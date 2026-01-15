@@ -6,7 +6,7 @@ Handles GET /me endpoint to retrieve current user information.
 
 from uuid import UUID
 
-from src.application.dtos.me import MeResponse
+from src.application.dtos.me import MeResponse, RoleResponse
 from src.domain.exceptions.auth_exceptions import UserInactiveError
 from src.domain.exceptions.user_exceptions import UserNotFoundError
 from src.domain.repositories.user_repository import UserRepository
@@ -48,9 +48,10 @@ class MeQueryUseCase:
             raise UserInactiveError("User account is inactive")
 
         # Map roles to response DTOs
-        # Note: Roles will be loaded by repository if needed
-        # For now, return empty list (roles will be loaded in infrastructure layer)
+        # Roles are loaded by repository and attached as dynamic attribute
         roles = []
+        if hasattr(user, "roles") and user.roles:
+            roles = [RoleResponse(id=role.id, name=role.name) for role in user.roles]
 
         return MeResponse(
             user_id=user.id,

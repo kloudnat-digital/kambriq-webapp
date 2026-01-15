@@ -5,7 +5,7 @@ Handles user authentication.
 """
 
 import secrets
-from typing import Tuple
+from typing import Optional, Tuple
 
 from src.application.dtos.signin import SigninRequest, SigninResponse
 from src.domain.entities.refresh_token import RefreshToken
@@ -53,8 +53,8 @@ class SigninUseCase:
     async def execute(
         self,
         request: SigninRequest,
-        client_ip: str = None,
-        user_agent: str = None,
+        client_ip: Optional[str] = None,
+        user_agent: Optional[str] = None,
     ) -> Tuple[SigninResponse, str, str]:
         """
         Execute signin use case.

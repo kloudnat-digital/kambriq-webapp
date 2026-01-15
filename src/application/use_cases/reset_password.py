@@ -4,6 +4,7 @@ Reset Password Use Cases
 Handles password reset request and confirmation.
 """
 
+from typing import Optional
 
 from src.application.dtos.reset_password import (
     ResetPasswordConfirmRequest,
@@ -52,7 +53,7 @@ class ResetPasswordRequestUseCase:
     async def execute(
         self,
         request: ResetPasswordRequestRequest,
-        client_ip: str = None,
+        client_ip: Optional[str] = None,
     ) -> str:
         """
         Execute reset password request use case.

@@ -5,7 +5,7 @@ Handles token refresh to get a new access token.
 """
 
 import secrets
-from typing import Tuple
+from typing import Optional, Tuple
 
 from src.domain.entities.refresh_token import RefreshToken
 from src.domain.exceptions.auth_exceptions import (
@@ -48,8 +48,8 @@ class RefreshTokenUseCase:
     async def execute(
         self,
         refresh_token_plain: str,
-        client_ip: str = None,
-        user_agent: str = None,
+        client_ip: Optional[str] = None,
+        user_agent: Optional[str] = None,
     ) -> Tuple[str, str]:
         """
         Execute refresh token use case.
