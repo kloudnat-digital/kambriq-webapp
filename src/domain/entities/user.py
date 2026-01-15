@@ -16,7 +16,7 @@ from .user_address import UserAddress
 class User:
     """
     Domain entity representing a user.
-    
+
     Attributes:
         id: Unique identifier
         first_name: User's first name
@@ -32,7 +32,7 @@ class User:
         created_at: Creation timestamp
         updated_at: Last update timestamp
     """
-    
+
     id: UUID
     first_name: str
     last_name: str
@@ -46,7 +46,7 @@ class User:
     terms_accepted: bool
     created_at: datetime
     updated_at: datetime
-    
+
     def __post_init__(self) -> None:
         """Validate user fields."""
         if not self.first_name or not self.first_name.strip():
@@ -58,7 +58,7 @@ class User:
         # Basic email validation
         if "@" not in self.email:
             raise ValueError("Invalid email format")
-    
+
     @classmethod
     def create(
         cls,
@@ -74,7 +74,7 @@ class User:
     ) -> "User":
         """
         Factory method to create a new User.
-        
+
         Args:
             first_name: User's first name
             last_name: User's last name
@@ -85,7 +85,7 @@ class User:
             referrer_id: Optional referrer user ID
             avatar_url: Optional avatar URL
             terms_accepted: Whether terms are accepted
-            
+
         Returns:
             New User instance
         """
@@ -105,11 +105,11 @@ class User:
             created_at=now,
             updated_at=now,
         )
-    
+
     def update_password(self, new_password_hash: str) -> None:
         """
         Update user password.
-        
+
         Args:
             new_password_hash: New hashed password
         """
@@ -117,34 +117,33 @@ class User:
             raise ValueError("Password hash cannot be empty")
         self.password_hash = new_password_hash
         self.updated_at = datetime.utcnow()
-    
+
     def activate(self) -> None:
         """Activate the user account."""
         self.is_active = True
         self.updated_at = datetime.utcnow()
-    
+
     def deactivate(self) -> None:
         """Deactivate the user account."""
         self.is_active = False
         self.updated_at = datetime.utcnow()
-    
+
     def accept_terms(self) -> None:
         """Mark terms as accepted."""
         self.terms_accepted = True
         self.updated_at = datetime.utcnow()
-    
+
     def update_address(self, address: Optional[UserAddress]) -> None:
         """
         Update user address.
-        
+
         Args:
             address: New address or None to remove
         """
         self.address = address
         self.updated_at = datetime.utcnow()
-    
+
     @property
     def full_name(self) -> str:
         """Get user's full name."""
         return f"{self.first_name} {self.last_name}"
-

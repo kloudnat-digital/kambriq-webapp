@@ -10,7 +10,7 @@ from src.infrastructure.security.token_hasher import TokenHasher
 class TestTokenHasher:
     """Test suite for TokenHasher."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def token_hasher(self):
         """Create TokenHasher instance."""
         return TokenHasher(secret_key="test-secret-key-12345")
@@ -115,4 +115,3 @@ class TestTokenHasher:
         """Test that empty secret key fails."""
         with pytest.raises(ValueError, match="Secret key cannot be empty"):
             TokenHasher(secret_key="")
-

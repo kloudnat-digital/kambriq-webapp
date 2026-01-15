@@ -98,4 +98,3 @@ class TestPasswordHasher:
         hashed = hasher.hash(password)
 
         assert hasher.verify(password, hashed) is True
-

@@ -4,14 +4,12 @@ Database Base Configuration
 SQLAlchemy base and session setup.
 """
 
-from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 
 class Base(DeclarativeBase):
     """Base class for all SQLAlchemy models."""
-    pass
 
 
 # These will be initialized when database URL is available
@@ -22,10 +20,10 @@ _async_session_maker = None
 def get_async_engine(database_url: str):
     """
     Get or create async SQLAlchemy engine.
-    
+
     Args:
         database_url: Database connection URL (asyncpg format)
-        
+
     Returns:
         AsyncEngine instance
     """
@@ -42,10 +40,10 @@ def get_async_engine(database_url: str):
 def get_async_session_maker(database_url: str) -> async_sessionmaker[AsyncSession]:
     """
     Get or create async session maker.
-    
+
     Args:
         database_url: Database connection URL (asyncpg format)
-        
+
     Returns:
         AsyncSessionMaker instance
     """
@@ -61,10 +59,10 @@ def get_async_session_maker(database_url: str) -> async_sessionmaker[AsyncSessio
 async def get_db_session(database_url: str):
     """
     Dependency function to get database session.
-    
+
     Args:
         database_url: Database connection URL
-        
+
     Yields:
         AsyncSession instance
     """
@@ -74,4 +72,3 @@ async def get_db_session(database_url: str):
             yield session
         finally:
             await session.close()
-

@@ -1,7 +1,7 @@
 """
 PermissionMatrix Entity
 
-Represents a permission matrix entry (role × resource × actions).
+Represents a permission matrix entry (role x resource x actions).
 Each row represents permissions for a specific role-resource combination.
 """
 
@@ -14,10 +14,10 @@ from uuid import UUID, uuid4
 class PermissionMatrix:
     """
     Domain entity representing a permission matrix entry.
-    
+
     Each instance represents permissions for a specific (role_id, resource_id) combination.
     Contains 29 boolean columns representing different actions across resources.
-    
+
     Attributes:
         id: Unique identifier
         role_id: Role ID
@@ -68,11 +68,11 @@ class PermissionMatrix:
         created_at: datetime
         updated_at: datetime
     """
-    
+
     id: UUID
     role_id: UUID
     resource_id: UUID
-    
+
     # LAND actions
     land_view_public_lands: bool = False
     land_view_agents_catalog: bool = False
@@ -81,14 +81,14 @@ class PermissionMatrix:
     land_assign_label_tdt_vefil_vefl: bool = False
     land_reserve_land: bool = False
     land_validate_reservation: bool = False
-    
+
     # VERIFY actions
     verify_submit_case: bool = False
     verify_view_own_results: bool = False
     verify_process_request: bool = False
     verify_generate_documents: bool = False
     verify_rate_case_compliant: bool = False
-    
+
     # KBS actions
     kbs_view_kbs_presentation: bool = False
     kbs_signup: bool = False
@@ -97,7 +97,7 @@ class PermissionMatrix:
     kbs_view_kca_certificate: bool = False
     kbs_manage_contents: bool = False
     kbs_manage_candidates: bool = False
-    
+
     # KAMNET actions
     kamnet_view_land_catalog: bool = False
     kamnet_reserve_land: bool = False
@@ -106,25 +106,25 @@ class PermissionMatrix:
     kamnet_view_personal_network: bool = False
     kamnet_manage_agents: bool = False
     kamnet_create_agent: bool = False
-    
+
     # PARTNER actions
     partner_create: bool = False
     partner_read: bool = False
     partner_update: bool = False
     partner_delete: bool = False
     partner_export: bool = False
-    
+
     # ADMINISTRATEUR actions
     administrateur_create: bool = False
     administrateur_read: bool = False
     administrateur_update: bool = False
     administrateur_delete: bool = False
     administrateur_export: bool = False
-    
+
     # Metadata
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
-    
+
     @classmethod
     def create(
         cls,
@@ -134,12 +134,12 @@ class PermissionMatrix:
     ) -> "PermissionMatrix":
         """
         Factory method to create a new PermissionMatrix.
-        
+
         Args:
             role_id: Role ID
             resource_id: Resource ID
             **action_permissions: Action permissions to set (e.g., land_view_public_lands=True)
-            
+
         Returns:
             New PermissionMatrix instance
         """
@@ -151,18 +151,18 @@ class PermissionMatrix:
             created_at=now,
             updated_at=now,
         )
-        
+
         # Set provided action permissions
         for action, value in action_permissions.items():
             if hasattr(instance, action):
                 setattr(instance, action, value)
-        
+
         return instance
-    
+
     def update_permissions(self, **action_permissions: bool) -> None:
         """
         Update action permissions.
-        
+
         Args:
             **action_permissions: Action permissions to update
         """
@@ -172,33 +172,33 @@ class PermissionMatrix:
             else:
                 raise ValueError(f"Unknown action: {action}")
         self.updated_at = datetime.utcnow()
-    
+
     def get_action_value(self, action: str) -> bool:
         """
         Get value for a specific action.
-        
+
         Args:
             action: Action name
-            
+
         Returns:
             Permission value for the action
         """
         if not hasattr(self, action):
             raise ValueError(f"Unknown action: {action}")
         return getattr(self, action, False)
-    
+
     def has_permission(self, action: str) -> bool:
         """
         Check if permission is granted for an action.
-        
+
         Args:
             action: Action name
-            
+
         Returns:
             True if permission is granted
         """
         return self.get_action_value(action)
-    
+
     @property
     def all_actions(self) -> list[str]:
         """Get list of all action names."""
@@ -240,4 +240,3 @@ class PermissionMatrix:
             "administrateur_delete",
             "administrateur_export",
         ]
-

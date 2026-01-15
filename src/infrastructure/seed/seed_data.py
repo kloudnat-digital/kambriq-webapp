@@ -88,4 +88,3 @@ RESOURCE_ACTIONS = {
         "administrateur_export",
     ],
 }
-

@@ -12,7 +12,7 @@ from typing import Optional
 class UserAddress:
     """
     Value object representing a user's address.
-    
+
     Attributes:
         line: Street address line
         complement: Optional address complement (apartment, suite, etc.)
@@ -20,13 +20,13 @@ class UserAddress:
         city: City name
         country: Country name or code
     """
-    
+
     line: str
     postal_code: str
     city: str
     country: str
     complement: Optional[str] = None
-    
+
     def __post_init__(self) -> None:
         """Validate address fields."""
         if not self.line or not self.line.strip():
@@ -37,4 +37,3 @@ class UserAddress:
             raise ValueError("City cannot be empty")
         if not self.country or not self.country.strip():
             raise ValueError("Country cannot be empty")
-

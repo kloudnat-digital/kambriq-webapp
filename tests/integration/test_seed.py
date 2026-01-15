@@ -7,16 +7,13 @@ Tests seed idempotence and data correctness.
 import pytest
 from sqlalchemy import select
 
-from src.infrastructure.database.base import Base
 from src.infrastructure.database.models.permission_model import PermissionModel
-from src.infrastructure.database.models.role_model import RoleModel
 from src.infrastructure.database.models.resource_model import ResourceModel
+from src.infrastructure.database.models.role_model import RoleModel
 from src.infrastructure.database.models.user_model import UserModel
 from src.infrastructure.database.models.user_role_model import UserRoleModel
-from src.infrastructure.seed.seed_data import ROLES, RESOURCES
+from src.infrastructure.seed.seed_data import RESOURCES, ROLES
 from src.infrastructure.seed.seed_repository import SeedRepository
-
-from .conftest import TEST_DATABASE_URL
 
 
 async def run_seed(session):
@@ -28,7 +25,7 @@ async def run_seed(session):
     await session.commit()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_seed_roles_resources(test_session, test_engine):
     """Test that roles and resources are seeded correctly."""
     seed_repo = SeedRepository(test_session)
@@ -60,7 +57,7 @@ async def test_seed_roles_resources(test_session, test_engine):
     assert resource_names == set(RESOURCES)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_seed_permissions_matrix(test_session):
     """Test that permissions matrix is seeded correctly."""
     seed_repo = SeedRepository(test_session)
@@ -102,13 +99,13 @@ async def test_seed_permissions_matrix(test_session):
 
     await test_session.commit()
 
-    # Verify permissions count (18 roles × 6 resources = 108)
+    # Verify permissions count (18 roles x 6 resources = 108)
     result = await test_session.execute(select(PermissionModel))
     permissions = result.scalars().all()
     assert len(permissions) == len(ROLES) * len(RESOURCES)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_seed_idempotent_roles(test_session):
     """Test that seeding roles multiple times doesn't create duplicates."""
     seed_repo = SeedRepository(test_session)
@@ -134,7 +131,7 @@ async def test_seed_idempotent_roles(test_session):
     assert count_after_first == count_after_second == len(ROLES)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_seed_idempotent_permissions(test_session):
     """Test that seeding permissions multiple times doesn't create duplicates."""
     seed_repo = SeedRepository(test_session)
@@ -188,7 +185,7 @@ async def test_seed_idempotent_permissions(test_session):
     assert count_after_first == count_after_second == expected_count
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_seed_admin_user(test_session):
     """Test that admin user is seeded correctly."""
     from passlib.context import CryptContext
@@ -199,7 +196,7 @@ async def test_seed_admin_user(test_session):
     password_hash = pwd_context.hash("contact12345")
 
     # Seed admin user
-    admin_user = await seed_repo.upsert_user(
+    await seed_repo.upsert_user(
         email="contact@kambriq.com",
         first_name="Contact",
         last_name="Contact",
@@ -228,7 +225,7 @@ async def test_seed_admin_user(test_session):
     assert pwd_context.verify("contact12345", user.password_hash)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_seed_admin_user_role(test_session):
     """Test that admin user gets admin_global role."""
     from passlib.context import CryptContext
@@ -268,7 +265,7 @@ async def test_seed_admin_user_role(test_session):
     assert user_role.role_id == admin_role.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_seed_admin_global_all_permissions(test_session):
     """Test that admin_global role has all actions = True for all resources."""
     seed_repo = SeedRepository(test_session)
@@ -279,7 +276,7 @@ async def test_seed_admin_global_all_permissions(test_session):
 
     await test_session.flush()
 
-    # Seed permission for admin_global × land with all actions = True
+    # Seed permission for admin_global x land with all actions = True
     from src.infrastructure.seed.seed_data import RESOURCE_ACTIONS
 
     all_actions = []
@@ -309,4 +306,3 @@ async def test_seed_admin_global_all_permissions(test_session):
     # Verify all actions are True
     for action in all_actions:
         assert getattr(permission, action) is True, f"Action {action} should be True"
-

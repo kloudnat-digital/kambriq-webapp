@@ -1,4 +1,3 @@
 """
 Infrastructure unit tests
 """
-

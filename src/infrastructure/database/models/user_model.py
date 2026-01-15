@@ -5,7 +5,7 @@ Database model for User entity.
 """
 
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from sqlalchemy import Boolean, Column, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -17,12 +17,12 @@ from ..base import Base
 class UserModel(Base):
     """
     SQLAlchemy model for User.
-    
+
     Table: users
     """
-    
+
     __tablename__ = "users"
-    
+
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
     first_name = Column(String(255), nullable=False)
     last_name = Column(String(255), nullable=False)
@@ -34,14 +34,21 @@ class UserModel(Base):
     is_active = Column(Boolean, nullable=False, default=True)
     terms_accepted = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
     # Relationships
     roles = relationship("UserRoleModel", back_populates="user", cascade="all, delete-orphan")
-    address = relationship("UserAddressModel", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    refresh_tokens = relationship("RefreshTokenModel", back_populates="user", cascade="all, delete-orphan")
-    password_reset_tokens = relationship("PasswordResetTokenModel", back_populates="user", cascade="all, delete-orphan")
-    
+    address = relationship(
+        "UserAddressModel", back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
+    refresh_tokens = relationship(
+        "RefreshTokenModel", back_populates="user", cascade="all, delete-orphan"
+    )
+    password_reset_tokens = relationship(
+        "PasswordResetTokenModel", back_populates="user", cascade="all, delete-orphan"
+    )
+
     # Self-referential relationship for referrer
     referrer = relationship("UserModel", remote_side=[id], foreign_keys=[referrer_id])
-

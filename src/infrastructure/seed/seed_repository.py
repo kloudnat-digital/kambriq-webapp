@@ -7,16 +7,12 @@ Repository for idempotent seeding operations.
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.domain.entities.permission_matrix import PermissionMatrix
-from src.domain.entities.role import Role
-from src.domain.entities.resource import Resource
-from src.domain.entities.user import User
-from src.infrastructure.database.models.role_model import RoleModel
-from src.infrastructure.database.models.resource_model import ResourceModel
 from src.infrastructure.database.models.permission_model import PermissionModel
+from src.infrastructure.database.models.resource_model import ResourceModel
+from src.infrastructure.database.models.role_model import RoleModel
 from src.infrastructure.database.models.user_model import UserModel
 from src.infrastructure.database.models.user_role_model import UserRoleModel
 
@@ -40,9 +36,7 @@ class SeedRepository:
             RoleModel instance
         """
         # Check if role exists
-        result = await self.session.scalar(
-            select(RoleModel).where(RoleModel.name == name)
-        )
+        result = await self.session.scalar(select(RoleModel).where(RoleModel.name == name))
 
         if result:
             return result
@@ -64,9 +58,7 @@ class SeedRepository:
             ResourceModel instance
         """
         # Check if resource exists
-        result = await self.session.scalar(
-            select(ResourceModel).where(ResourceModel.name == name)
-        )
+        result = await self.session.scalar(select(ResourceModel).where(ResourceModel.name == name))
 
         if result:
             return result
@@ -143,9 +135,7 @@ class SeedRepository:
             UserModel instance
         """
         # Check if user exists
-        result = await self.session.scalar(
-            select(UserModel).where(UserModel.email == email)
-        )
+        result = await self.session.scalar(select(UserModel).where(UserModel.email == email))
 
         if result:
             # Update existing user
@@ -212,4 +202,3 @@ class SeedRepository:
             List of action names
         """
         return RESOURCE_ACTIONS.get(resource_name, [])
-

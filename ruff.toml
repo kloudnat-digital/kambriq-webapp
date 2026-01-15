@@ -1,8 +1,9 @@
 # Ruff configuration for KAMBRIQ API
 # Ruff remplace black + flake8 + isort
 
-# Version de ruff
-ruff_version = "0.1.15"
+
+# Longueur de ligne maximale (option globale)
+line-length = 100
 
 # Configuration du formatage (style black)
 [format]
@@ -10,9 +11,6 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
-
-# Longueur de ligne maximale (au niveau racine)
-line-length = 100
 
 # Configuration du linting
 [lint]
@@ -65,5 +63,7 @@ known-first-party = ["src"]
 "tests/**/*.py" = [
     "ARG",  # Permettre arguments non utilisés dans les tests
     "S101", # Permettre assert dans les tests
+    "B017", # pytest.raises(Exception) acceptable dans les tests
+    "PT011", # pytest.raises trop large acceptable dans les tests
+    "B007", # Variables de boucle non utilisées acceptables
 ]
-

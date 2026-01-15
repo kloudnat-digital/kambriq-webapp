@@ -83,4 +83,3 @@ class TokenHasher:
 
         # Use constant-time comparison to prevent timing attacks
         return hmac.compare_digest(computed_hash, stored_hash)
-

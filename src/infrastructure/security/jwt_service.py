@@ -81,7 +81,7 @@ class JWTService:
             payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
             return payload
         except JWTError as e:
-            raise JWTError(f"Invalid token: {str(e)}")
+            raise JWTError(f"Invalid token: {e!s}") from e
 
     def get_user_id_from_token(self, token: str) -> UUID:
         """
@@ -115,7 +115,10 @@ class JWTService:
         try:
             # Decode without verification to check expiration
             payload = jwt.decode(
-                token, self.secret_key, algorithms=[self.algorithm], options={"verify_signature": True}
+                token,
+                self.secret_key,
+                algorithms=[self.algorithm],
+                options={"verify_signature": True},
             )
             exp = payload.get("exp")
             if exp:
@@ -123,4 +126,3 @@ class JWTService:
             return True  # No expiration = expired
         except JWTError:
             return True  # Invalid token = expired
-

@@ -6,4 +6,3 @@ This package contains infrastructure implementations:
 - Repository implementations
 - External services (email, etc.)
 """
-

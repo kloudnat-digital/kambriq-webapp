@@ -5,18 +5,17 @@ Tests upgrade, downgrade, and re-upgrade cycles.
 """
 
 import pytest
-from sqlalchemy import inspect, text
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy import inspect
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import command
 from alembic.config import Config
-
 
 # Use SQLite for testing migrations
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 
-@pytest.fixture
+@pytest.fixture()
 def alembic_cfg():
     """Create Alembic config for testing."""
     alembic_cfg = Config("alembic.ini")
@@ -24,7 +23,7 @@ def alembic_cfg():
     return alembic_cfg
 
 
-@pytest.fixture
+@pytest.fixture()
 async def test_engine():
     """Create test database engine."""
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
@@ -32,14 +31,14 @@ async def test_engine():
     await engine.dispose()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_migration_upgrade(alembic_cfg, test_engine):
     """Test that upgrade creates all tables."""
     # Run upgrade to head
     command.upgrade(alembic_cfg, "head")
 
     # Verify all tables exist
-    async with test_engine.connect() as conn:
+    async with test_engine.connect():
         inspector = inspect(test_engine.sync_engine)
         tables = inspector.get_table_names()
 
@@ -58,7 +57,7 @@ async def test_migration_upgrade(alembic_cfg, test_engine):
             assert table in tables, f"Table {table} should exist after migration"
 
     # Verify permissions table has all 36 action columns
-    async with test_engine.connect() as conn:
+    async with test_engine.connect() as _conn:
         inspector = inspect(test_engine.sync_engine)
         columns = [col["name"] for col in inspector.get_columns("permissions")]
 
@@ -112,19 +111,23 @@ async def test_migration_upgrade(alembic_cfg, test_engine):
 
         # Count action columns (should be 36)
         action_columns = [
-            col for col in columns if not col.endswith("_id") and col not in ["id", "created_at", "updated_at"]
+            col
+            for col in columns
+            if not col.endswith("_id") and col not in ["id", "created_at", "updated_at"]
         ]
-        assert len(action_columns) == 36, f"Should have 36 action columns, got {len(action_columns)}"
+        assert (
+            len(action_columns) == 36
+        ), f"Should have 36 action columns, got {len(action_columns)}"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_migration_downgrade(alembic_cfg, test_engine):
     """Test that downgrade removes all tables."""
     # First upgrade
     command.upgrade(alembic_cfg, "head")
 
     # Verify tables exist
-    async with test_engine.connect() as conn:
+    async with test_engine.connect():
         inspector = inspect(test_engine.sync_engine)
         tables_before = inspector.get_table_names()
         assert len(tables_before) > 0
@@ -133,7 +136,7 @@ async def test_migration_downgrade(alembic_cfg, test_engine):
     command.downgrade(alembic_cfg, "base")
 
     # Verify all tables are removed
-    async with test_engine.connect() as conn:
+    async with test_engine.connect() as _conn:
         inspector = inspect(test_engine.sync_engine)
         tables_after = inspector.get_table_names()
 
@@ -152,7 +155,7 @@ async def test_migration_downgrade(alembic_cfg, test_engine):
             assert table not in tables_after, f"Table {table} should not exist after downgrade"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_migration_re_upgrade(alembic_cfg, test_engine):
     """Test that re-upgrade after downgrade works (idempotence)."""
     # Upgrade
@@ -165,7 +168,7 @@ async def test_migration_re_upgrade(alembic_cfg, test_engine):
     command.upgrade(alembic_cfg, "head")
 
     # Verify tables exist again
-    async with test_engine.connect() as conn:
+    async with test_engine.connect() as _conn:
         inspector = inspect(test_engine.sync_engine)
         tables = inspector.get_table_names()
 
@@ -184,12 +187,12 @@ async def test_migration_re_upgrade(alembic_cfg, test_engine):
             assert table in tables, f"Table {table} should exist after re-upgrade"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_permissions_unique_constraint(alembic_cfg, test_engine):
     """Test that permissions table has unique constraint on (role_id, resource_id)."""
     command.upgrade(alembic_cfg, "head")
 
-    async with test_engine.connect() as conn:
+    async with test_engine.connect() as _conn:
         inspector = inspect(test_engine.sync_engine)
         constraints = inspector.get_unique_constraints("permissions")
 
@@ -200,15 +203,17 @@ async def test_permissions_unique_constraint(alembic_cfg, test_engine):
                 unique_constraint = constraint
                 break
 
-        assert unique_constraint is not None, "Unique constraint on (role_id, resource_id) should exist"
+        assert (
+            unique_constraint is not None
+        ), "Unique constraint on (role_id, resource_id) should exist"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_user_email_unique_constraint(alembic_cfg, test_engine):
     """Test that users table has unique constraint on email."""
     command.upgrade(alembic_cfg, "head")
 
-    async with test_engine.connect() as conn:
+    async with test_engine.connect() as _conn:
         inspector = inspect(test_engine.sync_engine)
         constraints = inspector.get_unique_constraints("users")
 
@@ -220,4 +225,3 @@ async def test_user_email_unique_constraint(alembic_cfg, test_engine):
                 break
 
         assert email_unique is not None, "Unique constraint on email should exist"
-

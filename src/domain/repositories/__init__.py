@@ -5,10 +5,10 @@ Abstract base classes for repository interfaces.
 No infrastructure dependencies.
 """
 
-from .user_repository import UserRepository
-from .role_repository import RoleRepository
-from .refresh_token_repository import RefreshTokenRepository
 from .password_reset_token_repository import PasswordResetTokenRepository
+from .refresh_token_repository import RefreshTokenRepository
+from .role_repository import RoleRepository
+from .user_repository import UserRepository
 
 __all__ = [
     "UserRepository",
@@ -16,4 +16,3 @@ __all__ = [
     "RefreshTokenRepository",
     "PasswordResetTokenRepository",
 ]
-

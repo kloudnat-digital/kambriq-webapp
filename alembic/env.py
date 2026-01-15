@@ -17,8 +17,8 @@ from alembic import context
 # Import all models to ensure they are registered
 from src.infrastructure.database.base import Base
 from src.infrastructure.database.models import (  # noqa: F401
-    PermissionModel,
     PasswordResetTokenModel,
+    PermissionModel,
     RefreshTokenModel,
     ResourceModel,
     RoleModel,
@@ -111,4 +111,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-

@@ -4,8 +4,8 @@ SQLAlchemy Database Models
 All database models must be imported here for Alembic to detect them.
 """
 
-from .permission_model import PermissionModel
 from .password_reset_token_model import PasswordResetTokenModel
+from .permission_model import PermissionModel
 from .refresh_token_model import RefreshTokenModel
 from .resource_model import ResourceModel
 from .role_model import RoleModel
@@ -23,4 +23,3 @@ __all__ = [
     "UserRoleModel",
     "UserAddressModel",
 ]
-

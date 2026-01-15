@@ -19,7 +19,9 @@ class PasswordHasher:
         Args:
             rounds: Number of bcrypt rounds (default: 12, recommended: 12-14)
         """
-        self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=rounds)
+        self.pwd_context = CryptContext(
+            schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=rounds
+        )
 
     def hash(self, password: str) -> str:
         """
@@ -49,4 +51,3 @@ class PasswordHasher:
         if not password or not hashed:
             return False
         return self.pwd_context.verify(password, hashed)
-

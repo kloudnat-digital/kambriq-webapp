@@ -11,10 +11,7 @@ from .auth_exceptions import (
     TokenInvalidError,
     UserInactiveError,
 )
-from .user_exceptions import (
-    EmailAlreadyExistsError,
-    UserNotFoundError,
-)
+from .user_exceptions import EmailAlreadyExistsError, UserNotFoundError
 
 __all__ = [
     "AuthenticationError",
@@ -25,4 +22,3 @@ __all__ = [
     "EmailAlreadyExistsError",
     "UserNotFoundError",
 ]
-

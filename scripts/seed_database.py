@@ -18,11 +18,19 @@ from typing import Optional
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from passlib.context import CryptContext  # noqa: E402
+from sqlalchemy.ext.asyncio import (  # noqa: E402
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
-from src.infrastructure.seed.seed_data import ROLES, RESOURCES, RESOURCE_ACTIONS
-from src.infrastructure.seed.seed_repository import SeedRepository
-from passlib.context import CryptContext
+from src.infrastructure.seed.seed_data import (  # noqa: E402
+    RESOURCE_ACTIONS,
+    RESOURCES,
+    ROLES,
+)
+from src.infrastructure.seed.seed_repository import SeedRepository  # noqa: E402
 
 # Password hasher
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -69,7 +77,7 @@ async def execute_seed(session: AsyncSession):
         resources_map[resource_name] = resource
         print(f"  ✅ Resource: {resource_name}")
 
-    # 3. Seed Permissions (matrice: role × resource)
+        # 3. Seed Permissions (matrice: role x resource)
     print("\n📝 Seeding permissions (matrice)...")
     permission_count = 0
 
@@ -122,9 +130,7 @@ async def execute_seed(session: AsyncSession):
     # 5. Assign admin_global role to admin user
     admin_global_role = roles_map.get("admin_global")
     if admin_global_role:
-        await seed_repo.upsert_user_role(
-            user_id=admin_user.id, role_id=admin_global_role.id
-        )
+        await seed_repo.upsert_user_role(user_id=admin_user.id, role_id=admin_global_role.id)
         print(f"  ✅ Assigned role 'admin_global' to {admin_user.email}")
 
     # Print summary
@@ -132,7 +138,7 @@ async def execute_seed(session: AsyncSession):
     print(f"   - {len(roles_map)} roles")
     print(f"   - {len(resources_map)} resources")
     print(f"   - {permission_count} permission entries")
-    print(f"   - 1 admin user")
+    print("   - 1 admin user")
 
     return {
         "roles": len(roles_map),

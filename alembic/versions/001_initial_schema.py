@@ -1,15 +1,16 @@
 """Initial schema: users, roles, resources, permissions, etc
 
 Revision ID: 001_initial_schema
-Revises: 
+Revises:
 Create Date: 2025-01-28 12:00:00.000000
 
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "001_initial_schema"
@@ -102,19 +103,31 @@ def upgrade() -> None:
         # LAND actions (7)
         sa.Column("land_view_public_lands", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("land_view_agents_catalog", sa.Boolean(), nullable=False, server_default="false"),
-        sa.Column("land_view_agent_land_detail", sa.Boolean(), nullable=False, server_default="false"),
+        sa.Column(
+            "land_view_agent_land_detail", sa.Boolean(), nullable=False, server_default="false"
+        ),
         sa.Column("land_upsert_land", sa.Boolean(), nullable=False, server_default="false"),
-        sa.Column("land_assign_label_tdt_vefil_vefl", sa.Boolean(), nullable=False, server_default="false"),
+        sa.Column(
+            "land_assign_label_tdt_vefil_vefl", sa.Boolean(), nullable=False, server_default="false"
+        ),
         sa.Column("land_reserve_land", sa.Boolean(), nullable=False, server_default="false"),
-        sa.Column("land_validate_reservation", sa.Boolean(), nullable=False, server_default="false"),
+        sa.Column(
+            "land_validate_reservation", sa.Boolean(), nullable=False, server_default="false"
+        ),
         # VERIFY actions (5)
         sa.Column("verify_submit_case", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("verify_view_own_results", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("verify_process_request", sa.Boolean(), nullable=False, server_default="false"),
-        sa.Column("verify_generate_documents", sa.Boolean(), nullable=False, server_default="false"),
-        sa.Column("verify_rate_case_compliant", sa.Boolean(), nullable=False, server_default="false"),
+        sa.Column(
+            "verify_generate_documents", sa.Boolean(), nullable=False, server_default="false"
+        ),
+        sa.Column(
+            "verify_rate_case_compliant", sa.Boolean(), nullable=False, server_default="false"
+        ),
         # KBS actions (7)
-        sa.Column("kbs_view_kbs_presentation", sa.Boolean(), nullable=False, server_default="false"),
+        sa.Column(
+            "kbs_view_kbs_presentation", sa.Boolean(), nullable=False, server_default="false"
+        ),
         sa.Column("kbs_signup", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("kbs_access_courses", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("kbs_take_exam", sa.Boolean(), nullable=False, server_default="false"),
@@ -125,8 +138,12 @@ def upgrade() -> None:
         sa.Column("kamnet_view_land_catalog", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("kamnet_reserve_land", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("kamnet_view_referrals_n1", sa.Boolean(), nullable=False, server_default="false"),
-        sa.Column("kamnet_view_referrals_n1_n2_n3", sa.Boolean(), nullable=False, server_default="false"),
-        sa.Column("kamnet_view_personal_network", sa.Boolean(), nullable=False, server_default="false"),
+        sa.Column(
+            "kamnet_view_referrals_n1_n2_n3", sa.Boolean(), nullable=False, server_default="false"
+        ),
+        sa.Column(
+            "kamnet_view_personal_network", sa.Boolean(), nullable=False, server_default="false"
+        ),
         sa.Column("kamnet_manage_agents", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("kamnet_create_agent", sa.Boolean(), nullable=False, server_default="false"),
         # PARTNER actions (5)
@@ -148,7 +165,10 @@ def upgrade() -> None:
             ["role_id"], ["roles.id"], name="permissions_role_id_fkey", ondelete="CASCADE"
         ),
         sa.ForeignKeyConstraint(
-            ["resource_id"], ["resources.id"], name="permissions_resource_id_fkey", ondelete="CASCADE"
+            ["resource_id"],
+            ["resources.id"],
+            name="permissions_resource_id_fkey",
+            ondelete="CASCADE",
         ),
         sa.UniqueConstraint("role_id", "resource_id", name="uq_permissions_role_resource"),
     )
@@ -256,4 +276,3 @@ def downgrade() -> None:
 
     op.drop_index("ix_users_email", table_name="users")
     op.drop_table("users")
-

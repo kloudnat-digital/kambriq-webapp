@@ -20,31 +20,28 @@ async def test_engine():
     Creates all tables before tests, drops after.
     """
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
-    
+
     # Create all tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     yield engine
-    
+
     # Drop all tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-    
+
     await engine.dispose()
 
 
-@pytest.fixture
+@pytest.fixture()
 async def test_session(test_engine):
     """
     Create a test database session.
     Rolls back after each test.
     """
-    async_session = async_sessionmaker(
-        test_engine, class_=AsyncSession, expire_on_commit=False
-    )
-    
+    async_session = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
+
     async with async_session() as session:
         yield session
         await session.rollback()
-

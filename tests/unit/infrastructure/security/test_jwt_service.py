@@ -2,10 +2,10 @@
 Unit tests for JWTService
 """
 
-import pytest
-from datetime import datetime, timedelta
+from datetime import datetime
 from uuid import uuid4
 
+import pytest
 from jose import JWTError
 
 from src.infrastructure.security.jwt_service import JWTService
@@ -14,7 +14,7 @@ from src.infrastructure.security.jwt_service import JWTService
 class TestJWTService:
     """Test suite for JWTService."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def jwt_service(self):
         """Create JWTService instance."""
         return JWTService(secret_key="test-secret-key-12345", access_token_expires_in=900)
@@ -124,4 +124,3 @@ class TestJWTService:
         """Test that empty secret key fails."""
         with pytest.raises(ValueError, match="Secret key cannot be empty"):
             JWTService(secret_key="")
-
