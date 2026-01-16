@@ -33,10 +33,13 @@ class UserRepositoryImpl(IUserRepository):
         self.session = session
 
     async def find_by_id(self, user_id: UUID) -> Optional[User]:
-        """Find user by ID with roles loaded."""
+        """Find user by ID with roles and address loaded."""
         stmt = (
             select(UserModel)
-            .options(selectinload(UserModel.roles).selectinload(UserRoleModel.role))
+            .options(
+                selectinload(UserModel.roles).selectinload(UserRoleModel.role),
+                selectinload(UserModel.address),
+            )
             .where(UserModel.id == user_id)
         )
         result = await self.session.execute(stmt)
