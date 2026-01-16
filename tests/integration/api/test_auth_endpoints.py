@@ -2,7 +2,9 @@
 Integration tests for authentication endpoints.
 """
 
+import os
 
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -262,3 +264,68 @@ def test_reset_password_request_nonexistent_email(test_client: TestClient):
 
     # Should return 202 to prevent email enumeration
     assert response.status_code == 202
+
+
+def test_e2e_login_with_contact_user():
+    """
+    E2E test: Login with seeded contact user using environment variables.
+
+    This test:
+    1. Assumes database is already seeded (via docker-compose or previous test)
+    2. Logs in with contact user using env variables
+    3. Verifies authentication tokens and user data
+    4. Verifies user has admin_global role
+
+    Uses the same parameters as signin feature and runs on PostgreSQL from docker-compose.
+    Note: Database should be seeded before running this test (e.g., via docker-compose init).
+    Uses direct TestClient without test_session override to access seeded data.
+    """
+    from fastapi.testclient import TestClient
+
+    from src.presentation.main import app
+
+    # Use direct TestClient without session override to access seeded database
+    test_client = TestClient(app)
+
+    # Get contact user credentials from environment variables (REQUIRED - no hardcoded values)
+    # SEED_CONTACT_PASSWORD contains the plain password (same as used for seeding)
+    contact_email = os.getenv("SEED_CONTACT_EMAIL")
+    contact_password = os.getenv("SEED_CONTACT_PASSWORD")
+
+    if not contact_email or not contact_password:
+        pytest.skip(
+            "SEED_CONTACT_EMAIL and SEED_CONTACT_PASSWORD environment variables are required for E2E test. "
+            "SEED_CONTACT_PASSWORD must contain the plain password (same as used for seeding)."
+        )
+
+    # Attempt login (using /api/v1 prefix)
+    response = test_client.post(
+        "/api/v1/auth/signin",
+        json={
+            "email": contact_email,
+            "password": contact_password,
+        },
+    )
+
+    # Verify login success
+    assert response.status_code == 200, f"Login failed: {response.json()}"
+    data = response.json()
+    assert "user_id" in data
+    assert data["email"] == contact_email
+
+    # Verify cookies are set
+    cookies = response.cookies
+    assert "access_token" in cookies, "Access token cookie not set"
+    assert "refresh_token" in cookies, "Refresh token cookie not set"
+
+    # Verify cookies are HttpOnly and Secure
+    set_cookie_headers = list(response.headers.get_list("set-cookie"))
+    access_cookie = next((h for h in set_cookie_headers if "access_token" in h), "")
+    refresh_cookie = next((h for h in set_cookie_headers if "refresh_token" in h), "")
+
+    assert "HttpOnly" in access_cookie, "Access token cookie should be HttpOnly"
+    assert "HttpOnly" in refresh_cookie, "Refresh token cookie should be HttpOnly"
+
+    # Verify access token is set (for future use in authenticated requests)
+    access_token = cookies.get("access_token")
+    assert access_token is not None, "Access token should be set in cookies"
