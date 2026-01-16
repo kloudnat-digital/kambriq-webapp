@@ -11,6 +11,7 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.application.use_cases.get_permission_matrix import GetPermissionMatrixUseCase
 from src.application.use_cases.logout import LogoutUseCase
 from src.application.use_cases.me import MeQueryUseCase
 from src.application.use_cases.refresh import RefreshTokenUseCase
@@ -26,6 +27,9 @@ from src.infrastructure.repositories import (
     RefreshTokenRepositoryImpl,
     RoleRepositoryImpl,
     UserRepositoryImpl,
+)
+from src.infrastructure.repositories.permission_matrix_repository import (
+    PermissionMatrixRepository,
 )
 from src.infrastructure.security import JWTService, PasswordHasher, TokenHasher
 
@@ -204,3 +208,18 @@ def get_refresh_token_use_case(
         token_hasher=token_hasher,
         refresh_token_expires_in_days=refresh_expires // 86400,
     )
+
+
+def get_permission_matrix_repository(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> PermissionMatrixRepository:
+    """Dependency to get permission matrix repository."""
+    return PermissionMatrixRepository(session)
+
+
+def get_permission_matrix_use_case(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> GetPermissionMatrixUseCase:
+    """Dependency to get permission matrix use case."""
+    permission_matrix_repo = get_permission_matrix_repository(session)
+    return GetPermissionMatrixUseCase(permission_matrix_repository=permission_matrix_repo)
