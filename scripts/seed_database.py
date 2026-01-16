@@ -14,11 +14,11 @@ import os
 import sys
 from pathlib import Path
 from typing import Optional
+from uuid import UUID
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from passlib.context import CryptContext  # noqa: E402
 from sqlalchemy.ext.asyncio import (  # noqa: E402
     AsyncSession,
     async_sessionmaker,
@@ -31,9 +31,6 @@ from src.infrastructure.seed.seed_data import (  # noqa: E402
     ROLES,
 )
 from src.infrastructure.seed.seed_repository import SeedRepository  # noqa: E402
-
-# Password hasher
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def get_database_url() -> str:
@@ -64,24 +61,24 @@ async def execute_seed(session: AsyncSession):
     # 1. Seed Roles
     print("\n📝 Seeding roles...")
     roles_map = {}
-    for role_name in ROLES:
-        role = await seed_repo.upsert_role(role_name)
+    for role_name, role_id in ROLES.items():
+        role = await seed_repo.upsert_role(role_name, role_id=role_id)
         roles_map[role_name] = role
-        print(f"  ✅ Role: {role_name}")
+        print(f"  ✅ Role: {role_name} (ID: {role.id})")
 
     # 2. Seed Resources
     print("\n📝 Seeding resources...")
     resources_map = {}
-    for resource_name in RESOURCES:
-        resource = await seed_repo.upsert_resource(resource_name)
+    for resource_name, resource_id in RESOURCES.items():
+        resource = await seed_repo.upsert_resource(resource_name, resource_id=resource_id)
         resources_map[resource_name] = resource
-        print(f"  ✅ Resource: {resource_name}")
+        print(f"  ✅ Resource: {resource_name} (ID: {resource.id})")
 
         # 3. Seed Permissions (matrice: role x resource)
     print("\n📝 Seeding permissions (matrice)...")
     permission_count = 0
 
-    for role_name, role in roles_map.items():
+    for _role_name, role in roles_map.items():
         for resource_name, resource in resources_map.items():
             # Get actions for this resource
             resource_actions = seed_repo.get_resource_actions(resource_name)
@@ -89,8 +86,9 @@ async def execute_seed(session: AsyncSession):
             # Build action_permissions dict
             action_permissions = {}
 
-            # For admin_global: all actions = True for all resources
-            if role_name == "admin_global":
+            # For admin_global role (ID: 00000000-0000-0000-0000-00000000000c): all actions = True for all resources
+            admin_global_role_id = ROLES.get("admin_global")
+            if admin_global_role_id and role.id == admin_global_role_id:
                 # Set ALL actions to True (all 36 actions)
                 all_actions = []
                 for actions_list in RESOURCE_ACTIONS.values():
@@ -113,25 +111,59 @@ async def execute_seed(session: AsyncSession):
 
     print(f"  ✅ Created/updated {permission_count} permission entries")
 
-    # 4. Seed Admin User
-    print("\n📝 Seeding admin user...")
-    admin_password_hash = pwd_context.hash("contact12345")
+    # 4. Seed Admin User (Contact)
+    print("\n📝 Seeding admin user (contact)...")
+    # Get contact user data from environment variables
+    contact_email = os.getenv("SEED_CONTACT_EMAIL", "contact@kambriq.com")
+    # Use password hash directly (no plain password in code)
+    # Default hash is for "contact12345" - CHANGE IN PRODUCTION!
+    contact_password_hash = os.getenv(
+        "SEED_CONTACT_PASSWORD_HASH",
+        "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYq5q5q5q5q",  # Default: contact12345
+    )
+    contact_first_name = os.getenv("SEED_CONTACT_FIRST_NAME", "Contact")
+    contact_last_name = os.getenv("SEED_CONTACT_LAST_NAME", "Contact")
+    contact_phone = os.getenv("SEED_CONTACT_PHONE", "661234567")
+
+    if not contact_password_hash:
+        raise ValueError("SEED_CONTACT_PASSWORD_HASH environment variable is required")
     admin_user = await seed_repo.upsert_user(
-        email="contact@kambriq.com",
-        first_name="Contact",
-        last_name="Contact",
-        password_hash=admin_password_hash,
-        phone_number="661234567",
+        email=contact_email,
+        first_name=contact_first_name,
+        last_name=contact_last_name,
+        password_hash=contact_password_hash,
+        phone_number=contact_phone,
         is_active=True,
         terms_accepted=True,
     )
     print(f"  ✅ Admin user: {admin_user.email}")
 
-    # 5. Assign admin_global role to admin user
-    admin_global_role = roles_map.get("admin_global")
+    # 5. Assign role to admin user (using role ID from environment or default to admin_global)
+    contact_role_id_str = os.getenv("SEED_CONTACT_ROLE_ID")
+    if contact_role_id_str:
+        try:
+            contact_role_id = UUID(contact_role_id_str)
+            # Find role by ID
+            admin_global_role = None
+            for role in roles_map.values():
+                if role.id == contact_role_id:
+                    admin_global_role = role
+                    break
+            if not admin_global_role:
+                raise ValueError(f"Role with ID {contact_role_id} not found")
+        except ValueError as e:
+            raise ValueError(f"Invalid SEED_CONTACT_ROLE_ID: {e}") from e
+    else:
+        # Default to admin_global role
+        admin_global_role = roles_map.get("admin_global")
+
     if admin_global_role:
         await seed_repo.upsert_user_role(user_id=admin_user.id, role_id=admin_global_role.id)
-        print(f"  ✅ Assigned role 'admin_global' to {admin_user.email}")
+        print(
+            f"  ✅ Assigned role '{admin_global_role.name}' (ID: {admin_global_role.id}) to {admin_user.email}"
+        )
+    else:
+        raise ValueError("Could not find role to assign to contact user")
 
     # Print summary
     print("\n✅ Database seed completed successfully!")

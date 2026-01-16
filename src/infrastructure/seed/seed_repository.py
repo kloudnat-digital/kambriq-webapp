@@ -25,46 +25,64 @@ class SeedRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def upsert_role(self, name: str) -> RoleModel:
+    async def upsert_role(self, name: str, role_id: Optional[UUID] = None) -> RoleModel:
         """
         Create or update a role (idempotent).
 
         Args:
             name: Role name
+            role_id: Optional fixed UUID for the role
 
         Returns:
             RoleModel instance
         """
-        # Check if role exists
-        result = await self.session.scalar(select(RoleModel).where(RoleModel.name == name))
+        # Check if role exists by ID (if provided) or by name
+        if role_id:
+            result = await self.session.scalar(select(RoleModel).where(RoleModel.id == role_id))
+            if result:
+                return result
 
+        # Check by name
+        result = await self.session.scalar(select(RoleModel).where(RoleModel.name == name))
         if result:
             return result
 
-        # Create new role
+        # Create new role with fixed ID if provided
         role = RoleModel(name=name)
+        if role_id:
+            role.id = role_id
         self.session.add(role)
         await self.session.flush()
         return role
 
-    async def upsert_resource(self, name: str) -> ResourceModel:
+    async def upsert_resource(self, name: str, resource_id: Optional[UUID] = None) -> ResourceModel:
         """
         Create or update a resource (idempotent).
 
         Args:
             name: Resource name
+            resource_id: Optional fixed UUID for the resource
 
         Returns:
             ResourceModel instance
         """
-        # Check if resource exists
-        result = await self.session.scalar(select(ResourceModel).where(ResourceModel.name == name))
+        # Check if resource exists by ID (if provided) or by name
+        if resource_id:
+            result = await self.session.scalar(
+                select(ResourceModel).where(ResourceModel.id == resource_id)
+            )
+            if result:
+                return result
 
+        # Check by name
+        result = await self.session.scalar(select(ResourceModel).where(ResourceModel.name == name))
         if result:
             return result
 
-        # Create new resource
+        # Create new resource with fixed ID if provided
         resource = ResourceModel(name=name)
+        if resource_id:
+            resource.id = resource_id
         self.session.add(resource)
         await self.session.flush()
         return resource

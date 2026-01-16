@@ -2,40 +2,43 @@
 Seed Data
 
 Data definitions for seeding the database (roles, resources).
+Uses fixed UUIDs for idempotent seeding.
 """
 
-# List of roles to seed (18 roles)
-ROLES = [
-    "public",
-    "Prospect",
-    "client",
-    "kbs_candidate",
-    "kca_certified",
-    "kbs_admin",
-    "agent_junior",
-    "agent_certified",
-    "kamnet_manager",
-    "kamnet_admin",
-    "kamnet_root",
-    "admin_global",
-    "partner_geo",
-    "Banques & Assurances",
-    "Institution",
-    "Notaire",
-    "Cabinet d'avocat",
-    "admin_verify",
-    "admin_land",
-]
+from uuid import UUID
 
-# List of resources to seed (6 resources)
-RESOURCES = [
-    "verify",
-    "land",
-    "kbs",
-    "kamnet",
-    "partner",
-    "administrateur",
-]
+# Dictionary of roles to seed (18 roles) with fixed UUIDs
+ROLES = {
+    "public": UUID("00000000-0000-0000-0000-000000000001"),
+    "Prospect": UUID("00000000-0000-0000-0000-000000000002"),
+    "client": UUID("00000000-0000-0000-0000-000000000003"),
+    "kbs_candidate": UUID("00000000-0000-0000-0000-000000000004"),
+    "kca_certified": UUID("00000000-0000-0000-0000-000000000005"),
+    "kbs_admin": UUID("00000000-0000-0000-0000-000000000006"),
+    "agent_junior": UUID("00000000-0000-0000-0000-000000000007"),
+    "agent_certified": UUID("00000000-0000-0000-0000-000000000008"),
+    "kamnet_manager": UUID("00000000-0000-0000-0000-000000000009"),
+    "kamnet_admin": UUID("00000000-0000-0000-0000-00000000000a"),
+    "kamnet_root": UUID("00000000-0000-0000-0000-00000000000b"),
+    "admin_global": UUID("00000000-0000-0000-0000-00000000000c"),
+    "partner_geo": UUID("00000000-0000-0000-0000-00000000000d"),
+    "Banques & Assurances": UUID("00000000-0000-0000-0000-00000000000e"),
+    "Institution": UUID("00000000-0000-0000-0000-00000000000f"),
+    "Notaire": UUID("00000000-0000-0000-0000-000000000010"),
+    "Cabinet d'avocat": UUID("00000000-0000-0000-0000-000000000011"),
+    "admin_verify": UUID("00000000-0000-0000-0000-000000000012"),
+    "admin_land": UUID("00000000-0000-0000-0000-000000000013"),
+}
+
+# Dictionary of resources to seed (6 resources) with fixed UUIDs
+RESOURCES = {
+    "verify": UUID("10000000-0000-0000-0000-000000000001"),
+    "land": UUID("10000000-0000-0000-0000-000000000002"),
+    "kbs": UUID("10000000-0000-0000-0000-000000000003"),
+    "kamnet": UUID("10000000-0000-0000-0000-000000000004"),
+    "partner": UUID("10000000-0000-0000-0000-000000000005"),
+    "administrateur": UUID("10000000-0000-0000-0000-000000000006"),
+}
 
 # Mapping of resource names to their action prefixes
 RESOURCE_ACTIONS = {

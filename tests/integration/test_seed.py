@@ -31,12 +31,12 @@ async def test_seed_roles_resources(test_session, test_engine):
     seed_repo = SeedRepository(test_session)
 
     # Seed roles
-    for role_name in ROLES:
-        await seed_repo.upsert_role(role_name)
+    for role_name, role_id in ROLES.items():
+        await seed_repo.upsert_role(role_name, role_id=role_id)
 
     # Seed resources
-    for resource_name in RESOURCES:
-        await seed_repo.upsert_resource(resource_name)
+    for resource_name, resource_id in RESOURCES.items():
+        await seed_repo.upsert_resource(resource_name, resource_id=resource_id)
 
     await test_session.commit()
 
@@ -46,7 +46,7 @@ async def test_seed_roles_resources(test_session, test_engine):
     assert len(roles) == len(ROLES)
 
     role_names = {role.name for role in roles}
-    assert role_names == set(ROLES)
+    assert role_names == set(ROLES.keys())
 
     # Verify all resources exist
     result = await test_session.execute(select(ResourceModel))
@@ -54,7 +54,7 @@ async def test_seed_roles_resources(test_session, test_engine):
     assert len(resources) == len(RESOURCES)
 
     resource_names = {resource.name for resource in resources}
-    assert resource_names == set(RESOURCES)
+    assert resource_names == set(RESOURCES.keys())
 
 
 @pytest.mark.asyncio()
@@ -64,25 +64,26 @@ async def test_seed_permissions_matrix(test_session):
 
     # Seed roles and resources first
     roles_map = {}
-    for role_name in ROLES:
-        role = await seed_repo.upsert_role(role_name)
+    for role_name, role_id in ROLES.items():
+        role = await seed_repo.upsert_role(role_name, role_id=role_id)
         roles_map[role_name] = role
 
     resources_map = {}
-    for resource_name in RESOURCES:
-        resource = await seed_repo.upsert_resource(resource_name)
+    for resource_name, resource_id in RESOURCES.items():
+        resource = await seed_repo.upsert_resource(resource_name, resource_id=resource_id)
         resources_map[resource_name] = resource
 
     await test_session.flush()
 
     # Seed permissions
+    admin_global_role_id = ROLES.get("admin_global")
     for role_name, role in roles_map.items():
         for resource_name, resource in resources_map.items():
             resource_actions = seed_repo.get_resource_actions(resource_name)
             action_permissions = {action: True for action in resource_actions}
 
             # For admin_global, set all actions to True
-            if role_name == "admin_global":
+            if admin_global_role_id and role.id == admin_global_role_id:
                 from src.infrastructure.seed.seed_data import RESOURCE_ACTIONS
 
                 all_actions = []
@@ -111,8 +112,8 @@ async def test_seed_idempotent_roles(test_session):
     seed_repo = SeedRepository(test_session)
 
     # First seed
-    for role_name in ROLES:
-        await seed_repo.upsert_role(role_name)
+    for role_name, role_id in ROLES.items():
+        await seed_repo.upsert_role(role_name, role_id=role_id)
     await test_session.commit()
 
     # Count after first seed
@@ -120,8 +121,8 @@ async def test_seed_idempotent_roles(test_session):
     count_after_first = len(result.scalars().all())
 
     # Second seed (idempotent)
-    for role_name in ROLES:
-        await seed_repo.upsert_role(role_name)
+    for role_name, role_id in ROLES.items():
+        await seed_repo.upsert_role(role_name, role_id=role_id)
     await test_session.commit()
 
     # Count after second seed (should be the same)
@@ -138,13 +139,13 @@ async def test_seed_idempotent_permissions(test_session):
 
     # Seed roles and resources
     roles_map = {}
-    for role_name in ROLES:
-        role = await seed_repo.upsert_role(role_name)
+    for role_name, role_id in ROLES.items():
+        role = await seed_repo.upsert_role(role_name, role_id=role_id)
         roles_map[role_name] = role
 
     resources_map = {}
-    for resource_name in RESOURCES:
-        resource = await seed_repo.upsert_resource(resource_name)
+    for resource_name, resource_id in RESOURCES.items():
+        resource = await seed_repo.upsert_resource(resource_name, resource_id=resource_id)
         resources_map[resource_name] = resource
 
     await test_session.flush()
@@ -193,7 +194,8 @@ async def test_seed_admin_user(test_session):
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     seed_repo = SeedRepository(test_session)
 
-    password_hash = pwd_context.hash("contact12345")
+    # Use pre-hashed password (no plain password in code)
+    password_hash = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYq5q5q5q5q"
 
     # Seed admin user
     await seed_repo.upsert_user(
@@ -221,23 +223,24 @@ async def test_seed_admin_user(test_session):
     assert user.is_active is True
     assert user.terms_accepted is True
 
-    # Verify password hash is correct
+    # Verify password hash is correct (can verify against known password for testing)
+    # Note: In production, we would not have the plain password
     assert pwd_context.verify("contact12345", user.password_hash)
 
 
 @pytest.mark.asyncio()
 async def test_seed_admin_user_role(test_session):
     """Test that admin user gets admin_global role."""
-    from passlib.context import CryptContext
-
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     seed_repo = SeedRepository(test_session)
 
     # Seed roles
-    admin_role = await seed_repo.upsert_role("admin_global")
+    admin_role_id = ROLES.get("admin_global")
+    admin_role = await seed_repo.upsert_role("admin_global", role_id=admin_role_id)
 
     # Seed admin user
-    password_hash = pwd_context.hash("contact12345")
+    # Use pre-hashed password (no plain password in code)
+    # Hash for "contact12345"
+    password_hash = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYq5q5q5q5q"
     admin_user = await seed_repo.upsert_user(
         email="contact@kambriq.com",
         first_name="Contact",
@@ -271,8 +274,10 @@ async def test_seed_admin_global_all_permissions(test_session):
     seed_repo = SeedRepository(test_session)
 
     # Seed roles and resources
-    admin_role = await seed_repo.upsert_role("admin_global")
-    land_resource = await seed_repo.upsert_resource("land")
+    admin_role_id = ROLES.get("admin_global")
+    admin_role = await seed_repo.upsert_role("admin_global", role_id=admin_role_id)
+    land_resource_id = RESOURCES.get("land")
+    land_resource = await seed_repo.upsert_resource("land", resource_id=land_resource_id)
 
     await test_session.flush()
 

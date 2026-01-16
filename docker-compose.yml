@@ -34,6 +34,17 @@ services:
       ENV: ${ENV:-development}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       COOKIE_SAME_SITE: ${COOKIE_SAME_SITE:-lax}
+      # Frontend Configuration
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      # Seed User Contact Configuration
+      # These variables are loaded from .env file if present, otherwise use defaults
+      # Create .env file with these variables (REQUIRED for password hash):
+      SEED_CONTACT_EMAIL: ${SEED_CONTACT_EMAIL}
+      SEED_CONTACT_PASSWORD_HASH: ${SEED_CONTACT_PASSWORD_HASH}  # REQUIRED - bcrypt hash (NO PLAIN PASSWORD!)
+      SEED_CONTACT_FIRST_NAME: ${SEED_CONTACT_FIRST_NAME}
+      SEED_CONTACT_LAST_NAME: ${SEED_CONTACT_LAST_NAME}
+      SEED_CONTACT_PHONE: ${SEED_CONTACT_PHONE}
+      SEED_CONTACT_ROLE_ID: ${SEED_CONTACT_ROLE_ID}
     ports:
       - "8000:8000"
     depends_on:
@@ -52,4 +63,3 @@ volumes:
 networks:
   kambriq-network:
     driver: bridge
-
