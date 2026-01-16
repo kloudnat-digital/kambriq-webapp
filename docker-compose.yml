@@ -38,9 +38,8 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       # Seed User Contact Configuration
       # These variables are loaded from .env file if present, otherwise use defaults
-      # Create .env file with these variables (REQUIRED for password hash):
       SEED_CONTACT_EMAIL: ${SEED_CONTACT_EMAIL}
-      SEED_CONTACT_PASSWORD_HASH: ${SEED_CONTACT_PASSWORD_HASH}  # REQUIRED - bcrypt hash (NO PLAIN PASSWORD!)
+      SEED_CONTACT_PASSWORD: ${SEED_CONTACT_PASSWORD}
       SEED_CONTACT_FIRST_NAME: ${SEED_CONTACT_FIRST_NAME}
       SEED_CONTACT_LAST_NAME: ${SEED_CONTACT_LAST_NAME}
       SEED_CONTACT_PHONE: ${SEED_CONTACT_PHONE}
@@ -51,8 +50,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./src:/app/src
-      - ./alembic:/app/alembic
+      - .:/app
     networks:
       - kambriq-network
     command: uvicorn src.presentation.main:app --host 0.0.0.0 --port 8000 --reload

@@ -15,6 +15,7 @@ dependencies = [
     "alembic>=1.13.0",
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",
+    "email-validator>=2.0.0",
     "python-jose[cryptography]>=3.3.0",
     "passlib[bcrypt]>=1.7.4",
     "python-multipart>=0.0.6",
@@ -30,6 +31,7 @@ dev = [
     "pre-commit>=3.6.0",
     "isort>=5.13.2",
     "aiosqlite>=0.19.0",  # For SQLite async testing
+    "httpx>=0.25.0",  # Required for FastAPI TestClient
 ]
 
 [tool.ruff]
@@ -69,4 +71,3 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
 ]
-

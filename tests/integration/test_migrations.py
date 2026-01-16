@@ -4,6 +4,9 @@ Integration tests for Alembic migrations
 Tests upgrade, downgrade, and re-upgrade cycles.
 """
 
+# Use SQLite for testing migrations
+import os
+
 import pytest
 from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -11,8 +14,9 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import command
 from alembic.config import Config
 
-# Use SQLite for testing migrations
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+TEST_DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql+asyncpg://postgres:postgres@postgres:5432/kambriq_db"
+)
 
 
 @pytest.fixture()

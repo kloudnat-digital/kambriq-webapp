@@ -15,6 +15,7 @@ from src.domain.entities.role import Role
 from src.domain.entities.user import User
 from src.domain.entities.user_address import UserAddress
 from src.domain.repositories.user_repository import UserRepository as IUserRepository
+from src.infrastructure.database.models.user_address_model import UserAddressModel
 from src.infrastructure.database.models.user_model import UserModel
 from src.infrastructure.database.models.user_role_model import UserRoleModel
 
@@ -50,7 +51,10 @@ class UserRepositoryImpl(IUserRepository):
         """Find user by email with roles loaded."""
         stmt = (
             select(UserModel)
-            .options(selectinload(UserModel.roles).selectinload(UserRoleModel.role))
+            .options(
+                selectinload(UserModel.roles).selectinload(UserRoleModel.role),
+                selectinload(UserModel.address),
+            )
             .where(UserModel.email == email.lower())
         )
         result = await self.session.execute(stmt)
@@ -86,10 +90,6 @@ class UserRepositoryImpl(IUserRepository):
                 if user_model.address:
                     addr_model = user_model.address
                 else:
-                    from src.infrastructure.database.models.user_address_model import (
-                        UserAddressModel,
-                    )
-
                     addr_model = UserAddressModel(user_id=user.id)
                     self.session.add(addr_model)
 
@@ -132,7 +132,10 @@ class UserRepositoryImpl(IUserRepository):
         await self.session.refresh(user_model)
 
         # Reload with roles
-        return await self.find_by_id(user.id)
+        saved_user = await self.find_by_id(user.id)
+        if not saved_user:
+            raise ValueError(f"User with ID {user.id} not found after save")
+        return saved_user
 
     async def exists_by_email(self, email: str) -> bool:
         """Check if user exists by email."""
@@ -184,5 +187,5 @@ class UserRepositoryImpl(IUserRepository):
         )
         # Add roles as dynamic attribute (User entity doesn't have roles in domain)
         # This allows use cases to access roles when needed
-        user.roles = roles
+        user.roles = roles  # type: ignore[attr-defined]
         return user

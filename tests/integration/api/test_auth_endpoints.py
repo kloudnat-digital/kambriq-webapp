@@ -2,6 +2,7 @@
 Integration tests for authentication endpoints.
 """
 
+
 from fastapi.testclient import TestClient
 
 
@@ -89,9 +90,9 @@ def test_signin_success(test_client: TestClient):
     assert "refresh_token" in cookies
 
     # Check cookies are HttpOnly
-    set_cookie_headers = [h for h in response.headers.get_list("set-cookie")]
-    access_cookie = [h for h in set_cookie_headers if "access_token" in h][0]
-    refresh_cookie = [h for h in set_cookie_headers if "refresh_token" in h][0]
+    set_cookie_headers = list(response.headers.get_list("set-cookie"))
+    access_cookie = next((h for h in set_cookie_headers if "access_token" in h), "")
+    refresh_cookie = next((h for h in set_cookie_headers if "refresh_token" in h), "")
 
     assert "HttpOnly" in access_cookie
     assert "HttpOnly" in refresh_cookie
@@ -207,7 +208,7 @@ def test_logout(test_client: TestClient):
         },
     )
 
-    signin_response = test_client.post(
+    test_client.post(
         "/auth/signin",
         json={
             "email": "logout@example.com",
@@ -221,9 +222,8 @@ def test_logout(test_client: TestClient):
     assert response.status_code == 204
 
     # Check cookies are cleared
-    cookies = response.cookies
     # Cookies should be deleted (empty value with max_age=0)
-    set_cookie_headers = [h for h in response.headers.get_list("set-cookie")]
+    set_cookie_headers = list(response.headers.get_list("set-cookie"))
     for cookie_header in set_cookie_headers:
         if "access_token" in cookie_header or "refresh_token" in cookie_header:
             assert "Max-Age=0" in cookie_header or "expires=" in cookie_header.lower()

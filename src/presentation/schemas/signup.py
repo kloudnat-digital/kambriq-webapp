@@ -2,6 +2,7 @@
 Signup Schemas
 """
 
+from typing import ClassVar, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field
@@ -14,11 +15,11 @@ class SignupRequest(BaseModel):
     password: str = Field(..., min_length=8, description="Password must be at least 8 characters")
     first_name: str = Field(..., min_length=1, max_length=255)
     last_name: str = Field(..., min_length=1, max_length=255)
-    phone_number: str | None = Field(None, max_length=50)
+    phone_number: Optional[str] = Field(None, max_length=50)
     terms_accepted: bool = Field(False, description="User must accept terms and conditions")
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict] = {
             "example": {
                 "email": "user@example.com",
                 "password": "securepassword123",
@@ -39,7 +40,7 @@ class SignupResponse(BaseModel):
     last_name: str
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict] = {
             "example": {
                 "user_id": "123e4567-e89b-12d3-a456-426614174000",
                 "email": "user@example.com",

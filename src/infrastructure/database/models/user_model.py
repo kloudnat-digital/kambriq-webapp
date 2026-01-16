@@ -7,7 +7,7 @@ Database model for User entity.
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, Column, DateTime, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
 
@@ -29,7 +29,9 @@ class UserModel(Base):
     email = Column(String(255), nullable=False, unique=True, index=True)
     phone_number = Column(String(50), nullable=True)
     password_hash = Column(String(255), nullable=True)
-    referrer_id = Column(PG_UUID(as_uuid=True), nullable=True)
+    referrer_id = Column(
+        PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     avatar_url = Column(String(500), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     terms_accepted = Column(Boolean, nullable=False, default=False)
@@ -39,7 +41,12 @@ class UserModel(Base):
     )
 
     # Relationships
-    roles = relationship("UserRoleModel", back_populates="user", cascade="all, delete-orphan")
+    roles = relationship(
+        "UserRoleModel",
+        foreign_keys="UserRoleModel.user_id",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
     address = relationship(
         "UserAddressModel", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )

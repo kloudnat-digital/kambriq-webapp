@@ -13,8 +13,8 @@ app = FastAPI(
     title="KAMBRIQ API",
     description="KAMBRIQ Authentication API with DDD architecture",
     version="0.1.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/api/v1/docs",
+    redoc_url="/api/v1/redoc",
 )
 
 # CORS middleware
@@ -26,8 +26,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(auth.router)
+# Include routers with API version prefix
+app.include_router(auth.router, prefix="/api/v1")
 
 
 @app.get("/", tags=["health"])

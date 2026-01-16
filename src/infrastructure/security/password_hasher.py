@@ -4,7 +4,7 @@ Password Hasher Service
 Bcrypt password hashing and verification.
 """
 
-from passlib.context import CryptContext
+import bcrypt
 
 
 class PasswordHasher:
@@ -19,9 +19,7 @@ class PasswordHasher:
         Args:
             rounds: Number of bcrypt rounds (default: 12, recommended: 12-14)
         """
-        self.pwd_context = CryptContext(
-            schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=rounds
-        )
+        self.rounds = rounds
 
     def hash(self, password: str) -> str:
         """
@@ -35,7 +33,9 @@ class PasswordHasher:
         """
         if not password:
             raise ValueError("Password cannot be empty")
-        return self.pwd_context.hash(password)
+        return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=self.rounds)).decode(
+            "utf-8"
+        )
 
     def verify(self, password: str, hashed: str) -> bool:
         """
@@ -50,4 +50,7 @@ class PasswordHasher:
         """
         if not password or not hashed:
             return False
-        return self.pwd_context.verify(password, hashed)
+        try:
+            return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
+        except Exception:
+            return False
