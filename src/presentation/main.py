@@ -4,9 +4,14 @@ FastAPI Application
 Main FastAPI application entry point.
 """
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from typing import Annotated
 
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.presentation.dependencies import get_db_session
 from src.presentation.routers import auth
 
 app = FastAPI(
@@ -37,6 +42,21 @@ async def root():
 
 
 @app.get("/health", tags=["health"])
-async def health():
-    """Health check endpoint."""
-    return {"status": "healthy"}
+async def health(db: Annotated[AsyncSession, Depends(get_db_session)]):
+    """
+    Health check endpoint.
+
+    Verifies:
+    - API is running
+    - Database connection is accessible
+    """
+    try:
+        # Test database connection
+        result = await db.execute(text("SELECT 1"))
+        result.scalar()
+
+        return {"status": "healthy", "api": "ok", "database": "ok"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Service unhealthy: {e!s}"
+        ) from e
