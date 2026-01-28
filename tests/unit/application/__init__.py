@@ -1,3 +1,0 @@
-"""
-Application layer unit tests
-"""

@@ -1,3 +1,0 @@
-"""
-KAMBRIQ API - Source Package
-"""

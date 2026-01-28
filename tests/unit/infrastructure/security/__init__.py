@@ -1,3 +1,0 @@
-"""
-Security services unit tests
-"""
