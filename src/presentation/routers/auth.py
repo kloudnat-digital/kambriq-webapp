@@ -12,12 +12,16 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.application.dtos.permission_matrix import PermissionMatrixResponse
 from src.application.dtos.reset_password import (
     ResetPasswordConfirmRequest as ResetPasswordConfirmRequestDTO,
+)
+from src.application.dtos.reset_password import (
     ResetPasswordRequestRequest as ResetPasswordRequestRequestDTO,
 )
 from src.application.dtos.signin import SigninRequest as SigninRequestDTO
 from src.application.dtos.signup import SignupRequest as SignupRequestDTO
+from src.application.use_cases.get_permission_matrix import GetPermissionMatrixUseCase
 from src.application.use_cases.logout import LogoutUseCase
 from src.application.use_cases.me import MeQueryUseCase
 from src.application.use_cases.refresh import RefreshTokenUseCase
@@ -36,13 +40,17 @@ from src.domain.exceptions.auth_exceptions import (
     TokenInvalidError,
     UserInactiveError,
 )
-from src.domain.exceptions.user_exceptions import EmailAlreadyExistsError, UserNotFoundError
+from src.domain.exceptions.user_exceptions import (
+    EmailAlreadyExistsError,
+    UserNotFoundError,
+)
 from src.infrastructure.security import JWTService
 from src.presentation.dependencies import (
     get_db_session,
     get_jwt_service,
     get_logout_use_case,
     get_me_query_use_case,
+    get_permission_matrix_use_case,
     get_refresh_token_use_case,
     get_reset_password_confirm_use_case,
     get_reset_password_request_use_case,
@@ -430,3 +438,25 @@ async def me(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while retrieving user information",
         )
+
+
+@router.get(
+    "/permissions/matrix", response_model=PermissionMatrixResponse, status_code=status.HTTP_200_OK
+)
+async def get_permission_matrix(
+    permission_matrix_use_case: Annotated[
+        GetPermissionMatrixUseCase, Depends(get_permission_matrix_use_case)
+    ],
+):
+    """
+    Get the complete permission matrix.
+
+    Returns the permission matrix showing all roles, resources, and their allowed actions.
+    """
+    try:
+        return await permission_matrix_use_case.execute()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred while retrieving permission matrix: {e!s}",
+        ) from e
