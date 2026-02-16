@@ -40,3 +40,8 @@ Thumbs.db
 
 .nx/cache
 .nx/workspace-data
+
+# Environment Variables
+.env
+
+/generated/prisma

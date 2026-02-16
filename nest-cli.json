@@ -1,0 +1,29 @@
+{
+  "monorepo": true,
+  "root": "apps/kambriq-source",
+  "sourceRoot": "apps/kambriq-source/src",
+  "compilerOptions": {
+    "webpack": true,
+    "tsConfigPath": "apps/kambriq-source/tsconfig.app.json"
+  },
+  "projects": {
+    "kambriq-source": {
+      "type": "application",
+      "root": "apps/kambriq-source",
+      "entryFile": "main",
+      "sourceRoot": "apps/kambriq-source/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/kambriq-source/tsconfig.app.json"
+      }
+    },
+    "kbs": {
+      "type": "application",
+      "root": "apps/kbs",
+      "entryFile": "main",
+      "sourceRoot": "apps/kbs/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/kbs/tsconfig.app.json"
+      }
+    }
+  }
+}

@@ -14,7 +14,11 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@kambriq/db": ["libs/db/src/index.ts"],
+      "@kambriq/core/*": ["libs/core/*/src/index.ts"],
+      "@kambriq/shared": ["libs/shared/src/index.ts"]
+    }
   },
   "exclude": ["node_modules", "tmp"]
 }

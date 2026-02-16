@@ -37,7 +37,18 @@
       "options": {
         "targetName": "test"
       },
-      "exclude": ["apps/core-e2e/**/*"]
+      "exclude": [
+        "apps/core-e2e/**/*",
+        "apps/kbs-e2e/**/*",
+        "apps/kca-e2e/**/*"
+      ]
     }
-  ]
+  ],
+  "targetDefaults": {
+    "@nx/js:tsc": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
+    }
+  }
 }
