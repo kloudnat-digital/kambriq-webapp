@@ -1,0 +1,9 @@
+{
+  "notFound": "User {id} not found",
+  "alreadyInactive": "User is already inactive",
+  "alreadyActive": "User is already active",
+  "invalidRoleCodes": "Invalid role codes: {codes}",
+  "deleteSuccess": "Account deleted. You have {days} days to reactivate by logging in.",
+  "blockSuccess": "User blocked successfully",
+  "unblockSuccess": "User unblocked successfully"
+}

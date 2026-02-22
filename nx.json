@@ -40,7 +40,9 @@
       "exclude": [
         "apps/core-e2e/**/*",
         "apps/kbs-e2e/**/*",
-        "apps/kca-e2e/**/*"
+        "apps/kca-e2e/**/*",
+        "apps/api-e2e/**/*",
+        "apps/api-e2e/**/*"
       ]
     }
   ],

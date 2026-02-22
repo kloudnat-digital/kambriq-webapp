@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../../libs/common/src/prisma/kbs-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ----- KBS Module ----- //
+// Training, Exams, Certifications //
+
+model KbsCourse {
+  id          String   @id @default(uuid())
+  title       String   @unique
+  description String
+  slug        String?
+  language    String?  @default("fr")
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  modules KbsModule[]
+}
+
+model KbsModule {
+  id          String   @id @default(uuid())
+  courseId    String
+  title       String
+  description String
+  order       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course        KbsCourse              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons       KbsLesson[]
+  questions     KbsQuestion[]          // Module Quiz Questions
+  examQuestions KbsExamQuestion[]      // Exam Questions (categorized by module)
+  progress      KbsCandidateProgress[]
+
+  @@unique([courseId, order])
+}
+
+model KbsLesson {
+  id          String   @id @default(uuid())
+  moduleId    String
+  title       String
+  contentType String   // video | pdf | html | text
+  contentUrl  String   // S3 key or external URL
+  duration    Int      // estimated duration in minutes
+  order       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  module KbsModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, order])
+}
+
+model KbsQuestion {
+  id        String   @id @default(uuid())
+  moduleId  String
+  text      String
+  type      String   // SINGLE | MULTIPLE
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  module  KbsModule   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  answers KbsAnswer[]
+}
+
+model KbsAnswer {
+  id         String   @id @default(uuid())
+  questionId String
+  text       String
+  isCorrect  Boolean
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  question KbsQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model KbsExamQuestion {
+  id        String   @id @default(uuid())
+  moduleId  String
+  text      String
+  type      String   // SINGLE | MULTIPLE
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  module      KbsModule               @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  answers     KbsExamQuestionAnswer[]
+  examAnswers KbsExamAnswer[]
+}
+
+model KbsExamQuestionAnswer {
+  id         String   @id @default(uuid())
+  questionId String
+  text       String
+  isCorrect  Boolean
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  question   KbsExamQuestion          @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selections KbsExamAnswerSelection[]
+}
+
+model KbsCandidate {
+  id                 String    @id @default(uuid())
+  userId             String    @unique
+  sponsorCode        String?
+  status             String    // CANDIDATE | IN_TRAINING | EXAM_PENDING | CERTIFIED | FAILED
+  maxAttempts        Int       @default(3)
+  retakeCooldownDays Int       @default(7)
+  currentCycle       Int       @default(1)
+  enrolledAt         DateTime  @default(now())
+  certifiedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  progress    KbsCandidateProgress[]
+  exams       KbsExam[]
+  certificate KbsCertificate?
+}
+
+model KbsCandidateProgress {
+  id          String    @id @default(uuid())
+  candidateId String
+  moduleId    String
+  score       Int?      // Quiz score percentage (0-100)
+  passed      Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  candidate KbsCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  module    KbsModule    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([candidateId, moduleId])
+}
+
+model KbsExam {
+  id              String    @id @default(uuid())
+  candidateId     String
+  attemptNumber   Int
+  score           Int?      // Exam score percentage (0-100)
+  passingScore    Int       @default(75)
+  status          String    @default("SCHEDULED") // SCHEDULED | IN_PROGRESS | SUBMITTED | PASSED | FAILED | CANCELLED
+  cycle           Int       @default(1)
+  durationMinutes Int       @default(60)
+  totalQuestions  Int       @default(0)
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  submittedAt     DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  candidate   KbsCandidate    @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  examAnswers KbsExamAnswer[]
+
+  @@index([candidateId, cycle])
+}
+
+model KbsExamAnswer {
+  id              String    @id @default(uuid())
+  examId          String
+  questionId      String
+  flagged         Boolean   @default(false)
+  questionCorrect Boolean?  // null until graded
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  answeredAt      DateTime  @default(now())
+
+  exam       KbsExam                  @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question   KbsExamQuestion          @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selections KbsExamAnswerSelection[]
+
+  @@unique([examId, questionId])
+}
+
+model KbsExamAnswerSelection {
+  id           String   @id @default(uuid())
+  examAnswerId String
+  answerId     String
+  wasCorrect   Boolean? // null until graded; snapshot of answer.isCorrect at grading time
+
+  examAnswer KbsExamAnswer         @relation(fields: [examAnswerId], references: [id], onDelete: Cascade)
+  answer     KbsExamQuestionAnswer @relation(fields: [answerId], references: [id])
+
+  @@unique([examAnswerId, answerId])
+}
+
+// Singleton row — admin updates via settings API
+model KbsSettings {
+  id                Int      @id @default(autoincrement())
+  examQuestionCount Int      @default(20)
+  quizQuestionCount Int      @default(10)
+  updatedAt         DateTime @updatedAt
+}
+
+model KbsCertificate {
+  id          String   @id @default(uuid())
+  candidateId String   @unique
+  kcaNumber   String   @unique // KCA-YYYYMMDD-XXXX
+  issueDate   DateTime @default(now())
+  validUntil  DateTime // 2 years from issue
+  pdfUrl      String?
+  issuedBy    String?  // Admin userId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  candidate KbsCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+}

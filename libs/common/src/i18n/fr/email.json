@@ -1,0 +1,71 @@
+{
+  "verification": {
+    "subject": "Vérifiez votre email KAMBRIQ",
+    "heading": "Bienvenue, {firstName} !",
+    "body": "Merci de rejoindre KAMBRIQ. Veuillez vérifier votre adresse email pour commencer.",
+    "button": "Vérifier l'email",
+    "expiry": "Ce lien expire dans 24 heures. Si le bouton ne fonctionne pas, copiez cette URL dans votre navigateur :"
+  },
+  "passwordReset": {
+    "subject": "Réinitialisez votre mot de passe KAMBRIQ",
+    "heading": "Réinitialisation du mot de passe",
+    "body": "Bonjour {firstName}, nous avons reçu une demande de réinitialisation de votre mot de passe.",
+    "button": "Réinitialiser le mot de passe",
+    "expiry": "Ce lien expire dans 1 heure. Si vous n'avez pas fait cette demande, vous pouvez ignorer cet email — votre mot de passe ne sera pas modifié."
+  },
+  "passwordResetConfirmation": {
+    "subject": "Votre mot de passe KAMBRIQ a été réinitialisé",
+    "heading": "Mot de passe modifié",
+    "body": "Bonjour {firstName}, votre mot de passe a été réinitialisé avec succès.",
+    "warning": "Si vous n'avez pas effectué cette modification, veuillez contacter notre équipe de support immédiatement."
+  },
+  "accountReactivated": {
+    "subject": "Bon retour sur KAMBRIQ !",
+    "heading": "Compte réactivé",
+    "body": "Bonjour {firstName}, content de vous revoir ! Votre compte KAMBRIQ a été réactivé avec succès.",
+    "note": "Toutes vos données sont intactes et prêtes pour vous."
+  },
+  "accountBlocked": {
+    "subject": "Votre compte KAMBRIQ a été suspendu",
+    "heading": "Compte suspendu",
+    "body": "Bonjour {firstName}, votre compte KAMBRIQ a été suspendu par un administrateur.",
+    "note": "Si vous pensez qu'il s'agit d'une erreur, veuillez contacter notre équipe de support."
+  },
+  "accountUnblocked": {
+    "subject": "Votre compte KAMBRIQ a été réactivé",
+    "heading": "Compte réactivé",
+    "body": "Bonjour {firstName}, votre compte KAMBRIQ a été réactivé par un administrateur. Vous pouvez à nouveau vous connecter."
+  },
+  "accountDeletion": {
+    "subject": "Votre compte KAMBRIQ est programmé pour suppression",
+    "heading": "Suppression du compte programmée",
+    "body": "Bonjour {firstName}, comme demandé, votre compte KAMBRIQ a été désactivé.",
+    "grace": "Vous avez <strong>{days} jours</strong> pour changer d'avis. Connectez-vous simplement pour réactiver votre compte.",
+    "warning": "Après le délai de grâce, votre compte et vos données seront définitivement supprimés."
+  },
+  "examPassed": {
+    "subject": "🎉 Félicitations ! Vous avez réussi l'examen KBS",
+    "heading": "Examen réussi !",
+    "body": "Bonjour {firstName}, félicitations ! Vous avez obtenu <strong>{score}%</strong> à l'examen de certification KBS (score requis : {passingScore}%).",
+    "note": "Vous êtes désormais éligible à la certification KCA. Un administrateur examinera et émettra votre certificat sous peu."
+  },
+  "examFailed": {
+    "subject": "Résultats de l'examen KBS",
+    "heading": "Résultats de l'examen",
+    "body": "Bonjour {firstName}, malheureusement vous avez obtenu <strong>{score}%</strong> à l'examen KBS (score requis : {passingScore}%).",
+    "retake": "Il vous reste <strong>{attemptsRemaining}</strong> tentative(s). Vous pourrez repasser l'examen après le <strong>{retakeDate}</strong>.",
+    "encouragement": "Nous vous recommandons de revoir les supports de cours avant votre prochaine tentative. Vous allez y arriver !"
+  },
+  "certificateIssued": {
+    "subject": "🏆 Votre certificat KCA est prêt !",
+    "heading": "Certificat KCA émis",
+    "body": "Bonjour {firstName}, votre certificat d'Agent Certifié KAMBRIQ a été émis !",
+    "numberLabel": "Numéro de certificat :",
+    "validLabel": "Valide jusqu'au : <strong>{validUntil}</strong>",
+    "note": "Vous pouvez maintenant postuler pour rejoindre KAMNET et commencer votre parcours d'agent KAMBRIQ."
+  },
+  "footer": {
+    "copyright": "© {year} KAMBRIQ. Tous droits réservés.",
+    "ignore": "Si vous n'avez pas demandé cet email, vous pouvez l'ignorer en toute sécurité."
+  }
+}

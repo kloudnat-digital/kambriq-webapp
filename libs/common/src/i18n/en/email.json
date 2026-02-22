@@ -1,0 +1,71 @@
+{
+  "verification": {
+    "subject": "Verify your KAMBRIQ email",
+    "heading": "Welcome, {firstName}!",
+    "body": "Thanks for joining KAMBRIQ. Please verify your email address to get started.",
+    "button": "Verify Email",
+    "expiry": "This link expires in 24 hours. If the button doesn't work, copy this URL into your browser:"
+  },
+  "passwordReset": {
+    "subject": "Reset your KAMBRIQ password",
+    "heading": "Password Reset",
+    "body": "Hi {firstName}, we received a request to reset your password.",
+    "button": "Reset Password",
+    "expiry": "This link expires in 1 hour. If you didn't request this, you can ignore this email — your password won't change."
+  },
+  "passwordResetConfirmation": {
+    "subject": "Your KAMBRIQ password has been reset",
+    "heading": "Password Changed",
+    "body": "Hi {firstName}, your password has been successfully reset.",
+    "warning": "If you didn't make this change, please contact our support team immediately."
+  },
+  "accountReactivated": {
+    "subject": "Welcome back to KAMBRIQ!",
+    "heading": "Account Reactivated",
+    "body": "Hi {firstName}, great to have you back! Your KAMBRIQ account has been successfully reactivated.",
+    "note": "All your data is intact and ready for you."
+  },
+  "accountBlocked": {
+    "subject": "Your KAMBRIQ account has been suspended",
+    "heading": "Account Suspended",
+    "body": "Hi {firstName}, your KAMBRIQ account has been suspended by an administrator.",
+    "note": "If you believe this was done in error, please contact our support team for assistance."
+  },
+  "accountUnblocked": {
+    "subject": "Your KAMBRIQ account has been reactivated",
+    "heading": "Account Reactivated",
+    "body": "Hi {firstName}, your KAMBRIQ account has been reactivated by an administrator. You can now log in again."
+  },
+  "accountDeletion": {
+    "subject": "Your KAMBRIQ account has been scheduled for deletion",
+    "heading": "Account Deletion Scheduled",
+    "body": "Hi {firstName}, as requested, your KAMBRIQ account has been deactivated.",
+    "grace": "You have <strong>{days} days</strong> to change your mind. Simply log in to reactivate your account.",
+    "warning": "After the grace period, your account and data will be permanently deleted."
+  },
+  "examPassed": {
+    "subject": "🎉 Congratulations! You passed the KBS exam",
+    "heading": "Exam Passed!",
+    "body": "Hi {firstName}, congratulations! You scored <strong>{score}%</strong> on the KBS certification exam (passing score: {passingScore}%).",
+    "note": "You are now eligible for KCA certification. An admin will review and issue your certificate shortly."
+  },
+  "examFailed": {
+    "subject": "KBS Exam Results",
+    "heading": "Exam Results",
+    "body": "Hi {firstName}, unfortunately you scored <strong>{score}%</strong> on the KBS exam (passing score: {passingScore}%).",
+    "retake": "You have <strong>{attemptsRemaining}</strong> attempt(s) remaining. You can retake the exam after <strong>{retakeDate}</strong>.",
+    "encouragement": "We recommend reviewing the module materials before your next attempt. You've got this!"
+  },
+  "certificateIssued": {
+    "subject": "🏆 Your KCA Certificate is ready!",
+    "heading": "KCA Certificate Issued",
+    "body": "Hi {firstName}, your KAMBRIQ Certified Agent certificate has been issued!",
+    "numberLabel": "Certificate Number:",
+    "validLabel": "Valid until: <strong>{validUntil}</strong>",
+    "note": "You can now apply to join KAMNET and start your journey as a KAMBRIQ agent."
+  },
+  "footer": {
+    "copyright": "© {year} KAMBRIQ. All rights reserved.",
+    "ignore": "If you didn't request this email, you can safely ignore it."
+  }
+}

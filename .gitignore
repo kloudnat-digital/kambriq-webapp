@@ -44,4 +44,10 @@ Thumbs.db
 # Environment Variables
 .env
 
+# Prisma
 /generated/prisma
+prisma/*/migrations
+libs/common/prisma/*
+
+# Others
+tmp

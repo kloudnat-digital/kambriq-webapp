@@ -1,0 +1,54 @@
+{
+  "enrollment": {
+    "alreadyEnrolled": "You are already enrolled in KBS",
+    "success": "Enrolled in KBS successfully",
+    "notEnrolled": "You are not enrolled in KBS"
+  },
+  "course": {
+    "notFound": "Course {id} not found",
+    "deleted": "Course \"{title}\" and all its content deleted"
+  },
+  "module": {
+    "notFound": "Module {id} not found",
+    "deleted": "Module \"{title}\" and all its content deleted",
+    "prerequisiteNotMet": "Complete previous modules first"
+  },
+  "lesson": {
+    "notFound": "Lesson {id} not found"
+  },
+  "quiz": {
+    "alreadyPassed": "Module quiz already passed",
+    "pass": "Quiz passed! Score: {score}%",
+    "fail": "Quiz not passed. Score: {score}% (required: {required}%)"
+  },
+  "exam": {
+    "notFound": "Exam {id} not found",
+    "notEnrolled": "You are not enrolled in KBS",
+    "notYours": "This exam does not belong to you",
+    "cannotStart": "Cannot start exam with status \"{status}\"",
+    "cannotReschedule": "Cannot reschedule exam with status \"{status}\"",
+    "cannotCancel": "Cannot cancel exam with status \"{status}\"",
+    "notInProgress": "Exam is not in progress",
+    "timeExpired": "Exam time has expired",
+    "submitted": "Your exam has been submitted. Results will be available shortly.",
+    "resultsNotReady": "Results not yet available",
+    "alreadyCertified": "You are already certified and your certificate is still valid.",
+    "statusNotAllowed": "Current status \"{status}\" does not allow exam. Complete all modules first.",
+    "activeExam": "You already have an active exam session",
+    "maxAttempts": "Maximum attempts ({max}) reached. Contact admin for reset.",
+    "cooldownActive": "Retake available after {date}",
+    "trainingIncomplete": "Training not complete: {completed}/{total} modules finished",
+    "noQuestions": "No exam questions available. Please contact admin.",
+    "attemptsReset": "Exam attempts reset. Candidate can retake the exam.",
+    "notYetAvailable": "The exam is not yet available.",
+    "startWindowExpired": "The exam start window has expired.",
+    "candidateNotFound": "Candidate {id} not found"
+  },
+  "certificate": {
+    "notFound": "Certificate not found",
+    "candidateNotFound": "Candidate {id} not found",
+    "notPassed": "Candidate has not passed the final exam",
+    "alreadyIssued": "Certificate already issued: {kcaNumber}",
+    "invalid": "Certificate not found"
+  }
+}

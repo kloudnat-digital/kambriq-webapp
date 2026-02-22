@@ -1,0 +1,54 @@
+{
+  "enrollment": {
+    "alreadyEnrolled": "Vous êtes déjà inscrit au KBS",
+    "success": "Inscription au KBS réussie",
+    "notEnrolled": "Vous n'êtes pas inscrit au KBS"
+  },
+  "course": {
+    "notFound": "Cours {id} introuvable",
+    "deleted": "Le cours « {title} » et tout son contenu ont été supprimés"
+  },
+  "module": {
+    "notFound": "Module {id} introuvable",
+    "deleted": "Le module « {title} » et tout son contenu ont été supprimés",
+    "prerequisiteNotMet": "Veuillez d'abord terminer les modules précédents"
+  },
+  "lesson": {
+    "notFound": "Leçon {id} introuvable"
+  },
+  "quiz": {
+    "alreadyPassed": "Le quiz du module est déjà réussi",
+    "pass": "Quiz réussi ! Score : {score}%",
+    "fail": "Quiz non réussi. Score : {score}% (requis : {required}%)"
+  },
+  "exam": {
+    "notFound": "Examen {id} introuvable",
+    "notEnrolled": "Vous n'êtes pas inscrit au KBS",
+    "notYours": "Cet examen ne vous appartient pas",
+    "cannotStart": "Impossible de démarrer un examen avec le statut « {status} »",
+    "cannotReschedule": "Impossible de reprogrammer un examen avec le statut « {status} »",
+    "cannotCancel": "Impossible d'annuler un examen avec le statut « {status} »",
+    "notInProgress": "L'examen n'est pas en cours",
+    "timeExpired": "Le temps de l'examen est écoulé",
+    "submitted": "Votre examen a été soumis. Les résultats seront disponibles sous peu.",
+    "resultsNotReady": "Les résultats ne sont pas encore disponibles",
+    "alreadyCertified": "Vous êtes déjà certifié et votre certificat est toujours valide.",
+    "statusNotAllowed": "Le statut actuel « {status} » ne permet pas de passer l'examen. Terminez d'abord tous les modules.",
+    "activeExam": "Vous avez déjà une session d'examen en cours",
+    "maxAttempts": "Nombre maximum de tentatives ({max}) atteint. Contactez un administrateur.",
+    "cooldownActive": "Nouvelle tentative disponible après le {date}",
+    "trainingIncomplete": "Formation incomplète : {completed}/{total} modules terminés",
+    "noQuestions": "Aucune question d'examen disponible. Veuillez contacter un administrateur.",
+    "attemptsReset": "Tentatives d'examen réinitialisées. Le candidat peut repasser l'examen.",
+    "notYetAvailable": "L'examen n'est pas encore disponible.",
+    "startWindowExpired": "La fenêtre de démarrage de l'examen a expiré.",
+    "candidateNotFound": "Candidat {id} introuvable"
+  },
+  "certificate": {
+    "notFound": "Certificat introuvable",
+    "candidateNotFound": "Candidat {id} introuvable",
+    "notPassed": "Le candidat n'a pas réussi l'examen final",
+    "alreadyIssued": "Certificat déjà émis : {kcaNumber}",
+    "invalid": "Certificat introuvable"
+  }
+}

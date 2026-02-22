@@ -1,0 +1,74 @@
+# ----- KAMBRIQ Local Development Stack -----
+
+# Usage:
+# npm run docker:dev        → Start all services in the background
+# npm run docker:dev:down   → Stop all services (keeps volumes)
+# npm run docker:dev:reset  → Stop and delete all volumes (fresh start)
+# npm run docker:dev:logs   → Tail logs from all services
+#
+# After starting, you can:
+# -- Connect to Postgres at localhost:5432 (user: postgres, password: password)
+#    - Core DB: kambriq_core
+#    - KBS DB:  kambriq_kbs
+# -- Open pgAdmin at http://localhost:5050 (admin@kambriq.com / admin)
+# -- Connect to Redis at localhost:6379
+#
+# IMPORTANT: init.sql only runs on the first startup (empty data directory).
+# If you need to recreate the databases, run: npm run docker:dev:reset
+#
+# Note: The API itself runs on your host machine (npm run dev), NOT in Docker.
+
+services:
+  # ----- PostgreSQL 16 -----
+  db:
+    image: postgres:16-alpine
+    container_name: kambriq_db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: kambriq_core # Auto-creates the core database
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----- Redis 7 -----
+  redis:
+    image: redis:7-alpine
+    container_name: kambriq_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----- pgAdmin 4 -----
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: kambriq_pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@kambriq.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+    name: kambriq_pgdata
+  redisdata:
+    name: kambriq_redisdata

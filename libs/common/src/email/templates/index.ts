@@ -1,0 +1,219 @@
+/**
+ * KAMBRIQ Email Templates
+ * Each function returns { subject, html }
+ */
+
+import { I18nService } from 'nestjs-i18n';
+
+const t = (
+  i18n: I18nService,
+  key: string,
+  lang: string,
+  args?: Record<string, string | number>,
+): string => {
+  return i18n.translate(key, { lang, args });
+};
+
+/** Shared HTML Layout */
+const layout = (content: string, lang: string, i18n: I18nService): string => {
+  const year = new Date().getFullYear();
+  return `
+<!DOCTYPE html>
+<html lang="${lang}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { margin: 0; padding: 0; background: #f4f7fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+    .card { background: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .logo { font-size: 24px; font-weight: 700; color: #1a1a2e; letter-spacing: -0.5px; margin-bottom: 32px; }
+    .logo span { color: #e94560; }
+    h1 { font-size: 22px; color: #1a1a2e; margin: 0 0 16px; }
+    p { font-size: 15px; line-height: 1.6; color: #4a5568; margin: 0 0 16px; }
+    .btn { display: inline-block; padding: 14px 32px; background: #1a1a2e; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; margin: 8px 0 24px; }
+    .code { display: inline-block; padding: 12px 24px; background: #f0f4f8; border-radius: 8px; font-size: 28px; font-weight: 700; letter-spacing: 4px; color: #1a1a2e; font-family: monospace; margin: 8px 0 24px; }
+    .footer { text-align: center; padding-top: 32px; font-size: 13px; color: #a0aec0; }
+    .muted { font-size: 13px; color: #a0aec0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="logo">KAMBRI<span>Q</span></div>
+      ${content}
+    </div>
+    <div class="footer">
+      <p>${t(i18n, 'email.footer.copyright', lang, { year })}</p>
+      <p>${t(i18n, 'email.footer.ignore', lang)}</p>
+    </div>
+  </div>
+</body>
+</html>`.trim();
+};
+
+// ----- Template builders -----
+
+type TemplateArgs = Record<string, string | number>;
+
+type TemplateFn = (
+  i18n: I18nService,
+  lang: string,
+  args: TemplateArgs,
+) => { subject: string; html: string };
+
+const defineTemplates = <T extends Record<string, TemplateFn>>(t: T) => t;
+const templates = defineTemplates({
+  verification: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.verification.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.verification.heading', lang, args)}</h1>
+      <p>${t(i18n, 'email.verification.body', lang)}</p>
+      <a href="${args['verificationUrl']}" class="btn">${t(i18n, 'email.verification.button', lang)}</a>
+      <p class="muted">${t(i18n, 'email.verification.expiry', lang)}</p>
+      <p class="muted" style="word-break:break-all;">${args['verificationUrl']}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  passwordReset: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.passwordReset.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.passwordReset.heading', lang)}</h1>
+      <p>${t(i18n, 'email.passwordReset.body', lang, args)}</p>
+      <a href="${args['resetUrl']}" class="btn">${t(i18n, 'email.passwordReset.button', lang)}</a>
+      <p class="muted">${t(i18n, 'email.passwordReset.expiry', lang)}</p>
+      <p class="muted" style="word-break:break-all;">${args['resetUrl']}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  passwordResetConfirmation: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.passwordResetConfirmation.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.passwordResetConfirmation.heading', lang)}</h1>
+      <p>${t(i18n, 'email.passwordResetConfirmation.body', lang, args)}</p>
+      <p>${t(i18n, 'email.passwordResetConfirmation.warning', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  accountReactivated: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.accountReactivated.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.accountReactivated.heading', lang)}</h1>
+      <p>${t(i18n, 'email.accountReactivated.body', lang, args)}</p>
+      <p>${t(i18n, 'email.accountReactivated.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  accountBlocked: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.accountBlocked.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.accountBlocked.heading', lang)}</h1>
+      <p>${t(i18n, 'email.accountBlocked.body', lang, args)}</p>
+      <p>${t(i18n, 'email.accountBlocked.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  accountUnblocked: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.accountUnblocked.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.accountUnblocked.heading', lang)}</h1>
+      <p>${t(i18n, 'email.accountUnblocked.body', lang, args)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  accountDeletion: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.accountDeletion.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.accountDeletion.heading', lang)}</h1>
+      <p>${t(i18n, 'email.accountDeletion.body', lang, args)}</p>
+      <p>${t(i18n, 'email.accountDeletion.grace', lang, args)}</p>
+      <p>${t(i18n, 'email.accountDeletion.warning', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  examPassed: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.examPassed.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.examPassed.heading', lang)}</h1>
+      <p>${t(i18n, 'email.examPassed.body', lang, args)}</p>
+      <p>${t(i18n, 'email.examPassed.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  examFailed: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.examFailed.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.examFailed.heading', lang)}</h1>
+      <p>${t(i18n, 'email.examFailed.body', lang, args)}</p>
+      <p>${t(i18n, 'email.examFailed.retake', lang, args)}</p>
+      <p>${t(i18n, 'email.examFailed.encouragement', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  certificateIssued: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.certificateIssued.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.certificateIssued.heading', lang)}</h1>
+      <p>${t(i18n, 'email.certificateIssued.body', lang, args)}</p>
+      <p>${t(i18n, 'email.certificateIssued.numberLabel', lang)}</p>
+      <div class="code">${args['kcaNumber']}</div>
+      <p>${t(i18n, 'email.certificateIssued.validLabel', lang, args)}</p>
+      <p>${t(i18n, 'email.certificateIssued.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+});
+
+export type TemplateKey = keyof typeof templates;
+
+export const buildEmail = (
+  template: TemplateKey,
+  lang: 'en' | 'fr',
+  args: TemplateArgs,
+  i18n: I18nService,
+): { subject: string; html: string } => {
+  const builder = templates[template];
+  if (!builder) {
+    throw new Error(`Email template "${template}" not found`);
+  }
+  return builder(i18n, lang, args);
+};
