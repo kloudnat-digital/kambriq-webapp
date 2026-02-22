@@ -724,7 +724,7 @@ export class KbsExamService {
       },
       orderBy: { submittedAt: 'desc' },
     });
-    if (lastFailed.submittedAt) {
+    if (lastFailed?.submittedAt) {
       const cooldownEnd = new Date(lastFailed.submittedAt);
       cooldownEnd.setDate(cooldownEnd.getDate() + candidate.retakeCooldownDays);
       if (new Date() < cooldownEnd) {

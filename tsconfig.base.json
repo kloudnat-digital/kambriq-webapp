@@ -15,9 +15,6 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@kambriq/db": ["libs/db/src/index.ts"],
-      "@kambriq/core/*": ["libs/core/*/src/index.ts"],
-      "@kambriq/shared": ["libs/shared/src/index.ts"],
       "@kambriq/common": ["libs/common/src/index.ts"],
       "@kambriq/common/*": ["libs/common/src/*"]
     }
