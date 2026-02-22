@@ -648,7 +648,7 @@ export class AuthService {
   private isWithenGracePeriod(deletedAt: Date | null): boolean {
     if (!deletedAt) return false;
     const daysSinceDeletion =
-      (Date.now() - deletedAt.getTime()) / (100 * 60 * 60 * 24);
+      (Date.now() - deletedAt.getTime()) / (1_000 * 60 * 60 * 24);
     return daysSinceDeletion <= GRACE_PERIOD_DAYS;
   }
 

@@ -1,5 +1,8 @@
 # Kambriq — Server
 
+[![CI](https://github.com/kloudnat-digital/kambriq-api/actions/workflows/ci.yml/badge.svg)](https://github.com/kloudnat-digital/kambriq-api/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/kloudnat-digital/kambriq-api/branch/main/graph/badge.svg)](https://codecov.io/gh/kloudnat-digital/kambriq-api)
+
 A modular, enterprise-grade backend platform built with NestJS and managed as an Nx monorepo. The server exposes a single unified API gateway that routes requests across domain-specific modules, each backed by its own isolated PostgreSQL database.
 
 ---
@@ -120,15 +123,17 @@ Swagger docs: [http://localhost:3000/api/v1/docs](http://localhost:3000/api/v1/d
 
 ### API
 
-| Command              | Description                              |
-|----------------------|------------------------------------------|
-| `npm run start:dev`  | Start in watch mode (hot reload)         |
-| `npm run build`      | Production build                         |
-| `npm run start:prod` | Run production build                     |
-| `npm run lint`       | Run ESLint                               |
-| `npm run typecheck`  | Run TypeScript type checking             |
-| `npm run test`       | Run unit tests                           |
-| `npm run format`     | Format all source files with Prettier    |
+| Command                | Description                              |
+|------------------------|------------------------------------------|
+| `npm run start:dev`    | Start in watch mode (hot reload)         |
+| `npm run build`        | Production build                         |
+| `npm run start:prod`   | Run production build                     |
+| `npm run lint`         | Run ESLint                               |
+| `npm run typecheck`    | Run TypeScript type checking             |
+| `npm run test`         | Run all unit tests (`api` + `common`)    |
+| `npm run test:api`     | Run API unit tests only                  |
+| `npm run test:common`  | Run `@kambriq/common` unit tests only    |
+| `npm run format`       | Format all source files with Prettier    |
 
 ### Database
 
@@ -149,6 +154,44 @@ Swagger docs: [http://localhost:3000/api/v1/docs](http://localhost:3000/api/v1/d
 | `npm run docker:dev`      | Start dev containers in the background      |
 | `npm run docker:down`     | Stop all containers                         |
 | `npm run docker:dev:reset`| Stop containers and remove volumes (reset)  |
+
+---
+
+## Testing
+
+Unit tests are co-located in `__test__/` directories within each Nx project. The suite covers service-layer logic and shared library utilities; no database or external service is started — all dependencies are mocked.
+
+Coverage is tracked automatically on every push to `main` via [Codecov](https://codecov.io/gh/kloudnat-digital/kambriq-api). To generate reports locally:
+
+```bash
+npm run test:cov          # both projects
+npm run test:cov:api      # apps/api only  → coverage/apps/api/
+npm run test:cov:common   # libs/common only → coverage/libs/common/
+```
+
+### `apps/api` — Domain services
+
+| Suite | Covers |
+| ----- | ------ |
+| `core/auth/auth.service` | Sign-up, sign-in, token refresh, password hashing |
+| `core/auth/strategies/jwt.strategy` | JWT payload validation and user lookup |
+| `core/users/users.service` | User CRUD, role assignment |
+| `core/roles/roles.service` | Role lookup and management |
+| `kbs/candidates/candidates.service` | Candidate enrollment and progress |
+| `kbs/courses/courses.service` | Course creation, listing, deletion |
+| `kbs/exam/exam.service` | Exam scheduling, submission, and grading logic |
+| `kbs/exam/grading-processor` | BullMQ job routing, pass/fail email dispatch, KCA role grant |
+| `kbs/certificates/certificates.service` | Certificate generation and public verification |
+
+### `libs/common` — Shared library
+
+| Suite | Covers |
+| ----- | ------ |
+| `interceptors/transform-response` | Response envelope (`{ success, data }`), passthrough for pre-wrapped responses |
+| `middleware/correlation-id` | Correlation ID generation and header propagation |
+| `guards/roles.guard` | Role-based access enforcement |
+| `dto/pagination.dto` | Pagination query parsing and defaults |
+| `email/email.service` | SES template dispatch |
 
 ---
 

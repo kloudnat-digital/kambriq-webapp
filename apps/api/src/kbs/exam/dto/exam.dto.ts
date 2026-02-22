@@ -5,7 +5,7 @@ import { createZodDto } from 'nestjs-zod';
 export const saveAnswerSchema = z.object({
   questionId: z.cuid(),
   answerIds: z.array(z.cuid()).default([]), // empty = unanswered; SINGLE expects 1 element, MULTIPLE expects ≥1
-  flagged: z.boolean().default(false),
+  flagged: z.boolean().default(false).optional(), // for "mark for review" feature
 });
 
 export class SaveAnswerDto extends createZodDto(saveAnswerSchema) {}
