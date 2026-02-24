@@ -19,6 +19,15 @@ Optional:
 - `ASSIGN_PUBLIC_IP` (default: `DISABLED`)
 - `SMOKE_TEST_URL` (example: `https://dev.kambriq.com/api/v1/health/ready`)
 
+## Required tools
+
+- `aws` (AWS CLI)
+- `docker`
+- `git`
+- `jq`
+- `npm`
+- `curl` (only if `SMOKE_TEST_URL` is set)
+
 ## One-off migration command (ECS task override)
 
 The script and CI/CD use this command:

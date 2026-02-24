@@ -9,6 +9,20 @@ require_env() {
   fi
 }
 
+require_cmd() {
+  local name="$1"
+  if ! command -v "${name}" >/dev/null 2>&1; then
+    echo "Missing required command: ${name}" >&2
+    exit 1
+  fi
+}
+
+require_cmd aws
+require_cmd docker
+require_cmd git
+require_cmd jq
+require_cmd npm
+
 require_env AWS_REGION
 require_env ECR_REPO
 require_env ECS_CLUSTER
@@ -19,6 +33,7 @@ require_env ECS_SECURITY_GROUPS
 
 CONTAINER_NAME="${CONTAINER_NAME:-api}"
 ASSIGN_PUBLIC_IP="${ASSIGN_PUBLIC_IP:-DISABLED}"
+SMOKE_TEST_URL="${SMOKE_TEST_URL:-}"
 IMAGE_TAG="dev-$(git rev-parse --short HEAD)"
 IMAGE_URI="${ECR_REPO}:${IMAGE_TAG}"
 
@@ -99,5 +114,11 @@ aws ecs update-service \
 
 echo "Waiting for service stability"
 aws ecs wait services-stable --cluster "${ECS_CLUSTER}" --services "${ECS_SERVICE}"
+
+if [[ -n "${SMOKE_TEST_URL}" ]]; then
+  require_cmd curl
+  echo "Running smoke test: ${SMOKE_TEST_URL}"
+  curl -f "${SMOKE_TEST_URL}"
+fi
 
 echo "Dev deploy complete."
