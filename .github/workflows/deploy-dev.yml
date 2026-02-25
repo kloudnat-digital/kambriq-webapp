@@ -60,9 +60,12 @@ jobs:
         run: |
           set -euo pipefail
           IMAGE_URI="${ECR_REPO}:${IMAGE_TAG}"
+          LATEST_URI="${ECR_REPO}:latest"
           aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REPO%/*}"
           docker build -f docker/Dockerfile -t "${IMAGE_URI}" .
+          docker tag "${IMAGE_URI}" "${LATEST_URI}"
           docker push "${IMAGE_URI}"
+          docker push "${LATEST_URI}"
           echo "IMAGE_URI=${IMAGE_URI}" >> "$GITHUB_ENV"
 
       - name: Register new task definition

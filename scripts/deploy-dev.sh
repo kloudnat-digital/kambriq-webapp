@@ -36,6 +36,7 @@ ASSIGN_PUBLIC_IP="${ASSIGN_PUBLIC_IP:-DISABLED}"
 SMOKE_TEST_URL="${SMOKE_TEST_URL:-}"
 IMAGE_TAG="dev-$(git rev-parse --short HEAD)"
 IMAGE_URI="${ECR_REPO}:${IMAGE_TAG}"
+LATEST_URI="${ECR_REPO}:latest"
 
 echo "Installing dependencies"
 npm ci
@@ -47,6 +48,7 @@ npm run test
 
 echo "Building image: ${IMAGE_URI}"
 docker build -f docker/Dockerfile -t "${IMAGE_URI}" .
+docker tag "${IMAGE_URI}" "${LATEST_URI}"
 
 echo "Logging in to ECR"
 aws ecr get-login-password --region "${AWS_REGION}" \
@@ -54,6 +56,7 @@ aws ecr get-login-password --region "${AWS_REGION}" \
 
 echo "Pushing image"
 docker push "${IMAGE_URI}"
+docker push "${LATEST_URI}"
 
 echo "Preparing new task definition with updated image"
 TASK_DEF_JSON="$(aws ecs describe-task-definition --task-definition "${ECS_TASK_DEFINITION}")"
