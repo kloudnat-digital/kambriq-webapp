@@ -18,8 +18,8 @@ RUN npx tsc -p apps/api/tsconfig.app.json
 
 FROM node:24.13.1-bookworm AS production
 
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -S appuser -u 1001 -G appgroup
+RUN groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -m -s /usr/sbin/nologin appuser
 
 WORKDIR /app
 
