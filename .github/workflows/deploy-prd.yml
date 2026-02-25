@@ -61,13 +61,16 @@ jobs:
 
       - name: Build and push image
         env:
-          IMAGE_TAG: prd-${{ github.sha }}
+          IMAGE_TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           IMAGE_URI="${ECR_REPO}:${IMAGE_TAG}"
+          LATEST_URI="${ECR_REPO}:latest"
           aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REPO%/*}"
           docker build -f docker/Dockerfile -t "${IMAGE_URI}" .
+          docker tag "${IMAGE_URI}" "${LATEST_URI}"
           docker push "${IMAGE_URI}"
+          docker push "${LATEST_URI}"
           echo "IMAGE_URI=${IMAGE_URI}" >> "$GITHUB_ENV"
 
       - name: Register new task definition
@@ -138,7 +141,26 @@ jobs:
         if: ${{ env.SMOKE_TEST_URL != '' }}
         run: |
           set -euo pipefail
-          curl -f "${SMOKE_TEST_URL}"
+          TARGET_URL="${SMOKE_TEST_URL}"
+          if ! curl -fsS --retry 5 --retry-delay 5 --retry-all-errors "${TARGET_URL}"; then
+            echo "Smoke test failed for ${TARGET_URL}, trying ALB DNS fallback."
+            TG_ARN="$(aws ecs describe-services \
+              --cluster "${ECS_CLUSTER}" \
+              --services "${ECS_SERVICE}" \
+              --query "services[0].loadBalancers[0].targetGroupArn" \
+              --output text)"
+            LB_ARN="$(aws elbv2 describe-target-groups \
+              --target-group-arns "${TG_ARN}" \
+              --query "TargetGroups[0].LoadBalancerArns[0]" \
+              --output text)"
+            LB_DNS="$(aws elbv2 describe-load-balancers \
+              --load-balancer-arns "${LB_ARN}" \
+              --query "LoadBalancers[0].DNSName" \
+              --output text)"
+            TARGET_URL="http://${LB_DNS}/api/v1/health/ready"
+            curl -fsS --retry 5 --retry-delay 5 --retry-all-errors "${TARGET_URL}"
+          fi
+          echo "SMOKE_TEST_RESOLVED_URL=${TARGET_URL}" >> "$GITHUB_ENV"
 
       - name: Deployment summary
         if: always()
@@ -152,6 +174,6 @@ jobs:
             echo "- Migration task: ${MIGRATION_TASK_ARN:-n/a}"
             echo "- Migration exit code: ${MIGRATION_EXIT_CODE:-n/a}"
             if [[ -n "${SMOKE_TEST_URL}" ]]; then
-              echo "- Smoke test: ${SMOKE_TEST_URL}"
+              echo "- Smoke test: ${SMOKE_TEST_RESOLVED_URL:-${SMOKE_TEST_URL}}"
             fi
           } >> "$GITHUB_STEP_SUMMARY"

@@ -33,11 +33,15 @@ Optional:
 The script and CI/CD use this command:
 
 ```
-npx prisma migrate deploy --schema prisma/core/schema.prisma && \
-npx prisma migrate deploy --schema prisma/kbs/schema.prisma
+npx prisma migrate deploy --schema prisma/core/schema.prisma --config prisma/core/prisma.config.ts && \
+npx prisma migrate deploy --schema prisma/kbs/schema.prisma --config prisma/kbs/prisma.config.ts
 ```
 
 ## Local dev deploy
+
+Notes:
+- The script tags and pushes both `vX.Y.Z` and `latest` images.
+- If the smoke test URL fails, it falls back to the ALB DNS health check.
 
 ```
 ./scripts/deploy-dev.sh

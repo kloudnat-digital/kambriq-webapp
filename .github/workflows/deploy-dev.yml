@@ -54,9 +54,13 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Resolve image tag
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          echo "IMAGE_TAG=v${VERSION}" >> "$GITHUB_ENV"
+
       - name: Build and push image
-        env:
-          IMAGE_TAG: dev-${{ github.sha }}
         run: |
           set -euo pipefail
           IMAGE_URI="${ECR_REPO}:${IMAGE_TAG}"

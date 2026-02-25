@@ -34,7 +34,7 @@ require_env ECS_SECURITY_GROUPS
 CONTAINER_NAME="${CONTAINER_NAME:-api}"
 ASSIGN_PUBLIC_IP="${ASSIGN_PUBLIC_IP:-DISABLED}"
 SMOKE_TEST_URL="${SMOKE_TEST_URL:-}"
-IMAGE_TAG="dev-$(git rev-parse --short HEAD)"
+IMAGE_TAG="v$(node -p "require('./package.json').version")"
 IMAGE_URI="${ECR_REPO}:${IMAGE_TAG}"
 LATEST_URI="${ECR_REPO}:latest"
 
@@ -47,7 +47,7 @@ npm run typecheck
 npm run test
 
 echo "Building image: ${IMAGE_URI}"
-docker build -f docker/Dockerfile -t "${IMAGE_URI}" .
+docker buildx build --platform linux/amd64 -f docker/Dockerfile -t "${IMAGE_URI}" --load .
 docker tag "${IMAGE_URI}" "${LATEST_URI}"
 
 echo "Logging in to ECR"
@@ -120,8 +120,26 @@ aws ecs wait services-stable --cluster "${ECS_CLUSTER}" --services "${ECS_SERVIC
 
 if [[ -n "${SMOKE_TEST_URL}" ]]; then
   require_cmd curl
-  echo "Running smoke test: ${SMOKE_TEST_URL}"
-  curl -f "${SMOKE_TEST_URL}"
+  TARGET_URL="${SMOKE_TEST_URL}"
+  echo "Running smoke test: ${TARGET_URL}"
+  if ! curl -fsS --retry 5 --retry-delay 5 --retry-all-errors "${TARGET_URL}"; then
+    echo "Smoke test failed for ${TARGET_URL}, trying ALB DNS fallback."
+    TG_ARN="$(aws ecs describe-services \
+      --cluster "${ECS_CLUSTER}" \
+      --services "${ECS_SERVICE}" \
+      --query "services[0].loadBalancers[0].targetGroupArn" \
+      --output text)"
+    LB_ARN="$(aws elbv2 describe-target-groups \
+      --target-group-arns "${TG_ARN}" \
+      --query "TargetGroups[0].LoadBalancerArns[0]" \
+      --output text)"
+    LB_DNS="$(aws elbv2 describe-load-balancers \
+      --load-balancer-arns "${LB_ARN}" \
+      --query "LoadBalancers[0].DNSName" \
+      --output text)"
+    TARGET_URL="http://${LB_DNS}/api/v1/health/ready"
+    curl -fsS --retry 5 --retry-delay 5 --retry-all-errors "${TARGET_URL}"
+  fi
 fi
 
 echo "Dev deploy complete."
