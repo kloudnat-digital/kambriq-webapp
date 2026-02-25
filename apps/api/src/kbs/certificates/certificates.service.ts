@@ -4,9 +4,10 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { KbsPrismaService } from '../prisma/kbs-prisma.service';
 import { UsersService } from '../../core/users/users.service';
-import { IssueCertificateDto } from './dto/certificate.dto';
+import { IssueCertificateDto, RevokeCertificateDto } from './dto/certificate.dto';
 import {
   buildPaginatedResponse,
   CandidateStatus,
@@ -72,8 +73,8 @@ export class KbsCertificatesService {
       );
     }
 
-    // Generate unique KCA number: KCA-YYYYMMDD-XXXX
-    const kcaNumber = this.generateKcaNumber();
+    // Generate unique KCA number: KCA-YYYYMMDD-NNNN (sequential per day)
+    const kcaNumber = await this.generateKcaNumber();
 
     // 2-year validity
     const validUntil = new Date();
@@ -179,6 +180,64 @@ export class KbsCertificatesService {
     };
   }
 
+  // ----- Admin: Revoke Certificate ---------------------------
+
+  async revokeCertificate(
+    candidateId: string,
+    adminUserId: string,
+    dto: RevokeCertificateDto,
+  ) {
+    const candidate = await this.prisma.kbsCandidate.findUnique({
+      where: { id: candidateId },
+      include: { certificate: true },
+    });
+
+    if (!candidate) {
+      throw new NotFoundException(
+        this.t('kbs.certificate.candidateNotFound', undefined, {
+          id: candidateId,
+        }),
+      );
+    }
+
+    if (!candidate.certificate) {
+      throw new NotFoundException(this.t('kbs.certificate.notFound', 'en'));
+    }
+
+    if (candidate.certificate.revokedAt) {
+      throw new ConflictException(
+        this.t('kbs.certificate.alreadyRevoked', 'en'),
+      );
+    }
+
+    const revoked = await this.prisma.kbsCertificate.update({
+      where: { id: candidate.certificate.id },
+      data: {
+        revokedAt: new Date(),
+        revokedBy: adminUserId,
+        revokeReason: dto.reason,
+      },
+    });
+
+    // Downgrade candidate status back to EXAM_PENDING so admin can re-certify
+    await this.prisma.kbsCandidate.update({
+      where: { id: candidateId },
+      data: { status: CandidateStatus.EXAM_PENDING, certifiedAt: null },
+    });
+
+    // Remove KCA_CERTIFIED role from the user in Core
+    await this.usersService.removeRole(candidate.userId, RoleCode.KCA_CERTIFIED);
+
+    this.logger.log('Certificate revoked', {
+      candidateId,
+      kcaNumber: candidate.certificate.kcaNumber,
+      revokedBy: adminUserId,
+      reason: dto.reason,
+    });
+
+    return revoked;
+  }
+
   // ----- Admin: List All Certificates---------------
 
   async findAll(query: PaginationQuery) {
@@ -206,10 +265,32 @@ export class KbsCertificatesService {
   }
 
   // ----- Private Helpers ---------------------------
-  private generateKcaNumber(): string {
+
+  /**
+   * Generates a unique KCA number.
+   * Format: KCA-YYYYMMDD-XXXX (4 random alphanumeric chars).
+   * Retries up to 10 times on collision (DB unique constraint).
+   */
+  private async generateKcaNumber(): Promise<string> {
     const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `KCA-${datePart}-${randomPart}`;
+
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const kcaNumber = `KCA-${datePart}-${this.randomSuffix(4)}`;
+      const exists = await this.prisma.kbsCertificate.findUnique({
+        where: { kcaNumber },
+      });
+      if (!exists) return kcaNumber;
+    }
+
+    throw new Error('Failed to generate a unique KCA number after 10 attempts');
+  }
+
+  private randomSuffix(length: number): string {
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    return Array.from(
+      randomBytes(length),
+      (b) => charset[b % charset.length],
+    ).join('');
   }
 
   private t(key: string, lang = 'fr', args?: Record<string, unknown>): string {

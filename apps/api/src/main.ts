@@ -57,6 +57,13 @@ async function bootstrap() {
       .addTag('KBS - Candidate', 'KBS Training & Exams')
       .addTag('KBS - Admin', 'KBS Content & Candidate Management')
       .addTag('KBS - Public', 'KCA Certificate Verification')
+      .addTag('KAMNET - Agent', 'Agent Dashboard, Leads, Reservations, Network')
+      .addTag('KAMNET - Admin', 'Agent Management, Applications, Commissions')
+      .addTag('LANDS - Agent', 'Browse Lands, Reserve for Clients')
+      .addTag(
+        'LANDS - Admin',
+        'Land CRUD, Labels, Media, Documents, Reservations',
+      )
       .addTag('Health', 'Health Checks')
       .build();
 

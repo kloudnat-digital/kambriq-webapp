@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CoreModule } from '../core/core.module';
-import { KbsCandidateController } from './controllers/kbs-candidate.contoller';
+import { KbsCandidateController } from './controllers/kbs-candidate.controller';
 import { KbsAdminController } from './controllers/kbs-admin.controller';
 import { KbsPublicController } from './controllers/kbs-public.controller';
 import { KbsPrismaService } from './prisma/kbs-prisma.service';
@@ -28,6 +28,6 @@ import { KbsGradingProcessor } from './exam/grading-processor';
     KbsGradingProcessor,
   ],
   // Export services needed by other modules (e.g., HealthModule)
-  exports: [KbsCandidatesService, KbsPrismaService],
+  exports: [KbsCandidatesService, KbsCertificatesService, KbsPrismaService],
 })
 export class KbsModule {}

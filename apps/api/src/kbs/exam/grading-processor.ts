@@ -34,10 +34,51 @@ export class KbsGradingProcessor extends WorkerHost {
         return this.handleGradeExam(job);
       case KBS_JOBS.GRANT_KCA_ROLE:
         return this.handleGrantKcaRole(job);
+      case KBS_JOBS.EXPIRE_EXAM:
+        return this.handleExpireExam(job);
       default:
-        this.logger.warn(`Unknown KBS type: ${job.name}`);
+        this.logger.warn(`Unknown KBS job: ${job.name}`);
         return null;
     }
+  }
+
+  private async handleExpireExam(
+    job: Job<{ examId: string; candidateId: string; userId: string }>,
+  ) {
+    const { examId, candidateId, userId } = job.data;
+    this.logger.log('Checking exam for auto-expiry', { examId });
+
+    const exam = await this.kbsPrisma.kbsExam.findUnique({
+      where: { id: examId },
+      select: { status: true },
+    });
+
+    if (!exam) {
+      this.logger.warn('Expire-exam job: exam not found', { examId });
+      return;
+    }
+
+    // Only act if the exam is still IN_PROGRESS — candidate may have already submitted
+    if (exam.status !== ExamStatus.IN_PROGRESS) {
+      this.logger.log('Expire-exam job: exam already finalized, skipping', {
+        examId,
+        status: exam.status,
+      });
+      return;
+    }
+
+    this.logger.warn('Auto-expiring abandoned exam', { examId, candidateId });
+
+    await this.kbsPrisma.kbsExam.update({
+      where: { id: examId },
+      data: { status: ExamStatus.SUBMITTED, submittedAt: new Date() },
+    });
+
+    await this.kbsQueue.add(
+      KBS_JOBS.GRADE_EXAM,
+      { examId, candidateId, userId },
+      { jobId: `grade-exam-${examId}` },
+    );
   }
 
   private async handleGradeExam(
@@ -46,7 +87,25 @@ export class KbsGradingProcessor extends WorkerHost {
     const { examId, candidateId, userId } = job.data;
     this.logger.log('Grading Exam', { examId, candidateId, userId });
 
-    const result = await this.examService.gradeExam(examId);
+    let result: { score: number; passed: boolean };
+    try {
+      result = await this.examService.gradeExam(examId);
+    } catch (err) {
+      this.logger.error('Grading failed — marking exam as FAILED', {
+        examId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      // Prevent the exam from being stuck in SUBMITTED forever
+      await this.kbsPrisma.kbsExam.update({
+        where: { id: examId },
+        data: { status: ExamStatus.FAILED, score: 0 },
+      });
+      await this.kbsPrisma.kbsCandidate.update({
+        where: { id: candidateId },
+        data: { status: 'FAILED' },
+      });
+      throw err; // Re-throw so BullMQ marks the job as failed for observability
+    }
     const user = await this.usersService.findById(userId);
 
     const lang = user.language || 'fr';

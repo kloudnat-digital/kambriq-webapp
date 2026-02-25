@@ -7,6 +7,7 @@ import {
   EmailModule,
   JwtAuthGuard,
   QueueModule,
+  RedisModule,
   RolesGuard,
   UserLanguageResolver,
   validateEnv,
@@ -26,6 +27,8 @@ import { ZodValidationPipe } from 'nestjs-zod';
 import { KbsModule } from '../kbs/kbs.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { KamnetModule } from '../kamnet/kamnet.module';
+import { LandsModule } from '../lands/lands.module';
 
 @Module({
   imports: [
@@ -94,11 +97,14 @@ import { AppService } from './app.service';
     // ----- Domain Modules -----
     CoreModule,
     KbsModule,
+    KamnetModule,
+    LandsModule,
     HealthModule,
 
     // Infrastructure Modules
     QueueModule,
     EmailModule,
+    RedisModule,
   ],
 
   providers: [

@@ -40,12 +40,18 @@ export * from './constants/kbs';
 export * from './constants/queue';
 export * from './constants/email';
 export * from './constants/i18n';
+export * from './constants/kamnet';
+export * from './constants/lands';
 
 // ----- Services -----
 export { StorageService } from './services/storage.service';
 
 // ----- Queue -----
 export { QueueModule } from './queue/queue.module';
+
+// ----- Redis -----
+export { RedisModule } from './redis/redis.module';
+export { RedisService } from './redis/redis.service';
 
 // ----- Email -----
 export { EmailModule } from './email/email.module';

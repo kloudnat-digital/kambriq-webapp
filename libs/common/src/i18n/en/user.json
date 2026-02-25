@@ -5,5 +5,23 @@
   "invalidRoleCodes": "Invalid role codes: {codes}",
   "deleteSuccess": "Account deleted. You have {days} days to reactivate by logging in.",
   "blockSuccess": "User blocked successfully",
-  "unblockSuccess": "User unblocked successfully"
+  "unblockSuccess": "User unblocked successfully",
+  "password": {
+    "incorrectCurrent": "Current password is incorrect",
+    "changeSuccess": "Password changed successfully"
+  },
+  "email": {
+    "sameAsCurrent": "New email address must differ from the current one",
+    "alreadyTaken": "This email address is already in use by another account",
+    "changeRequested": "A confirmation email has been sent to your new address",
+    "invalidToken": "Invalid or expired confirmation link",
+    "noPendingChange": "No pending email change found",
+    "changeSuccess": "Email address updated successfully. Please log in again."
+  },
+  "idVerification": {
+    "alreadyVerified": "Your identity is already verified",
+    "submitted": "Document submitted. An administrator will review your request shortly.",
+    "noDocument": "No document pending verification",
+    "notPending": "Document is in status \"{status}\", not eligible for review"
+  }
 }

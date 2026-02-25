@@ -394,6 +394,57 @@ export class KbsCoursesService {
     return this.storage.getUploadUrl(key, dto.contentType);
   }
 
+  // ----- Lesson Completion Tracking ---------------------------
+
+  /**
+   * Records that a candidate has completed (viewed/finished) a lesson.
+   * Idempotent — calling it twice for the same lesson is safe.
+   */
+  async markLessonComplete(candidateId: string, lessonId: string) {
+    const lesson = await this.prisma.kbsLesson.findUnique({
+      where: { id: lessonId },
+      select: { id: true, moduleId: true },
+    });
+    if (!lesson) {
+      throw new NotFoundException(
+        this.t('kbs.lesson.notFound', undefined, { id: lessonId }),
+      );
+    }
+
+    await this.prisma.kbsLessonCompletion.upsert({
+      where: { candidateId_lessonId: { candidateId, lessonId } },
+      create: { candidateId, lessonId },
+      update: {}, // Already completed — no update needed
+    });
+
+    // Return count of completed lessons in the module so the client can show progress
+    const moduleTotal = await this.prisma.kbsLesson.count({
+      where: { moduleId: lesson.moduleId },
+    });
+    const moduleCompleted = await this.prisma.kbsLessonCompletion.count({
+      where: {
+        candidateId,
+        lesson: { moduleId: lesson.moduleId },
+      },
+    });
+
+    return {
+      lessonId,
+      moduleId: lesson.moduleId,
+      moduleLessonsCompleted: moduleCompleted,
+      moduleLessonsTotal: moduleTotal,
+      moduleFullyViewed: moduleCompleted >= moduleTotal,
+    };
+  }
+
+  async getLessonCompletions(candidateId: string, moduleId: string) {
+    const completions = await this.prisma.kbsLessonCompletion.findMany({
+      where: { candidateId, lesson: { moduleId } },
+      select: { lessonId: true, completedAt: true },
+    });
+    return completions;
+  }
+
   private shuffle<T>(array: T[]): T[] {
     const shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {

@@ -5,5 +5,23 @@
   "invalidRoleCodes": "Codes de rôle invalides : {codes}",
   "deleteSuccess": "Compte supprimé. Vous avez {days} jours pour le réactiver en vous connectant.",
   "blockSuccess": "Utilisateur bloqué avec succès",
-  "unblockSuccess": "Utilisateur débloqué avec succès"
+  "unblockSuccess": "Utilisateur débloqué avec succès",
+  "password": {
+    "incorrectCurrent": "Le mot de passe actuel est incorrect",
+    "changeSuccess": "Mot de passe modifié avec succès"
+  },
+  "email": {
+    "sameAsCurrent": "La nouvelle adresse email doit être différente de l'adresse actuelle",
+    "alreadyTaken": "Cette adresse email est déjà utilisée par un autre compte",
+    "changeRequested": "Un email de confirmation a été envoyé à votre nouvelle adresse",
+    "invalidToken": "Lien de confirmation invalide ou expiré",
+    "noPendingChange": "Aucun changement d'email en attente",
+    "changeSuccess": "Adresse email mise à jour avec succès. Veuillez vous reconnecter."
+  },
+  "idVerification": {
+    "alreadyVerified": "Votre identité est déjà vérifiée",
+    "submitted": "Document soumis. Un administrateur examinera votre demande sous peu.",
+    "noDocument": "Aucun document en attente de vérification",
+    "notPending": "Le document est dans le statut « {status} », non éligible à une révision"
+  }
 }

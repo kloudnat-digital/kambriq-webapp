@@ -64,6 +64,77 @@
     "validLabel": "Valid until: <strong>{validUntil}</strong>",
     "note": "You can now apply to join KAMNET and start your journey as a KAMBRIQ agent."
   },
+  "applicationSubmitted": {
+    "subject": "KAMNET Application Received",
+    "heading": "Application Submitted",
+    "body": "Hi {firstName}, we've received your application to join the KAMNET agent network.",
+    "note": "Our team will review your application shortly. You'll receive an email once a decision has been made."
+  },
+  "applicationApproved": {
+    "subject": "🎉 Welcome to KAMNET!",
+    "heading": "Application Approved",
+    "body": "Hi {firstName}, great news! Your KAMNET application has been approved.",
+    "agentCode": "Your agent code:",
+    "note": "You can now access the agent dashboard, browse land listings, and start your KAMBRIQ journey."
+  },
+  "applicationRejected": {
+    "subject": "KAMNET Application Update",
+    "heading": "Application Update",
+    "body": "Hi {firstName}, after review, your KAMNET application could not be approved at this time.",
+    "reason": "Reviewer note: <em>{reason}</em>",
+    "note": "If you believe this was an error, please contact our support team."
+  },
+  "agentSuspended": {
+    "subject": "Your KAMNET Agent Account has been suspended",
+    "heading": "Account Suspended",
+    "body": "Hi {firstName}, your KAMNET agent account has been suspended.",
+    "note": "Please contact the KAMNET administration for more information."
+  },
+  "agentReactivated": {
+    "subject": "Your KAMNET Agent Account has been reactivated",
+    "heading": "Agent Account Reactivated",
+    "body": "Hi {firstName}, your KAMNET agent account has been reactivated. You can now access all agent features again."
+  },
+  "agentPromotion": {
+    "subject": "🎉 You've been promoted on KAMNET!",
+    "heading": "Congratulations, {firstName}!",
+    "body": "Your hard work is paying off — you've earned a promotion on the KAMNET network.",
+    "tierLabel": "Your new rank:",
+    "note": "Keep growing your network and closing sales. The next level is within reach."
+  },
+  "emailChangeRequest": {
+    "subject": "Confirm your new KAMBRIQ email address",
+    "heading": "Email Address Change",
+    "body": "Hi {firstName}, you requested to change your email address to <strong>{newEmail}</strong>. Click below to confirm.",
+    "button": "Confirm Change",
+    "expiry": "This link expires in 24 hours. If you didn't request this, ignore this email — your current address remains unchanged."
+  },
+  "emailChangeConfirm": {
+    "subject": "Your KAMBRIQ email address has been updated",
+    "heading": "Email Address Updated",
+    "body": "Hi {firstName}, your KAMBRIQ email address has been changed to <strong>{newEmail}</strong>.",
+    "warning": "If you didn't make this change, please contact our support team immediately."
+  },
+  "idVerified": {
+    "subject": "Your identity has been verified",
+    "heading": "Identity Verified ✓",
+    "body": "Hi {firstName}, your identity document has been reviewed and approved.",
+    "note": "Your account is now verified."
+  },
+  "idRejected": {
+    "subject": "Identity verification — action required",
+    "heading": "Document Not Accepted",
+    "body": "Hi {firstName}, we were unable to verify your identity document.",
+    "reason": "Reason: <strong>{reason}</strong>",
+    "retry": "Please submit a new valid document from your account settings."
+  },
+  "inviteUser": {
+    "subject": "Welcome to KAMBRIQ — Set your password",
+    "heading": "Welcome, {firstName}!",
+    "body": "A KAMBRIQ account has been created for you. Set your password to get started.",
+    "button": "Set My Password",
+    "expiry": "This link expires in 24 hours. If you didn't request this account, you can safely ignore this email."
+  },
   "footer": {
     "copyright": "© {year} KAMBRIQ. All rights reserved.",
     "ignore": "If you didn't request this email, you can safely ignore it."

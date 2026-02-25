@@ -4,6 +4,7 @@ import {
   SetMetadata,
 } from '@nestjs/common';
 import { RequestUser } from '../types/user-payload.type';
+import { RoleCode } from '../types/roles.enum';
 
 /**
  * @CurrentUser() - Extracts authenticated user from request
@@ -25,7 +26,7 @@ export const CurrentUser = createParamDecorator(
  * Usage: @Roles(RoleCode.ADMIN, RoleCode.ADMIN_KBS)
  */
 export const ROLES_KEY = 'KROLES';
-export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
+export const Roles = (...roles: RoleCode[]) => SetMetadata(ROLES_KEY, roles);
 
 /**
  * @Public() - Marks route as public (no JWT required)
