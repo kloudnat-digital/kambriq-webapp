@@ -33,6 +33,7 @@ RUN npm ci --only=production && \
     npm cache clean --force
 
 COPY --from=builder /app/dist/apps/api ./dist/apps/api
+COPY --from=builder /app/libs/common/src/i18n ./libs/common/src/i18n
 
 USER appuser
 
