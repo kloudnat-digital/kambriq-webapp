@@ -80,7 +80,7 @@ TASK_ARN="$(aws ecs run-task \
       "command": [
         "sh",
         "-c",
-        "npx prisma migrate deploy --schema prisma/core/schema.prisma && npx prisma migrate deploy --schema prisma/kbs/schema.prisma"
+        "npx prisma migrate deploy --schema prisma/core/schema.prisma --config prisma/core/prisma.config.ts && npx prisma migrate deploy --schema prisma/kbs/schema.prisma --config prisma/kbs/prisma.config.ts"
       ]
     }
   ]
