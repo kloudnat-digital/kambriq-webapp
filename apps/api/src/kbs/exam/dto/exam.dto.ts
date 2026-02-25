@@ -3,8 +3,8 @@ import { createZodDto } from 'nestjs-zod';
 
 // ----- Save single answer (auto-save during exam) -----
 export const saveAnswerSchema = z.object({
-  questionId: z.cuid(),
-  answerIds: z.array(z.cuid()).default([]), // empty = unanswered; SINGLE expects 1 element, MULTIPLE expects ≥1
+  questionId: z.uuid(),
+  answerIds: z.array(z.uuid()).default([]), // empty = unanswered; SINGLE expects 1 element, MULTIPLE expects ≥1
   flagged: z.boolean().default(false).optional(), // for "mark for review" feature
 });
 
@@ -12,8 +12,8 @@ export class SaveAnswerDto extends createZodDto(saveAnswerSchema) {}
 
 // ----- Submit exam (for grading) -----
 const examAnswerSchema = z.object({
-  questionId: z.cuid(),
-  answerIds: z.array(z.cuid()).default([]),
+  questionId: z.uuid(),
+  answerIds: z.array(z.uuid()).default([]),
 });
 
 export const submitExamSchema = z.object({
@@ -51,7 +51,7 @@ export const createExamQuestionSchema = z
   .object({
     text: z.string().min(1).max(2000),
     type: z.enum(['SINGLE', 'MULTIPLE']).default('SINGLE'),
-    moduleId: z.cuid(),
+    moduleId: z.uuid(),
     answers: z.array(examAnswerInputSchema).min(2).max(6),
   })
   .refine((data) => data.answers.some((a) => a.isCorrect), {
@@ -66,7 +66,7 @@ export const updateExamQuestionSchema = z
   .object({
     text: z.string().min(1).max(2000).optional(),
     type: z.enum(['SINGLE', 'MULTIPLE']).optional(),
-    moduleId: z.cuid().optional(),
+    moduleId: z.uuid().optional(),
     answers: z.array(examAnswerInputSchema).min(2).max(6).optional(),
   })
   .refine((data) => !data.answers || data.answers.some((a) => a.isCorrect), {

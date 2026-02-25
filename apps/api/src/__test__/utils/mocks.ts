@@ -35,7 +35,9 @@ export const mockCorePrisma = () => ({
     count: fn(),
   },
   userProfile: {
+    findUnique: fn(),
     upsert: fn(),
+    update: fn(),
   },
   refreshToken: {
     findFirst: fn(),
@@ -141,6 +143,7 @@ export const mockKbsPrisma = () => ({
     findUnique: fn(),
     findMany: fn(),
     create: fn(),
+    update: fn(),
     count: fn(),
   },
   kbsSettings: {

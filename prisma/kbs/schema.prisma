@@ -17,6 +17,7 @@ model KbsCourse {
   slug        String?
   language    String?  @default("fr")
   isPublished Boolean  @default(false)
+  duration    Int?     // estimated total duration in minutes
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -52,9 +53,22 @@ model KbsLesson {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  module KbsModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  module             KbsModule               @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  lessonCompletions  KbsLessonCompletion[]
 
   @@unique([moduleId, order])
+}
+
+model KbsLessonCompletion {
+  id          String   @id @default(uuid())
+  candidateId String
+  lessonId    String
+  completedAt DateTime @default(now())
+
+  candidate KbsCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  lesson    KbsLesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([candidateId, lessonId])
 }
 
 model KbsQuestion {
@@ -118,9 +132,10 @@ model KbsCandidate {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  progress    KbsCandidateProgress[]
-  exams       KbsExam[]
-  certificate KbsCertificate?
+  progress           KbsCandidateProgress[]
+  lessonCompletions  KbsLessonCompletion[]
+  exams              KbsExam[]
+  certificate        KbsCertificate?
 }
 
 model KbsCandidateProgress {
@@ -129,6 +144,7 @@ model KbsCandidateProgress {
   moduleId    String
   score       Int?      // Quiz score percentage (0-100)
   passed      Boolean   @default(false)
+  attempts    Int       @default(0) // Total quiz submissions for this module
   completedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -197,19 +213,23 @@ model KbsSettings {
   id                Int      @id @default(autoincrement())
   examQuestionCount Int      @default(20)
   quizQuestionCount Int      @default(10)
+  quizMaxAttempts   Int      @default(0) // 0 = unlimited
   updatedAt         DateTime @updatedAt
 }
 
 model KbsCertificate {
-  id          String   @id @default(uuid())
-  candidateId String   @unique
-  kcaNumber   String   @unique // KCA-YYYYMMDD-XXXX
-  issueDate   DateTime @default(now())
-  validUntil  DateTime // 2 years from issue
+  id          String    @id @default(uuid())
+  candidateId String    @unique
+  kcaNumber   String    @unique // KCA-YYYYMMDD-XXXX
+  issueDate   DateTime  @default(now())
+  validUntil  DateTime  // 2 years from issue
   pdfUrl      String?
-  issuedBy    String?  // Admin userId
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  issuedBy    String?   // Admin userId
+  revokedAt   DateTime? // Set when certificate is revoked
+  revokedBy   String?   // Admin userId who revoked
+  revokeReason String?  // Reason for revocation
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   candidate KbsCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 }

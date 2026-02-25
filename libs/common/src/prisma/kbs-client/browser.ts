@@ -33,6 +33,11 @@ export type KbsModule = Prisma.KbsModuleModel
  */
 export type KbsLesson = Prisma.KbsLessonModel
 /**
+ * Model KbsLessonCompletion
+ * 
+ */
+export type KbsLessonCompletion = Prisma.KbsLessonCompletionModel
+/**
  * Model KbsQuestion
  * 
  */

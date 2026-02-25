@@ -253,6 +253,7 @@ export type KbsLessonWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"KbsLesson"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"KbsLesson"> | Date | string
   module?: Prisma.XOR<Prisma.KbsModuleScalarRelationFilter, Prisma.KbsModuleWhereInput>
+  lessonCompletions?: Prisma.KbsLessonCompletionListRelationFilter
 }
 
 export type KbsLessonOrderByWithRelationInput = {
@@ -266,6 +267,7 @@ export type KbsLessonOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   module?: Prisma.KbsModuleOrderByWithRelationInput
+  lessonCompletions?: Prisma.KbsLessonCompletionOrderByRelationAggregateInput
 }
 
 export type KbsLessonWhereUniqueInput = Prisma.AtLeast<{
@@ -283,6 +285,7 @@ export type KbsLessonWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"KbsLesson"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"KbsLesson"> | Date | string
   module?: Prisma.XOR<Prisma.KbsModuleScalarRelationFilter, Prisma.KbsModuleWhereInput>
+  lessonCompletions?: Prisma.KbsLessonCompletionListRelationFilter
 }, "id" | "moduleId_order">
 
 export type KbsLessonOrderByWithAggregationInput = {
@@ -327,6 +330,7 @@ export type KbsLessonCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   module: Prisma.KbsModuleCreateNestedOneWithoutLessonsInput
+  lessonCompletions?: Prisma.KbsLessonCompletionCreateNestedManyWithoutLessonInput
 }
 
 export type KbsLessonUncheckedCreateInput = {
@@ -339,6 +343,7 @@ export type KbsLessonUncheckedCreateInput = {
   order: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  lessonCompletions?: Prisma.KbsLessonCompletionUncheckedCreateNestedManyWithoutLessonInput
 }
 
 export type KbsLessonUpdateInput = {
@@ -351,6 +356,7 @@ export type KbsLessonUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   module?: Prisma.KbsModuleUpdateOneRequiredWithoutLessonsNestedInput
+  lessonCompletions?: Prisma.KbsLessonCompletionUpdateManyWithoutLessonNestedInput
 }
 
 export type KbsLessonUncheckedUpdateInput = {
@@ -363,6 +369,7 @@ export type KbsLessonUncheckedUpdateInput = {
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lessonCompletions?: Prisma.KbsLessonCompletionUncheckedUpdateManyWithoutLessonNestedInput
 }
 
 export type KbsLessonCreateManyInput = {
@@ -461,6 +468,11 @@ export type KbsLessonSumOrderByAggregateInput = {
   order?: Prisma.SortOrder
 }
 
+export type KbsLessonScalarRelationFilter = {
+  is?: Prisma.KbsLessonWhereInput
+  isNot?: Prisma.KbsLessonWhereInput
+}
+
 export type KbsLessonCreateNestedManyWithoutModuleInput = {
   create?: Prisma.XOR<Prisma.KbsLessonCreateWithoutModuleInput, Prisma.KbsLessonUncheckedCreateWithoutModuleInput> | Prisma.KbsLessonCreateWithoutModuleInput[] | Prisma.KbsLessonUncheckedCreateWithoutModuleInput[]
   connectOrCreate?: Prisma.KbsLessonCreateOrConnectWithoutModuleInput | Prisma.KbsLessonCreateOrConnectWithoutModuleInput[]
@@ -503,6 +515,20 @@ export type KbsLessonUncheckedUpdateManyWithoutModuleNestedInput = {
   deleteMany?: Prisma.KbsLessonScalarWhereInput | Prisma.KbsLessonScalarWhereInput[]
 }
 
+export type KbsLessonCreateNestedOneWithoutLessonCompletionsInput = {
+  create?: Prisma.XOR<Prisma.KbsLessonCreateWithoutLessonCompletionsInput, Prisma.KbsLessonUncheckedCreateWithoutLessonCompletionsInput>
+  connectOrCreate?: Prisma.KbsLessonCreateOrConnectWithoutLessonCompletionsInput
+  connect?: Prisma.KbsLessonWhereUniqueInput
+}
+
+export type KbsLessonUpdateOneRequiredWithoutLessonCompletionsNestedInput = {
+  create?: Prisma.XOR<Prisma.KbsLessonCreateWithoutLessonCompletionsInput, Prisma.KbsLessonUncheckedCreateWithoutLessonCompletionsInput>
+  connectOrCreate?: Prisma.KbsLessonCreateOrConnectWithoutLessonCompletionsInput
+  upsert?: Prisma.KbsLessonUpsertWithoutLessonCompletionsInput
+  connect?: Prisma.KbsLessonWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.KbsLessonUpdateToOneWithWhereWithoutLessonCompletionsInput, Prisma.KbsLessonUpdateWithoutLessonCompletionsInput>, Prisma.KbsLessonUncheckedUpdateWithoutLessonCompletionsInput>
+}
+
 export type KbsLessonCreateWithoutModuleInput = {
   id?: string
   title: string
@@ -512,6 +538,7 @@ export type KbsLessonCreateWithoutModuleInput = {
   order: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  lessonCompletions?: Prisma.KbsLessonCompletionCreateNestedManyWithoutLessonInput
 }
 
 export type KbsLessonUncheckedCreateWithoutModuleInput = {
@@ -523,6 +550,7 @@ export type KbsLessonUncheckedCreateWithoutModuleInput = {
   order: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  lessonCompletions?: Prisma.KbsLessonCompletionUncheckedCreateNestedManyWithoutLessonInput
 }
 
 export type KbsLessonCreateOrConnectWithoutModuleInput = {
@@ -566,6 +594,70 @@ export type KbsLessonScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"KbsLesson"> | Date | string
 }
 
+export type KbsLessonCreateWithoutLessonCompletionsInput = {
+  id?: string
+  title: string
+  contentType: string
+  contentUrl: string
+  duration: number
+  order: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  module: Prisma.KbsModuleCreateNestedOneWithoutLessonsInput
+}
+
+export type KbsLessonUncheckedCreateWithoutLessonCompletionsInput = {
+  id?: string
+  moduleId: string
+  title: string
+  contentType: string
+  contentUrl: string
+  duration: number
+  order: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type KbsLessonCreateOrConnectWithoutLessonCompletionsInput = {
+  where: Prisma.KbsLessonWhereUniqueInput
+  create: Prisma.XOR<Prisma.KbsLessonCreateWithoutLessonCompletionsInput, Prisma.KbsLessonUncheckedCreateWithoutLessonCompletionsInput>
+}
+
+export type KbsLessonUpsertWithoutLessonCompletionsInput = {
+  update: Prisma.XOR<Prisma.KbsLessonUpdateWithoutLessonCompletionsInput, Prisma.KbsLessonUncheckedUpdateWithoutLessonCompletionsInput>
+  create: Prisma.XOR<Prisma.KbsLessonCreateWithoutLessonCompletionsInput, Prisma.KbsLessonUncheckedCreateWithoutLessonCompletionsInput>
+  where?: Prisma.KbsLessonWhereInput
+}
+
+export type KbsLessonUpdateToOneWithWhereWithoutLessonCompletionsInput = {
+  where?: Prisma.KbsLessonWhereInput
+  data: Prisma.XOR<Prisma.KbsLessonUpdateWithoutLessonCompletionsInput, Prisma.KbsLessonUncheckedUpdateWithoutLessonCompletionsInput>
+}
+
+export type KbsLessonUpdateWithoutLessonCompletionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  contentType?: Prisma.StringFieldUpdateOperationsInput | string
+  contentUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  duration?: Prisma.IntFieldUpdateOperationsInput | number
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  module?: Prisma.KbsModuleUpdateOneRequiredWithoutLessonsNestedInput
+}
+
+export type KbsLessonUncheckedUpdateWithoutLessonCompletionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  moduleId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  contentType?: Prisma.StringFieldUpdateOperationsInput | string
+  contentUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  duration?: Prisma.IntFieldUpdateOperationsInput | number
+  order?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type KbsLessonCreateManyModuleInput = {
   id?: string
   title: string
@@ -586,6 +678,7 @@ export type KbsLessonUpdateWithoutModuleInput = {
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lessonCompletions?: Prisma.KbsLessonCompletionUpdateManyWithoutLessonNestedInput
 }
 
 export type KbsLessonUncheckedUpdateWithoutModuleInput = {
@@ -597,6 +690,7 @@ export type KbsLessonUncheckedUpdateWithoutModuleInput = {
   order?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lessonCompletions?: Prisma.KbsLessonCompletionUncheckedUpdateManyWithoutLessonNestedInput
 }
 
 export type KbsLessonUncheckedUpdateManyWithoutModuleInput = {
@@ -611,6 +705,35 @@ export type KbsLessonUncheckedUpdateManyWithoutModuleInput = {
 }
 
 
+/**
+ * Count Type KbsLessonCountOutputType
+ */
+
+export type KbsLessonCountOutputType = {
+  lessonCompletions: number
+}
+
+export type KbsLessonCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  lessonCompletions?: boolean | KbsLessonCountOutputTypeCountLessonCompletionsArgs
+}
+
+/**
+ * KbsLessonCountOutputType without action
+ */
+export type KbsLessonCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the KbsLessonCountOutputType
+   */
+  select?: Prisma.KbsLessonCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * KbsLessonCountOutputType without action
+ */
+export type KbsLessonCountOutputTypeCountLessonCompletionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.KbsLessonCompletionWhereInput
+}
+
 
 export type KbsLessonSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -623,6 +746,8 @@ export type KbsLessonSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   createdAt?: boolean
   updatedAt?: boolean
   module?: boolean | Prisma.KbsModuleDefaultArgs<ExtArgs>
+  lessonCompletions?: boolean | Prisma.KbsLesson$lessonCompletionsArgs<ExtArgs>
+  _count?: boolean | Prisma.KbsLessonCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["kbsLesson"]>
 
 export type KbsLessonSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -666,6 +791,8 @@ export type KbsLessonSelectScalar = {
 export type KbsLessonOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "moduleId" | "title" | "contentType" | "contentUrl" | "duration" | "order" | "createdAt" | "updatedAt", ExtArgs["result"]["kbsLesson"]>
 export type KbsLessonInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   module?: boolean | Prisma.KbsModuleDefaultArgs<ExtArgs>
+  lessonCompletions?: boolean | Prisma.KbsLesson$lessonCompletionsArgs<ExtArgs>
+  _count?: boolean | Prisma.KbsLessonCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type KbsLessonIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   module?: boolean | Prisma.KbsModuleDefaultArgs<ExtArgs>
@@ -678,6 +805,7 @@ export type $KbsLessonPayload<ExtArgs extends runtime.Types.Extensions.InternalA
   name: "KbsLesson"
   objects: {
     module: Prisma.$KbsModulePayload<ExtArgs>
+    lessonCompletions: Prisma.$KbsLessonCompletionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1084,6 +1212,7 @@ readonly fields: KbsLessonFieldRefs;
 export interface Prisma__KbsLessonClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   module<T extends Prisma.KbsModuleDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.KbsModuleDefaultArgs<ExtArgs>>): Prisma.Prisma__KbsModuleClient<runtime.Types.Result.GetResult<Prisma.$KbsModulePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  lessonCompletions<T extends Prisma.KbsLesson$lessonCompletionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.KbsLesson$lessonCompletionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$KbsLessonCompletionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1515,6 +1644,30 @@ export type KbsLessonDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Limit how many KbsLessons to delete.
    */
   limit?: number
+}
+
+/**
+ * KbsLesson.lessonCompletions
+ */
+export type KbsLesson$lessonCompletionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the KbsLessonCompletion
+   */
+  select?: Prisma.KbsLessonCompletionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the KbsLessonCompletion
+   */
+  omit?: Prisma.KbsLessonCompletionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.KbsLessonCompletionInclude<ExtArgs> | null
+  where?: Prisma.KbsLessonCompletionWhereInput
+  orderBy?: Prisma.KbsLessonCompletionOrderByWithRelationInput | Prisma.KbsLessonCompletionOrderByWithRelationInput[]
+  cursor?: Prisma.KbsLessonCompletionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.KbsLessonCompletionScalarFieldEnum | Prisma.KbsLessonCompletionScalarFieldEnum[]
 }
 
 /**

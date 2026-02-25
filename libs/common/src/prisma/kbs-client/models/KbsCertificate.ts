@@ -32,6 +32,9 @@ export type KbsCertificateMinAggregateOutputType = {
   validUntil: Date | null
   pdfUrl: string | null
   issuedBy: string | null
+  revokedAt: Date | null
+  revokedBy: string | null
+  revokeReason: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -44,6 +47,9 @@ export type KbsCertificateMaxAggregateOutputType = {
   validUntil: Date | null
   pdfUrl: string | null
   issuedBy: string | null
+  revokedAt: Date | null
+  revokedBy: string | null
+  revokeReason: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -56,6 +62,9 @@ export type KbsCertificateCountAggregateOutputType = {
   validUntil: number
   pdfUrl: number
   issuedBy: number
+  revokedAt: number
+  revokedBy: number
+  revokeReason: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -70,6 +79,9 @@ export type KbsCertificateMinAggregateInputType = {
   validUntil?: true
   pdfUrl?: true
   issuedBy?: true
+  revokedAt?: true
+  revokedBy?: true
+  revokeReason?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -82,6 +94,9 @@ export type KbsCertificateMaxAggregateInputType = {
   validUntil?: true
   pdfUrl?: true
   issuedBy?: true
+  revokedAt?: true
+  revokedBy?: true
+  revokeReason?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -94,6 +109,9 @@ export type KbsCertificateCountAggregateInputType = {
   validUntil?: true
   pdfUrl?: true
   issuedBy?: true
+  revokedAt?: true
+  revokedBy?: true
+  revokeReason?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -179,6 +197,9 @@ export type KbsCertificateGroupByOutputType = {
   validUntil: Date
   pdfUrl: string | null
   issuedBy: string | null
+  revokedAt: Date | null
+  revokedBy: string | null
+  revokeReason: string | null
   createdAt: Date
   updatedAt: Date
   _count: KbsCertificateCountAggregateOutputType | null
@@ -212,6 +233,9 @@ export type KbsCertificateWhereInput = {
   validUntil?: Prisma.DateTimeFilter<"KbsCertificate"> | Date | string
   pdfUrl?: Prisma.StringNullableFilter<"KbsCertificate"> | string | null
   issuedBy?: Prisma.StringNullableFilter<"KbsCertificate"> | string | null
+  revokedAt?: Prisma.DateTimeNullableFilter<"KbsCertificate"> | Date | string | null
+  revokedBy?: Prisma.StringNullableFilter<"KbsCertificate"> | string | null
+  revokeReason?: Prisma.StringNullableFilter<"KbsCertificate"> | string | null
   createdAt?: Prisma.DateTimeFilter<"KbsCertificate"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"KbsCertificate"> | Date | string
   candidate?: Prisma.XOR<Prisma.KbsCandidateScalarRelationFilter, Prisma.KbsCandidateWhereInput>
@@ -225,6 +249,9 @@ export type KbsCertificateOrderByWithRelationInput = {
   validUntil?: Prisma.SortOrder
   pdfUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   issuedBy?: Prisma.SortOrderInput | Prisma.SortOrder
+  revokedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  revokedBy?: Prisma.SortOrderInput | Prisma.SortOrder
+  revokeReason?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   candidate?: Prisma.KbsCandidateOrderByWithRelationInput
@@ -241,6 +268,9 @@ export type KbsCertificateWhereUniqueInput = Prisma.AtLeast<{
   validUntil?: Prisma.DateTimeFilter<"KbsCertificate"> | Date | string
   pdfUrl?: Prisma.StringNullableFilter<"KbsCertificate"> | string | null
   issuedBy?: Prisma.StringNullableFilter<"KbsCertificate"> | string | null
+  revokedAt?: Prisma.DateTimeNullableFilter<"KbsCertificate"> | Date | string | null
+  revokedBy?: Prisma.StringNullableFilter<"KbsCertificate"> | string | null
+  revokeReason?: Prisma.StringNullableFilter<"KbsCertificate"> | string | null
   createdAt?: Prisma.DateTimeFilter<"KbsCertificate"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"KbsCertificate"> | Date | string
   candidate?: Prisma.XOR<Prisma.KbsCandidateScalarRelationFilter, Prisma.KbsCandidateWhereInput>
@@ -254,6 +284,9 @@ export type KbsCertificateOrderByWithAggregationInput = {
   validUntil?: Prisma.SortOrder
   pdfUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   issuedBy?: Prisma.SortOrderInput | Prisma.SortOrder
+  revokedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  revokedBy?: Prisma.SortOrderInput | Prisma.SortOrder
+  revokeReason?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.KbsCertificateCountOrderByAggregateInput
@@ -272,6 +305,9 @@ export type KbsCertificateScalarWhereWithAggregatesInput = {
   validUntil?: Prisma.DateTimeWithAggregatesFilter<"KbsCertificate"> | Date | string
   pdfUrl?: Prisma.StringNullableWithAggregatesFilter<"KbsCertificate"> | string | null
   issuedBy?: Prisma.StringNullableWithAggregatesFilter<"KbsCertificate"> | string | null
+  revokedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"KbsCertificate"> | Date | string | null
+  revokedBy?: Prisma.StringNullableWithAggregatesFilter<"KbsCertificate"> | string | null
+  revokeReason?: Prisma.StringNullableWithAggregatesFilter<"KbsCertificate"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"KbsCertificate"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"KbsCertificate"> | Date | string
 }
@@ -283,6 +319,9 @@ export type KbsCertificateCreateInput = {
   validUntil: Date | string
   pdfUrl?: string | null
   issuedBy?: string | null
+  revokedAt?: Date | string | null
+  revokedBy?: string | null
+  revokeReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   candidate: Prisma.KbsCandidateCreateNestedOneWithoutCertificateInput
@@ -296,6 +335,9 @@ export type KbsCertificateUncheckedCreateInput = {
   validUntil: Date | string
   pdfUrl?: string | null
   issuedBy?: string | null
+  revokedAt?: Date | string | null
+  revokedBy?: string | null
+  revokeReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -307,6 +349,9 @@ export type KbsCertificateUpdateInput = {
   validUntil?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pdfUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   issuedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revokedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revokeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   candidate?: Prisma.KbsCandidateUpdateOneRequiredWithoutCertificateNestedInput
@@ -320,6 +365,9 @@ export type KbsCertificateUncheckedUpdateInput = {
   validUntil?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pdfUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   issuedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revokedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revokeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -332,6 +380,9 @@ export type KbsCertificateCreateManyInput = {
   validUntil: Date | string
   pdfUrl?: string | null
   issuedBy?: string | null
+  revokedAt?: Date | string | null
+  revokedBy?: string | null
+  revokeReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -343,6 +394,9 @@ export type KbsCertificateUpdateManyMutationInput = {
   validUntil?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pdfUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   issuedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revokedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revokeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -355,6 +409,9 @@ export type KbsCertificateUncheckedUpdateManyInput = {
   validUntil?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pdfUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   issuedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revokedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revokeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -372,6 +429,9 @@ export type KbsCertificateCountOrderByAggregateInput = {
   validUntil?: Prisma.SortOrder
   pdfUrl?: Prisma.SortOrder
   issuedBy?: Prisma.SortOrder
+  revokedAt?: Prisma.SortOrder
+  revokedBy?: Prisma.SortOrder
+  revokeReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -384,6 +444,9 @@ export type KbsCertificateMaxOrderByAggregateInput = {
   validUntil?: Prisma.SortOrder
   pdfUrl?: Prisma.SortOrder
   issuedBy?: Prisma.SortOrder
+  revokedAt?: Prisma.SortOrder
+  revokedBy?: Prisma.SortOrder
+  revokeReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -396,6 +459,9 @@ export type KbsCertificateMinOrderByAggregateInput = {
   validUntil?: Prisma.SortOrder
   pdfUrl?: Prisma.SortOrder
   issuedBy?: Prisma.SortOrder
+  revokedAt?: Prisma.SortOrder
+  revokedBy?: Prisma.SortOrder
+  revokeReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -439,6 +505,9 @@ export type KbsCertificateCreateWithoutCandidateInput = {
   validUntil: Date | string
   pdfUrl?: string | null
   issuedBy?: string | null
+  revokedAt?: Date | string | null
+  revokedBy?: string | null
+  revokeReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -450,6 +519,9 @@ export type KbsCertificateUncheckedCreateWithoutCandidateInput = {
   validUntil: Date | string
   pdfUrl?: string | null
   issuedBy?: string | null
+  revokedAt?: Date | string | null
+  revokedBy?: string | null
+  revokeReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -477,6 +549,9 @@ export type KbsCertificateUpdateWithoutCandidateInput = {
   validUntil?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pdfUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   issuedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revokedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revokeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -488,6 +563,9 @@ export type KbsCertificateUncheckedUpdateWithoutCandidateInput = {
   validUntil?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   pdfUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   issuedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revokedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  revokeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -502,6 +580,9 @@ export type KbsCertificateSelect<ExtArgs extends runtime.Types.Extensions.Intern
   validUntil?: boolean
   pdfUrl?: boolean
   issuedBy?: boolean
+  revokedAt?: boolean
+  revokedBy?: boolean
+  revokeReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   candidate?: boolean | Prisma.KbsCandidateDefaultArgs<ExtArgs>
@@ -515,6 +596,9 @@ export type KbsCertificateSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   validUntil?: boolean
   pdfUrl?: boolean
   issuedBy?: boolean
+  revokedAt?: boolean
+  revokedBy?: boolean
+  revokeReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   candidate?: boolean | Prisma.KbsCandidateDefaultArgs<ExtArgs>
@@ -528,6 +612,9 @@ export type KbsCertificateSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   validUntil?: boolean
   pdfUrl?: boolean
   issuedBy?: boolean
+  revokedAt?: boolean
+  revokedBy?: boolean
+  revokeReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   candidate?: boolean | Prisma.KbsCandidateDefaultArgs<ExtArgs>
@@ -541,11 +628,14 @@ export type KbsCertificateSelectScalar = {
   validUntil?: boolean
   pdfUrl?: boolean
   issuedBy?: boolean
+  revokedAt?: boolean
+  revokedBy?: boolean
+  revokeReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type KbsCertificateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "candidateId" | "kcaNumber" | "issueDate" | "validUntil" | "pdfUrl" | "issuedBy" | "createdAt" | "updatedAt", ExtArgs["result"]["kbsCertificate"]>
+export type KbsCertificateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "candidateId" | "kcaNumber" | "issueDate" | "validUntil" | "pdfUrl" | "issuedBy" | "revokedAt" | "revokedBy" | "revokeReason" | "createdAt" | "updatedAt", ExtArgs["result"]["kbsCertificate"]>
 export type KbsCertificateInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   candidate?: boolean | Prisma.KbsCandidateDefaultArgs<ExtArgs>
 }
@@ -569,6 +659,9 @@ export type $KbsCertificatePayload<ExtArgs extends runtime.Types.Extensions.Inte
     validUntil: Date
     pdfUrl: string | null
     issuedBy: string | null
+    revokedAt: Date | null
+    revokedBy: string | null
+    revokeReason: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["kbsCertificate"]>
@@ -1002,6 +1095,9 @@ export interface KbsCertificateFieldRefs {
   readonly validUntil: Prisma.FieldRef<"KbsCertificate", 'DateTime'>
   readonly pdfUrl: Prisma.FieldRef<"KbsCertificate", 'String'>
   readonly issuedBy: Prisma.FieldRef<"KbsCertificate", 'String'>
+  readonly revokedAt: Prisma.FieldRef<"KbsCertificate", 'DateTime'>
+  readonly revokedBy: Prisma.FieldRef<"KbsCertificate", 'String'>
+  readonly revokeReason: Prisma.FieldRef<"KbsCertificate", 'String'>
   readonly createdAt: Prisma.FieldRef<"KbsCertificate", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"KbsCertificate", 'DateTime'>
 }

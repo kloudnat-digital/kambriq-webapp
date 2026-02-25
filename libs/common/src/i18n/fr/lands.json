@@ -1,0 +1,47 @@
+{
+  "land": {
+    "notFound": "Parcelle de terrain introuvable",
+    "created": "Parcelle de terrain créée avec succès",
+    "updated": "Parcelle de terrain mise à jour avec succès",
+    "deleted": "Parcelle de terrain archivée avec succès",
+    "notAvailable": "Ce terrain n'est pas disponible",
+    "alreadyReserved": "Ce terrain est déjà réservé par un autre agent",
+    "slugTaken": "Un terrain avec ce slug existe déjà",
+    "titleNumberTaken": "Un terrain avec ce numéro de titre existe déjà",
+    "notPublished": "Ce terrain n'est pas encore publié",
+    "notVerified": "Ce terrain n'a pas encore été vérifié",
+    "priceUpdated": "Prix du terrain mis à jour de {previousPrice} à {newPrice} XAF"
+  },
+  "label": {
+    "notFound": "Label de terrain introuvable",
+    "created": "Label de terrain créé avec succès",
+    "updated": "Label de terrain mis à jour avec succès",
+    "deleted": "Label de terrain supprimé avec succès",
+    "codeTaken": "Un label avec le code {code} existe déjà",
+    "inUse": "Impossible de supprimer ce label — il est attribué à {count} terrain(s)"
+  },
+  "media": {
+    "uploaded": "Média téléchargé avec succès",
+    "notFound": "Média introuvable",
+    "deleted": "Média supprimé avec succès"
+  },
+  "document": {
+    "uploaded": "Document téléchargé avec succès",
+    "notFound": "Document introuvable",
+    "deleted": "Document supprimé avec succès"
+  },
+  "reservation": {
+    "created": "Réservation créée — le terrain est maintenant réservé pour {clientName}",
+    "notFound": "Réservation introuvable",
+    "confirmed": "Acompte confirmé — la réservation est maintenant active",
+    "completed": "Vente finalisée avec succès",
+    "cancelled": "Réservation annulée — le terrain est de nouveau disponible",
+    "alreadyActive": "Cette réservation a déjà un acompte confirmé",
+    "notPending": "Seules les réservations en attente peuvent être confirmées",
+    "notConfirmed": "Seules les réservations confirmées peuvent être finalisées",
+    "conflict": "Ce terrain vient d'être réservé par un autre agent. Veuillez essayer une autre parcelle."
+  },
+  "priceHistory": {
+    "noChanges": "Aucun changement de prix enregistré pour ce terrain"
+  }
+}

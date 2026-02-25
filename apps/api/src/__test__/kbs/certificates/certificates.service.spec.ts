@@ -18,7 +18,11 @@ import {
 describe('KbsCertificatesService', () => {
   let service: KbsCertificatesService;
   let prisma: ReturnType<typeof mockKbsPrisma>;
-  let usersService: { addRole: jest.Mock; findById: jest.Mock };
+  let usersService: {
+    addRole: jest.Mock;
+    findById: jest.Mock;
+    removeRole: jest.Mock;
+  };
   let emailService: ReturnType<typeof mockEmailService>;
 
   beforeEach(async () => {
@@ -27,6 +31,7 @@ describe('KbsCertificatesService', () => {
     emailService = mockEmailService();
     usersService = {
       addRole: jest.fn(),
+      removeRole: jest.fn(),
       findById: jest.fn().mockResolvedValue(buildUserResponse()),
     };
 
@@ -128,6 +133,85 @@ describe('KbsCertificatesService', () => {
 
       const result = await service.verifyCertificate('KCA-FAKE-0000');
       expect(result.valid).toBe(false);
+    });
+  });
+
+  // ----- REVOKE CERTIFICATE ----- //
+
+  describe('revokeCertificate', () => {
+    it('stamps revokedAt, reverts candidate status, removes KCA role', async () => {
+      const cert = buildCertificate({ revokedAt: null });
+      const candidate = buildCandidate({
+        status: 'CERTIFIED',
+        certificate: cert,
+      });
+      prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
+      prisma.kbsCertificate.update.mockResolvedValue({
+        ...cert,
+        revokedAt: new Date(),
+      });
+      prisma.kbsCandidate.update.mockResolvedValue({});
+
+      const result = await service.revokeCertificate(candidate.id, 'admin-1', {
+        reason: 'Fraudulent activity',
+      });
+
+      expect(prisma.kbsCertificate.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            revokedAt: expect.any(Date),
+            revokedBy: 'admin-1',
+            revokeReason: 'Fraudulent activity',
+          }),
+        }),
+      );
+      expect(prisma.kbsCandidate.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: 'EXAM_PENDING' }),
+        }),
+      );
+      expect(usersService.removeRole).toHaveBeenCalledWith(
+        candidate.userId,
+        'KCA_CERTIFIED',
+      );
+      expect(result).toHaveProperty('revokedAt');
+    });
+
+    it('throws NotFoundException when candidate does not exist', async () => {
+      prisma.kbsCandidate.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.revokeCertificate('bad-id', 'admin-1', { reason: 'Reason' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws NotFoundException when candidate has no certificate', async () => {
+      const candidate = buildCandidate({
+        status: 'CERTIFIED',
+        certificate: null,
+      });
+      prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
+
+      await expect(
+        service.revokeCertificate(candidate.id, 'admin-1', {
+          reason: 'Reason',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws ConflictException when certificate already revoked', async () => {
+      const cert = buildCertificate({ revokedAt: new Date('2025-03-01') });
+      const candidate = buildCandidate({
+        status: 'CERTIFIED',
+        certificate: cert,
+      });
+      prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
+
+      await expect(
+        service.revokeCertificate(candidate.id, 'admin-1', {
+          reason: 'Reason',
+        }),
+      ).rejects.toThrow(ConflictException);
     });
   });
 

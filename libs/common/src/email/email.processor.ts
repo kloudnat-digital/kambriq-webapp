@@ -45,14 +45,14 @@ export class EmailProcessor extends WorkerHost {
     } else {
       this.sesClient = null;
       this.logger.warn(
-        'SES not configured - Emails will be loggeg to console.',
+        'SES not configured - Emails will be logged to console.',
       );
     }
   }
 
   async process(job: Job<EmailJobPayload>): Promise<unknown> {
     if (job.name !== NOTIFICATIONS_JOBS.SEND_EMAIL) {
-      this.logger.warn(`Unknown job type: ${job.name}`);
+      this.logger.warn(`Unknown EMAIL job: ${job.name}`);
       return null;
     }
 

@@ -186,6 +186,76 @@ const templates = defineTemplates({
     ),
   }),
 
+  inviteUser: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.inviteUser.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.inviteUser.heading', lang, args)}</h1>
+      <p>${t(i18n, 'email.inviteUser.body', lang, args)}</p>
+      <a href="${args['setPasswordUrl']}" class="btn">${t(i18n, 'email.inviteUser.button', lang)}</a>
+      <p class="muted">${t(i18n, 'email.inviteUser.expiry', lang)}</p>
+      <p class="muted" style="word-break:break-all;">${args['setPasswordUrl']}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  emailChangeRequest: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.emailChangeRequest.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.emailChangeRequest.heading', lang, args)}</h1>
+      <p>${t(i18n, 'email.emailChangeRequest.body', lang, args)}</p>
+      <a href="${args['confirmUrl']}" class="btn">${t(i18n, 'email.emailChangeRequest.button', lang)}</a>
+      <p class="muted">${t(i18n, 'email.emailChangeRequest.expiry', lang)}</p>
+      <p class="muted" style="word-break:break-all;">${args['confirmUrl']}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  emailChangeConfirm: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.emailChangeConfirm.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.emailChangeConfirm.heading', lang)}</h1>
+      <p>${t(i18n, 'email.emailChangeConfirm.body', lang, args)}</p>
+      <p>${t(i18n, 'email.emailChangeConfirm.warning', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  idVerified: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.idVerified.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.idVerified.heading', lang)}</h1>
+      <p>${t(i18n, 'email.idVerified.body', lang, args)}</p>
+      <p>${t(i18n, 'email.idVerified.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  idRejected: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.idRejected.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.idRejected.heading', lang)}</h1>
+      <p>${t(i18n, 'email.idRejected.body', lang, args)}</p>
+      <p>${t(i18n, 'email.idRejected.reason', lang, args)}</p>
+      <p>${t(i18n, 'email.idRejected.retry', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
   certificateIssued: (i18n, lang, args) => ({
     subject: t(i18n, 'email.certificateIssued.subject', lang),
     html: layout(
@@ -196,6 +266,144 @@ const templates = defineTemplates({
       <div class="code">${args['kcaNumber']}</div>
       <p>${t(i18n, 'email.certificateIssued.validLabel', lang, args)}</p>
       <p>${t(i18n, 'email.certificateIssued.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  applicationSubmitted: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.applicationSubmitted.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.applicationSubmitted.heading', lang)}</h1>
+      <p>${t(i18n, 'email.applicationSubmitted.body', lang, args)}</p>
+      <p>${t(i18n, 'email.applicationSubmitted.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  applicationApproved: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.applicationApproved.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.applicationApproved.heading', lang)}</h1>
+      <p>${t(i18n, 'email.applicationApproved.body', lang, args)}</p>
+      <p>${t(i18n, 'email.applicationApproved.agentCode', lang)}</p>
+      <div class="code">${args['agentCode']}</div>
+      <p>${t(i18n, 'email.applicationApproved.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  applicationRejected: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.applicationRejected.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.applicationRejected.heading', lang)}</h1>
+      <p>${t(i18n, 'email.applicationRejected.body', lang, args)}</p>
+      ${args['reason'] ? `<p>${t(i18n, 'email.applicationRejected.reason', lang, args)}</p>` : ''}
+      <p>${t(i18n, 'email.applicationRejected.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  agentSuspended: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.agentSuspended.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.agentSuspended.heading', lang)}</h1>
+      <p>${t(i18n, 'email.agentSuspended.body', lang, args)}</p>
+      <p>${t(i18n, 'email.agentSuspended.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  agentReactivated: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.agentReactivated.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.agentReactivated.heading', lang)}</h1>
+      <p>${t(i18n, 'email.agentReactivated.body', lang, args)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  agentPromotion: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.agentPromotion.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.agentPromotion.heading', lang, args)}</h1>
+      <p>${t(i18n, 'email.agentPromotion.body', lang, args)}</p>
+      <p>${t(i18n, 'email.agentPromotion.tierLabel', lang)}</p>
+      <div class="code">${args['newTier']}</div>
+      <p>${t(i18n, 'email.agentPromotion.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  reservationCreated: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.reservationCreated.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.reservationCreated.heading', lang)}</h1>
+      <p>${t(i18n, 'email.reservationCreated.body', lang, args)}</p>
+      <p>${t(i18n, 'email.reservationCreated.landInfo', lang, args)}</p>
+      <p>${t(i18n, 'email.reservationCreated.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  clientPortalAccess: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.clientPortalAccess.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.clientPortalAccess.heading', lang)}</h1>
+      <p>${t(i18n, 'email.clientPortalAccess.body', lang, args)}</p>
+      <p>${t(i18n, 'email.clientPortalAccess.landInfo', lang, args)}</p>
+      <p>${t(i18n, 'email.clientPortalAccess.agent', lang, args)}</p>
+      <p>${t(i18n, 'email.clientPortalAccess.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  reservationConfirmed: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.reservationConfirmed.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.reservationConfirmed.heading', lang)}</h1>
+      <p>${t(i18n, 'email.reservationConfirmed.body', lang, args)}</p>
+      <p>${t(i18n, 'email.reservationConfirmed.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  reservationCancelled: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.reservationCancelled.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.reservationCancelled.heading', lang)}</h1>
+      <p>${t(i18n, 'email.reservationCancelled.body', lang, args)}</p>
+      ${args['reason'] ? `<p>${t(i18n, 'email.reservationCancelled.reason', lang, args)}</p>` : ''}
+      <p>${t(i18n, 'email.reservationCancelled.note', lang)}</p>
     `,
       lang,
       i18n,

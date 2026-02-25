@@ -1,4 +1,5 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -24,6 +25,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post()
   @ApiOperation({
     summary: 'Register a new user account',
@@ -47,6 +49,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -105,6 +108,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -138,6 +142,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('forgot-password')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({

@@ -22,6 +22,7 @@ describe('KbsCandidatesService', () => {
   let usersService: { addRole: jest.Mock };
 
   beforeEach(async () => {
+    jest.clearAllMocks();
     resetIdCounter();
     prisma = mockKbsPrisma();
     usersService = { addRole: jest.fn() };
@@ -253,7 +254,12 @@ describe('KbsCandidatesService', () => {
 
   describe('isUserCertified', () => {
     it('returns true for CERTIFIED candidate', async () => {
-      prisma.kbsCandidate.findUnique.mockResolvedValue({ status: 'CERTIFIED' });
+      prisma.kbsCandidate.findUnique.mockResolvedValue({
+        status: 'CERTIFIED',
+        certificate: {
+          validUntil: new Date(Date.now() + 86_400_000) /* +1 day */,
+        },
+      });
       expect(await service.isUserCertified('u1')).toBe(true);
     });
 

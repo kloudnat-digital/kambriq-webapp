@@ -32,7 +32,10 @@ export type UserProfileMinAggregateOutputType = {
   city: string | null
   country: string | null
   idDocumentUrl: string | null
-  idVerified: boolean | null
+  idVerificationStatus: string | null
+  idVerifiedAt: Date | null
+  idVerifiedBy: string | null
+  idRejectionReason: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -45,7 +48,10 @@ export type UserProfileMaxAggregateOutputType = {
   city: string | null
   country: string | null
   idDocumentUrl: string | null
-  idVerified: boolean | null
+  idVerificationStatus: string | null
+  idVerifiedAt: Date | null
+  idVerifiedBy: string | null
+  idRejectionReason: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -58,7 +64,10 @@ export type UserProfileCountAggregateOutputType = {
   city: number
   country: number
   idDocumentUrl: number
-  idVerified: number
+  idVerificationStatus: number
+  idVerifiedAt: number
+  idVerifiedBy: number
+  idRejectionReason: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -73,7 +82,10 @@ export type UserProfileMinAggregateInputType = {
   city?: true
   country?: true
   idDocumentUrl?: true
-  idVerified?: true
+  idVerificationStatus?: true
+  idVerifiedAt?: true
+  idVerifiedBy?: true
+  idRejectionReason?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -86,7 +98,10 @@ export type UserProfileMaxAggregateInputType = {
   city?: true
   country?: true
   idDocumentUrl?: true
-  idVerified?: true
+  idVerificationStatus?: true
+  idVerifiedAt?: true
+  idVerifiedBy?: true
+  idRejectionReason?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -99,7 +114,10 @@ export type UserProfileCountAggregateInputType = {
   city?: true
   country?: true
   idDocumentUrl?: true
-  idVerified?: true
+  idVerificationStatus?: true
+  idVerifiedAt?: true
+  idVerifiedBy?: true
+  idRejectionReason?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -185,7 +203,10 @@ export type UserProfileGroupByOutputType = {
   city: string | null
   country: string | null
   idDocumentUrl: string | null
-  idVerified: boolean
+  idVerificationStatus: string
+  idVerifiedAt: Date | null
+  idVerifiedBy: string | null
+  idRejectionReason: string | null
   createdAt: Date
   updatedAt: Date
   _count: UserProfileCountAggregateOutputType | null
@@ -219,7 +240,10 @@ export type UserProfileWhereInput = {
   city?: Prisma.StringNullableFilter<"UserProfile"> | string | null
   country?: Prisma.StringNullableFilter<"UserProfile"> | string | null
   idDocumentUrl?: Prisma.StringNullableFilter<"UserProfile"> | string | null
-  idVerified?: Prisma.BoolFilter<"UserProfile"> | boolean
+  idVerificationStatus?: Prisma.StringFilter<"UserProfile"> | string
+  idVerifiedAt?: Prisma.DateTimeNullableFilter<"UserProfile"> | Date | string | null
+  idVerifiedBy?: Prisma.StringNullableFilter<"UserProfile"> | string | null
+  idRejectionReason?: Prisma.StringNullableFilter<"UserProfile"> | string | null
   createdAt?: Prisma.DateTimeFilter<"UserProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"UserProfile"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -233,7 +257,10 @@ export type UserProfileOrderByWithRelationInput = {
   city?: Prisma.SortOrderInput | Prisma.SortOrder
   country?: Prisma.SortOrderInput | Prisma.SortOrder
   idDocumentUrl?: Prisma.SortOrderInput | Prisma.SortOrder
-  idVerified?: Prisma.SortOrder
+  idVerificationStatus?: Prisma.SortOrder
+  idVerifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  idVerifiedBy?: Prisma.SortOrderInput | Prisma.SortOrder
+  idRejectionReason?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
@@ -250,7 +277,10 @@ export type UserProfileWhereUniqueInput = Prisma.AtLeast<{
   city?: Prisma.StringNullableFilter<"UserProfile"> | string | null
   country?: Prisma.StringNullableFilter<"UserProfile"> | string | null
   idDocumentUrl?: Prisma.StringNullableFilter<"UserProfile"> | string | null
-  idVerified?: Prisma.BoolFilter<"UserProfile"> | boolean
+  idVerificationStatus?: Prisma.StringFilter<"UserProfile"> | string
+  idVerifiedAt?: Prisma.DateTimeNullableFilter<"UserProfile"> | Date | string | null
+  idVerifiedBy?: Prisma.StringNullableFilter<"UserProfile"> | string | null
+  idRejectionReason?: Prisma.StringNullableFilter<"UserProfile"> | string | null
   createdAt?: Prisma.DateTimeFilter<"UserProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"UserProfile"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -264,7 +294,10 @@ export type UserProfileOrderByWithAggregationInput = {
   city?: Prisma.SortOrderInput | Prisma.SortOrder
   country?: Prisma.SortOrderInput | Prisma.SortOrder
   idDocumentUrl?: Prisma.SortOrderInput | Prisma.SortOrder
-  idVerified?: Prisma.SortOrder
+  idVerificationStatus?: Prisma.SortOrder
+  idVerifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  idVerifiedBy?: Prisma.SortOrderInput | Prisma.SortOrder
+  idRejectionReason?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.UserProfileCountOrderByAggregateInput
@@ -283,7 +316,10 @@ export type UserProfileScalarWhereWithAggregatesInput = {
   city?: Prisma.StringNullableWithAggregatesFilter<"UserProfile"> | string | null
   country?: Prisma.StringNullableWithAggregatesFilter<"UserProfile"> | string | null
   idDocumentUrl?: Prisma.StringNullableWithAggregatesFilter<"UserProfile"> | string | null
-  idVerified?: Prisma.BoolWithAggregatesFilter<"UserProfile"> | boolean
+  idVerificationStatus?: Prisma.StringWithAggregatesFilter<"UserProfile"> | string
+  idVerifiedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"UserProfile"> | Date | string | null
+  idVerifiedBy?: Prisma.StringNullableWithAggregatesFilter<"UserProfile"> | string | null
+  idRejectionReason?: Prisma.StringNullableWithAggregatesFilter<"UserProfile"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"UserProfile"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"UserProfile"> | Date | string
 }
@@ -295,7 +331,10 @@ export type UserProfileCreateInput = {
   city?: string | null
   country?: string | null
   idDocumentUrl?: string | null
-  idVerified?: boolean
+  idVerificationStatus?: string
+  idVerifiedAt?: Date | string | null
+  idVerifiedBy?: string | null
+  idRejectionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutProfileInput
@@ -309,7 +348,10 @@ export type UserProfileUncheckedCreateInput = {
   city?: string | null
   country?: string | null
   idDocumentUrl?: string | null
-  idVerified?: boolean
+  idVerificationStatus?: string
+  idVerifiedAt?: Date | string | null
+  idVerifiedBy?: string | null
+  idRejectionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -321,7 +363,10 @@ export type UserProfileUpdateInput = {
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idDocumentUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  idVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  idVerificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  idVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  idVerifiedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutProfileNestedInput
@@ -335,7 +380,10 @@ export type UserProfileUncheckedUpdateInput = {
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idDocumentUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  idVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  idVerificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  idVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  idVerifiedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -348,7 +396,10 @@ export type UserProfileCreateManyInput = {
   city?: string | null
   country?: string | null
   idDocumentUrl?: string | null
-  idVerified?: boolean
+  idVerificationStatus?: string
+  idVerifiedAt?: Date | string | null
+  idVerifiedBy?: string | null
+  idRejectionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -360,7 +411,10 @@ export type UserProfileUpdateManyMutationInput = {
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idDocumentUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  idVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  idVerificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  idVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  idVerifiedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -373,7 +427,10 @@ export type UserProfileUncheckedUpdateManyInput = {
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idDocumentUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  idVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  idVerificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  idVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  idVerifiedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -391,7 +448,10 @@ export type UserProfileCountOrderByAggregateInput = {
   city?: Prisma.SortOrder
   country?: Prisma.SortOrder
   idDocumentUrl?: Prisma.SortOrder
-  idVerified?: Prisma.SortOrder
+  idVerificationStatus?: Prisma.SortOrder
+  idVerifiedAt?: Prisma.SortOrder
+  idVerifiedBy?: Prisma.SortOrder
+  idRejectionReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -404,7 +464,10 @@ export type UserProfileMaxOrderByAggregateInput = {
   city?: Prisma.SortOrder
   country?: Prisma.SortOrder
   idDocumentUrl?: Prisma.SortOrder
-  idVerified?: Prisma.SortOrder
+  idVerificationStatus?: Prisma.SortOrder
+  idVerifiedAt?: Prisma.SortOrder
+  idVerifiedBy?: Prisma.SortOrder
+  idRejectionReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -417,7 +480,10 @@ export type UserProfileMinOrderByAggregateInput = {
   city?: Prisma.SortOrder
   country?: Prisma.SortOrder
   idDocumentUrl?: Prisma.SortOrder
-  idVerified?: Prisma.SortOrder
+  idVerificationStatus?: Prisma.SortOrder
+  idVerifiedAt?: Prisma.SortOrder
+  idVerifiedBy?: Prisma.SortOrder
+  idRejectionReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -461,7 +527,10 @@ export type UserProfileCreateWithoutUserInput = {
   city?: string | null
   country?: string | null
   idDocumentUrl?: string | null
-  idVerified?: boolean
+  idVerificationStatus?: string
+  idVerifiedAt?: Date | string | null
+  idVerifiedBy?: string | null
+  idRejectionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -473,7 +542,10 @@ export type UserProfileUncheckedCreateWithoutUserInput = {
   city?: string | null
   country?: string | null
   idDocumentUrl?: string | null
-  idVerified?: boolean
+  idVerificationStatus?: string
+  idVerifiedAt?: Date | string | null
+  idVerifiedBy?: string | null
+  idRejectionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -501,7 +573,10 @@ export type UserProfileUpdateWithoutUserInput = {
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idDocumentUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  idVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  idVerificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  idVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  idVerifiedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -513,7 +588,10 @@ export type UserProfileUncheckedUpdateWithoutUserInput = {
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   idDocumentUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  idVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  idVerificationStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  idVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  idVerifiedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idRejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -528,7 +606,10 @@ export type UserProfileSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   city?: boolean
   country?: boolean
   idDocumentUrl?: boolean
-  idVerified?: boolean
+  idVerificationStatus?: boolean
+  idVerifiedAt?: boolean
+  idVerifiedBy?: boolean
+  idRejectionReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -542,7 +623,10 @@ export type UserProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   city?: boolean
   country?: boolean
   idDocumentUrl?: boolean
-  idVerified?: boolean
+  idVerificationStatus?: boolean
+  idVerifiedAt?: boolean
+  idVerifiedBy?: boolean
+  idRejectionReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -556,7 +640,10 @@ export type UserProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   city?: boolean
   country?: boolean
   idDocumentUrl?: boolean
-  idVerified?: boolean
+  idVerificationStatus?: boolean
+  idVerifiedAt?: boolean
+  idVerifiedBy?: boolean
+  idRejectionReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -570,12 +657,15 @@ export type UserProfileSelectScalar = {
   city?: boolean
   country?: boolean
   idDocumentUrl?: boolean
-  idVerified?: boolean
+  idVerificationStatus?: boolean
+  idVerifiedAt?: boolean
+  idVerifiedBy?: boolean
+  idRejectionReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type UserProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "avatarUrl" | "address" | "city" | "country" | "idDocumentUrl" | "idVerified" | "createdAt" | "updatedAt", ExtArgs["result"]["userProfile"]>
+export type UserProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "avatarUrl" | "address" | "city" | "country" | "idDocumentUrl" | "idVerificationStatus" | "idVerifiedAt" | "idVerifiedBy" | "idRejectionReason" | "createdAt" | "updatedAt", ExtArgs["result"]["userProfile"]>
 export type UserProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
@@ -599,7 +689,10 @@ export type $UserProfilePayload<ExtArgs extends runtime.Types.Extensions.Interna
     city: string | null
     country: string | null
     idDocumentUrl: string | null
-    idVerified: boolean
+    idVerificationStatus: string
+    idVerifiedAt: Date | null
+    idVerifiedBy: string | null
+    idRejectionReason: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["userProfile"]>
@@ -1033,7 +1126,10 @@ export interface UserProfileFieldRefs {
   readonly city: Prisma.FieldRef<"UserProfile", 'String'>
   readonly country: Prisma.FieldRef<"UserProfile", 'String'>
   readonly idDocumentUrl: Prisma.FieldRef<"UserProfile", 'String'>
-  readonly idVerified: Prisma.FieldRef<"UserProfile", 'Boolean'>
+  readonly idVerificationStatus: Prisma.FieldRef<"UserProfile", 'String'>
+  readonly idVerifiedAt: Prisma.FieldRef<"UserProfile", 'DateTime'>
+  readonly idVerifiedBy: Prisma.FieldRef<"UserProfile", 'String'>
+  readonly idRejectionReason: Prisma.FieldRef<"UserProfile", 'String'>
   readonly createdAt: Prisma.FieldRef<"UserProfile", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"UserProfile", 'DateTime'>
 }

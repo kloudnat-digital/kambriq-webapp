@@ -117,6 +117,28 @@ export class KbsCandidateController {
     return this.coursesService.findLessonById(lessonId);
   }
 
+  @Post('lesson/:lessonId/complete')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Mark a lesson as completed',
+    description:
+      'Records that the candidate has finished viewing a lesson. Idempotent. Returns module-level completion progress.',
+  })
+  @ApiParam({ name: 'lessonId', description: 'Lesson ID (CUID)', example: 'clxxxxxxxxxxxxxx' })
+  @ApiResponse({ status: 200, description: 'Lesson marked complete. Returns module progress.' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
+  @ApiResponse({ status: 404, description: 'Lesson not found.' })
+  async markLessonComplete(
+    @CurrentUser() user: RequestUser,
+    @Param('lessonId') lessonId: string,
+  ) {
+    const candidate = await this.candidatesService.findByUserId(user.id);
+    if (!candidate) {
+      return { lessonId, completed: true }; // Not enrolled — still record nothing, just OK
+    }
+    return this.coursesService.markLessonComplete(candidate.id, lessonId);
+  }
+
   @Get('modules/:moduleId/quiz')
   @ApiOperation({
     summary: 'Get the quiz for a module',

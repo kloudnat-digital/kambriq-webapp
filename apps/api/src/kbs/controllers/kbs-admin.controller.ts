@@ -51,7 +51,10 @@ import {
   CandidateFilterDto,
   UpdateCandidateStatusDto,
 } from '../candidates/dto/candidate.dto';
-import { IssueCertificateDto } from '../certificates/dto/certificate.dto';
+import {
+  IssueCertificateDto,
+  RevokeCertificateDto,
+} from '../certificates/dto/certificate.dto';
 
 @ApiTags('KBS - Admin')
 @ApiBearerAuth()
@@ -147,8 +150,6 @@ export class KbsAdminController {
     return this.coursesService.deleteCourse(id);
   }
 
-  // ─── Modules ───────────────────────────────────────────────────────────────
-
   @Post('modules')
   @ApiOperation({
     summary: 'Create a module within a course',
@@ -221,8 +222,6 @@ export class KbsAdminController {
     return this.coursesService.deleteModule(id);
   }
 
-  // ─── Lessons ───────────────────────────────────────────────────────────────
-
   @Post('lessons')
   @ApiOperation({
     summary: 'Create a lesson within a module',
@@ -276,8 +275,6 @@ export class KbsAdminController {
   async deleteLesson(@Param('id') id: string) {
     return this.coursesService.deleteLesson(id);
   }
-
-  // ─── Module Quiz Questions ──────────────────────────────────────────────────
 
   @Get('modules/:moduleId/questions')
   @ApiOperation({
@@ -362,8 +359,6 @@ export class KbsAdminController {
     return this.coursesService.deleteQuestion(id);
   }
 
-  // ─── Exam Question Pool ────────────────────────────────────────────────────
-
   @Get('exam-questions')
   @ApiOperation({
     summary: 'List all exam pool questions (with correct answers)',
@@ -440,8 +435,6 @@ export class KbsAdminController {
     return this.examService.deleteExamQuestion(id);
   }
 
-  // ─── Storage ───────────────────────────────────────────────────────────────
-
   @Post('upload-url')
   @ApiOperation({
     summary: 'Get a presigned S3 URL for lesson content upload',
@@ -459,8 +452,6 @@ export class KbsAdminController {
   async getUploadUrl(@Body() dto: GetUploadUrlDto) {
     return this.coursesService.getUploadUrl(dto);
   }
-
-  // ─── Candidates ────────────────────────────────────────────────────────────
 
   @Get('candidates')
   @ApiOperation({
@@ -559,8 +550,6 @@ export class KbsAdminController {
     return this.examService.resetAttempts(candidateId);
   }
 
-  // ─── Exams ─────────────────────────────────────────────────────────────────
-
   @Get('exams')
   @ApiOperation({
     summary: 'List all exam sessions',
@@ -617,8 +606,6 @@ export class KbsAdminController {
     return this.examService.cancelExam(id, dto);
   }
 
-  // ─── Certificates ──────────────────────────────────────────────────────────
-
   @Post('certificates/:candidateId')
   @ApiOperation({
     summary: 'Issue a KCA certificate to a candidate',
@@ -652,6 +639,34 @@ export class KbsAdminController {
     @Body() dto: IssueCertificateDto,
   ) {
     return this.certificatesService.issueCertificate(
+      candidateId,
+      admin.id,
+      dto,
+    );
+  }
+
+  @Patch('certificates/:candidateId/revoke')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Revoke a KCA certificate',
+    description:
+      'Marks a certificate as revoked with a mandatory reason. Removes the KCA_CERTIFIED role from the user and resets the candidate status to EXAM_PENDING.',
+  })
+  @ApiParam({ name: 'candidateId', description: 'Candidate ID (CUID)' })
+  @ApiResponse({ status: 200, description: 'Certificate revoked.' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions.' })
+  @ApiResponse({
+    status: 404,
+    description: 'Candidate or certificate not found.',
+  })
+  @ApiResponse({ status: 409, description: 'Certificate already revoked.' })
+  async revokeCertificate(
+    @Param('candidateId') candidateId: string,
+    @CurrentUser() admin: RequestUser,
+    @Body() dto: RevokeCertificateDto,
+  ) {
+    return this.certificatesService.revokeCertificate(
       candidateId,
       admin.id,
       dto,

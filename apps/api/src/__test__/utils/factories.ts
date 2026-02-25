@@ -7,7 +7,7 @@
  */
 
 let userIdCounter = 1;
-const id = () => `cuid-${userIdCounter++}`;
+const id = () => `uuid-${userIdCounter++}`;
 
 // ----- Core Entities ----- //
 
@@ -21,6 +21,7 @@ export const buildUser = (overrides: Record<string, unknown> = {}) => ({
   isActive: true,
   emailVerified: false,
   preferredLanguage: 'fr',
+  pendingEmail: null,
   loginAttempts: 0,
   lockedUntil: null,
   deletedAt: null,
@@ -184,6 +185,9 @@ export const buildCertificate = (overrides: Record<string, unknown> = {}) => ({
   validUntil: new Date('2027-06-01'),
   pdfUrl: null,
   issuedBy: id(),
+  revokedAt: null,
+  revokedBy: null,
+  revokeReason: null,
   createdAt: new Date('2025-06-01'),
   ...overrides,
 });

@@ -160,14 +160,27 @@ export class KbsExamService {
         answers: this.shuffle(q.answers),
       }));
 
+    const startedAt = new Date();
     await this.prisma.kbsExam.update({
       where: { id: exam.id },
       data: {
         status: ExamStatus.IN_PROGRESS,
-        startedAt: new Date(),
+        startedAt,
         totalQuestions: shuffled.length,
       },
     });
+
+    // Schedule auto-expiry job — fires when the exam duration elapses.
+    // The processor will force-submit and grade the exam if it is still IN_PROGRESS.
+    const delayMs = exam.durationMinutes * 60_000;
+    await this.kbsQueue.add(
+      KBS_JOBS.EXPIRE_EXAM,
+      { examId: exam.id, candidateId: candidate.id, userId: candidate.userId },
+      {
+        jobId: `expire-exam-${exam.id}`,
+        delay: delayMs,
+      },
+    );
 
     this.logger.log('Exam started', {
       examId: exam.id,
@@ -178,8 +191,8 @@ export class KbsExamService {
       examId: exam.id,
       durationMinutes: exam.durationMinutes,
       totalQuestions: shuffled.length,
-      startedAt: new Date(),
-      expiresAt: new Date(Date.now() + exam.durationMinutes * 60000),
+      startedAt,
+      expiresAt: new Date(startedAt.getTime() + delayMs),
       questions: shuffled,
     };
   }

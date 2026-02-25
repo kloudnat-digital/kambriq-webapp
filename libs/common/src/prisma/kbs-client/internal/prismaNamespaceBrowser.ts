@@ -54,6 +54,7 @@ export const ModelName = {
   KbsCourse: 'KbsCourse',
   KbsModule: 'KbsModule',
   KbsLesson: 'KbsLesson',
+  KbsLessonCompletion: 'KbsLessonCompletion',
   KbsQuestion: 'KbsQuestion',
   KbsAnswer: 'KbsAnswer',
   KbsExamQuestion: 'KbsExamQuestion',
@@ -90,6 +91,7 @@ export const KbsCourseScalarFieldEnum = {
   slug: 'slug',
   language: 'language',
   isPublished: 'isPublished',
+  duration: 'duration',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -123,6 +125,16 @@ export const KbsLessonScalarFieldEnum = {
 } as const
 
 export type KbsLessonScalarFieldEnum = (typeof KbsLessonScalarFieldEnum)[keyof typeof KbsLessonScalarFieldEnum]
+
+
+export const KbsLessonCompletionScalarFieldEnum = {
+  id: 'id',
+  candidateId: 'candidateId',
+  lessonId: 'lessonId',
+  completedAt: 'completedAt'
+} as const
+
+export type KbsLessonCompletionScalarFieldEnum = (typeof KbsLessonCompletionScalarFieldEnum)[keyof typeof KbsLessonCompletionScalarFieldEnum]
 
 
 export const KbsQuestionScalarFieldEnum = {
@@ -196,6 +208,7 @@ export const KbsCandidateProgressScalarFieldEnum = {
   moduleId: 'moduleId',
   score: 'score',
   passed: 'passed',
+  attempts: 'attempts',
   completedAt: 'completedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -254,6 +267,7 @@ export const KbsSettingsScalarFieldEnum = {
   id: 'id',
   examQuestionCount: 'examQuestionCount',
   quizQuestionCount: 'quizQuestionCount',
+  quizMaxAttempts: 'quizMaxAttempts',
   updatedAt: 'updatedAt'
 } as const
 
@@ -268,6 +282,9 @@ export const KbsCertificateScalarFieldEnum = {
   validUntil: 'validUntil',
   pdfUrl: 'pdfUrl',
   issuedBy: 'issuedBy',
+  revokedAt: 'revokedAt',
+  revokedBy: 'revokedBy',
+  revokeReason: 'revokeReason',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

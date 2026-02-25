@@ -1,22 +1,22 @@
 # ----- KAMBRIQ Local Development Stack -----
 
-# Usage:
-# npm run docker:dev        → Start all services in the background
-# npm run docker:dev:down   → Stop all services (keeps volumes)
-# npm run docker:dev:reset  → Stop and delete all volumes (fresh start)
-# npm run docker:dev:logs   → Tail logs from all services
+# First-time setup (run once after cloning):
+#   npm run docker:dev:init        → Start services + apply all migrations + seed data
 #
-# After starting, you can:
-# -- Connect to Postgres at localhost:5432 (user: postgres, password: password)
-#    - Core DB: kambriq_core
-#    - KBS DB:  kambriq_kbs
-# -- Open pgAdmin at http://localhost:5050 (admin@kambriq.com / admin)
-# -- Connect to Redis at localhost:6379
+# Regular usage:
+#   npm run docker:dev             → Start services (data already present from previous run)
+#   npm run docker:down            → Stop services (volumes preserved)
+#   npm run docker:dev:reset       → Stop + wipe all volumes (clean slate)
+#   npm run docker:dev:logs        → Tail logs from all services
 #
-# IMPORTANT: init.sql only runs on the first startup (empty data directory).
-# If you need to recreate the databases, run: npm run docker:dev:reset
+# Services:
+#   PostgreSQL 16  → localhost:5432  (postgres / password)
+#     Databases: kambriq_core  kambriq_kbs  kambriq_kamnet  kambriq_lands
+#   Redis 7        → localhost:6379
+#   pgAdmin 4      → http://localhost:5050  (admin@kambriq.com / admin)
 #
-# Note: The API itself runs on your host machine (npm run dev), NOT in Docker.
+# NOTE: init.sql runs only on first startup (empty pgdata volume).
+# To reset completely: npm run docker:dev:reset && npm run docker:dev:init
 
 services:
   # ----- PostgreSQL 16 -----
@@ -27,11 +27,12 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: kambriq_core # Auto-creates the core database
+      POSTGRES_DB: kambriq_core
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s

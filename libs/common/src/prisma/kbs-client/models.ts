@@ -11,6 +11,7 @@
 export type * from './models/KbsCourse'
 export type * from './models/KbsModule'
 export type * from './models/KbsLesson'
+export type * from './models/KbsLessonCompletion'
 export type * from './models/KbsQuestion'
 export type * from './models/KbsAnswer'
 export type * from './models/KbsExamQuestion'

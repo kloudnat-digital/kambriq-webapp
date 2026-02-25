@@ -20,8 +20,18 @@ export type KbsCourseModel = runtime.Types.Result.DefaultSelection<Prisma.$KbsCo
 
 export type AggregateKbsCourse = {
   _count: KbsCourseCountAggregateOutputType | null
+  _avg: KbsCourseAvgAggregateOutputType | null
+  _sum: KbsCourseSumAggregateOutputType | null
   _min: KbsCourseMinAggregateOutputType | null
   _max: KbsCourseMaxAggregateOutputType | null
+}
+
+export type KbsCourseAvgAggregateOutputType = {
+  duration: number | null
+}
+
+export type KbsCourseSumAggregateOutputType = {
+  duration: number | null
 }
 
 export type KbsCourseMinAggregateOutputType = {
@@ -31,6 +41,7 @@ export type KbsCourseMinAggregateOutputType = {
   slug: string | null
   language: string | null
   isPublished: boolean | null
+  duration: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -42,6 +53,7 @@ export type KbsCourseMaxAggregateOutputType = {
   slug: string | null
   language: string | null
   isPublished: boolean | null
+  duration: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -53,11 +65,20 @@ export type KbsCourseCountAggregateOutputType = {
   slug: number
   language: number
   isPublished: number
+  duration: number
   createdAt: number
   updatedAt: number
   _all: number
 }
 
+
+export type KbsCourseAvgAggregateInputType = {
+  duration?: true
+}
+
+export type KbsCourseSumAggregateInputType = {
+  duration?: true
+}
 
 export type KbsCourseMinAggregateInputType = {
   id?: true
@@ -66,6 +87,7 @@ export type KbsCourseMinAggregateInputType = {
   slug?: true
   language?: true
   isPublished?: true
+  duration?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -77,6 +99,7 @@ export type KbsCourseMaxAggregateInputType = {
   slug?: true
   language?: true
   isPublished?: true
+  duration?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -88,6 +111,7 @@ export type KbsCourseCountAggregateInputType = {
   slug?: true
   language?: true
   isPublished?: true
+  duration?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -131,6 +155,18 @@ export type KbsCourseAggregateArgs<ExtArgs extends runtime.Types.Extensions.Inte
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: KbsCourseAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: KbsCourseSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: KbsCourseMinAggregateInputType
@@ -161,6 +197,8 @@ export type KbsCourseGroupByArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   _count?: KbsCourseCountAggregateInputType | true
+  _avg?: KbsCourseAvgAggregateInputType
+  _sum?: KbsCourseSumAggregateInputType
   _min?: KbsCourseMinAggregateInputType
   _max?: KbsCourseMaxAggregateInputType
 }
@@ -172,9 +210,12 @@ export type KbsCourseGroupByOutputType = {
   slug: string | null
   language: string | null
   isPublished: boolean
+  duration: number | null
   createdAt: Date
   updatedAt: Date
   _count: KbsCourseCountAggregateOutputType | null
+  _avg: KbsCourseAvgAggregateOutputType | null
+  _sum: KbsCourseSumAggregateOutputType | null
   _min: KbsCourseMinAggregateOutputType | null
   _max: KbsCourseMaxAggregateOutputType | null
 }
@@ -204,6 +245,7 @@ export type KbsCourseWhereInput = {
   slug?: Prisma.StringNullableFilter<"KbsCourse"> | string | null
   language?: Prisma.StringNullableFilter<"KbsCourse"> | string | null
   isPublished?: Prisma.BoolFilter<"KbsCourse"> | boolean
+  duration?: Prisma.IntNullableFilter<"KbsCourse"> | number | null
   createdAt?: Prisma.DateTimeFilter<"KbsCourse"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"KbsCourse"> | Date | string
   modules?: Prisma.KbsModuleListRelationFilter
@@ -216,6 +258,7 @@ export type KbsCourseOrderByWithRelationInput = {
   slug?: Prisma.SortOrderInput | Prisma.SortOrder
   language?: Prisma.SortOrderInput | Prisma.SortOrder
   isPublished?: Prisma.SortOrder
+  duration?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   modules?: Prisma.KbsModuleOrderByRelationAggregateInput
@@ -231,6 +274,7 @@ export type KbsCourseWhereUniqueInput = Prisma.AtLeast<{
   slug?: Prisma.StringNullableFilter<"KbsCourse"> | string | null
   language?: Prisma.StringNullableFilter<"KbsCourse"> | string | null
   isPublished?: Prisma.BoolFilter<"KbsCourse"> | boolean
+  duration?: Prisma.IntNullableFilter<"KbsCourse"> | number | null
   createdAt?: Prisma.DateTimeFilter<"KbsCourse"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"KbsCourse"> | Date | string
   modules?: Prisma.KbsModuleListRelationFilter
@@ -243,11 +287,14 @@ export type KbsCourseOrderByWithAggregationInput = {
   slug?: Prisma.SortOrderInput | Prisma.SortOrder
   language?: Prisma.SortOrderInput | Prisma.SortOrder
   isPublished?: Prisma.SortOrder
+  duration?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.KbsCourseCountOrderByAggregateInput
+  _avg?: Prisma.KbsCourseAvgOrderByAggregateInput
   _max?: Prisma.KbsCourseMaxOrderByAggregateInput
   _min?: Prisma.KbsCourseMinOrderByAggregateInput
+  _sum?: Prisma.KbsCourseSumOrderByAggregateInput
 }
 
 export type KbsCourseScalarWhereWithAggregatesInput = {
@@ -260,6 +307,7 @@ export type KbsCourseScalarWhereWithAggregatesInput = {
   slug?: Prisma.StringNullableWithAggregatesFilter<"KbsCourse"> | string | null
   language?: Prisma.StringNullableWithAggregatesFilter<"KbsCourse"> | string | null
   isPublished?: Prisma.BoolWithAggregatesFilter<"KbsCourse"> | boolean
+  duration?: Prisma.IntNullableWithAggregatesFilter<"KbsCourse"> | number | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"KbsCourse"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"KbsCourse"> | Date | string
 }
@@ -271,6 +319,7 @@ export type KbsCourseCreateInput = {
   slug?: string | null
   language?: string | null
   isPublished?: boolean
+  duration?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   modules?: Prisma.KbsModuleCreateNestedManyWithoutCourseInput
@@ -283,6 +332,7 @@ export type KbsCourseUncheckedCreateInput = {
   slug?: string | null
   language?: string | null
   isPublished?: boolean
+  duration?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   modules?: Prisma.KbsModuleUncheckedCreateNestedManyWithoutCourseInput
@@ -295,6 +345,7 @@ export type KbsCourseUpdateInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   language?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   modules?: Prisma.KbsModuleUpdateManyWithoutCourseNestedInput
@@ -307,6 +358,7 @@ export type KbsCourseUncheckedUpdateInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   language?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   modules?: Prisma.KbsModuleUncheckedUpdateManyWithoutCourseNestedInput
@@ -319,6 +371,7 @@ export type KbsCourseCreateManyInput = {
   slug?: string | null
   language?: string | null
   isPublished?: boolean
+  duration?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -330,6 +383,7 @@ export type KbsCourseUpdateManyMutationInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   language?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -341,6 +395,7 @@ export type KbsCourseUncheckedUpdateManyInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   language?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -352,8 +407,13 @@ export type KbsCourseCountOrderByAggregateInput = {
   slug?: Prisma.SortOrder
   language?: Prisma.SortOrder
   isPublished?: Prisma.SortOrder
+  duration?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type KbsCourseAvgOrderByAggregateInput = {
+  duration?: Prisma.SortOrder
 }
 
 export type KbsCourseMaxOrderByAggregateInput = {
@@ -363,6 +423,7 @@ export type KbsCourseMaxOrderByAggregateInput = {
   slug?: Prisma.SortOrder
   language?: Prisma.SortOrder
   isPublished?: Prisma.SortOrder
+  duration?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -374,8 +435,13 @@ export type KbsCourseMinOrderByAggregateInput = {
   slug?: Prisma.SortOrder
   language?: Prisma.SortOrder
   isPublished?: Prisma.SortOrder
+  duration?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type KbsCourseSumOrderByAggregateInput = {
+  duration?: Prisma.SortOrder
 }
 
 export type KbsCourseScalarRelationFilter = {
@@ -393,6 +459,14 @@ export type NullableStringFieldUpdateOperationsInput = {
 
 export type BoolFieldUpdateOperationsInput = {
   set?: boolean
+}
+
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type DateTimeFieldUpdateOperationsInput = {
@@ -420,6 +494,7 @@ export type KbsCourseCreateWithoutModulesInput = {
   slug?: string | null
   language?: string | null
   isPublished?: boolean
+  duration?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -431,6 +506,7 @@ export type KbsCourseUncheckedCreateWithoutModulesInput = {
   slug?: string | null
   language?: string | null
   isPublished?: boolean
+  duration?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -458,6 +534,7 @@ export type KbsCourseUpdateWithoutModulesInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   language?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -469,6 +546,7 @@ export type KbsCourseUncheckedUpdateWithoutModulesInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   language?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  duration?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -511,6 +589,7 @@ export type KbsCourseSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   slug?: boolean
   language?: boolean
   isPublished?: boolean
+  duration?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   modules?: boolean | Prisma.KbsCourse$modulesArgs<ExtArgs>
@@ -524,6 +603,7 @@ export type KbsCourseSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   slug?: boolean
   language?: boolean
   isPublished?: boolean
+  duration?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["kbsCourse"]>
@@ -535,6 +615,7 @@ export type KbsCourseSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   slug?: boolean
   language?: boolean
   isPublished?: boolean
+  duration?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["kbsCourse"]>
@@ -546,11 +627,12 @@ export type KbsCourseSelectScalar = {
   slug?: boolean
   language?: boolean
   isPublished?: boolean
+  duration?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type KbsCourseOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "description" | "slug" | "language" | "isPublished" | "createdAt" | "updatedAt", ExtArgs["result"]["kbsCourse"]>
+export type KbsCourseOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "description" | "slug" | "language" | "isPublished" | "duration" | "createdAt" | "updatedAt", ExtArgs["result"]["kbsCourse"]>
 export type KbsCourseInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   modules?: boolean | Prisma.KbsCourse$modulesArgs<ExtArgs>
   _count?: boolean | Prisma.KbsCourseCountOutputTypeDefaultArgs<ExtArgs>
@@ -570,6 +652,7 @@ export type $KbsCoursePayload<ExtArgs extends runtime.Types.Extensions.InternalA
     slug: string | null
     language: string | null
     isPublished: boolean
+    duration: number | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["kbsCourse"]>
@@ -1002,6 +1085,7 @@ export interface KbsCourseFieldRefs {
   readonly slug: Prisma.FieldRef<"KbsCourse", 'String'>
   readonly language: Prisma.FieldRef<"KbsCourse", 'String'>
   readonly isPublished: Prisma.FieldRef<"KbsCourse", 'Boolean'>
+  readonly duration: Prisma.FieldRef<"KbsCourse", 'Int'>
   readonly createdAt: Prisma.FieldRef<"KbsCourse", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"KbsCourse", 'DateTime'>
 }

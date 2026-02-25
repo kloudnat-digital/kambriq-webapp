@@ -1,0 +1,54 @@
+{
+  "application": {
+    "submitted": "Votre demande d'adhésion KAMNET a été soumise avec succès",
+    "alreadyExists": "Vous avez déjà une demande KAMNET en attente ou approuvée",
+    "notFound": "Demande introuvable",
+    "notPending": "Cette demande n'est pas en attente de traitement",
+    "invalidKca": "Votre certificat KCA est invalide ou expiré. Veuillez vous assurer d'avoir une certification KBS valide.",
+    "approved": "Demande approuvée — bienvenue dans KAMNET !",
+    "rejected": "La demande a été rejetée",
+    "sponsorNotFound": "Parrain avec le code {code} introuvable"
+  },
+  "agent": {
+    "notFound": "Profil agent introuvable",
+    "alreadyExists": "Vous êtes déjà un agent KAMNET",
+    "suspended": "Votre compte agent a été suspendu. Contactez l'administration.",
+    "profileUpdated": "Profil agent mis à jour avec succès",
+    "statusUpdated": "Statut de l'agent mis à jour à {status}",
+    "suspendSuccess": "L'agent a été suspendu",
+    "reactivateSuccess": "L'agent a été réactivé",
+    "alreadySuspended": "Cet agent est déjà suspendu",
+    "notSuspended": "Cet agent n'est pas suspendu",
+    "codeGenerated": "Code agent : {code}"
+  },
+  "lead": {
+    "created": "Prospect créé avec succès",
+    "notFound": "Prospect introuvable",
+    "updated": "Prospect mis à jour avec succès",
+    "deleted": "Prospect supprimé avec succès",
+    "invalidTransition": "Impossible de passer le prospect de {from} à {to}",
+    "notOwner": "Vous ne pouvez gérer que vos propres prospects"
+  },
+  "reservation": {
+    "created": "Terrain réservé avec succès pour {clientName}",
+    "notFound": "Réservation introuvable",
+    "landNotAvailable": "Ce terrain n'est pas disponible à la réservation",
+    "alreadyReserved": "Ce terrain est déjà réservé",
+    "downPaymentConfirmed": "Acompte confirmé pour la réservation {id}",
+    "completed": "Réservation terminée — vente finalisée",
+    "cancelled": "La réservation a été annulée",
+    "notPending": "Cette réservation n'est pas en attente",
+    "notConfirmed": "Cette réservation n'a pas encore été confirmée",
+    "notOwner": "Vous ne pouvez gérer que vos propres réservations"
+  },
+  "commission": {
+    "created": "Enregistrement de commission créé",
+    "notFound": "Enregistrement de commission introuvable",
+    "invalidStatusTransition": "Impossible de faire passer la commission de {from} à {to}",
+    "validated": "Commission validée",
+    "paid": "Commission marquée comme payée"
+  },
+  "network": {
+    "treeLoaded": "Arbre de parrainage chargé ({count} filleuls)"
+  }
+}

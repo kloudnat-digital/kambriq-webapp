@@ -1,0 +1,202 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../../libs/common/src/prisma/lands-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum LandLabelCodes {
+  TDT
+  VEFL
+  VEFIL
+}
+
+enum LandStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  ARCHIVED
+}
+
+enum LandOwnerType {
+  PARTNER
+  KAMBRIQ
+}
+
+enum LandMediaType {
+  IMAGE
+  VIDEO
+  MAP
+}
+
+enum LandDocumentType {
+  TITLE_DEED
+  SURVEY
+  PERMIT
+  RECEIPT
+  OTHER
+}
+
+enum LandReservationStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+// ----- LANDS Module ----- //
+/**
+* Classification of land titles
+* TDT = Titre Définitif de Terrain
+* VEFL = Vente d'un Expace de terrain Fiable et Loti
+* VEFIL = Vente d'un Expace de terrain Fiable Immatriculé et Loti
+*/
+model LandLabel {
+  id          String          @id @default(uuid())
+  code        LandLabelCodes  @unique
+  name        String
+  description String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  lands       Land[]
+}
+
+// ----- Land (Parcel) ----- //
+/**
+* The core product. Each land is a verified, titled parcel
+* available for sale through KAMNET agents.
+*/
+model Land {
+  id            String              @id @default(uuid())
+  title         String              // Display name (e.g. "Parcelle Douala 1")
+  slug          String              @unique // URL-friendly identifier (e.g. "parcelle-douala-1")
+  description   String              // Rich text description of the land
+  region        String              // Administrative region (e.g. "Littoral")
+  city          String?             // City or locality (e.g. "Douala")
+  neighborhood  String?             // Neighborhood or district (e.g. "Bonapriso")
+  latitude      Float?              // Geographical coordinates for map display
+  longitude     Float?              // Geographical coordinates for map display
+  sizeM2        Float               // Size of the land in square meters
+  price         Float               // Price in XAF
+  labelId       String              // Foreign key to LandLabel
+  status        LandStatus          @default(AVAILABLE)
+  isPublished   Boolean             @default(false) // Whether the land is visible to clients
+
+  pv            Float               @default(1.0) // Point Valeur (02-1.2)  Commission coefficient for agents
+  ownerType     LandOwnerType       @default(KAMBRIQ)
+  partnerId     String?             // External partner ID (if ownerType = PARTNER)
+
+  isVerified    Boolean             @default(false)
+  verifiedAt    DateTime?
+  verificationRef String?           // Reference to VERIFY module's verification ID
+
+  titleNumber  String?              @unique // Numéro de titre foncier
+  surfaceTitle Int?                 // Surface title as mention in the document
+
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  label         LandLabel           @relation(fields: [labelId], references: [id])
+  media         LandMedia[]
+  documents     LandDocument[]
+  reservations  LandReservation[]   // Relation to KAMNET reservations
+  priceHistory  LandPriceHistory[]
+
+  @@index([status])
+  @@index([region])
+  @@index([labelId])
+  @@index([price])
+}
+
+// ----- Land Media ----- //
+/**
+* Public images (photos, satellite views, maps) for a land.
+*/
+model LandMedia {
+  id          String          @id @default(uuid())
+  landId      String
+  type        LandMediaType   // IMAGE | VIDEO | MAP
+  url         String          // S3 key
+  caption     String?         // Optional descriotion
+  order       Int             @default(0) // For ordering media items (0 = primary/cover)
+  createdAt   DateTime        @default(now())
+
+  land        Land            @relation(fields: [landId], references: [id])
+
+  @@index([landId])
+}
+
+
+// ----- Land Documents ----- //
+/**
+* Private legal/administrative documents (deeds, surveys, title scans).
+* Only visible to admins, partners, and the purchasing client.
+*/
+model LandDocument {
+  id            String             @id @default(uuid())
+  landId        String
+  type          LandDocumentType   // TITLE_DEED | SURVEY | PERMIT | RECEIPT | OTHER
+  name          String             // Display name (e.g. "Certificat de propriété")
+  url           String             // S3 key
+  uploadedBy    String             // User ID of uploader (admin or agent)
+  isPrivate     Boolean            @default(true) // Whether the document is private (only visible to admin/partner/client)
+  createdAt     DateTime           @default(now())
+
+  land          Land               @relation(fields: [landId], references: [id])
+
+  @@index([landId])
+}
+
+// ----- Land Documents ----- //
+/**
+* Created when an agent reserves a land for a client.
+* Only one active reservation per land (enforced by unique constraint).
+*/
+model LandReservation {
+  id                   String                  @id @default(uuid())
+  landId               String
+  agentUserId          String                  // Agent's Core.User ID
+  clientUserId         String?                 // Client's Core.User ID (created on reservation)
+  clientName           String
+  clientEmail          String
+  clientPhone          String?
+  status               LandReservationStatus   @default(PENDING)
+  downPaymentAmount    Float?                  // Down payment amount in XAF (5% of land price)
+  downPaymentConfirmed Boolean                 @default(false) // Whether down payment has been confirmed
+  confirmedBy          String?                 // admin userId who confirmed the down payment
+  confirmedAt          DateTime?
+  completedAt          DateTime?               // When the full sale was completed
+  cancelReason         String?                 // reason for cancellation if status is CANCELLED
+  cancelledAt          DateTime?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+
+  land                 Land                    @relation(fields: [landId], references: [id])
+
+// Only one active (non-cancelled) reservation per land.
+  @@unique([landId])
+  @@index([agentUserId])
+  @@index([status])
+}
+
+// ----- Price History ----- //
+/**
+* Tracks every price change for a land parcel. Created
+* automatically when admin updates the price.
+*/
+model LandPriceHistory {
+  id               String   @id @default(uuid())
+  landId           String
+  previousPrice    Float
+  newPrice         Float
+  changedBy        String   // User ID of admin who made the change
+  reason           String   // Reason for price change
+  changedAt        DateTime @default(now())
+
+  land             Land     @relation(fields: [landId], references: [id])
+
+  @@index([landId])
+}

@@ -387,6 +387,7 @@ export const ModelName = {
   KbsCourse: 'KbsCourse',
   KbsModule: 'KbsModule',
   KbsLesson: 'KbsLesson',
+  KbsLessonCompletion: 'KbsLessonCompletion',
   KbsQuestion: 'KbsQuestion',
   KbsAnswer: 'KbsAnswer',
   KbsExamQuestion: 'KbsExamQuestion',
@@ -413,7 +414,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "kbsCourse" | "kbsModule" | "kbsLesson" | "kbsQuestion" | "kbsAnswer" | "kbsExamQuestion" | "kbsExamQuestionAnswer" | "kbsCandidate" | "kbsCandidateProgress" | "kbsExam" | "kbsExamAnswer" | "kbsExamAnswerSelection" | "kbsSettings" | "kbsCertificate"
+    modelProps: "kbsCourse" | "kbsModule" | "kbsLesson" | "kbsLessonCompletion" | "kbsQuestion" | "kbsAnswer" | "kbsExamQuestion" | "kbsExamQuestionAnswer" | "kbsCandidate" | "kbsCandidateProgress" | "kbsExam" | "kbsExamAnswer" | "kbsExamAnswerSelection" | "kbsSettings" | "kbsCertificate"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -636,6 +637,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.KbsLessonCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.KbsLessonCountAggregateOutputType> | number
+        }
+      }
+    }
+    KbsLessonCompletion: {
+      payload: Prisma.$KbsLessonCompletionPayload<ExtArgs>
+      fields: Prisma.KbsLessonCompletionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.KbsLessonCompletionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KbsLessonCompletionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.KbsLessonCompletionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KbsLessonCompletionPayload>
+        }
+        findFirst: {
+          args: Prisma.KbsLessonCompletionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KbsLessonCompletionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.KbsLessonCompletionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KbsLessonCompletionPayload>
+        }
+        findMany: {
+          args: Prisma.KbsLessonCompletionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KbsLessonCompletionPayload>[]
+        }
+        create: {
+          args: Prisma.KbsLessonCompletionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KbsLessonCompletionPayload>
+        }
+        createMany: {
+          args: Prisma.KbsLessonCompletionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.KbsLessonCompletionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KbsLessonCompletionPayload>[]
+        }
+        delete: {
+          args: Prisma.KbsLessonCompletionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KbsLessonCompletionPayload>
+        }
+        update: {
+          args: Prisma.KbsLessonCompletionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KbsLessonCompletionPayload>
+        }
+        deleteMany: {
+          args: Prisma.KbsLessonCompletionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.KbsLessonCompletionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.KbsLessonCompletionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KbsLessonCompletionPayload>[]
+        }
+        upsert: {
+          args: Prisma.KbsLessonCompletionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KbsLessonCompletionPayload>
+        }
+        aggregate: {
+          args: Prisma.KbsLessonCompletionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateKbsLessonCompletion>
+        }
+        groupBy: {
+          args: Prisma.KbsLessonCompletionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.KbsLessonCompletionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.KbsLessonCompletionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.KbsLessonCompletionCountAggregateOutputType> | number
         }
       }
     }
@@ -1499,6 +1574,7 @@ export const KbsCourseScalarFieldEnum = {
   slug: 'slug',
   language: 'language',
   isPublished: 'isPublished',
+  duration: 'duration',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1532,6 +1608,16 @@ export const KbsLessonScalarFieldEnum = {
 } as const
 
 export type KbsLessonScalarFieldEnum = (typeof KbsLessonScalarFieldEnum)[keyof typeof KbsLessonScalarFieldEnum]
+
+
+export const KbsLessonCompletionScalarFieldEnum = {
+  id: 'id',
+  candidateId: 'candidateId',
+  lessonId: 'lessonId',
+  completedAt: 'completedAt'
+} as const
+
+export type KbsLessonCompletionScalarFieldEnum = (typeof KbsLessonCompletionScalarFieldEnum)[keyof typeof KbsLessonCompletionScalarFieldEnum]
 
 
 export const KbsQuestionScalarFieldEnum = {
@@ -1605,6 +1691,7 @@ export const KbsCandidateProgressScalarFieldEnum = {
   moduleId: 'moduleId',
   score: 'score',
   passed: 'passed',
+  attempts: 'attempts',
   completedAt: 'completedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -1663,6 +1750,7 @@ export const KbsSettingsScalarFieldEnum = {
   id: 'id',
   examQuestionCount: 'examQuestionCount',
   quizQuestionCount: 'quizQuestionCount',
+  quizMaxAttempts: 'quizMaxAttempts',
   updatedAt: 'updatedAt'
 } as const
 
@@ -1677,6 +1765,9 @@ export const KbsCertificateScalarFieldEnum = {
   validUntil: 'validUntil',
   pdfUrl: 'pdfUrl',
   issuedBy: 'issuedBy',
+  revokedAt: 'revokedAt',
+  revokedBy: 'revokedBy',
+  revokeReason: 'revokeReason',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1736,20 +1827,6 @@ export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
- * Reference to a field of type 'DateTime'
- */
-export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
-    
-
-
-/**
- * Reference to a field of type 'DateTime[]'
- */
-export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
-    
-
-
-/**
  * Reference to a field of type 'Int'
  */
 export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
@@ -1760,6 +1837,20 @@ export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'In
  * Reference to a field of type 'Int[]'
  */
 export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime'
+ */
+export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime[]'
+ */
+export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
     
 
 
@@ -1874,6 +1965,7 @@ export type GlobalOmitConfig = {
   kbsCourse?: Prisma.KbsCourseOmit
   kbsModule?: Prisma.KbsModuleOmit
   kbsLesson?: Prisma.KbsLessonOmit
+  kbsLessonCompletion?: Prisma.KbsLessonCompletionOmit
   kbsQuestion?: Prisma.KbsQuestionOmit
   kbsAnswer?: Prisma.KbsAnswerOmit
   kbsExamQuestion?: Prisma.KbsExamQuestionOmit

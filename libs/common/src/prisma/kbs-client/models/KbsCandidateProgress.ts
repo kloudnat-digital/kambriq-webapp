@@ -28,10 +28,12 @@ export type AggregateKbsCandidateProgress = {
 
 export type KbsCandidateProgressAvgAggregateOutputType = {
   score: number | null
+  attempts: number | null
 }
 
 export type KbsCandidateProgressSumAggregateOutputType = {
   score: number | null
+  attempts: number | null
 }
 
 export type KbsCandidateProgressMinAggregateOutputType = {
@@ -40,6 +42,7 @@ export type KbsCandidateProgressMinAggregateOutputType = {
   moduleId: string | null
   score: number | null
   passed: boolean | null
+  attempts: number | null
   completedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -51,6 +54,7 @@ export type KbsCandidateProgressMaxAggregateOutputType = {
   moduleId: string | null
   score: number | null
   passed: boolean | null
+  attempts: number | null
   completedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -62,6 +66,7 @@ export type KbsCandidateProgressCountAggregateOutputType = {
   moduleId: number
   score: number
   passed: number
+  attempts: number
   completedAt: number
   createdAt: number
   updatedAt: number
@@ -71,10 +76,12 @@ export type KbsCandidateProgressCountAggregateOutputType = {
 
 export type KbsCandidateProgressAvgAggregateInputType = {
   score?: true
+  attempts?: true
 }
 
 export type KbsCandidateProgressSumAggregateInputType = {
   score?: true
+  attempts?: true
 }
 
 export type KbsCandidateProgressMinAggregateInputType = {
@@ -83,6 +90,7 @@ export type KbsCandidateProgressMinAggregateInputType = {
   moduleId?: true
   score?: true
   passed?: true
+  attempts?: true
   completedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -94,6 +102,7 @@ export type KbsCandidateProgressMaxAggregateInputType = {
   moduleId?: true
   score?: true
   passed?: true
+  attempts?: true
   completedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -105,6 +114,7 @@ export type KbsCandidateProgressCountAggregateInputType = {
   moduleId?: true
   score?: true
   passed?: true
+  attempts?: true
   completedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -203,6 +213,7 @@ export type KbsCandidateProgressGroupByOutputType = {
   moduleId: string
   score: number | null
   passed: boolean
+  attempts: number
   completedAt: Date | null
   createdAt: Date
   updatedAt: Date
@@ -237,6 +248,7 @@ export type KbsCandidateProgressWhereInput = {
   moduleId?: Prisma.StringFilter<"KbsCandidateProgress"> | string
   score?: Prisma.IntNullableFilter<"KbsCandidateProgress"> | number | null
   passed?: Prisma.BoolFilter<"KbsCandidateProgress"> | boolean
+  attempts?: Prisma.IntFilter<"KbsCandidateProgress"> | number
   completedAt?: Prisma.DateTimeNullableFilter<"KbsCandidateProgress"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"KbsCandidateProgress"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"KbsCandidateProgress"> | Date | string
@@ -250,6 +262,7 @@ export type KbsCandidateProgressOrderByWithRelationInput = {
   moduleId?: Prisma.SortOrder
   score?: Prisma.SortOrderInput | Prisma.SortOrder
   passed?: Prisma.SortOrder
+  attempts?: Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -267,6 +280,7 @@ export type KbsCandidateProgressWhereUniqueInput = Prisma.AtLeast<{
   moduleId?: Prisma.StringFilter<"KbsCandidateProgress"> | string
   score?: Prisma.IntNullableFilter<"KbsCandidateProgress"> | number | null
   passed?: Prisma.BoolFilter<"KbsCandidateProgress"> | boolean
+  attempts?: Prisma.IntFilter<"KbsCandidateProgress"> | number
   completedAt?: Prisma.DateTimeNullableFilter<"KbsCandidateProgress"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"KbsCandidateProgress"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"KbsCandidateProgress"> | Date | string
@@ -280,6 +294,7 @@ export type KbsCandidateProgressOrderByWithAggregationInput = {
   moduleId?: Prisma.SortOrder
   score?: Prisma.SortOrderInput | Prisma.SortOrder
   passed?: Prisma.SortOrder
+  attempts?: Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -299,6 +314,7 @@ export type KbsCandidateProgressScalarWhereWithAggregatesInput = {
   moduleId?: Prisma.StringWithAggregatesFilter<"KbsCandidateProgress"> | string
   score?: Prisma.IntNullableWithAggregatesFilter<"KbsCandidateProgress"> | number | null
   passed?: Prisma.BoolWithAggregatesFilter<"KbsCandidateProgress"> | boolean
+  attempts?: Prisma.IntWithAggregatesFilter<"KbsCandidateProgress"> | number
   completedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"KbsCandidateProgress"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"KbsCandidateProgress"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"KbsCandidateProgress"> | Date | string
@@ -308,6 +324,7 @@ export type KbsCandidateProgressCreateInput = {
   id?: string
   score?: number | null
   passed?: boolean
+  attempts?: number
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -321,6 +338,7 @@ export type KbsCandidateProgressUncheckedCreateInput = {
   moduleId: string
   score?: number | null
   passed?: boolean
+  attempts?: number
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -330,6 +348,7 @@ export type KbsCandidateProgressUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   passed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attempts?: Prisma.IntFieldUpdateOperationsInput | number
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -343,6 +362,7 @@ export type KbsCandidateProgressUncheckedUpdateInput = {
   moduleId?: Prisma.StringFieldUpdateOperationsInput | string
   score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   passed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attempts?: Prisma.IntFieldUpdateOperationsInput | number
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -354,6 +374,7 @@ export type KbsCandidateProgressCreateManyInput = {
   moduleId: string
   score?: number | null
   passed?: boolean
+  attempts?: number
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -363,6 +384,7 @@ export type KbsCandidateProgressUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   passed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attempts?: Prisma.IntFieldUpdateOperationsInput | number
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -374,6 +396,7 @@ export type KbsCandidateProgressUncheckedUpdateManyInput = {
   moduleId?: Prisma.StringFieldUpdateOperationsInput | string
   score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   passed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attempts?: Prisma.IntFieldUpdateOperationsInput | number
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -400,6 +423,7 @@ export type KbsCandidateProgressCountOrderByAggregateInput = {
   moduleId?: Prisma.SortOrder
   score?: Prisma.SortOrder
   passed?: Prisma.SortOrder
+  attempts?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -407,6 +431,7 @@ export type KbsCandidateProgressCountOrderByAggregateInput = {
 
 export type KbsCandidateProgressAvgOrderByAggregateInput = {
   score?: Prisma.SortOrder
+  attempts?: Prisma.SortOrder
 }
 
 export type KbsCandidateProgressMaxOrderByAggregateInput = {
@@ -415,6 +440,7 @@ export type KbsCandidateProgressMaxOrderByAggregateInput = {
   moduleId?: Prisma.SortOrder
   score?: Prisma.SortOrder
   passed?: Prisma.SortOrder
+  attempts?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -426,6 +452,7 @@ export type KbsCandidateProgressMinOrderByAggregateInput = {
   moduleId?: Prisma.SortOrder
   score?: Prisma.SortOrder
   passed?: Prisma.SortOrder
+  attempts?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -433,6 +460,7 @@ export type KbsCandidateProgressMinOrderByAggregateInput = {
 
 export type KbsCandidateProgressSumOrderByAggregateInput = {
   score?: Prisma.SortOrder
+  attempts?: Prisma.SortOrder
 }
 
 export type KbsCandidateProgressCreateNestedManyWithoutModuleInput = {
@@ -519,18 +547,11 @@ export type KbsCandidateProgressUncheckedUpdateManyWithoutCandidateNestedInput =
   deleteMany?: Prisma.KbsCandidateProgressScalarWhereInput | Prisma.KbsCandidateProgressScalarWhereInput[]
 }
 
-export type NullableIntFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type KbsCandidateProgressCreateWithoutModuleInput = {
   id?: string
   score?: number | null
   passed?: boolean
+  attempts?: number
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -542,6 +563,7 @@ export type KbsCandidateProgressUncheckedCreateWithoutModuleInput = {
   candidateId: string
   score?: number | null
   passed?: boolean
+  attempts?: number
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -582,6 +604,7 @@ export type KbsCandidateProgressScalarWhereInput = {
   moduleId?: Prisma.StringFilter<"KbsCandidateProgress"> | string
   score?: Prisma.IntNullableFilter<"KbsCandidateProgress"> | number | null
   passed?: Prisma.BoolFilter<"KbsCandidateProgress"> | boolean
+  attempts?: Prisma.IntFilter<"KbsCandidateProgress"> | number
   completedAt?: Prisma.DateTimeNullableFilter<"KbsCandidateProgress"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"KbsCandidateProgress"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"KbsCandidateProgress"> | Date | string
@@ -591,6 +614,7 @@ export type KbsCandidateProgressCreateWithoutCandidateInput = {
   id?: string
   score?: number | null
   passed?: boolean
+  attempts?: number
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -602,6 +626,7 @@ export type KbsCandidateProgressUncheckedCreateWithoutCandidateInput = {
   moduleId: string
   score?: number | null
   passed?: boolean
+  attempts?: number
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -638,6 +663,7 @@ export type KbsCandidateProgressCreateManyModuleInput = {
   candidateId: string
   score?: number | null
   passed?: boolean
+  attempts?: number
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -647,6 +673,7 @@ export type KbsCandidateProgressUpdateWithoutModuleInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   passed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attempts?: Prisma.IntFieldUpdateOperationsInput | number
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -658,6 +685,7 @@ export type KbsCandidateProgressUncheckedUpdateWithoutModuleInput = {
   candidateId?: Prisma.StringFieldUpdateOperationsInput | string
   score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   passed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attempts?: Prisma.IntFieldUpdateOperationsInput | number
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -668,6 +696,7 @@ export type KbsCandidateProgressUncheckedUpdateManyWithoutModuleInput = {
   candidateId?: Prisma.StringFieldUpdateOperationsInput | string
   score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   passed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attempts?: Prisma.IntFieldUpdateOperationsInput | number
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -678,6 +707,7 @@ export type KbsCandidateProgressCreateManyCandidateInput = {
   moduleId: string
   score?: number | null
   passed?: boolean
+  attempts?: number
   completedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -687,6 +717,7 @@ export type KbsCandidateProgressUpdateWithoutCandidateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   passed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attempts?: Prisma.IntFieldUpdateOperationsInput | number
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -698,6 +729,7 @@ export type KbsCandidateProgressUncheckedUpdateWithoutCandidateInput = {
   moduleId?: Prisma.StringFieldUpdateOperationsInput | string
   score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   passed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attempts?: Prisma.IntFieldUpdateOperationsInput | number
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -708,6 +740,7 @@ export type KbsCandidateProgressUncheckedUpdateManyWithoutCandidateInput = {
   moduleId?: Prisma.StringFieldUpdateOperationsInput | string
   score?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   passed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attempts?: Prisma.IntFieldUpdateOperationsInput | number
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -721,6 +754,7 @@ export type KbsCandidateProgressSelect<ExtArgs extends runtime.Types.Extensions.
   moduleId?: boolean
   score?: boolean
   passed?: boolean
+  attempts?: boolean
   completedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -734,6 +768,7 @@ export type KbsCandidateProgressSelectCreateManyAndReturn<ExtArgs extends runtim
   moduleId?: boolean
   score?: boolean
   passed?: boolean
+  attempts?: boolean
   completedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -747,6 +782,7 @@ export type KbsCandidateProgressSelectUpdateManyAndReturn<ExtArgs extends runtim
   moduleId?: boolean
   score?: boolean
   passed?: boolean
+  attempts?: boolean
   completedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -760,12 +796,13 @@ export type KbsCandidateProgressSelectScalar = {
   moduleId?: boolean
   score?: boolean
   passed?: boolean
+  attempts?: boolean
   completedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type KbsCandidateProgressOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "candidateId" | "moduleId" | "score" | "passed" | "completedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["kbsCandidateProgress"]>
+export type KbsCandidateProgressOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "candidateId" | "moduleId" | "score" | "passed" | "attempts" | "completedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["kbsCandidateProgress"]>
 export type KbsCandidateProgressInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   candidate?: boolean | Prisma.KbsCandidateDefaultArgs<ExtArgs>
   module?: boolean | Prisma.KbsModuleDefaultArgs<ExtArgs>
@@ -791,6 +828,7 @@ export type $KbsCandidateProgressPayload<ExtArgs extends runtime.Types.Extension
     moduleId: string
     score: number | null
     passed: boolean
+    attempts: number
     completedAt: Date | null
     createdAt: Date
     updatedAt: Date
@@ -1224,6 +1262,7 @@ export interface KbsCandidateProgressFieldRefs {
   readonly moduleId: Prisma.FieldRef<"KbsCandidateProgress", 'String'>
   readonly score: Prisma.FieldRef<"KbsCandidateProgress", 'Int'>
   readonly passed: Prisma.FieldRef<"KbsCandidateProgress", 'Boolean'>
+  readonly attempts: Prisma.FieldRef<"KbsCandidateProgress", 'Int'>
   readonly completedAt: Prisma.FieldRef<"KbsCandidateProgress", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"KbsCandidateProgress", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"KbsCandidateProgress", 'DateTime'>

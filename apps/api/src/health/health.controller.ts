@@ -30,10 +30,14 @@ export class HealthController {
     description:
       'Checks database connectivity (core + KBS), memory heap, memory RSS, and disk usage. Returns a detailed status per indicator. Used by load balancers and monitoring tools.',
   })
-  @ApiResponse({ status: 200, description: 'All health indicators are healthy.' })
+  @ApiResponse({
+    status: 200,
+    description: 'All health indicators are healthy.',
+  })
   @ApiResponse({
     status: 503,
-    description: 'One or more indicators are unhealthy. See response body for details.',
+    description:
+      'One or more indicators are unhealthy. See response body for details.',
   })
   check(): Promise<HealthCheckResult> {
     return this.health.check([
@@ -57,15 +61,22 @@ export class HealthController {
         this.disk.checkStorage('disk', { thresholdPercent: 0.9, path: '/' }),
 
       async () => {
-        const count = await this.kbsPrisma.kbsExamQuestion.count();
-        const up = count > 0;
-        return {
-          'database-kbs': {
-            status: up ? 'up' : 'down',
-            count,
-            ...(up ? {} : { message: 'No exam questions available' }),
-          },
-        };
+        try {
+          const count = await this.kbsPrisma.kbsExamQuestion.count();
+          return {
+            'database-kbs-exam-questions': {
+              status: 'up',
+              count,
+            },
+          };
+        } catch (error) {
+          return {
+            'database-kbs-exam-questions': {
+              status: 'down',
+              error,
+            },
+          };
+        }
       },
     ]);
   }
@@ -77,8 +88,14 @@ export class HealthController {
     description:
       'Lightweight check that verifies core database connectivity. Used by orchestrators (Kubernetes, ECS) to determine if the instance is ready to receive traffic.',
   })
-  @ApiResponse({ status: 200, description: 'Service is ready. Returns { status: "ok" }.' })
-  @ApiResponse({ status: 503, description: 'Service is not ready. Core database is unreachable.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Service is ready. Returns { status: "ok" }.',
+  })
+  @ApiResponse({
+    status: 503,
+    description: 'Service is not ready. Core database is unreachable.',
+  })
   async ready(): Promise<{ status: string }> {
     try {
       await this.corePrisma.$queryRawUnsafe('SELECT 1');

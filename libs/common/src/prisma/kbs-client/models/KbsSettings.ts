@@ -30,18 +30,21 @@ export type KbsSettingsAvgAggregateOutputType = {
   id: number | null
   examQuestionCount: number | null
   quizQuestionCount: number | null
+  quizMaxAttempts: number | null
 }
 
 export type KbsSettingsSumAggregateOutputType = {
   id: number | null
   examQuestionCount: number | null
   quizQuestionCount: number | null
+  quizMaxAttempts: number | null
 }
 
 export type KbsSettingsMinAggregateOutputType = {
   id: number | null
   examQuestionCount: number | null
   quizQuestionCount: number | null
+  quizMaxAttempts: number | null
   updatedAt: Date | null
 }
 
@@ -49,6 +52,7 @@ export type KbsSettingsMaxAggregateOutputType = {
   id: number | null
   examQuestionCount: number | null
   quizQuestionCount: number | null
+  quizMaxAttempts: number | null
   updatedAt: Date | null
 }
 
@@ -56,6 +60,7 @@ export type KbsSettingsCountAggregateOutputType = {
   id: number
   examQuestionCount: number
   quizQuestionCount: number
+  quizMaxAttempts: number
   updatedAt: number
   _all: number
 }
@@ -65,18 +70,21 @@ export type KbsSettingsAvgAggregateInputType = {
   id?: true
   examQuestionCount?: true
   quizQuestionCount?: true
+  quizMaxAttempts?: true
 }
 
 export type KbsSettingsSumAggregateInputType = {
   id?: true
   examQuestionCount?: true
   quizQuestionCount?: true
+  quizMaxAttempts?: true
 }
 
 export type KbsSettingsMinAggregateInputType = {
   id?: true
   examQuestionCount?: true
   quizQuestionCount?: true
+  quizMaxAttempts?: true
   updatedAt?: true
 }
 
@@ -84,6 +92,7 @@ export type KbsSettingsMaxAggregateInputType = {
   id?: true
   examQuestionCount?: true
   quizQuestionCount?: true
+  quizMaxAttempts?: true
   updatedAt?: true
 }
 
@@ -91,6 +100,7 @@ export type KbsSettingsCountAggregateInputType = {
   id?: true
   examQuestionCount?: true
   quizQuestionCount?: true
+  quizMaxAttempts?: true
   updatedAt?: true
   _all?: true
 }
@@ -185,6 +195,7 @@ export type KbsSettingsGroupByOutputType = {
   id: number
   examQuestionCount: number
   quizQuestionCount: number
+  quizMaxAttempts: number
   updatedAt: Date
   _count: KbsSettingsCountAggregateOutputType | null
   _avg: KbsSettingsAvgAggregateOutputType | null
@@ -215,6 +226,7 @@ export type KbsSettingsWhereInput = {
   id?: Prisma.IntFilter<"KbsSettings"> | number
   examQuestionCount?: Prisma.IntFilter<"KbsSettings"> | number
   quizQuestionCount?: Prisma.IntFilter<"KbsSettings"> | number
+  quizMaxAttempts?: Prisma.IntFilter<"KbsSettings"> | number
   updatedAt?: Prisma.DateTimeFilter<"KbsSettings"> | Date | string
 }
 
@@ -222,6 +234,7 @@ export type KbsSettingsOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   examQuestionCount?: Prisma.SortOrder
   quizQuestionCount?: Prisma.SortOrder
+  quizMaxAttempts?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
@@ -232,6 +245,7 @@ export type KbsSettingsWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.KbsSettingsWhereInput | Prisma.KbsSettingsWhereInput[]
   examQuestionCount?: Prisma.IntFilter<"KbsSettings"> | number
   quizQuestionCount?: Prisma.IntFilter<"KbsSettings"> | number
+  quizMaxAttempts?: Prisma.IntFilter<"KbsSettings"> | number
   updatedAt?: Prisma.DateTimeFilter<"KbsSettings"> | Date | string
 }, "id">
 
@@ -239,6 +253,7 @@ export type KbsSettingsOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   examQuestionCount?: Prisma.SortOrder
   quizQuestionCount?: Prisma.SortOrder
+  quizMaxAttempts?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.KbsSettingsCountOrderByAggregateInput
   _avg?: Prisma.KbsSettingsAvgOrderByAggregateInput
@@ -254,12 +269,14 @@ export type KbsSettingsScalarWhereWithAggregatesInput = {
   id?: Prisma.IntWithAggregatesFilter<"KbsSettings"> | number
   examQuestionCount?: Prisma.IntWithAggregatesFilter<"KbsSettings"> | number
   quizQuestionCount?: Prisma.IntWithAggregatesFilter<"KbsSettings"> | number
+  quizMaxAttempts?: Prisma.IntWithAggregatesFilter<"KbsSettings"> | number
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"KbsSettings"> | Date | string
 }
 
 export type KbsSettingsCreateInput = {
   examQuestionCount?: number
   quizQuestionCount?: number
+  quizMaxAttempts?: number
   updatedAt?: Date | string
 }
 
@@ -267,12 +284,14 @@ export type KbsSettingsUncheckedCreateInput = {
   id?: number
   examQuestionCount?: number
   quizQuestionCount?: number
+  quizMaxAttempts?: number
   updatedAt?: Date | string
 }
 
 export type KbsSettingsUpdateInput = {
   examQuestionCount?: Prisma.IntFieldUpdateOperationsInput | number
   quizQuestionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  quizMaxAttempts?: Prisma.IntFieldUpdateOperationsInput | number
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -280,6 +299,7 @@ export type KbsSettingsUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   examQuestionCount?: Prisma.IntFieldUpdateOperationsInput | number
   quizQuestionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  quizMaxAttempts?: Prisma.IntFieldUpdateOperationsInput | number
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -287,12 +307,14 @@ export type KbsSettingsCreateManyInput = {
   id?: number
   examQuestionCount?: number
   quizQuestionCount?: number
+  quizMaxAttempts?: number
   updatedAt?: Date | string
 }
 
 export type KbsSettingsUpdateManyMutationInput = {
   examQuestionCount?: Prisma.IntFieldUpdateOperationsInput | number
   quizQuestionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  quizMaxAttempts?: Prisma.IntFieldUpdateOperationsInput | number
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -300,6 +322,7 @@ export type KbsSettingsUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   examQuestionCount?: Prisma.IntFieldUpdateOperationsInput | number
   quizQuestionCount?: Prisma.IntFieldUpdateOperationsInput | number
+  quizMaxAttempts?: Prisma.IntFieldUpdateOperationsInput | number
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -307,6 +330,7 @@ export type KbsSettingsCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   examQuestionCount?: Prisma.SortOrder
   quizQuestionCount?: Prisma.SortOrder
+  quizMaxAttempts?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
@@ -314,12 +338,14 @@ export type KbsSettingsAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
   examQuestionCount?: Prisma.SortOrder
   quizQuestionCount?: Prisma.SortOrder
+  quizMaxAttempts?: Prisma.SortOrder
 }
 
 export type KbsSettingsMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   examQuestionCount?: Prisma.SortOrder
   quizQuestionCount?: Prisma.SortOrder
+  quizMaxAttempts?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
@@ -327,6 +353,7 @@ export type KbsSettingsMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   examQuestionCount?: Prisma.SortOrder
   quizQuestionCount?: Prisma.SortOrder
+  quizMaxAttempts?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
@@ -334,6 +361,7 @@ export type KbsSettingsSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
   examQuestionCount?: Prisma.SortOrder
   quizQuestionCount?: Prisma.SortOrder
+  quizMaxAttempts?: Prisma.SortOrder
 }
 
 
@@ -342,6 +370,7 @@ export type KbsSettingsSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   id?: boolean
   examQuestionCount?: boolean
   quizQuestionCount?: boolean
+  quizMaxAttempts?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["kbsSettings"]>
 
@@ -349,6 +378,7 @@ export type KbsSettingsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   id?: boolean
   examQuestionCount?: boolean
   quizQuestionCount?: boolean
+  quizMaxAttempts?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["kbsSettings"]>
 
@@ -356,6 +386,7 @@ export type KbsSettingsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   id?: boolean
   examQuestionCount?: boolean
   quizQuestionCount?: boolean
+  quizMaxAttempts?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["kbsSettings"]>
 
@@ -363,10 +394,11 @@ export type KbsSettingsSelectScalar = {
   id?: boolean
   examQuestionCount?: boolean
   quizQuestionCount?: boolean
+  quizMaxAttempts?: boolean
   updatedAt?: boolean
 }
 
-export type KbsSettingsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "examQuestionCount" | "quizQuestionCount" | "updatedAt", ExtArgs["result"]["kbsSettings"]>
+export type KbsSettingsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "examQuestionCount" | "quizQuestionCount" | "quizMaxAttempts" | "updatedAt", ExtArgs["result"]["kbsSettings"]>
 
 export type $KbsSettingsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "KbsSettings"
@@ -375,6 +407,7 @@ export type $KbsSettingsPayload<ExtArgs extends runtime.Types.Extensions.Interna
     id: number
     examQuestionCount: number
     quizQuestionCount: number
+    quizMaxAttempts: number
     updatedAt: Date
   }, ExtArgs["result"]["kbsSettings"]>
   composites: {}
@@ -802,6 +835,7 @@ export interface KbsSettingsFieldRefs {
   readonly id: Prisma.FieldRef<"KbsSettings", 'Int'>
   readonly examQuestionCount: Prisma.FieldRef<"KbsSettings", 'Int'>
   readonly quizQuestionCount: Prisma.FieldRef<"KbsSettings", 'Int'>
+  readonly quizMaxAttempts: Prisma.FieldRef<"KbsSettings", 'Int'>
   readonly updatedAt: Prisma.FieldRef<"KbsSettings", 'DateTime'>
 }
     

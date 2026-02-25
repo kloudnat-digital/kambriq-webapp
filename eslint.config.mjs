@@ -36,7 +36,18 @@ export default [
       '**/*.cjs',
       '**/*.mjs',
     ],
-    // Override or add rules here
-    rules: {},
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@kambriq/common/**/*enum*', '@kambriq/common/**/*enums*'],
+              message: 'Import enums via @kambriq/common instead of directly from enum files.',
+            },
+          ],
+        },
+      ],
+    },
   },
 ];

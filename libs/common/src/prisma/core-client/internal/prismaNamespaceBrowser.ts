@@ -54,8 +54,6 @@ export const ModelName = {
   User: 'User',
   Role: 'Role',
   UserRole: 'UserRole',
-  Permission: 'Permission',
-  RolePermission: 'RolePermission',
   UserProfile: 'UserProfile',
   RefreshToken: 'RefreshToken',
   VerificationToken: 'VerificationToken'
@@ -91,6 +89,7 @@ export const UserScalarFieldEnum = {
   updatedAt: 'updatedAt',
   deletedAt: 'deletedAt',
   deactivatedBy: 'deactivatedBy',
+  pendingEmail: 'pendingEmail',
   lastLoginAt: 'lastLoginAt',
   loginAttempts: 'loginAttempts',
   lockedUntil: 'lockedUntil'
@@ -121,28 +120,6 @@ export const UserRoleScalarFieldEnum = {
 export type UserRoleScalarFieldEnum = (typeof UserRoleScalarFieldEnum)[keyof typeof UserRoleScalarFieldEnum]
 
 
-export const PermissionScalarFieldEnum = {
-  id: 'id',
-  code: 'code',
-  name: 'name',
-  module: 'module',
-  createdAt: 'createdAt'
-} as const
-
-export type PermissionScalarFieldEnum = (typeof PermissionScalarFieldEnum)[keyof typeof PermissionScalarFieldEnum]
-
-
-export const RolePermissionScalarFieldEnum = {
-  id: 'id',
-  roleId: 'roleId',
-  permissionId: 'permissionId',
-  assignedAt: 'assignedAt',
-  assignedBy: 'assignedBy'
-} as const
-
-export type RolePermissionScalarFieldEnum = (typeof RolePermissionScalarFieldEnum)[keyof typeof RolePermissionScalarFieldEnum]
-
-
 export const UserProfileScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -151,7 +128,10 @@ export const UserProfileScalarFieldEnum = {
   city: 'city',
   country: 'country',
   idDocumentUrl: 'idDocumentUrl',
-  idVerified: 'idVerified',
+  idVerificationStatus: 'idVerificationStatus',
+  idVerifiedAt: 'idVerifiedAt',
+  idVerifiedBy: 'idVerifiedBy',
+  idRejectionReason: 'idRejectionReason',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

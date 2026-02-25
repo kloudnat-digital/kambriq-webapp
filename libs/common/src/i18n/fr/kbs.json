@@ -49,6 +49,7 @@
     "candidateNotFound": "Candidat {id} introuvable",
     "notPassed": "Le candidat n'a pas réussi l'examen final",
     "alreadyIssued": "Certificat déjà émis : {kcaNumber}",
+    "alreadyRevoked": "Ce certificat a déjà été révoqué",
     "invalid": "Certificat introuvable"
   }
 }

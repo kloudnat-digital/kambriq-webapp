@@ -273,6 +273,7 @@ export type KbsCandidateWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"KbsCandidate"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"KbsCandidate"> | Date | string
   progress?: Prisma.KbsCandidateProgressListRelationFilter
+  lessonCompletions?: Prisma.KbsLessonCompletionListRelationFilter
   exams?: Prisma.KbsExamListRelationFilter
   certificate?: Prisma.XOR<Prisma.KbsCertificateNullableScalarRelationFilter, Prisma.KbsCertificateWhereInput> | null
 }
@@ -290,6 +291,7 @@ export type KbsCandidateOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   progress?: Prisma.KbsCandidateProgressOrderByRelationAggregateInput
+  lessonCompletions?: Prisma.KbsLessonCompletionOrderByRelationAggregateInput
   exams?: Prisma.KbsExamOrderByRelationAggregateInput
   certificate?: Prisma.KbsCertificateOrderByWithRelationInput
 }
@@ -310,6 +312,7 @@ export type KbsCandidateWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"KbsCandidate"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"KbsCandidate"> | Date | string
   progress?: Prisma.KbsCandidateProgressListRelationFilter
+  lessonCompletions?: Prisma.KbsLessonCompletionListRelationFilter
   exams?: Prisma.KbsExamListRelationFilter
   certificate?: Prisma.XOR<Prisma.KbsCertificateNullableScalarRelationFilter, Prisma.KbsCertificateWhereInput> | null
 }, "id" | "userId">
@@ -363,6 +366,7 @@ export type KbsCandidateCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   progress?: Prisma.KbsCandidateProgressCreateNestedManyWithoutCandidateInput
+  lessonCompletions?: Prisma.KbsLessonCompletionCreateNestedManyWithoutCandidateInput
   exams?: Prisma.KbsExamCreateNestedManyWithoutCandidateInput
   certificate?: Prisma.KbsCertificateCreateNestedOneWithoutCandidateInput
 }
@@ -380,6 +384,7 @@ export type KbsCandidateUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   progress?: Prisma.KbsCandidateProgressUncheckedCreateNestedManyWithoutCandidateInput
+  lessonCompletions?: Prisma.KbsLessonCompletionUncheckedCreateNestedManyWithoutCandidateInput
   exams?: Prisma.KbsExamUncheckedCreateNestedManyWithoutCandidateInput
   certificate?: Prisma.KbsCertificateUncheckedCreateNestedOneWithoutCandidateInput
 }
@@ -397,6 +402,7 @@ export type KbsCandidateUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   progress?: Prisma.KbsCandidateProgressUpdateManyWithoutCandidateNestedInput
+  lessonCompletions?: Prisma.KbsLessonCompletionUpdateManyWithoutCandidateNestedInput
   exams?: Prisma.KbsExamUpdateManyWithoutCandidateNestedInput
   certificate?: Prisma.KbsCertificateUpdateOneWithoutCandidateNestedInput
 }
@@ -414,6 +420,7 @@ export type KbsCandidateUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   progress?: Prisma.KbsCandidateProgressUncheckedUpdateManyWithoutCandidateNestedInput
+  lessonCompletions?: Prisma.KbsLessonCompletionUncheckedUpdateManyWithoutCandidateNestedInput
   exams?: Prisma.KbsExamUncheckedUpdateManyWithoutCandidateNestedInput
   certificate?: Prisma.KbsCertificateUncheckedUpdateOneWithoutCandidateNestedInput
 }
@@ -458,6 +465,11 @@ export type KbsCandidateUncheckedUpdateManyInput = {
   certifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type KbsCandidateScalarRelationFilter = {
+  is?: Prisma.KbsCandidateWhereInput
+  isNot?: Prisma.KbsCandidateWhereInput
 }
 
 export type KbsCandidateCountOrderByAggregateInput = {
@@ -514,9 +526,18 @@ export type KbsCandidateSumOrderByAggregateInput = {
   currentCycle?: Prisma.SortOrder
 }
 
-export type KbsCandidateScalarRelationFilter = {
-  is?: Prisma.KbsCandidateWhereInput
-  isNot?: Prisma.KbsCandidateWhereInput
+export type KbsCandidateCreateNestedOneWithoutLessonCompletionsInput = {
+  create?: Prisma.XOR<Prisma.KbsCandidateCreateWithoutLessonCompletionsInput, Prisma.KbsCandidateUncheckedCreateWithoutLessonCompletionsInput>
+  connectOrCreate?: Prisma.KbsCandidateCreateOrConnectWithoutLessonCompletionsInput
+  connect?: Prisma.KbsCandidateWhereUniqueInput
+}
+
+export type KbsCandidateUpdateOneRequiredWithoutLessonCompletionsNestedInput = {
+  create?: Prisma.XOR<Prisma.KbsCandidateCreateWithoutLessonCompletionsInput, Prisma.KbsCandidateUncheckedCreateWithoutLessonCompletionsInput>
+  connectOrCreate?: Prisma.KbsCandidateCreateOrConnectWithoutLessonCompletionsInput
+  upsert?: Prisma.KbsCandidateUpsertWithoutLessonCompletionsInput
+  connect?: Prisma.KbsCandidateWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.KbsCandidateUpdateToOneWithWhereWithoutLessonCompletionsInput, Prisma.KbsCandidateUpdateWithoutLessonCompletionsInput>, Prisma.KbsCandidateUncheckedUpdateWithoutLessonCompletionsInput>
 }
 
 export type NullableDateTimeFieldUpdateOperationsInput = {
@@ -565,6 +586,90 @@ export type KbsCandidateUpdateOneRequiredWithoutCertificateNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.KbsCandidateUpdateToOneWithWhereWithoutCertificateInput, Prisma.KbsCandidateUpdateWithoutCertificateInput>, Prisma.KbsCandidateUncheckedUpdateWithoutCertificateInput>
 }
 
+export type KbsCandidateCreateWithoutLessonCompletionsInput = {
+  id?: string
+  userId: string
+  sponsorCode?: string | null
+  status: string
+  maxAttempts?: number
+  retakeCooldownDays?: number
+  currentCycle?: number
+  enrolledAt?: Date | string
+  certifiedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  progress?: Prisma.KbsCandidateProgressCreateNestedManyWithoutCandidateInput
+  exams?: Prisma.KbsExamCreateNestedManyWithoutCandidateInput
+  certificate?: Prisma.KbsCertificateCreateNestedOneWithoutCandidateInput
+}
+
+export type KbsCandidateUncheckedCreateWithoutLessonCompletionsInput = {
+  id?: string
+  userId: string
+  sponsorCode?: string | null
+  status: string
+  maxAttempts?: number
+  retakeCooldownDays?: number
+  currentCycle?: number
+  enrolledAt?: Date | string
+  certifiedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  progress?: Prisma.KbsCandidateProgressUncheckedCreateNestedManyWithoutCandidateInput
+  exams?: Prisma.KbsExamUncheckedCreateNestedManyWithoutCandidateInput
+  certificate?: Prisma.KbsCertificateUncheckedCreateNestedOneWithoutCandidateInput
+}
+
+export type KbsCandidateCreateOrConnectWithoutLessonCompletionsInput = {
+  where: Prisma.KbsCandidateWhereUniqueInput
+  create: Prisma.XOR<Prisma.KbsCandidateCreateWithoutLessonCompletionsInput, Prisma.KbsCandidateUncheckedCreateWithoutLessonCompletionsInput>
+}
+
+export type KbsCandidateUpsertWithoutLessonCompletionsInput = {
+  update: Prisma.XOR<Prisma.KbsCandidateUpdateWithoutLessonCompletionsInput, Prisma.KbsCandidateUncheckedUpdateWithoutLessonCompletionsInput>
+  create: Prisma.XOR<Prisma.KbsCandidateCreateWithoutLessonCompletionsInput, Prisma.KbsCandidateUncheckedCreateWithoutLessonCompletionsInput>
+  where?: Prisma.KbsCandidateWhereInput
+}
+
+export type KbsCandidateUpdateToOneWithWhereWithoutLessonCompletionsInput = {
+  where?: Prisma.KbsCandidateWhereInput
+  data: Prisma.XOR<Prisma.KbsCandidateUpdateWithoutLessonCompletionsInput, Prisma.KbsCandidateUncheckedUpdateWithoutLessonCompletionsInput>
+}
+
+export type KbsCandidateUpdateWithoutLessonCompletionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  sponsorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  maxAttempts?: Prisma.IntFieldUpdateOperationsInput | number
+  retakeCooldownDays?: Prisma.IntFieldUpdateOperationsInput | number
+  currentCycle?: Prisma.IntFieldUpdateOperationsInput | number
+  enrolledAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  certifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  progress?: Prisma.KbsCandidateProgressUpdateManyWithoutCandidateNestedInput
+  exams?: Prisma.KbsExamUpdateManyWithoutCandidateNestedInput
+  certificate?: Prisma.KbsCertificateUpdateOneWithoutCandidateNestedInput
+}
+
+export type KbsCandidateUncheckedUpdateWithoutLessonCompletionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  sponsorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  maxAttempts?: Prisma.IntFieldUpdateOperationsInput | number
+  retakeCooldownDays?: Prisma.IntFieldUpdateOperationsInput | number
+  currentCycle?: Prisma.IntFieldUpdateOperationsInput | number
+  enrolledAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  certifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  progress?: Prisma.KbsCandidateProgressUncheckedUpdateManyWithoutCandidateNestedInput
+  exams?: Prisma.KbsExamUncheckedUpdateManyWithoutCandidateNestedInput
+  certificate?: Prisma.KbsCertificateUncheckedUpdateOneWithoutCandidateNestedInput
+}
+
 export type KbsCandidateCreateWithoutProgressInput = {
   id?: string
   userId: string
@@ -577,6 +682,7 @@ export type KbsCandidateCreateWithoutProgressInput = {
   certifiedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  lessonCompletions?: Prisma.KbsLessonCompletionCreateNestedManyWithoutCandidateInput
   exams?: Prisma.KbsExamCreateNestedManyWithoutCandidateInput
   certificate?: Prisma.KbsCertificateCreateNestedOneWithoutCandidateInput
 }
@@ -593,6 +699,7 @@ export type KbsCandidateUncheckedCreateWithoutProgressInput = {
   certifiedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  lessonCompletions?: Prisma.KbsLessonCompletionUncheckedCreateNestedManyWithoutCandidateInput
   exams?: Prisma.KbsExamUncheckedCreateNestedManyWithoutCandidateInput
   certificate?: Prisma.KbsCertificateUncheckedCreateNestedOneWithoutCandidateInput
 }
@@ -625,6 +732,7 @@ export type KbsCandidateUpdateWithoutProgressInput = {
   certifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lessonCompletions?: Prisma.KbsLessonCompletionUpdateManyWithoutCandidateNestedInput
   exams?: Prisma.KbsExamUpdateManyWithoutCandidateNestedInput
   certificate?: Prisma.KbsCertificateUpdateOneWithoutCandidateNestedInput
 }
@@ -641,6 +749,7 @@ export type KbsCandidateUncheckedUpdateWithoutProgressInput = {
   certifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lessonCompletions?: Prisma.KbsLessonCompletionUncheckedUpdateManyWithoutCandidateNestedInput
   exams?: Prisma.KbsExamUncheckedUpdateManyWithoutCandidateNestedInput
   certificate?: Prisma.KbsCertificateUncheckedUpdateOneWithoutCandidateNestedInput
 }
@@ -658,6 +767,7 @@ export type KbsCandidateCreateWithoutExamsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   progress?: Prisma.KbsCandidateProgressCreateNestedManyWithoutCandidateInput
+  lessonCompletions?: Prisma.KbsLessonCompletionCreateNestedManyWithoutCandidateInput
   certificate?: Prisma.KbsCertificateCreateNestedOneWithoutCandidateInput
 }
 
@@ -674,6 +784,7 @@ export type KbsCandidateUncheckedCreateWithoutExamsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   progress?: Prisma.KbsCandidateProgressUncheckedCreateNestedManyWithoutCandidateInput
+  lessonCompletions?: Prisma.KbsLessonCompletionUncheckedCreateNestedManyWithoutCandidateInput
   certificate?: Prisma.KbsCertificateUncheckedCreateNestedOneWithoutCandidateInput
 }
 
@@ -706,6 +817,7 @@ export type KbsCandidateUpdateWithoutExamsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   progress?: Prisma.KbsCandidateProgressUpdateManyWithoutCandidateNestedInput
+  lessonCompletions?: Prisma.KbsLessonCompletionUpdateManyWithoutCandidateNestedInput
   certificate?: Prisma.KbsCertificateUpdateOneWithoutCandidateNestedInput
 }
 
@@ -722,6 +834,7 @@ export type KbsCandidateUncheckedUpdateWithoutExamsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   progress?: Prisma.KbsCandidateProgressUncheckedUpdateManyWithoutCandidateNestedInput
+  lessonCompletions?: Prisma.KbsLessonCompletionUncheckedUpdateManyWithoutCandidateNestedInput
   certificate?: Prisma.KbsCertificateUncheckedUpdateOneWithoutCandidateNestedInput
 }
 
@@ -738,6 +851,7 @@ export type KbsCandidateCreateWithoutCertificateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   progress?: Prisma.KbsCandidateProgressCreateNestedManyWithoutCandidateInput
+  lessonCompletions?: Prisma.KbsLessonCompletionCreateNestedManyWithoutCandidateInput
   exams?: Prisma.KbsExamCreateNestedManyWithoutCandidateInput
 }
 
@@ -754,6 +868,7 @@ export type KbsCandidateUncheckedCreateWithoutCertificateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   progress?: Prisma.KbsCandidateProgressUncheckedCreateNestedManyWithoutCandidateInput
+  lessonCompletions?: Prisma.KbsLessonCompletionUncheckedCreateNestedManyWithoutCandidateInput
   exams?: Prisma.KbsExamUncheckedCreateNestedManyWithoutCandidateInput
 }
 
@@ -786,6 +901,7 @@ export type KbsCandidateUpdateWithoutCertificateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   progress?: Prisma.KbsCandidateProgressUpdateManyWithoutCandidateNestedInput
+  lessonCompletions?: Prisma.KbsLessonCompletionUpdateManyWithoutCandidateNestedInput
   exams?: Prisma.KbsExamUpdateManyWithoutCandidateNestedInput
 }
 
@@ -802,6 +918,7 @@ export type KbsCandidateUncheckedUpdateWithoutCertificateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   progress?: Prisma.KbsCandidateProgressUncheckedUpdateManyWithoutCandidateNestedInput
+  lessonCompletions?: Prisma.KbsLessonCompletionUncheckedUpdateManyWithoutCandidateNestedInput
   exams?: Prisma.KbsExamUncheckedUpdateManyWithoutCandidateNestedInput
 }
 
@@ -812,11 +929,13 @@ export type KbsCandidateUncheckedUpdateWithoutCertificateInput = {
 
 export type KbsCandidateCountOutputType = {
   progress: number
+  lessonCompletions: number
   exams: number
 }
 
 export type KbsCandidateCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   progress?: boolean | KbsCandidateCountOutputTypeCountProgressArgs
+  lessonCompletions?: boolean | KbsCandidateCountOutputTypeCountLessonCompletionsArgs
   exams?: boolean | KbsCandidateCountOutputTypeCountExamsArgs
 }
 
@@ -840,6 +959,13 @@ export type KbsCandidateCountOutputTypeCountProgressArgs<ExtArgs extends runtime
 /**
  * KbsCandidateCountOutputType without action
  */
+export type KbsCandidateCountOutputTypeCountLessonCompletionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.KbsLessonCompletionWhereInput
+}
+
+/**
+ * KbsCandidateCountOutputType without action
+ */
 export type KbsCandidateCountOutputTypeCountExamsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.KbsExamWhereInput
 }
@@ -858,6 +984,7 @@ export type KbsCandidateSelect<ExtArgs extends runtime.Types.Extensions.Internal
   createdAt?: boolean
   updatedAt?: boolean
   progress?: boolean | Prisma.KbsCandidate$progressArgs<ExtArgs>
+  lessonCompletions?: boolean | Prisma.KbsCandidate$lessonCompletionsArgs<ExtArgs>
   exams?: boolean | Prisma.KbsCandidate$examsArgs<ExtArgs>
   certificate?: boolean | Prisma.KbsCandidate$certificateArgs<ExtArgs>
   _count?: boolean | Prisma.KbsCandidateCountOutputTypeDefaultArgs<ExtArgs>
@@ -908,6 +1035,7 @@ export type KbsCandidateSelectScalar = {
 export type KbsCandidateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "sponsorCode" | "status" | "maxAttempts" | "retakeCooldownDays" | "currentCycle" | "enrolledAt" | "certifiedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["kbsCandidate"]>
 export type KbsCandidateInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   progress?: boolean | Prisma.KbsCandidate$progressArgs<ExtArgs>
+  lessonCompletions?: boolean | Prisma.KbsCandidate$lessonCompletionsArgs<ExtArgs>
   exams?: boolean | Prisma.KbsCandidate$examsArgs<ExtArgs>
   certificate?: boolean | Prisma.KbsCandidate$certificateArgs<ExtArgs>
   _count?: boolean | Prisma.KbsCandidateCountOutputTypeDefaultArgs<ExtArgs>
@@ -919,6 +1047,7 @@ export type $KbsCandidatePayload<ExtArgs extends runtime.Types.Extensions.Intern
   name: "KbsCandidate"
   objects: {
     progress: Prisma.$KbsCandidateProgressPayload<ExtArgs>[]
+    lessonCompletions: Prisma.$KbsLessonCompletionPayload<ExtArgs>[]
     exams: Prisma.$KbsExamPayload<ExtArgs>[]
     certificate: Prisma.$KbsCertificatePayload<ExtArgs> | null
   }
@@ -1329,6 +1458,7 @@ readonly fields: KbsCandidateFieldRefs;
 export interface Prisma__KbsCandidateClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   progress<T extends Prisma.KbsCandidate$progressArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.KbsCandidate$progressArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$KbsCandidateProgressPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  lessonCompletions<T extends Prisma.KbsCandidate$lessonCompletionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.KbsCandidate$lessonCompletionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$KbsLessonCompletionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   exams<T extends Prisma.KbsCandidate$examsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.KbsCandidate$examsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$KbsExamPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   certificate<T extends Prisma.KbsCandidate$certificateArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.KbsCandidate$certificateArgs<ExtArgs>>): Prisma.Prisma__KbsCertificateClient<runtime.Types.Result.GetResult<Prisma.$KbsCertificatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
@@ -1780,6 +1910,30 @@ export type KbsCandidate$progressArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.KbsCandidateProgressScalarFieldEnum | Prisma.KbsCandidateProgressScalarFieldEnum[]
+}
+
+/**
+ * KbsCandidate.lessonCompletions
+ */
+export type KbsCandidate$lessonCompletionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the KbsLessonCompletion
+   */
+  select?: Prisma.KbsLessonCompletionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the KbsLessonCompletion
+   */
+  omit?: Prisma.KbsLessonCompletionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.KbsLessonCompletionInclude<ExtArgs> | null
+  where?: Prisma.KbsLessonCompletionWhereInput
+  orderBy?: Prisma.KbsLessonCompletionOrderByWithRelationInput | Prisma.KbsLessonCompletionOrderByWithRelationInput[]
+  cursor?: Prisma.KbsLessonCompletionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.KbsLessonCompletionScalarFieldEnum | Prisma.KbsLessonCompletionScalarFieldEnum[]
 }
 
 /**
