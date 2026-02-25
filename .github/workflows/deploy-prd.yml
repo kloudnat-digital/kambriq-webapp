@@ -59,6 +59,15 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Validate semver tag matches package.json
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          if [[ "${{ github.ref_name }}" != "v${VERSION}" ]]; then
+            echo "Tag ${{ github.ref_name }} does not match package.json version v${VERSION}" >&2
+            exit 1
+          fi
+
       - name: Build and push image
         env:
           IMAGE_TAG: ${{ github.ref_name }}
