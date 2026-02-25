@@ -49,6 +49,7 @@
     "candidateNotFound": "Candidate {id} not found",
     "notPassed": "Candidate has not passed the final exam",
     "alreadyIssued": "Certificate already issued: {kcaNumber}",
+    "alreadyRevoked": "This certificate has already been revoked",
     "invalid": "Certificate not found"
   }
 }

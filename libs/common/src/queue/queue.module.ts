@@ -29,6 +29,8 @@ import { QUEUES } from '../constants/queue';
     // Register queues
     BullModule.registerQueue(
       { name: QUEUES.KBS },
+      { name: QUEUES.CORE },
+      { name: QUEUES.KAMNET },
       { name: QUEUES.NOTIFICATIONS },
     ),
   ],

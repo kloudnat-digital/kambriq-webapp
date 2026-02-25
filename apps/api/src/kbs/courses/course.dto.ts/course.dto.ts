@@ -16,7 +16,7 @@ export class UpdateCourseDto extends createZodDto(updateCourseSchema) {}
 
 // ----- Module -----
 export const createModuleSchema = z.object({
-  courseId: z.cuid(),
+  courseId: z.uuid(),
   title: z.string().min(1).max(200),
   description: z.string().min(1).max(1000),
   order: z.number().int().min(1),
@@ -32,15 +32,15 @@ export const updateModuleSchema = z.object({
 export class UpdateModuleDto extends createZodDto(updateModuleSchema) {}
 
 export const reorderModulesSchema = z.object({
-  courseId: z.cuid(),
-  moduleIds: z.array(z.cuid()).min(1),
+  courseId: z.uuid(),
+  moduleIds: z.array(z.uuid()).min(1),
 });
 
 export class ReorderModulesDto extends createZodDto(reorderModulesSchema) {}
 
 // ----- Lesson -----
 export const createLessonSchema = z.object({
-  moduleId: z.cuid(),
+  moduleId: z.uuid(),
   title: z.string().min(1).max(200),
   contentType: z.enum(['VIDEO', 'PDF', 'HTML', 'TEXT']),
   contentUrl: z.string().min(1),
@@ -68,7 +68,7 @@ const answerSchema = z.object({
 
 export const createQuestionSchema = z
   .object({
-    moduleId: z.cuid(),
+    moduleId: z.uuid(),
     text: z.string().min(1).max(1000),
     type: z.enum(['SINGLE', 'MULTIPLE']).optional(),
     answers: z.array(answerSchema).min(2).max(6).optional(),
@@ -95,8 +95,8 @@ export class UpdateQuestionDto extends createZodDto(updateQuestionSchema) {}
 export const uploadUrlSchema = z.object({
   fileName: z.string().min(1),
   contentType: z.string().min(1),
-  moduleId: z.cuid().optional(),
-  lessonId: z.cuid().optional(),
+  moduleId: z.uuid().optional(),
+  lessonId: z.uuid().optional(),
 });
 
 export class GetUploadUrlDto extends createZodDto(uploadUrlSchema) {}

@@ -8,8 +8,10 @@ import { AuthService } from './auth/auth.service';
 import { UsersService } from './users/users.service';
 import { RolesService } from './roles/roles.service';
 import { AuthController } from './auth/auth.controller';
-import { UserController } from './users/users.contoller';
+import { UserController } from './users/users.controller';
 import { JwtStrategy } from './auth/strategies/jwt.strategy';
+import { CoreCleanupProcessor } from './cleanup/cleanup.processor';
+import { CleanupScheduler } from './cleanup/cleanup.scheduler';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { JwtStrategy } from './auth/strategies/jwt.strategy';
     JwtStrategy,
     UsersService,
     RolesService,
+    CoreCleanupProcessor,
+    CleanupScheduler,
   ],
   // Export services needed by other modules (e.g., KbsModule)
   exports: [UsersService, RolesService, CorePrismaService],

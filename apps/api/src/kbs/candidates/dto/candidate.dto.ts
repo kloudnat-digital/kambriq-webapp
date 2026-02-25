@@ -11,8 +11,8 @@ export class EnrollDto extends createZodDto(enrollSchema) {}
 
 // ----- Module Quiz Submission ---------
 const quizAnswerSchema = z.object({
-  questionId: z.cuid(),
-  answerIds: z.array(z.cuid()).min(1), // SINGLE: 1 element; MULTIPLE: ≥1 elements
+  questionId: z.uuid(),
+  answerIds: z.array(z.uuid()).min(1), // SINGLE: 1 element; MULTIPLE: ≥1 elements
 });
 
 export const submitQuizSchema = z.object({

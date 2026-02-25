@@ -1,0 +1,54 @@
+{
+  "application": {
+    "submitted": "Your KAMNET application has been submitted successfully",
+    "alreadyExists": "You already have a pending or approved KAMNET application",
+    "notFound": "Application not found",
+    "notPending": "This application is not in pending status",
+    "invalidKca": "Your KCA certificate is invalid or expired. Please ensure you have a valid KBS certification.",
+    "approved": "Application approved — welcome to KAMNET!",
+    "rejected": "Application has been rejected",
+    "sponsorNotFound": "Sponsor with code {code} not found"
+  },
+  "agent": {
+    "notFound": "Agent profile not found",
+    "alreadyExists": "You are already a KAMNET agent",
+    "suspended": "Your agent account has been suspended. Contact admin for details.",
+    "profileUpdated": "Agent profile updated successfully",
+    "statusUpdated": "Agent status updated to {status}",
+    "suspendSuccess": "Agent has been suspended",
+    "reactivateSuccess": "Agent has been reactivated",
+    "alreadySuspended": "This agent is already suspended",
+    "notSuspended": "This agent is not suspended",
+    "codeGenerated": "Agent code: {code}"
+  },
+  "lead": {
+    "created": "Lead created successfully",
+    "notFound": "Lead not found",
+    "updated": "Lead updated successfully",
+    "deleted": "Lead deleted successfully",
+    "invalidTransition": "Cannot transition lead from {from} to {to}",
+    "notOwner": "You can only manage your own leads"
+  },
+  "reservation": {
+    "created": "Land reserved successfully for {clientName}",
+    "notFound": "Reservation not found",
+    "landNotAvailable": "This land is not available for reservation",
+    "alreadyReserved": "This land is already reserved",
+    "downPaymentConfirmed": "Down payment confirmed for reservation {id}",
+    "completed": "Reservation completed — sale finalized",
+    "cancelled": "Reservation has been cancelled",
+    "notPending": "This reservation is not in pending status",
+    "notConfirmed": "This reservation has not been confirmed yet",
+    "notOwner": "You can only manage your own reservations"
+  },
+  "commission": {
+    "created": "Commission record created",
+    "notFound": "Commission record not found",
+    "invalidStatusTransition": "Cannot transition commission from {from} to {to}",
+    "validated": "Commission validated",
+    "paid": "Commission marked as paid"
+  },
+  "network": {
+    "treeLoaded": "Sponsorship tree loaded ({count} referrals)"
+  }
+}

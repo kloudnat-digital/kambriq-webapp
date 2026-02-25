@@ -64,6 +64,77 @@
     "validLabel": "Valide jusqu'au : <strong>{validUntil}</strong>",
     "note": "Vous pouvez maintenant postuler pour rejoindre KAMNET et commencer votre parcours d'agent KAMBRIQ."
   },
+  "applicationSubmitted": {
+    "subject": "Demande KAMNET reçue",
+    "heading": "Demande soumise",
+    "body": "Bonjour {firstName}, nous avons reçu votre demande d'adhésion au réseau d'agents KAMNET.",
+    "note": "Notre équipe examinera votre demande sous peu. Vous recevrez un email dès qu'une décision sera prise."
+  },
+  "applicationApproved": {
+    "subject": "🎉 Bienvenue dans KAMNET !",
+    "heading": "Demande approuvée",
+    "body": "Bonjour {firstName}, bonne nouvelle ! Votre demande d'adhésion KAMNET a été approuvée.",
+    "agentCode": "Votre code agent :",
+    "note": "Vous pouvez maintenant accéder au tableau de bord agent, parcourir les terrains et commencer votre parcours KAMBRIQ."
+  },
+  "applicationRejected": {
+    "subject": "Mise à jour de votre demande KAMNET",
+    "heading": "Mise à jour de la demande",
+    "body": "Bonjour {firstName}, après examen, votre demande KAMNET n'a pas pu être approuvée pour le moment.",
+    "reason": "Note du réviseur : <em>{reason}</em>",
+    "note": "Si vous pensez qu'il s'agit d'une erreur, veuillez contacter notre équipe de support."
+  },
+  "agentSuspended": {
+    "subject": "Votre compte agent KAMNET a été suspendu",
+    "heading": "Compte suspendu",
+    "body": "Bonjour {firstName}, votre compte agent KAMNET a été suspendu.",
+    "note": "Veuillez contacter l'administration KAMNET pour plus d'informations."
+  },
+  "agentReactivated": {
+    "subject": "Votre compte agent KAMNET a été réactivé",
+    "heading": "Compte agent réactivé",
+    "body": "Bonjour {firstName}, votre compte agent KAMNET a été réactivé. Vous pouvez à nouveau accéder à toutes les fonctionnalités."
+  },
+  "agentPromotion": {
+    "subject": "🎉 Vous avez été promu sur KAMNET !",
+    "heading": "Félicitations, {firstName} !",
+    "body": "Votre travail porte ses fruits — vous venez de gagner une promotion sur le réseau KAMNET.",
+    "tierLabel": "Votre nouveau rang :",
+    "note": "Continuez à développer votre réseau et à conclure des ventes. Le prochain niveau est à portée de main."
+  },
+  "emailChangeRequest": {
+    "subject": "Confirmez votre nouvelle adresse email KAMBRIQ",
+    "heading": "Changement d'adresse email",
+    "body": "Bonjour {firstName}, vous avez demandé à changer votre adresse email vers <strong>{newEmail}</strong>. Cliquez ci-dessous pour confirmer.",
+    "button": "Confirmer le changement",
+    "expiry": "Ce lien expire dans 24 heures. Si vous n'avez pas fait cette demande, ignorez cet email — votre adresse actuelle reste inchangée."
+  },
+  "emailChangeConfirm": {
+    "subject": "Votre adresse email KAMBRIQ a été modifiée",
+    "heading": "Adresse email mise à jour",
+    "body": "Bonjour {firstName}, votre adresse email KAMBRIQ a été changée vers <strong>{newEmail}</strong>.",
+    "warning": "Si vous n'avez pas effectué cette modification, contactez notre support immédiatement."
+  },
+  "idVerified": {
+    "subject": "Votre identité a été vérifiée",
+    "heading": "Identité vérifiée ✓",
+    "body": "Bonjour {firstName}, votre document d'identité a été examiné et approuvé.",
+    "note": "Votre compte est maintenant vérifié."
+  },
+  "idRejected": {
+    "subject": "Vérification d'identité — action requise",
+    "heading": "Document non accepté",
+    "body": "Bonjour {firstName}, votre document d'identité n'a pas pu être validé.",
+    "reason": "Motif : <strong>{reason}</strong>",
+    "retry": "Veuillez soumettre un nouveau document valide depuis votre espace personnel."
+  },
+  "inviteUser": {
+    "subject": "Bienvenue sur KAMBRIQ — Définissez votre mot de passe",
+    "heading": "Bienvenue, {firstName} !",
+    "body": "Un compte KAMBRIQ a été créé pour vous. Définissez votre mot de passe pour commencer.",
+    "button": "Définir mon mot de passe",
+    "expiry": "Ce lien expire dans 24 heures. Si vous n'avez pas demandé ce compte, vous pouvez ignorer cet email."
+  },
   "footer": {
     "copyright": "© {year} KAMBRIQ. Tous droits réservés.",
     "ignore": "Si vous n'avez pas demandé cet email, vous pouvez l'ignorer en toute sécurité."

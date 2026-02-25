@@ -161,6 +161,23 @@ export class KbsCandidatesService {
       }
     }
 
+    // Enforce quiz attempt limit (quizMaxAttempts = 0 means unlimited)
+    const settings = await this.prisma.kbsSettings.findFirst();
+    const quizMaxAttempts = settings?.quizMaxAttempts ?? 0;
+    if (quizMaxAttempts > 0) {
+      const existingProgress = await this.prisma.kbsCandidateProgress.findUnique({
+        where: { candidateId_moduleId: { candidateId: candidate.id, moduleId } },
+        select: { attempts: true },
+      });
+      if ((existingProgress?.attempts ?? 0) >= quizMaxAttempts) {
+        throw new ForbiddenException(
+          this.t('kbs.quiz.maxAttemptsReached', undefined, {
+            max: quizMaxAttempts,
+          }),
+        );
+      }
+    }
+
     // Fetch correct answers for this module's questions
     const questions = await this.prisma.kbsQuestion.findMany({
       where: { moduleId },
@@ -190,7 +207,7 @@ export class KbsCandidatesService {
     const score = Math.round((correctCount / questions.length) * 100);
     const passed = score >= MODULE_PASSING_SCORE;
 
-    // Upsert progress record
+    // Upsert progress record — always increment attempt counter
     await this.prisma.kbsCandidateProgress.upsert({
       where: {
         candidateId_moduleId: {
@@ -203,11 +220,13 @@ export class KbsCandidatesService {
         moduleId,
         score,
         passed,
+        attempts: 1,
         completedAt: passed ? new Date() : null,
       },
       update: {
         score,
         passed,
+        attempts: { increment: 1 },
         completedAt: passed ? new Date() : null,
       },
     });
@@ -230,6 +249,13 @@ export class KbsCandidatesService {
       correctCount,
       totalQuestions: questions.length,
       passingScore: MODULE_PASSING_SCORE,
+      attemptsUsed: (settings?.quizMaxAttempts ?? 0) > 0
+        ? ((await this.prisma.kbsCandidateProgress.findUnique({
+            where: { candidateId_moduleId: { candidateId: candidate.id, moduleId } },
+            select: { attempts: true },
+          }))?.attempts ?? 1)
+        : null,
+      maxAttempts: quizMaxAttempts > 0 ? quizMaxAttempts : null,
     };
   }
 
@@ -360,13 +386,25 @@ export class KbsCandidatesService {
   }
 
   // ----- Cross Module Interface ----------------------------------
-  /** Used by KAMNET to check if a user has KBS certification */
+  /**
+   * Used by KAMNET to check if a user has an active (non-expired) KBS certification.
+   * Returns false if the candidate is not certified or if the certificate has expired.
+   */
   async isUserCertified(userId: string): Promise<boolean> {
     const candidate = await this.prisma.kbsCandidate.findUnique({
       where: { userId },
-      select: { status: true },
+      select: {
+        status: true,
+        certificate: { select: { validUntil: true } },
+      },
     });
-    return candidate?.status === CandidateStatus.CERTIFIED;
+
+    if (candidate?.status !== CandidateStatus.CERTIFIED) return false;
+
+    // If no certificate has been issued yet the status alone is not enough
+    if (!candidate.certificate) return false;
+
+    return candidate.certificate.validUntil > new Date();
   }
 
   async findByUserId(userId: string) {
