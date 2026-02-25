@@ -1,0 +1,152 @@
+name: Deploy Dev
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Build, Migrate, Deploy
+    runs-on: ubuntu-latest
+    environment: dev
+
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_REPO: ${{ vars.ECR_REPO }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+      ECS_SERVICE: ${{ vars.ECS_SERVICE }}
+      ECS_TASK_DEFINITION: ${{ vars.ECS_TASK_DEFINITION }}
+      ECS_SUBNETS: ${{ vars.ECS_SUBNETS }}
+      ECS_SECURITY_GROUPS: ${{ vars.ECS_SECURITY_GROUPS }}
+      CONTAINER_NAME: ${{ vars.CONTAINER_NAME || 'api' }}
+      ASSIGN_PUBLIC_IP: ${{ vars.ASSIGN_PUBLIC_IP || 'DISABLED' }}
+      SMOKE_TEST_URL: ${{ vars.SMOKE_TEST_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build and push image
+        env:
+          IMAGE_TAG: dev-${{ github.sha }}
+        run: |
+          set -euo pipefail
+          IMAGE_URI="${ECR_REPO}:${IMAGE_TAG}"
+          aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REPO%/*}"
+          docker build -f docker/Dockerfile -t "${IMAGE_URI}" .
+          docker push "${IMAGE_URI}"
+          echo "IMAGE_URI=${IMAGE_URI}" >> "$GITHUB_ENV"
+
+      - name: Run Prisma migrations (one-off task)
+        run: |
+          set -euo pipefail
+          TASK_ARN="$(aws ecs run-task \
+            --cluster "${ECS_CLUSTER}" \
+            --launch-type FARGATE \
+            --task-definition "${ECS_TASK_DEFINITION}" \
+            --network-configuration "awsvpcConfiguration={subnets=[${ECS_SUBNETS}],securityGroups=[${ECS_SECURITY_GROUPS}],assignPublicIp=${ASSIGN_PUBLIC_IP}}" \
+            --overrides "$(cat <<EOF
+          {
+            "containerOverrides": [
+              {
+                "name": "${CONTAINER_NAME}",
+                "command": [
+                  "sh",
+                  "-c",
+                  "npx prisma migrate deploy --schema prisma/core/schema.prisma && npx prisma migrate deploy --schema prisma/kbs/schema.prisma"
+                ]
+              }
+            ]
+          }
+          EOF
+          )" \
+            --query "tasks[0].taskArn" \
+            --output text)"
+
+          if [[ -z "${TASK_ARN}" || "${TASK_ARN}" == "None" ]]; then
+            echo "Failed to start migration task" >&2
+            exit 1
+          fi
+
+          aws ecs wait tasks-stopped --cluster "${ECS_CLUSTER}" --tasks "${TASK_ARN}"
+          EXIT_CODE="$(aws ecs describe-tasks --cluster "${ECS_CLUSTER}" --tasks "${TASK_ARN}" \
+            --query "tasks[0].containers[0].exitCode" --output text)"
+          echo "MIGRATION_TASK_ARN=${TASK_ARN}" >> "$GITHUB_ENV"
+          echo "MIGRATION_EXIT_CODE=${EXIT_CODE}" >> "$GITHUB_ENV"
+
+          if [[ "${EXIT_CODE}" != "0" ]]; then
+            echo "Migration task failed with exit code ${EXIT_CODE}" >&2
+            exit 1
+          fi
+
+      - name: Register new task definition
+        run: |
+          set -euo pipefail
+          TASK_DEF_JSON="$(aws ecs describe-task-definition --task-definition "${ECS_TASK_DEFINITION}")"
+          NEW_TASK_DEF="$(echo "${TASK_DEF_JSON}" | jq --arg IMAGE "${IMAGE_URI}" --arg NAME "${CONTAINER_NAME}" '
+            .taskDefinition
+            | .containerDefinitions |= map(if .name == $NAME then .image = $IMAGE else . end)
+            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
+          ')"
+          NEW_TASK_DEF_ARN="$(aws ecs register-task-definition --cli-input-json "${NEW_TASK_DEF}" \
+            --query "taskDefinition.taskDefinitionArn" --output text)"
+          echo "NEW_TASK_DEF_ARN=${NEW_TASK_DEF_ARN}" >> "$GITHUB_ENV"
+
+      - name: Deploy to ECS
+        run: |
+          set -euo pipefail
+          aws ecs update-service \
+            --cluster "${ECS_CLUSTER}" \
+            --service "${ECS_SERVICE}" \
+            --task-definition "${NEW_TASK_DEF_ARN}"
+          aws ecs wait services-stable --cluster "${ECS_CLUSTER}" --services "${ECS_SERVICE}"
+
+      - name: Smoke test
+        if: ${{ env.SMOKE_TEST_URL != '' }}
+        run: |
+          set -euo pipefail
+          curl -f "${SMOKE_TEST_URL}"
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          {
+            echo "## Deploy Dev Summary"
+            echo
+            echo "- Image: ${IMAGE_URI:-n/a}"
+            echo "- Task definition: ${NEW_TASK_DEF_ARN:-n/a}"
+            echo "- ECS service: ${ECS_SERVICE}"
+            echo "- Migration task: ${MIGRATION_TASK_ARN:-n/a}"
+            echo "- Migration exit code: ${MIGRATION_EXIT_CODE:-n/a}"
+            if [[ -n "${SMOKE_TEST_URL}" ]]; then
+              echo "- Smoke test: ${SMOKE_TEST_URL}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
