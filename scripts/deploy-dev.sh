@@ -55,11 +55,22 @@ aws ecr get-login-password --region "${AWS_REGION}" \
 echo "Pushing image"
 docker push "${IMAGE_URI}"
 
+echo "Preparing new task definition with updated image"
+TASK_DEF_JSON="$(aws ecs describe-task-definition --task-definition "${ECS_TASK_DEFINITION}")"
+NEW_TASK_DEF="$(echo "${TASK_DEF_JSON}" | jq --arg IMAGE "${IMAGE_URI}" --arg NAME "${CONTAINER_NAME}" '
+  .taskDefinition
+  | .containerDefinitions |= map(if .name == $NAME then .image = $IMAGE else . end)
+  | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
+')"
+
+NEW_TASK_DEF_ARN="$(aws ecs register-task-definition --cli-input-json "${NEW_TASK_DEF}" \
+  --query "taskDefinition.taskDefinitionArn" --output text)"
+
 echo "Running Prisma migrations as one-off task"
 TASK_ARN="$(aws ecs run-task \
   --cluster "${ECS_CLUSTER}" \
   --launch-type FARGATE \
-  --task-definition "${ECS_TASK_DEFINITION}" \
+  --task-definition "${NEW_TASK_DEF_ARN}" \
   --network-configuration "awsvpcConfiguration={subnets=[${ECS_SUBNETS}],securityGroups=[${ECS_SECURITY_GROUPS}],assignPublicIp=${ASSIGN_PUBLIC_IP}}" \
   --overrides "$(cat <<EOF
 {
@@ -94,17 +105,6 @@ if [[ "${EXIT_CODE}" != "0" ]]; then
   echo "Migration task failed with exit code ${EXIT_CODE}" >&2
   exit 1
 fi
-
-echo "Preparing new task definition with updated image"
-TASK_DEF_JSON="$(aws ecs describe-task-definition --task-definition "${ECS_TASK_DEFINITION}")"
-NEW_TASK_DEF="$(echo "${TASK_DEF_JSON}" | jq --arg IMAGE "${IMAGE_URI}" --arg NAME "${CONTAINER_NAME}" '
-  .taskDefinition
-  | .containerDefinitions |= map(if .name == $NAME then .image = $IMAGE else . end)
-  | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
-')"
-
-NEW_TASK_DEF_ARN="$(aws ecs register-task-definition --cli-input-json "${NEW_TASK_DEF}" \
-  --query "taskDefinition.taskDefinitionArn" --output text)"
 
 echo "Updating ECS service to ${NEW_TASK_DEF_ARN}"
 aws ecs update-service \

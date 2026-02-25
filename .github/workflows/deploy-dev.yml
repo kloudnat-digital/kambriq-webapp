@@ -65,13 +65,26 @@ jobs:
           docker push "${IMAGE_URI}"
           echo "IMAGE_URI=${IMAGE_URI}" >> "$GITHUB_ENV"
 
+      - name: Register new task definition
+        run: |
+          set -euo pipefail
+          TASK_DEF_JSON="$(aws ecs describe-task-definition --task-definition "${ECS_TASK_DEFINITION}")"
+          NEW_TASK_DEF="$(echo "${TASK_DEF_JSON}" | jq --arg IMAGE "${IMAGE_URI}" --arg NAME "${CONTAINER_NAME}" '
+            .taskDefinition
+            | .containerDefinitions |= map(if .name == $NAME then .image = $IMAGE else . end)
+            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
+          ')"
+          NEW_TASK_DEF_ARN="$(aws ecs register-task-definition --cli-input-json "${NEW_TASK_DEF}" \
+            --query "taskDefinition.taskDefinitionArn" --output text)"
+          echo "NEW_TASK_DEF_ARN=${NEW_TASK_DEF_ARN}" >> "$GITHUB_ENV"
+
       - name: Run Prisma migrations (one-off task)
         run: |
           set -euo pipefail
           TASK_ARN="$(aws ecs run-task \
             --cluster "${ECS_CLUSTER}" \
             --launch-type FARGATE \
-            --task-definition "${ECS_TASK_DEFINITION}" \
+            --task-definition "${NEW_TASK_DEF_ARN}" \
             --network-configuration "awsvpcConfiguration={subnets=[${ECS_SUBNETS}],securityGroups=[${ECS_SECURITY_GROUPS}],assignPublicIp=${ASSIGN_PUBLIC_IP}}" \
             --overrides "$(cat <<EOF
           {
@@ -106,19 +119,6 @@ jobs:
             echo "Migration task failed with exit code ${EXIT_CODE}" >&2
             exit 1
           fi
-
-      - name: Register new task definition
-        run: |
-          set -euo pipefail
-          TASK_DEF_JSON="$(aws ecs describe-task-definition --task-definition "${ECS_TASK_DEFINITION}")"
-          NEW_TASK_DEF="$(echo "${TASK_DEF_JSON}" | jq --arg IMAGE "${IMAGE_URI}" --arg NAME "${CONTAINER_NAME}" '
-            .taskDefinition
-            | .containerDefinitions |= map(if .name == $NAME then .image = $IMAGE else . end)
-            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
-          ')"
-          NEW_TASK_DEF_ARN="$(aws ecs register-task-definition --cli-input-json "${NEW_TASK_DEF}" \
-            --query "taskDefinition.taskDefinitionArn" --output text)"
-          echo "NEW_TASK_DEF_ARN=${NEW_TASK_DEF_ARN}" >> "$GITHUB_ENV"
 
       - name: Deploy to ECS
         run: |
