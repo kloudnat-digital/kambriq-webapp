@@ -42,6 +42,12 @@ jobs:
             "containerOverrides": [
               {
                 "name": "${CONTAINER_NAME}",
+                "environment": [
+                  {
+                    "name": "ALLOW_DB_PUSH",
+                    "value": "true"
+                  }
+                ],
                 "command": [
                   "sh",
                   "-c",

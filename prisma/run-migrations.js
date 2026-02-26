@@ -53,10 +53,25 @@ function runMigrations() {
     throw new Error('No prisma schema directories found');
   }
 
+  const allowDbPush = process.env.ALLOW_DB_PUSH === 'true';
+
   for (const name of schemaDirs) {
     const schemaPath = path.join(prismaDir, name, 'schema.prisma');
     const configPath = path.join(prismaDir, name, 'prisma.config.ts');
     const configArg = fs.existsSync(configPath) ? ` --config ${configPath}` : '';
+    const migrationsDir = path.join(prismaDir, name, 'migrations');
+    const hasMigrations = fs.existsSync(migrationsDir) && fs.readdirSync(migrationsDir).length > 0;
+
+    if (!hasMigrations) {
+      if (!allowDbPush) {
+        throw new Error(`No migrations found for ${name}. Set ALLOW_DB_PUSH=true to run prisma db push.`);
+      }
+      const pushCmd = `npx prisma db push --accept-data-loss --schema ${schemaPath}${configArg}`;
+      console.log(`\n→ ${pushCmd}`);
+      execSync(pushCmd, { stdio: 'inherit' });
+      continue;
+    }
+
     const cmd = `npx prisma migrate deploy --schema ${schemaPath}${configArg}`;
     console.log(`\n→ ${cmd}`);
     execSync(cmd, { stdio: 'inherit' });
