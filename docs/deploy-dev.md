@@ -33,11 +33,7 @@ Optional:
 The script and CI/CD use this command:
 
 ```
-node prisma/ensure-databases.js && \
-npx prisma migrate deploy --schema prisma/core/schema.prisma --config prisma/core/prisma.config.ts && \
-npx prisma migrate deploy --schema prisma/kbs/schema.prisma --config prisma/kbs/prisma.config.ts && \
-npx prisma migrate deploy --schema prisma/kamnet/schema.prisma --config prisma/kamnet/prisma.config.ts && \
-npx prisma migrate deploy --schema prisma/lands/schema.prisma --config prisma/lands/prisma.config.ts
+node prisma/run-migrations.js
 ```
 
 ## Seed data (dev only)
