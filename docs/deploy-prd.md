@@ -34,8 +34,11 @@ Optional:
 The workflow uses this command:
 
 ```
+node prisma/ensure-databases.js && \
 npx prisma migrate deploy --schema prisma/core/schema.prisma --config prisma/core/prisma.config.ts && \
-npx prisma migrate deploy --schema prisma/kbs/schema.prisma --config prisma/kbs/prisma.config.ts
+npx prisma migrate deploy --schema prisma/kbs/schema.prisma --config prisma/kbs/prisma.config.ts && \
+npx prisma migrate deploy --schema prisma/kamnet/schema.prisma --config prisma/kamnet/prisma.config.ts && \
+npx prisma migrate deploy --schema prisma/lands/schema.prisma --config prisma/lands/prisma.config.ts
 ```
 
 ## Production deploy flow
@@ -43,6 +46,8 @@ npx prisma migrate deploy --schema prisma/kbs/schema.prisma --config prisma/kbs/
 - Trigger: push a `vX.Y.Z` Git tag.
 - Steps: quality checks -> build/push image -> run migrations -> update ECS -> smoke test.
 - If the vanity domain is unavailable, the smoke test falls back to the ALB DNS health check.
+
+Note: seeding is not run in prd CI/CD.
 
 ## End-to-end sequence (infra → API)
 

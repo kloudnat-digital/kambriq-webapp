@@ -117,6 +117,26 @@ const kbs    = new KbsClient({ adapter: new PrismaPg(kbsPool) });
 const kamnet = new KamnetClient({ adapter: new PrismaPg(kamnetPool) });
 const lands  = new LandsClient({ adapter: new PrismaPg(landsPool) });
 
+function getDbName(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    const name = parsed.pathname.replace("/", "");
+    return name || null;
+  } catch {
+    return null;
+  }
+}
+
+async function ensureDatabaseExists(dbName: string | null) {
+  if (!dbName) return;
+  const exists = await corePool.query("select 1 from pg_database where datname = $1", [dbName]);
+  if (exists.rowCount === 0) {
+    await corePool.query(`create database "${dbName}"`);
+    console.log(`  ✓ Created database ${dbName}`);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -483,6 +503,10 @@ async function main() {
   console.log('\n🌱 Kambriq seed starting...\n');
 
   try {
+    await ensureDatabaseExists(getDbName(process.env['DATABASE_URL_KBS']));
+    await ensureDatabaseExists(getDbName(process.env['DATABASE_URL_KAMNET']));
+    await ensureDatabaseExists(getDbName(process.env['DATABASE_URL_LANDS']));
+
     await seedCore();
     await seedKbs();
     await seedKamnet();
