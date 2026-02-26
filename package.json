@@ -45,7 +45,7 @@
     "db:reset:kamnet": "npx prisma migrate reset --config prisma/kamnet/prisma.config.ts --schema prisma/kamnet/schema.prisma",
     "db:reset:lands": "npx prisma migrate reset --config prisma/lands/prisma.config.ts --schema prisma/lands/schema.prisma",
     "db:reset": "npm run db:reset:core && npm run db:reset:kbs && npm run db:reset:kamnet && npm run db:reset:lands",
-    "db:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
+    "db:seed": "node --loader ts-node/esm prisma/seed.ts",
     "db:setup": "npm run db:migrate:dev && npm run db:seed",
     "----- NX -----": "",
     "nx:graph": "npx nx graph",
@@ -61,7 +61,7 @@
   },
   "private": true,
   "prisma": {
-    "seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts"
+    "seed": "node --loader ts-node/esm prisma/seed.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.995.0",
