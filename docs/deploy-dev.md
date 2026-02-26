@@ -46,3 +46,8 @@ Notes:
 ```
 ./scripts/deploy-dev.sh
 ```
+
+## End-to-end sequence (infra → API)
+
+Infra must be applied and GitHub env vars must be populated before this deploy.
+See `kambriq-infra/docs/deployment-sequence.md` for the complete order.

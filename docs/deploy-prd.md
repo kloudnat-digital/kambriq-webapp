@@ -24,6 +24,11 @@ Optional:
 - Images are tagged with release tags `vX.Y.Z` and also pushed as `latest`.
 - The workflow validates that the Git tag matches `package.json` version.
 
+## Prd prerequisites
+
+- Complete and validate dev deployments before promoting to prd.
+- Ensure the prd ACM certificate ARN is configured in Terraform (ALB HTTPS listener).
+
 ## One-off migration command (ECS task override)
 
 The workflow uses this command:
@@ -38,3 +43,8 @@ npx prisma migrate deploy --schema prisma/kbs/schema.prisma --config prisma/kbs/
 - Trigger: push a `vX.Y.Z` Git tag.
 - Steps: quality checks -> build/push image -> run migrations -> update ECS -> smoke test.
 - If the vanity domain is unavailable, the smoke test falls back to the ALB DNS health check.
+
+## End-to-end sequence (infra → API)
+
+Infra must be applied and GitHub env vars must be populated before this deploy.
+See `kambriq-infra/docs/deployment-sequence.md` for the complete order.
