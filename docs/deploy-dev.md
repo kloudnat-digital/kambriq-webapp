@@ -45,6 +45,9 @@ It requires the following secrets on the task definition:
 - `DATABASE_URL_KAMNET`
 - `DATABASE_URL_LANDS`
 
+Note: the core schema no longer includes `Permission` or `RolePermission` tables,
+so they should not be expected during verification.
+
 ## Local dev deploy
 
 Notes:
