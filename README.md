@@ -364,3 +364,6 @@ Eric  (CONFIRMED, 6 sales)  ← root sponsor
 ## License
 
 MIT
+
+## Commit Hygiene
+- Do not add `Made-with: Cursor` to commits.
