@@ -15,12 +15,7 @@ import {
 } from '../../utils';
 import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import {
-  comparePassword,
-  EmailService,
-  RoleCode,
-  VerificationTokenType,
-} from '@kambriq/common';
+import { comparePassword, EmailService, RoleCode, VerificationTokenType } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 import { ConfigService } from '@nestjs/config';
 import { AuthResponse } from '../../../core/auth/dto/auth.dto';
@@ -79,9 +74,7 @@ describe('AuthService', () => {
       prisma.user.findUnique.mockResolvedValue(null); // No existing user
       const createdUser = buildUser({ id: 'user-1', email: dto.email });
       prisma.user.create.mockResolvedValue(createdUser);
-      prisma.role.findUnique.mockResolvedValue(
-        buildRole(RoleCode.CLIENT, { id: 'role-1' }),
-      );
+      prisma.role.findUnique.mockResolvedValue(buildRole(RoleCode.CLIENT, { id: 'role-1' }));
       prisma.userRole.create.mockResolvedValue({});
       prisma.verificationToken.updateMany.mockResolvedValue({ count: 0 });
       prisma.verificationToken.create.mockResolvedValue({});
@@ -129,12 +122,13 @@ describe('AuthService', () => {
   // ----- LOGIN ----- //
 
   describe('login', () => {
-    const dto = { email: 'test@kambriq.com', password: 'StrongPass123!' };
+    const dto = { email: 'test@kambriq.com', password: 'StrongPass123!', rememberMe: false };
 
     it('returns tokens on valid credentials', async () => {
       const user = buildUserWithRoles(['CLIENT'], {
         email: dto.email,
         isActive: true,
+        emailVerified: true,
       });
 
       prisma.user.findUnique.mockResolvedValue(user);
@@ -156,6 +150,7 @@ describe('AuthService', () => {
     it('throws a wrong password and increments loginAttempts', async () => {
       const user = buildUserWithRoles(['CLIENT'], {
         email: dto.email,
+        emailVerified: true,
         loginAttempts: 0,
       });
       prisma.user.findUnique.mockResolvedValue(user);
@@ -174,6 +169,7 @@ describe('AuthService', () => {
     it('locks account after MAX_LOGIN_ATTEMPTS failures', async () => {
       const user = buildUserWithRoles(['CLIENT'], {
         email: dto.email,
+        emailVerified: true,
         loginAttempts: 4, // one more will be 5 = locked
       });
       prisma.user.findUnique.mockResolvedValue(user);
@@ -190,6 +186,7 @@ describe('AuthService', () => {
     it('rejects login when account is locked', async () => {
       const user = buildUserWithRoles(['CLIENT'], {
         email: dto.email,
+        emailVerified: true,
         lockedUntil: new Date(Date.now() + 900_000), // locked for 15min
       });
       prisma.user.findUnique.mockResolvedValue(user);
@@ -201,6 +198,7 @@ describe('AuthService', () => {
     it('returns grace period response for self-deleted user within the window', async () => {
       const user = buildUserWithRoles(['CLIENT'], {
         email: dto.email,
+        emailVerified: true,
         isActive: false,
         deletedAt: new Date(Date.now() - 5 * 86_400_000), // deleted 5 days ago
         deactivatedBy: null,
@@ -215,6 +213,7 @@ describe('AuthService', () => {
     it('throws for admin blocked users', async () => {
       const user = buildUserWithRoles(['CLIENT'], {
         email: dto.email,
+        emailVerified: true,
         isActive: false,
         deletedAt: null,
         deactivatedBy: 'admin-1',
@@ -299,9 +298,7 @@ describe('AuthService', () => {
       const token = buildVerificationToken({ usedAt: new Date() });
       prisma.verificationToken.findUnique.mockResolvedValue(token);
 
-      await expect(
-        service.verifyEmail({ token: token.token }),
-      ).rejects.toThrow();
+      await expect(service.verifyEmail({ token: token.token })).rejects.toThrow();
     });
 
     it('rejects expired token', async () => {
@@ -310,9 +307,7 @@ describe('AuthService', () => {
       });
       prisma.verificationToken.findUnique.mockResolvedValue(token);
 
-      await expect(
-        service.verifyEmail({ token: token.token }),
-      ).rejects.toThrow();
+      await expect(service.verifyEmail({ token: token.token })).rejects.toThrow();
     });
   });
 

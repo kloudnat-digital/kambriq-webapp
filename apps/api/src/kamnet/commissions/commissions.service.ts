@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { KamnetPrismaService } from '../prisma/kamnet-prisma.service';
 import { I18nService } from 'nestjs-i18n';
 import {
@@ -50,8 +45,8 @@ export class KamnetCommissionsService {
     const commission = await this.prisma.kamnetCommission.create({
       data: {
         agentId: dto.agentId,
-        landId: dto.landId,
-        reservationId: dto.reservationId,
+        landId: dto.landId as string,
+        reservationId: dto.reservationId as string,
         level: dto.level,
         pv: dto.pv,
         tpc: dto.tpc,
@@ -74,8 +69,7 @@ export class KamnetCommissionsService {
   async updateStatus(commissionId: string, dto: UpdateCommissionStatusDto) {
     const commission = await this.findByIdOrThrow(commissionId);
 
-    const allowed =
-      KAMNET_VALID_COMMISSION_TRANSITIONS[commission.status] || [];
+    const allowed = KAMNET_VALID_COMMISSION_TRANSITIONS[commission.status] || [];
     if (!allowed.includes(dto.status)) {
       throw new BadRequestException(
         this.t('kamnet.commission.invalidStatusTransition', undefined, {
@@ -105,11 +99,7 @@ export class KamnetCommissionsService {
   }
 
   // ----- Agent: Get My Commissions ----- //
-  async findMyCommissions(
-    agentId: string,
-    query: PaginationQuery,
-    filters?: CommissionFilterDto,
-  ) {
+  async findMyCommissions(agentId: string, query: PaginationQuery, filters?: CommissionFilterDto) {
     const { page, limit, sort, order } = query;
     const skip = (page - 1) * limit;
 

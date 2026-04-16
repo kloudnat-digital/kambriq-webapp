@@ -1,0 +1,54 @@
+# ----- KAMBRIQ Web — Production Dockerfile ----- #
+# Uses Next.js standalone output for minimal image size.
+# Requires next.config.ts to have: output: 'standalone'
+
+FROM node:24.13.1-bookworm AS builder
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+WORKDIR /app
+
+# Install all workspace deps (needed to build the web app)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json ./apps/web/
+RUN pnpm install --frozen-lockfile
+
+# Copy source and build
+COPY tsconfig.base.json ./
+COPY apps/web ./apps/web/
+COPY libs ./libs/
+
+# Build-time env vars (non-secret, baked into the bundle)
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_APP_URL
+ARG NEXT_PUBLIC_MAPBOX_TOKEN
+
+RUN pnpm --filter @kambriq/web run build
+
+# ----- Production image -----
+FROM node:24.13.1-bookworm-slim AS production
+
+RUN groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -m -s /usr/sbin/nologin appuser
+
+WORKDIR /app
+
+# Copy Next.js standalone output
+COPY --from=builder --chown=appuser:appgroup /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=appuser:appgroup /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder --chown=appuser:appgroup /app/apps/web/public ./apps/web/public
+
+USER appuser
+
+EXPOSE 3001
+
+ENV PORT=3001
+ENV HOSTNAME="0.0.0.0"
+ENV NODE_ENV=production
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+  CMD wget -q --spider http://localhost:3001 || exit 1
+
+CMD ["node", "apps/web/server.js"]

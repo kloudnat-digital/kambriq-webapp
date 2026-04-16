@@ -98,9 +98,7 @@ export class LandReservationsService {
       }
 
       // 3. Calculate down payment (5% of land price)
-      const downPaymentAmount = Math.round(
-        (land.price * DOWN_PAYMENT_PERCENT) / 100,
-      );
+      const downPaymentAmount = Math.round((land.price * DOWN_PAYMENT_PERCENT) / 100);
 
       // 4. Create the reservation
       const reservation = await tx.landReservation.create({
@@ -234,6 +232,66 @@ export class LandReservationsService {
     return updated;
   }
 
+  // ----- Admin: Mark Client Documents Received (Step 3) ----- //
+  async markDocumentsReceived(reservationId: string, adminUserId: string) {
+    const reservation = await this.findByIdOrThrow(reservationId);
+
+    if (!reservation.downPaymentConfirmed) {
+      throw new ForbiddenException(this.t('lands.reservation.previousStepRequired'));
+    }
+    if (reservation.documentsReceivedAt) {
+      throw new ConflictException(this.t('lands.reservation.stepAlreadyDone'));
+    }
+
+    await this.prisma.landReservation.update({
+      where: { id: reservationId },
+      data: { documentsReceivedAt: new Date(), documentsReceivedBy: adminUserId },
+    });
+
+    this.logger.log('Reservation documents received', { reservationId, adminUserId });
+    return { message: this.t('lands.reservation.documentsReceived') };
+  }
+
+  // ----- Admin: Confirm Remaining Payment (Step 4) ----- //
+  async confirmRemainingPayment(reservationId: string, adminUserId: string) {
+    const reservation = await this.findByIdOrThrow(reservationId);
+
+    if (!reservation.documentsReceivedAt) {
+      throw new ForbiddenException(this.t('lands.reservation.previousStepRequired'));
+    }
+    if (reservation.remainingPaymentConfirmedAt) {
+      throw new ConflictException(this.t('lands.reservation.stepAlreadyDone'));
+    }
+
+    await this.prisma.landReservation.update({
+      where: { id: reservationId },
+      data: { remainingPaymentConfirmedAt: new Date(), remainingPaymentConfirmedBy: adminUserId },
+    });
+
+    this.logger.log('Reservation remaining payment confirmed', { reservationId, adminUserId });
+    return { message: this.t('lands.reservation.remainingPaymentConfirmed') };
+  }
+
+  // ----- Admin: Start Dossier / Title Transfer (Step 5) ----- //
+  async startDossier(reservationId: string, adminUserId: string) {
+    const reservation = await this.findByIdOrThrow(reservationId);
+
+    if (!reservation.remainingPaymentConfirmedAt) {
+      throw new ForbiddenException(this.t('lands.reservation.previousStepRequired'));
+    }
+    if (reservation.dossierStartedAt) {
+      throw new ConflictException(this.t('lands.reservation.stepAlreadyDone'));
+    }
+
+    await this.prisma.landReservation.update({
+      where: { id: reservationId },
+      data: { dossierStartedAt: new Date(), dossierStartedBy: adminUserId },
+    });
+
+    this.logger.log('Reservation dossier started', { reservationId, adminUserId });
+    return { message: this.t('lands.reservation.dossierStarted') };
+  }
+
   // ----- Admin: Complete Sale ----- //
   async complete(reservationId: string, adminUserId: string) {
     const reservation = await this.findByIdOrThrow(reservationId);
@@ -275,11 +333,7 @@ export class LandReservationsService {
   }
 
   // ----- Cancel Reservation ----- //
-  async cancel(
-    reservationId: string,
-    userId: string,
-    dto: CancelLandReservationDto,
-  ) {
+  async cancel(reservationId: string, userId: string, dto: CancelLandReservationDto) {
     const reservation = await this.findByIdOrThrow(reservationId);
 
     if (reservation.status === LandReservationStatus.COMPLETED) {
@@ -384,6 +438,70 @@ export class LandReservationsService {
     return buildPaginatedResponse(reservations, total, page, limit);
   }
 
+  // ----- Client: Single Purchase Detail ----- //
+  async findOneForClient(clientUserId: string, reservationId: string) {
+    const reservation = await this.prisma.landReservation.findUnique({
+      where: { id: reservationId },
+      include: {
+        land: {
+          select: {
+            id: true,
+            title: true,
+            region: true,
+            city: true,
+            price: true,
+            sizeM2: true,
+            label: { select: { code: true, name: true } },
+            documents: {
+              where: { isPrivate: false },
+              select: { id: true, name: true, type: true, url: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!reservation) {
+      throw new NotFoundException(this.t('lands.reservation.notFound'));
+    }
+    if (reservation.clientUserId !== clientUserId) {
+      throw new ForbiddenException();
+    }
+
+    return reservation;
+  }
+
+  // ----- Client: My Purchases ----- //
+  async findByClient(clientUserId: string, query: PaginationQuery) {
+    const { page, limit } = query;
+    const skip = (page - 1) * limit;
+
+    const [reservations, total] = await this.prisma.$transaction([
+      this.prisma.landReservation.findMany({
+        where: { clientUserId },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          land: {
+            select: {
+              id: true,
+              title: true,
+              region: true,
+              city: true,
+              price: true,
+              sizeM2: true,
+              label: { select: { code: true, name: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.landReservation.count({ where: { clientUserId } }),
+    ]);
+
+    return buildPaginatedResponse(reservations, total, page, limit);
+  }
+
   // ----- Admin: All Reservations ----- //
   async findAll(query: PaginationQuery, filters?: LandReservationFilterDto) {
     const { page, limit, sort, order } = query;
@@ -416,6 +534,24 @@ export class LandReservationsService {
     ]);
 
     return buildPaginatedResponse(reservations, total, page, limit);
+  }
+
+  // ----- Admin: Invite Client (manual resend) ----- //
+  async inviteClient(email: string, firstName: string, lastName: string, phone?: string) {
+    const result = await this.usersService.findOrCreateClientUser(
+      email,
+      firstName,
+      lastName,
+      phone,
+    );
+
+    this.logger.log(`Client invite ${result.isNew ? 'sent' : 'resent'}`, { email });
+
+    return {
+      clientUserId: result.id,
+      email: result.email,
+      isNew: result.isNew,
+    };
   }
 
   // ----- Private Helpers ----- //

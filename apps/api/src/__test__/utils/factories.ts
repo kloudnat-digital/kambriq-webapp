@@ -34,10 +34,7 @@ export const buildUser = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-export const buildRole = (
-  code = 'CLIENT',
-  overrides: Record<string, unknown> = {},
-) => ({
+export const buildRole = (code = 'CLIENT', overrides: Record<string, unknown> = {}) => ({
   id: id(),
   code,
   name: code.toLowerCase().replace(/_/g, ' '),
@@ -51,7 +48,7 @@ export const buildUserWithRoles = (
   overrides: Record<string, unknown> = {},
 ) => {
   const user = buildUser(overrides);
-  user.userRoles = roleCodes.map((code) => ({
+  (user as Record<string, unknown>).userRoles = roleCodes.map((code) => ({
     id: id(),
     userId: user.id,
     roleId: id(),
@@ -62,9 +59,7 @@ export const buildUserWithRoles = (
   return user;
 };
 
-export const buildVerificationToken = (
-  overrides: Record<string, unknown> = {},
-) => ({
+export const buildVerificationToken = (overrides: Record<string, unknown> = {}) => ({
   id: id(),
   userId: id(),
   token: 'abc123def456',

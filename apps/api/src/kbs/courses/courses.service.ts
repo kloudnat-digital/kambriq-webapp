@@ -53,9 +53,7 @@ export class KbsCoursesService {
     });
 
     if (!course)
-      throw new NotFoundException(
-        this.t('kbs.course.notFound', undefined, { id: courseId }),
-      );
+      throw new NotFoundException(this.t('kbs.course.notFound', undefined, { id: courseId }));
     return course;
   }
 
@@ -87,9 +85,7 @@ export class KbsCoursesService {
     });
 
     if (!course) {
-      throw new NotFoundException(
-        this.t('kbs.course.notFound', undefined, { id: courseId }),
-      );
+      throw new NotFoundException(this.t('kbs.course.notFound', undefined, { id: courseId }));
     }
 
     await this.prisma.kbsCourse.delete({ where: { id: courseId } });
@@ -173,9 +169,7 @@ export class KbsCoursesService {
       where: { id: dto.courseId },
     });
     if (!course)
-      throw new NotFoundException(
-        this.t('kbs.course.notFound', 'en', { id: dto.courseId }),
-      );
+      throw new NotFoundException(this.t('kbs.course.notFound', 'en', { id: dto.courseId }));
 
     const mod = await this.prisma.kbsModule.create({ data: dto });
     this.logger.log(`Module created`, {
@@ -212,9 +206,7 @@ export class KbsCoursesService {
       where: { id: moduleId },
     });
     if (!mod) {
-      throw new NotFoundException(
-        this.t('kbs.module.notFound', undefined, { id: moduleId }),
-      );
+      throw new NotFoundException(this.t('kbs.module.notFound', undefined, { id: moduleId }));
     }
     await this.prisma.kbsModule.delete({ where: { id: moduleId } });
     this.logger.log(`Module deleted`, { moduleId, title: mod.title });
@@ -235,10 +227,7 @@ export class KbsCoursesService {
       },
     });
 
-    if (!lesson)
-      throw new NotFoundException(
-        this.t('kbs.lesson.notFound', undefined, { id }),
-      );
+    if (!lesson) throw new NotFoundException(this.t('kbs.lesson.notFound', undefined, { id }));
 
     // Generate download URL from S3
     const contentUrl = await this.storage.getDownloadUrl(lesson.contentUrl);
@@ -251,9 +240,7 @@ export class KbsCoursesService {
       where: { id: dto.moduleId },
     });
     if (!mod)
-      throw new NotFoundException(
-        this.t('kbs.module.notFound', undefined, { id: dto.moduleId }),
-      );
+      throw new NotFoundException(this.t('kbs.module.notFound', undefined, { id: dto.moduleId }));
 
     const lesson = await this.prisma.kbsLesson.create({ data: dto });
     this.logger.log(`Lesson created`, {
@@ -311,21 +298,21 @@ export class KbsCoursesService {
       where: { id: dto.moduleId },
     });
     if (!mod)
-      throw new NotFoundException(
-        this.t('kbs.module.notFound', undefined, { id: dto.moduleId }),
-      );
+      throw new NotFoundException(this.t('kbs.module.notFound', undefined, { id: dto.moduleId }));
 
     const question = await this.prisma.kbsQuestion.create({
       data: {
-        moduleId: dto.moduleId,
+        moduleId: dto.moduleId as string,
         text: dto.text,
-        type: dto.type,
-        answers: {
-          create: dto.answers.map((a) => ({
-            text: a.text,
-            isCorrect: a.isCorrect,
-          })),
-        },
+        type: (dto.type ?? 'SINGLE') as 'SINGLE' | 'MULTIPLE',
+        ...(dto.answers && {
+          answers: {
+            create: dto.answers.map((a) => ({
+              text: a.text,
+              isCorrect: a.isCorrect,
+            })),
+          },
+        }),
       },
       include: { answers: true },
     });
@@ -341,10 +328,7 @@ export class KbsCoursesService {
     const existing = await this.prisma.kbsQuestion.findUnique({
       where: { id },
     });
-    if (!existing)
-      throw new NotFoundException(
-        this.t('kbs.question.notFound', undefined, { id }),
-      );
+    if (!existing) throw new NotFoundException(this.t('kbs.question.notFound', undefined, { id }));
 
     if (dto.answers) {
       return this.prisma.$transaction(async (tx) => {
@@ -355,7 +339,7 @@ export class KbsCoursesService {
             ...(dto.text !== undefined && { text: dto.text }),
             ...(dto.type !== undefined && { type: dto.type }),
             answers: {
-              create: dto.answers.map((a) => ({
+              create: (dto.answers ?? []).map((a) => ({
                 text: a.text,
                 isCorrect: a.isCorrect,
               })),
@@ -406,9 +390,7 @@ export class KbsCoursesService {
       select: { id: true, moduleId: true },
     });
     if (!lesson) {
-      throw new NotFoundException(
-        this.t('kbs.lesson.notFound', undefined, { id: lessonId }),
-      );
+      throw new NotFoundException(this.t('kbs.lesson.notFound', undefined, { id: lessonId }));
     }
 
     await this.prisma.kbsLessonCompletion.upsert({

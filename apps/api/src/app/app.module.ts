@@ -12,11 +12,7 @@ import {
   UserLanguageResolver,
   validateEnv,
 } from '@kambriq/common';
-import {
-  AcceptLanguageResolver,
-  HeaderResolver,
-  I18nModule,
-} from 'nestjs-i18n';
+import { AcceptLanguageResolver, HeaderResolver, I18nModule } from 'nestjs-i18n';
 import { LoggerModule } from 'nestjs-pino';
 import { IncomingMessage } from 'http';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -29,6 +25,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { KamnetModule } from '../kamnet/kamnet.module';
 import { LandsModule } from '../lands/lands.module';
+import { NewsletterModule } from '../newsletter/newsletter.module';
 
 @Module({
   imports: [
@@ -46,11 +43,7 @@ import { LandsModule } from '../lands/lands.module';
         path: path.join(process.cwd(), 'libs/common/src/i18n'),
         watch: true,
       },
-      resolvers: [
-        new HeaderResolver(['x-lang']),
-        UserLanguageResolver,
-        AcceptLanguageResolver,
-      ],
+      resolvers: [new HeaderResolver(['x-lang']), UserLanguageResolver, AcceptLanguageResolver],
     }),
 
     // ----- Logging (Pino) -----
@@ -99,6 +92,7 @@ import { LandsModule } from '../lands/lands.module';
     KbsModule,
     KamnetModule,
     LandsModule,
+    NewsletterModule,
     HealthModule,
 
     // Infrastructure Modules

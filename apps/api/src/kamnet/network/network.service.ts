@@ -127,9 +127,7 @@ export class KamnetNetworkService {
         id: current.id,
         agentCode: current.agentCode,
         level,
-        name:
-          [user.firstName, user.lastName].filter(Boolean).join(' ') ||
-          undefined,
+        name: [user.firstName, user.lastName].filter(Boolean).join(' ') || undefined,
       });
 
       // Load next sponsor
@@ -167,10 +165,7 @@ export class KamnetNetworkService {
     };
   }
 
-  private async fetchReferrals(
-    parentId: string,
-    remainingDepth: number,
-  ): Promise<unknown[]> {
+  private async fetchReferrals(parentId: string, remainingDepth: number): Promise<unknown[]> {
     const children = await this.prisma.kamnetAgent.findMany({
       where: { sponsorId: parentId },
       orderBy: { createdAt: 'asc' },
@@ -180,9 +175,7 @@ export class KamnetNetworkService {
       children.map(async (child) => ({
         agent: await this.enrichAgent(child),
         referrals:
-          remainingDepth > 0
-            ? await this.fetchReferrals(child.id, remainingDepth - 1)
-            : [],
+          remainingDepth > 0 ? await this.fetchReferrals(child.id, remainingDepth - 1) : [],
       })),
     );
   }
@@ -207,8 +200,8 @@ export class KamnetNetworkService {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        country: user.profile.country,
-        city: user.profile.city,
+        country: user.profile?.country ?? null,
+        city: user.profile?.city ?? null,
       },
     };
   }

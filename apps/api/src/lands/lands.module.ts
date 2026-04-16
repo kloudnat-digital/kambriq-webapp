@@ -7,6 +7,7 @@ import { LandsLabelsService } from './labels/labels.service';
 import { LandReservationsService } from './reservations/reservations.service';
 import { LandsAgentController } from './controllers/lands-agent.controller';
 import { LandsAdminController } from './controllers/lands-admin.controller';
+import { LandsClientController } from './controllers/lands-client.controller';
 
 /**
  * LANDS Module — Land Inventory & Sales
@@ -21,7 +22,7 @@ import { LandsAdminController } from './controllers/lands-admin.controller';
  */
 @Module({
   imports: [CoreModule],
-  controllers: [LandsAgentController, LandsAdminController],
+  controllers: [LandsAdminController, LandsAgentController, LandsClientController],
   providers: [
     LandsPrismaService,
     StorageService,

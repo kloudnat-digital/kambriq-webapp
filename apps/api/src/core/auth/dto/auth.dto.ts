@@ -8,10 +8,7 @@ const passwordFieldSchema = z
   .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
   .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
   .regex(/\d/, 'Password must contain at least one number')
-  .regex(
-    /[!@#$%^&*(),.?":{}|<>]/,
-    'Password must contain at least one special character',
-  );
+  .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Password must contain at least one special character');
 
 // ---- Register ----------
 export const registerSchema = z.object({
@@ -29,6 +26,7 @@ export class RegisterDto extends createZodDto(registerSchema) {}
 export const loginSchema = z.object({
   email: z.email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
+  rememberMe: z.boolean().default(false),
 });
 
 export class LoginDto extends createZodDto(loginSchema) {}
@@ -45,17 +43,13 @@ export const emailVerificationSchema = z.object({
   token: z.string().min(1),
 });
 
-export class EmailVerificationDto extends createZodDto(
-  emailVerificationSchema,
-) {}
+export class EmailVerificationDto extends createZodDto(emailVerificationSchema) {}
 
 export const resendVerificationEmailSchema = z.object({
   email: z.email().transform((email) => email.toLowerCase()),
 });
 
-export class ResendVerificationEmailDto extends createZodDto(
-  resendVerificationEmailSchema,
-) {}
+export class ResendVerificationEmailDto extends createZodDto(resendVerificationEmailSchema) {}
 
 // ----- Forgot / Reset Password ----------
 export const forgotPasswordSchema = z.object({
@@ -77,15 +71,17 @@ export const accountReactivationSchema = z.object({
   password: z.string().min(1),
 });
 
-export class AccountReactivationDto extends createZodDto(
-  accountReactivationSchema,
-) {}
+export class AccountReactivationDto extends createZodDto(accountReactivationSchema) {}
 
-// ----- Token Response (for swagger documentation) -----
+// ----- Token Response -----
+// refreshToken and rememberMe are internal — the controller sets the cookie and
+// strips both fields before sending the response to the client.
 export class TokenResponse {
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: Date;
+  declare accessToken: string;
+  declare refreshToken: string;
+  declare expiresAt: Date;
+  /** Internal: whether this was a "remember me" session. Used by the controller to set cookie maxAge. */
+  rememberMe?: boolean;
 }
 
 export interface AuthResponse {

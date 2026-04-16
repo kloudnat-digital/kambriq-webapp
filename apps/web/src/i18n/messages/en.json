@@ -1,0 +1,975 @@
+{
+  "nav": {
+    "lands": "Lands",
+    "verify": "Verify",
+    "kbs": "KBS",
+    "kamnet": "KAMNET",
+    "login": "Sign in",
+    "contact": "Contact us",
+    "openMenu": "Open main menu",
+    "existingCustomer": "Existing customer?",
+    "profile": "Profile",
+    "settings": "Settings",
+    "signOut": "Sign out"
+  },
+  "hero": {
+    "title1": "Invest with confidence",
+    "title2": "in Cameroonian real estate",
+    "subtitle": "KAMBRIQ connects the diaspora and local market to titled, verified lands ready for purchase.",
+    "cta": "Browse lands",
+    "cta2": "Verify a land",
+    "since2019": "Since 2019",
+    "certifiedPartners": "Certified partners",
+    "cadastralVerification": "Cadastral verification",
+    "verified": "100% verified",
+    "slide1Alt": "Aerial view of titled land in Cameroon",
+    "slide2Alt": "Cadastral aerial view of verified plots in Cameroon"
+  },
+  "why": {
+    "title": "Why choose KAMBRIQ?",
+    "subtitle": "A platform built for the diaspora and local market, with trust and security at the heart of our mission.",
+    "verification": {
+      "title": "Trust",
+      "description": "Every land is legally verified. Property titles authenticated by our experts."
+    },
+    "transparency": {
+      "title": "Security",
+      "description": "Clear pricing, no hidden fees. Complete documentation accessible online."
+    },
+    "support": {
+      "title": "Simplicity",
+      "description": "From selection to acquisition, our team guides you every step of the way."
+    },
+    "distance": {
+      "title": "Network",
+      "description": "Certified partners across Cameroon. Buy from Paris, Brussels or Montreal."
+    }
+  },
+  "process": {
+    "title": "How it works",
+    "subtitle": "A simple, transparent 4-step process to invest with confidence.",
+    "step1": {
+      "title": "Explore",
+      "description": "Browse our catalogue of titled and verified lands"
+    },
+    "step2": {
+      "title": "Verify",
+      "description": "Access all legal documents online"
+    },
+    "step3": {
+      "title": "Purchase",
+      "description": "Simple and secure process from abroad"
+    },
+    "step4": {
+      "title": "Receive",
+      "description": "Our team accompanies you until the title handover"
+    }
+  },
+  "products": {
+    "verify": {
+      "hero": {
+        "eyebrow": "KAMBRIQ Verify",
+        "title": "Protect your investment",
+        "subtitle": "Before buying land, verify the title deed authenticity with our certified experts. Report delivered in 72 hours."
+      },
+      "howItWorks": {
+        "title": "How it works",
+        "step": "Step",
+        "steps": [
+          {
+            "title": "Submit your request",
+            "description": "Provide the title deed number and property details."
+          },
+          {
+            "title": "Expert analysis",
+            "description": "Our certified experts cross-check with official registries."
+          },
+          {
+            "title": "Official report",
+            "description": "Receive a detailed PDF report with our opinion."
+          },
+          {
+            "title": "Certificate issued",
+            "description": "A KAMBRIQ certificate is issued for valid deeds."
+          }
+        ]
+      },
+      "form": {
+        "title": "Request a verification",
+        "subtitle": "Results within 72 hours",
+        "tfNumber": "Title deed number",
+        "location": "Property location",
+        "ownerName": "Declared owner name",
+        "notes": "Additional notes",
+        "notesPlaceholder": "Any additional information about this property…",
+        "submit": "Submit verification",
+        "submitting": "Submitting…",
+        "turnaround": "We will contact you within 72 business hours.",
+        "success": "Verification request submitted successfully."
+      },
+      "badge": "Premium Service",
+      "title": "KAMBRIQ Verify",
+      "description": "Complete title verification and real estate document checking. Detailed report within 48-72h by our legal experts.",
+      "cta": "Verify a land"
+    },
+    "kbs": {
+      "hero": {
+        "eyebrow": "KAMBRIQ Business School",
+        "title": "Become a Certified Real Estate Agent",
+        "subtitle": "6 modules, online learning, certification recognized across the KAMBRIQ network.",
+        "applyNow": "Apply now",
+        "learnMore": "Learn more"
+      },
+      "modules": {
+        "title": "Training curriculum",
+        "subtitle": "6 comprehensive modules covering all aspects of diaspora real estate.",
+        "items": [
+          {
+            "title": "Fundamentals of the Cameroonian land market",
+            "description": "Understand the actors, legal framework and types of land titles."
+          },
+          {
+            "title": "Legal framework and title types",
+            "description": "Deep dive into TDT, VEFL and VEFIL and their implications."
+          },
+          {
+            "title": "Diaspora prospection techniques",
+            "description": "How to identify and engage diaspora clients effectively."
+          },
+          {
+            "title": "Negotiation and closing",
+            "description": "Master the art of negotiation and closing real estate deals."
+          },
+          {
+            "title": "Transaction management",
+            "description": "Handle payments, contracts and documentation seamlessly."
+          },
+          {
+            "title": "KCA certification and KAMNET",
+            "description": "Finalize your certification and join the KAMNET network."
+          }
+        ]
+      },
+      "badge": "Certification Training",
+      "title": "KAMBRIQ Business School",
+      "description": "Professional training to become a certified KAMNET Agent. Master the Cameroonian land market.",
+      "cta": "Discover KBS"
+    },
+    "kamnet": {
+      "hero": {
+        "eyebrow": "KAMNET Agent Network",
+        "title": "Earn while helping your community",
+        "subtitle": "Join hundreds of certified agents earning commissions on every diaspora real estate transaction.",
+        "cta": "Apply to KAMNET"
+      },
+      "commissions": {
+        "title": "Commission structure",
+        "subtitle": "Grow your earnings as you progress through certification levels.",
+        "perSale": "per sale value"
+      },
+      "badge": "Premium",
+      "title": "KAMNET",
+      "description": "Professional network to connect investors, experts and entrepreneurs in the Cameroonian real estate sector.",
+      "cta": "Learn more"
+    },
+    "title": "Our Products & Services",
+    "subtitle": "From land purchase to agent certification, KAMBRIQ supports you at every step of your project in Cameroon.",
+    "comingSoon": "Coming soon",
+    "lands": {
+      "badge": "Available now",
+      "title": "KAMBRIQ Lands",
+      "description": "Buy titled and verified lands remotely, safely. Expert support and certified documents.",
+      "cta": "Discover lands"
+    },
+    "kcpi": {
+      "badge": "Coming soon",
+      "title": "KAMBRIQ Construction & Project Implementation",
+      "description": "Complete management of your construction projects in Cameroon, from design to delivery."
+    }
+  },
+  "diaspora": {
+    "title": "The Cameroonian diaspora deserves better",
+    "subtitle": "We understand your challenges: distance, lack of trust, administrative complexity. KAMBRIQ offers you a turnkey solution.",
+    "responseTime": "Response within 2h • 7 days/week",
+    "transactions": {
+      "value": "500+",
+      "description": "transactions completed"
+    },
+    "satisfaction": {
+      "value": "4.9/5",
+      "description": "average client rating"
+    },
+    "averageResponse": {
+      "value": "24h",
+      "description": "Average response"
+    },
+    "whatsapp": "Talk to an advisor"
+  },
+  "partners": {
+    "hero": {
+      "eyebrow": "Partner Program",
+      "title": "Build with KAMBRIQ",
+      "subtitle": "Join our network of certified partners and serve the African diaspora together."
+    },
+    "benefits": {
+      "title": "Why become a partner?",
+      "items": {
+        "access": {
+          "title": "Platform access",
+          "description": "Access our full suite of tools and client database."
+        },
+        "revenue": {
+          "title": "Revenue sharing",
+          "description": "Earn commissions on every transaction processed with your clients."
+        },
+        "growth": {
+          "title": "Business growth",
+          "description": "Grow your reputation by serving a motivated diaspora clientele."
+        },
+        "support": {
+          "title": "Dedicated support",
+          "description": "A dedicated KAMBRIQ account manager for your business."
+        }
+      }
+    },
+    "form": {
+      "title": "Apply to become a partner",
+      "subtitle": "We review all applications within 5 business days.",
+      "company": "Company name",
+      "name": "Contact name",
+      "email": "Email",
+      "phone": "Phone",
+      "partnerType": "Partner type",
+      "selectType": "Select a type",
+      "message": "Additional information",
+      "messagePlaceholder": "Tell us about your business and how we can collaborate…",
+      "submit": "Submit application",
+      "sending": "Submitting…",
+      "success": "Application submitted! We'll get back to you within 5 days.",
+      "types": {
+        "notary": "Notary",
+        "surveyor": "Surveyor",
+        "bank": "Bank / Financial institution",
+        "university": "University / Training center",
+        "real_estate": "Real estate agency",
+        "other": "Other"
+      }
+    },
+    "title": "Our land partners",
+    "subtitle": "A network of certified experts to secure every transaction",
+    "notaire": {
+      "title": "Notaries",
+      "description": "Authentication and legalisation of all land documents"
+    },
+    "geometre": {
+      "title": "Expert Surveyors",
+      "description": "Boundary marking and cadastral verification of each plot"
+    },
+    "cadastre": {
+      "title": "Cadastral Services",
+      "description": "Official validation of property titles"
+    },
+    "institutions": {
+      "title": "Institutions",
+      "description": "Partnerships with local and regional authorities"
+    }
+  },
+  "testimonials": {
+    "title": "What our clients say",
+    "subtitle": "Thousands of diaspora members have already invested with KAMBRIQ.",
+    "client1": {
+      "name": "Marie D.",
+      "location": "Paris, France",
+      "country": "FR",
+      "text": "I bought my land from Paris with complete confidence. The KAMBRIQ team handled all the procedures. Transparent and professional process."
+    },
+    "client2": {
+      "name": "Jean-Paul K.",
+      "location": "Brussels, Belgium",
+      "country": "BE",
+      "text": "Excellent service! The document verification reassured me. I strongly recommend KAMBRIQ to all diaspora members."
+    },
+    "client3": {
+      "name": "Sandra M.",
+      "location": "Montreal, Canada",
+      "country": "CA",
+      "text": "Finally a reliable solution to invest in Cameroon from abroad. Thank you KAMBRIQ for your professionalism."
+    }
+  },
+  "faq": {
+    "hero": {
+      "title": "Frequently Asked Questions",
+      "subtitle": "Everything you need to know about KAMBRIQ."
+    },
+    "searchPlaceholder": "Search a question…",
+    "noResults": "No results found. Try a different search.",
+    "categories": {
+      "all": "All",
+      "lands": "Lands",
+      "verify": "Verify",
+      "kbs": "KBS",
+      "kamnet": "KAMNET"
+    },
+    "title": "Frequently Asked Questions",
+    "subtitle": "Everything you need to know about KAMBRIQ and our services.",
+    "q1": {
+      "question": "How do I buy land from abroad?",
+      "answer": "Buying from abroad is done in 4 simple steps: browse our available lands, select the land and request a virtual tour, our local team verifies and sends you all documents, then secure electronic signature and fund transfer via our banking partner."
+    },
+    "q2": {
+      "question": "What documents come with each land?",
+      "answer": "Each land sold via KAMBRIQ comes with: certified title deed, KAMBRIQ Verify certificate, official cadastral plan, expert surveyor boundary report, non-dispute certificate, and complete transaction history."
+    },
+    "q3": {
+      "question": "Are all lands titled?",
+      "answer": "Yes, absolutely. KAMBRIQ only sells lands with Definitive Title Deeds (TDT). Every title is verified by our experts and at the Cadastre. We guarantee 100% authenticity. Untitled lands are never listed on our platform."
+    },
+    "q4": {
+      "question": "What is the KAMBRIQ Verify service?",
+      "answer": "KAMBRIQ Verify is a professional land verification service that authenticates a property title within 48-72h. Our team verifies at the Cadastre, checks the transaction history, verifies the absence of disputes, and delivers a certificate of compliance with guarantee."
+    },
+    "q5": {
+      "question": "How do I become a certified KAMNET Agent?",
+      "answer": "To become a certified KAMNET Agent, complete the KBS (KAMBRIQ Business School) training: 8 weeks online covering land law, sales techniques and platform usage. You then receive the KCA (KAMBRIQ Certified Associate) certificate and access to the KAMNET network."
+    }
+  },
+  "footer": {
+    "description": "Your trusted partner for real estate investment in Cameroon.",
+    "location": "Douala-Dibamba, Cameroon",
+    "productsServices": "Products & Services",
+    "lands": "Titled lands",
+    "verify": "KAMBRIQ Verify",
+    "kamnet": "KAMNET",
+    "kbs": "KBS",
+    "kcpi": "KCPI (coming soon)",
+    "support": "Support",
+    "about": "About us",
+    "partners": "Partners",
+    "contact": "Contact",
+    "faq": "FAQ",
+    "helpCenter": "Help Centre",
+    "legal": "Legal",
+    "mentions": "Legal notices",
+    "terms": "Terms of use",
+    "privacy": "Privacy policy",
+    "rgpd": "GDPR",
+    "manageCookies": "Manage cookies",
+    "company": "Company",
+    "careers": "Careers",
+    "newsletter": {
+      "title": "Stay informed",
+      "description": "Be the first to receive our new lands, exclusive offers and investment tips.",
+      "placeholder": "Your email address",
+      "submit": "Subscribe",
+      "consent": {
+        "text": "I agree that my personal data is processed in accordance with the",
+        "privacyLink": "privacy policy",
+        "and": "and the",
+        "rgpdLink": "GDPR"
+      },
+      "validation": {
+        "emailInvalid": "Invalid email address",
+        "consentRequired": "You must accept data processing"
+      },
+      "success": {
+        "title": "Subscribed!",
+        "description": "You'll receive our latest news and exclusive offers."
+      },
+      "errors": {
+        "title": "Error",
+        "alreadySubscribed": "This email address is already subscribed to our newsletter."
+      }
+    },
+    "copyright": "KAMBRIQ. All rights reserved.",
+    "tagline": "Serving the Cameroonian diaspora and investors"
+  },
+  "auth": {
+    "backToHome": "Back to home",
+    "login": {
+      "title": "Sign in to your account",
+      "subtitle": "Welcome back.",
+      "footer": "Don't have an account?",
+      "footerLink": "Create one",
+      "email": "Email address",
+      "password": "Password",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign in",
+      "logIn": "Sign in",
+      "loggingIn": "Signing in..."
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Join thousands of diaspora investors.",
+      "footer": "Already have an account?",
+      "footerLink": "Sign in",
+      "firstName": "First name",
+      "firstNamePlaceholder": "Jean",
+      "lastName": "Last name",
+      "lastNamePlaceholder": "Dupont",
+      "email": "Email address",
+      "phone": "Phone",
+      "phonePlaceholder": "+237 6XX XXX XXX",
+      "password": "Password",
+      "submit": "Create account",
+      "successTitle": "Account created!",
+      "successDescription": "Check your inbox and click the link to activate your account."
+    },
+    "forgotPassword": {
+      "title": "Forgot your password?",
+      "subtitle": "Enter your email and we'll send you a reset link.",
+      "email": "Email address",
+      "submit": "Send reset link",
+      "backToLogin": "Back to sign in",
+      "successMessage": "If this email exists, a reset link has been sent."
+    },
+    "resetPassword": {
+      "title": "New password",
+      "subtitle": "Choose a strong new password.",
+      "password": "New password",
+      "confirmPassword": "Confirm password",
+      "submit": "Reset password",
+      "missingToken": "Invalid reset link. Please request a new one.",
+      "successMessage": "Password updated. You can now sign in."
+    },
+    "verifyEmail": {
+      "title": "Email verification",
+      "subtitle": "Confirming your identity to keep your account secure.",
+      "verifying": "Verifying your email...",
+      "successHeading": "Verification successful",
+      "errorHeading": "Verification failed",
+      "waitMessage": "Please wait while we verify your email.",
+      "errorMessage": "The link may have expired or has already been used.",
+      "goToLogin": "Go to login",
+      "backToLogin": "Back to login"
+    }
+  },
+  "landsHero": {
+    "badge": "Verified and secured lands",
+    "title": "Titled lands verified and secured by KAMBRIQ",
+    "subtitle": "An exclusive selection of titled lands, verified by KAMBRIQ Verify and accompanied by our certified KAMNET Agents.",
+    "cta": "Contact a KAMNET agent",
+    "cta2": "Discover KAMBRIQ Verify",
+    "indicator1": "100% titled lands",
+    "indicator2": "Complete cadastral verification",
+    "indicator3": "Personalised support"
+  },
+  "howItWorks": {
+    "title": "How does it work?",
+    "subtitle": "Tailored support by our certified KAMNET Agents",
+    "step1": {
+      "title": "Contact with an Agent",
+      "description": "You are connected with a certified KAMNET Agent who understands your needs."
+    },
+    "step2": {
+      "title": "Personalised selection",
+      "description": "The agent presents you with a selection of lands adapted to your budget and project."
+    },
+    "step3": {
+      "title": "KAMBRIQ Verify check",
+      "description": "Every land is verified by our KAMBRIQ Verify service before presentation."
+    },
+    "step4": {
+      "title": "Secure acquisition",
+      "description": "Full accompaniment until you receive your title deed."
+    }
+  },
+  "whyBuyAtKambriq": {
+    "title": "Why buy via KAMBRIQ?",
+    "subtitle": "A complete solution to invest in complete serenity",
+    "cta": "Find a KAMNET agent",
+    "cta2": "Request an external verification",
+    "legalSecurity": {
+      "title": "Guaranteed legal security",
+      "description": "Every land is verified by KAMBRIQ Verify before being listed. Authentic documents certified."
+    },
+    "payment": {
+      "title": "Payment by instalments",
+      "description": "Option to pay in instalments according to your capacity. Minimum 5% deposit for reservation."
+    },
+    "transparency": {
+      "title": "Total transparency",
+      "description": "Track your file's progress in real time. All documents provided and explained."
+    },
+    "kamnetAgent": {
+      "title": "KAMNET Agent support",
+      "description": "From selection to title deed, your certified agent guides you at every step."
+    }
+  },
+  "landTypes": {
+    "title": "Understanding our land labels",
+    "subtitle": "Every KAMBRIQ land is classified according to its legal status for total transparency",
+    "clientAdvantages": "Client Advantages",
+    "agentAdvantages": "KAMNET Agent Advantages",
+    "kambriqGuarantees": "KAMBRIQ Guarantees",
+    "tdt": {
+      "name": "Already Titled Land",
+      "description": "Definitive title deeds already established. Ready for immediate transaction with maximum legal security.",
+      "advantages": {
+        "client": "Immediate transaction, maximum legal security, no additional administrative procedures.",
+        "agent": "Fast commission, simplified process, secured client.",
+        "guarantees": "Authentic title deed verified by KAMBRIQ Verify, certified cadastral compliance."
+      }
+    },
+    "vefil": {
+      "name": "Future Sale of Registration and Subdivision",
+      "description": "Lands undergoing subdivision with a guaranteed title deed. Ideal for securing a future project.",
+      "advantages": {
+        "client": "Attractive price, securing a strategic location, guaranteed title deed.",
+        "agent": "Capital gain potential, long-term support, client loyalty.",
+        "guarantees": "Contractual commitment on delivery deadlines, bank guarantees, KAMBRIQ process monitoring."
+      }
+    },
+    "vefl": {
+      "name": "Future Sale of Subdivision",
+      "description": "Lands with an existing parent title, undergoing division. Legal security ensured throughout the process.",
+      "advantages": {
+        "client": "Intermediate price, secured parent title, shorter division deadlines.",
+        "agent": "Good price/deadline balance, controlled support.",
+        "guarantees": "Verified parent title, approved subdivision plan, commitment on division deadlines."
+      }
+    }
+  },
+  "quickActions": {
+    "whatsapp": "Talk to an advisor",
+    "language": "Change language",
+    "languageToggle": "Switch to French",
+    "selectQuestion": "How can we help you?",
+    "selectQuestionDescription": "Choose a topic to start the conversation on WhatsApp.",
+    "questions": {
+      "landInfo": "I'd like information on available lands",
+      "verifyService": "I'd like to know more about KAMBRIQ Verify",
+      "kbsFormation": "How to become a certified KAMNET Agent via KBS?",
+      "kamnetAgent": "How to join the KAMNET network and earn commissions?",
+      "pricing": "What are your rates and payment terms?",
+      "buyingProcess": "How does the purchase process work from abroad?",
+      "documentation": "What documents are needed to buy land?",
+      "other": "I have another question"
+    }
+  },
+  "landSearch": {
+    "verified": "Verified",
+    "details": "View details",
+    "compare": "Compare",
+    "resultsCount": "{count} land(s) found",
+    "noResults": "No lands found",
+    "noResultsHint": "Try adjusting your filters",
+    "filters": {
+      "searchPlaceholder": "Search by name, city…",
+      "allRegions": "All regions",
+      "allTypes": "All types",
+      "minPrice": "Min price",
+      "maxPrice": "Max price",
+      "verifiedOnly": "Verified only",
+      "reset": "Reset"
+    },
+    "compareBar": {
+      "selected": "{count} land(s) selected",
+      "addLand": "Add",
+      "clear": "Clear",
+      "compare": "Compare"
+    },
+    "modal": {
+      "verified": "Verified",
+      "statusAvailable": "Available",
+      "statusReserved": "Reserved",
+      "totalPrice": "Total price",
+      "pricePerSqm": "{price} XAF/m²",
+      "instalments": "Payment by instalments available",
+      "deposit": "Minimum 5% deposit to reserve",
+      "noDescription": "No description available for this land.",
+      "tabs": {
+        "identity": "Identity",
+        "verification": "Verification",
+        "technical": "Technical",
+        "description": "Description",
+        "actions": "Agent Actions"
+      },
+      "actions": {
+        "title": "KAMNET Agent Actions",
+        "description": "Actions available to support your clients on this land.",
+        "createProspect": "Create a prospect for this land",
+        "reserve": "Reserve for a client",
+        "viewDocs": "View verified documents",
+        "requestSupport": "Request KAMBRIQ support",
+        "cancel": "Cancel",
+        "prospect": {
+          "title": "Create a prospect",
+          "name": "Client full name",
+          "phone": "Phone",
+          "email": "Email (optional)",
+          "notes": "Notes",
+          "submit": "Create prospect",
+          "success": "Prospect created successfully"
+        },
+        "reservation": {
+          "title": "Reserve for a client",
+          "clientName": "Client full name",
+          "clientPhone": "Phone",
+          "deposit": "Deposit",
+          "notes": "Notes",
+          "submit": "Confirm reservation",
+          "success": "Reservation recorded successfully"
+        },
+        "docs": {
+          "title": "Verified documents",
+          "description": "Documents available for this land, validated by KAMBRIQ Verify.",
+          "view": "View"
+        },
+        "support": {
+          "title": "Request KAMBRIQ support",
+          "requestType": "Request type",
+          "typePlaceholder": "Select a type",
+          "types": {
+            "legal": "Legal support",
+            "commercial": "Commercial support",
+            "client": "Client management",
+            "other": "Other"
+          },
+          "message": "Message",
+          "messagePlaceholder": "Describe your request…",
+          "submit": "Send request",
+          "success": "Request sent",
+          "successDesc": "The KAMBRIQ team will contact you within 24h"
+        }
+      },
+      "details": {
+        "type": "Type",
+        "size": "Area",
+        "price": "Price",
+        "region": "Region",
+        "city": "City",
+        "neighborhood": "Neighborhood",
+        "tfNumber": "Title deed No."
+      },
+      "verification": {
+        "verified": "Land verified by KAMBRIQ",
+        "notVerified": "Land not yet verified",
+        "verifiedDesc": "This land has been fully checked by our KAMBRIQ Verify experts before publication.",
+        "notVerifiedDesc": "This land has not yet been submitted for KAMBRIQ verification.",
+        "verifiedAt": "Last verification: {date}",
+        "docsTitle": "Available verification documents:",
+        "docTitle": "Property certificate (< 3 months)",
+        "docVerify": "KAMBRIQ Verify report",
+        "docBordereau": "Analytical bordereau",
+        "docUrban": "Urban planning certificate",
+        "check1": "Authenticated title deed",
+        "check2": "Cadastral compliance verified",
+        "check3": "Absence of disputes confirmed"
+      },
+      "technical": {
+        "topography": "Topography",
+        "water": "Water access",
+        "electricity": "Electricity",
+        "available": "Available",
+        "unavailable": "Unavailable",
+        "features": "Features"
+      }
+    }
+  },
+  "landsCompare": {
+    "title": "Compare Lands",
+    "subtitle": "Comparing {count} land(s)",
+    "emptyMessage": "Select at least 2 lands from the search to compare them side by side.",
+    "backToSearch": "Back to search",
+    "clearAndRestart": "Clear & restart",
+    "attribute": "Attribute",
+    "actions": "Actions",
+    "verifyLand": "Verify this land",
+    "contact": "Contact an agent",
+    "yes": "Yes",
+    "no": "No",
+    "attrs": {
+      "image": "Photo",
+      "location": "Location",
+      "surface": "Surface area",
+      "price": "Price",
+      "pricePerM2": "Price / m²",
+      "label": "Label",
+      "tfNumber": "Title number",
+      "verified": "Verified",
+      "water": "Water access",
+      "electricity": "Electricity",
+      "topography": "Topography"
+    }
+  },
+  "landsAdmin": {
+    "header": {
+      "title": "KAMBRIQ LANDS - Admin",
+      "subtitle": "Manage your land catalogue and reservations",
+      "newLand": "New land"
+    },
+    "stats": {
+      "total": "Total lands",
+      "available": "Available",
+      "reserved": "Reserved",
+      "sold": "Sold",
+      "pendingReservations": "Pending reservations"
+    },
+    "tabs": {
+      "lands": "Lands",
+      "reservations": "Reservations"
+    },
+    "table": {
+      "land": "Land",
+      "label": "Label",
+      "size": "Size",
+      "price": "Price",
+      "status": "Status",
+      "published": "Published",
+      "pv": "PV",
+      "actions": "Actions",
+      "client": "Client",
+      "agent": "Agent",
+      "deposit": "Deposit",
+      "date": "Date"
+    },
+    "lands": {
+      "searchPlaceholder": "Search by title or city…",
+      "allRegions": "All regions",
+      "allLabels": "All labels",
+      "allStatuses": "All statuses",
+      "results": "results",
+      "noResults": "No lands match the current filters.",
+      "status": {
+        "AVAILABLE": "Available",
+        "RESERVED": "Reserved",
+        "SOLD": "Sold",
+        "ARCHIVED": "Archived"
+      },
+      "edit": "Edit",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "archive": "Archive",
+      "published": "Published",
+      "unpublished": "Unpublished",
+      "archived": "Archived"
+    },
+    "reservations": {
+      "searchPlaceholder": "Search by client, land or agent…",
+      "allStatuses": "All statuses",
+      "noResults": "No reservations match the current filters.",
+      "detailTitle": "Reservation details",
+      "land": "Land",
+      "client": "Client",
+      "agent": "Agent",
+      "deposit": "Deposit (5%)",
+      "depositReceived": "Received",
+      "depositPending": "Pending",
+      "cancelReason": "Cancellation reason",
+      "cancelReasonLabel": "Reason for cancellation",
+      "cancelReasonPlaceholder": "Explain the reason for this cancellation…",
+      "status": {
+        "PENDING": "Pending",
+        "CONFIRMED": "Confirmed",
+        "COMPLETED": "Completed",
+        "CANCELLED": "Cancelled"
+      },
+      "action": {
+        "confirm": "Confirm deposit",
+        "complete": "Mark as sold",
+        "cancel": "Cancel",
+        "confirmCancel": "Confirm cancellation",
+        "confirmSuccess": "Deposit confirmed.",
+        "completeSuccess": "Sale completed — land marked as sold.",
+        "cancelSuccess": "Reservation cancelled."
+      }
+    },
+    "form": {
+      "createTitle": "New land",
+      "editTitle": "Edit land",
+      "createDesc": "Fill in the land details. It will be saved as a draft until you publish it.",
+      "editDesc": "Update the information for this land.",
+      "sectionIdentity": "Identity",
+      "sectionClassification": "Classification",
+      "sectionPricing": "Size & Price",
+      "sectionPublication": "Publication",
+      "title": "Title",
+      "description": "Commercial description",
+      "descPlaceholder": "Describe the land, its location, advantages…",
+      "region": "Region",
+      "selectRegion": "Select a region",
+      "city": "City",
+      "neighborhood": "Neighborhood",
+      "label": "Label",
+      "selectLabel": "Select a label",
+      "ownerType": "Owner",
+      "partner": "Partner",
+      "titleNumber": "Title number (TF)",
+      "size": "Surface area",
+      "price": "Price",
+      "pv": "Point Valeur (commission coefficient)",
+      "published": "Publish immediately (visible to agents)",
+      "verified": "Verified by KAMBRIQ",
+      "sectionMedia": "Media",
+      "mediaUploadLabel": "Click to add photos or videos",
+      "mediaUploadHint": "JPG, PNG, WEBP, MP4 accepted",
+      "cancel": "Cancel",
+      "create": "Create land",
+      "update": "Save changes",
+      "saving": "Saving…",
+      "createSuccess": "Land created successfully.",
+      "updateSuccess": "Land updated successfully.",
+      "errorRequired": "Please fill in all required fields."
+    }
+  },
+  "about": {
+    "hero": {
+      "eyebrow": "About KAMBRIQ",
+      "title": "Our Mission, Our Vision",
+      "subtitle": "KAMBRIQ is making real estate accessible to the African diaspora through trust, technology and certified expertise."
+    },
+    "mission": {
+      "title": "Our Mission",
+      "body": "To provide the African diaspora with a safe, transparent and professional pathway to invest in land back home."
+    },
+    "vision": {
+      "title": "Our Vision",
+      "body": "To become the leading real estate platform connecting the African diaspora to their homeland in 10 years."
+    },
+    "timeline": {
+      "title": "Our Journey",
+      "items": [
+        {
+          "title": "KAMBRIQ Founded",
+          "description": "Launch of the first land listings platform for the Cameroonian diaspora."
+        },
+        {
+          "title": "KAMBRIQ Verify Launched",
+          "description": "Introduction of our title deed verification service, protecting diaspora buyers."
+        },
+        {
+          "title": "KBS & KAMNET Expansion",
+          "description": "Launch of agent training program and certified agent network across 4 countries."
+        }
+      ]
+    },
+    "team": {
+      "title": "The Team",
+      "members": {
+        "ceo": {
+          "name": "Ulrich E.",
+          "role": "CEO & Co-founder",
+          "bio": "Real estate expert with 10+ years experience serving the Cameroonian diaspora."
+        },
+        "cto": {
+          "name": "Tech Lead",
+          "role": "CTO & Co-founder",
+          "bio": "Full-stack engineer building scalable proptech solutions for emerging markets."
+        },
+        "coo": {
+          "name": "Ops Lead",
+          "role": "COO",
+          "bio": "Operations specialist ensuring seamless transactions between diaspora and local partners."
+        }
+      }
+    },
+    "offices": {
+      "title": "Our Presence",
+      "active": "Active",
+      "comingSoon": "Coming soon"
+    }
+  },
+  "contact": {
+    "hero": {
+      "title": "Contact Us",
+      "subtitle": "Our team is available to answer all your questions."
+    },
+    "info": {
+      "title": "Contact information",
+      "email": {
+        "label": "Email"
+      },
+      "whatsapp": {
+        "label": "WhatsApp"
+      },
+      "phone": {
+        "label": "Phone"
+      },
+      "hours": {
+        "label": "Office hours",
+        "value": "Mon–Fri, 8am–6pm (WAT)"
+      }
+    },
+    "form": {
+      "title": "Send us a message",
+      "name": "Full name",
+      "email": "Email",
+      "phone": "Phone",
+      "subject": "Subject",
+      "selectSubject": "Select a subject",
+      "message": "Message",
+      "messagePlaceholder": "Describe your question or request…",
+      "send": "Send message",
+      "sending": "Sending…",
+      "successMessage": "Message sent! We will get back to you within 24 hours.",
+      "subjects": {
+        "lands": "Lands & acquisition",
+        "verify": "Verify a title deed",
+        "kamnet": "Become a KAMNET agent",
+        "kbs": "KBS training",
+        "partnership": "Partnership",
+        "other": "Other"
+      }
+    }
+  },
+  "comingSoon": {
+    "title": "Coming Soon",
+    "subtitle": "We are working on exciting new features. Stay tuned!",
+    "upcoming": "Upcoming",
+    "kcpi": {
+      "title": "KAMBRIQ Construction (KCPI)",
+      "description": "Construction management services for diaspora building projects in Cameroon."
+    },
+    "currentServices": "Our current services",
+    "services": {
+      "lands": {
+        "title": "KAMBRIQ Lands",
+        "description": "Secure land acquisition for the diaspora."
+      },
+      "verify": {
+        "title": "KAMBRIQ Verify",
+        "description": "Title deed verification in 72 hours."
+      },
+      "kamnet": {
+        "title": "KAMNET",
+        "description": "Certified agent network."
+      },
+      "kbs": {
+        "title": "KBS",
+        "description": "Real estate training and certification."
+      }
+    }
+  },
+  "help": {
+    "hero": {
+      "title": "Help Center",
+      "subtitle": "Find answers to all your questions about KAMBRIQ."
+    },
+    "searchTitle": "How can we help you?",
+    "searchPlaceholder": "Search for help…",
+    "faqTitle": "Common questions",
+    "categories": {
+      "start": "Getting started",
+      "lands": "Lands",
+      "verify": "Verify",
+      "payment": "Payment",
+      "kbs": "KBS"
+    },
+    "contactSupport": {
+      "title": "Need more help?",
+      "subtitle": "Our team is here to help you Monday to Friday.",
+      "cta": "Contact support",
+      "faq": "View all FAQs"
+    }
+  },
+  "knowledgeBase": {
+    "hero": {
+      "title": "Knowledge Base",
+      "subtitle": "Guides and resources to help you navigate the KAMBRIQ ecosystem."
+    },
+    "searchPlaceholder": "Search an article…",
+    "allArticles": "All",
+    "noResults": "No articles found."
+  }
+}

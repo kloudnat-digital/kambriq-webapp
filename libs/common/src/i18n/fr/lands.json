@@ -34,12 +34,21 @@
     "created": "Réservation créée — le terrain est maintenant réservé pour {clientName}",
     "notFound": "Réservation introuvable",
     "confirmed": "Acompte confirmé — la réservation est maintenant active",
+    "documentsReceived": "Documents client marqués comme reçus",
+    "remainingPaymentConfirmed": "Paiement restant confirmé",
+    "dossierStarted": "Dossier / transfert de titre démarré",
     "completed": "Vente finalisée avec succès",
     "cancelled": "Réservation annulée — le terrain est de nouveau disponible",
     "alreadyActive": "Cette réservation a déjà un acompte confirmé",
     "notPending": "Seules les réservations en attente peuvent être confirmées",
-    "notConfirmed": "Seules les réservations confirmées peuvent être finalisées",
+    "notConfirmed": "Seules les réservations confirmées peuvent progresser",
+    "stepAlreadyDone": "Cette étape a déjà été enregistrée",
+    "previousStepRequired": "L'étape précédente doit être complétée en premier",
     "conflict": "Ce terrain vient d'être réservé par un autre agent. Veuillez essayer une autre parcelle."
+  },
+  "invite": {
+    "sent": "Invitation envoyée à {email}",
+    "alreadyExists": "Un compte existe déjà pour {email} — invitation renvoyée"
   },
   "priceHistory": {
     "noChanges": "Aucun changement de prix enregistré pour ce terrain"

@@ -1,13 +1,13 @@
 # ----- KAMBRIQ Local Development Stack -----
 
 # First-time setup (run once after cloning):
-#   npm run docker:dev:init        → Start services + apply all migrations + seed data
+#   pnpm docker:dev:init        → Start services + apply all migrations + seed data
 #
 # Regular usage:
-#   npm run docker:dev             → Start services (data already present from previous run)
-#   npm run docker:down            → Stop services (volumes preserved)
-#   npm run docker:dev:reset       → Stop + wipe all volumes (clean slate)
-#   npm run docker:dev:logs        → Tail logs from all services
+#   pnpm docker:dev             → Start services (data already present from previous run)
+#   pnpm docker:down            → Stop services (volumes preserved)
+#   pnpm docker:dev:reset       → Stop + wipe all volumes (clean slate)
+#   pnpm docker:dev:logs        → Tail logs from all services
 #
 # Services:
 #   PostgreSQL 16  → localhost:5432  (postgres / password)

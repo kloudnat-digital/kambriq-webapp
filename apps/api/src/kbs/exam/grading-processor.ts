@@ -81,9 +81,7 @@ export class KbsGradingProcessor extends WorkerHost {
     );
   }
 
-  private async handleGradeExam(
-    job: Job<{ examId: string; candidateId: string; userId: string }>,
-  ) {
+  private async handleGradeExam(job: Job<{ examId: string; candidateId: string; userId: string }>) {
     const { examId, candidateId, userId } = job.data;
     this.logger.log('Grading Exam', { examId, candidateId, userId });
 
@@ -133,6 +131,10 @@ export class KbsGradingProcessor extends WorkerHost {
       const candidate = await this.kbsPrisma.kbsCandidate.findUnique({
         where: { id: candidateId },
       });
+      if (!candidate) {
+        this.logger.error('Candidate not found during grading', { candidateId });
+        return;
+      }
       const totalAttempts = await this.kbsPrisma.kbsExam.count({
         where: {
           candidateId: candidate.id,
@@ -172,9 +174,7 @@ export class KbsGradingProcessor extends WorkerHost {
     return result;
   }
 
-  private async handleGrantKcaRole(
-    job: Job<{ userId: string; examId: string }>,
-  ) {
+  private async handleGrantKcaRole(job: Job<{ userId: string; examId: string }>) {
     const { userId, examId } = job.data;
     this.logger.log('Granting KCA role', { userId, examId });
     await this.usersService.addRole(userId, RoleCode.KCA_CERTIFIED);

@@ -1,9 +1,9 @@
-# Kambriq — Server
+# Kambriq
 
 [![CI](https://github.com/kloudnat-digital/kambriq-api/actions/workflows/ci.yml/badge.svg)](https://github.com/kloudnat-digital/kambriq-api/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/kloudnat-digital/kambriq-api/branch/main/graph/badge.svg)](https://codecov.io/gh/kloudnat-digital/kambriq-api)
 
-A modular, enterprise-grade backend platform built with NestJS and managed as an Nx monorepo. The server exposes a single unified API gateway that routes requests across domain-specific modules, each backed by its own isolated PostgreSQL database.
+Full-stack Nx monorepo containing the NestJS API and Next.js web application. The API exposes a single unified gateway routing requests across domain-specific modules, each backed by its own isolated PostgreSQL database. The web app is a Next.js 16 client consuming the API.
 
 ---
 
@@ -11,13 +11,14 @@ A modular, enterprise-grade backend platform built with NestJS and managed as an
 
 ```text
 apps/
-└── api/                        # Single NestJS API gateway
-    └── src/
-        ├── app/                # Root module (global config, guards, filters)
-        ├── core/               # Domain: authentication, users, roles, profiles
-        ├── kbs/                # Domain: training courses, exams, certificates
-        ├── kamnet/             # Domain: agent network, tiers, referrals, sales
-        └── lands/              # Domain: land parcels, reservations, commissions
+├── api/                        # NestJS API gateway
+│   └── src/
+│       ├── app/                # Root module (global config, guards, filters)
+│       ├── core/               # Domain: authentication, users, roles, profiles
+│       ├── kbs/                # Domain: training courses, exams, certificates
+│       ├── kamnet/             # Domain: agent network, tiers, referrals, sales
+│       └── lands/              # Domain: land parcels, reservations, commissions
+└── web/                        # Next.js 16 frontend (Turbopack)
 
 libs/
 └── common/                     # Shared library (guards, decorators, filters, i18n, services…)
@@ -36,7 +37,7 @@ Each domain has a dedicated Prisma client generated into `libs/common/src/prisma
 ## Domains
 
 | Domain        | Database            | Status      | Description                                              |
-|---------------|---------------------|-------------|----------------------------------------------------------|
+| ------------- | ------------------- | ----------- | -------------------------------------------------------- |
 | **Core**      | `kambriq_core`      | Implemented | Authentication, user management, roles & permissions     |
 | **KBS**       | `kambriq_kbs`       | Implemented | Training courses, exams, progress tracking, certificates |
 | **Kamnet**    | `kambriq_kamnet`    | Implemented | Agent network, tier promotions, referrals, commissions   |
@@ -48,30 +49,45 @@ Each domain has a dedicated Prisma client generated into `libs/common/src/prisma
 
 ## Tech Stack
 
-| Layer              | Technology                                                              |
-|--------------------|-------------------------------------------------------------------------|
-| Framework          | [NestJS](https://nestjs.com) v11                                        |
-| Monorepo           | [Nx](https://nx.dev) v22                                                |
-| ORM                | [Prisma](https://www.prisma.io) v7 (multi-schema, per-domain clients)   |
-| Database           | PostgreSQL 16                                                           |
-| Cache / Queue      | Redis 7 + [BullMQ](https://docs.bullmq.io)                              |
-| Authentication     | JWT (access + refresh tokens) via Passport                              |
-| Validation         | [Zod](https://zod.dev) + nestjs-zod                                     |
-| File Storage       | AWS S3 (presigned uploads)                                              |
-| Email              | AWS SES v2                                                              |
-| Logging            | [Pino](https://getpino.io) via nestjs-pino (structured, correlation IDs)|
-| i18n               | nestjs-i18n (default language: French)                                  |
-| API Docs           | Swagger / OpenAPI (`/api/v1/docs` in non-production)                    |
-| Security           | Helmet, rate limiting (Throttler), CORS                                 |
-| Health             | @nestjs/terminus                                                        |
-| Language           | TypeScript v5.9                                                         |
+### API
+
+| Layer           | Technology                                                               |
+| --------------- | ------------------------------------------------------------------------ |
+| Framework       | [NestJS](https://nestjs.com) v11                                         |
+| Monorepo        | [Nx](https://nx.dev) v22                                                 |
+| Package manager | [pnpm](https://pnpm.io) v9 (workspace)                                   |
+| ORM             | [Prisma](https://www.prisma.io) v7 (multi-schema, per-domain clients)    |
+| Database        | PostgreSQL 16                                                            |
+| Cache / Queue   | Redis 7 + [BullMQ](https://docs.bullmq.io)                               |
+| Authentication  | JWT (access + refresh tokens) via Passport                               |
+| Validation      | [Zod](https://zod.dev) + nestjs-zod                                      |
+| File Storage    | AWS S3 (presigned uploads)                                               |
+| Email           | AWS SES v2                                                               |
+| Logging         | [Pino](https://getpino.io) via nestjs-pino (structured, correlation IDs) |
+| i18n            | nestjs-i18n (default language: French)                                   |
+| API Docs        | Swagger / OpenAPI (`/api/v1/docs` in non-production)                     |
+| Security        | Helmet, rate limiting (Throttler), CORS                                  |
+| Health          | @nestjs/terminus                                                         |
+| Language        | TypeScript v5.9                                                          |
+
+### Web
+
+| Layer        | Technology                                                   |
+| ------------ | ------------------------------------------------------------ |
+| Framework    | [Next.js](https://nextjs.org) v16 (App Router, Turbopack)    |
+| Auth         | [NextAuth](https://authjs.dev) v5 (JWT, no database adapter) |
+| Styling      | [Tailwind CSS](https://tailwindcss.com) v4 + shadcn/ui       |
+| State / Data | [TanStack Query](https://tanstack.com/query) v5              |
+| i18n         | [next-intl](https://next-intl-docs.vercel.app) (fr / en)     |
+| Maps         | [Mapbox GL JS](https://docs.mapbox.com/mapbox-gl-js)         |
+| Language     | TypeScript v5.9                                              |
 
 ---
 
 ## Prerequisites
 
 - **Node.js** >= 20
-- **npm** >= 10
+- **pnpm** >= 9 (`npm install -g pnpm`)
 - **Docker** and **Docker Compose**
 
 ---
@@ -81,7 +97,7 @@ Each domain has a dedicated Prisma client generated into `libs/common/src/prisma
 ### 1. Install dependencies
 
 ```bash
-npm install
+pnpm install
 ```
 
 > `postinstall` automatically generates all four Prisma clients (`core`, `kbs`, `kamnet`, `lands`).
@@ -99,7 +115,7 @@ Edit `.env` and fill in the required values (see [Environment Variables](#enviro
 **First time only** (starts services, applies all migrations, and seeds demo data):
 
 ```bash
-npm run docker:dev:init
+pnpm docker:dev:init
 ```
 
 This starts:
@@ -113,13 +129,13 @@ Then runs `db:setup` (all four migrations + seed script). See [Seed Credentials]
 **Subsequent runs** (data already present):
 
 ```bash
-npm run docker:dev
+pnpm docker:dev
 ```
 
 ### 4. Start the API in development mode
 
 ```bash
-npm run start:dev
+pnpm start:dev
 ```
 
 The API will be available at [http://localhost:3000](http://localhost:3000).
@@ -129,51 +145,59 @@ Swagger docs: [http://localhost:3000/api/v1/docs](http://localhost:3000/api/v1/d
 
 ## Available Scripts
 
-### API
+### API scripts
 
-| Command                | Description                              |
-|------------------------|------------------------------------------|
-| `npm run start:dev`    | Start in watch mode (hot reload)         |
-| `npm run build`        | Production build                         |
-| `npm run start:prod`   | Run production build                     |
-| `npm run lint`         | Run ESLint                               |
-| `npm run typecheck`    | Run TypeScript type checking             |
-| `npm run test`         | Run all unit tests (`api` + `common`)    |
-| `npm run test:api`     | Run API unit tests only                  |
-| `npm run test:common`  | Run `@kambriq/common` unit tests only    |
-| `npm run format`       | Format all source files with Prettier    |
+| Command            | Description                           |
+| ------------------ | ------------------------------------- |
+| `pnpm start:dev`   | Start API in watch mode (hot reload)  |
+| `pnpm build`       | Production build (API)                |
+| `pnpm start:prod`  | Run production build                  |
+| `pnpm lint`        | Run ESLint                            |
+| `pnpm typecheck`   | Run TypeScript type checking          |
+| `pnpm test`        | Run all unit tests (`api` + `common`) |
+| `pnpm test:api`    | Run API unit tests only               |
+| `pnpm test:common` | Run `@kambriq/common` unit tests only |
+| `pnpm format`      | Format all source files with Prettier |
 
-### Database
+### Web scripts
 
-| Command                        | Description                                         |
-|--------------------------------|-----------------------------------------------------|
-| `npm run db:migrate:dev`       | Create and apply migrations (dev) — all 4 schemas   |
-| `npm run db:migrate:dev:core`  | Migrations for Core DB only                         |
-| `npm run db:migrate:dev:kbs`   | Migrations for KBS DB only                          |
-| `npm run db:migrate:dev:kamnet`| Migrations for Kamnet DB only                       |
-| `npm run db:migrate:dev:lands` | Migrations for Lands DB only                        |
-| `npm run db:migrate:deploy`    | Apply existing migrations (production) — all 4      |
-| `npm run db:seed`              | Run seed script (idempotent — safe to re-run)       |
-| `npm run db:setup`             | Migrate all + seed (shortcut for fresh environments)|
-| `npm run db:generate:core`     | Regenerate Core Prisma client                       |
-| `npm run db:generate:kbs`      | Regenerate KBS Prisma client                        |
-| `npm run db:generate:kamnet`   | Regenerate Kamnet Prisma client                     |
-| `npm run db:generate:lands`    | Regenerate Lands Prisma client                      |
-| `npm run db:studio:core`       | Open Prisma Studio for Core DB (port 5555)          |
-| `npm run db:studio:kbs`        | Open Prisma Studio for KBS DB (port 5556)           |
-| `npm run db:studio:kamnet`     | Open Prisma Studio for Kamnet DB (port 5557)        |
-| `npm run db:studio:lands`      | Open Prisma Studio for Lands DB (port 5558)         |
-| `npm run db:reset`             | Reset all databases (dev only)                      |
+| Command          | Description                           |
+| ---------------- | ------------------------------------- |
+| `pnpm web:dev`   | Start web app in dev mode (port 3001) |
+| `pnpm web:build` | Production build (Next.js)            |
+| `pnpm web:start` | Serve the production build            |
 
-### Docker
+### Database scripts
 
-| Command                    | Description                                                  |
-|----------------------------|--------------------------------------------------------------|
-| `npm run docker:dev:init`  | First-time setup: start services + migrate + seed            |
-| `npm run docker:dev`       | Start dev containers (data already present)                  |
-| `npm run docker:down`      | Stop all containers (volumes preserved)                      |
-| `npm run docker:dev:reset` | Stop containers and remove all volumes (clean slate)         |
-| `npm run docker:dev:logs`  | Tail logs from all services                                  |
+| Command                      | Description                                          |
+| ---------------------------- | ---------------------------------------------------- |
+| `pnpm db:migrate:dev`        | Create and apply migrations (dev) — all 4 schemas    |
+| `pnpm db:migrate:dev:core`   | Migrations for Core DB only                          |
+| `pnpm db:migrate:dev:kbs`    | Migrations for KBS DB only                           |
+| `pnpm db:migrate:dev:kamnet` | Migrations for Kamnet DB only                        |
+| `pnpm db:migrate:dev:lands`  | Migrations for Lands DB only                         |
+| `pnpm db:migrate:deploy`     | Apply existing migrations (production) — all 4       |
+| `pnpm db:seed`               | Run seed script (idempotent — safe to re-run)        |
+| `pnpm db:setup`              | Migrate all + seed (shortcut for fresh environments) |
+| `pnpm db:generate:core`      | Regenerate Core Prisma client                        |
+| `pnpm db:generate:kbs`       | Regenerate KBS Prisma client                         |
+| `pnpm db:generate:kamnet`    | Regenerate Kamnet Prisma client                      |
+| `pnpm db:generate:lands`     | Regenerate Lands Prisma client                       |
+| `pnpm db:studio:core`        | Open Prisma Studio for Core DB (port 5555)           |
+| `pnpm db:studio:kbs`         | Open Prisma Studio for KBS DB (port 5556)            |
+| `pnpm db:studio:kamnet`      | Open Prisma Studio for Kamnet DB (port 5557)         |
+| `pnpm db:studio:lands`       | Open Prisma Studio for Lands DB (port 5558)          |
+| `pnpm db:reset`              | Reset all databases (dev only)                       |
+
+### Docker scripts
+
+| Command                 | Description                                          |
+| ----------------------- | ---------------------------------------------------- |
+| `pnpm docker:dev:init`  | First-time setup: start services + migrate + seed    |
+| `pnpm docker:dev`       | Start dev containers (data already present)          |
+| `pnpm docker:down`      | Stop all containers (volumes preserved)              |
+| `pnpm docker:dev:reset` | Stop containers and remove all volumes (clean slate) |
+| `pnpm docker:dev:logs`  | Tail logs from all services                          |
 
 ---
 
@@ -184,64 +208,64 @@ Unit tests are co-located in `__test__/` directories within each Nx project. The
 Coverage is tracked automatically on every push to `main` via [Codecov](https://codecov.io/gh/kloudnat-digital/kambriq-api). To generate reports locally:
 
 ```bash
-npm run test:cov          # both projects
-npm run test:cov:api      # apps/api only  → coverage/apps/api/
-npm run test:cov:common   # libs/common only → coverage/libs/common/
+pnpm test:cov          # both projects
+pnpm test:cov:api      # apps/api only  → coverage/apps/api/
+pnpm test:cov:common   # libs/common only → coverage/libs/common/
 ```
 
 ### `apps/api` — Domain services
 
-| Suite | Covers |
-| ----- | ------ |
-| `core/auth/auth.service` | Sign-up, sign-in, token refresh, password hashing |
-| `core/auth/strategies/jwt.strategy` | JWT payload validation and user lookup |
-| `core/users/users.service` | User CRUD, role assignment |
-| `core/roles/roles.service` | Role lookup and management |
-| `kbs/candidates/candidates.service` | Candidate enrollment and progress |
-| `kbs/courses/courses.service` | Course creation, listing, deletion |
-| `kbs/exam/exam.service` | Exam scheduling, submission, and grading logic |
-| `kbs/exam/grading-processor` | BullMQ job routing, pass/fail email dispatch, KCA role grant |
-| `kbs/certificates/certificates.service` | Certificate generation and public verification |
+| Suite                                   | Covers                                                       |
+| --------------------------------------- | ------------------------------------------------------------ |
+| `core/auth/auth.service`                | Sign-up, sign-in, token refresh, password hashing            |
+| `core/auth/strategies/jwt.strategy`     | JWT payload validation and user lookup                       |
+| `core/users/users.service`              | User CRUD, role assignment                                   |
+| `core/roles/roles.service`              | Role lookup and management                                   |
+| `kbs/candidates/candidates.service`     | Candidate enrollment and progress                            |
+| `kbs/courses/courses.service`           | Course creation, listing, deletion                           |
+| `kbs/exam/exam.service`                 | Exam scheduling, submission, and grading logic               |
+| `kbs/exam/grading-processor`            | BullMQ job routing, pass/fail email dispatch, KCA role grant |
+| `kbs/certificates/certificates.service` | Certificate generation and public verification               |
 
 ### `libs/common` — Shared library
 
-| Suite | Covers |
-| ----- | ------ |
+| Suite                             | Covers                                                                         |
+| --------------------------------- | ------------------------------------------------------------------------------ |
 | `interceptors/transform-response` | Response envelope (`{ success, data }`), passthrough for pre-wrapped responses |
-| `middleware/correlation-id` | Correlation ID generation and header propagation |
-| `guards/roles.guard` | Role-based access enforcement |
-| `dto/pagination.dto` | Pagination query parsing and defaults |
-| `email/email.service` | SES template dispatch |
+| `middleware/correlation-id`       | Correlation ID generation and header propagation                               |
+| `guards/roles.guard`              | Role-based access enforcement                                                  |
+| `dto/pagination.dto`              | Pagination query parsing and defaults                                          |
+| `email/email.service`             | SES template dispatch                                                          |
 
 ---
 
 ## Environment Variables
 
-| Variable                  | Description                                      | Example                          |
-|---------------------------|--------------------------------------------------|----------------------------------|
-| `NODE_ENV`                | Runtime environment                              | `development`                    |
-| `PORT`                    | API listening port                               | `3000`                           |
-| `API_PREFIX`              | Global route prefix                              | `api/v1`                         |
-| `DATABASE_URL_CORE`       | PostgreSQL connection — Core domain              | `postgresql://...`               |
-| `DATABASE_URL_KBS`        | PostgreSQL connection — KBS domain               | `postgresql://...`               |
-| `DATABASE_URL_KAMNET`     | PostgreSQL connection — Kamnet domain            | `postgresql://...`               |
-| `DATABASE_URL_LANDS`      | PostgreSQL connection — Lands domain             | `postgresql://...`               |
-| `JWT_SECRET`              | JWT signing secret (≥ 32 chars)                  | —                                |
-| `JWT_ACCESS_EXPIRATION`   | Access token lifetime                            | `15m`                            |
-| `JWT_REFRESH_EXPIRATION`  | Refresh token lifetime                           | `15d`                            |
-| `CORS_ORIGINS`            | Comma-separated allowed origins                  | `http://localhost:3001`          |
-| `THROTTLE_TTL`            | Rate limit window in milliseconds                | `60000`                          |
-| `THROTTLE_LIMIT`          | Max requests per window                          | `100`                            |
-| `REDIS_HOST`              | Redis hostname                                   | `localhost`                      |
-| `REDIS_PORT`              | Redis port                                       | `6379`                           |
-| `AWS_ACCESS_KEY_ID`       | AWS credentials                                  | —                                |
-| `AWS_SECRET_ACCESS_KEY`   | AWS credentials                                  | —                                |
-| `AWS_S3_BUCKET`           | S3 bucket name for file uploads                  | `kambriq-uploads`                |
-| `AWS_REGION`              | AWS region                                       | `eu-west-3`                      |
-| `EMAIL_FROM`              | Sender email address                             | `noreply@kambriq.com`            |
-| `EMAIL_FROM_NAME`         | Sender display name                              | `KAMBRIQ`                        |
-| `FRONTEND_URL`            | Frontend origin (used in email links)            | `http://localhost:3001`          |
-| `SALT_ROUNDS`             | bcrypt salt rounds for password hashing          | `12`                             |
+| Variable                 | Description                             | Example                 |
+| ------------------------ | --------------------------------------- | ----------------------- |
+| `NODE_ENV`               | Runtime environment                     | `development`           |
+| `PORT`                   | API listening port                      | `3000`                  |
+| `API_PREFIX`             | Global route prefix                     | `api/v1`                |
+| `DATABASE_URL_CORE`      | PostgreSQL connection — Core domain     | `postgresql://...`      |
+| `DATABASE_URL_KBS`       | PostgreSQL connection — KBS domain      | `postgresql://...`      |
+| `DATABASE_URL_KAMNET`    | PostgreSQL connection — Kamnet domain   | `postgresql://...`      |
+| `DATABASE_URL_LANDS`     | PostgreSQL connection — Lands domain    | `postgresql://...`      |
+| `JWT_SECRET`             | JWT signing secret (≥ 32 chars)         | —                       |
+| `JWT_ACCESS_EXPIRATION`  | Access token lifetime                   | `15m`                   |
+| `JWT_REFRESH_EXPIRATION` | Refresh token lifetime                  | `15d`                   |
+| `CORS_ORIGINS`           | Comma-separated allowed origins         | `http://localhost:3001` |
+| `THROTTLE_TTL`           | Rate limit window in milliseconds       | `60000`                 |
+| `THROTTLE_LIMIT`         | Max requests per window                 | `100`                   |
+| `REDIS_HOST`             | Redis hostname                          | `localhost`             |
+| `REDIS_PORT`             | Redis port                              | `6379`                  |
+| `AWS_ACCESS_KEY_ID`      | AWS credentials                         | —                       |
+| `AWS_SECRET_ACCESS_KEY`  | AWS credentials                         | —                       |
+| `AWS_S3_BUCKET`          | S3 bucket name for file uploads         | `kambriq-uploads`       |
+| `AWS_REGION`             | AWS region                              | `eu-west-3`             |
+| `EMAIL_FROM`             | Sender email address                    | `noreply@kambriq.com`   |
+| `EMAIL_FROM_NAME`        | Sender display name                     | `KAMBRIQ`               |
+| `FRONTEND_URL`           | Frontend origin (used in email links)   | `http://localhost:3001` |
+| `SALT_ROUNDS`            | bcrypt salt rounds for password hashing | `12`                    |
 
 ---
 
@@ -251,18 +275,18 @@ All endpoints are prefixed with `/api/v1`. Authentication uses Bearer JWT tokens
 
 ### Core — Auth & Users
 
-| Method | Path                    | Auth     | Description                |
-|--------|-------------------------|----------|----------------------------|
-| POST   | `/auth/signup`          | Public   | Register a new user        |
-| POST   | `/auth/signin`          | Public   | Login and obtain tokens    |
-| POST   | `/auth/refresh`         | Public   | Refresh access token       |
-| GET    | `/users/profile`        | Required | Get current user's profile |
-| PATCH  | `/users/:id`            | Required | Update user profile        |
+| Method | Path             | Auth     | Description                |
+| ------ | ---------------- | -------- | -------------------------- |
+| POST   | `/auth/signup`   | Public   | Register a new user        |
+| POST   | `/auth/signin`   | Public   | Login and obtain tokens    |
+| POST   | `/auth/refresh`  | Public   | Refresh access token       |
+| GET    | `/users/profile` | Required | Get current user's profile |
+| PATCH  | `/users/:id`     | Required | Update user profile        |
 
 ### KBS — Training & Exams
 
 | Method | Path                              | Auth       | Description                          |
-|--------|-----------------------------------|------------|--------------------------------------|
+| ------ | --------------------------------- | ---------- | ------------------------------------ |
 | GET    | `/kbs/courses`                    | Required   | List published courses               |
 | POST   | `/kbs/enroll`                     | Required   | Enroll in a course                   |
 | GET    | `/kbs/progress`                   | Required   | Get candidate progress               |
@@ -322,21 +346,21 @@ Full interactive documentation is available at `/api/v1/docs` when running in de
 
 ## Seed Credentials
 
-Running `npm run db:seed` (or `npm run docker:dev:init`) populates all four databases with demo data. All accounts use the password **`Test1234!`**.
+Running `pnpm db:seed` (or `pnpm docker:dev:init`) populates all four databases with demo data. All accounts use the password **`Test1234!`**.
 
 ### Core — Users
 
-| Email                      | Role           | Notes                          |
-|----------------------------|----------------|--------------------------------|
-| `admin@kambriq.com`        | `ADMIN_GLOBAL` | Platform super-admin           |
-| `jean.kbs@kambriq.com`     | `ADMIN_KBS`    | KBS domain admin               |
-| `claude.kamnet@kambriq.com`| `ADMIN_KAMNET` | Kamnet domain admin            |
-| `pierre.lands@kambriq.com` | `ADMIN_LANDS`  | Lands domain admin             |
-| `eric.mbou@kambriq.com`    | `AGENT`        | Agent (AGT-2025-0001)          |
-| `sylvie.ngo@kambriq.com`   | `AGENT`        | Agent (AGT-2025-0002)          |
-| `boris.tcha@kambriq.com`   | `AGENT`        | Agent (AGT-2025-0003)          |
-| `amina.fall@kambriq.com`   | `AGENT`        | Agent (AGT-2025-0004)          |
-| `paul.fouda@kambriq.com`   | `AGENT`        | Agent (AGT-2025-0005)          |
+| Email                       | Role           | Notes                 |
+| --------------------------- | -------------- | --------------------- |
+| `admin@kambriq.com`         | `ADMIN_GLOBAL` | Platform super-admin  |
+| `jean.kbs@kambriq.com`      | `ADMIN_KBS`    | KBS domain admin      |
+| `claude.kamnet@kambriq.com` | `ADMIN_KAMNET` | Kamnet domain admin   |
+| `pierre.lands@kambriq.com`  | `ADMIN_LANDS`  | Lands domain admin    |
+| `eric.mbou@kambriq.com`     | `AGENT`        | Agent (AGT-2025-0001) |
+| `sylvie.ngo@kambriq.com`    | `AGENT`        | Agent (AGT-2025-0002) |
+| `boris.tcha@kambriq.com`    | `AGENT`        | Agent (AGT-2025-0003) |
+| `amina.fall@kambriq.com`    | `AGENT`        | Agent (AGT-2025-0004) |
+| `paul.fouda@kambriq.com`    | `AGENT`        | Agent (AGT-2025-0005) |
 
 ### Kamnet — Agent sponsorship tree
 
@@ -366,4 +390,5 @@ Eric  (CONFIRMED, 6 sales)  ← root sponsor
 MIT
 
 ## Commit Hygiene
+
 - Do not add `Made-with: Cursor` to commits.

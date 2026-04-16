@@ -119,17 +119,13 @@ export const createLandReservationSchema = z.object({
   clientPhone: z.string().max(30),
 });
 
-export class CreateLandReservationDto extends createZodDto(
-  createLandReservationSchema,
-) {}
+export class CreateLandReservationDto extends createZodDto(createLandReservationSchema) {}
 
 export const cancelLandReservationSchema = z.object({
   reason: z.string().min(1, 'Cancellation reason is required').max(1000),
 });
 
-export class CancelLandReservationDto extends createZodDto(
-  cancelLandReservationSchema,
-) {}
+export class CancelLandReservationDto extends createZodDto(cancelLandReservationSchema) {}
 
 export const landReservationFilterSchema = z.object({
   status: z.enum(LandReservationStatus).optional(),
@@ -137,9 +133,18 @@ export const landReservationFilterSchema = z.object({
   search: z.string().optional(),
 });
 
-export class LandReservationFilterDto extends createZodDto(
-  landReservationFilterSchema,
-) {}
+export class LandReservationFilterDto extends createZodDto(landReservationFilterSchema) {}
+
+// ----- Client Invite ----- //
+
+export const inviteClientSchema = z.object({
+  email: z.email('Invalid email address'),
+  firstName: z.string().min(1, 'First name is required').max(100),
+  lastName: z.string().min(1, 'Last name is required').max(100),
+  phone: z.string().max(30).optional(),
+});
+
+export class InviteClientDto extends createZodDto(inviteClientSchema) {}
 
 // ----- Land Upload URL ----- //
 

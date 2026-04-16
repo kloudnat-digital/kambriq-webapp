@@ -2,9 +2,7 @@ import { z } from 'zod';
 
 export const envSchema = z.object({
   // ----- App -----
-  NODE_ENV: z
-    .enum(['development', 'production', 'test'])
-    .default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().default('3000'),
   API_PREFIX: z.string().default('api/v1'),
 
@@ -31,6 +29,14 @@ export const envSchema = z.object({
   // ----- Redis -----
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.coerce.number().default(6379),
+
+  // ----- AWS -----
+  AWS_ACCESS_KEY_ID: z.string().optional(),
+  AWS_SECRET_ACCESS_KEY: z.string().optional(),
+  AWS_REGION: z.string().default('eu-west-3'),
+
+  // ----- SES Contact Lists -----
+  AWS_SES_CONTACT_LIST_NAME: z.string().default('kambriq-newsletter'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
@@ -52,9 +58,7 @@ export const validateEnv = (config: Record<string, unknown>): EnvConfig => {
     console.error('+==================================================+\n');
 
     console.error(formatted);
-    console.error(
-      '\n Check your .env file or container environment variables.\n',
-    );
+    console.error('\n Check your .env file or container environment variables.\n');
 
     process.exit(1);
   }
