@@ -128,6 +128,7 @@ describe('AuthService', () => {
       const user = buildUserWithRoles(['CLIENT'], {
         email: dto.email,
         isActive: true,
+        emailVerified: true,
       });
 
       prisma.user.findUnique.mockResolvedValue(user);
@@ -149,6 +150,7 @@ describe('AuthService', () => {
     it('throws a wrong password and increments loginAttempts', async () => {
       const user = buildUserWithRoles(['CLIENT'], {
         email: dto.email,
+        emailVerified: true,
         loginAttempts: 0,
       });
       prisma.user.findUnique.mockResolvedValue(user);
@@ -167,6 +169,7 @@ describe('AuthService', () => {
     it('locks account after MAX_LOGIN_ATTEMPTS failures', async () => {
       const user = buildUserWithRoles(['CLIENT'], {
         email: dto.email,
+        emailVerified: true,
         loginAttempts: 4, // one more will be 5 = locked
       });
       prisma.user.findUnique.mockResolvedValue(user);
@@ -183,6 +186,7 @@ describe('AuthService', () => {
     it('rejects login when account is locked', async () => {
       const user = buildUserWithRoles(['CLIENT'], {
         email: dto.email,
+        emailVerified: true,
         lockedUntil: new Date(Date.now() + 900_000), // locked for 15min
       });
       prisma.user.findUnique.mockResolvedValue(user);
@@ -194,6 +198,7 @@ describe('AuthService', () => {
     it('returns grace period response for self-deleted user within the window', async () => {
       const user = buildUserWithRoles(['CLIENT'], {
         email: dto.email,
+        emailVerified: true,
         isActive: false,
         deletedAt: new Date(Date.now() - 5 * 86_400_000), // deleted 5 days ago
         deactivatedBy: null,
@@ -208,6 +213,7 @@ describe('AuthService', () => {
     it('throws for admin blocked users', async () => {
       const user = buildUserWithRoles(['CLIENT'], {
         email: dto.email,
+        emailVerified: true,
         isActive: false,
         deletedAt: null,
         deactivatedBy: 'admin-1',
