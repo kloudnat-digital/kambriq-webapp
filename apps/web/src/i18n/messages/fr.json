@@ -1,0 +1,975 @@
+{
+  "nav": {
+    "lands": "Terrains",
+    "verify": "Vérifier",
+    "kbs": "KBS",
+    "kamnet": "KAMNET",
+    "login": "Se connecter",
+    "contact": "Nous contacter",
+    "openMenu": "Ouvrir le menu principal",
+    "existingCustomer": "Déjà client ?",
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "signOut": "Se déconnecter"
+  },
+  "hero": {
+    "title1": "Investir en toute confiance,",
+    "title2": "dans le foncier au Cameroun",
+    "subtitle": "KAMBRIQ connecte la diaspora et le marché local à des terrains titrés, vérifiés et prêts à l'achat.",
+    "cta": "Parcourir les terrains",
+    "cta2": "Vérifier un terrain",
+    "since2019": "Depuis 2019",
+    "certifiedPartners": "Partenaires certifiés",
+    "cadastralVerification": "Vérification cadastrale",
+    "verified": "100% vérifié",
+    "slide1Alt": "Vue aérienne de terrains titrés au Cameroun",
+    "slide2Alt": "Vue cadastrale de parcelles vérifiées au Cameroun"
+  },
+  "why": {
+    "title": "Pourquoi choisir KAMBRIQ ?",
+    "subtitle": "Une plateforme conçue pour la diaspora et le marché local, avec la confiance et la sécurité au cœur de notre mission.",
+    "verification": {
+      "title": "Confiance",
+      "description": "Chaque terrain est vérifié juridiquement. Titres fonciers authentifiés par nos experts."
+    },
+    "transparency": {
+      "title": "Sécurité",
+      "description": "Prix clairs, sans frais cachés. Documentation complète accessible en ligne."
+    },
+    "support": {
+      "title": "Simplicité",
+      "description": "De la sélection à l'acquisition, notre équipe vous guide à chaque étape."
+    },
+    "distance": {
+      "title": "Réseau",
+      "description": "Partenaires certifiés partout au Cameroun. Achetez depuis Paris, Bruxelles ou Montréal."
+    }
+  },
+  "process": {
+    "title": "Comment ça marche ?",
+    "subtitle": "Un processus simple et transparent en 4 étapes pour investir en toute confiance.",
+    "step1": {
+      "title": "Explorer",
+      "description": "Parcourez notre catalogue de terrains titrés et vérifiés"
+    },
+    "step2": {
+      "title": "Vérifier",
+      "description": "Accédez à tous les documents juridiques en ligne"
+    },
+    "step3": {
+      "title": "Acheter",
+      "description": "Processus simple et sécurisé depuis l'étranger"
+    },
+    "step4": {
+      "title": "Recevoir",
+      "description": "Notre équipe vous accompagne jusqu'à la remise des titres"
+    }
+  },
+  "products": {
+    "verify": {
+      "hero": {
+        "eyebrow": "KAMBRIQ Verify",
+        "title": "Protégez votre investissement",
+        "subtitle": "Avant d'acheter un terrain, vérifiez l'authenticité du titre foncier avec nos experts certifiés. Rapport livré en 72 heures."
+      },
+      "howItWorks": {
+        "title": "Comment ça marche",
+        "step": "Étape",
+        "steps": [
+          {
+            "title": "Soumettez votre demande",
+            "description": "Fournissez le numéro de titre foncier et les détails du bien."
+          },
+          {
+            "title": "Analyse experte",
+            "description": "Nos experts certifiés croisent les données avec les registres officiels."
+          },
+          {
+            "title": "Rapport officiel",
+            "description": "Recevez un rapport PDF détaillé avec notre avis."
+          },
+          {
+            "title": "Certificat délivré",
+            "description": "Un certificat KAMBRIQ est émis pour les titres valides."
+          }
+        ]
+      },
+      "form": {
+        "title": "Demander une vérification",
+        "subtitle": "Résultats sous 72 heures",
+        "tfNumber": "Numéro de titre foncier",
+        "location": "Localisation du bien",
+        "ownerName": "Nom du propriétaire déclaré",
+        "notes": "Notes complémentaires",
+        "notesPlaceholder": "Toute information supplémentaire concernant ce bien…",
+        "submit": "Soumettre la vérification",
+        "submitting": "Envoi en cours…",
+        "turnaround": "Nous vous contacterons dans les 72 heures ouvrées.",
+        "success": "Demande de vérification soumise avec succès."
+      },
+      "badge": "Service Premium",
+      "title": "KAMBRIQ Verify",
+      "description": "Vérification complète des titres fonciers et documents immobiliers. Rapport détaillé sous 48-72h par nos experts juridiques.",
+      "cta": "Vérifier un terrain"
+    },
+    "kbs": {
+      "hero": {
+        "eyebrow": "KAMBRIQ Business School",
+        "title": "Devenez Agent Immobilier Certifié",
+        "subtitle": "6 modules, formation en ligne, certification reconnue dans tout le réseau KAMBRIQ.",
+        "applyNow": "Postuler maintenant",
+        "learnMore": "En savoir plus"
+      },
+      "modules": {
+        "title": "Programme de formation",
+        "subtitle": "6 modules complets couvrant tous les aspects de l'immobilier diaspora.",
+        "items": [
+          {
+            "title": "Fondamentaux du marché foncier camerounais",
+            "description": "Comprendre les acteurs, le cadre juridique et les types de titres fonciers."
+          },
+          {
+            "title": "Cadre légal et types de titres",
+            "description": "Plongée dans les TF, VEFL et VEFIL et leurs implications."
+          },
+          {
+            "title": "Techniques de prospection diaspora",
+            "description": "Comment identifier et engager efficacement les clients de la diaspora."
+          },
+          {
+            "title": "Négociation et closing",
+            "description": "Maîtriser l'art de la négociation et la conclusion des transactions immobilières."
+          },
+          {
+            "title": "Gestion des transactions",
+            "description": "Gérer les paiements, contrats et documents en toute fluidité."
+          },
+          {
+            "title": "Certification KCA et KAMNET",
+            "description": "Finaliser votre certification et rejoindre le réseau KAMNET."
+          }
+        ]
+      },
+      "badge": "Formation Certifiante",
+      "title": "KAMBRIQ Business School",
+      "description": "Formation professionnelle pour devenir Agent KAMNET certifié. Maîtrisez le marché foncier camerounais.",
+      "cta": "Découvrir KBS"
+    },
+    "kamnet": {
+      "hero": {
+        "eyebrow": "Réseau d'Agents KAMNET",
+        "title": "Gagnez en aidant votre communauté",
+        "subtitle": "Rejoignez des centaines d'agents certifiés gagnant des commissions sur chaque transaction immobilière de la diaspora.",
+        "cta": "Postuler à KAMNET"
+      },
+      "commissions": {
+        "title": "Structure des commissions",
+        "subtitle": "Augmentez vos gains à mesure que vous progressez dans les niveaux de certification.",
+        "perSale": "par valeur de vente"
+      },
+      "badge": "Premium",
+      "title": "KAMNET",
+      "description": "Réseau professionnel pour connecter investisseurs, experts et entrepreneurs du secteur immobilier camerounais.",
+      "cta": "En savoir plus"
+    },
+    "title": "Nos Produits & Services",
+    "subtitle": "De l'achat de terrain à la certification d'agents, KAMBRIQ vous accompagne dans chaque étape de votre projet au Cameroun.",
+    "comingSoon": "Bientôt disponible",
+    "lands": {
+      "badge": "Disponible maintenant",
+      "title": "KAMBRIQ Lands",
+      "description": "Achetez des terrains titrés et vérifiés, sans déplacement, en toute sécurité. Accompagnement expert et documents certifiés.",
+      "cta": "Découvrir les terrains"
+    },
+    "kcpi": {
+      "badge": "Bientôt disponible",
+      "title": "KAMBRIQ Construction & Project Implementation",
+      "description": "Gestion complète de vos projets de construction au Cameroun, de la conception à la livraison."
+    }
+  },
+  "diaspora": {
+    "title": "La diaspora camerounaise mérite mieux",
+    "subtitle": "Nous comprenons vos défis : distance, manque de confiance, complexité administrative. KAMBRIQ vous offre une solution clé en main.",
+    "responseTime": "Réponse en moins de 2h • 7j/7",
+    "transactions": {
+      "value": "500+",
+      "description": "transactions réalisées"
+    },
+    "satisfaction": {
+      "value": "4.9/5",
+      "description": "note moyenne clients"
+    },
+    "averageResponse": {
+      "value": "24h",
+      "description": "Réponse moyenne"
+    },
+    "whatsapp": "Parler à un conseiller"
+  },
+  "partners": {
+    "hero": {
+      "eyebrow": "Programme Partenaire",
+      "title": "Construisez avec KAMBRIQ",
+      "subtitle": "Rejoignez notre réseau de partenaires certifiés et servez ensemble la diaspora africaine."
+    },
+    "benefits": {
+      "title": "Pourquoi devenir partenaire ?",
+      "items": {
+        "access": {
+          "title": "Accès à la plateforme",
+          "description": "Accédez à notre suite complète d'outils et à notre base de clients."
+        },
+        "revenue": {
+          "title": "Partage des revenus",
+          "description": "Percevez des commissions sur chaque transaction traitée avec vos clients."
+        },
+        "growth": {
+          "title": "Développement commercial",
+          "description": "Renforcez votre réputation en servant une clientèle diaspora motivée."
+        },
+        "support": {
+          "title": "Support dédié",
+          "description": "Un responsable de compte KAMBRIQ dédié à votre activité."
+        }
+      }
+    },
+    "form": {
+      "title": "Postuler pour devenir partenaire",
+      "subtitle": "Nous examinons toutes les candidatures sous 5 jours ouvrables.",
+      "company": "Nom de l'entreprise",
+      "name": "Nom du contact",
+      "email": "Email",
+      "phone": "Téléphone",
+      "partnerType": "Type de partenaire",
+      "selectType": "Sélectionner un type",
+      "message": "Informations complémentaires",
+      "messagePlaceholder": "Parlez-nous de votre activité et de comment nous pourrions collaborer…",
+      "submit": "Soumettre la candidature",
+      "sending": "Envoi en cours…",
+      "success": "Candidature soumise ! Nous vous recontacterons sous 5 jours.",
+      "types": {
+        "notary": "Notaire",
+        "surveyor": "Géomètre",
+        "bank": "Banque / Institution financière",
+        "university": "Université / Centre de formation",
+        "real_estate": "Agence immobilière",
+        "other": "Autre"
+      }
+    },
+    "title": "Nos partenaires fonciers",
+    "subtitle": "Un réseau d'experts certifiés pour sécuriser chaque transaction",
+    "notaire": {
+      "title": "Notaires",
+      "description": "Authentification et légalisation de tous les actes fonciers"
+    },
+    "geometre": {
+      "title": "Géomètres-Experts",
+      "description": "Bornage et vérification cadastrale de chaque terrain"
+    },
+    "cadastre": {
+      "title": "Services Cadastraux",
+      "description": "Validation officielle des titres fonciers"
+    },
+    "institutions": {
+      "title": "Institutions",
+      "description": "Partenariats avec les autorités locales et régionales"
+    }
+  },
+  "testimonials": {
+    "title": "Ce que disent nos clients",
+    "subtitle": "Des milliers de membres de la diaspora ont déjà investi avec KAMBRIQ.",
+    "client1": {
+      "name": "Marie D.",
+      "location": "Paris, France",
+      "country": "FR",
+      "text": "J'ai acheté mon terrain depuis Paris en toute confiance. L'équipe KAMBRIQ a géré toutes les démarches. Processus transparent et professionnel."
+    },
+    "client2": {
+      "name": "Jean-Paul K.",
+      "location": "Bruxelles, Belgique",
+      "country": "BE",
+      "text": "Excellent service ! La vérification des documents m'a rassuré. Je recommande vivement KAMBRIQ à toute la diaspora."
+    },
+    "client3": {
+      "name": "Sandra M.",
+      "location": "Montréal, Canada",
+      "country": "CA",
+      "text": "Enfin une solution fiable pour investir au Cameroun depuis l'étranger. Merci KAMBRIQ pour votre professionnalisme."
+    }
+  },
+  "faq": {
+    "hero": {
+      "title": "Foire Aux Questions",
+      "subtitle": "Tout ce que vous devez savoir sur KAMBRIQ."
+    },
+    "searchPlaceholder": "Rechercher une question…",
+    "noResults": "Aucun résultat. Essayez une autre recherche.",
+    "categories": {
+      "all": "Tout",
+      "lands": "Terrains",
+      "verify": "Vérification",
+      "kbs": "KBS",
+      "kamnet": "KAMNET"
+    },
+    "title": "Questions Fréquentes",
+    "subtitle": "Tout ce que vous devez savoir sur KAMBRIQ et nos services.",
+    "q1": {
+      "question": "Comment acheter un terrain depuis l'étranger ?",
+      "answer": "L'achat depuis l'étranger se fait en 4 étapes simples : consultez nos terrains disponibles, sélectionnez le terrain et demandez une visite virtuelle, notre équipe locale vérifie et vous envoie tous les documents, puis signature électronique sécurisée et transfert des fonds via notre partenaire bancaire."
+    },
+    "q2": {
+      "question": "Quels documents sont fournis avec chaque terrain ?",
+      "answer": "Chaque terrain vendu via KAMBRIQ est accompagné du titre foncier certifié conforme, d'un certificat de vérification KAMBRIQ Verify, du plan cadastral officiel, d'un rapport de bornage par géomètre-expert, d'une attestation de non-contentieux et de l'historique complet des transactions."
+    },
+    "q3": {
+      "question": "Est-ce que tous les terrains sont titrés ?",
+      "answer": "Oui, absolument. KAMBRIQ ne commercialise que des terrains avec Titre Foncier Définitif (TDT). Chaque titre est vérifié par nos experts et au Cadastre. Nous garantissons l'authenticité à 100%. Les terrains sans titre ne sont jamais proposés sur notre plateforme."
+    },
+    "q4": {
+      "question": "Qu'est-ce que le service KAMBRIQ Verify ?",
+      "answer": "KAMBRIQ Verify est un service professionnel de vérification foncière qui authentifie un titre foncier en 48-72h. Notre équipe vérifie au Cadastre, contrôle l'historique des transactions, vérifie l'absence de contentieux, et délivre un certificat de conformité avec garantie."
+    },
+    "q5": {
+      "question": "Comment devenir Agent KAMNET certifié ?",
+      "answer": "Pour devenir Agent KAMNET certifié, suivez la formation KBS (KAMBRIQ Business School) : 8 semaines en ligne couvrant le droit foncier, les techniques de vente et l'utilisation de la plateforme. À la fin, vous obtenez le certificat KCA (KAMBRIQ Certified Associate) et accédez au réseau KAMNET."
+    }
+  },
+  "footer": {
+    "description": "Votre partenaire de confiance pour investir dans l'immobilier au Cameroun.",
+    "location": "Douala-Dibamba, Cameroun",
+    "productsServices": "Produits & Services",
+    "lands": "Terrains titrés",
+    "verify": "KAMBRIQ Verify",
+    "kamnet": "KAMNET",
+    "kbs": "KBS",
+    "kcpi": "KCPI (à venir)",
+    "support": "Support",
+    "about": "À propos",
+    "partners": "Partenaires",
+    "contact": "Contact",
+    "faq": "FAQ",
+    "helpCenter": "Centre d'aide",
+    "legal": "Légal",
+    "mentions": "Mentions légales",
+    "terms": "Conditions d'utilisation",
+    "privacy": "Politique de confidentialité",
+    "rgpd": "RGPD",
+    "manageCookies": "Gérer les cookies",
+    "company": "Entreprise",
+    "careers": "Recrutement",
+    "newsletter": {
+      "title": "Restez informé de nos actualités",
+      "description": "Recevez en avant-première nos nouveaux terrains, offres exclusives et conseils d'investissement.",
+      "placeholder": "Votre adresse email",
+      "submit": "S'abonner",
+      "consent": {
+        "text": "J'accepte que mes données personnelles soient traitées conformément à la",
+        "privacyLink": "politique de confidentialité",
+        "and": "et au",
+        "rgpdLink": "RGPD"
+      },
+      "validation": {
+        "emailInvalid": "Adresse email invalide",
+        "consentRequired": "Vous devez accepter le traitement de vos données"
+      },
+      "success": {
+        "title": "Inscription réussie !",
+        "description": "Vous allez recevoir nos dernières actualités et offres exclusives."
+      },
+      "errors": {
+        "title": "Erreur",
+        "alreadySubscribed": "Cette adresse email est déjà inscrite à notre newsletter."
+      }
+    },
+    "copyright": "KAMBRIQ. Tous droits réservés.",
+    "tagline": "Au service de la diaspora camerounaise et des investisseurs"
+  },
+  "auth": {
+    "backToHome": "Retour à l'accueil",
+    "login": {
+      "title": "Connectez-vous à votre compte",
+      "subtitle": "Bon retour parmi nous.",
+      "footer": "Pas encore de compte ?",
+      "footerLink": "Créez un compte",
+      "email": "Adresse email",
+      "password": "Mot de passe",
+      "rememberMe": "Se souvenir de moi",
+      "forgotPassword": "Mot de passe oublié ?",
+      "submit": "Se connecter",
+      "logIn": "Se connecter",
+      "loggingIn": "Connexion en cours..."
+    },
+    "register": {
+      "title": "Créez votre compte",
+      "subtitle": "Rejoignez des milliers d'investisseurs de la diaspora.",
+      "footer": "Vous avez déjà un compte ?",
+      "footerLink": "Connectez-vous",
+      "firstName": "Prénom",
+      "firstNamePlaceholder": "Jean",
+      "lastName": "Nom",
+      "lastNamePlaceholder": "Dupont",
+      "email": "Adresse email",
+      "phone": "Téléphone",
+      "phonePlaceholder": "+237 6XX XXX XXX",
+      "password": "Mot de passe",
+      "submit": "Créer mon compte",
+      "successTitle": "Compte créé !",
+      "successDescription": "Vérifiez votre boîte de réception et cliquez sur le lien pour activer votre compte."
+    },
+    "forgotPassword": {
+      "title": "Mot de passe oublié ?",
+      "subtitle": "Entrez votre adresse email et nous vous enverrons un lien de réinitialisation.",
+      "email": "Adresse email",
+      "submit": "Envoyer le lien",
+      "backToLogin": "Retour à la connexion",
+      "successMessage": "Si cet email existe, un lien de réinitialisation a été envoyé."
+    },
+    "resetPassword": {
+      "title": "Nouveau mot de passe",
+      "subtitle": "Choisissez un nouveau mot de passe sécurisé.",
+      "password": "Nouveau mot de passe",
+      "confirmPassword": "Confirmer le mot de passe",
+      "submit": "Réinitialiser",
+      "missingToken": "Lien invalide. Veuillez en demander un nouveau.",
+      "successMessage": "Mot de passe mis à jour. Vous pouvez maintenant vous connecter."
+    },
+    "verifyEmail": {
+      "title": "Vérification d'email",
+      "subtitle": "Confirmation de votre identité pour sécuriser votre compte.",
+      "verifying": "Vérification en cours...",
+      "successHeading": "Vérification réussie",
+      "errorHeading": "Vérification échouée",
+      "waitMessage": "Veuillez patienter pendant que nous vérifions votre email.",
+      "errorMessage": "Le lien a peut-être expiré ou a déjà été utilisé.",
+      "goToLogin": "Accéder à la connexion",
+      "backToLogin": "Retour à la connexion"
+    }
+  },
+  "landsHero": {
+    "badge": "Terrains vérifiés et sécurisés",
+    "title": "Les terrains titrés vérifiés et sécurisés par KAMBRIQ",
+    "subtitle": "Une sélection exclusive de terrains titrés, vérifiés par KAMBRIQ Verify et accompagnés par nos Agents KAMNET certifiés.",
+    "cta": "Contacter un agent KAMNET",
+    "cta2": "Découvrir KAMBRIQ Verify",
+    "indicator1": "Terrains 100% titrés",
+    "indicator2": "Vérification cadastrale complète",
+    "indicator3": "Accompagnement personnalisé"
+  },
+  "howItWorks": {
+    "title": "Comment ça marche ?",
+    "subtitle": "Un accompagnement sur mesure par nos Agents KAMNET certifiés",
+    "step1": {
+      "title": "Contact avec un Agent",
+      "description": "Vous êtes mis en relation avec un Agent KAMNET certifié qui comprend vos besoins."
+    },
+    "step2": {
+      "title": "Sélection personnalisée",
+      "description": "L'agent vous présente une sélection de terrains adaptés à votre budget et projet."
+    },
+    "step3": {
+      "title": "Vérification KAMBRIQ Verify",
+      "description": "Chaque terrain est vérifié par notre service KAMBRIQ Verify avant présentation."
+    },
+    "step4": {
+      "title": "Acquisition sécurisée",
+      "description": "Accompagnement complet jusqu'à l'obtention de votre titre foncier."
+    }
+  },
+  "whyBuyAtKambriq": {
+    "title": "Pourquoi acheter via KAMBRIQ ?",
+    "subtitle": "Une solution complète pour investir en toute sérénité",
+    "cta": "Trouver un agent KAMNET",
+    "cta2": "Demander une vérification externe",
+    "legalSecurity": {
+      "title": "Sécurité juridique garantie",
+      "description": "Chaque terrain est vérifié par KAMBRIQ Verify avant mise en catalogue. Documents authentiques certifiés."
+    },
+    "payment": {
+      "title": "Paiement par échéances",
+      "description": "Possibilité de paiement échelonné selon vos capacités. Acompte minimum 5% pour réservation."
+    },
+    "transparency": {
+      "title": "Transparence totale",
+      "description": "Suivez l'avancement de votre dossier en temps réel. Tous les documents fournis et expliqués."
+    },
+    "kamnetAgent": {
+      "title": "Accompagnement Agent KAMNET",
+      "description": "De la sélection jusqu'à l'obtention du titre, votre agent certifié vous guide à chaque étape."
+    }
+  },
+  "landTypes": {
+    "title": "Comprendre nos labels de terrains",
+    "subtitle": "Chaque terrain KAMBRIQ est classé selon son statut juridique pour une transparence totale",
+    "clientAdvantages": "Avantages Client",
+    "agentAdvantages": "Avantages Agent KAMNET",
+    "kambriqGuarantees": "Garanties KAMBRIQ",
+    "tdt": {
+      "name": "Terrain Déjà Titré",
+      "description": "Titres fonciers définitifs déjà établis. Prêts pour transaction immédiate avec sécurité juridique maximale.",
+      "advantages": {
+        "client": "Transaction immédiate, sécurité juridique maximale, aucune procédure administrative supplémentaire.",
+        "agent": "Commission rapide, processus simplifié, client sécurisé.",
+        "guarantees": "Titre foncier authentique vérifié par KAMBRIQ Verify, conformité cadastrale certifiée."
+      }
+    },
+    "vefil": {
+      "name": "Vente en État Futur d'Immatriculation et de Lotissement",
+      "description": "Terrains en cours de lotissement avec garantie d'obtention du titre foncier. Idéal pour sécuriser un projet futur.",
+      "advantages": {
+        "client": "Prix attractif, sécurisation d'un emplacement stratégique, garantie d'obtention du titre.",
+        "agent": "Potentiel de plus-value, accompagnement long terme, fidélisation client.",
+        "guarantees": "Engagement contractuel sur délais de livraison, garanties bancaires, suivi KAMBRIQ du processus."
+      }
+    },
+    "vefl": {
+      "name": "Vente en État Futur de Lotissement",
+      "description": "Terrains avec titre mère existant, en cours de division. Sécurité juridique assurée pendant le processus.",
+      "advantages": {
+        "client": "Prix intermédiaire, titre mère sécurisé, délais de division plus courts.",
+        "agent": "Bon équilibre prix/délai, accompagnement maîtrisé.",
+        "guarantees": "Titre mère vérifié, plan de lotissement approuvé, engagement sur délais de division."
+      }
+    }
+  },
+  "quickActions": {
+    "whatsapp": "Parler à un conseiller",
+    "language": "Changer de langue",
+    "languageToggle": "Passer en anglais",
+    "selectQuestion": "Comment pouvons-nous vous aider ?",
+    "selectQuestionDescription": "Choisissez un sujet pour démarrer la conversation sur WhatsApp.",
+    "questions": {
+      "landInfo": "Je souhaite obtenir des informations sur les terrains disponibles",
+      "verifyService": "J'aimerais en savoir plus sur le service KAMBRIQ Verify",
+      "kbsFormation": "Comment devenir Agent KAMNET Certifié via la formation KBS ?",
+      "kamnetAgent": "Comment rejoindre le réseau KAMNET et gagner des commissions ?",
+      "pricing": "Quels sont vos tarifs et conditions de paiement ?",
+      "buyingProcess": "Comment se déroule le processus d'achat depuis l'étranger ?",
+      "documentation": "Quels documents sont nécessaires pour acheter un terrain ?",
+      "other": "J'ai une autre question"
+    }
+  },
+  "landSearch": {
+    "verified": "Vérifié",
+    "details": "Voir les détails",
+    "compare": "Comparer",
+    "resultsCount": "{count} terrain(s) trouvé(s)",
+    "noResults": "Aucun terrain trouvé",
+    "noResultsHint": "Essayez de modifier vos filtres",
+    "filters": {
+      "searchPlaceholder": "Rechercher par nom, ville…",
+      "allRegions": "Toutes les régions",
+      "allTypes": "Tous les types",
+      "minPrice": "Prix min",
+      "maxPrice": "Prix max",
+      "verifiedOnly": "Vérifiés seulement",
+      "reset": "Réinitialiser"
+    },
+    "compareBar": {
+      "selected": "{count} terrain(s) sélectionné(s)",
+      "addLand": "Ajouter",
+      "clear": "Effacer",
+      "compare": "Comparer"
+    },
+    "modal": {
+      "verified": "Vérifié",
+      "statusAvailable": "Disponible",
+      "statusReserved": "Réservé",
+      "totalPrice": "Prix total",
+      "pricePerSqm": "{price} XAF/m²",
+      "instalments": "Paiement échelonné disponible",
+      "deposit": "Acompte minimum 5% pour réserver",
+      "noDescription": "Aucune description disponible pour ce terrain.",
+      "tabs": {
+        "identity": "Identité",
+        "verification": "Vérification",
+        "technical": "Technique",
+        "description": "Description",
+        "actions": "Actions Agent"
+      },
+      "actions": {
+        "title": "Actions Agent KAMNET",
+        "description": "Actions disponibles pour accompagner vos clients sur ce terrain.",
+        "createProspect": "Créer un prospect pour ce terrain",
+        "reserve": "Réserver pour un client",
+        "viewDocs": "Voir les documents vérifiés",
+        "requestSupport": "Demander accompagnement KAMBRIQ",
+        "cancel": "Annuler",
+        "prospect": {
+          "title": "Créer un prospect",
+          "name": "Nom complet du client",
+          "phone": "Téléphone",
+          "email": "Email (optionnel)",
+          "notes": "Notes",
+          "submit": "Créer le prospect",
+          "success": "Prospect créé avec succès"
+        },
+        "reservation": {
+          "title": "Réserver pour un client",
+          "clientName": "Nom complet du client",
+          "clientPhone": "Téléphone",
+          "deposit": "Acompte",
+          "notes": "Observations",
+          "submit": "Confirmer la réservation",
+          "success": "Réservation enregistrée avec succès"
+        },
+        "docs": {
+          "title": "Documents vérifiés",
+          "description": "Documents disponibles pour ce terrain, validés par KAMBRIQ Verify.",
+          "view": "Voir"
+        },
+        "support": {
+          "title": "Demander accompagnement KAMBRIQ",
+          "requestType": "Type de demande",
+          "typePlaceholder": "Sélectionner un type",
+          "types": {
+            "legal": "Accompagnement juridique",
+            "commercial": "Accompagnement commercial",
+            "client": "Gestion client",
+            "other": "Autre"
+          },
+          "message": "Message",
+          "messagePlaceholder": "Décrivez votre demande…",
+          "submit": "Envoyer la demande",
+          "success": "Demande envoyée",
+          "successDesc": "L'équipe KAMBRIQ vous contactera sous 24h"
+        }
+      },
+      "details": {
+        "type": "Type",
+        "size": "Superficie",
+        "price": "Prix",
+        "region": "Région",
+        "city": "Ville",
+        "neighborhood": "Quartier",
+        "tfNumber": "N° Titre foncier"
+      },
+      "verification": {
+        "verified": "Terrain vérifié par KAMBRIQ",
+        "notVerified": "Terrain non encore vérifié",
+        "verifiedDesc": "Ce terrain a été entièrement contrôlé par nos experts KAMBRIQ Verify avant publication.",
+        "notVerifiedDesc": "Ce terrain n'a pas encore été soumis à la vérification KAMBRIQ.",
+        "verifiedAt": "Dernière vérification : {date}",
+        "docsTitle": "Documents de vérification disponibles :",
+        "docTitle": "Certificat de propriété (< 3 mois)",
+        "docVerify": "Avis KAMBRIQ Verify",
+        "docBordereau": "Bordereau analytique",
+        "docUrban": "Certificat d'urbanisme",
+        "check1": "Titre foncier authentifié",
+        "check2": "Conformité cadastrale vérifiée",
+        "check3": "Absence de litiges confirmée"
+      },
+      "technical": {
+        "topography": "Topographie",
+        "water": "Accès eau",
+        "electricity": "Électricité",
+        "available": "Disponible",
+        "unavailable": "Non disponible",
+        "features": "Caractéristiques"
+      }
+    }
+  },
+  "landsCompare": {
+    "title": "Comparer des terrains",
+    "subtitle": "Comparaison de {count} terrain(s)",
+    "emptyMessage": "Sélectionnez au moins 2 terrains depuis la recherche pour les comparer côte à côte.",
+    "backToSearch": "Retour à la recherche",
+    "clearAndRestart": "Vider & recommencer",
+    "attribute": "Attribut",
+    "actions": "Actions",
+    "verifyLand": "Vérifier ce terrain",
+    "contact": "Contacter un agent",
+    "yes": "Oui",
+    "no": "Non",
+    "attrs": {
+      "image": "Photo",
+      "location": "Localisation",
+      "surface": "Superficie",
+      "price": "Prix",
+      "pricePerM2": "Prix / m²",
+      "label": "Label",
+      "tfNumber": "Titre foncier",
+      "verified": "Vérifié",
+      "water": "Accès eau",
+      "electricity": "Électricité",
+      "topography": "Topographie"
+    }
+  },
+  "landsAdmin": {
+    "header": {
+      "title": "KAMBRIQ LANDS - Admin",
+      "subtitle": "Gérez votre catalogue de terrains et les réservations",
+      "newLand": "Nouveau terrain"
+    },
+    "stats": {
+      "total": "Total terrains",
+      "available": "Disponibles",
+      "reserved": "Réservés",
+      "sold": "Vendus",
+      "pendingReservations": "Réservations en attente"
+    },
+    "tabs": {
+      "lands": "Terrains",
+      "reservations": "Réservations"
+    },
+    "table": {
+      "land": "Terrain",
+      "label": "Label",
+      "size": "Superficie",
+      "price": "Prix",
+      "status": "Statut",
+      "published": "Publié",
+      "pv": "PV",
+      "actions": "Actions",
+      "client": "Client",
+      "agent": "Agent",
+      "deposit": "Acompte",
+      "date": "Date"
+    },
+    "lands": {
+      "searchPlaceholder": "Rechercher par titre ou ville…",
+      "allRegions": "Toutes les régions",
+      "allLabels": "Tous les labels",
+      "allStatuses": "Tous les statuts",
+      "results": "résultats",
+      "noResults": "Aucun terrain ne correspond aux filtres actuels.",
+      "status": {
+        "AVAILABLE": "Disponible",
+        "RESERVED": "Réservé",
+        "SOLD": "Vendu",
+        "ARCHIVED": "Archivé"
+      },
+      "edit": "Modifier",
+      "publish": "Publier",
+      "unpublish": "Dépublier",
+      "archive": "Archiver",
+      "published": "Publié",
+      "unpublished": "Dépublié",
+      "archived": "Archivé"
+    },
+    "reservations": {
+      "searchPlaceholder": "Rechercher par client, terrain ou agent…",
+      "allStatuses": "Tous les statuts",
+      "noResults": "Aucune réservation ne correspond aux filtres actuels.",
+      "detailTitle": "Détail de la réservation",
+      "land": "Terrain",
+      "client": "Client",
+      "agent": "Agent",
+      "deposit": "Acompte (5%)",
+      "depositReceived": "Reçu",
+      "depositPending": "En attente",
+      "cancelReason": "Motif d'annulation",
+      "cancelReasonLabel": "Raison de l'annulation",
+      "cancelReasonPlaceholder": "Expliquez la raison de cette annulation…",
+      "status": {
+        "PENDING": "En attente",
+        "CONFIRMED": "Confirmé",
+        "COMPLETED": "Complété",
+        "CANCELLED": "Annulé"
+      },
+      "action": {
+        "confirm": "Confirmer l'acompte",
+        "complete": "Marquer comme vendu",
+        "cancel": "Annuler",
+        "confirmCancel": "Confirmer l'annulation",
+        "confirmSuccess": "Acompte confirmé.",
+        "completeSuccess": "Vente finalisée — terrain marqué comme vendu.",
+        "cancelSuccess": "Réservation annulée."
+      }
+    },
+    "form": {
+      "createTitle": "Nouveau terrain",
+      "editTitle": "Modifier le terrain",
+      "createDesc": "Renseignez les informations du terrain. Il sera sauvegardé en brouillon jusqu'à sa publication.",
+      "editDesc": "Mettez à jour les informations de ce terrain.",
+      "sectionIdentity": "Identité",
+      "sectionClassification": "Classification",
+      "sectionPricing": "Superficie & Prix",
+      "sectionPublication": "Publication",
+      "title": "Titre",
+      "description": "Description commerciale",
+      "descPlaceholder": "Décrivez le terrain, sa localisation, ses atouts…",
+      "region": "Région",
+      "selectRegion": "Sélectionner une région",
+      "city": "Ville",
+      "neighborhood": "Quartier",
+      "label": "Label",
+      "selectLabel": "Sélectionner un label",
+      "ownerType": "Propriétaire",
+      "partner": "Partenaire",
+      "titleNumber": "Numéro de titre foncier (TF)",
+      "size": "Superficie",
+      "price": "Prix",
+      "pv": "Point Valeur (coefficient de commission)",
+      "published": "Publier immédiatement (visible par les agents)",
+      "verified": "Vérifié par KAMBRIQ",
+      "sectionMedia": "Médias",
+      "mediaUploadLabel": "Cliquez pour ajouter des photos ou vidéos",
+      "mediaUploadHint": "JPG, PNG, WEBP, MP4 acceptés",
+      "cancel": "Annuler",
+      "create": "Créer le terrain",
+      "update": "Enregistrer les modifications",
+      "saving": "Enregistrement…",
+      "createSuccess": "Terrain créé avec succès.",
+      "updateSuccess": "Terrain mis à jour avec succès.",
+      "errorRequired": "Veuillez remplir tous les champs obligatoires."
+    }
+  },
+  "about": {
+    "hero": {
+      "eyebrow": "À propos de KAMBRIQ",
+      "title": "Notre Mission, Notre Vision",
+      "subtitle": "KAMBRIQ rend l'immobilier accessible à la diaspora africaine grâce à la confiance, la technologie et l'expertise certifiée."
+    },
+    "mission": {
+      "title": "Notre Mission",
+      "body": "Offrir à la diaspora africaine un accès sûr, transparent et professionnel pour investir dans les terres de leurs origines."
+    },
+    "vision": {
+      "title": "Notre Vision",
+      "body": "Devenir la principale plateforme immobilière connectant la diaspora africaine à leur pays d'origine d'ici 10 ans."
+    },
+    "timeline": {
+      "title": "Notre Parcours",
+      "items": [
+        {
+          "title": "Fondation de KAMBRIQ",
+          "description": "Lancement de la première plateforme d'annonces foncières pour la diaspora camerounaise."
+        },
+        {
+          "title": "Lancement de KAMBRIQ Verify",
+          "description": "Introduction de notre service de vérification de titres fonciers, protégeant les acheteurs de la diaspora."
+        },
+        {
+          "title": "Expansion KBS & KAMNET",
+          "description": "Lancement du programme de formation des agents et du réseau d'agents certifiés dans 4 pays."
+        }
+      ]
+    },
+    "team": {
+      "title": "L'Équipe",
+      "members": {
+        "ceo": {
+          "name": "Ulrich E.",
+          "role": "PDG & Co-fondateur",
+          "bio": "Expert immobilier avec plus de 10 ans d'expérience au service de la diaspora camerounaise."
+        },
+        "cto": {
+          "name": "Tech Lead",
+          "role": "CTO & Co-fondateur",
+          "bio": "Ingénieur full-stack développant des solutions proptech évolutives pour les marchés émergents."
+        },
+        "coo": {
+          "name": "Ops Lead",
+          "role": "Directeur des Opérations",
+          "bio": "Spécialiste des opérations assurant des transactions fluides entre la diaspora et les partenaires locaux."
+        }
+      }
+    },
+    "offices": {
+      "title": "Notre Présence",
+      "active": "Actif",
+      "comingSoon": "Bientôt disponible"
+    }
+  },
+  "contact": {
+    "hero": {
+      "title": "Contactez-nous",
+      "subtitle": "Notre équipe est disponible pour répondre à toutes vos questions."
+    },
+    "info": {
+      "title": "Informations de contact",
+      "email": {
+        "label": "Email"
+      },
+      "whatsapp": {
+        "label": "WhatsApp"
+      },
+      "phone": {
+        "label": "Téléphone"
+      },
+      "hours": {
+        "label": "Horaires",
+        "value": "Lun–Ven, 8h–18h (WAT)"
+      }
+    },
+    "form": {
+      "title": "Envoyez-nous un message",
+      "name": "Nom complet",
+      "email": "Email",
+      "phone": "Téléphone",
+      "subject": "Sujet",
+      "selectSubject": "Sélectionner un sujet",
+      "message": "Message",
+      "messagePlaceholder": "Décrivez votre question ou demande…",
+      "send": "Envoyer le message",
+      "sending": "Envoi…",
+      "successMessage": "Message envoyé ! Nous vous répondrons dans les 24 heures.",
+      "subjects": {
+        "lands": "Terrains & acquisition",
+        "verify": "Vérifier un titre foncier",
+        "kamnet": "Devenir agent KAMNET",
+        "kbs": "Formation KBS",
+        "partnership": "Partenariat",
+        "other": "Autre"
+      }
+    }
+  },
+  "comingSoon": {
+    "title": "Bientôt disponible",
+    "subtitle": "Nous travaillons sur de nouvelles fonctionnalités passionnantes. Restez connectés !",
+    "upcoming": "À venir",
+    "kcpi": {
+      "title": "KAMBRIQ Construction (KCPI)",
+      "description": "Services de gestion de construction pour les projets de la diaspora au Cameroun."
+    },
+    "currentServices": "Nos services actuels",
+    "services": {
+      "lands": {
+        "title": "KAMBRIQ Terrains",
+        "description": "Acquisition foncière sécurisée pour la diaspora."
+      },
+      "verify": {
+        "title": "KAMBRIQ Verify",
+        "description": "Vérification de titre foncier en 72 heures."
+      },
+      "kamnet": {
+        "title": "KAMNET",
+        "description": "Réseau d'agents certifiés."
+      },
+      "kbs": {
+        "title": "KBS",
+        "description": "Formation et certification immobilière."
+      }
+    }
+  },
+  "help": {
+    "hero": {
+      "title": "Centre d'aide",
+      "subtitle": "Trouvez des réponses à toutes vos questions sur KAMBRIQ."
+    },
+    "searchTitle": "Comment pouvons-nous vous aider ?",
+    "searchPlaceholder": "Rechercher de l'aide…",
+    "faqTitle": "Questions fréquentes",
+    "categories": {
+      "start": "Démarrer",
+      "lands": "Terrains",
+      "verify": "Vérification",
+      "payment": "Paiement",
+      "kbs": "KBS"
+    },
+    "contactSupport": {
+      "title": "Besoin d'aide supplémentaire ?",
+      "subtitle": "Notre équipe est là pour vous aider du lundi au vendredi.",
+      "cta": "Contacter le support",
+      "faq": "Voir toutes les FAQ"
+    }
+  },
+  "knowledgeBase": {
+    "hero": {
+      "title": "Base de Connaissances",
+      "subtitle": "Guides et ressources pour vous aider à naviguer dans l'écosystème KAMBRIQ."
+    },
+    "searchPlaceholder": "Rechercher un article…",
+    "allArticles": "Tout",
+    "noResults": "Aucun article trouvé."
+  }
+}

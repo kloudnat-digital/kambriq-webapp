@@ -44,10 +44,7 @@ export class KbsExamService {
     const candidate = await this.findCandidateByUserIdOrThrow(userId);
 
     // Must be in EXAM_PENDING or FAILED (for retake) OR certified with expired certificate (renewal)
-    const allowedStatuses = [
-      CandidateStatus.EXAM_PENDING,
-      CandidateStatus.FAILED,
-    ];
+    const allowedStatuses = [CandidateStatus.EXAM_PENDING, CandidateStatus.FAILED];
 
     // Check if certified but certificate expired (renewal case)
     if (candidate.status === CandidateStatus.CERTIFIED) {
@@ -117,6 +114,9 @@ export class KbsExamService {
     const exam = await this.findExamOrThrow(examId);
 
     const now = DateTime.utc();
+    if (!exam.scheduledAt) {
+      throw new BadRequestException(this.t('kbs.exam.notScheduled'));
+    }
     const scheduled = DateTime.fromJSDate(exam.scheduledAt);
 
     if (exam.candidateId !== candidate.id) {
@@ -140,8 +140,7 @@ export class KbsExamService {
     await this.ensureQuestionPoolAvailable();
 
     const settings = await this.prisma.kbsSettings.findFirst();
-    const questionCount =
-      settings?.examQuestionCount ?? DEFAULT_EXAM_QUESTION_COUNT;
+    const questionCount = settings?.examQuestionCount ?? DEFAULT_EXAM_QUESTION_COUNT;
 
     const allQuestions = await this.prisma.kbsExamQuestion.findMany({
       include: {
@@ -317,27 +316,18 @@ export class KbsExamService {
     });
 
     if (!exam) {
-      throw new NotFoundException(
-        this.t('kbs.exam.notFound', undefined, { id: examId }),
-      );
+      throw new NotFoundException(this.t('kbs.exam.notFound', undefined, { id: examId }));
     }
 
     if (exam.candidateId !== candidate.id) {
       throw new ForbiddenException(this.t('kbs.exam.notYours'));
     }
 
-    if (
-      ![ExamStatus.PASSED, ExamStatus.FAILED].includes(
-        exam.status as ExamStatus,
-      )
-    ) {
+    if (![ExamStatus.PASSED, ExamStatus.FAILED].includes(exam.status as ExamStatus)) {
       throw new BadRequestException(this.t('kbs.exam.resultsNotReady'));
     }
 
-    const moduleScores = new Map<
-      string,
-      { title: string; correct: number; total: number }
-    >();
+    const moduleScores = new Map<string, { title: string; correct: number; total: number }>();
     for (const ea of exam.examAnswers) {
       const moduleId = ea.question.module.id;
       if (!moduleScores.has(moduleId)) {
@@ -347,7 +337,11 @@ export class KbsExamService {
           total: 0,
         });
       }
-      const entry = moduleScores.get(moduleId);
+      const entry = moduleScores.get(moduleId) ?? {
+        title: ea.question.module.title,
+        correct: 0,
+        total: 0,
+      };
       entry.total++;
       if (ea.questionCorrect) {
         entry.correct++;
@@ -422,11 +416,7 @@ export class KbsExamService {
   async cancelExam(examId: string, dto: CancelExamDto) {
     const exam = await this.findExamOrThrow(examId);
 
-    if (
-      ![ExamStatus.SCHEDULED, ExamStatus.IN_PROGRESS].includes(
-        exam.status as ExamStatus,
-      )
-    ) {
+    if (![ExamStatus.SCHEDULED, ExamStatus.IN_PROGRESS].includes(exam.status as ExamStatus)) {
       throw new BadRequestException(
         this.t('kbs.exam.cannotCancel', undefined, { status: exam.status }),
       );
@@ -446,9 +436,7 @@ export class KbsExamService {
       where: { id: candidateId },
     });
     if (!candidate) {
-      throw new NotFoundException(
-        this.t('kbs.candidate.notFound', undefined, { id: candidateId }),
-      );
+      throw new NotFoundException(this.t('kbs.candidate.notFound', undefined, { id: candidateId }));
     }
 
     await this.prisma.kbsCandidate.update({
@@ -506,9 +494,7 @@ export class KbsExamService {
     });
 
     if (!exam) {
-      throw new NotFoundException(
-        this.t('kbs.exam.notFound', undefined, { id: examId }),
-      );
+      throw new NotFoundException(this.t('kbs.exam.notFound', undefined, { id: examId }));
     }
 
     let correctCount = 0;
@@ -542,10 +528,7 @@ export class KbsExamService {
     }
 
     const totalQuestions = exam.totalQuestions || exam.examAnswers.length;
-    const score =
-      totalQuestions > 0
-        ? Math.round((correctCount / totalQuestions) * 100)
-        : 0;
+    const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
     const passed = score >= exam.passingScore;
 
     await this.prisma.kbsExam.update({
@@ -580,9 +563,7 @@ export class KbsExamService {
       where: { id: dto.moduleId },
     });
     if (!mod)
-      throw new NotFoundException(
-        this.t('kbs.module.notFound', undefined, { id: dto.moduleId }),
-      );
+      throw new NotFoundException(this.t('kbs.module.notFound', undefined, { id: dto.moduleId }));
 
     const question = await this.prisma.kbsExamQuestion.create({
       data: {
@@ -658,21 +639,13 @@ export class KbsExamService {
     const exam = await this.prisma.kbsExam.findUnique({
       where: { id: examId },
     });
-    if (!exam)
-      throw new NotFoundException(
-        this.t('kbs.exam.notFound', undefined, { id: examId }),
-      );
+    if (!exam) throw new NotFoundException(this.t('kbs.exam.notFound', undefined, { id: examId }));
     return exam;
   }
 
-  private assertExamNotExpired(exam: {
-    startedAt: Date | null;
-    durationMinutes: number;
-  }) {
+  private assertExamNotExpired(exam: { startedAt: Date | null; durationMinutes: number }) {
     if (!exam.startedAt) return;
-    const expiresAt = new Date(
-      exam.startedAt.getTime() + exam.durationMinutes * 60000,
-    );
+    const expiresAt = new Date(exam.startedAt.getTime() + exam.durationMinutes * 60000);
     if (new Date() > expiresAt) {
       throw new BadRequestException(this.t('kbs.exam.timeExpired'));
     }
@@ -779,8 +752,7 @@ export class KbsExamService {
 
   private async ensureQuestionPoolAvailable() {
     const poolSize = await this.prisma.kbsExamQuestion.count();
-    if (poolSize === 0)
-      throw new ServiceUnavailableException(this.t('kbs.exam.noQuestions'));
+    if (poolSize === 0) throw new ServiceUnavailableException(this.t('kbs.exam.noQuestions'));
   }
 
   private shuffle<T>(array: T[]): T[] {

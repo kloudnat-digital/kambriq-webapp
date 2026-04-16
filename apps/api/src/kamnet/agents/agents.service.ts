@@ -16,18 +16,13 @@ import {
 } from '@kambriq/common';
 import { KamnetPrismaService } from '../prisma/kamnet-prisma.service';
 import { UsersService } from '../../core/users/users.service';
-import {
-  AgentFilterDto,
-  UpdateAgentProfileDto,
-  UpdateAgentStatusDto,
-} from '../dto/kamnet.dto';
+import { AgentFilterDto, UpdateAgentProfileDto, UpdateAgentStatusDto } from '../dto/kamnet.dto';
 
 @Injectable()
 export class KamnetAgentsService {
   private readonly logger = new Logger(KamnetAgentsService.name);
 
-  private static agentCacheKey = (userId: string) =>
-    `kamnet:agent:userId:${userId}`;
+  private static agentCacheKey = (userId: string) => `kamnet:agent:userId:${userId}`;
   private static readonly AGENT_CACHE_TTL = 60; // seconds
 
   constructor(
@@ -50,10 +45,10 @@ export class KamnetAgentsService {
         phone: user.phone,
         lastName: user.lastName,
         firstName: user.firstName,
-        address: user.profile.address,
-        avatarUrl: user.profile.avatarUrl,
-        country: user.profile.country,
-        city: user.profile.city,
+        address: user.profile?.address ?? null,
+        avatarUrl: user.profile?.avatarUrl ?? null,
+        country: user.profile?.country ?? null,
+        city: user.profile?.city ?? null,
       },
     };
   }
@@ -130,8 +125,8 @@ export class KamnetAgentsService {
       user: {
         firstName: user.firstName,
         lastName: user.lastName,
-        country: user.profile.country,
-        city: user.profile.city,
+        country: user.profile?.country ?? null,
+        city: user.profile?.city ?? null,
       },
       createdAt: agent.createdAt.toISOString(),
     };
@@ -153,11 +148,7 @@ export class KamnetAgentsService {
       throw new NotFoundException(this.t('kamnet.agent.notFound'));
     }
 
-    await this.redis.set(
-      cacheKey,
-      JSON.stringify(agent),
-      KamnetAgentsService.AGENT_CACHE_TTL,
-    );
+    await this.redis.set(cacheKey, JSON.stringify(agent), KamnetAgentsService.AGENT_CACHE_TTL);
 
     return agent;
   }

@@ -6,14 +6,11 @@ export type { JwtPayload, RequestUser } from './types/user-payload.type';
 export * from './exceptions';
 
 // ----- Config -----
-export {
-  validateEnv,
-  envSchema,
-  type EnvConfig,
-} from './config/env.validation';
+export { validateEnv, envSchema, type EnvConfig } from './config/env.validation';
 
 // ----- Utils -----
 export { hashPassword, comparePassword } from './utils/hash.util';
+export { applyCoefficient, formatXAF, formatXAFCompact } from './utils/money.util';
 
 // ----- DTOs -----
 export {
@@ -26,13 +23,7 @@ export {
 } from './dto/pagination.dto';
 
 // ----- Decorators -----
-export {
-  CurrentUser,
-  Roles,
-  ROLES_KEY,
-  Public,
-  IS_PUBLIC_KEY,
-} from './decorators';
+export { CurrentUser, Roles, ROLES_KEY, Public, IS_PUBLIC_KEY } from './decorators';
 
 // ----- Constants -----
 export * from './constants/core';

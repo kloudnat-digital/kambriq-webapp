@@ -34,12 +34,21 @@
     "created": "Reservation created — land is now held for {clientName}",
     "notFound": "Reservation not found",
     "confirmed": "Down payment confirmed — reservation is now active",
+    "documentsReceived": "Client documents marked as received",
+    "remainingPaymentConfirmed": "Remaining payment confirmed",
+    "dossierStarted": "Dossier / title transfer started",
     "completed": "Sale completed successfully",
     "cancelled": "Reservation cancelled — land is available again",
     "alreadyActive": "This reservation already has a confirmed down payment",
     "notPending": "Only pending reservations can be confirmed",
-    "notConfirmed": "Only confirmed reservations can be completed",
+    "notConfirmed": "Only confirmed reservations can progress",
+    "stepAlreadyDone": "This step has already been recorded",
+    "previousStepRequired": "The previous step must be completed first",
     "conflict": "This land was just reserved by another agent. Please try a different parcel."
+  },
+  "invite": {
+    "sent": "Invitation sent to {email}",
+    "alreadyExists": "An account already exists for {email} — invitation resent"
   },
   "priceHistory": {
     "noChanges": "No price changes recorded for this land"

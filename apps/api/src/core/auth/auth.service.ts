@@ -51,10 +51,7 @@ export class AuthService {
     private readonly emailService: EmailService,
     private readonly i18n: I18nService,
   ) {
-    this.frontendUrl = this.config.get<string>(
-      'FRONTEND_URL',
-      'http://localhost:3001',
-    );
+    this.frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3001');
   }
 
   // ----- Register ------------------------------------------
@@ -136,21 +133,17 @@ export class AuthService {
     const lang = user?.preferredLanguage || 'fr';
 
     if (!user) {
-      throw new InvalidCredentialsException(
-        this.t('auth.login.invalidCredentials', lang),
-      );
+      throw new InvalidCredentialsException(this.t('auth.login.invalidCredentials', lang));
+    }
+
+    if (!user.emailVerified) {
+      throw new UnauthorizedException(this.t('auth.login.emailNotVerified', lang));
     }
 
     if (!user.isActive) {
-      if (
-        user.deletedAt &&
-        !user.deactivatedBy &&
-        this.isWithenGracePeriod(user.deletedAt)
-      ) {
+      if (user.deletedAt && !user.deactivatedBy && this.isWithenGracePeriod(user.deletedAt)) {
         const daysRemaining = Math.ceil(
-          (GRACE_PERIOD_DAYS * 86_400_000 -
-            (Date.now() - user.deletedAt.getTime())) /
-            86_400_000,
+          (GRACE_PERIOD_DAYS * 86_400_000 - (Date.now() - user.deletedAt.getTime())) / 86_400_000,
         );
         this.logger.log('Inactive user within grace period attempted login', {
           userId: user.id,
@@ -167,24 +160,17 @@ export class AuthService {
         };
       }
 
-      throw new InvalidCredentialsException(
-        this.t('auth.login.inactiveAccount', lang),
-      );
+      throw new InvalidCredentialsException(this.t('auth.login.inactiveAccount', lang));
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      const minutesLeft = Math.ceil(
-        (user.lockedUntil.getTime() - Date.now()) / 60_000,
-      );
+      const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000);
       throw new UnauthorizedException(
         this.t('auth.login.accountLocked', lang, { minutes: minutesLeft }),
       );
     }
 
-    const isPasswordValid = await comparePassword(
-      dto.password,
-      user.passwordHash,
-    );
+    const isPasswordValid = await comparePassword(dto.password, user.passwordHash);
     if (!isPasswordValid) {
       const attempts = user.loginAttempts + 1;
       await this.handleFailedLogin({
@@ -208,7 +194,13 @@ export class AuthService {
     }
 
     const roles = user.userRoles.map((ur) => ur.role.code);
-    const tokens = await this.generateTokens(user.id, user.email, roles, lang);
+    const tokens = await this.generateTokens(
+      user.id,
+      user.email,
+      roles,
+      lang,
+      dto.rememberMe ?? false,
+    );
 
     this.logger.log('User logged in', { userId: user.id });
 
@@ -230,9 +222,7 @@ export class AuthService {
     try {
       this.jwtService.verify(refreshToken);
     } catch {
-      throw new InvalidRefreshTokenException(
-        this.t('auth.token.invalidRefresh'),
-      );
+      throw new InvalidRefreshTokenException(this.t('auth.token.invalidRefresh'));
     }
 
     const storedToken = await this.prisma.refreshToken.findFirst({
@@ -242,14 +232,8 @@ export class AuthService {
       },
     });
 
-    if (
-      !storedToken ||
-      storedToken.revokedAt ||
-      storedToken.expiresAt < new Date()
-    ) {
-      throw new InvalidRefreshTokenException(
-        this.t('auth.token.invalidRefresh'),
-      );
+    if (!storedToken || storedToken.revokedAt || storedToken.expiresAt < new Date()) {
+      throw new InvalidRefreshTokenException(this.t('auth.token.invalidRefresh'));
     }
 
     await this.prisma.refreshToken.update({
@@ -262,16 +246,24 @@ export class AuthService {
     }
 
     const roles = storedToken.user.userRoles.map((ur) => ur.role.code);
+
+    // Infer "remember me" from the original token's duration.
+    // Short tokens (24h) were session-only; long tokens (30d) were remembered.
+    // 2 days is a safe threshold — well above 24h, well below 30d.
+    const durationMs = storedToken.expiresAt.getTime() - storedToken.createdAt.getTime();
+    const wasRemembered = durationMs > 2 * 86_400_000;
+
     const tokens = await this.generateTokens(
       storedToken.user.id,
       storedToken.user.email,
       roles,
       storedToken.user.preferredLanguage || 'fr',
+      wasRemembered,
     );
 
     this.logger.log('Token refreshed', { userId: storedToken.user.id });
 
-    return tokens;
+    return { ...tokens, rememberMe: wasRemembered };
   }
 
   // ----- Logout ------------------------------------------
@@ -294,10 +286,7 @@ export class AuthService {
 
     const lang = tokenRecord?.user?.preferredLanguage || 'fr';
 
-    if (
-      !tokenRecord ||
-      tokenRecord.type !== VerificationTokenType.EMAIL_VERIFICATION
-    ) {
+    if (!tokenRecord || tokenRecord.type !== VerificationTokenType.EMAIL_VERIFICATION) {
       throw new BadRequestException(this.t('auth.email.invalidToken', lang));
     }
     if (tokenRecord.usedAt) {
@@ -386,6 +375,7 @@ export class AuthService {
       });
       return { message: this.t('auth.password.resetSent', lang) };
     }
+    return { message: this.t('auth.password.resetSent', lang) };
   }
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
     const { token, newPassword } = dto;
@@ -405,13 +395,8 @@ export class AuthService {
 
     const lang = tokenRecord?.user?.preferredLanguage || 'fr';
 
-    if (
-      !tokenRecord ||
-      tokenRecord.type !== VerificationTokenType.PASSWORD_RESET
-    ) {
-      throw new BadRequestException(
-        this.t('auth.password.invalidResetToken', lang),
-      );
+    if (!tokenRecord || tokenRecord.type !== VerificationTokenType.PASSWORD_RESET) {
+      throw new BadRequestException(this.t('auth.password.invalidResetToken', lang));
     }
     if (tokenRecord.usedAt) {
       throw new BadRequestException(this.t('auth.email.tokenUsed', lang));
@@ -464,29 +449,18 @@ export class AuthService {
     const lang = user?.preferredLanguage || 'fr';
 
     if (!user) {
-      throw new NotFoundException(
-        this.t('auth.login.invalidCredentials', lang),
-      );
+      throw new NotFoundException(this.t('auth.login.invalidCredentials', lang));
     }
     if (!user.deletedAt || user.deactivatedBy) {
-      throw new BadRequestException(
-        this.t('auth.reactivation.notEligible', lang),
-      );
+      throw new BadRequestException(this.t('auth.reactivation.notEligible', lang));
     }
     if (!this.isWithenGracePeriod(user.deletedAt)) {
-      throw new BadRequestException(
-        this.t('auth.reactivation.gracePeriodExpired', lang),
-      );
+      throw new BadRequestException(this.t('auth.reactivation.gracePeriodExpired', lang));
     }
 
-    const isPasswordValid = await comparePassword(
-      dto.password,
-      user.passwordHash,
-    );
+    const isPasswordValid = await comparePassword(dto.password, user.passwordHash);
     if (!isPasswordValid) {
-      throw new BadRequestException(
-        this.t('auth.login.invalidCredentials', lang),
-      );
+      throw new BadRequestException(this.t('auth.login.invalidCredentials', lang));
     }
 
     await this.prisma.user.update({
@@ -533,6 +507,7 @@ export class AuthService {
     email: string,
     roles: string[],
     lang: string,
+    rememberMe = false,
   ): Promise<TokenResponse> {
     const payload: JwtPayload = {
       sub: userId,
@@ -541,14 +516,13 @@ export class AuthService {
       lang,
     };
 
-    const accessExpiration = this.config.get<StringValue>(
-      'JWT_ACCESS_EXPIRATION',
-      '15m',
-    );
-    const refreshExpiration = this.config.get<StringValue>(
-      'JWT_REFRESH_EXPIRATION',
-      '15d',
-    );
+    const accessExpiration = this.config.get<StringValue>('JWT_ACCESS_EXPIRATION', '15m');
+
+    // rememberMe: true  → long-lived token from config (e.g. 30d), persistent cookie
+    // rememberMe: false → short-lived (24h), session cookie deleted when browser closes
+    const refreshExpiration: StringValue = rememberMe
+      ? this.config.get<StringValue>('JWT_REFRESH_EXPIRATION', '30d')
+      : '24h';
 
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: accessExpiration,
@@ -557,9 +531,7 @@ export class AuthService {
       expiresIn: refreshExpiration,
     });
 
-    const expiresAt = new Date(
-      Date.now() + this.parseExpiry(refreshExpiration),
-    );
+    const expiresAt = new Date(Date.now() + this.parseExpiry(refreshExpiration));
 
     await this.prisma.refreshToken.create({
       data: {
@@ -573,6 +545,7 @@ export class AuthService {
       accessToken,
       refreshToken,
       expiresAt,
+      rememberMe,
     };
   }
 
@@ -647,8 +620,7 @@ export class AuthService {
 
   private isWithenGracePeriod(deletedAt: Date | null): boolean {
     if (!deletedAt) return false;
-    const daysSinceDeletion =
-      (Date.now() - deletedAt.getTime()) / (1_000 * 60 * 60 * 24);
+    const daysSinceDeletion = (Date.now() - deletedAt.getTime()) / (1_000 * 60 * 60 * 24);
     return daysSinceDeletion <= GRACE_PERIOD_DAYS;
   }
 

@@ -51,3 +51,11 @@ libs/common/src/prisma/*
 
 # Others
 tmp
+
+# Next.js
+.next
+out
+*.tsbuildinfo
+
+.claude/worktrees
+.claude/settings.local.json

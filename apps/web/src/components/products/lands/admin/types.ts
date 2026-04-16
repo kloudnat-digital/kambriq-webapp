@@ -1,0 +1,59 @@
+export type LandLabel = {
+  id: string;
+  code: 'TDT' | 'VEFL' | 'VEFIL';
+  name: string;
+};
+
+export type AdminLand = {
+  id: string;
+  title: string;
+  slug: string;
+  region: string;
+  city?: string;
+  neighborhood?: string;
+  latitude?: number;
+  longitude?: number;
+  sizeM2: number;
+  price: number;
+  label: LandLabel;
+  pv: number;
+  ownerType: 'KAMBRIQ' | 'PARTNER';
+  titleNumber?: string;
+  surfaceTitle?: number;
+  isPublished: boolean;
+  isVerified: boolean;
+  status: 'AVAILABLE' | 'RESERVED' | 'SOLD' | 'ARCHIVED';
+  media: { id: string; url: string; type: string }[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminReservation = {
+  id: string;
+  land: { id: string; title: string; region: string; city?: string };
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+  agent: { id: string; name: string };
+  depositAmount: number;
+  downPaymentConfirmed: boolean;
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  reason?: string;
+  createdAt: string;
+};
+
+export type LandFormValues = {
+  title: string;
+  description: string;
+  region: string;
+  city: string;
+  neighborhood: string;
+  sizeM2: number;
+  price: number;
+  labelId: string;
+  pv: number;
+  ownerType: 'KAMBRIQ' | 'PARTNER';
+  titleNumber: string;
+  isPublished: boolean;
+  isVerified: boolean;
+};

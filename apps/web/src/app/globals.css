@@ -1,0 +1,138 @@
+@import 'tailwindcss';
+
+/* ─────────────────────────────────────────────────────────────
+   KAMBRIQ DESIGN SYSTEM
+   Brand colors:
+     Primary  — Forest Green  #32723B
+     Surface  — Warm Cream    #EEECE5
+     Accent   — Dark Brown    #4F2E04
+     Gold     — Golden Yellow #F1BD2F
+   ───────────────────────────────────────────────────────────── */
+
+@theme {
+  /* ── Fonts ───────────────────────────────────────────────── */
+  --font-sans: Switzer, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* ── Brand Palette ───────────────────────────────────────── */
+
+  /* Primary — Forest Green #32723B */
+  --color-primary-50: #f0f7f1;
+  --color-primary-100: #d9eddb;
+  --color-primary-200: #b4dcb8;
+  --color-primary-300: #82c389;
+  --color-primary-400: #52a45b;
+  --color-primary-500: #32723b; /* Brand anchor */
+  --color-primary-600: #275c2f;
+  --color-primary-700: #1f4825;
+  --color-primary-800: #183820;
+  --color-primary-900: #122d19;
+  --color-primary-950: #0a1a0e;
+
+  /* Accent — Dark Brown #4F2E04 */
+  --color-accent-50: #fdf8f0;
+  --color-accent-100: #f7ead8;
+  --color-accent-200: #efd4ac;
+  --color-accent-300: #e4b478;
+  --color-accent-400: #d68e44;
+  --color-accent-500: #b86e23;
+  --color-accent-600: #8c511a;
+  --color-accent-700: #6b3c12;
+  --color-accent-800: #4f2e04; /* Brand anchor */
+  --color-accent-900: #3a2108;
+  --color-accent-950: #1e1104;
+
+  /* Gold — Golden Yellow #F1BD2F */
+  --color-gold-50: #fefaeb;
+  --color-gold-100: #fdf3c6;
+  --color-gold-200: #fae78d;
+  --color-gold-300: #f7d75b;
+  --color-gold-400: #f4c93f;
+  --color-gold-500: #f1bd2f; /* Brand anchor */
+  --color-gold-600: #ca9a1c;
+  --color-gold-700: #9c7713;
+  --color-gold-800: #74590f;
+  --color-gold-900: #523f0b;
+  --color-gold-950: #2c2106;
+
+  /* Surface — Warm Cream #EEECE5 */
+  --color-surface-50: #fdfcfa;
+  --color-surface-100: #eeece5; /* Brand anchor */
+  --color-surface-200: #dedad0;
+  --color-surface-300: #cbc6b8;
+  --color-surface-400: #b3ae9f;
+  --color-surface-500: #928d7e;
+  --color-surface-600: #736e61;
+  --color-surface-700: #5a564b;
+  --color-surface-800: #403d35;
+  --color-surface-900: #2a2821;
+  --color-surface-950: #16150f;
+
+  /* ── Semantic Tokens (Light Mode) ────────────────────────── */
+  --color-background: var(--color-surface-50);
+  --color-foreground: var(--color-surface-900);
+
+  --color-card: #ffffff;
+  --color-card-foreground: var(--color-surface-900);
+
+  --color-muted: var(--color-surface-100);
+  --color-muted-foreground: var(--color-surface-600);
+
+  --color-border: var(--color-surface-200);
+  --color-input: var(--color-surface-200);
+  --color-ring: var(--color-primary-500);
+
+  --color-primary: var(--color-primary-500);
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: var(--color-surface-100);
+  --color-secondary-foreground: var(--color-surface-800);
+
+  --color-accent: var(--color-accent-800);
+  --color-accent-foreground: #ffffff;
+
+  --color-gold: var(--color-gold-500);
+  --color-gold-foreground: #ffffff;
+
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #ffffff;
+
+  --color-success: var(--color-primary-500);
+  --color-success-foreground: #ffffff;
+
+  --color-warning: #d97706;
+  --color-warning-foreground: #ffffff;
+
+  /* ── Border Radius ───────────────────────────────────────── */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* ── Shadows ─────────────────────────────────────────────── */
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-hover: 0 4px 12px 0 rgb(0 0 0 / 0.12), 0 2px 4px -1px rgb(0 0 0 / 0.08);
+  --shadow-modal: 0 20px 60px -10px rgb(0 0 0 / 0.2);
+
+  /* ── Transitions ─────────────────────────────────────────── */
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Base Reset ──────────────────────────────────────────── */
+* {
+  scrollbar-width: none; /* Firefox */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

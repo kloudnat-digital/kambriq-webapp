@@ -1,5 +1,6 @@
 import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
@@ -21,10 +22,12 @@ async function bootstrap() {
   // ----- Security ----------
   app.use(helmet());
 
+  // ----- Cookie Parser -----
+  // Parses Cookie header and populates req.cookies so NestJS can read httpOnly tokens
+  app.use(cookieParser());
+
   // ----- CORS --------------
-  const corsOrigins = process.env.CORS_ORIGINS?.split(',') || [
-    'http://localhost:3000',
-  ];
+  const corsOrigins = process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000'];
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
@@ -60,10 +63,7 @@ async function bootstrap() {
       .addTag('KAMNET - Agent', 'Agent Dashboard, Leads, Reservations, Network')
       .addTag('KAMNET - Admin', 'Agent Management, Applications, Commissions')
       .addTag('LANDS - Agent', 'Browse Lands, Reserve for Clients')
-      .addTag(
-        'LANDS - Admin',
-        'Land CRUD, Labels, Media, Documents, Reservations',
-      )
+      .addTag('LANDS - Admin', 'Land CRUD, Labels, Media, Documents, Reservations')
       .addTag('Health', 'Health Checks')
       .build();
 
