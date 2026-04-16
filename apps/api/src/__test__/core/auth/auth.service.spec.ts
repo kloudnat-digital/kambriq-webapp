@@ -15,12 +15,7 @@ import {
 } from '../../utils';
 import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import {
-  comparePassword,
-  EmailService,
-  RoleCode,
-  VerificationTokenType,
-} from '@kambriq/common';
+import { comparePassword, EmailService, RoleCode, VerificationTokenType } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 import { ConfigService } from '@nestjs/config';
 import { AuthResponse } from '../../../core/auth/dto/auth.dto';
@@ -79,9 +74,7 @@ describe('AuthService', () => {
       prisma.user.findUnique.mockResolvedValue(null); // No existing user
       const createdUser = buildUser({ id: 'user-1', email: dto.email });
       prisma.user.create.mockResolvedValue(createdUser);
-      prisma.role.findUnique.mockResolvedValue(
-        buildRole(RoleCode.CLIENT, { id: 'role-1' }),
-      );
+      prisma.role.findUnique.mockResolvedValue(buildRole(RoleCode.CLIENT, { id: 'role-1' }));
       prisma.userRole.create.mockResolvedValue({});
       prisma.verificationToken.updateMany.mockResolvedValue({ count: 0 });
       prisma.verificationToken.create.mockResolvedValue({});
@@ -129,7 +122,7 @@ describe('AuthService', () => {
   // ----- LOGIN ----- //
 
   describe('login', () => {
-    const dto = { email: 'test@kambriq.com', password: 'StrongPass123!' };
+    const dto = { email: 'test@kambriq.com', password: 'StrongPass123!', rememberMe: false };
 
     it('returns tokens on valid credentials', async () => {
       const user = buildUserWithRoles(['CLIENT'], {
@@ -299,9 +292,7 @@ describe('AuthService', () => {
       const token = buildVerificationToken({ usedAt: new Date() });
       prisma.verificationToken.findUnique.mockResolvedValue(token);
 
-      await expect(
-        service.verifyEmail({ token: token.token }),
-      ).rejects.toThrow();
+      await expect(service.verifyEmail({ token: token.token })).rejects.toThrow();
     });
 
     it('rejects expired token', async () => {
@@ -310,9 +301,7 @@ describe('AuthService', () => {
       });
       prisma.verificationToken.findUnique.mockResolvedValue(token);
 
-      await expect(
-        service.verifyEmail({ token: token.token }),
-      ).rejects.toThrow();
+      await expect(service.verifyEmail({ token: token.token })).rejects.toThrow();
     });
   });
 
