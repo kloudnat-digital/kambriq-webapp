@@ -112,7 +112,7 @@ export const MOCK_LANDS: MockLand[] = [
     tfNumber: 'TF/SUD/2025/0034',
     status: 'reserved',
     description:
-      "Exceptionnel terrain en bord de mer à Kribi. Vue mer partielle, à quelques mètres de la plage. Idéal pour un projet touristique ou une villa de luxe. Titre en cours d'immatriculation avec garantie contractuelle.",
+      "Exceptionnel terrain en bord de mer à Kribi. Vue mer partielle, à quelques mètres de la plage. Idéal pour un projet touristique ou une villa de luxe. Titre en cours d'immatriculation sous label KAMBRIQ VEFL™.",
     features: ['Vue mer', 'Proche plage', 'Zone touristique', 'Très prisé'],
     topography: 'Plat',
     waterAccess: true,

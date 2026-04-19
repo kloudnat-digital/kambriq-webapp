@@ -29,12 +29,9 @@ export const TeamSection = () => {
               <p className="mt-3 text-xs leading-relaxed text-gray-500">
                 {t(`members.${member.key}.bio`)}
               </p>
-              <a
-                href="#"
-                className="mt-4 flex items-center gap-1.5 text-xs text-gray-400 transition-colors hover:text-primary-600"
-              >
+              <span className="mt-4 flex items-center gap-1.5 text-xs text-gray-400">
                 <Linkedin className="size-3.5" /> LinkedIn
-              </a>
+              </span>
             </div>
           ))}
         </div>

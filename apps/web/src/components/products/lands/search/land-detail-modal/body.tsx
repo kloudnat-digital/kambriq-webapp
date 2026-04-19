@@ -11,7 +11,7 @@ import {
   Zap,
   HelpCircle,
 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import type { useTranslations } from 'next-intl';
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {

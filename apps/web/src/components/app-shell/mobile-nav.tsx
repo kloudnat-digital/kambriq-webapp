@@ -30,7 +30,9 @@ export const MobileNav = ({ userRoles, userName, userRole, initials }: MobileNav
       {/* Overlay + Drawer */}
       {open && (
         <>
-          <div
+          <button
+            type="button"
+            aria-label={t('closeMenu')}
             className="fixed inset-0 z-40 bg-black/50 lg:hidden"
             onClick={() => setOpen(false)}
           />
