@@ -1,17 +1,17 @@
 import { Network } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
 import SharedHero from '@/components/hero';
 
-const Hero = () => {
+const Hero = async () => {
+  const t = await getTranslations('products.kamnet.hero');
   return (
     <SharedHero
       Icon={Network}
-      heroBadgeLabel={"KAMNET - Réseau d'Agents Certifiés"}
-      title={"Rejoignez le réseau d'agents fonciers certifiés du Cameroun"}
-      subtitle={
-        "Développez votre activité d'agent foncier en vous appuyant sur l'expertise KAMBRIQ et accédez au catalogue exclusif de terrains vérifiés."
-      }
-      cta1={{ label: 'Devenir agent', href: '/kamnet/apply' }}
-      cta2={{ label: 'Nous contacter', href: '/contact' }}
+      heroBadgeLabel={t('eyebrow')}
+      title={t('title')}
+      subtitle={t('subtitle')}
+      cta1={{ label: t('cta'), href: '/kamnet/apply' }}
+      cta2={{ label: t('cta2'), href: '/contact' }}
     />
   );
 };

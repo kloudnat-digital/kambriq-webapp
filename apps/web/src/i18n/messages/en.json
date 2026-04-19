@@ -65,7 +65,14 @@
     "title": "Understanding Cameroonian land",
     "subtitle": "Every week, an insight into Cameroonian land: the basics, the pitfalls, the reforms, the method.",
     "season1": {
-      "title": "Season 1 — Understanding the ground you stand on"
+      "title": "Season 1 — Understanding the ground you stand on",
+      "items": [
+        "The 4 land domains in Cameroon",
+        "What exactly is a title deed?",
+        "National domain vs private domain",
+        "Why it is complicated",
+        "What the diaspora needs to know"
+      ]
     },
     "comingSoon": "Articles coming soon. Follow us so you don't miss anything.",
     "follow": "Follow us:"
@@ -179,11 +186,224 @@
     },
     "kbs": {
       "hero": {
-        "eyebrow": "KAMBRIQ Business School",
+        "eyebrow": "Professional training",
         "title": "Become a certified KAMNET agent",
-        "subtitle": "KBS is the reference training to master Cameroonian land law and join the KAMNET network.",
+        "subtitle": "KAMBRIQ Business School (KBS) is the reference training to master Cameroonian land and join the KAMNET network.",
         "applyNow": "Contact us",
-        "learnMore": "Learn more about KAMNET"
+        "learnMore": "Learn more about KAMNET",
+        "certificateBadge": "Earn your KCA (KAMBRIQ Certified Agent) certificate in 2 months"
+      },
+      "program": {
+        "title": "KAMBRIQ Business School training program",
+        "subtitle": "6 complete modules to become a KAMBRIQ Certified Agent (KCA)",
+        "features": [
+          { "name": "Total duration", "title": "8 weeks", "description": "At your own pace" },
+          { "name": "Format", "title": "100% online", "description": "Accessible 24/7" },
+          { "name": "Modules", "title": "6 modules", "description": "32 lessons" }
+        ]
+      },
+      "admission": {
+        "title": "How to join KBS",
+        "subtitle": "Two entry paths to access the training",
+        "sponsorship": {
+          "name": "Sponsorship",
+          "title": "KAMNET sponsorship",
+          "description": "If you are recommended by an existing KAMNET Agent, you benefit from priority access with a sponsor code."
+        },
+        "freeApplication": {
+          "name": "Free Application",
+          "title": "Free application",
+          "description": "You may also apply freely by filling out the admission form. Your file will be reviewed by our team."
+        },
+        "pricing": {
+          "label": "Training fee",
+          "description": "Full 2-month training + KCA exam + certificate valid for 2 years",
+          "price": "€249",
+          "tax": "incl. tax",
+          "cta": "Apply now"
+        }
+      },
+      "modulesDetail": {
+        "title": "Training modules",
+        "contentLabel": "Module content:",
+        "items": [
+          {
+            "name": "Module 1",
+            "title": "Fundamentals of Cameroonian land",
+            "duration": "1 week",
+            "description": "Provide the essential land fundamentals to future KAMNET Agents.",
+            "lectures": [
+              {
+                "title": "Introduction to the Cameroonian land system",
+                "description": "Understand the history, institutions, and complexity of land in Cameroon."
+              },
+              {
+                "title": "The 3 land categories marketed by KAMBRIQ",
+                "description": "Distinguish KAMBRIQ TFL™, VEFL™ and VEFIL™ lands."
+              },
+              {
+                "title": "Why KAMBRIQ limits itself to these 3 categories",
+                "description": "Security, traceability, commercial coherence."
+              },
+              {
+                "title": "Common risks in land",
+                "description": "Identify the major pitfalls in order to avoid them."
+              }
+            ]
+          },
+          {
+            "name": "Module 2",
+            "title": "KAMBRIQ TFL™: understand, read, verify",
+            "duration": "1 week",
+            "description": "Enable the agent to read, interpret and verify a simple Title Deed.",
+            "lectures": [
+              {
+                "title": "What is a Title Deed?",
+                "description": "Understand the role and definition of the Title Deed in the Cameroonian land system."
+              },
+              {
+                "title": "Anatomy of a Title Deed",
+                "description": "Know how to read a Title Deed field by field."
+              },
+              {
+                "title": "Verifying a Title Deed",
+                "description": "Set up a simple method to verify a TD before presenting it to a client."
+              },
+              {
+                "title": "Case studies and common mistakes",
+                "description": "Identify warning signals using concrete examples."
+              }
+            ]
+          },
+          {
+            "name": "Module 3",
+            "title": "VEFL™ & VEFIL™: understand & sell ongoing projects",
+            "duration": "3 weeks",
+            "description": "Enable the agent to understand and clearly explain KAMBRIQ's VEFL™ and VEFIL™ offerings, their administrative processes, risks and commercial advantages.",
+            "lectures": [
+              {
+                "title": "General introduction",
+                "description": "Understand why VEFL™ and VEFIL™ represent a large share of the real land market and why KAMBRIQ offers them."
+              },
+              {
+                "title": "VEFL™: Sale in Future State of Subdivision",
+                "description": "Master the VEFL™ process, its mandatory documents, associated risks and KAMBRIQ controls."
+              },
+              {
+                "title": "VEFIL™: Sale in Future State of Registration & Subdivision",
+                "description": "Understand the VEFIL™ process, its documents, higher risks and KAMBRIQ's reinforced controls."
+              },
+              {
+                "title": "KAMBRIQ TFL™ / VEFL™ / VEFIL™ comparison",
+                "description": "Comparative table of the three KAMBRIQ land categories across key criteria."
+              },
+              {
+                "title": "Professional checklists",
+                "description": "Essential verification lists to validate a VEFL™ or VEFIL™ file before client presentation."
+              },
+              {
+                "title": "Module 3 Mini-Exam",
+                "description": "Assessment of knowledge on VEFL™ and VEFIL™: procedures, risks, document analysis."
+              }
+            ]
+          },
+          {
+            "name": "Module 4",
+            "title": "Sales techniques & KAMBRIQ messaging",
+            "duration": "2 weeks",
+            "description": "Train the KAMNET Agent to present a land, reassure a client, handle objections and close a sale following the KAMBRIQ method.",
+            "lectures": [
+              {
+                "title": "Foundations of KAMBRIQ land selling",
+                "description": "Understand the KAMNET Agent role, client profiles and the 3 pillars of the KAMBRIQ method."
+              },
+              {
+                "title": "How to present a KAMBRIQ land",
+                "description": "Presentation structure by label (TFL™, VEFL™, VEFIL™) and document presentation rules."
+              },
+              {
+                "title": "Handling objections",
+                "description": "Structured techniques to answer the most common objections."
+              },
+              {
+                "title": "KAMBRIQ sales scripts",
+                "description": "Scripts adapted to client profile: diaspora, local, investor."
+              },
+              {
+                "title": "KAMNET sales process",
+                "description": "Mandatory sales steps and absolute prohibitions for agents."
+              },
+              {
+                "title": "Practical exercise",
+                "description": "Practical case: diaspora client hesitating between TFL™ and VEFL™."
+              }
+            ]
+          },
+          {
+            "name": "Module 5",
+            "title": "KAMNET tools & platform",
+            "duration": "2 weeks",
+            "description": "Train the KAMNET Agent to master the interface, navigation, land reservations, sales tracking and commission management.",
+            "lectures": [
+              {
+                "title": "Introduction to the KAMNET platform",
+                "description": "Understand KAMNET's role in the KAMBRIQ ecosystem and the general usage flow."
+              },
+              {
+                "title": "Platform navigation",
+                "description": "Master the agent dashboard, land access and land-sheet structure."
+              },
+              {
+                "title": "Prospect management",
+                "description": "Learn to create and manage prospects in the KAMNET platform."
+              },
+              {
+                "title": "KAMNET reservations",
+                "description": "Master the reservation process and its rules."
+              },
+              {
+                "title": "Sales tracking",
+                "description": "Understand the sales pipeline and actions available per role."
+              },
+              {
+                "title": "KAMNET commissions",
+                "description": "Understand how commissions work and how to track them."
+              }
+            ]
+          },
+          {
+            "name": "Module 6",
+            "title": "Ethics, compliance & KAMBRIQ brand",
+            "duration": "1 week",
+            "description": "Train KAMNET Agents to uphold ethical rules, protect the KAMBRIQ brand, prevent fraud and ensure an exemplary client experience.",
+            "lectures": [
+              {
+                "title": "Introduction to KAMBRIQ ethics",
+                "description": "Understand the importance of strict ethics in the land sector and the KAMNET commitment."
+              },
+              {
+                "title": "KAMNET code of conduct",
+                "description": "Discover expected and prohibited behaviours to preserve KAMNET network integrity."
+              },
+              {
+                "title": "Compliance & data protection",
+                "description": "Master confidentiality rules and secure management of client data."
+              },
+              {
+                "title": "Fraud prevention",
+                "description": "Identify common fraud types and learn to detect and report suspicious cases."
+              },
+              {
+                "title": "KAMBRIQ image & brand",
+                "description": "Understand the duty of representation and the rules of official communication."
+              },
+              {
+                "title": "Professional responsibility",
+                "description": "Master the duty of care and the final commitment of the certified KCA agent."
+              }
+            ]
+          }
+        ]
       },
       "modules": {
         "title": "Training curriculum",
@@ -361,7 +581,8 @@
         "eyebrow": "KAMNET Agent Network",
         "title": "Earn while helping your community",
         "subtitle": "Earn commissions on every Cameroonian land transaction and access the exclusive verified catalogue.",
-        "cta": "Apply to KAMNET"
+        "cta": "Apply to KAMNET",
+        "cta2": "Contact us"
       },
       "commissions": {
         "title": "Commission structure",
@@ -442,75 +663,6 @@
       "cta": "Discover KAMBRIQ LANDS"
     }
   },
-  "partners": {
-    "hero": {
-      "eyebrow": "Partner Program",
-      "title": "Build with KAMBRIQ",
-      "subtitle": "Join our network of certified partners and serve the African diaspora together."
-    },
-    "benefits": {
-      "title": "Why become a partner?",
-      "items": {
-        "access": {
-          "title": "Platform access",
-          "description": "Access our full suite of tools and client database."
-        },
-        "revenue": {
-          "title": "Revenue sharing",
-          "description": "Earn commissions on every transaction processed with your clients."
-        },
-        "growth": {
-          "title": "Business growth",
-          "description": "Grow your reputation by serving a motivated diaspora clientele."
-        },
-        "support": {
-          "title": "Dedicated support",
-          "description": "A dedicated KAMBRIQ account manager for your business."
-        }
-      }
-    },
-    "form": {
-      "title": "Apply to become a partner",
-      "subtitle": "We review all applications within 5 business days.",
-      "company": "Company name",
-      "name": "Contact name",
-      "email": "Email",
-      "phone": "Phone",
-      "partnerType": "Partner type",
-      "selectType": "Select a type",
-      "message": "Additional information",
-      "messagePlaceholder": "Tell us about your business and how we can collaborate…",
-      "submit": "Submit application",
-      "sending": "Submitting…",
-      "success": "Application submitted! We'll get back to you within 5 days.",
-      "types": {
-        "notary": "Notary",
-        "surveyor": "Surveyor",
-        "bank": "Bank / Financial institution",
-        "university": "University / Training center",
-        "real_estate": "Real estate agency",
-        "other": "Other"
-      }
-    },
-    "title": "Our land partners",
-    "subtitle": "A network of certified experts to secure every transaction",
-    "notaire": {
-      "title": "Notaries",
-      "description": "Authentication and legalisation of all land documents"
-    },
-    "geometre": {
-      "title": "Expert Surveyors",
-      "description": "Boundary marking and cadastral verification of each plot"
-    },
-    "cadastre": {
-      "title": "Cadastral Services",
-      "description": "Official validation of property titles"
-    },
-    "institutions": {
-      "title": "Institutions",
-      "description": "Partnerships with local and regional authorities"
-    }
-  },
   "faq": {
     "hero": {
       "title": "Frequently asked questions about Cameroonian land",
@@ -527,26 +679,53 @@
     },
     "title": "Frequently Asked Questions",
     "subtitle": "Everything you need to know about KAMBRIQ and our services.",
-    "q1": {
-      "question": "How do I buy land from abroad?",
-      "answer": "Buying from abroad is done in 4 simple steps: browse our available lands, select the land and request a virtual tour, our local team verifies and sends you all documents, then secure electronic signature and fund transfer via our banking partner."
-    },
-    "q2": {
-      "question": "What documents come with each land?",
-      "answer": "Each land sold via KAMBRIQ comes with: certified title deed, KAMBRIQ Verify certificate, official cadastral plan, expert surveyor boundary report, non-dispute certificate, and complete transaction history."
-    },
-    "q3": {
-      "question": "What do the KAMBRIQ TFL™, VEFL™ and VEFIL™ labels mean?",
-      "answer": "These are KAMBRIQ's 3 security levels. KAMBRIQ TFL™: the land already has an individual title deed — maximum security. KAMBRIQ VEFL™: a parent title deed exists, subdivision is underway. KAMBRIQ VEFIL™: the land is on the national domain, the registration process is pending or underway — higher risk, reinforced support."
-    },
-    "q4": {
-      "question": "What is KAMBRIQ VERIFY™?",
-      "answer": "Our land verification service. 7 control points per land: title authenticity, owner identity, known disputes, geographic accuracy, technical file, legal status, transaction history. €99 for external verification, free if you buy through KAMBRIQ."
-    },
-    "q5": {
-      "question": "How do I become a certified KAMNET Agent?",
-      "answer": "By completing the KCA certification through KAMBRIQ Business School (KBS). Online training, final exam (QCM, minimum score 85%), numbered certificate valid for 2 years. More info on the KBS page."
-    }
+    "items": [
+      {
+        "id": "1",
+        "q": "What is KAMBRIQ?",
+        "a": "KAMBRIQ is a land strategy advisor in Cameroon. We do not sell land — we verify, secure and accompany your land acquisition project."
+      },
+      {
+        "id": "2",
+        "q": "How do I buy land from abroad?",
+        "a": "Contact us on WhatsApp (+33 7 45 90 98 56) or by email (contact@kambriq.com). A certified KAMNET agent guides you from land selection through to obtaining your title deed."
+      },
+      {
+        "id": "3",
+        "q": "What is a title deed?",
+        "a": "It is the only document that proves you own a piece of land in Cameroon. It is issued by the State, numbered, and recorded in an official land registry."
+      },
+      {
+        "id": "4",
+        "q": "What is the national domain?",
+        "a": "This is the land category that covers more than 95% of Cameroonian territory. On the national domain, no one is an owner — not even the seller. To become an owner you must go through the land registration process."
+      },
+      {
+        "id": "5",
+        "q": "What do the KAMBRIQ TFL™, VEFL™ and VEFIL™ labels mean?",
+        "a": "These are KAMBRIQ's 3 security levels: KAMBRIQ TFL™ (the land already has an individual title deed — maximum security), KAMBRIQ VEFL™ (a parent title deed exists, subdivision is underway), KAMBRIQ VEFIL™ (the land is on the national domain, the registration process is pending or underway — higher risk, reinforced support)."
+      },
+      {
+        "id": "6",
+        "q": "What is KAMBRIQ VERIFY™?",
+        "a": "Our land verification service. 7 control points per land. €99 for external verification, free if you buy through KAMBRIQ."
+      },
+      {
+        "id": "7",
+        "q": "How do I become a KAMNET agent?",
+        "a": "By completing the KCA certification through KAMBRIQ Business School (KBS). Online training, final exam (minimum score 85%), numbered certificate valid for 2 years. See the KBS page to learn more."
+      },
+      {
+        "id": "8",
+        "q": "Is KAMBRIQ a land seller?",
+        "a": "No. KAMBRIQ is a land strategy advisor. We do not own the lands. Our role is to verify, secure and accompany."
+      },
+      {
+        "id": "9",
+        "q": "What are the MINDCAF (ARDFC/AJPTER) reforms?",
+        "a": "These are new land documents introduced by the Ministry of State Property, Surveys and Land Tenure (MINDCAF) in 2026. The ARDFC (Certificate of Recognition of Customary Land Rights) and the AJPTER (Certificate of Peaceful Land Enjoyment) are preliminary evidence of occupation, NOT title deeds. They concern the 1st-category national domain only."
+      }
+    ]
   },
   "footer": {
     "description": "Land strategy advisory in Cameroon.",
@@ -1122,56 +1301,6 @@
         "partnership": "Partnership",
         "other": "Other"
       }
-    }
-  },
-  "comingSoon": {
-    "title": "Coming Soon",
-    "subtitle": "We are working on exciting new features. Stay tuned!",
-    "upcoming": "Upcoming",
-    "kcpi": {
-      "title": "KAMBRIQ Construction (KCPI)",
-      "description": "Construction management services for diaspora building projects in Cameroon."
-    },
-    "currentServices": "Our current services",
-    "services": {
-      "lands": {
-        "title": "KAMBRIQ Lands",
-        "description": "Secure land acquisition for the diaspora."
-      },
-      "verify": {
-        "title": "KAMBRIQ Verify",
-        "description": "Title deed verification in 72 hours."
-      },
-      "kamnet": {
-        "title": "KAMNET",
-        "description": "Certified agent network."
-      },
-      "kbs": {
-        "title": "KBS",
-        "description": "Real estate training and certification."
-      }
-    }
-  },
-  "help": {
-    "hero": {
-      "title": "Help Center",
-      "subtitle": "Find answers to all your questions about KAMBRIQ."
-    },
-    "searchTitle": "How can we help you?",
-    "searchPlaceholder": "Search for help…",
-    "faqTitle": "Common questions",
-    "categories": {
-      "start": "Getting started",
-      "lands": "Lands",
-      "verify": "Verify",
-      "payment": "Payment",
-      "kbs": "KBS"
-    },
-    "contactSupport": {
-      "title": "Need more help?",
-      "subtitle": "Our team is here to help you Monday to Friday.",
-      "cta": "Contact support",
-      "faq": "View all FAQs"
     }
   },
   "knowledgeBase": {

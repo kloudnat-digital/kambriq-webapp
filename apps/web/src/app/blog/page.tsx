@@ -12,14 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function BlogPage() {
   const t = await getTranslations('blog');
-
-  const season1 = [
-    'Les 4 domaines fonciers au Cameroun',
-    "Le titre foncier, c'est quoi exactement ?",
-    'Domaine national vs domaine privé',
-    "Pourquoi c'est compliqué",
-    'Ce que la diaspora doit savoir',
-  ];
+  const season1 = t.raw('season1.items') as string[];
 
   return (
     <>
