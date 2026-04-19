@@ -1,9 +1,16 @@
+import type { Metadata } from 'next';
 import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 
 import Navbar from '@/components/layout/navbar';
 import Footer from '@/components/layout/footer';
 import { ContactInfo } from '@/components/contact/contact-info';
 import { ContactForm } from '@/components/contact/contact-form';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('metadata.contact');
+  return { title: t('title'), description: t('description') };
+}
 
 const ContactHero = () => {
   const t = useTranslations('contact.hero');

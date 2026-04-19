@@ -223,7 +223,7 @@
         "title": "Qu'est-ce que KAMBRIQ Business School ?",
         "subtitle": "KAMBRIQ Business School (KBS) est le centre de formation officiel pour devenir Agent KAMNET certifié. Notre programme intensif de 8 semaines vous prépare à maîtriser le marché foncier camerounais et à réussir dans le réseau d'agents KAMBRIQ.",
         "missionLabel": "Notre mission",
-        "missionText": "Former des professionnels compétents et éthiques capables d'accompagner les investisseurs (diaspora et locaux) dans leurs projets fonciers au Cameroun, tout en garantissant sécurité juridique et transparence."
+        "missionText": "Former des professionnels compétents et éthiques capables d'accompagner les investisseurs (diaspora et locaux) dans leurs projets fonciers au Cameroun, en veillant à la sécurité juridique et à la transparence."
       },
       "whoCanRegister": {
         "heading": "Qui peut s'inscrire ?",
@@ -1184,8 +1184,52 @@
     "noResults": "Aucun article trouvé."
   },
   "metadata": {
-    "description": "Conseil en stratégie foncière au Cameroun. KAMBRIQ vérifie, sécurise et accompagne votre projet foncier.",
-    "keywords": "immobilier, Cameroun, terrains, investissement, KAMBRIQ, titre foncier"
+    "description": "KAMBRIQ accompagne la diaspora dans ses projets fonciers au Cameroun. 7 vérifications, 3 niveaux de sécurité, un accompagnement de A à Z.",
+    "keywords": "foncier, Cameroun, terrains, titre foncier, KAMBRIQ, diaspora, vérification",
+    "home": {
+      "title": "KAMBRIQ — Foncier camerounais vérifié et accompagné",
+      "description": "KAMBRIQ accompagne la diaspora dans ses projets fonciers au Cameroun. 7 vérifications, 3 niveaux de sécurité, un accompagnement de A à Z."
+    },
+    "methode": {
+      "title": "Notre méthode — KAMBRIQ",
+      "description": "KAMBRIQ vérifie chaque terrain en 7 points avant de le proposer. Découvrez notre méthode et nos 3 niveaux de sécurité : TFL™, VEFL™, VEFIL™."
+    },
+    "verify": {
+      "title": "KAMBRIQ VERIFY™ — Vérification foncière au Cameroun",
+      "description": "Faites vérifier l'authenticité d'un terrain au Cameroun avant tout achat. 7 points de contrôle, rapport détaillé. 99€ ou gratuit si achat via KAMBRIQ."
+    },
+    "lands": {
+      "title": "KAMBRIQ LANDS — Terrains vérifiés au Cameroun",
+      "description": "KAMBRIQ LANDS propose des terrains au Cameroun vérifiés en 7 points. 3 labels de sécurité (TFL™, VEFL™, VEFIL™). Accompagnement complet par un agent certifié."
+    },
+    "plan": {
+      "title": "KAMBRIQ PLAN™ — Paiement échelonné terrain Cameroun",
+      "description": "Achetez un terrain au Cameroun avec un paiement échelonné. Acompte de 5%, échéances selon vos capacités. Accompagnement KAMBRIQ de A à Z."
+    },
+    "kbs": {
+      "title": "KAMBRIQ Business School — Formation agent foncier Cameroun",
+      "description": "Formez-vous au foncier camerounais et devenez agent KAMNET certifié. Programme KCA, formation en ligne, certification reconnue."
+    },
+    "kamnet": {
+      "title": "KAMNET — Réseau d'agents fonciers certifiés KAMBRIQ",
+      "description": "KAMNET est le réseau d'agents certifiés KAMBRIQ. Formés par KBS, ils accompagnent la diaspora dans ses projets fonciers au Cameroun."
+    },
+    "about": {
+      "title": "À propos — KAMBRIQ",
+      "description": "KAMBRIQ est un conseil en stratégie foncière qui accompagne la diaspora camerounaise dans ses projets d'acquisition de terrains. Méthode, vérification, accompagnement."
+    },
+    "contact": {
+      "title": "Contact — KAMBRIQ",
+      "description": "Contactez KAMBRIQ pour votre projet foncier au Cameroun. WhatsApp, email, formulaire. Réponse rapide, accompagnement personnalisé."
+    },
+    "faq": {
+      "title": "FAQ — KAMBRIQ",
+      "description": "Réponses aux questions les plus courantes sur l'achat de terrain au Cameroun, les titres fonciers, le domaine national, et les services KAMBRIQ."
+    },
+    "blog": {
+      "title": "Blog — KAMBRIQ",
+      "description": "Articles éducatifs sur le foncier camerounais : titres fonciers, domaine national, pièges à éviter, réformes. Par KAMBRIQ, conseil en stratégie foncière."
+    }
   },
   "legal": {
     "nav": {

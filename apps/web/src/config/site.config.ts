@@ -1,6 +1,7 @@
 export const siteConfig = {
   name: 'KAMBRIQ',
-  description: "Votre partenaire de confiance pour investir dans l'immobilier au Cameroun",
+  description:
+    'Conseil en stratégie foncière au Cameroun. Vérification, sécurisation et accompagnement de votre projet foncier.',
 
   contact: {
     email: 'contact@kambriq.com',
@@ -20,10 +21,7 @@ export const siteConfig = {
   social: {
     linkedin: 'https://www.linkedin.com/company/kambriq',
     facebook: 'https://www.facebook.com/profile.php?id=61576162540542',
-    instagram: 'https://www.instagram.com/kambriq',
     youtube: 'https://www.youtube.com/@kambriq',
-    tiktok: 'https://www.tiktok.com/@kambriq',
-    twitter: 'https://x.com/kambriq',
   },
 
   defaultLocale: 'fr' as const,

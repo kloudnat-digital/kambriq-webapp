@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KAMBRIQ — UI Model v1.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+--navy:#0D1B2A;--navy-light:#162536;--navy-lighter:#1E3248;
+--teal:#1A7A6E;--teal-light:#E1F5EE;--teal-dark:#0F6E56;
+--gold:#B8972A;--gold-light:#FFF8E7;--gold-dark:#8B7120;
+--cream:#EFECE5;--bg:#F8F7F4;--white:#FFFFFF;
+--text:#1A1A1A;--text-sec:#6B6B6B;--text-ter:#999999;
+--border:#E5E3DC;--border-light:#F0EDE6;
+--success:#1E7E4A;--success-bg:#EAF3DE;
+--warning:#D4680A;--warning-bg:#FAEEDA;
+--danger:#C0392B;--danger-bg:#FDE8E8;
+--info:#2A6CB6;--info-bg:#E6F1FB;
+--radius:8px;--radius-lg:12px;
+--sidebar-w:240px;--header-h:56px;
+}
+body{font-family:'Inter',system-ui,sans-serif;font-size:14px;color:var(--text);background:var(--bg)}
+
+/* NAV TABS */
+.nav-bar{position:sticky;top:0;z-index:100;background:var(--navy);display:flex;align-items:center;gap:0;padding:0 16px;height:44px;overflow-x:auto}
+.nav-bar button{background:none;border:none;color:rgba(255,255,255,.6);font:500 12px/1 'Inter',sans-serif;padding:10px 16px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:.15s}
+.nav-bar button.on{color:#fff;border-bottom-color:var(--teal)}
+.nav-bar button:hover:not(.on){color:rgba(255,255,255,.85)}
+.view{display:block;margin-bottom:40px;border:2px solid #E5E3DC;border-radius:16px;overflow:hidden;position:relative}
+
+/* DESIGN SYSTEM */
+.ds-section{padding:32px 24px;max-width:900px;margin:0 auto}
+.ds-title{font-size:22px;font-weight:600;color:var(--navy);margin-bottom:8px}
+.ds-sub{font-size:13px;color:var(--text-sec);margin-bottom:24px}
+.color-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:32px}
+.color-swatch{border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+.color-fill{height:48px}
+.color-info{padding:8px;font-size:11px;background:#fff}
+.color-name{font-weight:500;color:var(--text);margin-bottom:2px}
+.color-hex{color:var(--text-ter)}
+.typo-row{display:flex;align-items:baseline;gap:24px;padding:12px 0;border-bottom:1px solid var(--border-light)}
+.typo-label{width:120px;font-size:11px;color:var(--text-ter);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
+.comp-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.comp-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px}
+.comp-label{font-size:11px;color:var(--text-ter);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+
+/* MOCKUP SHELL */
+.mockup-frame{display:flex;height:calc(100vh - 44px);overflow:hidden}
+.sidebar{width:var(--sidebar-w);background:var(--navy);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:16px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar-logo-icon{width:32px;height:32px;border-radius:8px;background:var(--teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:13px}
+.sidebar-logo-text{color:#fff;font-weight:600;font-size:15px;letter-spacing:.3px}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto}
+.sidebar-group{padding:0 12px;margin-bottom:16px}
+.sidebar-group-label{font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.8px;padding:0 8px 6px;font-weight:500}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;color:rgba(255,255,255,.65);font-size:13px;cursor:pointer;transition:.1s;margin-bottom:1px}
+.sidebar-item:hover{background:var(--navy-light);color:rgba(255,255,255,.85)}
+.sidebar-item.active{background:var(--navy-lighter);color:#fff}
+.sidebar-item svg{width:16px;height:16px;opacity:.6;flex-shrink:0}
+.sidebar-item.active svg{opacity:1}
+.sidebar-badge{margin-left:auto;background:var(--teal);color:#fff;font-size:10px;padding:1px 7px;border-radius:10px;font-weight:500}
+.sidebar-user{padding:12px 20px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.sidebar-avatar{width:32px;height:32px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:500;flex-shrink:0}
+.sidebar-user-name{color:rgba(255,255,255,.9);font-size:12px;font-weight:500}
+.sidebar-user-role{color:rgba(255,255,255,.4);font-size:11px}
+
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.header{height:var(--header-h);background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.header-title{font-size:16px;font-weight:600;color:var(--navy)}
+.header-actions{display:flex;align-items:center;gap:8px}
+.content{flex:1;overflow-y:auto;padding:24px;background:var(--bg)}
+
+/* COMPONENTS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);font:500 13px/1 'Inter',sans-serif;cursor:pointer;border:none;transition:.1s}
+.btn-primary{background:var(--teal);color:#fff}.btn-primary:hover{background:var(--teal-dark)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}.btn-outline:hover{background:var(--bg)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-gold{background:var(--gold);color:#fff}
+.btn-sm{padding:5px 10px;font-size:12px}
+
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-teal{background:var(--teal-light);color:var(--teal-dark)}
+.badge-gold{background:var(--gold-light);color:var(--gold-dark)}
+.badge-success{background:var(--success-bg);color:var(--success)}
+.badge-warning{background:var(--warning-bg);color:var(--warning)}
+.badge-danger{background:var(--danger-bg);color:var(--danger)}
+.badge-info{background:var(--info-bg);color:var(--info)}
+.badge-gray{background:#F1EFE8;color:#5F5E5A}
+
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px}
+.stat-label{font-size:12px;color:var(--text-sec);margin-bottom:4px}
+.stat-value{font-size:24px;font-weight:600;color:var(--navy)}
+.stat-change{font-size:12px;margin-top:4px}
+
+.table-wrap{overflow-x:auto}
+table.data{width:100%;border-collapse:collapse}
+table.data th{text-align:left;font-size:11px;font-weight:500;color:var(--text-ter);text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;border-bottom:1px solid var(--border)}
+table.data td{padding:10px 12px;border-bottom:1px solid var(--border-light);font-size:13px;vertical-align:middle}
+table.data tr:hover td{background:var(--bg)}
+
+.label-tfl{background:#E1F5EE;color:#0F6E56;border:1px solid #9FE1CB;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.label-vefl{background:#E6F1FB;color:#185FA5;border:1px solid #B5D4F4;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.label-vefil{background:#FAEEDA;color:#854F0B;border:1px solid #FAC775;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.status-available{background:var(--success)}
+.status-reserved{background:var(--warning)}
+.status-sold{background:var(--text-ter)}
+
+.progress-bar{height:6px;background:var(--border-light);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:var(--teal);border-radius:3px;transition:.3s}
+
+.timeline{position:relative;padding-left:24px}
+.timeline::before{content:'';position:absolute;left:7px;top:4px;bottom:4px;width:2px;background:var(--border)}
+.timeline-step{position:relative;padding-bottom:20px}
+.timeline-dot{position:absolute;left:-20px;top:2px;width:14px;height:14px;border-radius:50%;border:2px solid var(--border);background:#fff}
+.timeline-dot.done{background:var(--teal);border-color:var(--teal)}
+.timeline-dot.active{background:#fff;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-light)}
+.timeline-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
+.timeline-desc{font-size:12px;color:var(--text-sec)}
+.timeline-date{font-size:11px;color:var(--text-ter);margin-top:2px}
+
+.search-input{width:100%;padding:8px 12px 8px 36px;border:1px solid var(--border);border-radius:var(--radius);font:14px 'Inter',sans-serif;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 24 24'%3E%3Cpath d='M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E") 10px center no-repeat}
+.search-input:focus{outline:none;border-color:var(--teal)}
+
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap}
+.filter-pill{padding:5px 14px;border-radius:20px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:#fff;color:var(--text-sec);transition:.1s}
+.filter-pill.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.filter-pill:hover:not(.on){border-color:var(--text-sec)}
+
+.terrain-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:.15s}
+.terrain-card:hover{border-color:var(--teal)}
+.terrain-img{height:140px;background:var(--cream);display:flex;align-items:center;justify-content:center;color:var(--text-ter);font-size:12px;position:relative}
+.terrain-img .reserved-banner{position:absolute;top:8px;right:8px;background:var(--warning);color:#fff;font-size:10px;padding:3px 8px;border-radius:4px;font-weight:500}
+.terrain-body{padding:14px}
+.terrain-title{font-size:14px;font-weight:500;margin-bottom:4px}
+.terrain-loc{font-size:12px;color:var(--text-sec);margin-bottom:8px}
+.terrain-meta{display:flex;justify-content:space-between;align-items:center}
+.terrain-price{font-size:15px;font-weight:600;color:var(--navy)}
+.terrain-size{font-size:12px;color:var(--text-ter)}
+
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:12px;font-weight:500;color:var(--text-sec);margin-bottom:4px}
+.form-input{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);font:14px 'Inter',sans-serif}
+.form-input:focus{outline:none;border-color:var(--teal)}
+.form-help{font-size:11px;color:var(--text-ter);margin-top:3px}
+
+.view::before{content:attr(data-label);display:block;background:#0D1B2A;color:#fff;padding:10px 20px;font-size:14px;font-weight:600;letter-spacing:.5px}
+.mockup-frame{height:700px}
+</style>
+</head>
+<body style="padding:24px;max-width:1400px;margin:0 auto">
+<div style="background:#0D1B2A;padding:40px;text-align:center;color:#fff;margin-bottom:40px">
+<div style="font-size:32px;font-weight:600;margin-bottom:8px">KAMBRIQ — UI Model v1.0</div>
+<div style="font-size:14px;color:rgba(255,255,255,.6)">39 écrans — Import Figma via html.to.design</div>
+<div style="font-size:12px;color:rgba(255,255,255,.35);margin-top:8px">Palette: Navy #0D1B2A · Teal #1A7A6E · Gold #B8972A · Cream #EFECE5</div>
+</div>
+
+<!-- ========== DESIGN SYSTEM ========== -->
+<div class="view on" id="v-ds" data-label="01 — Design System">
+<div class="ds-section">
+<div class="ds-title">KAMBRIQ Design System</div>
+<div class="ds-sub">Palette, typographie et composants pour kambriq.com</div>
+
+<div style="font-size:12px;font-weight:500;color:var(--text-sec);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Palette principale</div>
+<div class="color-grid">
+<div class="color-swatch"><div class="color-fill" style="background:var(--navy)"></div><div class="color-info"><div class="color-name">Navy</div><div class="color-hex">#0D1B2A</div></div></div>
+<div class="color-swatch"><div class="color-fill" style="background:var(--teal)"></div><div class="color-info"><div class="color-name">Teal</div><div class="color-hex">#1A7A6E</div></div></div>
+<div class="color-swatch"><div class="color-fill" style="background:var(--gold)"></div><div class="color-info"><div class="color-name">Gold</div><div class="color-hex">#B8972A</div></div></div>
+<div class="color-swatch"><div class="color-fill" style="background:var(--cream)"></div><div class="color-info"><div class="color-name">Cream</div><div class="color-hex">#EFECE5</div></div></div>
+<div class="color-swatch"><div class="color-fill" style="background:var(--bg)"></div><div class="color-info"><div class="color-name">Background</div><div class="color-hex">#F8F7F4</div></div></div>
+<div class="color-swatch"><div class="color-fill" style="background:var(--success)"></div><div class="color-info"><div class="color-name">Success</div><div class="color-hex">#1E7E4A</div></div></div>
+<div class="color-swatch"><div class="color-fill" style="background:var(--warning)"></div><div class="color-info"><div class="color-name">Warning</div><div class="color-hex">#D4680A</div></div></div>
+<div class="color-swatch"><div class="color-fill" style="background:var(--danger)"></div><div class="color-info"><div class="color-name">Danger</div><div class="color-hex">#C0392B</div></div></div>
+</div>
+
+<div style="font-size:12px;font-weight:500;color:var(--text-sec);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Typographie</div>
+<div style="margin-bottom:32px">
+<div class="typo-row"><div class="typo-label">H1 / 22px 600</div><div style="font-size:22px;font-weight:600;color:var(--navy)">Dashboard KAMBRIQ</div></div>
+<div class="typo-row"><div class="typo-label">H2 / 18px 600</div><div style="font-size:18px;font-weight:600;color:var(--navy)">Mes terrains</div></div>
+<div class="typo-row"><div class="typo-label">H3 / 16px 500</div><div style="font-size:16px;font-weight:500">Fiche terrain</div></div>
+<div class="typo-row"><div class="typo-label">Body / 14px 400</div><div style="font-size:14px">Terrain titré en zone résidentielle</div></div>
+<div class="typo-row"><div class="typo-label">Small / 12px 400</div><div style="font-size:12px;color:var(--text-sec)">Dernière mise à jour il y a 3 jours</div></div>
+<div class="typo-row"><div class="typo-label">Caption / 11px 500</div><div style="font-size:11px;font-weight:500;color:var(--text-ter);text-transform:uppercase;letter-spacing:.5px">STATUT RÉSERVATION</div></div>
+</div>
+
+<div style="font-size:12px;font-weight:500;color:var(--text-sec);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Composants</div>
+<div class="comp-grid">
+<div class="comp-card">
+<div class="comp-label">Boutons</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn btn-primary">Action principale</button>
+<button class="btn btn-outline">Secondaire</button>
+<button class="btn btn-gold">Accent</button>
+<button class="btn btn-danger btn-sm">Danger</button>
+</div>
+</div>
+<div class="comp-card">
+<div class="comp-label">Badges</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<span class="badge badge-teal">Agent</span>
+<span class="badge badge-gold">Premium</span>
+<span class="badge badge-success">Publié</span>
+<span class="badge badge-warning">Réservé</span>
+<span class="badge badge-danger">Exclu</span>
+<span class="badge badge-info">En cours</span>
+<span class="badge badge-gray">Brouillon</span>
+</div>
+</div>
+<div class="comp-card">
+<div class="comp-label">Labels terrains</div>
+<div style="display:flex;gap:8px">
+<span class="label-tfl">TFL</span>
+<span class="label-vefl">VEFL</span>
+<span class="label-vefil">VEFIL</span>
+</div>
+</div>
+<div class="comp-card">
+<div class="comp-label">Statuts</div>
+<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
+<div><span class="status-dot status-available"></span>Disponible</div>
+<div><span class="status-dot status-reserved"></span>Réservé</div>
+<div><span class="status-dot status-sold"></span>Vendu</div>
+</div>
+</div>
+<div class="comp-card">
+<div class="comp-label">Progression</div>
+<div style="margin-bottom:8px"><div class="progress-bar"><div class="progress-fill" style="width:72%"></div></div></div>
+<div style="font-size:12px;color:var(--text-sec)">72% — Module 4/6</div>
+</div>
+<div class="comp-card">
+<div class="comp-label">KPI Card</div>
+<div class="stat-card" style="border:none;padding:0">
+<div class="stat-label">Prospects actifs</div>
+<div class="stat-value">24</div>
+<div class="stat-change" style="color:var(--success)">+3 cette semaine</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== AGENT DASHBOARD ========== -->
+<div class="view" id="v-agent" data-label="17 — Dashboard Agent">
+<div class="mockup-frame">
+<div class="sidebar">
+<div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div>
+<div class="sidebar-nav">
+<div class="sidebar-group">
+<div class="sidebar-group-label">Principal</div>
+<div class="sidebar-item active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Dashboard</div>
+<div class="sidebar-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93z"/></svg>Terrains LANDS<span class="sidebar-badge">12</span></div>
+<div class="sidebar-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3z"/></svg>Mes prospects</div>
+</div>
+<div class="sidebar-group">
+<div class="sidebar-group-label">Réseau</div>
+<div class="sidebar-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3z"/></svg>Mon réseau</div>
+<div class="sidebar-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13z"/></svg>Commissions</div>
+</div>
+<div class="sidebar-group">
+<div class="sidebar-group-label">Support</div>
+<div class="sidebar-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>Escalade</div>
+</div>
+</div>
+<div class="sidebar-user"><div class="sidebar-avatar">JM</div><div><div class="sidebar-user-name">Jean Mbarga</div><div class="sidebar-user-role">Agent Confirmé — KCA 2</div></div></div>
+</div>
+<div class="main">
+<div class="header">
+<div class="header-title">Dashboard</div>
+<div class="header-actions">
+<span class="badge badge-teal">Confirmé</span>
+<button class="btn btn-outline btn-sm">FR / EN</button>
+</div>
+</div>
+<div class="content">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
+<div class="stat-card"><div class="stat-label">Ventes conclues</div><div class="stat-value">7</div><div class="stat-change" style="color:var(--success)">+2 ce mois</div></div>
+<div class="stat-card"><div class="stat-label">Prospects actifs</div><div class="stat-value">12</div><div class="stat-change" style="color:var(--text-ter)">3 en attente</div></div>
+<div class="stat-card"><div class="stat-label">Commissions</div><div class="stat-value" style="font-size:20px">1 450 000 F</div><div class="stat-change" style="color:var(--warning)">En attente validation</div></div>
+<div class="stat-card"><div class="stat-label">Filleuls N1</div><div class="stat-value">4</div><div class="stat-change" style="color:var(--text-ter)">2 juniors, 2 confirmés</div></div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><div style="font-size:15px;font-weight:500">Dernières réservations</div><button class="btn btn-outline btn-sm">Voir tout</button></div>
+<table class="data"><thead><tr><th>Terrain</th><th>Client</th><th>Statut</th><th>Date</th></tr></thead><tbody>
+<tr><td><span class="label-tfl">TFL</span> Dibamba Nord #12</td><td>Alice Nkoumou</td><td><span class="badge badge-success">Confirmée</span></td><td style="color:var(--text-ter)">15 mars</td></tr>
+<tr><td><span class="label-vefil">VEFIL</span> Logbajeck #47</td><td>Pierre Essono</td><td><span class="badge badge-warning">Acompte en attente</span></td><td style="color:var(--text-ter)">22 mars</td></tr>
+<tr><td><span class="label-vefl">VEFL</span> SOA #8</td><td>Marie Fouda</td><td><span class="badge badge-info">En cours</span></td><td style="color:var(--text-ter)">28 mars</td></tr>
+</tbody></table>
+</div>
+<div class="card">
+<div style="font-size:15px;font-weight:500;margin-bottom:16px">Certification KCA</div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div style="width:40px;height:40px;border-radius:50%;background:var(--teal-light);display:flex;align-items:center;justify-content:center;color:var(--teal);font-weight:600;font-size:14px">2</div><div><div style="font-weight:500;font-size:13px">KCA Niveau 2</div><div style="font-size:11px;color:var(--text-sec)">Valide jusqu'au 15/01/2028</div></div></div>
+<div style="margin-bottom:16px"><div class="progress-bar"><div class="progress-fill" style="width:100%;background:var(--teal)"></div></div><div style="font-size:11px;color:var(--text-ter);margin-top:4px">Formation complétée</div></div>
+<div style="padding:12px;background:var(--gold-light);border-radius:var(--radius);font-size:12px;color:var(--gold-dark)"><strong>Prochain objectif :</strong> 10 ventes + 10 filleuls pour passer Manager</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== CATALOGUE LANDS ========== -->
+<div class="view" id="v-lands" data-label="24 — Catalogue Terrains">
+<div class="mockup-frame">
+<div class="sidebar">
+<div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div>
+<div class="sidebar-nav">
+<div class="sidebar-group">
+<div class="sidebar-group-label">Principal</div>
+<div class="sidebar-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Dashboard</div>
+<div class="sidebar-item active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>Terrains LANDS<span class="sidebar-badge">12</span></div>
+</div>
+</div>
+<div class="sidebar-user"><div class="sidebar-avatar">JM</div><div><div class="sidebar-user-name">Jean Mbarga</div><div class="sidebar-user-role">Agent Confirmé</div></div></div>
+</div>
+<div class="main">
+<div class="header"><div class="header-title">Catalogue terrains</div><div class="header-actions"><span style="font-size:12px;color:var(--text-sec)">12 terrains disponibles</span></div></div>
+<div class="content">
+<div style="display:flex;gap:12px;margin-bottom:20px;align-items:center">
+<input class="search-input" placeholder="Rechercher par zone, label..." style="max-width:320px">
+<div class="filter-pills">
+<div class="filter-pill on">Tous</div>
+<div class="filter-pill">TFL</div>
+<div class="filter-pill">VEFL</div>
+<div class="filter-pill">VEFIL</div>
+<div class="filter-pill">Disponible</div>
+<div class="filter-pill">Réservé</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+<div class="terrain-card"><div class="terrain-img">Photo terrain</div><div class="terrain-body"><div style="margin-bottom:6px"><span class="label-tfl">TFL</span></div><div class="terrain-title">Dibamba Nord — Parcelle 12</div><div class="terrain-loc">Zone Industrielle Dibamba, Douala</div><div class="terrain-meta"><div class="terrain-price">7 500 F/m²</div><div class="terrain-size">500 m²</div></div></div></div>
+<div class="terrain-card"><div class="terrain-img">Photo terrain<div class="reserved-banner">Réservé par Agent K.</div></div><div class="terrain-body"><div style="margin-bottom:6px"><span class="label-vefil">VEFIL</span></div><div class="terrain-title">Logbajeck — Lot 47</div><div class="terrain-loc">Logbajeck, Douala</div><div class="terrain-meta"><div class="terrain-price">3 000 F/m²</div><div class="terrain-size">800 m²</div></div></div></div>
+<div class="terrain-card"><div class="terrain-img">Photo terrain</div><div class="terrain-body"><div style="margin-bottom:6px"><span class="label-vefl">VEFL</span></div><div class="terrain-title">SOA Fegminbang — Parcelle 8</div><div class="terrain-loc">SOA, Yaoundé</div><div class="terrain-meta"><div class="terrain-price">4 500 F/m²</div><div class="terrain-size">600 m²</div></div></div></div>
+<div class="terrain-card"><div class="terrain-img">Photo terrain</div><div class="terrain-body"><div style="margin-bottom:6px"><span class="label-tfl">TFL</span></div><div class="terrain-title">Édéa — Zone Est</div><div class="terrain-loc">Édéa</div><div class="terrain-meta"><div class="terrain-price">4 000 F/m²</div><div class="terrain-size">1 200 m²</div></div></div></div>
+<div class="terrain-card"><div class="terrain-img">Photo terrain</div><div class="terrain-body"><div style="margin-bottom:6px"><span class="label-tfl">TFL</span></div><div class="terrain-title">Ekounou 1 — Premium</div><div class="terrain-loc">Ekounou, Yaoundé</div><div class="terrain-meta"><div class="terrain-price">300 000 F/m²</div><div class="terrain-size">200 m²</div></div></div></div>
+<div class="terrain-card"><div class="terrain-img">Photo terrain</div><div class="terrain-body"><div style="margin-bottom:6px"><span class="label-vefil">VEFIL</span></div><div class="terrain-title">Élaté Nkoabang — Lot 3</div><div class="terrain-loc">Nkoabang, Yaoundé</div><div class="terrain-meta"><div class="terrain-price">3 000 F/m²</div><div class="terrain-size">700 m²</div></div></div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== FICHE TERRAIN ========== -->
+<div class="view" id="v-terrain" data-label="25 — Fiche Terrain + Réservation">
+<div class="mockup-frame">
+<div class="sidebar">
+<div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div>
+<div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-item">Dashboard</div><div class="sidebar-item active">Terrains LANDS</div></div></div>
+<div class="sidebar-user"><div class="sidebar-avatar">JM</div><div><div class="sidebar-user-name">Jean Mbarga</div><div class="sidebar-user-role">Agent Confirmé</div></div></div>
+</div>
+<div class="main">
+<div class="header"><div class="header-title"><span style="color:var(--text-sec);font-weight:400">Terrains /</span> Dibamba Nord — Parcelle 12</div></div>
+<div class="content">
+<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:20px">
+<div>
+<div class="card" style="margin-bottom:16px">
+<div style="height:200px;background:var(--cream);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--text-ter);margin-bottom:16px">Galerie photos terrain</div>
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><span class="label-tfl">TFL</span><span class="badge badge-success">Disponible</span></div>
+<div style="font-size:20px;font-weight:600;color:var(--navy);margin-bottom:4px">Dibamba Nord — Parcelle 12</div>
+<div style="font-size:13px;color:var(--text-sec);margin-bottom:16px">Zone Industrielle Dibamba, Douala — Littoral</div>
+<div style="font-size:14px;color:var(--text);line-height:1.7">Terrain titré en zone résidentielle avec accès route bitumée. Titre foncier vérifié par KAMBRIQ VERIFY. Certificat de propriété datant de moins de 3 mois. Dossier technique complet disponible.</div>
+</div>
+<div class="card">
+<div style="font-size:15px;font-weight:500;margin-bottom:16px">Documents disponibles</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:var(--radius)"><span style="font-size:13px">Certificat de propriété</span><button class="btn btn-outline btn-sm">Télécharger</button></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:var(--radius)"><span style="font-size:13px">Dossier technique</span><button class="btn btn-outline btn-sm">Télécharger</button></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:var(--radius)"><span style="font-size:13px">Avis KAMBRIQ VERIFY</span><button class="btn btn-outline btn-sm">Télécharger</button></div>
+</div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:16px">
+<div style="font-size:15px;font-weight:500;margin-bottom:16px">Informations clés</div>
+<table style="width:100%;font-size:13px"><tbody>
+<tr><td style="padding:6px 0;color:var(--text-sec)">Prix</td><td style="padding:6px 0;text-align:right;font-weight:500">7 500 FCFA/m²</td></tr>
+<tr><td style="padding:6px 0;color:var(--text-sec)">Superficie</td><td style="padding:6px 0;text-align:right">500 m²</td></tr>
+<tr><td style="padding:6px 0;color:var(--text-sec)">Prix total</td><td style="padding:6px 0;text-align:right;font-weight:600;color:var(--navy)">3 750 000 F</td></tr>
+<tr><td style="padding:6px 0;color:var(--text-sec)">Point Valeur</td><td style="padding:6px 0;text-align:right"><span class="badge badge-success">0.85</span></td></tr>
+<tr><td style="padding:6px 0;color:var(--text-sec)">Propriétaire</td><td style="padding:6px 0;text-align:right">KAMBRIQ</td></tr>
+<tr><td style="padding:6px 0;color:var(--text-sec)">Label</td><td style="padding:6px 0;text-align:right"><span class="label-tfl">TFL</span></td></tr>
+<tr><td style="padding:6px 0;color:var(--text-sec)">VERIFY</td><td style="padding:6px 0;text-align:right"><span class="badge badge-success">Vérifié</span></td></tr>
+</tbody></table>
+</div>
+<div class="card" style="border:2px solid var(--teal)">
+<div style="font-size:15px;font-weight:500;color:var(--teal);margin-bottom:12px">Réserver ce terrain</div>
+<div class="form-group"><div class="form-label">Nom du client</div><input class="form-input" placeholder="Nom complet"></div>
+<div class="form-group"><div class="form-label">Email</div><input class="form-input" placeholder="email@exemple.com"></div>
+<div class="form-group"><div class="form-label">WhatsApp</div><input class="form-input" placeholder="+33 6..."></div>
+<div class="form-group"><div class="form-label">Pays</div><input class="form-input" placeholder="France"></div>
+<div class="form-group"><div class="form-label">Acompte 5%</div><input class="form-input" value="187 500 FCFA" disabled><div class="form-help">Paiement hors plateforme — statut « à confirmer »</div></div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px">Émettre la réservation</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== CLIENT SUIVI ACHAT ========== -->
+<div class="view" id="v-client" data-label="27 — Client — Suivi Achat">
+<div class="mockup-frame">
+<div class="sidebar" style="background:var(--navy)">
+<div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div>
+<div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-group-label">Mon espace</div><div class="sidebar-item active">Mes terrains</div><div class="sidebar-item">Mes vérifications</div><div class="sidebar-item">Mon profil</div></div></div>
+<div class="sidebar-user"><div class="sidebar-avatar" style="background:var(--gold)">AN</div><div><div class="sidebar-user-name">Alice Nkoumou</div><div class="sidebar-user-role">Client</div></div></div>
+</div>
+<div class="main">
+<div class="header"><div class="header-title"><span style="color:var(--text-sec);font-weight:400">Mes terrains /</span> Dibamba Nord #12</div></div>
+<div class="content">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div>
+<div class="card" style="margin-bottom:16px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><div style="font-size:16px;font-weight:500">Suivi de votre achat</div><span class="badge badge-info">En cours — étape 3/6</span></div>
+<div class="timeline">
+<div class="timeline-step"><div class="timeline-dot done"></div><div class="timeline-title">Réservation</div><div class="timeline-desc">Terrain réservé par votre agent Jean Mbarga</div><div class="timeline-date">15 mars 2026</div></div>
+<div class="timeline-step"><div class="timeline-dot done"></div><div class="timeline-title">Validation acompte</div><div class="timeline-desc">Acompte de 187 500 FCFA confirmé par KAMBRIQ</div><div class="timeline-date">18 mars 2026</div></div>
+<div class="timeline-step"><div class="timeline-dot active"></div><div class="timeline-title">Signature documents</div><div class="timeline-desc">En attente de vos pièces. 2 documents à fournir.</div></div>
+<div class="timeline-step"><div class="timeline-dot"></div><div class="timeline-title">Paiements restants</div><div class="timeline-desc">3 562 500 FCFA restants</div></div>
+<div class="timeline-step"><div class="timeline-dot"></div><div class="timeline-title">Avancement dossier</div><div class="timeline-desc">Transfert de propriété en cours</div></div>
+<div class="timeline-step"><div class="timeline-dot"></div><div class="timeline-title">Livraison documents finaux</div><div class="timeline-desc">Titre foncier à votre nom</div></div>
+</div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:16px">
+<div style="font-size:15px;font-weight:500;margin-bottom:16px">Documents fournis par KAMBRIQ</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:var(--radius)"><span style="font-size:13px">Certificat de propriété</span><button class="btn btn-outline btn-sm">Télécharger</button></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:var(--radius)"><span style="font-size:13px">Avis KAMBRIQ VERIFY</span><button class="btn btn-outline btn-sm">Télécharger</button></div>
+</div>
+</div>
+<div class="card" style="margin-bottom:16px;border:1px solid var(--warning)">
+<div style="font-size:15px;font-weight:500;color:var(--warning);margin-bottom:12px">Pièces à fournir</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--warning-bg);border-radius:var(--radius)"><span style="font-size:13px">Copie carte d'identité</span><button class="btn btn-primary btn-sm">Déposer</button></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--warning-bg);border-radius:var(--radius)"><span style="font-size:13px">Justificatif de domicile</span><button class="btn btn-primary btn-sm">Déposer</button></div>
+</div>
+</div>
+<div class="card">
+<div style="font-size:15px;font-weight:500;margin-bottom:12px">Votre agent</div>
+<div style="display:flex;align-items:center;gap:12px"><div style="width:40px;height:40px;border-radius:50%;background:var(--teal-light);display:flex;align-items:center;justify-content:center;color:var(--teal);font-weight:500">JM</div><div><div style="font-weight:500;font-size:13px">Jean Mbarga</div><div style="font-size:12px;color:var(--text-sec)">Agent Confirmé KAMNET</div></div></div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:12px">Contacter via WhatsApp</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== KBS PARCOURS ========== -->
+<div class="view" id="v-kbs" data-label="10 — Parcours KBS">
+<div class="mockup-frame">
+<div class="sidebar" style="background:var(--navy)">
+<div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div>
+<div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-group-label">Formation KCA</div><div class="sidebar-item active">Mon parcours</div><div class="sidebar-item">Mon certificat</div><div class="sidebar-item">Mon profil</div></div></div>
+<div class="sidebar-user"><div class="sidebar-avatar" style="background:#534AB7">PO</div><div><div class="sidebar-user-name">Paul Ondoa</div><div class="sidebar-user-role">Candidat KBS</div></div></div>
+</div>
+<div class="main">
+<div class="header"><div class="header-title">Mon parcours KCA</div><div class="header-actions"><span class="badge badge-info">En formation</span></div></div>
+<div class="content">
+<div class="card" style="margin-bottom:16px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:15px;font-weight:500">Progression globale</div><div style="font-size:14px;font-weight:500;color:var(--teal)">4/6 modules</div></div>
+<div class="progress-bar" style="height:8px;margin-bottom:8px"><div class="progress-fill" style="width:67%"></div></div>
+<div style="font-size:12px;color:var(--text-sec)">67% complété — 2 modules restants avant l'examen KCA</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div class="card" style="display:flex;align-items:center;gap:16px;padding:16px;border-left:3px solid var(--success);border-radius:0"><div style="width:32px;height:32px;border-radius:50%;background:var(--success);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:500;flex-shrink:0">P0</div><div style="flex:1"><div style="font-size:14px;font-weight:500">Introduction au foncier camerounais</div><div style="font-size:12px;color:var(--text-sec)">4 leçons — QCM validé à 92%</div></div><span class="badge badge-success">Terminé</span></div>
+<div class="card" style="display:flex;align-items:center;gap:16px;padding:16px;border-left:3px solid var(--success);border-radius:0"><div style="width:32px;height:32px;border-radius:50%;background:var(--success);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:500;flex-shrink:0">P1</div><div style="flex:1"><div style="font-size:14px;font-weight:500">Le titre foncier</div><div style="font-size:12px;color:var(--text-sec)">6 leçons — QCM validé à 88%</div></div><span class="badge badge-success">Terminé</span></div>
+<div class="card" style="display:flex;align-items:center;gap:16px;padding:16px;border-left:3px solid var(--success);border-radius:0"><div style="width:32px;height:32px;border-radius:50%;background:var(--success);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:500;flex-shrink:0">P2</div><div style="flex:1"><div style="font-size:14px;font-weight:500">Domaine national et procédures</div><div style="font-size:12px;color:var(--text-sec)">5 leçons — QCM validé à 84%</div></div><span class="badge badge-success">Terminé</span></div>
+<div class="card" style="display:flex;align-items:center;gap:16px;padding:16px;border-left:3px solid var(--teal);border-radius:0"><div style="width:32px;height:32px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:500;flex-shrink:0">P5</div><div style="flex:1"><div style="font-size:14px;font-weight:500">Éthique et déontologie KAMBRIQ</div><div style="font-size:12px;color:var(--text-sec)">3 leçons — Leçon 2 en cours</div></div><span class="badge badge-teal">En cours</span></div>
+<div class="card" style="display:flex;align-items:center;gap:16px;padding:16px;opacity:.5;border-radius:0"><div style="width:32px;height:32px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-ter);font-size:12px;font-weight:500;flex-shrink:0">P3</div><div style="flex:1"><div style="font-size:14px;font-weight:500">Techniques de vente foncière</div><div style="font-size:12px;color:var(--text-ter)">Déverrouillé après P5</div></div><span class="badge badge-gray">Verrouillé</span></div>
+<div class="card" style="display:flex;align-items:center;gap:16px;padding:16px;opacity:.5;border-radius:0"><div style="width:32px;height:32px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-ter);font-size:12px;font-weight:500;flex-shrink:0">P4</div><div style="flex:1"><div style="font-size:14px;font-weight:500">KAMBRIQ LANDS et processus d'achat</div><div style="font-size:12px;color:var(--text-ter)">Déverrouillé après P3</div></div><span class="badge badge-gray">Verrouillé</span></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== VERIFY ADMIN ========== -->
+<div class="view" id="v-verify" data-label="34 — Admin VERIFY — Dashboard">
+<div class="mockup-frame">
+<div class="sidebar" style="background:var(--navy)">
+<div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div>
+<div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-group-label">Administration</div><div class="sidebar-item">Dashboard</div><div class="sidebar-item">LANDS</div><div class="sidebar-item active">VERIFY</div><div class="sidebar-item">Réservations</div><div class="sidebar-item">Escalades</div></div></div>
+<div class="sidebar-user"><div class="sidebar-avatar" style="background:#534AB7">SA</div><div><div class="sidebar-user-name">Sophie Admin</div><div class="sidebar-user-role">Ops KAMBRIQ</div></div></div>
+</div>
+<div class="main">
+<div class="header"><div class="header-title">KAMBRIQ VERIFY — Demandes</div><div class="header-actions"><span class="badge badge-warning">4 en attente</span></div></div>
+<div class="content">
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+<div class="stat-card"><div class="stat-label">Total demandes</div><div class="stat-value">47</div></div>
+<div class="stat-card"><div class="stat-label">En attente</div><div class="stat-value" style="color:var(--warning)">4</div></div>
+<div class="stat-card"><div class="stat-label">Complétées</div><div class="stat-value" style="color:var(--success)">38</div></div>
+</div>
+<div class="card">
+<table class="data"><thead><tr><th>ID</th><th>Demandeur</th><th>TF</th><th>Type</th><th>Statut</th><th>Date</th><th>Action</th></tr></thead><tbody>
+<tr><td style="font-family:monospace;font-size:12px;color:var(--text-ter)">VER-047</td><td>Pierre Essono</td><td>TF-12345</td><td><span class="badge badge-teal">Gratuit</span></td><td><span class="badge badge-warning">En attente</span></td><td style="color:var(--text-ter)">28 mars</td><td><button class="btn btn-primary btn-sm">Traiter</button></td></tr>
+<tr><td style="font-family:monospace;font-size:12px;color:var(--text-ter)">VER-046</td><td>Marie Fouda</td><td>TF-67890</td><td><span class="badge badge-gold">99€</span></td><td><span class="badge badge-info">En cours</span></td><td style="color:var(--text-ter)">25 mars</td><td><button class="btn btn-outline btn-sm">Voir</button></td></tr>
+<tr><td style="font-family:monospace;font-size:12px;color:var(--text-ter)">VER-045</td><td>Jacques Atemba</td><td>TF-11111</td><td><span class="badge badge-teal">Gratuit</span></td><td><span class="badge badge-success">Complété</span></td><td style="color:var(--text-ter)">22 mars</td><td><button class="btn btn-outline btn-sm">Voir</button></td></tr>
+<tr><td style="font-family:monospace;font-size:12px;color:var(--text-ter)">VER-044</td><td>Cécile Biya</td><td>TF-22222</td><td><span class="badge badge-gold">99€</span></td><td><span class="badge badge-success">Complété</span></td><td style="color:var(--text-ter)">20 mars</td><td><button class="btn btn-outline btn-sm">Voir</button></td></tr>
+</tbody></table>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== ADMIN KAMNET ========== -->
+<div class="view" id="v-admin" data-label="35 — Admin KAMNET — Agents">
+<div class="mockup-frame">
+<div class="sidebar" style="background:var(--navy)">
+<div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div>
+<div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-group-label">Administration</div><div class="sidebar-item">Dashboard</div><div class="sidebar-item">LANDS</div><div class="sidebar-item">VERIFY</div><div class="sidebar-item active">KAMNET agents</div><div class="sidebar-item">KBS candidats</div><div class="sidebar-item">Escalades</div><div class="sidebar-item">Utilisateurs</div><div class="sidebar-item">Audit log</div></div></div>
+<div class="sidebar-user"><div class="sidebar-avatar" style="background:var(--danger)">VM</div><div><div class="sidebar-user-name">Visquis M.</div><div class="sidebar-user-role">Super Admin (Root)</div></div></div>
+</div>
+<div class="main">
+<div class="header"><div class="header-title">KAMNET — Agents</div><div class="header-actions"><button class="btn btn-primary btn-sm">Exporter CSV</button></div></div>
+<div class="content">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+<div class="stat-card"><div class="stat-label">Total agents</div><div class="stat-value">10</div></div>
+<div class="stat-card"><div class="stat-label">Juniors</div><div class="stat-value">4</div></div>
+<div class="stat-card"><div class="stat-label">Confirmés</div><div class="stat-value">5</div></div>
+<div class="stat-card"><div class="stat-label">Managers</div><div class="stat-value">1</div></div>
+</div>
+<div class="card">
+<div style="display:flex;gap:12px;margin-bottom:16px"><input class="search-input" placeholder="Rechercher un agent..." style="max-width:300px"><div class="filter-pills"><div class="filter-pill on">Tous</div><div class="filter-pill">Junior</div><div class="filter-pill">Confirmé</div><div class="filter-pill">Manager</div><div class="filter-pill" style="border-color:var(--danger);color:var(--danger)">Suspendus</div></div></div>
+<table class="data"><thead><tr><th>Agent</th><th>Niveau</th><th>KCA</th><th>Ventes</th><th>Filleuls</th><th>Commissions</th><th>Statut</th></tr></thead><tbody>
+<tr><td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:var(--teal-light);display:flex;align-items:center;justify-content:center;color:var(--teal);font-size:10px;font-weight:500">JM</div>Jean Mbarga</div></td><td><span class="badge badge-teal">Confirmé</span></td><td style="font-size:12px;color:var(--text-ter)">KCA-2025-0021</td><td style="font-weight:500">7</td><td>4</td><td style="font-size:12px">1 450 000 F</td><td><span class="badge badge-success">Actif</span></td></tr>
+<tr><td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:var(--teal-light);display:flex;align-items:center;justify-content:center;color:var(--teal);font-size:10px;font-weight:500">AD</div>Aimée Dongmo</div></td><td><span class="badge badge-gold">Manager</span></td><td style="font-size:12px;color:var(--text-ter)">KCA-2025-0003</td><td style="font-weight:500">14</td><td>12</td><td style="font-size:12px">3 200 000 F</td><td><span class="badge badge-success">Actif</span></td></tr>
+<tr><td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--text-ter);font-size:10px;font-weight:500">EN</div>Éric Nana</div></td><td><span class="badge badge-gray">Junior</span></td><td style="font-size:12px;color:var(--text-ter)">KCA-2026-0045</td><td style="font-weight:500">0</td><td>0</td><td style="font-size:12px;color:var(--text-ter)">—</td><td><span class="badge badge-success">Actif</span></td></tr>
+<tr><td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:var(--danger-bg);display:flex;align-items:center;justify-content:center;color:var(--danger);font-size:10px;font-weight:500">RT</div>Robert Tabi</div></td><td><span class="badge badge-gray">Junior</span></td><td style="font-size:12px;color:var(--text-ter)">KCA-2025-0018</td><td style="font-weight:500">1</td><td>0</td><td style="font-size:12px;color:var(--text-ter)">—</td><td><span class="badge badge-danger">Suspendu</span></td></tr>
+</tbody></table>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== LOGIN ========== -->
+<div class="view" id="v-login" data-label="02 — Login">
+<div style="min-height:calc(100vh - 44px);display:flex;align-items:center;justify-content:center;background:var(--bg)">
+<div style="width:100%;max-width:400px;padding:24px">
+<div style="text-align:center;margin-bottom:32px">
+<div style="width:48px;height:48px;border-radius:12px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:20px;margin-bottom:12px">K</div>
+<div style="font-size:22px;font-weight:600;color:var(--navy);margin-bottom:4px">KAMBRIQ</div>
+<div style="font-size:13px;color:var(--text-sec)">Foncier camerounais. V&eacute;rifi&eacute;. Accompagn&eacute;.</div>
+</div>
+<div class="card">
+<div style="font-size:16px;font-weight:500;margin-bottom:20px">Connexion</div>
+<div class="form-group"><div class="form-label">Adresse email</div><input class="form-input" placeholder="votre@email.com" type="email"></div>
+<div class="form-group"><div class="form-label">Mot de passe</div><input class="form-input" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" type="password"></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sec);cursor:pointer"><input type="checkbox" style="accent-color:var(--teal)"> Se souvenir de moi</label><a style="font-size:12px;color:var(--teal);text-decoration:none;cursor:pointer">Mot de passe oubli&eacute; ?</a></div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px;font-size:14px">Se connecter</button>
+<div style="text-align:center;margin-top:16px;font-size:13px;color:var(--text-sec)">Pas encore de compte ? <a style="color:var(--teal);text-decoration:none;cursor:pointer;font-weight:500">S'inscrire</a></div>
+</div>
+<div style="display:flex;justify-content:center;gap:16px;margin-top:20px"><button class="btn btn-outline btn-sm">Fran&ccedil;ais</button><button class="btn btn-outline btn-sm" style="opacity:.5">English</button></div>
+</div>
+</div>
+</div>
+
+<!-- ========== INSCRIPTION ========== -->
+<div class="view" id="v-register" data-label="03 — Inscription">
+<div style="min-height:calc(100vh - 44px);display:flex;align-items:center;justify-content:center;background:var(--bg)">
+<div style="width:100%;max-width:520px;padding:24px">
+<div style="text-align:center;margin-bottom:24px">
+<div style="width:48px;height:48px;border-radius:12px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:20px;margin-bottom:12px">K</div>
+<div style="font-size:22px;font-weight:600;color:var(--navy);margin-bottom:4px">Cr&eacute;er votre compte</div>
+<div style="font-size:13px;color:var(--text-sec)">Rejoignez KAMBRIQ en quelques minutes</div>
+</div>
+<div class="card" style="margin-bottom:16px">
+<div style="font-size:14px;font-weight:500;margin-bottom:16px;color:var(--navy)">Quel est votre objectif ?</div>
+<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+<label style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:.15s" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--border)'"><input type="radio" name="intent" style="accent-color:var(--teal);margin-top:2px"><div><div style="font-size:13px;font-weight:500">Acheter un terrain</div><div style="font-size:12px;color:var(--text-sec)">Acc&eacute;dez &agrave; votre espace client pour suivre votre achat</div></div></label>
+<label style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:2px solid var(--teal);border-radius:var(--radius);cursor:pointer;background:var(--teal-light)"><input type="radio" name="intent" checked style="accent-color:var(--teal);margin-top:2px"><div><div style="font-size:13px;font-weight:500;color:var(--teal-dark)">Devenir agent KAMNET</div><div style="font-size:12px;color:var(--teal-dark)">Formation KCA + int&eacute;gration au r&eacute;seau commercial</div></div></label>
+<label style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:.15s" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--border)'"><input type="radio" name="intent" style="accent-color:var(--teal);margin-top:2px"><div><div style="font-size:13px;font-weight:500">V&eacute;rifier un terrain</div><div style="font-size:12px;color:var(--text-sec)">Service KAMBRIQ VERIFY &mdash; 99&euro; ou gratuit si achat</div></div></label>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="form-group"><div class="form-label">Pr&eacute;nom</div><input class="form-input" placeholder="Jean"></div>
+<div class="form-group"><div class="form-label">Nom</div><input class="form-input" placeholder="Mbarga"></div>
+</div>
+<div class="form-group"><div class="form-label">Adresse email</div><input class="form-input" placeholder="votre@email.com" type="email"></div>
+<div class="form-group"><div class="form-label">T&eacute;l&eacute;phone / WhatsApp</div><input class="form-input" placeholder="+33 6 12 34 56 78"></div>
+<div class="form-group"><div class="form-label">Mot de passe</div><input class="form-input" placeholder="Minimum 8 caract&egrave;res" type="password"><div class="form-help">Au moins 8 caract&egrave;res, une majuscule, un chiffre</div></div>
+<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:20px;margin-top:8px"><input type="checkbox" style="accent-color:var(--teal);margin-top:3px"><span style="font-size:12px;color:var(--text-sec)">J'accepte les <a style="color:var(--teal);text-decoration:none">conditions g&eacute;n&eacute;rales</a> et la <a style="color:var(--teal);text-decoration:none">politique de confidentialit&eacute;</a></span></div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px;font-size:14px">Cr&eacute;er mon compte</button>
+</div>
+<div style="text-align:center;font-size:13px;color:var(--text-sec)">D&eacute;j&agrave; un compte ? <a style="color:var(--teal);text-decoration:none;cursor:pointer;font-weight:500">Se connecter</a></div>
+</div>
+</div>
+</div>
+
+<!-- ========== EXAMEN KCA ========== -->
+<div class="view" id="v-exam" data-label="13 — Examen KCA">
+<div class="mockup-frame">
+<div class="sidebar" style="background:var(--navy)">
+<div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div>
+<div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-group-label">Formation KCA</div><div class="sidebar-item">Mon parcours</div><div class="sidebar-item active">Examen KCA</div></div></div>
+<div class="sidebar-user"><div class="sidebar-avatar" style="background:#534AB7">PO</div><div><div class="sidebar-user-name">Paul Ondoa</div><div class="sidebar-user-role">Candidat KBS</div></div></div>
+</div>
+<div class="main">
+<div class="header"><div class="header-title">Examen KCA</div><div class="header-actions"><div style="display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--danger-bg);border-radius:var(--radius);border:1px solid #F7C1C1"><svg width="16" height="16" viewBox="0 0 24 24" fill="var(--danger)"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg><span style="font-size:14px;font-weight:600;color:var(--danger);font-variant-numeric:tabular-nums" id="timer">45:00</span></div></div></div>
+<div class="content">
+<div style="max-width:680px;margin:0 auto">
+<div class="card" style="margin-bottom:16px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><div style="font-size:13px;color:var(--text-sec)">Question 12 / 40</div><div class="progress-bar" style="width:200px;height:4px"><div class="progress-fill" style="width:30%"></div></div><span class="badge badge-info">Seuil : 85%</span></div>
+<div style="font-size:16px;font-weight:500;color:var(--navy);margin-bottom:20px;line-height:1.6">Quel est le statut juridique d'un terrain class&eacute; VEFIL au moment de la signature du contrat de r&eacute;servation ?</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<label style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:.1s" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--border)'"><input type="radio" name="q12" style="accent-color:var(--teal)"><span style="font-size:13px">L'acheteur est imm&eacute;diatement propri&eacute;taire du terrain</span></label>
+<label style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:2px solid var(--teal);border-radius:var(--radius);cursor:pointer;background:var(--teal-light)"><input type="radio" name="q12" checked style="accent-color:var(--teal)"><span style="font-size:13px;color:var(--teal-dark);font-weight:500">L'acheteur n'est PAS propri&eacute;taire &mdash; la propri&eacute;t&eacute; est effective apr&egrave;s immatriculation ET lotissement</span></label>
+<label style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:.1s" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--border)'"><input type="radio" name="q12" style="accent-color:var(--teal)"><span style="font-size:13px">Le terrain appartient au domaine priv&eacute; de l'&Eacute;tat</span></label>
+<label style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:.1s" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--border)'"><input type="radio" name="q12" style="accent-color:var(--teal)"><span style="font-size:13px">Le notaire d&eacute;tient la propri&eacute;t&eacute; jusqu'&agrave; la fin du lotissement</span></label>
+</div>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center">
+<button class="btn btn-outline">Question pr&eacute;c&eacute;dente</button>
+<div style="display:flex;gap:4px">
+<span style="width:8px;height:8px;border-radius:50%;background:var(--teal);display:inline-block"></span>
+<span style="width:8px;height:8px;border-radius:50%;background:var(--teal);display:inline-block"></span>
+<span style="width:8px;height:8px;border-radius:50%;background:var(--teal);display:inline-block;opacity:.3"></span>
+<span style="width:8px;height:8px;border-radius:50%;background:var(--border);display:inline-block"></span>
+<span style="width:8px;height:8px;border-radius:50%;background:var(--border);display:inline-block"></span>
+</div>
+<button class="btn btn-primary">Question suivante</button>
+</div>
+<div style="margin-top:24px;padding:12px;background:var(--warning-bg);border-radius:var(--radius);font-size:12px;color:var(--warning)"><strong>Rappel :</strong> Seuil de r&eacute;ussite : 85%. Vous devez r&eacute;pondre &agrave; toutes les questions. L'examen dure 45 minutes maximum.</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== ADHESION KAMNET ========== -->
+<div class="view" id="v-apply" data-label="16 — Adhésion KAMNET">
+<div class="mockup-frame">
+<div class="sidebar" style="background:var(--navy)">
+<div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div>
+<div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-group-label">Mon espace</div><div class="sidebar-item">Mon certificat KCA</div><div class="sidebar-item active">Rejoindre KAMNET</div></div></div>
+<div class="sidebar-user"><div class="sidebar-avatar" style="background:#534AB7">PO</div><div><div class="sidebar-user-name">Paul Ondoa</div><div class="sidebar-user-role">KCA Certifi&eacute;</div></div></div>
+</div>
+<div class="main">
+<div class="header"><div class="header-title">Rejoindre le r&eacute;seau KAMNET</div></div>
+<div class="content">
+<div style="max-width:640px;margin:0 auto">
+<div class="card" style="border:2px solid var(--teal);margin-bottom:16px">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><div style="width:40px;height:40px;border-radius:50%;background:var(--success-bg);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--success)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div><div><div style="font-size:15px;font-weight:500;color:var(--success)">Certification KCA valid&eacute;e</div><div style="font-size:12px;color:var(--text-sec)">KCA-2026-0052 &mdash; valide jusqu'au 28/03/2028</div></div></div>
+<div style="padding:12px;background:var(--teal-light);border-radius:var(--radius);font-size:13px;color:var(--teal-dark);line-height:1.6">Vous &ecirc;tes &eacute;ligible au r&eacute;seau KAMNET. Remplissez le formulaire ci-dessous pour soumettre votre demande d'adh&eacute;sion. Un administrateur validera votre dossier sous 48h.</div>
+</div>
+<div class="card">
+<div style="font-size:16px;font-weight:500;margin-bottom:20px">Demande d'adh&eacute;sion</div>
+<div class="form-group"><div class="form-label">Code parrainage *</div><input class="form-input" placeholder="KNT-XXXX" value="KNT-0021"><div class="form-help">Obligatoire. Demandez votre code &agrave; l'agent qui vous a recommand&eacute;.</div></div>
+<div style="padding:10px 14px;background:var(--bg);border-radius:var(--radius);margin-bottom:16px;display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:50%;background:var(--teal-light);display:flex;align-items:center;justify-content:center;color:var(--teal);font-size:10px;font-weight:500">JM</div><div><div style="font-size:12px;color:var(--text-sec)">Parrain trouv&eacute;</div><div style="font-size:13px;font-weight:500">Jean Mbarga &mdash; Agent Confirm&eacute;</div></div></div>
+<div class="form-group"><div class="form-label">Ville de r&eacute;sidence</div><input class="form-input" placeholder="Paris, Douala, Montr&eacute;al..."></div>
+<div class="form-group"><div class="form-label">Pays</div><input class="form-input" placeholder="France"></div>
+<div class="form-group"><div class="form-label">Motivation (optionnel)</div><textarea class="form-input" rows="3" placeholder="Pourquoi souhaitez-vous rejoindre le r&eacute;seau KAMNET ?" style="resize:vertical"></textarea></div>
+<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:20px"><input type="checkbox" style="accent-color:var(--teal);margin-top:3px"><span style="font-size:12px;color:var(--text-sec)">Je m'engage &agrave; respecter le <a style="color:var(--teal);text-decoration:none">code de conduite KAMNET</a> et les <a style="color:var(--teal);text-decoration:none">7 interdictions absolues</a></span></div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px;font-size:14px">Soumettre ma demande</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== ESCALADE ========== -->
+<div class="view" id="v-escal" data-label="22 — Escalade STOP→TRACE→ESCALADE">
+<div class="mockup-frame">
+<div class="sidebar" style="background:var(--navy)">
+<div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div>
+<div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-group-label">Principal</div><div class="sidebar-item">Dashboard</div><div class="sidebar-item">Terrains LANDS</div><div class="sidebar-item">Mes prospects</div></div><div class="sidebar-group"><div class="sidebar-group-label">Support</div><div class="sidebar-item active" style="color:#F09595">Escalade</div></div></div>
+<div class="sidebar-user"><div class="sidebar-avatar">JM</div><div><div class="sidebar-user-name">Jean Mbarga</div><div class="sidebar-user-role">Agent Confirm&eacute;</div></div></div>
+</div>
+<div class="main">
+<div class="header"><div class="header-title" style="color:var(--danger)">Signaler une situation &agrave; risque</div><div class="header-actions"><span class="badge badge-danger">STOP &rarr; TRACE &rarr; ESCALADE</span></div></div>
+<div class="content">
+<div style="max-width:640px;margin:0 auto">
+<div style="padding:16px;background:var(--danger-bg);border:1px solid #F7C1C1;border-radius:var(--radius-lg);margin-bottom:20px">
+<div style="font-size:14px;font-weight:500;color:var(--danger);margin-bottom:8px">Protocole STOP &rarr; TRACE &rarr; ESCALADE</div>
+<div style="font-size:12px;color:#791F1F;line-height:1.7">
+<strong>1. STOP</strong> &mdash; Interrompez toute action. Aucune promesse, aucun engagement. R&eacute;ponse unique : &laquo; Je dois v&eacute;rifier un point avec KAMBRIQ. &raquo;<br>
+<strong>2. TRACE</strong> &mdash; Documentez ci-dessous : date, heure, faits exacts, mots prononc&eacute;s.<br>
+<strong>3. ESCALADE</strong> &mdash; Soumettez. Ops KAMBRIQ est notifi&eacute; imm&eacute;diatement et r&eacute;pond sous 24h.
+</div>
+</div>
+<div class="card">
+<div style="font-size:16px;font-weight:500;margin-bottom:20px">Fiche d'escalade</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="form-group"><div class="form-label">Date de l'incident</div><input class="form-input" type="date" value="2026-03-31"></div>
+<div class="form-group"><div class="form-label">Heure approximative</div><input class="form-input" type="time" value="14:30"></div>
+</div>
+<div class="form-group"><div class="form-label">Type de situation</div><select class="form-input" style="appearance:auto"><option>Demande d'encaissement direct</option><option>Document suspect</option><option>Terrain non r&eacute;f&eacute;renc&eacute; LANDS</option><option>Pression client/tiers</option><option>Autre situation hors protocole</option></select></div>
+<div class="form-group"><div class="form-label">Description d&eacute;taill&eacute;e des faits *</div><textarea class="form-input" rows="5" placeholder="D&eacute;crivez pr&eacute;cis&eacute;ment : qui, quoi, o&ugrave;, quand, mots prononc&eacute;s, documents pr&eacute;sent&eacute;s..." style="resize:vertical"></textarea><div class="form-help">Soyez factuel. Citez les mots exacts prononc&eacute;s. Pas d'interpr&eacute;tation.</div></div>
+<div class="form-group"><div class="form-label">Prospect / client concern&eacute; (si applicable)</div><input class="form-input" placeholder="Nom du prospect ou client"></div>
+<div class="form-group"><div class="form-label">Documents &agrave; joindre</div><div style="padding:24px;border:2px dashed var(--border);border-radius:var(--radius);text-align:center;color:var(--text-sec);font-size:13px;cursor:pointer">Cliquez ou glissez vos fichiers ici<br><span style="font-size:11px;color:var(--text-ter)">PDF, images &mdash; max 10 Mo par fichier</span></div></div>
+<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:20px;padding:10px;background:var(--warning-bg);border-radius:var(--radius)"><svg width="16" height="16" viewBox="0 0 24 24" fill="var(--warning)" style="flex-shrink:0;margin-top:1px"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg><span style="font-size:12px;color:var(--warning)">Cette escalade sera transmise imm&eacute;diatement &agrave; Ops KAMBRIQ avec horodatage. Vous ne pouvez pas traiter cette escalade vous-m&ecirc;me.</span></div>
+<button class="btn btn-danger" style="width:100%;justify-content:center;padding:10px;font-size:14px">Soumettre l'escalade</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== PROFILE ========== -->
+<div class="view" id="v-profile" data-label="07 — Mon profil">
+<div class="mockup-frame">
+<div class="sidebar"><div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div><div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-item">Dashboard</div><div class="sidebar-item active">Mon profil</div></div></div><div class="sidebar-user"><div class="sidebar-avatar">JM</div><div><div class="sidebar-user-name">Jean Mbarga</div><div class="sidebar-user-role">Agent Confirm&eacute;</div></div></div></div>
+<div class="main">
+<div class="header"><div class="header-title">Mon profil</div><div class="header-actions"><button class="btn btn-primary btn-sm">Enregistrer</button></div></div>
+<div class="content">
+<div style="max-width:640px;margin:0 auto">
+<div class="card" style="margin-bottom:16px">
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px"><div style="width:64px;height:64px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:500">JM</div><div><button class="btn btn-outline btn-sm">Changer la photo</button><div style="font-size:11px;color:var(--text-ter);margin-top:4px">JPG, PNG &mdash; max 2 Mo</div></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="form-group"><div class="form-label">Pr&eacute;nom</div><input class="form-input" value="Jean"></div>
+<div class="form-group"><div class="form-label">Nom</div><input class="form-input" value="Mbarga"></div>
+</div>
+<div class="form-group"><div class="form-label">Email</div><input class="form-input" value="jean.mbarga@gmail.com" type="email"></div>
+<div class="form-group"><div class="form-label">T&eacute;l&eacute;phone / WhatsApp</div><input class="form-input" value="+237 6 99 12 34 56"></div>
+<div class="form-group"><div class="form-label">Pays</div><input class="form-input" value="Cameroun"></div>
+<div class="form-group"><div class="form-label">Ville</div><input class="form-input" value="Douala"></div>
+</div>
+<div class="card" style="margin-bottom:16px">
+<div style="font-size:15px;font-weight:500;margin-bottom:16px">Pr&eacute;f&eacute;rences</div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-light)"><span style="font-size:13px">Langue</span><div style="display:flex;gap:6px"><button class="btn btn-sm" style="background:var(--navy);color:#fff;border:none">FR</button><button class="btn btn-outline btn-sm">EN</button></div></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-light)"><span style="font-size:13px">Notifications email</span><input type="checkbox" checked style="accent-color:var(--teal)"></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0"><span style="font-size:13px">Notifications WhatsApp</span><input type="checkbox" checked style="accent-color:var(--teal)"></div>
+</div>
+<div class="card">
+<div style="font-size:15px;font-weight:500;margin-bottom:16px">S&eacute;curit&eacute;</div>
+<div class="form-group"><div class="form-label">Mot de passe actuel</div><input class="form-input" type="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="form-group"><div class="form-label">Nouveau mot de passe</div><input class="form-input" type="password"></div>
+<div class="form-group"><div class="form-label">Confirmer</div><input class="form-input" type="password"></div>
+</div>
+<button class="btn btn-outline btn-sm">Changer le mot de passe</button>
+</div>
+</div></div></div>
+</div>
+</div>
+
+<!-- ========== LANDING KBS ========== -->
+<div class="view" id="v-lp-kbs" data-label="08 — Landing KBS (publique)">
+<div style="background:var(--bg);min-height:calc(100vh - 44px)">
+<div style="background:var(--navy);padding:48px 24px;text-align:center;color:#fff">
+<div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5);margin-bottom:12px">KAMBRIQ Business School</div>
+<div style="font-size:28px;font-weight:600;margin-bottom:8px">Devenez agent certifi&eacute; KCA</div>
+<div style="font-size:14px;color:rgba(255,255,255,.7);max-width:500px;margin:0 auto 24px">Formation compl&egrave;te sur le foncier camerounais. Certification reconnue par le r&eacute;seau KAMNET.</div>
+<button class="btn" style="background:var(--teal);color:#fff;padding:12px 32px;font-size:15px">S'inscrire &mdash; 249 &euro;</button>
+</div>
+<div style="max-width:800px;margin:0 auto;padding:32px 24px">
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px">
+<div class="card" style="text-align:center;padding:24px"><div style="width:40px;height:40px;border-radius:50%;background:var(--teal-light);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;color:var(--teal);font-weight:600;font-size:16px">6</div><div style="font-size:14px;font-weight:500;margin-bottom:4px">Modules</div><div style="font-size:12px;color:var(--text-sec)">Du foncier de base &agrave; l'&eacute;thique KAMBRIQ</div></div>
+<div class="card" style="text-align:center;padding:24px"><div style="width:40px;height:40px;border-radius:50%;background:var(--gold-light);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;color:var(--gold);font-weight:600;font-size:16px">2</div><div style="font-size:14px;font-weight:500;margin-bottom:4px">Mois d'acc&egrave;s</div><div style="font-size:12px;color:var(--text-sec)">Vid&eacute;os, PDF, quiz &agrave; votre rythme</div></div>
+<div class="card" style="text-align:center;padding:24px"><div style="width:40px;height:40px;border-radius:50%;background:var(--success-bg);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;color:var(--success);font-weight:600;font-size:14px">KCA</div><div style="font-size:14px;font-weight:500;margin-bottom:4px">Certification</div><div style="font-size:12px;color:var(--text-sec)">Examen final &mdash; seuil 85%</div></div>
+</div>
+<div class="card"><div style="font-size:16px;font-weight:500;margin-bottom:16px">Programme des modules</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--radius);background:var(--bg)"><span class="badge badge-teal">P0</span><span style="font-size:13px">Introduction au foncier camerounais</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--radius);background:var(--bg)"><span class="badge badge-teal">P1</span><span style="font-size:13px">Le titre foncier</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--radius);background:var(--bg)"><span class="badge badge-teal">P2</span><span style="font-size:13px">Domaine national et proc&eacute;dures</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--radius);background:var(--bg)"><span class="badge badge-gold">P5</span><span style="font-size:13px">&Eacute;thique et d&eacute;ontologie KAMBRIQ</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--radius);background:var(--bg)"><span class="badge badge-gray">P3</span><span style="font-size:13px">Techniques de vente fonci&egrave;re</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--radius);background:var(--bg)"><span class="badge badge-gray">P4</span><span style="font-size:13px">KAMBRIQ LANDS et processus d'achat</span></div>
+</div></div>
+</div>
+</div>
+</div>
+
+<!-- ========== KBS LESSON ========== -->
+<div class="view" id="v-kbs-lesson" data-label="11 — Leçon KBS">
+<div class="mockup-frame">
+<div class="sidebar"><div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div><div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-group-label">Module P1 &mdash; Le titre foncier</div><div class="sidebar-item" style="opacity:.5;font-size:12px">1. Qu'est-ce qu'un titre foncier ?</div><div class="sidebar-item active" style="font-size:12px">2. Les types de titres</div><div class="sidebar-item" style="opacity:.5;font-size:12px">3. Proc&eacute;dure d'obtention</div><div class="sidebar-item" style="opacity:.5;font-size:12px">4. Les pi&egrave;ges fr&eacute;quents</div><div class="sidebar-item" style="opacity:.5;font-size:12px">5. Cas pratiques</div><div class="sidebar-item" style="opacity:.5;font-size:12px">6. QCM Module P1</div></div></div><div class="sidebar-user"><div class="sidebar-avatar" style="background:#534AB7">PO</div><div><div class="sidebar-user-name">Paul Ondoa</div><div class="sidebar-user-role">Candidat KBS</div></div></div></div>
+<div class="main">
+<div class="header"><div class="header-title"><span style="color:var(--text-sec);font-weight:400">P1 /</span> Le&ccedil;on 2 &mdash; Les types de titres</div><div class="header-actions"><span style="font-size:12px;color:var(--text-sec)">Le&ccedil;on 2/6</span></div></div>
+<div class="content">
+<div style="max-width:720px;margin:0 auto">
+<div class="card" style="margin-bottom:16px">
+<div style="height:320px;background:#1a1a2e;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:#fff;margin-bottom:16px;position:relative"><span style="font-size:48px;opacity:.3">&#9654;</span><div style="position:absolute;bottom:12px;right:12px;background:rgba(0,0,0,.7);padding:4px 10px;border-radius:4px;font-size:12px">12:34</div></div>
+<div style="font-size:18px;font-weight:500;margin-bottom:8px">Les types de titres fonciers au Cameroun</div>
+<div style="font-size:13px;color:var(--text-sec);line-height:1.7;margin-bottom:16px">Dans cette le&ccedil;on, nous examinons les diff&eacute;rents types de titres fonciers existants au Cameroun, leurs caract&eacute;ristiques l&eacute;gales et les implications pour l'acheteur.</div>
+<div style="display:flex;gap:8px"><button class="btn btn-outline btn-sm">T&eacute;l&eacute;charger le PDF</button><button class="btn btn-outline btn-sm">Support de cours</button></div>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center"><button class="btn btn-outline">Le&ccedil;on pr&eacute;c&eacute;dente</button><button class="btn btn-primary">Le&ccedil;on suivante</button></div>
+</div></div></div>
+</div>
+</div>
+
+<!-- ========== KBS QCM ========== -->
+<div class="view" id="v-kbs-qcm" data-label="12 — QCM Module">
+<div class="mockup-frame">
+<div class="sidebar"><div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div><div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-group-label">Module P1</div><div class="sidebar-item" style="font-size:12px">Le&ccedil;ons 1-6</div><div class="sidebar-item active" style="font-size:12px">QCM Module P1</div></div></div><div class="sidebar-user"><div class="sidebar-avatar" style="background:#534AB7">PO</div><div><div class="sidebar-user-name">Paul Ondoa</div><div class="sidebar-user-role">Candidat KBS</div></div></div></div>
+<div class="main">
+<div class="header"><div class="header-title">QCM &mdash; Module P1 : Le titre foncier</div><div class="header-actions"><span class="badge badge-info">Seuil : 80%</span></div></div>
+<div class="content"><div style="max-width:640px;margin:0 auto">
+<div class="card" style="margin-bottom:12px"><div style="font-size:13px;color:var(--text-sec);margin-bottom:8px">Question 3 / 15</div><div style="font-size:15px;font-weight:500;margin-bottom:16px;line-height:1.6">Un terrain situ&eacute; dans le domaine national peut-il avoir un titre foncier ?</div><div style="display:flex;flex-direction:column;gap:8px">
+<label style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="radio" name="qcm1" style="accent-color:var(--teal)"><span style="font-size:13px">Oui, automatiquement</span></label>
+<label style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="radio" name="qcm1" style="accent-color:var(--teal)"><span style="font-size:13px">Oui, apr&egrave;s proc&eacute;dure d'immatriculation</span></label>
+<label style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="radio" name="qcm1" style="accent-color:var(--teal)"><span style="font-size:13px">Non, jamais</span></label>
+</div></div>
+<div style="display:flex;justify-content:space-between"><button class="btn btn-outline">Pr&eacute;c&eacute;dente</button><button class="btn btn-primary">Suivante</button></div>
+<div style="margin-top:16px;font-size:12px;color:var(--text-ter);text-align:center">Tentative 1 &mdash; Nombre de tentatives illimit&eacute;</div>
+</div></div></div>
+</div>
+</div>
+
+<!-- ========== KBS CERTIFICAT ========== -->
+<div class="view" id="v-kbs-cert" data-label="14 — Certificat KCA">
+<div class="mockup-frame">
+<div class="sidebar"><div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div><div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-item">Mon parcours</div><div class="sidebar-item active">Mon certificat</div></div></div><div class="sidebar-user"><div class="sidebar-avatar" style="background:var(--success)">PO</div><div><div class="sidebar-user-name">Paul Ondoa</div><div class="sidebar-user-role">KCA Certifi&eacute;</div></div></div></div>
+<div class="main">
+<div class="header"><div class="header-title">Certificat KCA</div><div class="header-actions"><span class="badge badge-success">Certifi&eacute;</span></div></div>
+<div class="content"><div style="max-width:560px;margin:0 auto">
+<div class="card" style="text-align:center;padding:32px;border:2px solid var(--teal)">
+<div style="width:64px;height:64px;border-radius:50%;background:var(--success-bg);margin:0 auto 16px;display:flex;align-items:center;justify-content:center"><svg width="32" height="32" viewBox="0 0 24 24" fill="var(--success)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+<div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--text-ter);margin-bottom:8px">KAMBRIQ Certified Associate</div>
+<div style="font-size:28px;font-weight:600;color:var(--navy);margin-bottom:4px">Paul Ondoa</div>
+<div style="font-size:16px;color:var(--teal);font-weight:500;margin-bottom:20px;font-family:monospace">KCA-2026-0052</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:left;margin-bottom:20px;padding:16px;background:var(--bg);border-radius:var(--radius)">
+<div><div style="font-size:11px;color:var(--text-ter)">Date d'&eacute;mission</div><div style="font-size:13px;font-weight:500">28 mars 2026</div></div>
+<div><div style="font-size:11px;color:var(--text-ter)">Valide jusqu'au</div><div style="font-size:13px;font-weight:500">28 mars 2028</div></div>
+<div><div style="font-size:11px;color:var(--text-ter)">Score examen</div><div style="font-size:13px;font-weight:500;color:var(--success)">91%</div></div>
+<div><div style="font-size:11px;color:var(--text-ter)">Modules compl&eacute;t&eacute;s</div><div style="font-size:13px;font-weight:500">6/6</div></div>
+</div>
+<div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-outline">T&eacute;l&eacute;charger PDF</button><button class="btn btn-primary">Rejoindre KAMNET</button></div>
+</div>
+</div></div></div>
+</div>
+</div>
+
+<!-- ========== AGENT PROSPECTS ========== -->
+<div class="view" id="v-prospects" data-label="18 — Mes Prospects">
+<div class="mockup-frame">
+<div class="sidebar"><div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div><div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-item">Dashboard</div><div class="sidebar-item">Terrains LANDS</div><div class="sidebar-item active">Mes prospects</div><div class="sidebar-item">Mon r&eacute;seau</div><div class="sidebar-item">Commissions</div></div></div><div class="sidebar-user"><div class="sidebar-avatar">JM</div><div><div class="sidebar-user-name">Jean Mbarga</div><div class="sidebar-user-role">Agent Confirm&eacute;</div></div></div></div>
+<div class="main">
+<div class="header"><div class="header-title">Mes prospects</div><div class="header-actions"><button class="btn btn-primary btn-sm">Nouveau prospect</button></div></div>
+<div class="content">
+<div style="display:flex;gap:12px;margin-bottom:16px"><input class="search-input" placeholder="Rechercher un prospect..." style="max-width:280px"><div class="filter-pills"><div class="filter-pill on">Tous</div><div class="filter-pill">Qualifi&eacute;</div><div class="filter-pill">En attente</div><div class="filter-pill">Converti</div></div></div>
+<div class="card">
+<table class="data"><thead><tr><th>Prospect</th><th>Zone souhait&eacute;e</th><th>Budget</th><th>Statut</th><th>Cr&eacute;&eacute; le</th><th></th></tr></thead><tbody>
+<tr><td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:var(--info-bg);display:flex;align-items:center;justify-content:center;color:var(--info);font-size:10px;font-weight:500">AN</div>Alice Nkoumou</div></td><td style="font-size:12px">Dibamba</td><td style="font-size:12px">3-5M FCFA</td><td><span class="badge badge-success">Converti</span></td><td style="color:var(--text-ter);font-size:12px">10 mars</td><td><button class="btn btn-outline btn-sm">Voir</button></td></tr>
+<tr><td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:var(--warning-bg);display:flex;align-items:center;justify-content:center;color:var(--warning);font-size:10px;font-weight:500">PE</div>Pierre Essono</div></td><td style="font-size:12px">Logbajeck</td><td style="font-size:12px">2-3M FCFA</td><td><span class="badge badge-warning">Qualifi&eacute;</span></td><td style="color:var(--text-ter);font-size:12px">20 mars</td><td><button class="btn btn-outline btn-sm">Voir</button></td></tr>
+<tr><td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--text-ter);font-size:10px;font-weight:500">MF</div>Marie Fouda</div></td><td style="font-size:12px">Yaound&eacute;</td><td style="font-size:12px">5-10M FCFA</td><td><span class="badge badge-info">En attente</span></td><td style="color:var(--text-ter);font-size:12px">28 mars</td><td><button class="btn btn-outline btn-sm">Voir</button></td></tr>
+</tbody></table>
+</div></div></div>
+</div>
+</div>
+
+<!-- ========== AGENT NETWORK ========== -->
+<div class="view" id="v-network" data-label="19 — Mon Réseau">
+<div class="mockup-frame">
+<div class="sidebar"><div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div><div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-item">Dashboard</div><div class="sidebar-item">Terrains LANDS</div><div class="sidebar-item">Mes prospects</div><div class="sidebar-item active">Mon r&eacute;seau</div><div class="sidebar-item">Commissions</div></div></div><div class="sidebar-user"><div class="sidebar-avatar">JM</div><div><div class="sidebar-user-name">Jean Mbarga</div><div class="sidebar-user-role">Agent Confirm&eacute;</div></div></div></div>
+<div class="main">
+<div class="header"><div class="header-title">Mon r&eacute;seau</div><div class="header-actions"><span style="font-size:12px;color:var(--text-sec)">4 filleuls N1</span></div></div>
+<div class="content">
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px">
+<div class="stat-card"><div class="stat-label">Filleuls actifs</div><div class="stat-value">4</div></div>
+<div class="stat-card"><div class="stat-label">Ventes r&eacute;seau</div><div class="stat-value">3</div></div>
+</div>
+<div class="card"><div style="font-size:15px;font-weight:500;margin-bottom:16px">Mes filleuls &mdash; Niveau 1</div>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+<div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg);border-radius:var(--radius)"><div style="width:36px;height:36px;border-radius:50%;background:var(--teal-light);display:flex;align-items:center;justify-content:center;color:var(--teal);font-size:12px;font-weight:500">EN</div><div><div style="font-size:13px;font-weight:500">&Eacute;ric Nana</div><div style="font-size:11px;color:var(--text-sec)">Junior &mdash; 0 ventes</div></div><span class="badge badge-gray" style="margin-left:auto">Junior</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg);border-radius:var(--radius)"><div style="width:36px;height:36px;border-radius:50%;background:var(--teal-light);display:flex;align-items:center;justify-content:center;color:var(--teal);font-size:12px;font-weight:500">SN</div><div><div style="font-size:13px;font-weight:500">Sophie Ngono</div><div style="font-size:11px;color:var(--text-sec)">Junior &mdash; 1 vente</div></div><span class="badge badge-gray" style="margin-left:auto">Junior</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg);border-radius:var(--radius)"><div style="width:36px;height:36px;border-radius:50%;background:var(--success-bg);display:flex;align-items:center;justify-content:center;color:var(--success);font-size:12px;font-weight:500">DT</div><div><div style="font-size:13px;font-weight:500">David Tchana</div><div style="font-size:11px;color:var(--text-sec)">Confirm&eacute; &mdash; 6 ventes</div></div><span class="badge badge-teal" style="margin-left:auto">Confirm&eacute;</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg);border-radius:var(--radius)"><div style="width:36px;height:36px;border-radius:50%;background:var(--success-bg);display:flex;align-items:center;justify-content:center;color:var(--success);font-size:12px;font-weight:500">FB</div><div><div style="font-size:13px;font-weight:500">F&eacute;lix Bella</div><div style="font-size:11px;color:var(--text-sec)">Confirm&eacute; &mdash; 8 ventes</div></div><span class="badge badge-teal" style="margin-left:auto">Confirm&eacute;</span></div>
+</div>
+<div style="margin-top:16px;padding:12px;background:var(--gold-light);border-radius:var(--radius);font-size:12px;color:var(--gold-dark)">Acc&egrave;s N2 et N3 disponible au niveau Manager (10+ filleuls actifs)</div>
+</div></div></div>
+</div>
+</div>
+
+<!-- ========== AGENT COMMISSIONS ========== -->
+<div class="view" id="v-comms" data-label="20 — Mes Commissions">
+<div class="mockup-frame">
+<div class="sidebar"><div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div><div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-item">Dashboard</div><div class="sidebar-item">Terrains LANDS</div><div class="sidebar-item">Mes prospects</div><div class="sidebar-item">Mon r&eacute;seau</div><div class="sidebar-item active">Commissions</div></div></div><div class="sidebar-user"><div class="sidebar-avatar">JM</div><div><div class="sidebar-user-name">Jean Mbarga</div><div class="sidebar-user-role">Agent Confirm&eacute;</div></div></div></div>
+<div class="main">
+<div class="header"><div class="header-title">Mes commissions</div></div>
+<div class="content">
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+<div class="stat-card"><div class="stat-label">Total gagn&eacute;</div><div class="stat-value" style="font-size:20px">1 450 000 F</div></div>
+<div class="stat-card"><div class="stat-label">En attente</div><div class="stat-value" style="font-size:20px;color:var(--warning)">450 000 F</div></div>
+<div class="stat-card"><div class="stat-label">Vers&eacute;</div><div class="stat-value" style="font-size:20px;color:var(--success)">1 000 000 F</div></div>
+</div>
+<div class="card">
+<table class="data"><thead><tr><th>Terrain</th><th>Client</th><th>Type</th><th>PV</th><th>Commission</th><th>Statut</th></tr></thead><tbody>
+<tr><td>Dibamba #12</td><td>Alice Nkoumou</td><td style="font-size:12px">Vente (3%)</td><td style="font-size:12px">0.85</td><td style="font-weight:500">112 500 F</td><td><span class="badge badge-success">Vers&eacute;</span></td></tr>
+<tr><td>SOA #8</td><td>Marie Fouda</td><td style="font-size:12px">R&eacute;servation (1%)</td><td style="font-size:12px">0.72</td><td style="font-weight:500">27 000 F</td><td><span class="badge badge-warning">En attente</span></td></tr>
+<tr><td>Logbajeck #47</td><td>Pierre Essono</td><td style="font-size:12px">Vente (3%)</td><td style="font-size:12px">0.65</td><td style="font-weight:500">72 000 F</td><td><span class="badge badge-warning">J+15</span></td></tr>
+</tbody></table>
+<div style="margin-top:12px;font-size:11px;color:var(--text-ter)">Commission vente : 3% du prix &times; PV, vers&eacute;e J+15 apr&egrave;s encaissement. R&eacute;servation : 1% &times; PV.</div>
+</div></div></div>
+</div>
+</div>
+
+<!-- ========== AGENT RESERVATIONS ========== -->
+<div class="view" id="v-agent-res" data-label="21 — Mes Réservations">
+<div class="mockup-frame">
+<div class="sidebar"><div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div><div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-item">Dashboard</div><div class="sidebar-item">Terrains LANDS</div><div class="sidebar-item active">Mes r&eacute;servations</div></div></div><div class="sidebar-user"><div class="sidebar-avatar">JM</div><div><div class="sidebar-user-name">Jean Mbarga</div><div class="sidebar-user-role">Agent Confirm&eacute;</div></div></div></div>
+<div class="main">
+<div class="header"><div class="header-title">Mes r&eacute;servations</div></div>
+<div class="content"><div class="card">
+<table class="data"><thead><tr><th>Terrain</th><th>Label</th><th>Client</th><th>Acompte</th><th>Statut</th><th>Date</th></tr></thead><tbody>
+<tr><td style="font-weight:500">Dibamba #12</td><td><span class="label-tfl">TFL</span></td><td>Alice Nkoumou</td><td style="font-size:12px">187 500 F</td><td><span class="badge badge-success">Confirm&eacute;e</span></td><td style="color:var(--text-ter);font-size:12px">15 mars</td></tr>
+<tr><td style="font-weight:500">Logbajeck #47</td><td><span class="label-vefil">VEFIL</span></td><td>Pierre Essono</td><td style="font-size:12px">120 000 F</td><td><span class="badge badge-warning">Acompte en attente</span></td><td style="color:var(--text-ter);font-size:12px">22 mars</td></tr>
+<tr><td style="font-weight:500">SOA #8</td><td><span class="label-vefl">VEFL</span></td><td>Marie Fouda</td><td style="font-size:12px">135 000 F</td><td><span class="badge badge-info">En cours</span></td><td style="color:var(--text-ter);font-size:12px">28 mars</td></tr>
+</tbody></table>
+</div></div></div>
+</div>
+</div>
+
+<!-- ========== LANDING LANDS ========== -->
+<div class="view" id="v-lp-lands" data-label="23 — Landing LANDS (publique)">
+<div style="background:var(--bg);min-height:calc(100vh - 44px)">
+<div style="background:var(--navy);padding:48px 24px;text-align:center;color:#fff">
+<div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5);margin-bottom:12px">KAMBRIQ LANDS</div>
+<div style="font-size:28px;font-weight:600;margin-bottom:8px">Terrains v&eacute;rifi&eacute;s au Cameroun</div>
+<div style="font-size:14px;color:rgba(255,255,255,.7);max-width:500px;margin:0 auto 24px">Chaque terrain est contr&ocirc;l&eacute; par KAMBRIQ VERIFY avant d'&ecirc;tre propos&eacute;. 3 labels clairs pour savoir exactement ce que vous achetez.</div>
+<button class="btn" style="background:var(--teal);color:#fff;padding:12px 32px;font-size:15px">Contacter un agent KAMNET</button>
+</div>
+<div style="max-width:800px;margin:0 auto;padding:32px 24px">
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+<div class="card" style="border-top:3px solid #0F6E56;border-radius:0 0 var(--radius-lg) var(--radius-lg)"><div style="text-align:center;padding:16px 0"><span class="label-tfl" style="font-size:14px;padding:4px 16px">TFL</span><div style="font-size:15px;font-weight:500;margin:12px 0 4px">Titre Foncier Loti</div><div style="font-size:12px;color:var(--text-sec);line-height:1.6">Terrain d&eacute;j&agrave; titr&eacute;. Domaine priv&eacute;. Transfert &agrave; la mutation.</div></div></div>
+<div class="card" style="border-top:3px solid #185FA5;border-radius:0 0 var(--radius-lg) var(--radius-lg)"><div style="text-align:center;padding:16px 0"><span class="label-vefl" style="font-size:14px;padding:4px 16px">VEFL</span><div style="font-size:15px;font-weight:500;margin:12px 0 4px">Vente en &Eacute;tat Futur de Lotissement</div><div style="font-size:12px;color:var(--text-sec);line-height:1.6">Domaine priv&eacute;. Transfert apr&egrave;s lotissement.</div></div></div>
+<div class="card" style="border-top:3px solid #854F0B;border-radius:0 0 var(--radius-lg) var(--radius-lg)"><div style="text-align:center;padding:16px 0"><span class="label-vefil" style="font-size:14px;padding:4px 16px">VEFIL</span><div style="font-size:15px;font-weight:500;margin:12px 0 4px">Vente en &Eacute;tat Futur d'Immatriculation</div><div style="font-size:12px;color:var(--text-sec);line-height:1.6">Domaine national. Transfert apr&egrave;s immatriculation ET lotissement.</div></div></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== LANDING VERIFY ========== -->
+<div class="view" id="v-lp-verify" data-label="29 — Landing VERIFY (publique)">
+<div style="background:var(--bg);min-height:calc(100vh - 44px)">
+<div style="background:var(--navy);padding:48px 24px;text-align:center;color:#fff">
+<div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5);margin-bottom:12px">KAMBRIQ VERIFY</div>
+<div style="font-size:28px;font-weight:600;margin-bottom:8px">V&eacute;rifiez avant d'acheter</div>
+<div style="font-size:14px;color:rgba(255,255,255,.7);max-width:500px;margin:0 auto 24px">Authenticit&eacute; du titre foncier, dossier technique, certificat de propri&eacute;t&eacute;, ayants-droit. Un avis KAMBRIQ ind&eacute;pendant.</div>
+<div style="display:flex;gap:12px;justify-content:center"><button class="btn" style="background:var(--teal);color:#fff;padding:12px 32px;font-size:15px">Lancer une v&eacute;rification</button></div>
+</div>
+<div style="max-width:600px;margin:0 auto;padding:32px 24px">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+<div class="card" style="text-align:center;padding:24px;border:2px solid var(--teal)"><div style="font-size:28px;font-weight:600;color:var(--teal);margin-bottom:4px">Gratuit</div><div style="font-size:13px;color:var(--text-sec)">Si vous achetez via KAMBRIQ</div></div>
+<div class="card" style="text-align:center;padding:24px"><div style="font-size:28px;font-weight:600;color:var(--navy);margin-bottom:4px">99 &euro;</div><div style="font-size:13px;color:var(--text-sec)">V&eacute;rification ind&eacute;pendante</div></div>
+</div>
+<div class="card"><div style="font-size:15px;font-weight:500;margin-bottom:12px">Ce que nous v&eacute;rifions</div>
+<div style="font-size:13px;color:var(--text-sec);line-height:2">1. Authenticit&eacute; du Titre Foncier<br>2. Validit&eacute; du Dossier Technique<br>3. Certificat de Propri&eacute;t&eacute; r&eacute;cent (&lt;3 mois)<br>4. Identit&eacute; des ayants-droit<br>5. Concordance g&eacute;ographique<br>6. Conflits connus sur la zone</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== VERIFY SUBMIT ========== -->
+<div class="view" id="v-verify-sub" data-label="30 — VERIFY — Formulaire Soumission">
+<div style="background:var(--bg);min-height:calc(100vh - 44px);display:flex;align-items:center;justify-content:center">
+<div style="width:100%;max-width:520px;padding:24px">
+<div style="text-align:center;margin-bottom:24px"><div style="font-size:20px;font-weight:600;color:var(--navy)">Demande de v&eacute;rification</div><div style="font-size:13px;color:var(--text-sec)">KAMBRIQ VERIFY</div></div>
+<div class="card">
+<div class="form-group"><div class="form-label">Num&eacute;ro du Titre Foncier *</div><input class="form-input" placeholder="TF-12345"></div>
+<div class="form-group"><div class="form-label">Documents (optionnel)</div><div style="padding:20px;border:2px dashed var(--border);border-radius:var(--radius);text-align:center;color:var(--text-sec);font-size:13px;cursor:pointer">Dossier technique, ancien certificat<br><span style="font-size:11px;color:var(--text-ter)">PDF, JPG, PNG &mdash; max 10 Mo</span></div></div>
+<div class="form-group"><div class="form-label">Souhaitez-vous acheter via KAMBRIQ ?</div>
+<div style="display:flex;gap:8px"><label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="radio" name="intent-v" style="accent-color:var(--teal)"><span style="font-size:13px">Oui &mdash; gratuit</span></label><label style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer"><input type="radio" name="intent-v" style="accent-color:var(--teal)"><span style="font-size:13px">Non &mdash; 99&euro;</span></label></div></div>
+<div class="form-group"><div class="form-label">Commentaires (optionnel)</div><textarea class="form-input" rows="3" placeholder="Informations compl&eacute;mentaires..." style="resize:vertical"></textarea></div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px;font-size:14px">Soumettre la demande</button>
+<div style="font-size:11px;color:var(--text-ter);text-align:center;margin-top:10px">Un compte sera cr&eacute;&eacute; automatiquement si vous n'en avez pas</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== VERIFY RESULT ========== -->
+<div class="view" id="v-verify-res" data-label="33 — VERIFY — Résultat">
+<div class="mockup-frame">
+<div class="sidebar"><div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div><div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-group-label">Mon espace</div><div class="sidebar-item">Mes terrains</div><div class="sidebar-item active">Mes v&eacute;rifications</div></div></div><div class="sidebar-user"><div class="sidebar-avatar" style="background:var(--info)">PE</div><div><div class="sidebar-user-name">Pierre Essono</div><div class="sidebar-user-role">Client</div></div></div></div>
+<div class="main">
+<div class="header"><div class="header-title"><span style="color:var(--text-sec);font-weight:400">VERIFY /</span> TF-12345</div><div class="header-actions"><span class="badge badge-success">Compl&eacute;t&eacute;</span></div></div>
+<div class="content"><div style="max-width:640px;margin:0 auto">
+<div class="card" style="margin-bottom:16px;border:2px solid var(--success)">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><div style="width:40px;height:40px;border-radius:50%;background:var(--success-bg);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--success)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div><div><div style="font-size:16px;font-weight:500;color:var(--success)">Terrain v&eacute;rifi&eacute; &mdash; Avis positif</div><div style="font-size:12px;color:var(--text-sec)">V&eacute;rification compl&eacute;t&eacute;e le 25 mars 2026</div></div></div>
+<div style="font-size:13px;color:var(--text);line-height:1.7">Le titre foncier TF-12345 est authentique. Le dossier technique est conforme. Les ayants-droit sont identifi&eacute;s et l&eacute;gitimes. Aucun conflit connu sur la zone.</div>
+</div>
+<div class="card" style="margin-bottom:16px"><div style="font-size:15px;font-weight:500;margin-bottom:12px">Documents fournis par KAMBRIQ</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:var(--radius)"><span style="font-size:13px">Certificat de propri&eacute;t&eacute; (&lt;3 mois)</span><button class="btn btn-outline btn-sm">T&eacute;l&eacute;charger</button></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:var(--radius)"><span style="font-size:13px">Avis KAMBRIQ VERIFY</span><button class="btn btn-outline btn-sm">T&eacute;l&eacute;charger</button></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:var(--radius)"><span style="font-size:13px">Bordereau analytique</span><button class="btn btn-outline btn-sm">T&eacute;l&eacute;charger</button></div>
+</div></div>
+<div class="card"><div style="font-size:15px;font-weight:500;margin-bottom:12px">Et ensuite ?</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn-primary" style="justify-content:center;padding:10px">Demander un accompagnement KAMBRIQ</button>
+<button class="btn btn-outline" style="justify-content:center;padding:10px">Voir les terrains KAMBRIQ LANDS</button>
+<button class="btn btn-outline" style="justify-content:center;padding:10px">Laisser un avis</button>
+</div></div>
+</div></div></div>
+</div>
+</div>
+
+<!-- ========== ADMIN LANDS ========== -->
+<div class="view" id="v-admin-lands" data-label="36 — Admin LANDS — Gestion Terrains">
+<div class="mockup-frame">
+<div class="sidebar"><div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div><div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-group-label">Administration</div><div class="sidebar-item">Dashboard</div><div class="sidebar-item active">LANDS</div><div class="sidebar-item">VERIFY</div><div class="sidebar-item">R&eacute;servations</div><div class="sidebar-item">Escalades</div></div></div><div class="sidebar-user"><div class="sidebar-avatar" style="background:#534AB7">SA</div><div><div class="sidebar-user-name">Sophie Admin</div><div class="sidebar-user-role">Ops KAMBRIQ</div></div></div></div>
+<div class="main">
+<div class="header"><div class="header-title">KAMBRIQ LANDS &mdash; Gestion terrains</div><div class="header-actions"><button class="btn btn-primary btn-sm">Ajouter un terrain</button><button class="btn btn-outline btn-sm">Exporter CSV</button></div></div>
+<div class="content">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+<div class="stat-card"><div class="stat-label">Total terrains</div><div class="stat-value">18</div></div>
+<div class="stat-card"><div class="stat-label">Publi&eacute;s</div><div class="stat-value" style="color:var(--success)">12</div></div>
+<div class="stat-card"><div class="stat-label">R&eacute;serv&eacute;s</div><div class="stat-value" style="color:var(--warning)">4</div></div>
+<div class="stat-card"><div class="stat-label">Brouillons</div><div class="stat-value" style="color:var(--text-ter)">2</div></div>
+</div>
+<div class="card">
+<table class="data"><thead><tr><th>Terrain</th><th>Label</th><th>R&eacute;gion</th><th>Prix/m&sup2;</th><th>PV</th><th>Statut</th><th>VERIFY</th><th></th></tr></thead><tbody>
+<tr><td style="font-weight:500">Dibamba #12</td><td><span class="label-tfl">TFL</span></td><td style="font-size:12px">Littoral</td><td style="font-size:12px">7 500 F</td><td style="font-size:12px">0.85</td><td><span class="badge badge-success">Publi&eacute;</span></td><td><span class="badge badge-success">OK</span></td><td><button class="btn btn-outline btn-sm">&Eacute;diter</button></td></tr>
+<tr><td style="font-weight:500">Logbajeck #47</td><td><span class="label-vefil">VEFIL</span></td><td style="font-size:12px">Littoral</td><td style="font-size:12px">3 000 F</td><td style="font-size:12px">0.65</td><td><span class="badge badge-warning">R&eacute;serv&eacute;</span></td><td><span class="badge badge-success">OK</span></td><td><button class="btn btn-outline btn-sm">&Eacute;diter</button></td></tr>
+<tr><td style="font-weight:500">Nouveau site Kribi</td><td><span class="badge badge-gray">--</span></td><td style="font-size:12px">Sud</td><td style="font-size:12px">--</td><td style="font-size:12px">--</td><td><span class="badge badge-gray">Brouillon</span></td><td><span class="badge badge-danger">Non</span></td><td><button class="btn btn-outline btn-sm">&Eacute;diter</button></td></tr>
+</tbody></table>
+</div></div></div>
+</div>
+</div>
+
+<!-- ========== ADMIN KBS ========== -->
+<div class="view" id="v-admin-kbs" data-label="37 — Admin KBS — Candidats">
+<div class="mockup-frame">
+<div class="sidebar"><div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div><div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-group-label">Administration</div><div class="sidebar-item">KAMNET agents</div><div class="sidebar-item active">KBS candidats</div></div></div><div class="sidebar-user"><div class="sidebar-avatar" style="background:var(--danger)">VM</div><div><div class="sidebar-user-name">Visquis M.</div><div class="sidebar-user-role">Super Admin</div></div></div></div>
+<div class="main">
+<div class="header"><div class="header-title">KBS &mdash; Gestion candidats</div><div class="header-actions"><button class="btn btn-outline btn-sm">G&eacute;rer modules</button><button class="btn btn-outline btn-sm">Exporter CSV</button></div></div>
+<div class="content">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+<div class="stat-card"><div class="stat-label">Candidats actifs</div><div class="stat-value">14</div></div>
+<div class="stat-card"><div class="stat-label">En formation</div><div class="stat-value" style="color:var(--info)">8</div></div>
+<div class="stat-card"><div class="stat-label">Examen en cours</div><div class="stat-value" style="color:var(--warning)">3</div></div>
+<div class="stat-card"><div class="stat-label">Certifi&eacute;s</div><div class="stat-value" style="color:var(--success)">10</div></div>
+</div>
+<div class="card">
+<table class="data"><thead><tr><th>Candidat</th><th>Statut</th><th>Progression</th><th>Dernier score</th><th>Inscrit le</th><th></th></tr></thead><tbody>
+<tr><td>Paul Ondoa</td><td><span class="badge badge-warning">Examen</span></td><td><div class="progress-bar" style="width:100px;height:4px;display:inline-block;vertical-align:middle"><div class="progress-fill" style="width:100%"></div></div> 100%</td><td style="font-size:12px">P5: 88%</td><td style="color:var(--text-ter);font-size:12px">15 jan</td><td><button class="btn btn-outline btn-sm">D&eacute;tail</button></td></tr>
+<tr><td>Claire Ateba</td><td><span class="badge badge-info">En formation</span></td><td><div class="progress-bar" style="width:100px;height:4px;display:inline-block;vertical-align:middle"><div class="progress-fill" style="width:45%"></div></div> 45%</td><td style="font-size:12px">P1: 82%</td><td style="color:var(--text-ter);font-size:12px">1 f&eacute;v</td><td><button class="btn btn-outline btn-sm">D&eacute;tail</button></td></tr>
+<tr><td>Marc Bello</td><td><span class="badge badge-success">Certifi&eacute;</span></td><td><div class="progress-bar" style="width:100px;height:4px;display:inline-block;vertical-align:middle"><div class="progress-fill" style="width:100%"></div></div> 100%</td><td style="font-size:12px">Examen: 91%</td><td style="color:var(--text-ter);font-size:12px">10 d&eacute;c</td><td><button class="btn btn-outline btn-sm">Certificat</button></td></tr>
+</tbody></table>
+</div></div></div>
+</div>
+</div>
+
+<!-- ========== KCPI (PHASE 2) ========== -->
+<div class="view" id="v-kcpi" data-label="38 — KCPI — Projets (Phase 2)">
+<div class="mockup-frame">
+<div class="sidebar"><div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div><div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-item">Dashboard</div><div class="sidebar-item">Terrains LANDS</div><div class="sidebar-item active">KCPI</div></div></div><div class="sidebar-user"><div class="sidebar-avatar">JM</div><div><div class="sidebar-user-name">Jean Mbarga</div><div class="sidebar-user-role">Agent Confirm&eacute;</div></div></div></div>
+<div class="main">
+<div class="header"><div class="header-title">KCPI &mdash; Projets d'investissement</div><div class="header-actions"><span class="badge" style="background:#FBEAF0;color:#993556;border:1px solid #F4C0D1">Phase 2</span></div></div>
+<div class="content">
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
+<div class="card" style="border-top:3px solid var(--teal);border-radius:0 0 var(--radius-lg) var(--radius-lg)">
+<div style="display:flex;justify-content:space-between;margin-bottom:12px"><span class="badge badge-success">Ouvert</span><span style="font-size:11px;color:var(--text-ter)">Cl&ocirc;ture : 30 juin 2026</span></div>
+<div style="font-size:16px;font-weight:500;margin-bottom:4px">Site Dibamba &mdash; Projet pilote</div>
+<div style="font-size:12px;color:var(--text-sec);margin-bottom:12px;line-height:1.6">Am&eacute;nagement complet : source d'eau, panneaux solaires, espace de vie communautaire. 12 ha.</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+<div style="padding:8px;background:var(--bg);border-radius:var(--radius)"><div style="font-size:10px;color:var(--text-ter)">Budget</div><div style="font-size:13px;font-weight:500">45M FCFA</div></div>
+<div style="padding:8px;background:var(--bg);border-radius:var(--radius)"><div style="font-size:10px;color:var(--text-ter)">Membres</div><div style="font-size:13px;font-weight:500">8 / 15</div></div>
+</div>
+<div class="progress-bar" style="margin-bottom:8px"><div class="progress-fill" style="width:53%"></div></div>
+<div style="font-size:11px;color:var(--text-ter);margin-bottom:12px">53% du budget collect&eacute;</div>
+<button class="btn btn-primary" style="width:100%;justify-content:center">Rejoindre ce KCPI</button>
+</div>
+<div class="card" style="border-top:3px solid var(--border);border-radius:0 0 var(--radius-lg) var(--radius-lg);opacity:.6">
+<div style="display:flex;justify-content:space-between;margin-bottom:12px"><span class="badge badge-gray">Bient&ocirc;t</span></div>
+<div style="font-size:16px;font-weight:500;margin-bottom:4px">Site Yaound&eacute; Sud</div>
+<div style="font-size:12px;color:var(--text-sec);margin-bottom:12px;line-height:1.6">Projet en pr&eacute;paration. D&eacute;tails bient&ocirc;t disponibles.</div>
+<button class="btn btn-outline" style="width:100%;justify-content:center" disabled>Pas encore ouvert</button>
+</div>
+</div>
+</div></div>
+</div>
+</div>
+
+<!-- ========== VALUATION (PHASE 2) ========== -->
+<div class="view" id="v-val" data-label="39 — VALUATION — KPVE (Phase 2)">
+<div style="background:var(--bg);min-height:calc(100vh - 44px)">
+<div style="background:var(--navy);padding:48px 24px;text-align:center;color:#fff">
+<div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5);margin-bottom:12px">KAMBRIQ VALUATION <span style="background:#993556;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;margin-left:8px">Phase 2</span></div>
+<div style="font-size:28px;font-weight:600;margin-bottom:8px">Combien vaut votre terrain ?</div>
+<div style="font-size:14px;color:rgba(255,255,255,.7);max-width:500px;margin:0 auto 24px">Le moteur KPVE analyse localisation, documents, environnement et potentiel pour vous donner une estimation fiable.</div>
+<button class="btn" style="background:var(--teal);color:#fff;padding:12px 32px;font-size:15px">Demander une &eacute;valuation</button>
+</div>
+<div style="max-width:600px;margin:0 auto;padding:32px 24px">
+<div class="card" style="margin-bottom:16px">
+<div style="font-size:15px;font-weight:500;margin-bottom:16px">Exemple de rapport KPVE</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+<div style="padding:16px;background:var(--teal-light);border-radius:var(--radius);text-align:center"><div style="font-size:11px;color:var(--teal-dark)">Score KPVE</div><div style="font-size:28px;font-weight:600;color:var(--teal)">7.2 / 10</div></div>
+<div style="padding:16px;background:var(--gold-light);border-radius:var(--radius);text-align:center"><div style="font-size:11px;color:var(--gold-dark)">Fourchette estim&eacute;e</div><div style="font-size:16px;font-weight:600;color:var(--gold)">4 200 - 5 800 F/m&sup2;</div></div>
+</div>
+<div style="font-size:12px;color:var(--text-sec);line-height:1.7">Le rapport complet inclut : analyse de la localisation, &eacute;valuation documentaire, &eacute;tude de l'environnement, potentiel de valorisation, recommandations.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#fff;border:1px solid var(--border);border-radius:var(--radius)"><svg width="16" height="16" viewBox="0 0 24 24" fill="var(--teal)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span style="font-size:13px">Rapport PDF t&eacute;l&eacute;chargeable</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#fff;border:1px solid var(--border);border-radius:var(--radius)"><svg width="16" height="16" viewBox="0 0 24 24" fill="var(--teal)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span style="font-size:13px">Validit&eacute; indicative 6 mois</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#fff;border:1px solid var(--border);border-radius:var(--radius)"><svg width="16" height="16" viewBox="0 0 24 24" fill="var(--teal)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span style="font-size:13px">Cross-sell VERIFY + LANDS int&eacute;gr&eacute;</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== FORGOT PASSWORD ========== -->
+<div class="view" id="v-forgot" data-label="04 — Mot de passe oublié">
+<div style="min-height:calc(100vh - 44px);display:flex;align-items:center;justify-content:center;background:var(--bg)">
+<div style="width:100%;max-width:400px;padding:24px">
+<div style="text-align:center;margin-bottom:32px">
+<div style="width:48px;height:48px;border-radius:12px;background:var(--teal);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:20px;margin-bottom:12px">K</div>
+<div style="font-size:20px;font-weight:600;color:var(--navy);margin-bottom:4px">Mot de passe oubli&eacute;</div>
+<div style="font-size:13px;color:var(--text-sec)">Entrez votre email pour recevoir un lien de r&eacute;initialisation</div>
+</div>
+<div class="card">
+<div class="form-group"><div class="form-label">Adresse email</div><input class="form-input" placeholder="votre@email.com" type="email"></div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px;font-size:14px">Envoyer le lien</button>
+<div style="text-align:center;margin-top:16px;font-size:13px;color:var(--text-sec)"><a style="color:var(--teal);text-decoration:none;cursor:pointer">Retour &agrave; la connexion</a></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== VERIFY EMAIL ========== -->
+<div class="view" id="v-verify-email" data-label="05 — Vérification email">
+<div style="min-height:calc(100vh - 44px);display:flex;align-items:center;justify-content:center;background:var(--bg)">
+<div style="width:100%;max-width:440px;padding:24px;text-align:center">
+<div style="width:64px;height:64px;border-radius:50%;background:var(--teal-light);margin:0 auto 20px;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="var(--teal)"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
+<div style="font-size:20px;font-weight:600;color:var(--navy);margin-bottom:8px">V&eacute;rifiez votre email</div>
+<div style="font-size:14px;color:var(--text-sec);line-height:1.7;margin-bottom:24px">Nous avons envoy&eacute; un lien de confirmation &agrave;<br><strong style="color:var(--text)"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3f555a5e5111525d5e4d585e7f58525e5653115c5052">[email&#160;protected]</a></strong></div>
+<div class="card" style="text-align:left;margin-bottom:16px">
+<div style="font-size:13px;color:var(--text-sec);line-height:1.7">
+<div style="margin-bottom:8px"><strong style="color:var(--text)">1.</strong> Ouvrez votre bo&icirc;te email</div>
+<div style="margin-bottom:8px"><strong style="color:var(--text)">2.</strong> Cliquez sur le lien de confirmation</div>
+<div><strong style="color:var(--text)">3.</strong> Vous serez redirig&eacute; vers votre espace</div>
+</div>
+</div>
+<button class="btn btn-outline" style="font-size:13px">Renvoyer l'email</button>
+<div style="font-size:11px;color:var(--text-ter);margin-top:12px">Pensez &agrave; v&eacute;rifier vos spams</div>
+</div>
+</div>
+</div>
+
+<!-- ========== WELCOME / ONBOARDING ========== -->
+<div class="view" id="v-welcome" data-label="06 — Welcome / Onboarding">
+<div style="min-height:calc(100vh - 44px);display:flex;align-items:center;justify-content:center;background:var(--bg)">
+<div style="width:100%;max-width:600px;padding:24px">
+<div style="text-align:center;margin-bottom:24px">
+<div style="font-size:22px;font-weight:600;color:var(--navy);margin-bottom:4px">Bienvenue sur KAMBRIQ, Jean !</div>
+<div style="font-size:14px;color:var(--text-sec)">Vous avez choisi : <strong style="color:var(--teal)">Devenir agent KAMNET</strong></div>
+</div>
+<div class="card" style="margin-bottom:16px">
+<div style="font-size:15px;font-weight:500;margin-bottom:16px">Votre parcours en 3 &eacute;tapes</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:flex-start;gap:14px;padding:14px;background:var(--teal-light);border-radius:var(--radius);border:1px solid #9FE1CB">
+<div style="width:32px;height:32px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:500;flex-shrink:0">1</div>
+<div><div style="font-size:14px;font-weight:500;color:var(--teal-dark)">Formation KCA</div><div style="font-size:12px;color:var(--teal-dark)">6 modules + examen (seuil 85%) &mdash; 249&euro;</div></div>
+</div>
+<div style="display:flex;align-items:flex-start;gap:14px;padding:14px;background:var(--bg);border-radius:var(--radius);border:1px solid var(--border)">
+<div style="width:32px;height:32px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-ter);font-size:13px;font-weight:500;flex-shrink:0">2</div>
+<div><div style="font-size:14px;font-weight:500">Certification KCA</div><div style="font-size:12px;color:var(--text-sec)">Num&eacute;ro KCA unique, valide 2 ans</div></div>
+</div>
+<div style="display:flex;align-items:flex-start;gap:14px;padding:14px;background:var(--bg);border-radius:var(--radius);border:1px solid var(--border)">
+<div style="width:32px;height:32px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-ter);font-size:13px;font-weight:500;flex-shrink:0">3</div>
+<div><div style="font-size:14px;font-weight:500">Adh&eacute;sion KAMNET</div><div style="font-size:12px;color:var(--text-sec)">Acc&egrave;s au catalogue, commissions, parrainage</div></div>
+</div>
+</div>
+</div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:15px">Commencer la formation KCA</button>
+<div style="text-align:center;margin-top:12px;font-size:12px;color:var(--text-ter)">Vous pourrez changer d'objectif &agrave; tout moment depuis votre profil</div>
+</div>
+</div>
+</div>
+
+<!-- ========== INSCRIPTION KBS ========== -->
+<div class="view" id="v-kbs-enroll" data-label="09 — Inscription KBS">
+<div style="min-height:calc(100vh - 44px);display:flex;align-items:center;justify-content:center;background:var(--bg)">
+<div style="width:100%;max-width:520px;padding:24px">
+<div style="text-align:center;margin-bottom:24px">
+<div style="font-size:20px;font-weight:600;color:var(--navy);margin-bottom:4px">Inscription KBS</div>
+<div style="font-size:13px;color:var(--text-sec)">Formation KCA &mdash; 249&euro; &mdash; 2 mois d'acc&egrave;s</div>
+</div>
+<div class="card">
+<div style="font-size:14px;font-weight:500;margin-bottom:16px;color:var(--navy)">Identit&eacute;</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="form-group"><div class="form-label">Pr&eacute;nom *</div><input class="form-input" placeholder="Jean"></div>
+<div class="form-group"><div class="form-label">Nom *</div><input class="form-input" placeholder="Mbarga"></div>
+</div>
+<div class="form-group"><div class="form-label">Email *</div><input class="form-input" placeholder="votre@email.com" type="email"></div>
+<div class="form-group"><div class="form-label">T&eacute;l&eacute;phone *</div><input class="form-input" placeholder="+33 6..."></div>
+
+<div style="font-size:14px;font-weight:500;margin:20px 0 16px;color:var(--navy)">KYC l&eacute;ger</div>
+<div class="form-group"><div class="form-label">Carte d'identit&eacute; (recto/verso) *</div><div style="padding:20px;border:2px dashed var(--border);border-radius:var(--radius);text-align:center;color:var(--text-sec);font-size:13px;cursor:pointer">Cliquez ou glissez votre pi&egrave;ce d'identit&eacute;<br><span style="font-size:11px;color:var(--text-ter)">JPG, PNG, PDF &mdash; max 5 Mo</span></div></div>
+<div class="form-group"><div class="form-label">CV (optionnel)</div><div style="padding:16px;border:2px dashed var(--border);border-radius:var(--radius);text-align:center;color:var(--text-ter);font-size:12px;cursor:pointer">Glisser votre CV</div></div>
+
+<div style="font-size:14px;font-weight:500;margin:20px 0 16px;color:var(--navy)">Parrainage</div>
+<div class="form-group"><div class="form-label">Code parrainage (optionnel)</div><input class="form-input" placeholder="KNT-XXXX"><div class="form-help">Si vous n'avez pas de code, KAMBRIQ sera votre parrain par d&eacute;faut</div></div>
+
+<div style="padding:14px;background:var(--gold-light);border-radius:var(--radius);margin:20px 0;display:flex;align-items:center;gap:12px"><div style="font-size:13px;color:var(--gold-dark)"><strong>Paiement :</strong> 249&euro; &mdash; hors plateforme (MVP). Les instructions de paiement vous seront envoy&eacute;es par email.</div></div>
+
+<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:20px"><input type="checkbox" style="accent-color:var(--teal);margin-top:3px"><span style="font-size:12px;color:var(--text-sec)">Je m'engage &agrave; suivre la formation avec s&eacute;rieux et &agrave; respecter le <a style="color:var(--teal);text-decoration:none">r&egrave;glement int&eacute;rieur KBS</a></span></div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px;font-size:14px">Soumettre mon inscription</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== LANDING KAMNET ========== -->
+<div class="view" id="v-lp-kamnet" data-label="15 — Landing KAMNET (publique)">
+<div style="background:var(--bg);min-height:calc(100vh - 44px)">
+<div style="background:var(--navy);padding:48px 24px;text-align:center;color:#fff">
+<div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5);margin-bottom:12px">R&eacute;seau KAMNET</div>
+<div style="font-size:28px;font-weight:600;margin-bottom:8px">Devenez agent KAMBRIQ</div>
+<div style="font-size:14px;color:rgba(255,255,255,.7);max-width:520px;margin:0 auto 24px">Rejoignez un r&eacute;seau structur&eacute;, certifi&eacute; et r&eacute;mun&eacute;r&eacute;. Acc&eacute;dez &agrave; un catalogue exclusif de terrains v&eacute;rifi&eacute;s au Cameroun.</div>
+<button class="btn" style="background:var(--teal);color:#fff;padding:12px 32px;font-size:15px">Commencer par la formation KCA</button>
+</div>
+<div style="max-width:800px;margin:0 auto;padding:32px 24px">
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px">
+<div class="card" style="text-align:center;padding:24px"><div style="width:40px;height:40px;border-radius:50%;background:var(--teal-light);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;color:var(--teal);font-weight:600;font-size:16px">1</div><div style="font-size:14px;font-weight:500;margin-bottom:4px">Formation KCA</div><div style="font-size:12px;color:var(--text-sec)">6 modules + examen certifiant</div></div>
+<div class="card" style="text-align:center;padding:24px"><div style="width:40px;height:40px;border-radius:50%;background:var(--gold-light);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;color:var(--gold);font-weight:600;font-size:16px">2</div><div style="font-size:14px;font-weight:500;margin-bottom:4px">Adh&eacute;sion KAMNET</div><div style="font-size:12px;color:var(--text-sec)">Parrainage + validation admin</div></div>
+<div class="card" style="text-align:center;padding:24px"><div style="width:40px;height:40px;border-radius:50%;background:var(--success-bg);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;color:var(--success);font-weight:600;font-size:16px">3</div><div style="font-size:14px;font-weight:500;margin-bottom:4px">Agent actif</div><div style="font-size:12px;color:var(--text-sec)">Terrains, commissions, parrainage</div></div>
+</div>
+<div class="card" style="margin-bottom:16px">
+<div style="font-size:16px;font-weight:500;margin-bottom:16px">Avantages agents KAMNET</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div style="padding:12px;background:var(--bg);border-radius:var(--radius)"><div style="font-size:13px;font-weight:500;margin-bottom:4px">Commissions 3%</div><div style="font-size:12px;color:var(--text-sec)">Sur chaque vente conclue, vers&eacute;e J+15</div></div>
+<div style="padding:12px;background:var(--bg);border-radius:var(--radius)"><div style="font-size:13px;font-weight:500;margin-bottom:4px">Catalogue exclusif</div><div style="font-size:12px;color:var(--text-sec)">Terrains TFL, VEFL, VEFIL v&eacute;rifi&eacute;s</div></div>
+<div style="padding:12px;background:var(--bg);border-radius:var(--radius)"><div style="font-size:13px;font-weight:500;margin-bottom:4px">Parrainage 3 niveaux</div><div style="font-size:12px;color:var(--text-sec)">D&eacute;veloppez votre r&eacute;seau d'agents</div></div>
+<div style="padding:12px;background:var(--bg);border-radius:var(--radius)"><div style="font-size:13px;font-weight:500;margin-bottom:4px">&Eacute;volution de carri&egrave;re</div><div style="font-size:12px;color:var(--text-sec)">Junior &rarr; Confirm&eacute; &rarr; Manager</div></div>
+</div>
+</div>
+<div style="padding:16px;background:var(--info-bg);border-radius:var(--radius-lg);text-align:center"><div style="font-size:14px;font-weight:500;color:var(--info);margin-bottom:4px">Pr&eacute;requis : certification KCA</div><div style="font-size:12px;color:#0C447C">Vous devez d'abord obtenir votre certificat KCA via la formation KBS</div></div>
+</div>
+</div>
+</div>
+
+<!-- ========== CLIENT - MES TERRAINS (LISTE) ========== -->
+<div class="view" id="v-client-list" data-label="26 — Client — Mes Terrains">
+<div class="mockup-frame">
+<div class="sidebar"><div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div><div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-group-label">Mon espace</div><div class="sidebar-item active">Mes terrains</div><div class="sidebar-item">Mes v&eacute;rifications</div><div class="sidebar-item">Mon profil</div></div></div><div class="sidebar-user"><div class="sidebar-avatar" style="background:var(--gold)">AN</div><div><div class="sidebar-user-name">Alice Nkoumou</div><div class="sidebar-user-role">Client</div></div></div></div>
+<div class="main">
+<div class="header"><div class="header-title">Mes terrains</div></div>
+<div class="content">
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
+<div class="card" style="border-left:3px solid var(--teal);border-radius:0">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span class="badge badge-info">&Eacute;tape 3/6 &mdash; En cours</span><span class="label-tfl">TFL</span></div>
+<div style="font-size:15px;font-weight:500;margin-bottom:4px">Dibamba Nord &mdash; Parcelle 12</div>
+<div style="font-size:12px;color:var(--text-sec);margin-bottom:12px">Zone Industrielle Dibamba, Douala</div>
+<div class="progress-bar" style="margin-bottom:8px"><div class="progress-fill" style="width:50%"></div></div>
+<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-ter)"><span>R&eacute;serv&eacute; le 15 mars</span><span>Agent : Jean Mbarga</span></div>
+<button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:12px">Voir le suivi</button>
+</div>
+<div class="card" style="border-left:3px solid var(--success);border-radius:0;opacity:.7">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span class="badge badge-success">Termin&eacute;</span><span class="label-vefl">VEFL</span></div>
+<div style="font-size:15px;font-weight:500;margin-bottom:4px">SOA Fegminbang &mdash; Lot 3</div>
+<div style="font-size:12px;color:var(--text-sec);margin-bottom:12px">SOA, Yaound&eacute;</div>
+<div class="progress-bar" style="margin-bottom:8px"><div class="progress-fill" style="width:100%"></div></div>
+<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-ter)"><span>Finalis&eacute; le 2 f&eacute;vrier</span><span>Documents disponibles</span></div>
+<button class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:12px">T&eacute;l&eacute;charger documents</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ========== INVITATION CLIENT ========== -->
+<div class="view" id="v-invite" data-label="28 — Admin — Invitation Client">
+<div class="mockup-frame">
+<div class="sidebar"><div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div><div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-group-label">Administration</div><div class="sidebar-item">LANDS</div><div class="sidebar-item">R&eacute;servations</div><div class="sidebar-item active">Clients</div></div></div><div class="sidebar-user"><div class="sidebar-avatar" style="background:#534AB7">SA</div><div><div class="sidebar-user-name">Sophie Admin</div><div class="sidebar-user-role">Ops KAMBRIQ</div></div></div></div>
+<div class="main">
+<div class="header"><div class="header-title">Inviter un client</div></div>
+<div class="content"><div style="max-width:480px;margin:0 auto">
+<div class="card">
+<div style="font-size:15px;font-weight:500;margin-bottom:4px">Envoyer une invitation</div>
+<div style="font-size:12px;color:var(--text-sec);margin-bottom:20px">Le client recevra un email avec un lien pour cr&eacute;er son espace et suivre son achat.</div>
+<div class="form-group"><div class="form-label">Email du client *</div><input class="form-input" placeholder="client@email.com" type="email"></div>
+<div class="form-group"><div class="form-label">Nom du client *</div><input class="form-input" placeholder="Nom complet"></div>
+<div class="form-group"><div class="form-label">Terrain associ&eacute; *</div><select class="form-input" style="appearance:auto"><option>Dibamba Nord #12 (TFL)</option><option>Logbajeck #47 (VEFIL)</option><option>SOA #8 (VEFL)</option></select></div>
+<div class="form-group"><div class="form-label">Agent r&eacute;f&eacute;rent</div><input class="form-input" value="Jean Mbarga" disabled></div>
+<div style="padding:10px 14px;background:var(--info-bg);border-radius:var(--radius);margin-bottom:16px;font-size:12px;color:var(--info)">L'invitation est g&eacute;n&eacute;ralement envoy&eacute;e automatiquement lors d'une r&eacute;servation. Ce formulaire permet le renvoi manuel.</div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px">Envoyer l'invitation</button>
+</div>
+</div></div>
+</div>
+</div>
+</div>
+
+<!-- ========== VERIFY CONFIRMATION ========== -->
+<div class="view" id="v-verify-confirm" data-label="31 — VERIFY — Confirmation">
+<div style="min-height:calc(100vh - 44px);display:flex;align-items:center;justify-content:center;background:var(--bg)">
+<div style="width:100%;max-width:480px;padding:24px;text-align:center">
+<div style="width:64px;height:64px;border-radius:50%;background:var(--success-bg);margin:0 auto 20px;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="var(--success)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+<div style="font-size:20px;font-weight:600;color:var(--navy);margin-bottom:8px">Demande soumise</div>
+<div style="font-size:14px;color:var(--text-sec);margin-bottom:24px">Votre demande KAMBRIQ VERIFY a bien &eacute;t&eacute; enregistr&eacute;e.</div>
+<div class="card" style="text-align:left;margin-bottom:16px">
+<table style="width:100%;font-size:13px"><tbody>
+<tr><td style="padding:6px 0;color:var(--text-sec)">R&eacute;f&eacute;rence</td><td style="padding:6px 0;text-align:right;font-weight:500;font-family:monospace">VER-048</td></tr>
+<tr><td style="padding:6px 0;color:var(--text-sec)">Titre Foncier</td><td style="padding:6px 0;text-align:right">TF-12345</td></tr>
+<tr><td style="padding:6px 0;color:var(--text-sec)">Type</td><td style="padding:6px 0;text-align:right"><span class="badge badge-teal">Gratuit (achat KAMBRIQ)</span></td></tr>
+<tr><td style="padding:6px 0;color:var(--text-sec)">Statut</td><td style="padding:6px 0;text-align:right"><span class="badge badge-info">Soumis</span></td></tr>
+</tbody></table>
+</div>
+<div style="font-size:13px;color:var(--text-sec);line-height:1.7;margin-bottom:20px">Un email de confirmation a &eacute;t&eacute; envoy&eacute; &agrave; votre adresse. Notre &eacute;quipe va traiter votre demande sous 72h.</div>
+<button class="btn btn-primary" style="padding:10px 24px">Acc&eacute;der &agrave; mon espace</button>
+</div>
+</div>
+</div>
+
+<!-- ========== CLIENT - MES VERIFICATIONS ========== -->
+<div class="view" id="v-client-verify" data-label="32 — Client — Mes Vérifications">
+<div class="mockup-frame">
+<div class="sidebar"><div class="sidebar-logo"><div class="sidebar-logo-icon">K</div><div class="sidebar-logo-text">KAMBRIQ</div></div><div class="sidebar-nav"><div class="sidebar-group"><div class="sidebar-group-label">Mon espace</div><div class="sidebar-item">Mes terrains</div><div class="sidebar-item active">Mes v&eacute;rifications</div><div class="sidebar-item">Mon profil</div></div></div><div class="sidebar-user"><div class="sidebar-avatar" style="background:var(--info)">PE</div><div><div class="sidebar-user-name">Pierre Essono</div><div class="sidebar-user-role">Client</div></div></div></div>
+<div class="main">
+<div class="header"><div class="header-title">Mes v&eacute;rifications</div></div>
+<div class="content">
+<div class="card">
+<table class="data"><thead><tr><th>R&eacute;f&eacute;rence</th><th>Titre Foncier</th><th>Type</th><th>Statut</th><th>Date</th><th></th></tr></thead><tbody>
+<tr><td style="font-family:monospace;font-size:12px">VER-048</td><td>TF-12345</td><td><span class="badge badge-teal">Gratuit</span></td><td><span class="badge badge-success">Compl&eacute;t&eacute;</span></td><td style="color:var(--text-ter);font-size:12px">25 mars</td><td><button class="btn btn-primary btn-sm">Voir r&eacute;sultat</button></td></tr>
+<tr><td style="font-family:monospace;font-size:12px">VER-041</td><td>TF-67890</td><td><span class="badge badge-gold">99&euro;</span></td><td><span class="badge badge-info">En cours</span></td><td style="color:var(--text-ter);font-size:12px">20 mars</td><td><button class="btn btn-outline btn-sm">Voir</button></td></tr>
+<tr><td style="font-family:monospace;font-size:12px">VER-035</td><td>TF-11111</td><td><span class="badge badge-gold">99&euro;</span></td><td><span class="badge badge-success">Compl&eacute;t&eacute;</span></td><td style="color:var(--text-ter);font-size:12px">5 mars</td><td><button class="btn btn-outline btn-sm">Voir r&eacute;sultat</button></td></tr>
+</tbody></table>
+</div>
+<div style="margin-top:16px;text-align:center"><button class="btn btn-primary">Nouvelle v&eacute;rification</button></div>
+</div>
+</div>
+</div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+function show(id){
+document.querySelectorAll('.view').forEa

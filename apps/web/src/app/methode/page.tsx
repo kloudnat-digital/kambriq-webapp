@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Navbar from '@/components/layout/navbar';
 import Footer from '@/components/layout/footer';
 import QuickActions from '@/components/floating/quick-actions';
@@ -6,6 +7,11 @@ import { loadContent } from '@/lib/content';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('metadata.methode');
+  return { title: t('title'), description: t('description') };
+}
 
 export default async function MethodePage() {
   const locale = await getLocale();

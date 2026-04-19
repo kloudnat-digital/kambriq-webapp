@@ -1184,8 +1184,52 @@
     "noResults": "No articles found."
   },
   "metadata": {
-    "description": "Land strategy advisory in Cameroon. KAMBRIQ verifies, secures and guides your land project.",
-    "keywords": "real estate, Cameroon, land, investment, KAMBRIQ, title deed"
+    "description": "KAMBRIQ guides the diaspora through land projects in Cameroon. 7 verifications, 3 security levels, end-to-end support.",
+    "keywords": "land, Cameroon, title deed, KAMBRIQ, diaspora, verification",
+    "home": {
+      "title": "KAMBRIQ — Verified and guided land in Cameroon",
+      "description": "KAMBRIQ guides the diaspora through land projects in Cameroon. 7 verifications, 3 security levels, end-to-end support."
+    },
+    "methode": {
+      "title": "Our method — KAMBRIQ",
+      "description": "KAMBRIQ verifies every plot through 7 checkpoints before listing. Discover our method and 3 security levels: TFL™, VEFL™, VEFIL™."
+    },
+    "verify": {
+      "title": "KAMBRIQ VERIFY™ — Land verification in Cameroon",
+      "description": "Verify the authenticity of a plot in Cameroon before any purchase. 7 checkpoints, detailed report. €99 or free when buying through KAMBRIQ."
+    },
+    "lands": {
+      "title": "KAMBRIQ LANDS — Verified land in Cameroon",
+      "description": "KAMBRIQ LANDS offers land in Cameroon verified through 7 checkpoints. 3 security labels (TFL™, VEFL™, VEFIL™). Full support by a certified agent."
+    },
+    "plan": {
+      "title": "KAMBRIQ PLAN™ — Instalment payments for land in Cameroon",
+      "description": "Buy land in Cameroon with instalment payments. 5% deposit, schedule based on your budget. End-to-end KAMBRIQ support."
+    },
+    "kbs": {
+      "title": "KAMBRIQ Business School — Land agent training Cameroon",
+      "description": "Train in Cameroon land law and become a certified KAMNET agent. KCA programme, online training, recognised certification."
+    },
+    "kamnet": {
+      "title": "KAMNET — Certified KAMBRIQ land agent network",
+      "description": "KAMNET is the network of KAMBRIQ-certified agents. Trained by KBS, they guide the diaspora through land projects in Cameroon."
+    },
+    "about": {
+      "title": "About — KAMBRIQ",
+      "description": "KAMBRIQ is a land strategy advisory that guides the Cameroonian diaspora through land acquisition projects. Method, verification, support."
+    },
+    "contact": {
+      "title": "Contact — KAMBRIQ",
+      "description": "Contact KAMBRIQ for your land project in Cameroon. WhatsApp, email, form. Fast response, personalised guidance."
+    },
+    "faq": {
+      "title": "FAQ — KAMBRIQ",
+      "description": "Answers to the most common questions about buying land in Cameroon, title deeds, national domain, and KAMBRIQ services."
+    },
+    "blog": {
+      "title": "Blog — KAMBRIQ",
+      "description": "Educational articles on Cameroon land law: title deeds, national domain, pitfalls, reforms. By KAMBRIQ, land strategy advisory."
+    }
   },
   "legal": {
     "nav": {

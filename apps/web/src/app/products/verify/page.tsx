@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Navbar from '@/components/layout/navbar';
 import HowItWorks from '@/components/products/verify/how-it-works';
 import QuickActions from '@/components/floating/quick-actions';
@@ -5,8 +6,13 @@ import Footer from '@/components/layout/footer';
 import Hero from '@/components/products/verify/hero';
 import VerifyFAQ from '@/components/products/verify/faq';
 import ReadyToVerify from '@/components/products/verify/ready-to-verify';
-import { getLocale } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { loadContent } from '@/lib/content';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('metadata.verify');
+  return { title: t('title'), description: t('description') };
+}
 
 export default async function VerifyPage() {
   const locale = await getLocale();
