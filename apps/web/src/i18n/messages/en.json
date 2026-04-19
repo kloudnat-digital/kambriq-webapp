@@ -1303,15 +1303,6 @@
       }
     }
   },
-  "knowledgeBase": {
-    "hero": {
-      "title": "Knowledge Base",
-      "subtitle": "Guides and resources to help you navigate the KAMBRIQ ecosystem."
-    },
-    "searchPlaceholder": "Search an article…",
-    "allArticles": "All",
-    "noResults": "No articles found."
-  },
   "metadata": {
     "description": "KAMBRIQ guides the diaspora through land projects in Cameroon. 7 verifications, 3 security levels, end-to-end support.",
     "keywords": "land, Cameroon, title deed, KAMBRIQ, diaspora, verification",
@@ -1527,29 +1518,6 @@
     "network": {
       "pageTitle": "My KAMNET network",
       "pageSubtitle": "Sponsored agents and network connections"
-    },
-    "mentorship": {
-      "title": "KAMNET Mentorship",
-      "subtitle": "Connect with a certified mentor",
-      "planButton": "Schedule",
-      "available": "Available",
-      "busy": "Busy",
-      "speciality": "Speciality",
-      "analytics": {
-        "title": "Mentor analytics",
-        "subtitle": "Your performance as a KAMNET mentor",
-        "sessions": "Mentorship sessions",
-        "sessionSubtitle": "Last 6 months",
-        "ratingsTitle": "Rating evolution",
-        "ratingsSubtitle": "Weekly rating of mentees"
-      }
-    },
-    "gamification": {
-      "title": "Gamification",
-      "subtitle": "Your points, badges and ongoing challenges",
-      "progressTo": "Progress to",
-      "myBadges": "My badges",
-      "challenges": "Ongoing challenges"
     },
     "landsPage": {
       "title": "Land catalogue",

@@ -1303,15 +1303,6 @@
       }
     }
   },
-  "knowledgeBase": {
-    "hero": {
-      "title": "Base de Connaissances",
-      "subtitle": "Guides et ressources pour vous aider à naviguer dans l'écosystème KAMBRIQ."
-    },
-    "searchPlaceholder": "Rechercher un article…",
-    "allArticles": "Tout",
-    "noResults": "Aucun article trouvé."
-  },
   "metadata": {
     "description": "KAMBRIQ accompagne la diaspora dans ses projets fonciers au Cameroun. 7 vérifications, 3 niveaux de sécurité, un accompagnement de A à Z.",
     "keywords": "foncier, Cameroun, terrains, titre foncier, KAMBRIQ, diaspora, vérification",
@@ -1527,29 +1518,6 @@
     "network": {
       "pageTitle": "Mon réseau KAMNET",
       "pageSubtitle": "Agents parrainés et connexions de réseau"
-    },
-    "mentorship": {
-      "title": "Mentorship KAMNET",
-      "subtitle": "Connectez-vous avec un mentor certifié",
-      "planButton": "Planifier",
-      "available": "Disponible",
-      "busy": "Occupé",
-      "speciality": "Spécialité",
-      "analytics": {
-        "title": "Analytiques Mentor",
-        "subtitle": "Vos performances en tant que mentor KAMNET",
-        "sessions": "Sessions de mentorship",
-        "sessionSubtitle": "6 derniers mois",
-        "ratingsTitle": "Évolution des notes",
-        "ratingsSubtitle": "Note hebdomadaire des mentorés"
-      }
-    },
-    "gamification": {
-      "title": "Gamification",
-      "subtitle": "Vos points, badges et défis en cours",
-      "progressTo": "Progression vers",
-      "myBadges": "Mes badges",
-      "challenges": "Défis en cours"
     },
     "landsPage": {
       "title": "Catalogue des terrains",

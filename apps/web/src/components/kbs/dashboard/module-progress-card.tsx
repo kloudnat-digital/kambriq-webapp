@@ -80,7 +80,7 @@ export const ModuleProgressCard = ({ module }: { module: Module }) => {
             variant={module.status === 'completed' ? 'outline' : 'default'}
             className="w-full"
           >
-            <Link href={`/kbs/module/${module.id}`}>
+            <Link href={`/kbs/lessons/${module.id}`}>
               {module.status === 'completed' ? 'Réviser' : 'Continuer'}
             </Link>
           </Button>

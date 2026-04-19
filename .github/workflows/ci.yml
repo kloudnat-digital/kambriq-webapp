@@ -44,7 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        check: [lint, typecheck, test]
+        check: [lint, typecheck, typecheck:web, test]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -63,6 +63,10 @@ jobs:
       - name: Typecheck
         if: matrix.check == 'typecheck'
         run: pnpm run typecheck
+
+      - name: Typecheck web
+        if: matrix.check == 'typecheck:web'
+        run: pnpm run typecheck:web
 
       - name: Test with coverage
         if: matrix.check == 'test'

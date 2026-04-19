@@ -29,6 +29,16 @@ const PUBLIC_PATHS = [
 // '/' uses exact match; others use startsWith
 const REDIRECT_WHEN_AUTHED = ['/', '/login', '/register'];
 
+// Role-gated sections. Each entry: pathname prefix → allowed role codes.
+// A match requires the user to have at least one of the listed role codes.
+// Unauthenticated users are redirected to /login regardless of these rules.
+const ROLE_GATES: Array<{ prefix: string; roles: string[] }> = [
+  { prefix: '/admin/kbs', roles: ['ADMIN_KBS', 'ADMIN_GLOBAL', 'ROOT'] },
+  { prefix: '/admin/kamnet', roles: ['ADMIN_KAMNET', 'ADMIN_GLOBAL', 'ROOT'] },
+  { prefix: '/admin', roles: ['OPS', 'ADMIN_LANDS', 'ADMIN_GLOBAL', 'ROOT'] },
+  { prefix: '/agent', roles: ['AGENT', 'OPS', 'ADMIN_GLOBAL', 'ROOT'] },
+];
+
 const LOCALES = ['fr', 'en'];
 
 const stripLocale = (pathname: string) => {
@@ -44,6 +54,11 @@ const isPublic = (pathname: string) => {
   return PUBLIC_PATHS.some((p) => bare === p || bare.startsWith(p + '/'));
 };
 
+const matchGate = (pathname: string) => {
+  const bare = stripLocale(pathname);
+  return ROLE_GATES.find((g) => bare === g.prefix || bare.startsWith(g.prefix + '/'));
+};
+
 const getDefaultRoute = (roleCodes: string[]): string => {
   if (roleCodes.includes('CLIENT')) return '/mylands';
   if (
@@ -52,8 +67,8 @@ const getDefaultRoute = (roleCodes: string[]): string => {
     roleCodes.includes('ADMIN_GLOBAL')
   )
     return '/lands';
-  if (roleCodes.includes('ADMIN_KBS')) return '/kbs/admin';
-  if (roleCodes.includes('ADMIN_KAMNET')) return '/kamnet/admin/agents';
+  if (roleCodes.includes('ADMIN_KBS')) return '/admin/kbs';
+  if (roleCodes.includes('ADMIN_KAMNET')) return '/admin/kamnet';
   return '/mylands';
 };
 
@@ -62,6 +77,10 @@ export default auth((req) => {
   const pathname = nextUrl.pathname;
   const isAuthenticated = !!session?.user;
 
+  const rawRoles =
+    (session?.user as unknown as { roles?: Array<{ code: string } | string> })?.roles ?? [];
+  const roles = rawRoles.map((r) => (typeof r === 'string' ? r : r.code));
+
   // Authenticated user on landing/auth pages → redirect to their role home
   if (isAuthenticated) {
     const bare = stripLocale(pathname);
@@ -69,9 +88,6 @@ export default auth((req) => {
       p === '/' ? bare === '/' : bare.startsWith(p),
     );
     if (shouldRedirect) {
-      const rawRoles =
-        (session.user as unknown as { roles?: Array<{ code: string } | string> })?.roles ?? [];
-      const roles = rawRoles.map((r) => (typeof r === 'string' ? r : r.code));
       return NextResponse.redirect(new URL(getDefaultRoute(roles), nextUrl.origin));
     }
   }
@@ -81,6 +97,14 @@ export default auth((req) => {
     const loginUrl = new URL(AUTH_ROUTES.LOGIN, nextUrl.origin);
     loginUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Authenticated user hitting a role-gated section → redirect to their home if not allowed
+  if (isAuthenticated) {
+    const gate = matchGate(pathname);
+    if (gate && !gate.roles.some((r) => roles.includes(r))) {
+      return NextResponse.redirect(new URL(getDefaultRoute(roles), nextUrl.origin));
+    }
   }
 
   return NextResponse.next();
