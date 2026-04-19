@@ -1,209 +1,290 @@
 name: Deploy Dev
 
-on:
-  push:
-    branches: [develop]
-  workflow_dispatch:
+# ------------------------------------------------------------------------------
+# Pure deploy workflow - no build step.
+# Called automatically by ci.yml after a successful image build on develop,
+# or triggered manually from the UI with explicit image tags.
+#
+# Expected runtime: 3-6 min (migrate + ECS rolling updates for API + web).
+# ------------------------------------------------------------------------------
 
-permissions:
-  id-token: write
-  contents: read
+on:
+  workflow_call:
+    inputs:
+      api_image_tag:
+        description: "ECR API image tag (e.g. sha-abc1234)"
+        type: string
+        required: true
+      web_image_tag:
+        description: "ECR Web image tag (e.g. sha-abc1234)"
+        type: string
+        required: true
+      run_seed:
+        description: "Run database seed (first deploy only)"
+        type: boolean
+        default: false
+    secrets:
+      AWS_ROLE_ARN:
+        required: true
+  workflow_dispatch:
+    inputs:
+      api_image_tag:
+        description: "ECR API image tag (e.g. sha-abc1234 or dev-latest)"
+        type: string
+        required: true
+      web_image_tag:
+        description: "ECR Web image tag (e.g. sha-abc1234 or web-dev-latest)"
+        type: string
+        required: true
+      run_seed:
+        description: "Run database seed (first deploy only)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
 
 jobs:
   deploy:
-    name: Build, Migrate, Deploy
+    name: Deploy to dev
     runs-on: ubuntu-latest
     environment: dev
-
+    permissions:
+      id-token: write
+      contents: read
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}
       ECR_REPO: ${{ vars.ECR_REPO }}
+      ECR_WEB_REPO: ${{ vars.ECR_WEB_REPO }}
       ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
       ECS_SERVICE: ${{ vars.ECS_SERVICE }}
+      ECS_WEB_SERVICE: ${{ vars.ECS_WEB_SERVICE }}
       ECS_TASK_DEFINITION: ${{ vars.ECS_TASK_DEFINITION }}
+      ECS_WEB_TASK_DEFINITION: ${{ vars.ECS_WEB_TASK_DEFINITION }}
       ECS_SUBNETS: ${{ vars.ECS_SUBNETS }}
       ECS_SECURITY_GROUPS: ${{ vars.ECS_SECURITY_GROUPS }}
       CONTAINER_NAME: ${{ vars.CONTAINER_NAME || 'api' }}
+      WEB_CONTAINER_NAME: ${{ vars.WEB_CONTAINER_NAME || 'web' }}
       ASSIGN_PUBLIC_IP: ${{ vars.ASSIGN_PUBLIC_IP || 'DISABLED' }}
       SMOKE_TEST_URL: ${{ vars.SMOKE_TEST_URL }}
+      API_IMAGE_TAG: ${{ inputs.api_image_tag }}
+      WEB_IMAGE_TAG: ${{ inputs.web_image_tag }}
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Test
-        run: npm run test
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Resolve image tag
+      - name: Set image URIs
         run: |
-          set -euo pipefail
-          VERSION="$(node -p "require('./package.json').version")"
-          echo "IMAGE_TAG=v${VERSION}" >> "$GITHUB_ENV"
+          echo "API_IMAGE_URI=${ECR_REPO}:${API_IMAGE_TAG}" >> "$GITHUB_ENV"
+          echo "WEB_IMAGE_URI=${ECR_WEB_REPO}:${WEB_IMAGE_TAG}" >> "$GITHUB_ENV"
 
-      - name: Build and push image
-        run: |
-          set -euo pipefail
-          IMAGE_URI="${ECR_REPO}:${IMAGE_TAG}"
-          LATEST_URI="${ECR_REPO}:latest"
-          aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REPO%/*}"
-          docker build -f docker/Dockerfile -t "${IMAGE_URI}" .
-          docker tag "${IMAGE_URI}" "${LATEST_URI}"
-          docker push "${IMAGE_URI}"
-          docker push "${LATEST_URI}"
-          echo "IMAGE_URI=${IMAGE_URI}" >> "$GITHUB_ENV"
-
-      - name: Register new task definition
+      # -- API: register task definition ----------------------------------------
+      - name: Register API task definition
         run: |
           set -euo pipefail
           TASK_DEF_JSON="$(aws ecs describe-task-definition --task-definition "${ECS_TASK_DEFINITION}")"
-          NEW_TASK_DEF="$(echo "${TASK_DEF_JSON}" | jq --arg IMAGE "${IMAGE_URI}" --arg NAME "${CONTAINER_NAME}" '
+          NEW_TASK_DEF="$(echo "${TASK_DEF_JSON}" | jq --arg IMAGE "${API_IMAGE_URI}" --arg NAME "${CONTAINER_NAME}" '
             .taskDefinition
             | .containerDefinitions |= map(if .name == $NAME then .image = $IMAGE else . end)
-            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .deregisteredAt)
+            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities,
+                  .registeredAt, .registeredBy, .deregisteredAt)
           ')"
-          NEW_TASK_DEF_ARN="$(aws ecs register-task-definition --cli-input-json "${NEW_TASK_DEF}" \
+          NEW_TASK_DEF_ARN="$(aws ecs register-task-definition \
+            --cli-input-json "${NEW_TASK_DEF}" \
             --query "taskDefinition.taskDefinitionArn" --output text)"
           echo "NEW_TASK_DEF_ARN=${NEW_TASK_DEF_ARN}" >> "$GITHUB_ENV"
 
-      - name: Run Prisma migrations (one-off task)
+      # -- Run Prisma migrations ------------------------------------------------
+      - name: Run Prisma migrations
         run: |
           set -euo pipefail
+          OVERRIDES="$(jq -nc --arg name "${CONTAINER_NAME}" '{
+            containerOverrides: [{
+              name: $name,
+              environment: [{name: "ALLOW_DB_PUSH", value: "true"}],
+              command: ["node", "prisma/run-migrations.js"]
+            }]
+          }')"
           TASK_ARN="$(aws ecs run-task \
             --cluster "${ECS_CLUSTER}" \
             --launch-type FARGATE \
             --task-definition "${NEW_TASK_DEF_ARN}" \
             --network-configuration "awsvpcConfiguration={subnets=[${ECS_SUBNETS}],securityGroups=[${ECS_SECURITY_GROUPS}],assignPublicIp=${ASSIGN_PUBLIC_IP}}" \
-            --overrides "$(cat <<EOF
-          {
-            "containerOverrides": [
-              {
-                "name": "${CONTAINER_NAME}",
-                "environment": [
-                  {
-                    "name": "ALLOW_DB_PUSH",
-                    "value": "true"
-                  }
-                ],
-                "command": [
-                  "sh",
-                  "-c",
-                  "node prisma/run-migrations.js"
-                ]
-              }
-            ]
-          }
-          EOF
-          )" \
-            --query "tasks[0].taskArn" \
-            --output text)"
+            --overrides "${OVERRIDES}" \
+            --query "tasks[0].taskArn" --output text)"
 
           if [[ -z "${TASK_ARN}" || "${TASK_ARN}" == "None" ]]; then
-            echo "Failed to start migration task" >&2
-            exit 1
+            echo "Failed to start migration task" >&2; exit 1
           fi
 
+          echo "Waiting for migration task ${TASK_ARN} to complete..."
           aws ecs wait tasks-stopped --cluster "${ECS_CLUSTER}" --tasks "${TASK_ARN}"
-          EXIT_CODE="$(aws ecs describe-tasks --cluster "${ECS_CLUSTER}" --tasks "${TASK_ARN}" \
+
+          EXIT_CODE="$(aws ecs describe-tasks \
+            --cluster "${ECS_CLUSTER}" --tasks "${TASK_ARN}" \
             --query "tasks[0].containers[0].exitCode" --output text)"
           echo "MIGRATION_TASK_ARN=${TASK_ARN}" >> "$GITHUB_ENV"
           echo "MIGRATION_EXIT_CODE=${EXIT_CODE}" >> "$GITHUB_ENV"
 
           if [[ "${EXIT_CODE}" != "0" ]]; then
-            echo "Migration task failed with exit code ${EXIT_CODE}" >&2
-            exit 1
+            echo "Migration task failed with exit code ${EXIT_CODE}" >&2; exit 1
           fi
 
-      - name: Run database seed (one-off task)
+      # -- Seed: opt-in only (run_seed=true), first-deploy use-case ------------
+      - name: Run database seed
+        if: inputs.run_seed == true
         run: |
           set -euo pipefail
+          OVERRIDES="$(jq -nc --arg name "${CONTAINER_NAME}" '{
+            containerOverrides: [{
+              name: $name,
+              command: ["node", "prisma/run-migrations.js", "--seed"]
+            }]
+          }')"
           TASK_ARN="$(aws ecs run-task \
             --cluster "${ECS_CLUSTER}" \
             --launch-type FARGATE \
             --task-definition "${NEW_TASK_DEF_ARN}" \
             --network-configuration "awsvpcConfiguration={subnets=[${ECS_SUBNETS}],securityGroups=[${ECS_SECURITY_GROUPS}],assignPublicIp=${ASSIGN_PUBLIC_IP}}" \
-            --overrides "$(cat <<EOF
-          {
-            "containerOverrides": [
-              {
-                "name": "${CONTAINER_NAME}",
-                "command": [
-                  "sh",
-                  "-c",
-                  "npm run db:seed"
-                ]
-              }
-            ]
-          }
-          EOF
-          )" \
-            --query "tasks[0].taskArn" \
-            --output text)"
+            --overrides "${OVERRIDES}" \
+            --query "tasks[0].taskArn" --output text)"
 
           if [[ -z "${TASK_ARN}" || "${TASK_ARN}" == "None" ]]; then
-            echo "Failed to start seed task" >&2
-            exit 1
+            echo "Failed to start seed task" >&2; exit 1
           fi
 
           aws ecs wait tasks-stopped --cluster "${ECS_CLUSTER}" --tasks "${TASK_ARN}"
-          EXIT_CODE="$(aws ecs describe-tasks --cluster "${ECS_CLUSTER}" --tasks "${TASK_ARN}" \
+          EXIT_CODE="$(aws ecs describe-tasks \
+            --cluster "${ECS_CLUSTER}" --tasks "${TASK_ARN}" \
             --query "tasks[0].containers[0].exitCode" --output text)"
-          echo "SEED_TASK_ARN=${TASK_ARN}" >> "$GITHUB_ENV"
-          echo "SEED_EXIT_CODE=${EXIT_CODE}" >> "$GITHUB_ENV"
 
           if [[ "${EXIT_CODE}" != "0" ]]; then
-            echo "Seed task failed with exit code ${EXIT_CODE}" >&2
-            exit 1
+            echo "Seed task failed with exit code ${EXIT_CODE}" >&2; exit 1
           fi
 
-      - name: Deploy to ECS
+      # -- Deploy API service ---------------------------------------------------
+      - name: Deploy API to ECS
         run: |
           set -euo pipefail
           aws ecs update-service \
             --cluster "${ECS_CLUSTER}" \
             --service "${ECS_SERVICE}" \
             --task-definition "${NEW_TASK_DEF_ARN}"
-          aws ecs wait services-stable --cluster "${ECS_CLUSTER}" --services "${ECS_SERVICE}"
 
+          echo "Waiting for API service to stabilise (max 12 min)..."
+          TIMEOUT=720 INTERVAL=15 ELAPSED=0
+          while [[ $ELAPSED -lt $TIMEOUT ]]; do
+            SVC="$(aws ecs describe-services --cluster "${ECS_CLUSTER}" --services "${ECS_SERVICE}" \
+              --query "services[0]" --output json)"
+            ROLLOUT="$(echo "${SVC}" | jq -r '.deployments[] | select(.status=="PRIMARY") | .rolloutState')"
+            RUNNING="$(echo "${SVC}" | jq -r '.runningCount')"
+            DESIRED="$(echo "${SVC}" | jq -r '.desiredCount')"
+            echo "[${ELAPSED}s] API: running=${RUNNING}/${DESIRED} rollout=${ROLLOUT}"
+            if [[ "${ROLLOUT}" == "COMPLETED" ]]; then echo "✓ API stable"; break; fi
+            if [[ "${ROLLOUT}" == "FAILED" ]]; then
+              echo "✗ API rollout FAILED — recent events:"; echo "${SVC}" | jq -r '.events[:5][]|.message'; exit 1
+            fi
+            sleep $INTERVAL; ELAPSED=$((ELAPSED + INTERVAL))
+          done
+          if [[ $ELAPSED -ge $TIMEOUT ]]; then
+            echo "✗ Timed out waiting for API service after ${TIMEOUT}s — recent events:"
+            aws ecs describe-services --cluster "${ECS_CLUSTER}" --services "${ECS_SERVICE}" \
+              --query "services[0].events[:8]" --output table; exit 1
+          fi
+
+      # -- Web: register task definition and deploy -----------------------------
+      - name: Register Web task definition
+        if: env.ECS_WEB_SERVICE != '' && env.ECS_WEB_TASK_DEFINITION != ''
+        run: |
+          set -euo pipefail
+          TASK_DEF_JSON="$(aws ecs describe-task-definition --task-definition "${ECS_WEB_TASK_DEFINITION}")"
+          NEW_WEB_TASK_DEF="$(echo "${TASK_DEF_JSON}" | jq --arg IMAGE "${WEB_IMAGE_URI}" --arg NAME "${WEB_CONTAINER_NAME}" '
+            .taskDefinition
+            | .containerDefinitions |= map(
+                if .name == $NAME
+                then .image = $IMAGE | del(.healthCheck)
+                else .
+                end)
+            | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities,
+                  .registeredAt, .registeredBy, .deregisteredAt)
+          ')"
+          NEW_WEB_TASK_DEF_ARN="$(aws ecs register-task-definition \
+            --cli-input-json "${NEW_WEB_TASK_DEF}" \
+            --query "taskDefinition.taskDefinitionArn" --output text)"
+          echo "NEW_WEB_TASK_DEF_ARN=${NEW_WEB_TASK_DEF_ARN}" >> "$GITHUB_ENV"
+
+      - name: Deploy Web to ECS
+        if: env.ECS_WEB_SERVICE != '' && env.NEW_WEB_TASK_DEF_ARN != ''
+        run: |
+          set -euo pipefail
+          aws ecs update-service \
+            --cluster "${ECS_CLUSTER}" \
+            --service "${ECS_WEB_SERVICE}" \
+            --task-definition "${NEW_WEB_TASK_DEF_ARN}"
+
+          echo "Waiting for Web service to stabilise (max 20 min)..."
+          TIMEOUT=1200 INTERVAL=15 ELAPSED=0
+          while [[ $ELAPSED -lt $TIMEOUT ]]; do
+            SVC="$(aws ecs describe-services --cluster "${ECS_CLUSTER}" --services "${ECS_WEB_SERVICE}" \
+              --query "services[0]" --output json)"
+            ROLLOUT="$(echo "${SVC}" | jq -r '.deployments[] | select(.status=="PRIMARY") | .rolloutState')"
+            RUNNING="$(echo "${SVC}" | jq -r '.runningCount')"
+            DESIRED="$(echo "${SVC}" | jq -r '.desiredCount')"
+            echo "[${ELAPSED}s] Web: running=${RUNNING}/${DESIRED} rollout=${ROLLOUT}"
+            if [[ "${ROLLOUT}" == "COMPLETED" ]]; then echo "✓ Web stable"; break; fi
+            if [[ "${ROLLOUT}" == "FAILED" ]]; then
+              echo "✗ Web rollout FAILED — recent events:"; echo "${SVC}" | jq -r '.events[:5][]|.message'
+              # Show stopped task stop reason for root cause
+              STOPPED="$(aws ecs list-tasks --cluster "${ECS_CLUSTER}" --service-name "${ECS_WEB_SERVICE}" \
+                --desired-status STOPPED --query "taskArns[0]" --output text 2>/dev/null || true)"
+              if [[ -n "${STOPPED}" && "${STOPPED}" != "None" ]]; then
+                echo "--- Stopped task reason ---"
+                aws ecs describe-tasks --cluster "${ECS_CLUSTER}" --tasks "${STOPPED}" \
+                  --query "tasks[0].{stopCode:stopCode,stoppedReason:stoppedReason,containers:containers[*].{name:name,exitCode:exitCode,reason:reason}}" \
+                  --output json
+              fi
+              exit 1
+            fi
+            sleep $INTERVAL; ELAPSED=$((ELAPSED + INTERVAL))
+          done
+          if [[ $ELAPSED -ge $TIMEOUT ]]; then
+            echo "✗ Timed out waiting for Web service after ${TIMEOUT}s — recent events:"
+            aws ecs describe-services --cluster "${ECS_CLUSTER}" --services "${ECS_WEB_SERVICE}" \
+              --query "services[0].events[:8]" --output table
+            # Dump stopped task reason so we know why health checks are failing
+            STOPPED="$(aws ecs list-tasks --cluster "${ECS_CLUSTER}" --service-name "${ECS_WEB_SERVICE}" \
+              --desired-status STOPPED --query "taskArns[0]" --output text 2>/dev/null || true)"
+            if [[ -n "${STOPPED}" && "${STOPPED}" != "None" ]]; then
+              echo "--- Most recent stopped task ---"
+              aws ecs describe-tasks --cluster "${ECS_CLUSTER}" --tasks "${STOPPED}" \
+                --query "tasks[0].{stopCode:stopCode,stoppedReason:stoppedReason,containers:containers[*].{name:name,exitCode:exitCode,reason:reason}}" \
+                --output json
+            fi
+            exit 1
+          fi
+
+      # -- Smoke test -----------------------------------------------------------
       - name: Smoke test
-        if: ${{ env.SMOKE_TEST_URL != '' }}
+        if: env.SMOKE_TEST_URL != ''
         run: |
           set -euo pipefail
           TARGET_URL="${SMOKE_TEST_URL}"
           if ! curl -fsS --retry 5 --retry-delay 5 --retry-all-errors "${TARGET_URL}"; then
-            echo "Smoke test failed for ${TARGET_URL}, trying ALB DNS fallback."
+            echo "Smoke test failed on ${TARGET_URL} - trying ALB DNS fallback..."
             TG_ARN="$(aws ecs describe-services \
-              --cluster "${ECS_CLUSTER}" \
-              --services "${ECS_SERVICE}" \
-              --query "services[0].loadBalancers[0].targetGroupArn" \
-              --output text)"
+              --cluster "${ECS_CLUSTER}" --services "${ECS_SERVICE}" \
+              --query "services[0].loadBalancers[0].targetGroupArn" --output text)"
             LB_ARN="$(aws elbv2 describe-target-groups \
               --target-group-arns "${TG_ARN}" \
-              --query "TargetGroups[0].LoadBalancerArns[0]" \
-              --output text)"
+              --query "TargetGroups[0].LoadBalancerArns[0]" --output text)"
             LB_DNS="$(aws elbv2 describe-load-balancers \
               --load-balancer-arns "${LB_ARN}" \
-              --query "LoadBalancers[0].DNSName" \
-              --output text)"
+              --query "LoadBalancers[0].DNSName" --output text)"
             TARGET_URL="http://${LB_DNS}/api/v1/health/ready"
             curl -fsS --retry 5 --retry-delay 5 --retry-all-errors "${TARGET_URL}"
           fi
@@ -213,16 +294,14 @@ jobs:
         if: always()
         run: |
           {
-            echo "## Deploy Dev Summary"
+            echo "## Deploy Dev"
             echo
-            echo "- Image: ${IMAGE_URI:-n/a}"
-            echo "- Task definition: ${NEW_TASK_DEF_ARN:-n/a}"
-            echo "- ECS service: ${ECS_SERVICE}"
-            echo "- Migration task: ${MIGRATION_TASK_ARN:-n/a}"
-            echo "- Migration exit code: ${MIGRATION_EXIT_CODE:-n/a}"
-            echo "- Seed task: ${SEED_TASK_ARN:-n/a}"
-            echo "- Seed exit code: ${SEED_EXIT_CODE:-n/a}"
-            if [[ -n "${SMOKE_TEST_URL}" ]]; then
-              echo "- Smoke test: ${SMOKE_TEST_RESOLVED_URL:-${SMOKE_TEST_URL}}"
-            fi
+            echo "| | |"
+            echo "|---|---|"
+            echo "| API image | \`${API_IMAGE_URI:-n/a}\` |"
+            echo "| API task definition | \`${NEW_TASK_DEF_ARN:-n/a}\` |"
+            echo "| Web image | \`${WEB_IMAGE_URI:-n/a}\` |"
+            echo "| Web task definition | \`${NEW_WEB_TASK_DEF_ARN:-n/a}\` |"
+            echo "| Migration exit code | \`${MIGRATION_EXIT_CODE:-n/a}\` |"
+            [[ -n "${SMOKE_TEST_URL:-}" ]] && echo "| Smoke test | ${SMOKE_TEST_RESOLVED_URL:-${SMOKE_TEST_URL}} |"
           } >> "$GITHUB_STEP_SUMMARY"

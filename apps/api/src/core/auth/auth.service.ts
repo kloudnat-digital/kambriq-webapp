@@ -23,6 +23,7 @@ import {
 } from './dto/auth.dto';
 import {
   comparePassword,
+  DEFAULT_LANGUAGE,
   EMAIL_TOKEN_EXPIRY_HOURS,
   EmailAlreadyExistsException,
   EmailService,
@@ -242,7 +243,12 @@ export class AuthService {
     });
 
     if (!storedToken.user || !storedToken.user.isActive) {
-      throw new UnauthorizedException('User account is inactive');
+      throw new UnauthorizedException(
+        this.t(
+          'auth.token.accountInactive',
+          storedToken.user?.preferredLanguage || DEFAULT_LANGUAGE,
+        ),
+      );
     }
 
     const roles = storedToken.user.userRoles.map((ur) => ur.role.code);

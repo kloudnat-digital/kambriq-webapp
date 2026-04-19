@@ -158,7 +158,7 @@ const Navbar: FC = () => {
         >
           {/* Logo */}
           <div className="flex lg:flex-1">
-            <Link href="/" className="-m-1.5 p-1.5" aria-label="KAMBRIQ — Accueil">
+            <Link href="/" className="-m-1.5 p-1.5" aria-label={t('homeAriaLabel')}>
               <span className="sr-only">Kambriq</span>
               <KambriqLogo />
             </Link>
@@ -226,7 +226,7 @@ const Navbar: FC = () => {
           >
             <SheetHeader className="flex flex-row items-center justify-between px-6 py-0">
               <SheetTitle>
-                <Link href="/" className="-m-1.5 p-1.5" aria-label="KAMBRIQ — Accueil">
+                <Link href="/" className="-m-1.5 p-1.5" aria-label={t('homeAriaLabel')}>
                   <span className="sr-only">Kambriq</span>
                   <KambriqLogo />
                 </Link>

@@ -50,6 +50,10 @@
     "notPassed": "Le candidat n'a pas réussi l'examen final",
     "alreadyIssued": "Certificat déjà émis : {kcaNumber}",
     "alreadyRevoked": "Ce certificat a déjà été révoqué",
-    "invalid": "Certificat introuvable"
+    "invalid": "Certificat introuvable",
+    "numberGenerationFailed": "Impossible de générer un numéro KCA unique après {attempts} tentatives"
+  },
+  "candidate": {
+    "invalidTransition": "Impossible de passer du statut \"{from}\" à \"{to}\". Statuts autorisés : [{allowed}]"
   }
 }

@@ -24,7 +24,7 @@ const modules = [
       },
       {
         title: 'Les 3 catégories de terrains commercialisables par KAMBRIQ',
-        description: 'Différencier les terrains TDT, VEFL et VEFIL.',
+        description: 'Différencier les terrains KAMBRIQ TFL™, VEFL™ et VEFIL™.',
       },
       {
         title: 'Pourquoi KAMBRIQ se limite à ces 3 catégories',
@@ -39,7 +39,7 @@ const modules = [
   {
     id: 2,
     name: 'Module 2',
-    title: 'Le Titre Foncier (TDT) : comprendre, lire, vérifier',
+    title: 'Le KAMBRIQ TFL™ : comprendre, lire, vérifier',
     duration: '1 semaine',
     description: "Permettre à l'agent de lire, interpréter et vérifier un Titre Foncier simple.",
     lectures: [
@@ -87,7 +87,7 @@ const modules = [
           'Comprendre le processus VEFIL, ses documents, les risques plus élevés et les contrôles renforcés de KAMBRIQ.',
       },
       {
-        title: 'Comparatif VEFL / VEFIL / TDT',
+        title: 'Comparatif KAMBRIQ TFL™ / VEFL™ / VEFIL™',
         description:
           'Tableau comparatif des trois catégories de terrains KAMBRIQ selon les critères clés.',
       },
@@ -119,7 +119,7 @@ const modules = [
       {
         title: 'Comment présenter un terrain KAMBRIQ',
         description:
-          "Structure de présentation d'un terrain selon son label (TDT, VEFL, VEFIL) et règles de présentation des documents.",
+          "Structure de présentation d'un terrain selon son label (TFL™, VEFL™, VEFIL™) et règles de présentation des documents.",
       },
       {
         title: 'Gérer les objections',
@@ -137,7 +137,7 @@ const modules = [
       },
       {
         title: 'Exercice pratique',
-        description: 'Cas pratique de vente : client diaspora hésitant entre TDT et VEFL.',
+        description: 'Cas pratique de vente : client diaspora hésitant entre TFL™ et VEFL™.',
       },
     ],
   },

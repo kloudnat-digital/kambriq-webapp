@@ -6,7 +6,6 @@ import { KambriqLogo } from '@/components/ui/kambriq-logo';
 import FooterLinkColumn from '@/components/layout/footer-link-column';
 import LinkedIn from '@/components/icons/linkedin';
 import Facebook from '@/components/icons/facebook';
-import Instagram from '@/components/icons/instagram';
 import Youtube from '@/components/icons/youtube';
 import NewsletterSignup from '../landing/newsletter-signup';
 import type { FC } from 'react';
@@ -18,7 +17,6 @@ const Footer: FC = async () => {
   const socialLinks = [
     { href: siteConfig.social.linkedin, Icon: LinkedIn, label: 'LinkedIn' },
     { href: siteConfig.social.facebook, Icon: Facebook, label: 'Facebook' },
-    { href: siteConfig.social.instagram, Icon: Instagram, label: 'Instagram' },
     { href: siteConfig.social.youtube, Icon: Youtube, label: 'YouTube' },
   ];
 
@@ -37,7 +35,6 @@ const Footer: FC = async () => {
                   { href: '/products/verify', label: t('verify') },
                   { href: '/products/kamnet', label: t('kamnet') },
                   { href: '/products/kbs', label: t('kbs') },
-                  { href: '#', label: t('kcpi'), disabled: true },
                 ]}
               />
               <div className="mt-10 md:mt-0">
@@ -47,12 +44,11 @@ const Footer: FC = async () => {
                     { href: '/about', label: t('about') },
                     { href: '/contact', label: t('contact') },
                     { href: '/faq', label: t('faq') },
-                    { href: '/help', label: t('helpCenter') },
                   ]}
                 />
               </div>
             </div>
-            <div className="md:grid md:grid-cols-2 md:gap-8">
+            <div>
               <FooterLinkColumn
                 heading={t('legal')}
                 links={[
@@ -60,19 +56,8 @@ const Footer: FC = async () => {
                   { href: '/legal/terms', label: t('terms') },
                   { href: '/legal/privacy', label: t('privacy') },
                   { href: '/legal/rgpd', label: t('rgpd') },
-                  { href: '#', label: t('manageCookies'), disabled: true },
                 ]}
               />
-              <div className="mt-10 md:mt-0">
-                <FooterLinkColumn
-                  heading={t('company')}
-                  links={[
-                    { href: '/about', label: t('about') },
-                    { href: '/careers', label: t('careers') },
-                    { href: '/partners', label: t('partners') },
-                  ]}
-                />
-              </div>
             </div>
           </div>
         </div>

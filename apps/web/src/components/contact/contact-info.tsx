@@ -1,4 +1,4 @@
-import { Mail, Phone, MessageCircle, Clock } from 'lucide-react';
+import { Mail, MessageCircle, Clock } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 export const ContactInfo = () => {
@@ -13,14 +13,8 @@ export const ContactInfo = () => {
     {
       icon: MessageCircle,
       label: t('whatsapp.label'),
-      value: '+237 6 XX XX XX XX',
-      href: 'https://wa.me/237600000000',
-    },
-    {
-      icon: Phone,
-      label: t('phone.label'),
-      value: '+237 6 XX XX XX XX',
-      href: 'tel:+237600000000',
+      value: '+33 7 45 90 98 56',
+      href: 'https://wa.me/33745909856',
     },
     { icon: Clock, label: t('hours.label'), value: t('hours.value'), href: null },
   ];

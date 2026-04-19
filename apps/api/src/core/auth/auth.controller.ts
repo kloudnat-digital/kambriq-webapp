@@ -11,8 +11,9 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
+import { I18nService } from 'nestjs-i18n';
 import { AuthService } from './auth.service';
-import { Public } from '@kambriq/common';
+import { DEFAULT_LANGUAGE, Public } from '@kambriq/common';
 import {
   AccountReactivationDto,
   EmailVerificationDto,
@@ -32,7 +33,10 @@ const COOKIE_PATH = '/api/auth';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly i18n: I18nService,
+  ) {}
 
   // ----- Cookie helpers ----------------------------------------
 
@@ -159,7 +163,9 @@ export class AuthController {
     // Body  → server-to-server calls from next-auth jwt() callback
     const token: string | undefined = req.cookies?.[REFRESH_COOKIE] || body?.refreshToken;
     if (!token) {
-      throw new BadRequestException('Refresh token missing');
+      throw new BadRequestException(
+        this.i18n.translate('auth.token.missingRefresh', { lang: DEFAULT_LANGUAGE }),
+      );
     }
 
     const tokens = await this.authService.refreshTokens(token);

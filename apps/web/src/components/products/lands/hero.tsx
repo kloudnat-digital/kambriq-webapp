@@ -10,8 +10,8 @@ const Hero = async () => {
       heroBadgeLabel={t('badge')}
       title={t('title')}
       subtitle={t('subtitle')}
-      cta1={{ label: t('cta'), href: '/kamnet' }}
-      cta2={{ label: t('cta2'), href: '/verify' }}
+      cta1={{ label: t('cta'), href: '/contact' }}
+      cta2={{ label: t('cta2'), href: '/products/verify' }}
       indicators={[
         { icon: BadgeCheck, label: t('indicator1') },
         { icon: ScanSearch, label: t('indicator2') },

@@ -11,7 +11,7 @@ import {
   UpdateLessonDto,
   UpdateModuleDto,
   UpdateQuestionDto,
-} from './course.dto.ts/course.dto';
+} from './course.dto';
 import { DEFAULT_QUIZ_QUESTION_COUNT, StorageService } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 

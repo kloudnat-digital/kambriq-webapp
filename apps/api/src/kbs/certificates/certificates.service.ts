@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { KbsPrismaService } from '../prisma/kbs-prisma.service';
 import { UsersService } from '../../core/users/users.service';
@@ -11,6 +6,7 @@ import { IssueCertificateDto, RevokeCertificateDto } from './dto/certificate.dto
 import {
   buildPaginatedResponse,
   CandidateStatus,
+  DEFAULT_LANGUAGE,
   EmailService,
   PaginationQuery,
   RoleCode,
@@ -30,11 +26,7 @@ export class KbsCertificatesService {
   ) {}
 
   // ----- Admin: Issue Certificate ---------------------------
-  async issueCertificate(
-    candidateId: string,
-    adminUserId: string,
-    dto?: IssueCertificateDto,
-  ) {
+  async issueCertificate(candidateId: string, adminUserId: string, dto?: IssueCertificateDto) {
     const candidate = await this.prisma.kbsCandidate.findUnique({
       where: { id: candidateId },
       include: { certificate: true },
@@ -61,13 +53,13 @@ export class KbsCertificatesService {
         'Attempt to issue certificate failed - candidate has not passed final exam',
         { candidateId, status: candidate.status },
       );
-      throw new NotFoundException(this.t('kbs.certificate.notPassed', 'en'));
+      throw new NotFoundException(this.t('kbs.certificate.notPassed', DEFAULT_LANGUAGE));
     }
 
     // Prevent duplicate certificates
     if (candidate.certificate) {
       throw new ConflictException(
-        this.t('kbs.certificate.alreadyIssued', 'en', {
+        this.t('kbs.certificate.alreadyIssued', DEFAULT_LANGUAGE, {
           kcaNumber: candidate.certificate.kcaNumber,
         }),
       );
@@ -99,11 +91,7 @@ export class KbsCertificatesService {
     }
 
     // Ensure KCA role is granted in Core
-    await this.usersService.addRole(
-      candidate.userId,
-      RoleCode.KCA_CERTIFIED,
-      adminUserId,
-    );
+    await this.usersService.addRole(candidate.userId, RoleCode.KCA_CERTIFIED, adminUserId);
 
     // Send certificate email
     const user = await this.usersService.findById(candidate.userId);
@@ -115,10 +103,9 @@ export class KbsCertificatesService {
       args: {
         firstName: user.firstName,
         kcaNumber,
-        validUntil: DateTime.fromJSDate(certificate.validUntil).toLocaleString(
-          DateTime.DATE_MED,
-          { locale: lang },
-        ),
+        validUntil: DateTime.fromJSDate(certificate.validUntil).toLocaleString(DateTime.DATE_MED, {
+          locale: lang,
+        }),
       },
     });
 
@@ -182,11 +169,7 @@ export class KbsCertificatesService {
 
   // ----- Admin: Revoke Certificate ---------------------------
 
-  async revokeCertificate(
-    candidateId: string,
-    adminUserId: string,
-    dto: RevokeCertificateDto,
-  ) {
+  async revokeCertificate(candidateId: string, adminUserId: string, dto: RevokeCertificateDto) {
     const candidate = await this.prisma.kbsCandidate.findUnique({
       where: { id: candidateId },
       include: { certificate: true },
@@ -205,9 +188,7 @@ export class KbsCertificatesService {
     }
 
     if (candidate.certificate.revokedAt) {
-      throw new ConflictException(
-        this.t('kbs.certificate.alreadyRevoked', 'en'),
-      );
+      throw new ConflictException(this.t('kbs.certificate.alreadyRevoked', 'en'));
     }
 
     const revoked = await this.prisma.kbsCertificate.update({
@@ -282,15 +263,14 @@ export class KbsCertificatesService {
       if (!exists) return kcaNumber;
     }
 
-    throw new Error('Failed to generate a unique KCA number after 10 attempts');
+    throw new Error(
+      this.t('kbs.certificate.numberGenerationFailed', DEFAULT_LANGUAGE, { attempts: 10 }),
+    );
   }
 
   private randomSuffix(length: number): string {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    return Array.from(
-      randomBytes(length),
-      (b) => charset[b % charset.length],
-    ).join('');
+    return Array.from(randomBytes(length), (b) => charset[b % charset.length]).join('');
   }
 
   private t(key: string, lang = 'fr', args?: Record<string, unknown>): string {

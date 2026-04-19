@@ -5,11 +5,13 @@ const Hero = () => {
   return (
     <SharedHero
       Icon={GraduationCap}
-      heroBadgeLabel={'Formation certifiante'}
-      title={'KAMBRIQ Business School (KBS)'}
-      subtitle={'Devenir Agent KAMNET commence par une formation certifiante KCA.'}
-      cta1={{ label: 'Demandez à rejoindre KBS', href: '/kbs/apply' }}
-      cta2={{ label: 'Je suis déjà candidat', href: '/kbs/become-kca' }}
+      heroBadgeLabel={'Formation professionnelle'}
+      title={'Devenez agent KAMNET certifié'}
+      subtitle={
+        'KAMBRIQ Business School (KBS) est la formation de référence pour maîtriser le foncier camerounais et rejoindre le réseau KAMNET.'
+      }
+      cta1={{ label: 'Nous contacter', href: '/contact' }}
+      cta2={{ label: 'En savoir plus sur KAMNET', href: '/products/kamnet' }}
     >
       <div className="mt-5 flex w-full items-center justify-center">
         <div className="flex max-w-lg items-center justify-center rounded-md bg-primary-100 px-6 py-2.5 outline outline-primary-700 sm:px-3.5">

@@ -1,27 +1,36 @@
 'use client';
 
-import { ArrowRight, BadgeCheck, CalendarCheck, ScanSearch } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import Autoplay from 'embla-carousel-autoplay';
-import { formatXAF } from '@/lib/money';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import type { FC } from 'react';
 import { useMemo } from 'react';
-import { Badge } from '../ui/badge';
-import { MOCK_LANDS } from '@/data/mock-lands';
+
+const HERO_SLIDES = [
+  {
+    id: '1',
+    src: 'https://images.unsplash.com/photo-1764719396639-66ea940bb757?q=80&w=2670&auto=format&fit=crop',
+    alt: 'Vue aérienne de terrain au Cameroun',
+  },
+  {
+    id: '2',
+    src: 'https://images.unsplash.com/photo-1764223531702-1614efb82e40?q=80&w=3732&auto=format&fit=crop',
+    alt: 'Vue cadastrale de parcelles au Cameroun',
+  },
+];
 
 const Hero: FC = () => {
   const t = useTranslations();
-  const locale = useLocale();
 
   const prefersReducedMotion =
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const carouselPlugins = useMemo(
-    () => (prefersReducedMotion ? [] : [Autoplay({ delay: 3000 })]),
+    () => (prefersReducedMotion ? [] : [Autoplay({ delay: 4000 })]),
     [prefersReducedMotion],
   );
 
@@ -42,7 +51,7 @@ const Hero: FC = () => {
             {/* CTAs */}
             <div className="flex flex-col justify-center gap-4 sm:flex-row lg:justify-start">
               <Button asChild size="lg" className="h-9">
-                <Link href="/products/lands">{t('hero.cta')}</Link>
+                <Link href="/methode">{t('hero.cta')}</Link>
               </Button>
               <Button
                 asChild
@@ -55,52 +64,23 @@ const Hero: FC = () => {
                 </Link>
               </Button>
             </div>
-
-            <div className="flex flex-wrap items-center justify-center gap-6 font-sans text-base/7 font-medium text-gray-900 lg:justify-start">
-              {[
-                { label: t('hero.since2019'), icon: CalendarCheck },
-                { label: t('hero.certifiedPartners'), icon: BadgeCheck },
-                { label: t('hero.cadastralVerification'), icon: ScanSearch },
-              ].map(({ label, icon: Icon }) => (
-                <div key={label} className="flex items-center gap-2">
-                  <Icon className="h-5 w-5 text-success" />
-                  <span>{label}</span>
-                </div>
-              ))}
-            </div>
           </div>
 
           <div className="relative px-4 sm:px-0">
             <Carousel className="w-full" opts={{ loop: true }} plugins={carouselPlugins}>
               <CarouselContent>
-                {MOCK_LANDS.map((slide) => (
+                {HERO_SLIDES.map((slide, index) => (
                   <CarouselItem key={slide.id}>
                     <div className="aspect-square overflow-hidden rounded-md border border-border shadow-(--shadow-card)">
                       <div className="relative h-full w-full">
                         <Image
                           fill
                           className="object-cover"
-                          src={slide.media[0].url}
-                          priority={slide.id === '1'}
-                          alt={`${slide.title} · ${slide.neighborhood}, ${slide.city}`}
+                          src={slide.src}
+                          priority={index === 0}
+                          alt={slide.alt}
                           sizes="(max-width: 1024px) 100vw, 50vw"
                         />
-                        {/* Overlay with land info */}
-                        <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
-                        <div className="absolute right-0 bottom-0 left-0 p-5 text-white">
-                          <Badge
-                            variant={'secondary'}
-                            className="mb-2 bg-white/20 text-white backdrop-blur-sm"
-                          >
-                            {slide.label.code}
-                          </Badge>
-                          <p className="text-base font-semibold">
-                            {slide.title} · {slide.sizeM2.toLocaleString(locale)} m²
-                          </p>
-                          <p className="text-sm text-white/80">
-                            {slide.neighborhood}, {slide.city} - {formatXAF(slide.price, locale)}
-                          </p>
-                        </div>
                       </div>
                     </div>
                   </CarouselItem>

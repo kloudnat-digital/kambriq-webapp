@@ -1,4 +1,4 @@
-import { MapPin, Network, Building2, ArrowRight, Blocks, Signature } from 'lucide-react';
+import { MapPin, Network, Building2, ArrowRight, Signature } from 'lucide-react';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 
@@ -34,12 +34,6 @@ const ProductsServices = async () => {
       key: 'kbs',
       href: '/products/kbs',
       available: true,
-    },
-    {
-      Icon: Blocks,
-      key: 'kcpi',
-      href: '#',
-      available: false,
     },
   ];
 

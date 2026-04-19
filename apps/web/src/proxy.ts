@@ -30,8 +30,20 @@ const PUBLIC_PATHS = [
 // '/' uses exact match; others use startsWith
 const REDIRECT_WHEN_AUTHED = ['/', '/login', '/register'];
 
-const isPublic = (pathname: string) =>
-  PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
+const LOCALES = ['fr', 'en'];
+
+const stripLocale = (pathname: string) => {
+  const segments = pathname.split('/');
+  if (segments.length > 1 && LOCALES.includes(segments[1])) {
+    return '/' + segments.slice(2).join('/') || '/';
+  }
+  return pathname;
+};
+
+const isPublic = (pathname: string) => {
+  const bare = stripLocale(pathname);
+  return PUBLIC_PATHS.some((p) => bare === p || bare.startsWith(p + '/'));
+};
 
 const getDefaultRoute = (roleCodes: string[]): string => {
   if (roleCodes.includes('CLIENT')) return '/mylands';
@@ -53,8 +65,9 @@ export default auth((req) => {
 
   // Authenticated user on landing/auth pages → redirect to their role home
   if (isAuthenticated) {
+    const bare = stripLocale(pathname);
     const shouldRedirect = REDIRECT_WHEN_AUTHED.some((p) =>
-      p === '/' ? pathname === '/' : pathname.startsWith(p),
+      p === '/' ? bare === '/' : bare.startsWith(p),
     );
     if (shouldRedirect) {
       const rawRoles =
@@ -75,5 +88,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|assets).*)'],
+  matcher: ['/((?!api|health|_next/static|_next/image|favicon.ico|assets).*)'],
 };

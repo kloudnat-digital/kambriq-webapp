@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import React from 'react';
 import Image from 'next/image';
+import { getTranslations } from 'next-intl/server';
 
 interface GridItemProps {
   title: string;
@@ -34,32 +35,29 @@ const GridItem: FC<GridItemProps> = ({ title, description, imageSrc, imageSize }
   );
 };
 
-const WhoCanRegisterKBS: FC = () => {
+const WhoCanRegisterKBS: FC = async () => {
+  const t = await getTranslations('products.kbs.whoCanRegister');
   return (
     <div className="py-6">
       <p className="mx-auto max-w-lg text-center text-4xl font-semibold tracking-tight text-balance text-gray-950 sm:text-5xl">
-        Qui peut s'inscrire ?
+        {t('heading')}
       </p>
       <div className="mt-10 grid grid-cols-1 gap-4 sm:mt-16 lg:grid-cols-6">
         <GridItem
-          title="Futurs Agents KAMNET"
-          description="Vous souhaitez rejoindre notre réseau d'agents certifiés et développer une activité commerciale dans l'immobilier foncier."
+          title={t('futureAgent.title')}
+          description={t('futureAgent.description')}
           imageSrc="https://images.unsplash.com/photo-1507537417841-81e85feb9bd2?q=80&w=1287&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
         />
         <GridItem
-          title="Diaspora camerounaise"
-          imageSize={{
-            width: 2574,
-          }}
-          description="Vous vivez à l'étranger et voulez comprendre le marché foncier camerounais pour investir ou accompagner votre entourage."
+          title={t('diaspora.title')}
+          imageSize={{ width: 2574 }}
+          description={t('diaspora.description')}
           imageSrc="https://images.unsplash.com/photo-1659947234294-b217aaeb25f8?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
         />
         <GridItem
-          title="Professionnels de l'immobilier"
-          imageSize={{
-            width: 2670,
-          }}
-          description="Vous travaillez déjà dans le secteur et souhaitez approfondir vos connaissances du foncier camerounais et des labels KAMBRIQ."
+          title={t('professionals.title')}
+          imageSize={{ width: 2670 }}
+          description={t('professionals.description')}
           imageSrc="https://images.unsplash.com/photo-1682924754698-9f0a3bcef68f?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
         />
       </div>

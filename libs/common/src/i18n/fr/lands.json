@@ -44,7 +44,8 @@
     "notConfirmed": "Seules les réservations confirmées peuvent progresser",
     "stepAlreadyDone": "Cette étape a déjà été enregistrée",
     "previousStepRequired": "L'étape précédente doit être complétée en premier",
-    "conflict": "Ce terrain vient d'être réservé par un autre agent. Veuillez essayer une autre parcelle."
+    "conflict": "Ce terrain vient d'être réservé par un autre agent. Veuillez essayer une autre parcelle.",
+    "alreadyCompleted": "Impossible d'annuler une réservation finalisée"
   },
   "invite": {
     "sent": "Invitation envoyée à {email}",

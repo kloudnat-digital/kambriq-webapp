@@ -51,6 +51,7 @@ export function ReservationDetailDialog({ reservation, onClose, onUpdate }: Prop
     setLoading(true);
     // TODO: wire to PATCH /lands/admin/reservations/:id/{action}
     await new Promise((r) => setTimeout(r, 600));
+    if (!reservation) return;
     onUpdate(reservation.id, action, reason);
     toast.success(t(`reservations.action.${action}Success`));
     setLoading(false);

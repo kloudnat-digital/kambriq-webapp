@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 
 import Navbar from '@/components/layout/navbar';
+import Footer from '@/components/layout/footer';
 import { FaqContent } from '@/components/faq/faq-content';
 
 const FaqHero = () => {
@@ -23,6 +24,7 @@ export default function FaqPage() {
         <FaqHero />
         <FaqContent />
       </main>
+      <Footer />
     </>
   );
 }

@@ -2,44 +2,54 @@ import { defineConfig, devices } from '@playwright/test';
 import { nxE2EPreset } from '@nx/playwright/preset';
 import { workspaceRoot } from '@nx/devkit';
 
-// In CI, point to the deployed URL. Locally, always port 3001 (3000 = backend).
+// In CI, point to the deployed URL via BASE_URL. Locally, default to port 3001.
 const baseURL = process.env['BASE_URL'] || 'http://localhost:3001';
+
+// Only start the local dev server when we are NOT pointing at a remote deployment.
+// When BASE_URL is set (CI post-deploy run), the server is already live.
+const webServer = process.env['BASE_URL']
+  ? undefined
+  : {
+      command: 'npx nx run web:dev',
+      url: 'http://localhost:3001',
+      reuseExistingServer: !process.env['CI'],
+      cwd: workspaceRoot,
+    };
 
 export default defineConfig({
   ...nxE2EPreset(__filename, { testDir: './src' }),
 
+  // Global timeout for each test
+  timeout: 30_000,
+
+  // Retry once on CI to handle transient flakiness
+  retries: process.env['CI'] ? 1 : 0,
+
+  // Run tests in parallel (disabled locally for easier debugging)
+  workers: process.env['CI'] ? 2 : 1,
+
   use: {
     baseURL,
-    // Capture a trace on the first retry of a failed test — viewable in Playwright UI
     trace: 'on-first-retry',
-    // Screenshot only on failure
     screenshot: 'only-on-failure',
-    // Video only on failure
     video: 'retain-on-failure',
   },
 
-  /* Start the Next.js dev server before running tests.
-   * reuseExistingServer: in local dev we reuse a running server if one exists.
-   * In CI we always start fresh. */
-  webServer: {
-    command: 'npx nx run web:dev',
-    url: 'http://localhost:3001',
-    reuseExistingServer: !process.env['CI'],
-    cwd: workspaceRoot,
-  },
+  ...(webServer ? { webServer } : {}),
 
   projects: [
-    // ── Local development: Chromium only (fast feedback) ──────────
+    // Chromium (always on, local + CI)
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
 
-    // ── CI: full cross-browser suite ──────────────────────────────
-    // Uncomment or enable via CI config when needed:
-    // { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    // { name: 'webkit',  use: { ...devices['Desktop Safari'] } },
-    // { name: 'mobile-chrome', use: { ...devices['Pixel 5'] } },
-    // { name: 'mobile-safari', use: { ...devices['iPhone 12'] } },
+    // Firefox and WebKit run in CI only (set CI=true to enable)
+    ...(process.env['CI']
+      ? [
+          { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+          { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+        ]
+      : []),
   ],
 });

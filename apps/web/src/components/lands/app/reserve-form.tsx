@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { getLandById, createReservation } from '@/lib/actions/lands';
 import { unwrap } from '@/lib/actions/unwrap';
 import { Spinner } from '@/components/ui/spinner';
@@ -27,6 +28,7 @@ interface Props {
 
 export const ReserveForm = ({ landId }: Props) => {
   const router = useRouter();
+  const t = useTranslations('app.reserveForm');
 
   const { data: land, isLoading: landLoading } = useQuery<LandSummary>({
     queryKey: ['land', landId],
@@ -56,11 +58,11 @@ export const ReserveForm = ({ landId }: Props) => {
 
   const validate = () => {
     const errors: Record<string, string> = {};
-    if (!form.clientName.trim()) errors.clientName = 'Nom requis';
-    if (!form.clientEmail.trim()) errors.clientEmail = 'Email requis';
+    if (!form.clientName.trim()) errors.clientName = t('fullNameRequired');
+    if (!form.clientEmail.trim()) errors.clientEmail = t('emailRequired');
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.clientEmail))
-      errors.clientEmail = 'Email invalide';
-    if (!form.clientPhone.trim()) errors.clientPhone = 'Téléphone requis';
+      errors.clientEmail = t('emailInvalid');
+    if (!form.clientPhone.trim()) errors.clientPhone = t('phoneRequired');
     return errors;
   };
 
@@ -94,7 +96,7 @@ export const ReserveForm = ({ landId }: Props) => {
           <ArrowLeft className="size-5" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Réserver ce terrain</h1>
+          <h1 className="text-xl font-bold text-gray-900">{t('pageTitle')}</h1>
           <p className="text-sm text-gray-500">{land.title}</p>
         </div>
       </div>
@@ -103,17 +105,17 @@ export const ReserveForm = ({ landId }: Props) => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-sm font-semibold text-gray-900">Informations client</h2>
+            <h2 className="mb-4 text-sm font-semibold text-gray-900">{t('clientInfo')}</h2>
 
             <div className="space-y-4">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                  Nom complet <span className="text-red-500">*</span>
+                  {t('fullName')} <span className="text-red-500">*</span>
                 </label>
                 <Input
                   value={form.clientName}
                   onChange={set('clientName')}
-                  placeholder="Prénom et nom du client"
+                  placeholder={t('fullNamePlaceholder')}
                   className={cn(
                     fieldErrors.clientName && 'border-red-400 focus-visible:ring-red-400',
                   )}
@@ -125,7 +127,7 @@ export const ReserveForm = ({ landId }: Props) => {
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                  Email <span className="text-red-500">*</span>
+                  {t('email')} <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="email"
@@ -139,20 +141,18 @@ export const ReserveForm = ({ landId }: Props) => {
                 {fieldErrors.clientEmail && (
                   <p className="mt-1 text-xs text-red-500">{fieldErrors.clientEmail}</p>
                 )}
-                <p className="mt-1 text-xs text-gray-400">
-                  Un accès au portail client sera créé avec cet email.
-                </p>
+                <p className="mt-1 text-xs text-gray-400">{t('emailHint')}</p>
               </div>
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                  Téléphone WhatsApp <span className="text-red-500">*</span>
+                  {t('phone')} <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="tel"
                   value={form.clientPhone}
                   onChange={set('clientPhone')}
-                  placeholder="+225 07 00 00 00 00"
+                  placeholder={t('phonePlaceholder')}
                   className={cn(
                     fieldErrors.clientPhone && 'border-red-400 focus-visible:ring-red-400',
                   )}
@@ -168,10 +168,7 @@ export const ReserveForm = ({ landId }: Props) => {
           {mutation.isError && (
             <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
               <AlertCircle className="mt-0.5 size-4 shrink-0" />
-              <span>
-                {(mutation.error as Error)?.message ??
-                  'Une erreur est survenue. Veuillez réessayer.'}
-              </span>
+              <span>{(mutation.error as Error)?.message ?? t('apiError')}</span>
             </div>
           )}
 
@@ -181,41 +178,41 @@ export const ReserveForm = ({ landId }: Props) => {
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
           >
             {mutation.isPending && <Spinner className="size-4" />}
-            Confirmer la réservation
+            {t('submit')}
           </button>
         </form>
 
         {/* Summary */}
         <div className="space-y-4">
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 text-sm font-semibold text-gray-900">Récapitulatif</h2>
+            <h2 className="mb-4 text-sm font-semibold text-gray-900">{t('summary')}</h2>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-500">Terrain</span>
+                <span className="text-gray-500">{t('summaryLand')}</span>
                 <span className="max-w-45 truncate text-right font-medium text-gray-900">
                   {land.title}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Superficie</span>
+                <span className="text-gray-500">{t('summarySize')}</span>
                 <span className="font-medium text-gray-900">
                   {land.sizeM2?.toLocaleString('fr-FR')} m²
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Prix / m²</span>
+                <span className="text-gray-500">{t('summaryPricePerSqm')}</span>
                 <span className="font-medium text-gray-900">{formatPrice(land.price)} F</span>
               </div>
               {acompte !== null && (
                 <>
                   <div className="flex justify-between border-t border-gray-100 pt-3">
-                    <span className="text-gray-500">Total estimé</span>
+                    <span className="text-gray-500">{t('summaryTotal')}</span>
                     <span className="font-medium text-gray-900">
                       {formatPrice(land.price * land.sizeM2)} F
                     </span>
                   </div>
                   <div className="flex justify-between text-primary">
-                    <span className="font-semibold">Acompte (5%)</span>
+                    <span className="font-semibold">{t('summaryDeposit')}</span>
                     <span className="font-bold">{formatPrice(acompte)} F</span>
                   </div>
                 </>
@@ -224,11 +221,8 @@ export const ReserveForm = ({ landId }: Props) => {
           </div>
 
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            <p className="font-medium">À noter</p>
-            <p className="mt-1">
-              L&apos;acompte de 5% est dû à la confirmation. Le client recevra un email d&apos;accès
-              au portail.
-            </p>
+            <p className="font-medium">{t('note')}</p>
+            <p className="mt-1">{t('noteText')}</p>
           </div>
         </div>
       </div>

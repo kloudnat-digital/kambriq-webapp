@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -26,36 +27,39 @@ const formatXAFShort = (v: number) =>
       ? `${(v / 1000).toFixed(0)}k`
       : String(v);
 
-export const AgentSalesChart = () => (
-  <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
-    <h3 className="mb-1 font-semibold text-gray-900">Commissions (6 derniers mois)</h3>
-    <p className="mb-5 text-xs text-gray-400">En XAF</p>
-    <ResponsiveContainer width="100%" height={220}>
-      <AreaChart data={DATA} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-        <defs>
-          <linearGradient id="commGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.15} />
-            <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-        <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-        <YAxis
-          tickFormatter={formatXAFShort}
-          tick={{ fontSize: 11 }}
-          axisLine={false}
-          tickLine={false}
-          width={52}
-        />
-        <Tooltip formatter={(v) => [`${formatXAFShort(Number(v))} XAF`, 'Commissions']} />
-        <Area
-          type="monotone"
-          dataKey="commissions"
-          stroke="#4f46e5"
-          strokeWidth={2}
-          fill="url(#commGrad)"
-        />
-      </AreaChart>
-    </ResponsiveContainer>
-  </div>
-);
+export const AgentSalesChart = () => {
+  const t = useTranslations('app.agentDashboard.salesChart');
+  return (
+    <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+      <h3 className="mb-1 font-semibold text-gray-900">{t('title')}</h3>
+      <p className="mb-5 text-xs text-gray-400">{t('subtitle')}</p>
+      <ResponsiveContainer width="100%" height={220}>
+        <AreaChart data={DATA} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="commGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.15} />
+              <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+          <YAxis
+            tickFormatter={formatXAFShort}
+            tick={{ fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+            width={52}
+          />
+          <Tooltip formatter={(v) => [`${formatXAFShort(Number(v))} XAF`, t('tooltipLabel')]} />
+          <Area
+            type="monotone"
+            dataKey="commissions"
+            stroke="#4f46e5"
+            strokeWidth={2}
+            fill="url(#commGrad)"
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};

@@ -22,6 +22,7 @@
     "alreadyVerified": "Votre identité est déjà vérifiée",
     "submitted": "Document soumis. Un administrateur examinera votre demande sous peu.",
     "noDocument": "Aucun document en attente de vérification",
-    "notPending": "Le document est dans le statut « {status} », non éligible à une révision"
+    "notPending": "Le document est dans le statut « {status} », non éligible à une révision",
+    "statusUpdated": "Statut de vérification d'identité mis à jour : {status}"
   }
 }

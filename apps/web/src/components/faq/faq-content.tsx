@@ -12,80 +12,59 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 
-const CATEGORIES = ['all', 'lands', 'verify', 'kbs', 'kamnet'] as const;
-type Category = (typeof CATEGORIES)[number];
-
-type FaqItem = { id: string; category: Exclude<Category, 'all'>; q: string; a: string };
+type FaqItem = { id: string; q: string; a: string };
 
 const FAQ_ITEMS: FaqItem[] = [
   {
     id: '1',
-    category: 'lands',
-    q: "Qu'est-ce que le TDT ?",
-    a: "Le TDT (Terrain Déjà Titré) est un terrain disposant d'un titre foncier définitif, le niveau de sécurité juridique le plus élevé au Cameroun.",
+    q: "Qu'est-ce que KAMBRIQ ?",
+    a: "KAMBRIQ est un conseil en stratégie foncière au Cameroun. Nous ne vendons pas de terrains — nous vérifions, sécurisons et accompagnons votre projet d'acquisition foncière.",
   },
   {
     id: '2',
-    category: 'lands',
-    q: "Puis-je acheter depuis l'étranger ?",
-    a: "Oui. KAMBRIQ accompagne les membres de la diaspora dans l'acquisition de terrains à distance, avec un agent dédié sur place.",
+    q: "Comment acheter un terrain depuis l'étranger ?",
+    a: "Contactez-nous par WhatsApp (+33 7 45 90 98 56) ou par email (contact@kambriq.com). Un agent KAMNET certifié vous accompagne de la sélection du terrain jusqu'à l'obtention de votre titre foncier.",
   },
   {
     id: '3',
-    category: 'lands',
-    q: 'Comment fonctionne la réservation ?',
-    a: 'Un acompte minimum de 5% du prix de vente est requis pour réserver un terrain. Le reste peut être payé en plusieurs tranches selon accord.',
+    q: "C'est quoi un titre foncier ?",
+    a: "C'est le seul document qui prouve que vous êtes propriétaire d'un terrain au Cameroun. Il est délivré par l'État, numéroté, et enregistré dans un livre foncier officiel.",
   },
   {
     id: '4',
-    category: 'verify',
-    q: "Qu'est-ce que KAMBRIQ Verify ?",
-    a: "KAMBRIQ Verify est un service de vérification de titres fonciers qui analyse l'authenticité d'un document et émet un rapport officiel sous 72h.",
+    q: "Qu'est-ce que le domaine national ?",
+    a: "C'est la catégorie foncière qui couvre plus de 95% du territoire camerounais. Sur le domaine national, personne n'est propriétaire — même pas le vendeur. Pour devenir propriétaire, il faut passer par l'immatriculation foncière.",
   },
   {
     id: '5',
-    category: 'verify',
-    q: 'Combien coûte une vérification ?',
-    a: 'Le prix varie selon le type de vérification. Consultez notre page Verify pour les tarifs actuels.',
+    q: 'Que signifient les labels KAMBRIQ TFL™, VEFL™ et VEFIL™ ?',
+    a: "Ce sont les 3 niveaux de sécurité de KAMBRIQ : KAMBRIQ TFL™ (le terrain a déjà un titre foncier individuel — sécurité maximale), KAMBRIQ VEFL™ (un titre foncier mère existe, le morcellement est en cours), KAMBRIQ VEFIL™ (le terrain est sur le domaine national, le processus d'immatriculation est à lancer ou en cours — risque plus élevé, accompagnement renforcé).",
   },
   {
     id: '6',
-    category: 'kbs',
-    q: "Qu'est-ce que la KBS ?",
-    a: 'La KAMBRIQ Business School est notre programme de formation certifiante pour devenir agent immobilier spécialisé en diaspora.',
+    q: "Qu'est-ce que KAMBRIQ VERIFY™ ?",
+    a: "C'est notre service de vérification foncière. 7 points de contrôle sur chaque terrain. 99 € pour une vérification externe, gratuit si vous achetez via KAMBRIQ.",
   },
   {
     id: '7',
-    category: 'kbs',
-    q: 'Combien de temps dure la formation ?',
-    a: 'La formation KBS comprend 6 modules et peut être complétée en 3 à 6 mois selon votre rythme.',
+    q: 'Comment devenir agent KAMNET ?',
+    a: 'En passant la certification KCA via KAMBRIQ Business School (KBS). Formation en ligne, examen final (score minimum 85%), certificat numéroté valable 2 ans. Consultez la page KBS pour en savoir plus.',
   },
   {
     id: '8',
-    category: 'kamnet',
-    q: "Qu'est-ce que KAMNET ?",
-    a: "KAMNET est notre réseau d'agents certifiés (KCA) qui accompagnent les clients dans leurs projets immobiliers au Cameroun.",
-  },
-  {
-    id: '9',
-    category: 'kamnet',
-    q: 'Comment devenir agent KAMNET ?',
-    a: 'Complétez la formation KBS, obtenez votre certification KCA, puis rejoignez le réseau KAMNET pour commencer à gagner des commissions.',
+    q: 'KAMBRIQ est-il un vendeur de terrains ?',
+    a: 'Non. KAMBRIQ est un conseil en stratégie foncière. Nous ne possédons pas les terrains. Notre rôle est de vérifier, sécuriser et accompagner.',
   },
 ];
 
 export const FaqContent = () => {
   const t = useTranslations('faq');
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState<Category>('all');
 
   const filtered = FAQ_ITEMS.filter((item) => {
-    if (category !== 'all' && item.category !== category) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      return item.q.toLowerCase().includes(q) || item.a.toLowerCase().includes(q);
-    }
-    return true;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return item.q.toLowerCase().includes(q) || item.a.toLowerCase().includes(q);
   });
 
   return (
@@ -99,23 +78,6 @@ export const FaqContent = () => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-      </div>
-
-      {/* Category filters */}
-      <div className="flex flex-wrap gap-2">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setCategory(cat)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-              category === cat
-                ? 'bg-primary-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {t(`categories.${cat}`)}
-          </button>
-        ))}
       </div>
 
       {/* Items */}

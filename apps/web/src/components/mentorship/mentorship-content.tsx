@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import { MessageCircle, Video, Calendar, Star } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -35,7 +38,13 @@ const MENTORS = [
   },
 ];
 
-const MentorCard = ({ mentor }: { mentor: (typeof MENTORS)[0] }) => (
+const MentorCard = ({
+  mentor,
+  t,
+}: {
+  mentor: (typeof MENTORS)[0];
+  t: ReturnType<typeof useTranslations>;
+}) => (
   <Card>
     <CardContent className="p-6">
       <div className="mb-4 flex items-start gap-4">
@@ -58,15 +67,15 @@ const MentorCard = ({ mentor }: { mentor: (typeof MENTORS)[0] }) => (
               : 'border-gray-200 bg-gray-50 text-gray-400'
           }
         >
-          {mentor.available ? 'Disponible' : 'Occupé'}
+          {mentor.available ? t('available') : t('busy')}
         </Badge>
       </div>
       <p className="mb-4 text-xs text-gray-500">
-        Spécialité : <span className="font-medium text-gray-700">{mentor.speciality}</span>
+        {t('speciality')} : <span className="font-medium text-gray-700">{mentor.speciality}</span>
       </p>
       <div className="flex gap-2">
         <Button size="sm" className="flex-1 text-xs" disabled={!mentor.available}>
-          <Calendar className="size-3.5" /> Planifier
+          <Calendar className="size-3.5" /> {t('planButton')}
         </Button>
         <Button variant="outline" size="sm" className="px-3">
           <MessageCircle className="size-3.5" />
@@ -79,23 +88,24 @@ const MentorCard = ({ mentor }: { mentor: (typeof MENTORS)[0] }) => (
   </Card>
 );
 
-export const MentorshipContent = () => (
-  <div className="mx-auto max-w-4xl space-y-8 px-6 py-10 sm:px-8">
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Mentorship KAMNET</h1>
-        <p className="text-sm text-gray-500">
-          Connectez-vous avec un mentor certifié pour accélérer votre développement.
-        </p>
+export const MentorshipContent = () => {
+  const t = useTranslations('app.mentorship');
+  return (
+    <div className="mx-auto max-w-4xl space-y-8 px-6 py-10 sm:px-8">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+          <p className="text-sm text-gray-500">{t('subtitle')}</p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/mentorship/analytics">Mes analytics</Link>
+        </Button>
       </div>
-      <Button asChild variant="outline">
-        <Link href="/mentorship/analytics">Mes analytics</Link>
-      </Button>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {MENTORS.map((m) => (
+          <MentorCard key={m.id} mentor={m} t={t} />
+        ))}
+      </div>
     </div>
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      {MENTORS.map((m) => (
-        <MentorCard key={m.id} mentor={m} />
-      ))}
-    </div>
-  </div>
-);
+  );
+};

@@ -5,11 +5,8 @@ import Hero from '@/components/landing/hero';
 import WhyKambriq from '@/components/landing/why-kambriq';
 import Process from '@/components/landing/process';
 import ProductsServices from '@/components/landing/products-services';
-import DiasporaBanner from '@/components/landing/diaspora-banner';
+import LandingCta from '@/components/landing/landing-cta';
 
-const PartnersSection = dynamic(() => import('@/components/landing/partners-section'));
-const Testimonials = dynamic(() => import('@/components/landing/testimonials'));
-const FAQ = dynamic(() => import('@/components/landing/faq'));
 const QuickActions = dynamic(() => import('@/components/floating/quick-actions'));
 
 export default async function HomePage() {
@@ -21,10 +18,7 @@ export default async function HomePage() {
         <WhyKambriq />
         <Process />
         <ProductsServices />
-        <DiasporaBanner />
-        <PartnersSection />
-        <Testimonials />
-        <FAQ />
+        <LandingCta />
       </main>
       <Footer />
       <QuickActions />

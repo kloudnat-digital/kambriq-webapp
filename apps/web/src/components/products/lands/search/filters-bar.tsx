@@ -71,7 +71,7 @@ export default function FiltersBar() {
           value={filters.region}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select a region" />
+            <SelectValue placeholder={t('regionPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
@@ -91,7 +91,7 @@ export default function FiltersBar() {
           value={filters.labelCode}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select a label type" />
+            <SelectValue placeholder={t('labelPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>

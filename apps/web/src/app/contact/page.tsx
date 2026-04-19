@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 
 import Navbar from '@/components/layout/navbar';
+import Footer from '@/components/layout/footer';
 import { ContactInfo } from '@/components/contact/contact-info';
 import { ContactForm } from '@/components/contact/contact-form';
 
@@ -33,6 +34,7 @@ export default function ContactPage() {
           </div>
         </section>
       </main>
+      <Footer />
     </>
   );
 }

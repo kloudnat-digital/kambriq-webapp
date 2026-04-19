@@ -59,7 +59,7 @@ const Admission = () => {
               </div>
             </div>
             <Button asChild variant="outline" size="lg" className="h-9 font-semibold">
-              <Link href="/products/verify">
+              <Link href="/kbs/enroll">
                 Candidater maintenant <ArrowRight />
               </Link>
             </Button>

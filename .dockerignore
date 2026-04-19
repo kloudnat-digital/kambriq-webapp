@@ -1,0 +1,15 @@
+.git
+.gitignore
+.github
+.husky
+node_modules
+.env
+.env.local
+.env*.local
+.next
+dist
+coverage
+*.log
+npm-debug.log*
+pnpm-debug.log*
+docs

@@ -41,20 +41,10 @@ import {
   UpdateLessonDto,
   UpdateModuleDto,
   UpdateQuestionDto,
-} from '../courses/course.dto.ts/course.dto';
-import {
-  CancelExamDto,
-  CreateExamQuestionDto,
-  UpdateExamQuestionDto,
-} from '../exam/dto/exam.dto';
-import {
-  CandidateFilterDto,
-  UpdateCandidateStatusDto,
-} from '../candidates/dto/candidate.dto';
-import {
-  IssueCertificateDto,
-  RevokeCertificateDto,
-} from '../certificates/dto/certificate.dto';
+} from '../courses/course.dto';
+import { CancelExamDto, CreateExamQuestionDto, UpdateExamQuestionDto } from '../exam/dto/exam.dto';
+import { CandidateFilterDto, UpdateCandidateStatusDto } from '../candidates/dto/candidate.dto';
+import { IssueCertificateDto, RevokeCertificateDto } from '../certificates/dto/certificate.dto';
 
 @ApiTags('KBS - Admin')
 @ApiBearerAuth()
@@ -81,8 +71,7 @@ export class KbsAdminController {
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({
     status: 403,
-    description:
-      'Insufficient permissions. Requires ADMIN_KBS or ADMIN_GLOBAL.',
+    description: 'Insufficient permissions. Requires ADMIN_KBS or ADMIN_GLOBAL.',
   })
   async createCourse(@Body() dto: CreateCourseDto) {
     return this.coursesService.createCourse(dto);
@@ -91,8 +80,7 @@ export class KbsAdminController {
   @Get('courses/:id')
   @ApiOperation({
     summary: 'Get course detail',
-    description:
-      'Returns the full course with all modules, lessons, and quiz question counts.',
+    description: 'Returns the full course with all modules, lessons, and quiz question counts.',
   })
   @ApiParam({
     name: 'id',
@@ -332,10 +320,7 @@ export class KbsAdminController {
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions.' })
   @ApiResponse({ status: 404, description: 'Question not found.' })
-  async updateQuestion(
-    @Param('id') id: string,
-    @Body() dto: UpdateQuestionDto,
-  ) {
+  async updateQuestion(@Param('id') id: string, @Body() dto: UpdateQuestionDto) {
     return this.coursesService.updateQuestion(id, dto);
   }
 
@@ -343,8 +328,7 @@ export class KbsAdminController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete a quiz question',
-    description:
-      'Permanently removes the question and all its answers from the module quiz pool.',
+    description: 'Permanently removes the question and all its answers from the module quiz pool.',
   })
   @ApiParam({
     name: 'id',
@@ -408,10 +392,7 @@ export class KbsAdminController {
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions.' })
   @ApiResponse({ status: 404, description: 'Exam question not found.' })
-  async updateExamQuestion(
-    @Param('id') id: string,
-    @Body() dto: UpdateExamQuestionDto,
-  ) {
+  async updateExamQuestion(@Param('id') id: string, @Body() dto: UpdateExamQuestionDto) {
     return this.examService.updateExamQuestion(id, dto);
   }
 
@@ -443,8 +424,7 @@ export class KbsAdminController {
   })
   @ApiResponse({
     status: 201,
-    description:
-      'Returns { uploadUrl: presigned PUT URL, fileUrl: permanent asset URL }.',
+    description: 'Returns { uploadUrl: presigned PUT URL, fileUrl: permanent asset URL }.',
   })
   @ApiResponse({ status: 400, description: 'Validation error.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
@@ -477,10 +457,7 @@ export class KbsAdminController {
   })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions.' })
-  async listCandidates(
-    @Query() query: PaginationQueryDto,
-    @Query() filter: CandidateFilterDto,
-  ) {
+  async listCandidates(@Query() query: PaginationQueryDto, @Query() filter: CandidateFilterDto) {
     return this.candidatesService.findAll(query, filter.status, filter.search);
   }
 
@@ -560,22 +537,12 @@ export class KbsAdminController {
     name: 'status',
     required: false,
     description: 'Filter by exam status',
-    enum: [
-      'SCHEDULED',
-      'IN_PROGRESS',
-      'SUBMITTED',
-      'PASSED',
-      'FAILED',
-      'CANCELLED',
-    ],
+    enum: ['SCHEDULED', 'IN_PROGRESS', 'SUBMITTED', 'PASSED', 'FAILED', 'CANCELLED'],
   })
   @ApiResponse({ status: 200, description: 'Paginated exam list returned.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions.' })
-  async listExams(
-    @Query() query: PaginationQueryDto,
-    @Query('status') status?: string,
-  ) {
+  async listExams(@Query() query: PaginationQueryDto, @Query('status') status?: string) {
     return this.examService.findAllExams({
       ...query,
       status: status as ExamStatus,
@@ -596,8 +563,7 @@ export class KbsAdminController {
   @ApiResponse({ status: 200, description: 'Exam cancelled.' })
   @ApiResponse({
     status: 400,
-    description:
-      'Exam is not in a cancellable state (SCHEDULED or IN_PROGRESS).',
+    description: 'Exam is not in a cancellable state (SCHEDULED or IN_PROGRESS).',
   })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions.' })
@@ -619,8 +585,7 @@ export class KbsAdminController {
   })
   @ApiResponse({
     status: 201,
-    description:
-      'Certificate issued. Returns the certificate with the KCA number.',
+    description: 'Certificate issued. Returns the certificate with the KCA number.',
   })
   @ApiResponse({
     status: 400,
@@ -638,11 +603,7 @@ export class KbsAdminController {
     @CurrentUser() admin: RequestUser,
     @Body() dto: IssueCertificateDto,
   ) {
-    return this.certificatesService.issueCertificate(
-      candidateId,
-      admin.id,
-      dto,
-    );
+    return this.certificatesService.issueCertificate(candidateId, admin.id, dto);
   }
 
   @Patch('certificates/:candidateId/revoke')
@@ -666,11 +627,7 @@ export class KbsAdminController {
     @CurrentUser() admin: RequestUser,
     @Body() dto: RevokeCertificateDto,
   ) {
-    return this.certificatesService.revokeCertificate(
-      candidateId,
-      admin.id,
-      dto,
-    );
+    return this.certificatesService.revokeCertificate(candidateId, admin.id, dto);
   }
 
   @Get('certificates')

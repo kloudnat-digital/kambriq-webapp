@@ -19,7 +19,8 @@
     "reactivateSuccess": "L'agent a été réactivé",
     "alreadySuspended": "Cet agent est déjà suspendu",
     "notSuspended": "Cet agent n'est pas suspendu",
-    "codeGenerated": "Code agent : {code}"
+    "codeGenerated": "Code agent : {code}",
+    "codeGenerationFailed": "Impossible de générer un code agent unique après {attempts} tentatives"
   },
   "lead": {
     "created": "Prospect créé avec succès",

@@ -1,6 +1,10 @@
 import { auth } from '@/auth';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_URL && process.env.NODE_ENV === 'production') {
+  throw new Error('NEXT_PUBLIC_API_URL is required in production');
+}
+const resolvedApiUrl = API_URL ?? 'http://localhost:3000';
 
 // Core
 
@@ -9,7 +13,7 @@ const baseFetch = async <T>(
   options?: RequestInit,
   authHeader?: string,
 ): Promise<T> => {
-  const res = await fetch(`${API_URL}/api/v1${path}`, {
+  const res = await fetch(`${resolvedApiUrl}/api/v1${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',

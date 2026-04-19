@@ -22,6 +22,7 @@
     "alreadyVerified": "Your identity is already verified",
     "submitted": "Document submitted. An administrator will review your request shortly.",
     "noDocument": "No document pending verification",
-    "notPending": "Document is in status \"{status}\", not eligible for review"
+    "notPending": "Document is in status \"{status}\", not eligible for review",
+    "statusUpdated": "ID verification status updated to {status}"
   }
 }

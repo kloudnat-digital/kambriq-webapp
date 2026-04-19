@@ -20,6 +20,7 @@ import {
 import {
   buildPaginatedResponse,
   comparePassword,
+  DEFAULT_LANGUAGE,
   EMAIL_CHANGE_TOKEN_EXPIRY_HOURS,
   EmailService,
   GRACE_PERIOD_DAYS,
@@ -82,10 +83,7 @@ export class UsersService {
   }
 
   // ----- Change own password -----------------------------
-  async changePassword(
-    userId: string,
-    dto: ChangePasswordDto,
-  ): Promise<{ message: string }> {
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<{ message: string }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -97,19 +95,14 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(this.t('user.notFound', 'fr', { id: userId }));
+      throw new NotFoundException(this.t('user.notFound', DEFAULT_LANGUAGE, { id: userId }));
     }
 
     const lang = user.preferredLanguage || 'fr';
 
-    const isCurrentValid = await comparePassword(
-      dto.currentPassword,
-      user.passwordHash,
-    );
+    const isCurrentValid = await comparePassword(dto.currentPassword, user.passwordHash);
     if (!isCurrentValid) {
-      throw new BadRequestException(
-        this.t('user.password.incorrectCurrent', lang),
-      );
+      throw new BadRequestException(this.t('user.password.incorrectCurrent', lang));
     }
 
     const newHash = await hashPassword(dto.newPassword);
@@ -210,9 +203,7 @@ export class UsersService {
 
       if (roles.length !== dto.roleCodes.length) {
         const foundCodes = roles.map((r) => r.code);
-        const missingCodes = dto.roleCodes.filter(
-          (code) => !foundCodes.includes(code),
-        );
+        const missingCodes = dto.roleCodes.filter((code) => !foundCodes.includes(code));
         throw new BadRequestException(
           this.t('user.invalidRoleCodes', 'en', {
             codes: missingCodes.join(', '),
@@ -314,11 +305,7 @@ export class UsersService {
   }
 
   // ----- Add a role to a user --------------------------------
-  async addRole(
-    userId: string,
-    roleCode: string,
-    grantedBy?: string,
-  ): Promise<void> {
+  async addRole(userId: string, roleCode: string, grantedBy?: string): Promise<void> {
     const role = await this.prisma.role.findUnique({
       where: { code: roleCode },
     });
@@ -388,9 +375,7 @@ export class UsersService {
 
     // Generate a password-reset token so the user can set their password on first login
     const rawToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(
-      Date.now() + RESET_TOKEN_EXPIRY_HOURS * 60 * 60 * 1000,
-    );
+    const expiresAt = new Date(Date.now() + RESET_TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
     await this.prisma.verificationToken.create({
       data: {
         userId: newUser.id,
@@ -400,10 +385,7 @@ export class UsersService {
       },
     });
 
-    const frontendUrl = this.config.get<string>(
-      'FRONTEND_URL',
-      'http://localhost:3001',
-    );
+    const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3001');
     const setPasswordUrl = `${frontendUrl}/auth/set-password?token=${rawToken}`;
 
     await this.emailService.send({
@@ -427,7 +409,7 @@ export class UsersService {
       select: { email: true, passwordHash: true, preferredLanguage: true, firstName: true },
     });
     if (!user) {
-      throw new NotFoundException(this.t('user.notFound', 'fr', { id: userId }));
+      throw new NotFoundException(this.t('user.notFound', DEFAULT_LANGUAGE, { id: userId }));
     }
 
     const lang = user.preferredLanguage || 'fr';
@@ -454,9 +436,7 @@ export class UsersService {
     });
 
     const rawToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(
-      Date.now() + EMAIL_CHANGE_TOKEN_EXPIRY_HOURS * 60 * 60 * 1000,
-    );
+    const expiresAt = new Date(Date.now() + EMAIL_CHANGE_TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
 
     await this.prisma.$transaction([
       this.prisma.user.update({ where: { id: userId }, data: { pendingEmail: newEmail } }),
@@ -495,7 +475,7 @@ export class UsersService {
       tokenRecord.usedAt ||
       tokenRecord.expiresAt < new Date()
     ) {
-      throw new BadRequestException(this.t('user.email.invalidToken', 'fr'));
+      throw new BadRequestException(this.t('user.email.invalidToken', DEFAULT_LANGUAGE));
     }
 
     const user = await this.prisma.user.findUnique({
@@ -503,7 +483,9 @@ export class UsersService {
       select: { email: true, pendingEmail: true, preferredLanguage: true, firstName: true },
     });
     if (!user?.pendingEmail) {
-      throw new BadRequestException(this.t('user.email.noPendingChange', user?.preferredLanguage || 'fr'));
+      throw new BadRequestException(
+        this.t('user.email.noPendingChange', user?.preferredLanguage || 'fr'),
+      );
     }
 
     const lang = user.preferredLanguage || 'fr';
@@ -545,16 +527,13 @@ export class UsersService {
   }
 
   // ----- Submit ID document (user) --------------------------------
-  async submitIdDocument(
-    userId: string,
-    dto: SubmitIdDocumentDto,
-  ): Promise<{ message: string }> {
+  async submitIdDocument(userId: string, dto: SubmitIdDocumentDto): Promise<{ message: string }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { preferredLanguage: true, profile: { select: { idVerificationStatus: true } } },
     });
     if (!user) {
-      throw new NotFoundException(this.t('user.notFound', 'fr', { id: userId }));
+      throw new NotFoundException(this.t('user.notFound', DEFAULT_LANGUAGE, { id: userId }));
     }
 
     const lang = user.preferredLanguage || 'fr';
@@ -627,7 +606,11 @@ export class UsersService {
     });
 
     this.logger.log('ID document reviewed', { userId, status: dto.status, adminId });
-    return { message: `ID verification status updated to ${dto.status}` };
+    return {
+      message: this.t('user.idVerification.statusUpdated', DEFAULT_LANGUAGE, {
+        status: dto.status,
+      }),
+    };
   }
 
   async getUserRoles(userId: string): Promise<string[]> {
@@ -651,9 +634,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(
-        this.t('user.notFound', 'fr', { id: userId }),
-      );
+      throw new NotFoundException(this.t('user.notFound', DEFAULT_LANGUAGE, { id: userId }));
     }
 
     return user;

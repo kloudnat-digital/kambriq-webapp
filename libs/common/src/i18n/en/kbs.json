@@ -50,6 +50,10 @@
     "notPassed": "Candidate has not passed the final exam",
     "alreadyIssued": "Certificate already issued: {kcaNumber}",
     "alreadyRevoked": "This certificate has already been revoked",
-    "invalid": "Certificate not found"
+    "invalid": "Certificate not found",
+    "numberGenerationFailed": "Failed to generate a unique KCA number after {attempts} attempts"
+  },
+  "candidate": {
+    "invalidTransition": "Cannot transition from \"{from}\" to \"{to}\". Allowed: [{allowed}]"
   }
 }

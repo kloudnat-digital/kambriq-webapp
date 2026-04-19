@@ -107,7 +107,7 @@ import { NewsletterModule } from '../newsletter/newsletter.module';
     { provide: APP_PIPE, useClass: ZodValidationPipe },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
-    { provide: APP_PIPE, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
   controllers: [AppController],
 })

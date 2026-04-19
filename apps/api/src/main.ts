@@ -71,6 +71,11 @@ async function bootstrap() {
     SwaggerModule.setup(`${prefix}/docs`, app, document);
   }
 
+  // ----- Graceful Shutdown -----
+  // Enables NestJS to intercept SIGTERM and call OnModuleDestroy hooks
+  // (e.g. Prisma $disconnect) before the container exits.
+  app.enableShutdownHooks();
+
   // ----- Start Server ----------
   const port = process.env.PORT || 3000;
   await app.listen(port);

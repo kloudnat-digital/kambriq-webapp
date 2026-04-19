@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Maximize2, CheckCircle2, XCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { getLandById } from '@/lib/actions/lands';
 import { unwrap } from '@/lib/actions/unwrap';
 import { Spinner } from '@/components/ui/spinner';
@@ -22,13 +23,6 @@ const STATUS_BADGE: Record<string, string> = {
   RESERVED: 'bg-orange-100 text-orange-700',
   SOLD: 'bg-gray-100 text-gray-500',
   ARCHIVED: 'bg-gray-100 text-gray-400',
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  AVAILABLE: 'Disponible',
-  RESERVED: 'Réservé',
-  SOLD: 'Vendu',
-  ARCHIVED: 'Archivé',
 };
 
 interface LandDetail {
@@ -58,10 +52,18 @@ interface Props {
 }
 
 export const LandDetailContent = ({ id }: Props) => {
+  const t = useTranslations('app.landDetail');
   const { data: session } = useSession();
   const userRoles = (session?.user as { roles?: string[] })?.roles ?? [];
   const canReserve = hasRole(userRoles, 'AGENT', 'ADMIN_LANDS', 'ADMIN_GLOBAL');
   const isAdmin = hasRole(userRoles, 'ADMIN_LANDS', 'ADMIN_GLOBAL');
+
+  const STATUS_LABEL_T: Record<string, string> = {
+    AVAILABLE: t('statusAvailable'),
+    RESERVED: t('statusReserved'),
+    SOLD: t('statusSold'),
+    ARCHIVED: t('statusArchived'),
+  };
 
   const [activeImg, setActiveImg] = useState(0);
 
@@ -107,11 +109,11 @@ export const LandDetailContent = ({ id }: Props) => {
               STATUS_BADGE[land.status] ?? 'bg-gray-100 text-gray-500',
             )}
           >
-            {STATUS_LABEL[land.status] ?? land.status}
+            {STATUS_LABEL_T[land.status] ?? land.status}
           </span>
           {land.isVerified && (
             <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-              Vérifié
+              {t('verified')}
             </span>
           )}
         </div>
@@ -127,7 +129,7 @@ export const LandDetailContent = ({ id }: Props) => {
                 <img src={cover.url} alt={land.title} className="h-full w-full object-cover" />
               ) : (
                 <div className="flex h-full items-center justify-center text-sm text-gray-400">
-                  Aucune photo disponible
+                  {t('noPhoto')}
                 </div>
               )}
             </div>
@@ -162,7 +164,7 @@ export const LandDetailContent = ({ id }: Props) => {
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <div className="rounded-xl border border-gray-200 bg-white p-4">
               <p className="text-xs font-medium tracking-wide text-gray-400 uppercase">
-                Superficie
+                {t('superficie')}
               </p>
               <p className="mt-1 flex items-center gap-1 text-lg font-bold text-gray-900">
                 <Maximize2 className="size-4 text-gray-400" />
@@ -170,12 +172,14 @@ export const LandDetailContent = ({ id }: Props) => {
               </p>
             </div>
             <div className="rounded-xl border border-gray-200 bg-white p-4">
-              <p className="text-xs font-medium tracking-wide text-gray-400 uppercase">Prix / m²</p>
+              <p className="text-xs font-medium tracking-wide text-gray-400 uppercase">
+                {t('pricePerSqm')}
+              </p>
               <p className="mt-1 text-lg font-bold text-gray-900">{formatPrice(land.price)} F</p>
             </div>
             <div className="rounded-xl border border-gray-200 bg-white p-4">
               <p className="text-xs font-medium tracking-wide text-gray-400 uppercase">
-                Total estimé
+                {t('totalEstimate')}
               </p>
               <p className="mt-1 text-lg font-bold text-gray-900">
                 {formatPrice(Math.round(land.price * land.sizeM2))} F
@@ -186,7 +190,7 @@ export const LandDetailContent = ({ id }: Props) => {
           {/* Description */}
           {land.description && (
             <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <h2 className="mb-2 text-sm font-semibold text-gray-900">Description</h2>
+              <h2 className="mb-2 text-sm font-semibold text-gray-900">{t('description')}</h2>
               <p className="text-sm leading-relaxed text-gray-600">{land.description}</p>
             </div>
           )}
@@ -196,7 +200,7 @@ export const LandDetailContent = ({ id }: Props) => {
             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
               <div className="flex items-center gap-2 border-b border-gray-100 px-5 py-3">
                 <MapPin className="size-4 text-gray-400" />
-                <h2 className="text-sm font-semibold text-gray-900">Localisation</h2>
+                <h2 className="text-sm font-semibold text-gray-900">{t('location')}</h2>
               </div>
               <div className="h-64">
                 <LandMap latitude={land.latitude} longitude={land.longitude} title={land.title} />
@@ -207,7 +211,7 @@ export const LandDetailContent = ({ id }: Props) => {
           {/* Features */}
           {land.features && land.features.length > 0 && (
             <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <h2 className="mb-3 text-sm font-semibold text-gray-900">Caractéristiques</h2>
+              <h2 className="mb-3 text-sm font-semibold text-gray-900">{t('features')}</h2>
               <ul className="space-y-2">
                 {land.features.map((f: string, i: number) => (
                   <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
@@ -238,16 +242,16 @@ export const LandDetailContent = ({ id }: Props) => {
                 href={`/lands/${id}/reserve`}
                 className="flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
               >
-                Réserver ce terrain
+                {t('reserve')}
               </Link>
             ) : land.status === 'AVAILABLE' ? (
               <p className="rounded-xl bg-gray-50 px-4 py-3 text-center text-sm text-gray-500">
-                Contactez un agent pour réserver
+                {t('contactAgent')}
               </p>
             ) : (
               <div className="flex items-center gap-2 rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-500">
                 <XCircle className="size-4" />
-                {STATUS_LABEL[land.status] ?? land.status} — non disponible
+                {STATUS_LABEL_T[land.status] ?? land.status} — {t('notAvailable')}
               </div>
             )}
           </div>

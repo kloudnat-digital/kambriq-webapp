@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { JetBrains_Mono } from 'next/font/google';
-import { getLocale, getMessages } from 'next-intl/server';
+import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
 import { auth } from '@/auth';
 import { Providers } from '@/components/providers';
@@ -17,14 +17,16 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 // Metadata
-export const metadata: Metadata = {
-  title: {
-    default: 'KAMBRIQ',
-    template: '%s | KAMBRIQ',
-  },
-  description: "Investissez dans l'immobilier en toute confiance",
-  keywords: ['immobilier', 'Cameroun', 'terrains', 'investissement', 'KAMBRIQ'],
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('metadata');
+  return {
+    title: {
+      default: 'KAMBRIQ',
+      template: '%s | KAMBRIQ',
+    },
+    description: t('description'),
+  };
+}
 
 // Root Layout
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

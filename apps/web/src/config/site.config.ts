@@ -5,9 +5,10 @@ export const siteConfig = {
   contact: {
     email: 'contact@kambriq.com',
     whatsapp: {
-      number: '+33646426706',
-      displayNumber: '+33 6 46 42 67 06',
-      message: "Bonjour, je souhaite obtenir plus d'informations sur KAMBRIQ.",
+      number: '+33745909856',
+      displayNumber: '+33 7 45 90 98 56',
+      message:
+        "Bonjour, j'ai un projet foncier au Cameroun et je voudrais en savoir plus sur KAMBRIQ.",
     },
     phone: {
       local: '+237653420268',
@@ -18,7 +19,7 @@ export const siteConfig = {
 
   social: {
     linkedin: 'https://www.linkedin.com/company/kambriq',
-    facebook: 'https://www.facebook.com/kambriq',
+    facebook: 'https://www.facebook.com/profile.php?id=61576162540542',
     instagram: 'https://www.instagram.com/kambriq',
     youtube: 'https://www.youtube.com/@kambriq',
     tiktok: 'https://www.tiktok.com/@kambriq',

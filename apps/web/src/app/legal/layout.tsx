@@ -1,15 +1,17 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 
 import Navbar from '@/components/layout/navbar';
 
 const LEGAL_LINKS = [
-  { href: '/legal/mentions', label: 'Mentions légales' },
-  { href: '/legal/terms', label: 'CGU' },
-  { href: '/legal/privacy', label: 'Confidentialité' },
-  { href: '/legal/rgpd', label: 'RGPD' },
-];
+  { href: '/legal/mentions', labelKey: 'mentions' },
+  { href: '/legal/terms', labelKey: 'terms' },
+  { href: '/legal/privacy', labelKey: 'privacy' },
+  { href: '/legal/rgpd', labelKey: 'rgpd' },
+] as const;
 
-export default function LegalLayout({ children }: { children: React.ReactNode }) {
+export default async function LegalLayout({ children }: { children: React.ReactNode }) {
+  const t = await getTranslations('legal.nav');
   return (
     <>
       <Navbar />
@@ -22,7 +24,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
                 href={link.href}
                 className="shrink-0 text-sm font-medium text-gray-600 transition-colors hover:text-primary-600"
               >
-                {link.label}
+                {t(link.labelKey)}
               </Link>
             ))}
           </nav>

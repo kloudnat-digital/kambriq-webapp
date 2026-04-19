@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Sidebar } from './sidebar';
 
 interface MobileNavProps {
@@ -13,6 +14,7 @@ interface MobileNavProps {
 
 export const MobileNav = ({ userRoles, userName, userRole, initials }: MobileNavProps) => {
   const [open, setOpen] = useState(false);
+  const t = useTranslations('a11y');
 
   return (
     <>
@@ -20,7 +22,7 @@ export const MobileNav = ({ userRoles, userName, userRole, initials }: MobileNav
       <button
         onClick={() => setOpen(true)}
         className="flex size-10 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 lg:hidden"
-        aria-label="Ouvrir le menu"
+        aria-label={t('openMenu')}
       >
         <Menu className="size-5" />
       </button>
@@ -37,7 +39,7 @@ export const MobileNav = ({ userRoles, userName, userRole, initials }: MobileNav
               <button
                 onClick={() => setOpen(false)}
                 className="flex size-8 items-center justify-center rounded-lg text-gray-400 hover:text-white"
-                aria-label="Fermer le menu"
+                aria-label={t('closeMenu')}
               >
                 <X className="size-4" />
               </button>

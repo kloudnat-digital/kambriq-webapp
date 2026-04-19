@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 
 type Client = {
@@ -19,25 +22,32 @@ const STATUS_STYLES = {
   reserved: 'border-blue-300 bg-blue-50 text-blue-700',
   completed: 'border-success/30 bg-success/10 text-success',
 };
-const STATUS_LABELS = { in_progress: 'En cours', reserved: 'Réservé', completed: 'Vendu' };
 
-export const AgentRecentClients = () => (
-  <div className="rounded-2xl border border-border bg-white shadow-sm">
-    <div className="border-b border-border px-6 py-4">
-      <h3 className="font-semibold text-gray-900">Clients récents</h3>
-    </div>
-    <div className="divide-y divide-border">
-      {MOCK.map((c) => (
-        <div key={c.name} className="flex items-center justify-between px-6 py-3">
-          <div>
-            <p className="text-sm font-medium text-gray-900">{c.name}</p>
-            <p className="text-xs text-gray-500">
-              {c.land} · {c.date}
-            </p>
+export const AgentRecentClients = () => {
+  const t = useTranslations('app.agentDashboard.recentClients');
+  const STATUS_LABELS = {
+    in_progress: t('statusInProgress'),
+    reserved: t('statusReserved'),
+    completed: t('statusCompleted'),
+  };
+  return (
+    <div className="rounded-2xl border border-border bg-white shadow-sm">
+      <div className="border-b border-border px-6 py-4">
+        <h3 className="font-semibold text-gray-900">{t('title')}</h3>
+      </div>
+      <div className="divide-y divide-border">
+        {MOCK.map((c) => (
+          <div key={c.name} className="flex items-center justify-between px-6 py-3">
+            <div>
+              <p className="text-sm font-medium text-gray-900">{c.name}</p>
+              <p className="text-xs text-gray-500">
+                {c.land} · {c.date}
+              </p>
+            </div>
+            <Badge className={STATUS_STYLES[c.status]}>{STATUS_LABELS[c.status]}</Badge>
           </div>
-          <Badge className={STATUS_STYLES[c.status]}>{STATUS_LABELS[c.status]}</Badge>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};

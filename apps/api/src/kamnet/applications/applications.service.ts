@@ -12,6 +12,7 @@ import { KbsCertificatesService } from '../../kbs/certificates/certificates.serv
 import { I18nService } from 'nestjs-i18n';
 import {
   buildPaginatedResponse,
+  DEFAULT_LANGUAGE,
   EmailService,
   KamnetAgentTier,
   KamnetApplicationStatus,
@@ -66,9 +67,7 @@ export class KamnetApplicationsService {
       throw new ConflictException(this.t('kamnet.agent.alreadyExists'));
     }
 
-    const kcaResult = await this.certificatesService.verifyCertificate(
-      dto.kcaNumber,
-    );
+    const kcaResult = await this.certificatesService.verifyCertificate(dto.kcaNumber);
 
     if (!kcaResult.valid) {
       throw new ForbiddenException(this.t('kamnet.application.invalidKCA'));
@@ -128,11 +127,7 @@ export class KamnetApplicationsService {
   }
 
   // ----- Admin: Review Application ----- //
-  async review(
-    applicationId: string,
-    adminUserId: string,
-    dto: ReviewApplicationDto,
-  ) {
+  async review(applicationId: string, adminUserId: string, dto: ReviewApplicationDto) {
     const application = await this.prisma.kamnetApplication.findUnique({
       where: { id: applicationId },
     });
@@ -180,11 +175,7 @@ export class KamnetApplicationsService {
         },
       });
 
-      await this.usersService.addRole(
-        application.userId,
-        RoleCode.AGENT,
-        adminUserId,
-      );
+      await this.usersService.addRole(application.userId, RoleCode.AGENT, adminUserId);
 
       await this.emailService.send({
         to: user.email,
@@ -256,8 +247,8 @@ export class KamnetApplicationsService {
 
   // ----- Private Helpers ----- //
 
-  private t(key: string, lang = 'fr', args?: Record<string, unknown>) {
-    return this.i18n.translate(key, { lang, args });
+  private t(key: string, lang = 'fr', args?: Record<string, unknown>): string {
+    return this.i18n.translate(key, { lang, args }) as string;
   }
 
   /**
@@ -276,14 +267,13 @@ export class KamnetApplicationsService {
       if (!exists) return agentCode;
     }
 
-    throw new Error('Failed to generate a unique agent code after 10 attempts');
+    throw new Error(
+      this.t('kamnet.agent.codeGenerationFailed', DEFAULT_LANGUAGE, { attempts: 10 }),
+    );
   }
 
   private randomSuffix(length: number): string {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    return Array.from(
-      randomBytes(length),
-      (b) => charset[b % charset.length],
-    ).join('');
+    return Array.from(randomBytes(length), (b) => charset[b % charset.length]).join('');
   }
 }

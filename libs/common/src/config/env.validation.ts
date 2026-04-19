@@ -8,9 +8,9 @@ export const envSchema = z.object({
 
   // ----- Database URLS (One Per Module) -----
   DATABASE_URL_CORE: z.string().min(1, 'DATABASE_URL_CORE is required'),
-  DATABASE_URL_KBS: z.string().optional(),
-  DATABASE_URL_KAMNET: z.string().optional(),
-  DATABASE_URL_LANDS: z.string().optional(),
+  DATABASE_URL_KBS: z.string().min(1, 'DATABASE_URL_KBS is required'),
+  DATABASE_URL_KAMNET: z.string().min(1, 'DATABASE_URL_KAMNET is required'),
+  DATABASE_URL_LANDS: z.string().min(1, 'DATABASE_URL_LANDS is required'),
   DATABASE_URL_VERIFY: z.string().optional(),
   DATABASE_URL_VALUATION: z.string().optional(),
 

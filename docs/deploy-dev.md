@@ -1,64 +1,44 @@
 # Dev Deployment
 
-This document describes the one-off migration workflow and deployment to ECS Fargate.
+> Full process documented in [ADR-004](./adr/ADR-004-cicd-github-actions-ecs.md).
 
-## Required environment variables
+## Quick reference
 
-Set these before running `scripts/deploy-dev.sh`:
+### Automated (normal flow)
 
-- `AWS_REGION`
-- `ECR_REPO` (example: `051551940370.dkr.ecr.eu-central-1.amazonaws.com/kambriq-api`)
-- `ECS_CLUSTER`
-- `ECS_SERVICE`
-- `ECS_TASK_DEFINITION`
-- `ECS_SUBNETS` (comma-separated subnet IDs)
-- `ECS_SECURITY_GROUPS` (comma-separated security group IDs)
+Push to `develop` — the CI pipeline handles everything:
 
-Optional:
-- `CONTAINER_NAME` (default: `api`)
-- `ASSIGN_PUBLIC_IP` (default: `DISABLED`)
-- `SMOKE_TEST_URL` (example: `https://dev.kambriq.com/api/v1/health/ready`)
+1. Quality checks (lint + typecheck + test)
+2. Build API image → `kambriq-api:sha-{7char}` + `kambriq-api:dev-latest`
+3. Build web image → `kambriq-web:sha-{7char}` + `kambriq-web:web-dev-latest`
+4. Run Prisma migrations (one-off Fargate task, blocking)
+5. Update API ECS service → wait for stability
+6. Update web ECS service → wait for stability
+7. Smoke test `https://dev.kambriq.com/api/v1/health/ready`
 
-## Required tools
+### Manual redeploy (no rebuild)
 
-- `aws` (AWS CLI)
-- `docker`
-- `git`
-- `jq`
-- `npm`
-- `curl` (only if `SMOKE_TEST_URL` is set)
+Go to **Actions → Deploy Dev → Run workflow**, then set:
 
-## One-off migration command (ECS task override)
+- `api_image_tag`: existing ECR tag (e.g. `sha-abc1234` or `dev-latest`)
+- `web_image_tag`: existing ECR tag (e.g. `sha-abc1234` or `web-dev-latest`)
+- `run_seed`: `true` only on first deploy
 
-The script and CI/CD use this command:
+### Rollback
 
-```
-node prisma/run-migrations.js
-```
+Same as manual redeploy — supply the previous known-good SHA tags.
 
-## Seed data (dev only)
+## Required GitHub Environment variables
 
-Dev CI/CD runs `npm run db:seed` as a one-off ECS task after migrations.
-It requires the following secrets on the task definition:
-- `DATABASE_URL_CORE`
-- `DATABASE_URL_KBS`
-- `DATABASE_URL_KAMNET`
-- `DATABASE_URL_LANDS`
+Set in **Settings → Environments → dev**. See [ADR-004](./adr/ADR-004-cicd-github-actions-ecs.md#github-actions-environment-variables) for the full table.
 
-Note: the core schema no longer includes `Permission` or `RolePermission` tables,
-so they should not be expected during verification.
+Key variables: `AWS_REGION`, `ECR_REPO`, `ECR_WEB_REPO`, `ECS_CLUSTER`, `ECS_SERVICE`, `ECS_WEB_SERVICE`, `ECS_TASK_DEFINITION`, `ECS_WEB_TASK_DEFINITION`, `ECS_SUBNETS`, `ECS_SECURITY_GROUPS`, `SMOKE_TEST_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`.
 
-## Local dev deploy
+Key secrets: `AWS_ROLE_ARN` (from Terraform output `github_actions_role_arn`).
 
-Notes:
-- The script tags and pushes both `vX.Y.Z` and `latest` images.
-- If the smoke test URL fails, it falls back to the ALB DNS health check.
+## First deployment checklist
 
-```
-./scripts/deploy-dev.sh
-```
-
-## End-to-end sequence (infra → API)
-
-Infra must be applied and GitHub env vars must be populated before this deploy.
-See `kambriq-infra/docs/deployment-sequence.md` for the complete order.
+- [ ] Terraform applied for `envs/shared/` and `envs/dev/`
+- [ ] GitHub environment `dev` created with all variables and secrets populated
+- [ ] At least one image pushed to ECR (either via CI or manually)
+- [ ] Trigger deploy with `run_seed: true` to populate initial data

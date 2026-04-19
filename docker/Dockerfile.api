@@ -1,0 +1,67 @@
+# ----- KAMBRIQ API - Production Dockerfile ----- #
+
+FROM node:24.13.1-bookworm AS builder
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY prisma ./prisma
+
+RUN pnpm install --frozen-lockfile
+RUN npx prisma generate --schema prisma/core/schema.prisma && \
+    npx prisma generate --schema prisma/kbs/schema.prisma && \
+    npx prisma generate --schema prisma/kamnet/schema.prisma && \
+    npx prisma generate --schema prisma/lands/schema.prisma
+
+COPY tsconfig.base.json ./
+COPY apps/api ./apps/api/
+COPY libs ./libs/
+
+RUN pnpm run build
+
+# ----- Production image -----
+FROM node:24.13.1-bookworm-slim AS production
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+RUN groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -m -s /usr/sbin/nologin appuser
+
+RUN apt-get update && apt-get install -y --no-install-recommends openssl curl && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
+COPY --from=builder /app/prisma ./prisma/
+
+# Pre-create Prisma client output dirs so the postinstall (prisma generate) can write.
+# The generated clients are overwritten by the COPY from builder below, but the
+# engine binaries extracted here (as root) remain — preventing EACCES when the
+# non-root appuser runs migrations at deploy time.
+RUN mkdir -p libs/common/src/prisma/core-client \
+             libs/common/src/prisma/kbs-client \
+             libs/common/src/prisma/kamnet-client \
+             libs/common/src/prisma/lands-client && \
+    pnpm install --frozen-lockfile --prod && \
+    pnpm store prune
+
+# Copy pre-generated Prisma clients from builder — no prisma generate needed at runtime
+COPY --from=builder /app/libs/common/src/prisma ./libs/common/src/prisma
+
+COPY --from=builder /app/dist/apps/api ./dist/apps/api
+COPY --from=builder /app/libs/common/src/i18n ./libs/common/src/i18n
+
+USER appuser
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:3000/api/v1/health/ready || exit 1
+
+CMD ["node", "dist/apps/api/main.js"]

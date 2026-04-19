@@ -8,11 +8,7 @@ import {
 } from '@nestjs/common';
 import { UsersService } from '../../core/users/users.service';
 import { KbsPrismaService } from '../prisma/kbs-prisma.service';
-import {
-  EnrollDto,
-  SubmitQuizDto,
-  UpdateCandidateStatusDto,
-} from './dto/candidate.dto';
+import { EnrollDto, SubmitQuizDto, UpdateCandidateStatusDto } from './dto/candidate.dto';
 import {
   buildPaginatedResponse,
   CandidateStatus,
@@ -84,9 +80,7 @@ export class KbsCandidatesService {
     const totalModules = await this.prisma.kbsModule.count();
     const completedModules = candidate.progress.filter((p) => p.passed).length;
     const progressPercent =
-      totalModules > 0
-        ? Math.round((completedModules / totalModules) * 100)
-        : 0;
+      totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0;
 
     return {
       id: candidate.id,
@@ -136,7 +130,8 @@ export class KbsCandidatesService {
       where: { id: moduleId },
       include: { course: { select: { id: true } } },
     });
-    if (!mod) throw new NotFoundException(`Module ${moduleId} not found`);
+    if (!mod)
+      throw new NotFoundException(this.t('kbs.module.notFound', undefined, { id: moduleId }));
 
     // Check prerequisite: previous modules must be completed (ordered by order)
     const previousModules = await this.prisma.kbsModule.findMany({
@@ -249,12 +244,15 @@ export class KbsCandidatesService {
       correctCount,
       totalQuestions: questions.length,
       passingScore: MODULE_PASSING_SCORE,
-      attemptsUsed: (settings?.quizMaxAttempts ?? 0) > 0
-        ? ((await this.prisma.kbsCandidateProgress.findUnique({
-            where: { candidateId_moduleId: { candidateId: candidate.id, moduleId } },
-            select: { attempts: true },
-          }))?.attempts ?? 1)
-        : null,
+      attemptsUsed:
+        (settings?.quizMaxAttempts ?? 0) > 0
+          ? ((
+              await this.prisma.kbsCandidateProgress.findUnique({
+                where: { candidateId_moduleId: { candidateId: candidate.id, moduleId } },
+                select: { attempts: true },
+              })
+            )?.attempts ?? 1)
+          : null,
       maxAttempts: quizMaxAttempts > 0 ? quizMaxAttempts : null,
     };
   }
@@ -331,11 +329,7 @@ export class KbsCandidatesService {
     return candidate;
   }
 
-  async updateStatus(
-    candidateId: string,
-    adminUserId: string,
-    dto: UpdateCandidateStatusDto,
-  ) {
+  async updateStatus(candidateId: string, adminUserId: string, dto: UpdateCandidateStatusDto) {
     const candidate = await this.prisma.kbsCandidate.findUnique({
       where: { id: candidateId },
     });
@@ -347,11 +341,14 @@ export class KbsCandidatesService {
       );
     }
 
-    const allowed =
-      STATUS_TRANSITIONS[candidate.status as CandidateStatus] || [];
+    const allowed = STATUS_TRANSITIONS[candidate.status as CandidateStatus] || [];
     if (!allowed.includes(dto.status as CandidateStatus)) {
       throw new BadRequestException(
-        `Cannot transition from "${candidate.status}" to "${dto.status}". Allowed: [${allowed.join(', ')}]`,
+        this.t('kbs.candidate.invalidTransition', undefined, {
+          from: candidate.status,
+          to: dto.status,
+          allowed: allowed.join(', '),
+        }),
       );
     }
 
@@ -366,14 +363,8 @@ export class KbsCandidatesService {
 
     // Cross module side effect
     if (dto.status === CandidateStatus.CERTIFIED) {
-      await this.userService.addRole(
-        candidate.userId,
-        RoleCode.KCA_CERTIFIED,
-        adminUserId,
-      );
-      this.logger.log(
-        `KCA role granted to user ${candidate.userId} by admin ${adminUserId}`,
-      );
+      await this.userService.addRole(candidate.userId, RoleCode.KCA_CERTIFIED, adminUserId);
+      this.logger.log(`KCA role granted to user ${candidate.userId} by admin ${adminUserId}`);
     }
 
     this.logger.log('Candidate status updated', {

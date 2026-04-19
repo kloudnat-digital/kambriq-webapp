@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, Clock, Circle, AlertCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { getReservationById, reservationAction, cancelReservation } from '@/lib/actions/lands';
 import { unwrap } from '@/lib/actions/unwrap';
 import { Spinner } from '@/components/ui/spinner';
@@ -12,7 +13,7 @@ import { cn } from '@/lib/utils';
 
 const hasRole = (roles: string[], ...codes: string[]) => codes.some((c) => roles.includes(c));
 
-const STATUS_LABEL: Record<string, string> = {
+const STATUS_LABEL_STATIC: Record<string, string> = {
   PENDING: 'En attente',
   CONFIRMED: 'Acompte confirmé',
   DOCS_RECEIVED: 'Documents reçus',
@@ -130,6 +131,7 @@ interface Props {
 }
 
 export const ReservationDetailContent = ({ id }: Props) => {
+  const t = useTranslations('app.reservations');
   const { data: session } = useSession();
   const userRoles = (session?.user as { roles?: string[] })?.roles ?? [];
   const isAdmin = hasRole(userRoles, 'ADMIN_LANDS', 'ADMIN_GLOBAL');
@@ -197,7 +199,7 @@ export const ReservationDetailContent = ({ id }: Props) => {
                 STATUS_BADGE[r.status] ?? 'bg-gray-100 text-gray-500',
               )}
             >
-              {STATUS_LABEL[r.status] ?? r.status}
+              {STATUS_LABEL_STATIC[r.status] ?? r.status}
             </span>
           </div>
           <h1 className="truncate text-xl font-bold text-gray-900">{r.land?.title}</h1>
@@ -208,7 +210,7 @@ export const ReservationDetailContent = ({ id }: Props) => {
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         {/* Journey */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-5 text-sm font-semibold text-gray-900">Parcours d'achat</h2>
+          <h2 className="mb-5 text-sm font-semibold text-gray-900">{t('purchaseJourney')}</h2>
           <ol className="relative space-y-0">
             {steps.map((step, i) => {
               const done = !!step.doneAt;
@@ -276,19 +278,19 @@ export const ReservationDetailContent = ({ id }: Props) => {
         <div className="space-y-4">
           {/* Client info */}
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-3 text-sm font-semibold text-gray-900">Client</h2>
+            <h2 className="mb-3 text-sm font-semibold text-gray-900">{t('client')}</h2>
             <div className="space-y-2 text-sm">
               <div>
-                <p className="text-xs text-gray-400">Nom</p>
+                <p className="text-xs text-gray-400">{t('name')}</p>
                 <p className="font-medium text-gray-900">{r.clientName}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-400">Email</p>
+                <p className="text-xs text-gray-400">{t('email')}</p>
                 <p className="text-gray-700">{r.clientEmail}</p>
               </div>
               {r.clientPhone && (
                 <div>
-                  <p className="text-xs text-gray-400">Téléphone</p>
+                  <p className="text-xs text-gray-400">{t('phone')}</p>
                   <p className="text-gray-700">{r.clientPhone}</p>
                 </div>
               )}
@@ -297,7 +299,7 @@ export const ReservationDetailContent = ({ id }: Props) => {
 
           {/* Land info */}
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-3 text-sm font-semibold text-gray-900">Terrain</h2>
+            <h2 className="mb-3 text-sm font-semibold text-gray-900">{t('land')}</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-400">Prix / m²</span>
@@ -306,13 +308,13 @@ export const ReservationDetailContent = ({ id }: Props) => {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Superficie</span>
+                <span className="text-gray-400">{t('size')}</span>
                 <span className="font-medium text-gray-900">
                   {r.land?.sizeM2?.toLocaleString('fr-FR')} m²
                 </span>
               </div>
               <div className="flex justify-between border-t border-gray-100 pt-2">
-                <span className="text-gray-400">Total</span>
+                <span className="text-gray-400">{t('total')}</span>
                 <span className="font-bold text-gray-900">
                   {new Intl.NumberFormat('fr-FR').format(
                     (r.land?.price ?? 0) * (r.land?.sizeM2 ?? 0),

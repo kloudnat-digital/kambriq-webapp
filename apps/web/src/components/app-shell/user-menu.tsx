@@ -1,6 +1,7 @@
 'use client';
 
 import { LogOut } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { logOutAction } from '@/lib/actions/auth';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +12,7 @@ interface UserMenuProps {
 }
 
 export const UserMenu = ({ name, role, initials }: UserMenuProps) => {
+  const t = useTranslations('a11y');
   return (
     <div className="flex items-center gap-3 rounded-lg px-3 py-3">
       <div
@@ -29,7 +31,7 @@ export const UserMenu = ({ name, role, initials }: UserMenuProps) => {
         <button
           type="submit"
           className="text-gray-400 transition-colors hover:text-white"
-          aria-label="Se déconnecter"
+          aria-label={t('signOut')}
         >
           <LogOut className="size-4" />
         </button>

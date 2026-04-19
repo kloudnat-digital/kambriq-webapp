@@ -26,36 +26,36 @@ const LAND_TYPE_THEMES = {
 
 const LAND_TYPES = [
   {
-    code: 'TDT' as const,
+    code: 'TFL™' as const,
     colorScheme: 'primary' as const,
-    nameKey: 'tdt.name' as const,
-    descriptionKey: 'tdt.description' as const,
+    nameKey: 'tfl.name' as const,
+    descriptionKey: 'tfl.description' as const,
     features: [
-      { labelKey: 'clientAdvantages' as const, detailKey: 'tdt.advantages.client' as const },
-      { labelKey: 'agentAdvantages' as const, detailKey: 'tdt.advantages.agent' as const },
-      { labelKey: 'kambriqGuarantees' as const, detailKey: 'tdt.advantages.guarantees' as const },
+      { labelKey: 'clientAdvantages' as const, detailKey: 'tfl.advantages.client' as const },
+      { labelKey: 'agentAdvantages' as const, detailKey: 'tfl.advantages.agent' as const },
+      { labelKey: 'kambriqCommitment' as const, detailKey: 'tfl.advantages.commitment' as const },
     ],
   },
   {
-    code: 'VEFIL' as const,
-    colorScheme: 'accent' as const,
-    nameKey: 'vefil.name' as const,
-    descriptionKey: 'vefil.description' as const,
-    features: [
-      { labelKey: 'clientAdvantages' as const, detailKey: 'vefil.advantages.client' as const },
-      { labelKey: 'agentAdvantages' as const, detailKey: 'vefil.advantages.agent' as const },
-      { labelKey: 'kambriqGuarantees' as const, detailKey: 'vefil.advantages.guarantees' as const },
-    ],
-  },
-  {
-    code: 'VEFL' as const,
+    code: 'VEFL™' as const,
     colorScheme: 'gold' as const,
     nameKey: 'vefl.name' as const,
     descriptionKey: 'vefl.description' as const,
     features: [
       { labelKey: 'clientAdvantages' as const, detailKey: 'vefl.advantages.client' as const },
       { labelKey: 'agentAdvantages' as const, detailKey: 'vefl.advantages.agent' as const },
-      { labelKey: 'kambriqGuarantees' as const, detailKey: 'vefl.advantages.guarantees' as const },
+      { labelKey: 'kambriqCommitment' as const, detailKey: 'vefl.advantages.commitment' as const },
+    ],
+  },
+  {
+    code: 'VEFIL™' as const,
+    colorScheme: 'accent' as const,
+    nameKey: 'vefil.name' as const,
+    descriptionKey: 'vefil.description' as const,
+    features: [
+      { labelKey: 'clientAdvantages' as const, detailKey: 'vefil.advantages.client' as const },
+      { labelKey: 'agentAdvantages' as const, detailKey: 'vefil.advantages.agent' as const },
+      { labelKey: 'kambriqCommitment' as const, detailKey: 'vefil.advantages.commitment' as const },
     ],
   },
 ] as const;

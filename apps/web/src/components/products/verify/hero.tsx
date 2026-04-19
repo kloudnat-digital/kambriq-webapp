@@ -2,9 +2,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
-import React from 'react';
+import { getTranslations } from 'next-intl/server';
 
-const Hero = () => {
+const Hero = async () => {
+  const t = await getTranslations('products.verify.hero');
+  const tc = await getTranslations('products.verify.heroCard');
+
   return (
     <section className="mx-auto max-w-7xl pt-14 pb-16">
       <div className="py-8 sm:py-12 lg:grid lg:grid-cols-12 lg:gap-8 lg:py-14">
@@ -13,20 +16,17 @@ const Hero = () => {
             <div className="hidden sm:mb-4 sm:flex sm:justify-center lg:justify-start">
               <Badge className="rounded-full bg-primary-100 px-3 py-1 text-primary-600 ring-1 ring-primary-700/50">
                 <ShieldCheck className="mr-1 size-3 flex-none" />
-                <span>Service de vérification certifié</span>
+                <span>{t('eyebrow')}</span>
               </Badge>
             </div>
             <h1 className="gray-900 text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl">
-              Vérifiez l'authenticité d'un terrain avant tout achat où que vous soyez
+              {t('title')}
             </h1>
-            <p className="mt-3 text-lg text-gray-500 sm:mt-5 sm:text-xl/8">
-              Faites confiance à KAMBRIQ pour confirmer la validité des titres fonciers et
-              documents. Une vérification complète en quelques clics.
-            </p>
+            <p className="mt-3 text-lg text-gray-500 sm:mt-5 sm:text-xl/8">{t('subtitle')}</p>
             <div className="mt-5 w-full sm:mx-auto sm:max-w-lg lg:ml-0">
-              <div className="flex flex-wrap items-start">
+              <div className="flex flex-wrap items-start gap-4">
                 <Button asChild size="lg" className="h-9">
-                  <Link href="/kamnet">Commencer la vérification</Link>
+                  <Link href="/contact">{t('cta')}</Link>
                 </Button>
                 <Button
                   asChild
@@ -34,8 +34,8 @@ const Hero = () => {
                   size="lg"
                   className="h-9 font-semibold text-gray-900 hover:bg-transparent hover:text-gray-900"
                 >
-                  <Link href="/verify">
-                    En savoir plus
+                  <Link href="/methode">
+                    {t('cta2')}
                     <ArrowRight />
                   </Link>
                 </Button>
@@ -52,40 +52,32 @@ const Hero = () => {
                     <div className="absolute top-1 left-0 flex size-8 items-center justify-center rounded-md bg-primary-100">
                       <ShieldCheck className="size-5 text-primary-500" />
                     </div>
-                    Titre foncier
+                    {tc('tfLabel')}
                   </div>
                   <div className="font-mono text-sm/7 text-gray-600">TF-12345-ABCD</div>
                 </div>
                 <div className="ml-auto flex items-start">
                   <Badge className="bg-primary-100 text-primary-600 outline-1 outline-primary-700/50">
-                    Vérifié
+                    {tc('verified')}
                   </Badge>
                 </div>
               </div>
               <div className="divide-y divide-gray-100 text-sm/6">
                 <div className="flex justify-between gap-x-4 py-3">
-                  <div>
-                    <p className="text-gray-700">Statut cadastral</p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">Conforme</p>
-                  </div>
+                  <p className="text-gray-700">{tc('authenticity')}</p>
+                  <p className="font-medium text-gray-900">{tc('authenticityResult')}</p>
                 </div>
                 <div className="flex justify-between gap-x-4 py-3">
-                  <div>
-                    <p className="text-gray-700">Propriétaire</p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">Vérifié</p>
-                  </div>
+                  <p className="text-gray-700">{tc('ownerIdentity')}</p>
+                  <p className="font-medium text-gray-900">{tc('ownerIdentityResult')}</p>
                 </div>
                 <div className="flex justify-between gap-x-4 py-3">
-                  <div>
-                    <p className="text-gray-700">Surface</p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">500 m² confirmé</p>
-                  </div>
+                  <p className="text-gray-700">{tc('legalStatus')}</p>
+                  <p className="font-medium text-gray-900">{tc('legalStatusResult')}</p>
+                </div>
+                <div className="flex justify-between gap-x-4 py-3">
+                  <p className="text-gray-700">{tc('conflicts')}</p>
+                  <p className="font-medium text-gray-900">{tc('conflictsResult')}</p>
                 </div>
               </div>
             </div>

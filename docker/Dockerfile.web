@@ -10,10 +10,14 @@ RUN corepack enable
 
 WORKDIR /app
 
-# Install all workspace deps (needed to build the web app)
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# Copy manifests first — changes here invalidate the install cache layer
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json ./
 COPY apps/web/package.json ./apps/web/
-RUN pnpm install --frozen-lockfile
+
+# pnpm store is mounted as a BuildKit cache — downloads are reused across builds
+# even when pnpm-lock.yaml changes (only changed packages re-download).
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --ignore-scripts
 
 # Copy source and build
 COPY tsconfig.base.json ./
@@ -25,7 +29,7 @@ ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_MAPBOX_TOKEN
 
-RUN pnpm --filter @kambriq/web run build
+RUN cd apps/web && NEXT_TELEMETRY_DISABLED=1 ../../node_modules/.bin/next build
 
 # ----- Production image -----
 FROM node:24.13.1-bookworm-slim AS production
@@ -47,8 +51,13 @@ EXPOSE 3001
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 ENV NODE_ENV=production
+# Required by NextAuth v5 when running behind a reverse proxy or ALB.
+# Without this every session read logs "UntrustedHost" and may fail in
+# strict next-auth configurations.
+ENV AUTH_TRUST_HOST=true
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-  CMD wget -q --spider http://localhost:3001 || exit 1
+# No HEALTHCHECK here — health is managed by the ECS/ALB target group health
+# check (GET /health → 200). A Dockerfile HEALTHCHECK is redundant in Fargate
+# and causes false failures under CPU throttling (the node subprocess times out).
 
 CMD ["node", "apps/web/server.js"]

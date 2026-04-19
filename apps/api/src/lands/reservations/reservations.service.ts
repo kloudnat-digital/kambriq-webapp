@@ -337,7 +337,7 @@ export class LandReservationsService {
     const reservation = await this.findByIdOrThrow(reservationId);
 
     if (reservation.status === LandReservationStatus.COMPLETED) {
-      throw new ForbiddenException('Cannot cancel a completed reservation');
+      throw new ForbiddenException(this.t('lands.reservation.alreadyCompleted'));
     }
 
     // Cancel reservation + make land available again
