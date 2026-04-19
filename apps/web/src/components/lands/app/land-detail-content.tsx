@@ -13,7 +13,7 @@ import { LandMap } from './land-map';
 import { cn } from '@/lib/utils';
 
 const LABEL_COLOR: Record<string, string> = {
-  TDT: 'bg-blue-100 text-blue-700 border-blue-200',
+  TFL: 'bg-blue-100 text-blue-700 border-blue-200',
   VEFL: 'bg-amber-100 text-amber-700 border-amber-200',
   VEFIL: 'bg-purple-100 text-purple-700 border-purple-200',
 };

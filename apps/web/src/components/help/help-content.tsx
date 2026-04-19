@@ -49,7 +49,7 @@ const QUICK_FAQS = [
   {
     id: '4',
     q: 'Le titre foncier est-il garanti ?',
-    a: 'Oui, pour tous les terrains TDT. Pour les VEFL et VEFIL, le titre est garanti contractuellement.',
+    a: 'Oui, pour tous les terrains TFL. Pour les VEFL et VEFIL, le processus de titrage est accompagné par KAMBRIQ.',
   },
   {
     id: '5',

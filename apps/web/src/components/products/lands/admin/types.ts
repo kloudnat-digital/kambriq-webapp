@@ -1,6 +1,6 @@
 export type LandLabel = {
   id: string;
-  code: 'TDT' | 'VEFL' | 'VEFIL';
+  code: 'TFL' | 'VEFL' | 'VEFIL';
   name: string;
 };
 

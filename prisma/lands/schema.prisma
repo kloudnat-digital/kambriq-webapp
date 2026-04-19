@@ -9,7 +9,7 @@ datasource db {
 }
 
 enum LandLabelCodes {
-  TDT
+  TFL
   VEFL
   VEFIL
 }
@@ -50,7 +50,7 @@ enum LandReservationStatus {
 // ----- LANDS Module ----- //
 /**
 * Classification of land titles
-* TDT = Titre Définitif de Terrain
+* TFL = Titre Foncier Loti
 * VEFL = Vente d'un Expace de terrain Fiable et Loti
 * VEFIL = Vente d'un Expace de terrain Fiable Immatriculé et Loti
 */

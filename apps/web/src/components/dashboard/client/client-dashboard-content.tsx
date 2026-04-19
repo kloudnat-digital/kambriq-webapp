@@ -22,7 +22,7 @@ const MOCK_LANDS = [
   {
     id: 'LAND-001',
     title: 'Terrain résidentiel - Bastos',
-    label: 'TDT' as const,
+    label: 'TFL' as const,
     surface: '500 m²',
     price: '45 000 000 XAF',
     status: 'in_progress' as const,

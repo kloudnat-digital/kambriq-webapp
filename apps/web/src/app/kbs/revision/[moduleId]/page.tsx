@@ -7,9 +7,9 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const FLASHCARDS = [
   {
-    term: 'TDT',
+    term: 'TFL',
     definition:
-      'Terrain Déjà Titré — Le niveau de sécurité juridique le plus élevé. Le titre foncier définitif est déjà constitué.',
+      'Titre Foncier Loti — Le terrain possède un titre foncier individuel. Sécurité maximale.',
   },
   {
     term: 'VEFL',

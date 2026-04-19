@@ -66,7 +66,7 @@ export class LandsAdminController {
   }
 
   @Post('labels')
-  @ApiOperation({ summary: 'Create a land label (TDT, VEFL, VEFIL)' })
+  @ApiOperation({ summary: 'Create a land label (TFL, VEFL, VEFIL)' })
   @ApiResponse({ status: 201, description: 'Label created.' })
   @ApiResponse({ status: 409, description: 'Label code already exists.' })
   async createLabel(@Body() dto: CreateLabelDto) {
@@ -121,7 +121,7 @@ export class LandsAdminController {
   @ApiQuery({
     name: 'labelCode',
     required: false,
-    enum: ['TDT', 'VEFL', 'VEFIL'],
+    enum: ['TFL', 'VEFL', 'VEFIL'],
     description: 'Filter by land classification',
   })
   @ApiQuery({

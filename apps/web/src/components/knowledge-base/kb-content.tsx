@@ -30,7 +30,7 @@ const ARTICLES: Article[] = [
   {
     slug: 'comprendre-titre-foncier',
     title: 'Comprendre les types de titres fonciers',
-    excerpt: 'TDT, VEFL, VEFIL : les différences, les risques et comment choisir.',
+    excerpt: 'TFL, VEFL, VEFIL : les différences, les risques et comment choisir.',
     category: 'Lands',
     readTime: 5,
     date: '2025-01-20',

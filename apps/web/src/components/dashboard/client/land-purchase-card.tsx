@@ -8,7 +8,7 @@ import { LABEL_STYLES } from '@/components/products/lands/admin/constants';
 type LandPurchase = {
   id: string;
   title: string;
-  label: 'TDT' | 'VEFL' | 'VEFIL';
+  label: 'TFL' | 'VEFL' | 'VEFIL';
   surface: string;
   price: string;
   status: 'in_progress' | 'reserved' | 'completed';

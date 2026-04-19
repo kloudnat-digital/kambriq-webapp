@@ -30,7 +30,7 @@ export const MOCK_LANDS: MockLand[] = [
     neighborhood: 'Dibamba',
     sizeM2: 500,
     price: 7_500_000,
-    label: { code: 'TDT', name: 'Titre Définitif' },
+    label: { code: 'TFL', name: 'Titre Foncier Loti' },
     isVerified: true,
     verifiedAt: '2024-11-15',
     tfNumber: 'TF/MFOUNDI/2024/0421',
@@ -82,7 +82,7 @@ export const MOCK_LANDS: MockLand[] = [
     neighborhood: 'Tamdja',
     sizeM2: 650,
     price: 5_200_000,
-    label: { code: 'TDT', name: 'Titre Définitif' },
+    label: { code: 'TFL', name: 'Titre Foncier Loti' },
     isVerified: false,
     status: 'available',
     description:

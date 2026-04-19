@@ -14,7 +14,7 @@ import { LandsClientController } from './controllers/lands-client.controller';
  *
  * The LANDS module manages the core product — verified land parcels:
  * - Land parcels (CRUD, publishing, archiving)
- * - Labels (TDT, VEFL, VEFIL land classification)
+ * - Labels (TFL, VEFL, VEFIL land classification)
  * - Media (public images, maps via S3)
  * - Documents (private legal files via S3)
  * - Reservations (agent reserves land for client, concurrency-safe)
