@@ -59,6 +59,20 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
       </blockquote>
     ),
 
+    // Tables
+    table: ({ children }) => (
+      <div className="my-8 overflow-x-auto">
+        <table className="w-full border-collapse text-left text-sm">{children}</table>
+      </div>
+    ),
+    thead: ({ children }) => (
+      <thead className="border-b-2 border-gray-300 bg-gray-50">{children}</thead>
+    ),
+    tbody: ({ children }) => <tbody className="divide-y divide-gray-200">{children}</tbody>,
+    tr: ({ children }) => <tr>{children}</tr>,
+    th: ({ children }) => <th className="px-4 py-3 font-semibold text-gray-900">{children}</th>,
+    td: ({ children }) => <td className="px-4 py-3 text-gray-600">{children}</td>,
+
     // Spread custom overrides last so callers can still override per-page
     ...components,
   };
