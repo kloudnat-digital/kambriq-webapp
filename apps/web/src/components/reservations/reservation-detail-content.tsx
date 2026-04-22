@@ -34,7 +34,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const LABEL_COLOR: Record<string, string> = {
-  TDT: 'bg-blue-100 text-blue-700',
+  TFL: 'bg-blue-100 text-blue-700',
   VEFL: 'bg-amber-100 text-amber-700',
   VEFIL: 'bg-purple-100 text-purple-700',
 };

@@ -1,19 +1,18 @@
+import type { Metadata } from 'next';
 import Navbar from '@/components/layout/navbar';
 import Footer from '@/components/layout/footer';
 import QuickActions from '@/components/floating/quick-actions';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('metadata.blog');
+  return { title: t('title'), description: t('description') };
+}
+
 export default async function BlogPage() {
   const t = await getTranslations('blog');
-
-  const season1 = [
-    'Les 4 domaines fonciers au Cameroun',
-    "Le titre foncier, c'est quoi exactement ?",
-    'Domaine national vs domaine privé',
-    "Pourquoi c'est compliqué",
-    'Ce que la diaspora doit savoir',
-  ];
+  const season1 = t.raw('season1.items') as string[];
 
   return (
     <>

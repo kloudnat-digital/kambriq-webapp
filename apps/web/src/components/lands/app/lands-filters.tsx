@@ -4,7 +4,7 @@ import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
-const LABELS = ['TDT', 'VEFL', 'VEFIL'];
+const LABELS = ['TFL', 'VEFL', 'VEFIL'];
 const STATUSES = [
   { value: '', label: 'Tous' },
   { value: 'AVAILABLE', label: 'Disponible' },

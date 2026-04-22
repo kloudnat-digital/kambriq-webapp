@@ -1,4 +1,5 @@
 import { ShieldCheck, ShieldX } from 'lucide-react';
+import Link from 'next/link';
 
 import Navbar from '@/components/layout/navbar';
 import { Button } from '@/components/ui/button';
@@ -12,12 +13,13 @@ const MOCK_VALID = {
   valid: true,
 };
 
-export default function VerifyCertificatePage({
+export default async function VerifyCertificatePage({
   params,
 }: {
-  params: { certificateNumber: string };
+  params: Promise<{ certificateNumber: string }>;
 }) {
-  const cert = params.certificateNumber ? MOCK_VALID : null;
+  const { certificateNumber } = await params;
+  const cert = certificateNumber ? MOCK_VALID : null;
 
   return (
     <>
@@ -61,12 +63,12 @@ export default function VerifyCertificatePage({
                 <h1 className="mb-2 text-2xl font-bold text-gray-900">Certificat non trouvé</h1>
                 <p className="mb-8 text-sm text-gray-500">
                   Aucun certificat ne correspond au numéro{' '}
-                  <span className="font-mono font-medium">{params.certificateNumber}</span>.
+                  <span className="font-mono font-medium">{certificateNumber}</span>.
                 </p>
               </>
             )}
             <Button asChild variant="outline" className="w-full">
-              <a href="/">Retour à l&apos;accueil</a>
+              <Link href="/">Retour à l&apos;accueil</Link>
             </Button>
           </div>
         </div>

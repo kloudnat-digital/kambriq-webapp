@@ -6,23 +6,8 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Post,
-  Query,
-} from '@nestjs/common';
-import {
-  CurrentUser,
-  PaginationQueryDto,
-  RequestUser,
-  RoleCode,
-  Roles,
-} from '@kambriq/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
+import { CurrentUser, PaginationQueryDto, RequestUser, RoleCode, Roles } from '@kambriq/common';
 import { LandsService } from '../lands.service';
 import { LandReservationsService } from '../reservations/reservations.service';
 import {
@@ -52,18 +37,35 @@ export class LandsAgentController {
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
   @ApiQuery({ name: 'region', required: false, type: String, description: 'Filter by region' })
   @ApiQuery({ name: 'city', required: false, type: String, description: 'Filter by city' })
-  @ApiQuery({ name: 'labelCode', required: false, enum: ['TDT', 'VEFL', 'VEFIL'], description: 'Filter by land classification' })
-  @ApiQuery({ name: 'minPrice', required: false, type: Number, description: 'Minimum price in XAF' })
-  @ApiQuery({ name: 'maxPrice', required: false, type: Number, description: 'Maximum price in XAF' })
-  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search by title or description' })
+  @ApiQuery({
+    name: 'labelCode',
+    required: false,
+    enum: ['TFL', 'VEFL', 'VEFIL'],
+    description: 'Filter by land classification',
+  })
+  @ApiQuery({
+    name: 'minPrice',
+    required: false,
+    type: Number,
+    description: 'Minimum price in XAF',
+  })
+  @ApiQuery({
+    name: 'maxPrice',
+    required: false,
+    type: Number,
+    description: 'Maximum price in XAF',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search by title or description',
+  })
   @ApiResponse({
     status: 200,
     description: 'Paginated land listings returned.',
   })
-  async browseLands(
-    @Query() pagination: PaginationQueryDto,
-    @Query() filters: LandFilterDto,
-  ) {
+  async browseLands(@Query() pagination: PaginationQueryDto, @Query() filters: LandFilterDto) {
     return this.landsService.findForAgents(pagination, filters);
   }
 
@@ -93,10 +95,7 @@ export class LandsAgentController {
     status: 409,
     description: 'Land already reserved (race condition).',
   })
-  async reserveLand(
-    @CurrentUser() user: RequestUser,
-    @Body() dto: CreateLandReservationDto,
-  ) {
+  async reserveLand(@CurrentUser() user: RequestUser, @Body() dto: CreateLandReservationDto) {
     return this.reservationsService.create(user.id, dto);
   }
 
@@ -104,8 +103,18 @@ export class LandsAgentController {
   @ApiOperation({ summary: 'List my reservations' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
-  @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'], description: 'Filter by reservation status' })
-  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search by client name or email' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'],
+    description: 'Filter by reservation status',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search by client name or email',
+  })
   async getMyReservations(
     @CurrentUser() user: RequestUser,
     @Query() pagination: PaginationQueryDto,
@@ -125,8 +134,7 @@ export class LandsAgentController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Cancel a reservation',
-    description:
-      'Cancels a pending or confirmed reservation. Land becomes available again.',
+    description: 'Cancels a pending or confirmed reservation. Land becomes available again.',
   })
   @ApiParam({ name: 'id', description: 'Reservation ID' })
   @ApiResponse({ status: 200, description: 'Reservation cancelled.' })

@@ -32,7 +32,7 @@ const REGIONS = [
 ];
 
 const LABEL_CODES = [
-  { code: 'TDT', label: 'TDT' },
+  { code: 'TFL', label: 'TFL' },
   { code: 'VEFL', label: 'VEFL' },
   { code: 'VEFIL', label: 'VEFIL' },
 ];

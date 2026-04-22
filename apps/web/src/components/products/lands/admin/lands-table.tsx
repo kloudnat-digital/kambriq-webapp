@@ -101,7 +101,7 @@ export function LandsTable({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('lands.allLabels')}</SelectItem>
-            <SelectItem value="TDT">TDT</SelectItem>
+            <SelectItem value="TFL">TFL</SelectItem>
             <SelectItem value="VEFL">VEFL</SelectItem>
             <SelectItem value="VEFIL">VEFIL</SelectItem>
           </SelectContent>

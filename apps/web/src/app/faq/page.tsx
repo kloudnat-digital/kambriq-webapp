@@ -1,8 +1,15 @@
+import type { Metadata } from 'next';
 import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 
 import Navbar from '@/components/layout/navbar';
 import Footer from '@/components/layout/footer';
 import { FaqContent } from '@/components/faq/faq-content';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('metadata.faq');
+  return { title: t('title'), description: t('description') };
+}
 
 const FaqHero = () => {
   const t = useTranslations('faq.hero');

@@ -12,12 +12,12 @@ type Question = { id: number; question: string; options: string[]; correctIndex:
 const MOCK_EXAM: Question[] = [
   {
     id: 1,
-    question: "Qu'est-ce que le TDT ?",
+    question: "Qu'est-ce que le TFL ?",
     options: [
-      'Terrain Déjà Titré',
-      'Titre De Terrain',
-      'Transfert De Terrain',
-      'Terrain Délimité Titrisé',
+      'Titre Foncier Loti',
+      'Titre de Fondation Légale',
+      'Transfert Foncier Libre',
+      'Terrain Fiabilisé et Loti',
     ],
     correctIndex: 0,
   },
@@ -32,7 +32,7 @@ const MOCK_EXAM: Question[] = [
     question: 'Que signifie VEFL ?',
     options: [
       'Vente En Futur Lotissement',
-      'Vente En État Futur de Livraison',
+      'Vente en État Futur de Lotissement',
       'Vente Étatique Foncière Libre',
       'Aucune de ces réponses',
     ],

@@ -1,4 +1,3 @@
-// @ts-nocheck — ESLint config files don't need TypeScript strict checking
 import nextEslintPluginNext from '@next/eslint-plugin-next';
 import nx from '@nx/eslint-plugin';
 import prettierConfig from 'eslint-config-prettier';

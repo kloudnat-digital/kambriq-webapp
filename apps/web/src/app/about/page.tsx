@@ -1,9 +1,15 @@
-import { getLocale } from 'next-intl/server';
+import type { Metadata } from 'next';
+import { getLocale, getTranslations } from 'next-intl/server';
 
 import Navbar from '@/components/layout/navbar';
 import Footer from '@/components/layout/footer';
 import { AboutHero } from '@/components/about/about-hero';
 import { loadContent } from '@/lib/content';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('metadata.about');
+  return { title: t('title'), description: t('description') };
+}
 
 export default async function AboutPage() {
   const locale = await getLocale();

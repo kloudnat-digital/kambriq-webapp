@@ -1,7 +1,7 @@
 import type { AdminLand, AdminReservation, LandLabel } from './types';
 
 export const MOCK_LABELS: LandLabel[] = [
-  { id: 'lbl-1', code: 'TDT', name: 'Terrains Déjà Titrés' },
+  { id: 'lbl-1', code: 'TFL', name: 'Titre Foncier Loti' },
   { id: 'lbl-2', code: 'VEFL', name: 'Vente en État Futur de Lotissement' },
   { id: 'lbl-3', code: 'VEFIL', name: "Vente en État Futur d'Immatriculation et de Lotissement" },
 ];
