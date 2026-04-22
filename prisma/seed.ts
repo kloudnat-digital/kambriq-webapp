@@ -731,24 +731,31 @@ async function seedLands() {
       id: IDS.LABEL_TFL,
       code: LandLabelCodes.TFL,
       name: 'Titre Foncier Loti',
-      description: 'Le terrain possède un titre foncier individuel. Sécurité maximale.',
+      description:
+        'Immatriculation faite et lotissement fait : un titre foncier individuel existe déjà. Propriété immédiate à la signature. Niveau de sécurité maximal.',
     },
     {
       id: IDS.LABEL_VEFL,
       code: LandLabelCodes.VEFL,
-      name: "Vente d'Espace de Terrain Fiable et Loti",
-      description: 'Terrain loti dans une zone aménagée, fiabilisé par KAMBRIQ.',
+      name: 'Vente en État Futur de Lotissement',
+      description:
+        "Immatriculation faite, lotissement en cours. Le titre foncier existe déjà — un titre individuel sera établi à l'issue du lotissement. Propriété une fois le lotissement terminé.",
     },
     {
       id: IDS.LABEL_VEFIL,
       code: LandLabelCodes.VEFIL,
-      name: "Vente d'Espace de Terrain Fiable Immatriculé et Loti",
-      description: 'Terrain immatriculé, loti et fiabilisé — niveau de sécurité intermédiaire.',
+      name: "Vente en État Futur d'Immatriculation et de Lotissement",
+      description:
+        "Immatriculation en cours, lotissement à suivre. L'acheteur n'est PAS propriétaire à la signature : il doit attendre la fin de l'immatriculation ET du lotissement. Processus le plus long, jalons de vérification supplémentaires.",
     },
   ];
 
   for (const label of labels) {
-    await lands.landLabel.upsert({ where: { code: label.code }, create: label, update: {} });
+    await lands.landLabel.upsert({
+      where: { code: label.code },
+      create: label,
+      update: { name: label.name, description: label.description },
+    });
   }
 
   // Land parcels
