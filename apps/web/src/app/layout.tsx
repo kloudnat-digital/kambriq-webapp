@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { JetBrains_Mono } from 'next/font/google';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
@@ -16,15 +16,56 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
+// Viewport (theme-color lives here in Next.js 14+)
+export const viewport: Viewport = {
+  themeColor: '#0D1B2A',
+};
+
 // Metadata
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('metadata');
+  const description = t('description');
   return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://dev.kambriq.com'),
     title: {
       default: 'KAMBRIQ',
       template: '%s | KAMBRIQ',
     },
-    description: t('description'),
+    description,
+    icons: {
+      icon: [
+        { url: '/favicon.ico', sizes: 'any' },
+        { url: '/icons/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+        { url: '/icons/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      ],
+      apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    },
+    manifest: '/site.webmanifest',
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'black-translucent',
+      title: 'KAMBRIQ',
+    },
+    openGraph: {
+      type: 'website',
+      siteName: 'KAMBRIQ',
+      title: 'KAMBRIQ',
+      description,
+      images: [
+        {
+          url: '/og-image-1200x630.png',
+          width: 1200,
+          height: 630,
+          alt: 'KAMBRIQ — Foncier camerounais. Vérifié. Accompagné.',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'KAMBRIQ',
+      description,
+      images: ['/twitter-card-1200x600.png'],
+    },
   };
 }
 
