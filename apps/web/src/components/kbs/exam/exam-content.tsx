@@ -32,7 +32,7 @@ const MOCK_EXAM: Question[] = [
     question: 'Que signifie VEFL ?',
     options: [
       'Vente En Futur Lotissement',
-      'Vente En État Futur de Livraison',
+      'Vente en État Futur de Lotissement',
       'Vente Étatique Foncière Libre',
       'Aucune de ces réponses',
     ],

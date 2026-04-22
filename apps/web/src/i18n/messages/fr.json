@@ -703,7 +703,7 @@
       {
         "id": "5",
         "q": "Que signifient les labels KAMBRIQ TFL™, VEFL™ et VEFIL™ ?",
-        "a": "Ce sont les 3 niveaux de sécurité de KAMBRIQ : KAMBRIQ TFL™ (le terrain a déjà un titre foncier individuel — sécurité maximale), KAMBRIQ VEFL™ (un titre foncier mère existe, le morcellement est en cours), KAMBRIQ VEFIL™ (le terrain est sur le domaine national, le processus d'immatriculation est à lancer ou en cours — risque plus élevé, accompagnement renforcé)."
+        "a": "Ce sont les 3 niveaux de sécurité de KAMBRIQ : KAMBRIQ TFL™ (immatriculation et lotissement faits — propriété immédiate à l'achat), KAMBRIQ VEFL™ (le titre foncier existe, le lotissement est en cours — propriété transférée à la fin du lotissement), KAMBRIQ VEFIL™ (immatriculation en cours, lotissement ensuite — le plus long des trois processus, risque plus élevé, accompagnement renforcé)."
       },
       {
         "id": "6",
@@ -901,18 +901,18 @@
     },
     "vefl": {
       "name": "KAMBRIQ VEFL™ — Vente en État Futur de Lotissement",
-      "description": "Un titre foncier mère existe. Le terrain est en cours de morcellement pour obtenir un titre individuel.",
+      "description": "Le titre foncier existe déjà. Le lotissement est en cours pour obtenir un titre individuel.",
       "advantages": {
-        "client": "Le titre mère sécurise votre achat. Vous obtiendrez un titre individuel à l'issue du morcellement. Délais plus courts qu'un VEFIL™.",
+        "client": "L'existence du titre foncier sécurise votre achat. Vous obtiendrez un titre individuel à l'issue du lotissement. Délais plus courts qu'un VEFIL™.",
         "agent": "Bon équilibre prix/délai, accompagnement maîtrisé.",
-        "commitment": "Titre mère vérifié par KAMBRIQ VERIFY™, plan de lotissement approuvé, jalons de suivi KAMBRIQ."
+        "commitment": "Titre foncier vérifié par KAMBRIQ VERIFY™, plan de lotissement approuvé, jalons de suivi KAMBRIQ."
       }
     },
     "vefil": {
       "name": "KAMBRIQ VEFIL™ — Vente en État Futur d'Immatriculation et de Lotissement",
-      "description": "Le terrain est sur le domaine national. Il n'a pas encore de titre foncier. Le processus d'immatriculation est en cours ou à lancer.",
+      "description": "L'immatriculation est en cours. Le lotissement viendra après l'immatriculation.",
       "advantages": {
-        "client": "Vous n'êtes PAS propriétaire à la signature. Vous le devenez à l'issue de l'immatriculation foncière. Prix plus attractif, risque plus élevé.",
+        "client": "Vous n'êtes PAS propriétaire à la signature. Vous devez attendre la fin de l'immatriculation ET du lotissement. Prix plus attractif, risque plus élevé.",
         "agent": "Accompagnement long terme, potentiel de fidélisation client.",
         "commitment": "Jalons de vérification supplémentaires exigés par KAMBRIQ. Suivi complet du processus d'immatriculation."
       }

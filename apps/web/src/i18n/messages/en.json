@@ -703,7 +703,7 @@
       {
         "id": "5",
         "q": "What do the KAMBRIQ TFL™, VEFL™ and VEFIL™ labels mean?",
-        "a": "These are KAMBRIQ's 3 security levels: KAMBRIQ TFL™ (the land already has an individual title deed — maximum security), KAMBRIQ VEFL™ (a parent title deed exists, subdivision is underway), KAMBRIQ VEFIL™ (the land is on the national domain, the registration process is pending or underway — higher risk, reinforced support)."
+        "a": "These are KAMBRIQ's 3 security levels: KAMBRIQ TFL™ (land registration and subdivision complete — immediate ownership at purchase), KAMBRIQ VEFL™ (the title deed exists, subdivision is in progress — ownership transfers once subdivision is complete), KAMBRIQ VEFIL™ (land registration in progress, subdivision to follow — longest of the three processes, higher risk, reinforced support)."
       },
       {
         "id": "6",
@@ -901,18 +901,18 @@
     },
     "vefl": {
       "name": "KAMBRIQ VEFL™ — Vente en État Futur de Lotissement",
-      "description": "A parent title deed exists. The land is being subdivided to obtain an individual title.",
+      "description": "The title deed already exists. Subdivision is in progress to obtain an individual title.",
       "advantages": {
-        "client": "The parent title secures your purchase. You will receive an individual title once subdivision is complete. Shorter timelines than VEFIL™.",
+        "client": "The existing title deed secures your purchase. You will receive an individual title once subdivision is complete. Shorter timelines than VEFIL™.",
         "agent": "Good price/timeline balance, controlled support.",
-        "commitment": "Parent title verified by KAMBRIQ VERIFY™, approved subdivision plan, KAMBRIQ milestone tracking."
+        "commitment": "Title deed verified by KAMBRIQ VERIFY™, approved subdivision plan, KAMBRIQ milestone tracking."
       }
     },
     "vefil": {
       "name": "KAMBRIQ VEFIL™ — Vente en État Futur d'Immatriculation et de Lotissement",
-      "description": "The land is on national domain. It does not yet have a title deed. The registration process is underway or to be initiated.",
+      "description": "Land registration is in progress. Subdivision will follow registration.",
       "advantages": {
-        "client": "You are NOT the owner upon signing. You become the owner once land registration is complete. More attractive price, higher risk.",
+        "client": "You are NOT the owner upon signing. You must wait for both land registration AND subdivision to complete. More attractive price, higher risk.",
         "agent": "Long-term accompaniment, strong client retention potential.",
         "commitment": "Additional verification milestones required by KAMBRIQ. Full monitoring of the registration process."
       }
