@@ -111,5 +111,7 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ['/((?!api|health|_next/static|_next/image|favicon.ico|assets).*)'],
+  matcher: [
+    '/((?!api|health|_next/static|_next/image|favicon.ico|apple-touch-icon.png|og-image|twitter-card|site.webmanifest|assets|icons).*)',
+  ],
 };
