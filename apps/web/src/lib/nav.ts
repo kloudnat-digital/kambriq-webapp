@@ -66,7 +66,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'KAMNET',
     items: [
       { label: 'Dashboard', href: '/agent/dashboard', icon: LayoutGrid, roles: AGENTS_ALL },
-      { label: 'Terrains LANDS', href: '/lands', icon: Map, roles: AGENTS_ALL },
+      { label: 'KAMBRIQ LANDS', href: '/lands', icon: Map, roles: AGENTS_ALL },
       { label: 'Mes prospects', href: '/agent/prospects', icon: Users, roles: AGENTS_ALL },
       {
         label: 'Réservations',
@@ -107,7 +107,7 @@ export const NAV_SECTIONS: NavSection[] = [
         roles: [OPS, ADMIN_LANDS, ADMIN_GLOBAL, ROOT],
       },
       {
-        label: 'Admin VERIFY',
+        label: 'Admin VERIFY™',
         href: '/admin/verify',
         icon: ShieldCheck,
         roles: [OPS, ADMIN_GLOBAL, ROOT],
