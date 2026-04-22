@@ -1,7 +1,7 @@
 {
   "nav": {
-    "lands": "Lands",
-    "verify": "Verify",
+    "lands": "KAMBRIQ LANDS",
+    "verify": "KAMBRIQ VERIFY™",
     "kbs": "KBS",
     "kamnet": "KAMNET",
     "login": "Sign in",
@@ -672,8 +672,8 @@
     "noResults": "No results found. Try a different search.",
     "categories": {
       "all": "All",
-      "lands": "Lands",
-      "verify": "Verify",
+      "lands": "KAMBRIQ LANDS",
+      "verify": "KAMBRIQ VERIFY™",
       "kbs": "KBS",
       "kamnet": "KAMNET"
     },
