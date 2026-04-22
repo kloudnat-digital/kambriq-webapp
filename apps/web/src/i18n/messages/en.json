@@ -892,7 +892,7 @@
     "kambriqCommitment": "KAMBRIQ commitment",
     "tfl": {
       "name": "KAMBRIQ TFL™ — Titre Foncier Loti",
-      "description": "The land has an individual title deed established. Immediate transaction possible. The highest level of security.",
+      "description": "Registration is complete and subdivision is done. Ownership is transferred immediately.",
       "advantages": {
         "client": "You become the owner upon notarial signature. No additional administrative procedures.",
         "agent": "Fast commission, simplified process, secured client.",
@@ -901,7 +901,7 @@
     },
     "vefl": {
       "name": "KAMBRIQ VEFL™ — Vente en État Futur de Lotissement",
-      "description": "The title deed already exists. Subdivision is in progress to obtain an individual title.",
+      "description": "Registration is complete — the land title exists. Subdivision is in progress. Ownership is transferred after subdivision is complete.",
       "advantages": {
         "client": "The existing title deed secures your purchase. You will receive an individual title once subdivision is complete. Shorter timelines than VEFIL™.",
         "agent": "Good price/timeline balance, controlled support.",
@@ -910,7 +910,7 @@
     },
     "vefil": {
       "name": "KAMBRIQ VEFIL™ — Vente en État Futur d'Immatriculation et de Lotissement",
-      "description": "Land registration is in progress. Subdivision will follow registration.",
+      "description": "The land is still undergoing registration. Subdivision will follow. Ownership is transferred after both registration and subdivision are complete. This is the longest process.",
       "advantages": {
         "client": "You are NOT the owner upon signing. You must wait for both land registration AND subdivision to complete. More attractive price, higher risk.",
         "agent": "Long-term accompaniment, strong client retention potential.",
@@ -926,7 +926,7 @@
     "selectQuestionDescription": "Choose a topic to start the conversation on WhatsApp.",
     "questions": {
       "landInfo": "I'd like information on available lands",
-      "verifyService": "I'd like to know more about KAMBRIQ Verify",
+      "verifyService": "I'd like to know more about KAMBRIQ VERIFY™",
       "kbsFormation": "How to become a certified KAMNET Agent via KBS?",
       "kamnetAgent": "How to join the KAMNET network and earn commissions?",
       "pricing": "What are your rates and payment terms?",
@@ -1003,7 +1003,7 @@
         },
         "docs": {
           "title": "Verified documents",
-          "description": "Documents available for this land, validated by KAMBRIQ Verify.",
+          "description": "Documents available for this land, validated by KAMBRIQ VERIFY™.",
           "view": "View"
         },
         "support": {
@@ -1035,12 +1035,12 @@
       "verification": {
         "verified": "Land verified by KAMBRIQ",
         "notVerified": "Land not yet verified",
-        "verifiedDesc": "This land has been fully checked by our KAMBRIQ Verify experts before publication.",
+        "verifiedDesc": "This land has been fully checked by our KAMBRIQ VERIFY™ experts before publication.",
         "notVerifiedDesc": "This land has not yet been submitted for KAMBRIQ verification.",
         "verifiedAt": "Last verification: {date}",
         "docsTitle": "Available verification documents:",
         "docTitle": "Property certificate (< 3 months)",
-        "docVerify": "KAMBRIQ Verify report",
+        "docVerify": "KAMBRIQ VERIFY™ report",
         "docBordereau": "Analytical bordereau",
         "docUrban": "Urban planning certificate",
         "check1": "Authenticated title deed",
@@ -1225,7 +1225,7 @@
           "description": "Launch of the first land listings platform for the Cameroonian diaspora."
         },
         {
-          "title": "KAMBRIQ Verify Launched",
+          "title": "KAMBRIQ VERIFY™ Launched",
           "description": "Introduction of our title deed verification service, protecting diaspora buyers."
         },
         {

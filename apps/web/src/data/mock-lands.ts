@@ -36,7 +36,7 @@ export const MOCK_LANDS: MockLand[] = [
     tfNumber: 'TF/MFOUNDI/2024/0421',
     status: 'available',
     description:
-      'Terrain plat situé à Dibamba, en bordure de route bitumée. Idéal pour un projet résidentiel ou commercial. Titre foncier définitif, vérifié et certifié par KAMBRIQ Verify.',
+      'Terrain plat situé à Dibamba, en bordure de route bitumée. Idéal pour un projet résidentiel ou commercial. Titre foncier définitif, vérifié et certifié par KAMBRIQ VERIFY™.',
     features: ['Clôturé', 'Route bitumée', 'Zone résidentielle'],
     topography: 'Plat',
     waterAccess: true,

@@ -892,7 +892,7 @@
     "kambriqCommitment": "Engagement KAMBRIQ",
     "tfl": {
       "name": "KAMBRIQ TFL™ — Titre Foncier Loti",
-      "description": "Le terrain possède un titre foncier individuel établi. Transaction immédiate possible. Le niveau de sécurité le plus élevé.",
+      "description": "L'immatriculation est faite et le lotissement est fait. La propriété vous est transférée immédiatement.",
       "advantages": {
         "client": "Vous devenez propriétaire dès la signature chez le notaire. Aucune procédure administrative supplémentaire.",
         "agent": "Commission rapide, processus simplifié, client sécurisé.",
@@ -901,7 +901,7 @@
     },
     "vefl": {
       "name": "KAMBRIQ VEFL™ — Vente en État Futur de Lotissement",
-      "description": "Le titre foncier existe déjà. Le lotissement est en cours pour obtenir un titre individuel.",
+      "description": "L'immatriculation est terminée — le titre foncier existe. Le lotissement est en cours. La propriété vous est transférée après la fin du lotissement.",
       "advantages": {
         "client": "L'existence du titre foncier sécurise votre achat. Vous obtiendrez un titre individuel à l'issue du lotissement. Délais plus courts qu'un VEFIL™.",
         "agent": "Bon équilibre prix/délai, accompagnement maîtrisé.",
@@ -910,7 +910,7 @@
     },
     "vefil": {
       "name": "KAMBRIQ VEFIL™ — Vente en État Futur d'Immatriculation et de Lotissement",
-      "description": "L'immatriculation est en cours. Le lotissement viendra après l'immatriculation.",
+      "description": "Le terrain est encore en cours d'immatriculation. Le lotissement viendra après. La propriété vous est transférée après la fin de l'immatriculation et du lotissement. C'est le processus le plus long.",
       "advantages": {
         "client": "Vous n'êtes PAS propriétaire à la signature. Vous devez attendre la fin de l'immatriculation ET du lotissement. Prix plus attractif, risque plus élevé.",
         "agent": "Accompagnement long terme, potentiel de fidélisation client.",
@@ -926,7 +926,7 @@
     "selectQuestionDescription": "Choisissez un sujet pour démarrer la conversation sur WhatsApp.",
     "questions": {
       "landInfo": "Je souhaite obtenir des informations sur les terrains disponibles",
-      "verifyService": "J'aimerais en savoir plus sur le service KAMBRIQ Verify",
+      "verifyService": "J'aimerais en savoir plus sur le service KAMBRIQ VERIFY™",
       "kbsFormation": "Comment devenir Agent KAMNET Certifié via la formation KBS ?",
       "kamnetAgent": "Comment rejoindre le réseau KAMNET et gagner des commissions ?",
       "pricing": "Quels sont vos tarifs et conditions de paiement ?",
@@ -1003,7 +1003,7 @@
         },
         "docs": {
           "title": "Documents vérifiés",
-          "description": "Documents disponibles pour ce terrain, validés par KAMBRIQ Verify.",
+          "description": "Documents disponibles pour ce terrain, validés par KAMBRIQ VERIFY™.",
           "view": "Voir"
         },
         "support": {
@@ -1035,12 +1035,12 @@
       "verification": {
         "verified": "Terrain vérifié par KAMBRIQ",
         "notVerified": "Terrain non encore vérifié",
-        "verifiedDesc": "Ce terrain a été entièrement contrôlé par nos experts KAMBRIQ Verify avant publication.",
+        "verifiedDesc": "Ce terrain a été entièrement contrôlé par nos experts KAMBRIQ VERIFY™ avant publication.",
         "notVerifiedDesc": "Ce terrain n'a pas encore été soumis à la vérification KAMBRIQ.",
         "verifiedAt": "Dernière vérification : {date}",
         "docsTitle": "Documents de vérification disponibles :",
         "docTitle": "Certificat de propriété (< 3 mois)",
-        "docVerify": "Avis KAMBRIQ Verify",
+        "docVerify": "Avis KAMBRIQ VERIFY™",
         "docBordereau": "Bordereau analytique",
         "docUrban": "Certificat d'urbanisme",
         "check1": "Titre foncier authentifié",
@@ -1225,7 +1225,7 @@
           "description": "Lancement de la première plateforme d'annonces foncières pour la diaspora camerounaise."
         },
         {
-          "title": "Lancement de KAMBRIQ Verify",
+          "title": "Lancement de KAMBRIQ VERIFY™",
           "description": "Introduction de notre service de vérification de titres fonciers, protégeant les acheteurs de la diaspora."
         },
         {
