@@ -1,10 +1,10 @@
 /**
- * Kambriq — Database seed script
+ * Kambriq - Database seed script
  *
  * Run via:  npm run db:seed
  * Or:       npx prisma db seed
  *
- * Idempotent — safe to re-run. All entities use hardcoded UUIDs so
+ * Idempotent - safe to re-run. All entities use hardcoded UUIDs so
  * re-running upserts existing rows instead of creating duplicates.
  *
  * Seeded accounts (password: Test1234! for all):
@@ -41,7 +41,7 @@ import {
 import * as bcrypt from 'bcryptjs';
 
 // ---------------------------------------------------------------------------
-// Hardcoded IDs — allows cross-DB references and idempotent re-runs
+// Hardcoded IDs - allows cross-DB references and idempotent re-runs
 // ---------------------------------------------------------------------------
 
 const IDS = {
@@ -517,7 +517,7 @@ async function seedKamnet() {
     });
   }
 
-  // Agents — tree: Eric is root; Sylvie, Boris, Paul are N1; Amina is N2 (under Sylvie)
+  // Agents - tree: Eric is root; Sylvie, Boris, Paul are N1; Amina is N2 (under Sylvie)
   // Note: Eric must be created before Sylvie/Boris/Paul reference him as sponsor.
   const agents: Array<{
     id: string;
@@ -643,7 +643,7 @@ async function seedKamnet() {
     });
   }
 
-  // Commissions (for Eric's 6 sales — seeding 5 for variety)
+  // Commissions (for Eric's 6 sales - seeding 5 for variety)
   const commissions: Array<{
     agentId: string;
     landId: string;
@@ -739,7 +739,7 @@ async function seedLands() {
       code: LandLabelCodes.VEFL,
       name: 'Vente en État Futur de Lotissement',
       description:
-        "Immatriculation faite, lotissement en cours. Le titre foncier existe déjà — un titre individuel sera établi à l'issue du lotissement. Propriété une fois le lotissement terminé.",
+        "Immatriculation faite, lotissement en cours. Le titre foncier existe déjà - un titre individuel sera établi à l'issue du lotissement. Propriété une fois le lotissement terminé.",
     },
     {
       id: IDS.LABEL_VEFIL,
@@ -884,7 +884,7 @@ async function seedLands() {
     await lands.land.upsert({ where: { id: parcel.id }, create: parcel, update: {} });
   }
 
-  // Reservation for LAND_3 (Bonanjo) — CONFIRMED, by Eric for a client
+  // Reservation for LAND_3 (Bonanjo) - CONFIRMED, by Eric for a client
   await lands.landReservation.upsert({
     where: { landId: IDS.LAND_3 },
     create: {

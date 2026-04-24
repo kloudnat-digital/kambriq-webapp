@@ -8,7 +8,7 @@
 
 import { jest } from '@jest/globals';
 
-/** Mock for async Prisma methods — allows mockResolvedValue with any value in tests. */
+/** Mock for async Prisma methods - allows mockResolvedValue with any value in tests. */
 const fn = () => jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
 // ----- Core Prisma ----- //
@@ -51,9 +51,8 @@ export const mockCorePrisma = () => ({
     update: fn(),
     updateMany: fn(),
   },
-  $transaction: jest.fn(
-    (args: Promise<unknown>[] | ((client: unknown) => Promise<unknown>)) =>
-      Array.isArray(args) ? Promise.all(args) : args(mockCorePrisma()),
+  $transaction: jest.fn((args: Promise<unknown>[] | ((client: unknown) => Promise<unknown>)) =>
+    Array.isArray(args) ? Promise.all(args) : args(mockCorePrisma()),
   ),
   $connect: fn(),
   $disconnect: fn(),
@@ -149,9 +148,8 @@ export const mockKbsPrisma = () => ({
   kbsSettings: {
     findFirst: fn(),
   },
-  $transaction: jest.fn(
-    (args: Promise<unknown>[] | ((client: unknown) => Promise<unknown>)) =>
-      Array.isArray(args) ? Promise.all(args) : args(mockKbsPrisma()),
+  $transaction: jest.fn((args: Promise<unknown>[] | ((client: unknown) => Promise<unknown>)) =>
+    Array.isArray(args) ? Promise.all(args) : args(mockKbsPrisma()),
   ),
 });
 
@@ -208,9 +206,7 @@ export const mockStorageService = () => ({
       fileUrl: 'https://s3.example.com/file',
     }),
   ),
-  getDownloadUrl: jest.fn(() =>
-    Promise.resolve('https://s3.example.com/download'),
-  ),
+  getDownloadUrl: jest.fn(() => Promise.resolve('https://s3.example.com/download')),
   buildKey: jest.fn((...parts: string[]) => parts.join('/')),
 });
 

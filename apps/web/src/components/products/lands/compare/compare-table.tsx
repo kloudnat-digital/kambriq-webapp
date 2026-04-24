@@ -121,13 +121,13 @@ export const CompareTable = ({ lands }: Props) => {
                     </Badge>
                   )}
                   {row.key === 'tfNumber' && (
-                    <span className="font-mono text-xs">{land.tfNumber ?? '—'}</span>
+                    <span className="font-mono text-xs">{land.tfNumber ?? '-'}</span>
                   )}
                   {row.key === 'verified' && <BoolCell value={land.isVerified} />}
                   {row.key === 'water' && <BoolCell value={land.waterAccess} />}
                   {row.key === 'electricity' && <BoolCell value={land.electricityAccess} />}
                   {row.key === 'topography' && (
-                    <span className="text-sm capitalize">{land.topography ?? '—'}</span>
+                    <span className="text-sm capitalize">{land.topography ?? '-'}</span>
                   )}
                 </TableCell>
               ))}

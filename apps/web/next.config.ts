@@ -11,7 +11,7 @@ import createMDX from '@next/mdx';
 // Absolute paths are intentionally avoided: Turbopack rejects them.
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
-// MDX plugin — enables .mdx files as React components throughout the app.
+// MDX plugin - enables .mdx files as React components throughout the app.
 // Note: remark/rehype plugins with function values are not supported by Turbopack
 // (options must be serializable). Add plugins only when switching to webpack builds.
 const withMDX = createMDX({});

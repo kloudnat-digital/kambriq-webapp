@@ -11,7 +11,7 @@
     "heading": "Password Reset",
     "body": "Hi {firstName}, we received a request to reset your password.",
     "button": "Reset Password",
-    "expiry": "This link expires in 1 hour. If you didn't request this, you can ignore this email — your password won't change."
+    "expiry": "This link expires in 1 hour. If you didn't request this, you can ignore this email - your password won't change."
   },
   "passwordResetConfirmation": {
     "subject": "Your KAMBRIQ password has been reset",
@@ -98,7 +98,7 @@
   "agentPromotion": {
     "subject": "🎉 You've been promoted on KAMNET!",
     "heading": "Congratulations, {firstName}!",
-    "body": "Your hard work is paying off — you've earned a promotion on the KAMNET network.",
+    "body": "Your hard work is paying off - you've earned a promotion on the KAMNET network.",
     "tierLabel": "Your new rank:",
     "note": "Keep growing your network and closing sales. The next level is within reach."
   },
@@ -107,7 +107,7 @@
     "heading": "Email Address Change",
     "body": "Hi {firstName}, you requested to change your email address to <strong>{newEmail}</strong>. Click below to confirm.",
     "button": "Confirm Change",
-    "expiry": "This link expires in 24 hours. If you didn't request this, ignore this email — your current address remains unchanged."
+    "expiry": "This link expires in 24 hours. If you didn't request this, ignore this email - your current address remains unchanged."
   },
   "emailChangeConfirm": {
     "subject": "Your KAMBRIQ email address has been updated",
@@ -122,14 +122,14 @@
     "note": "Your account is now verified."
   },
   "idRejected": {
-    "subject": "Identity verification — action required",
+    "subject": "Identity verification - action required",
     "heading": "Document Not Accepted",
     "body": "Hi {firstName}, we were unable to verify your identity document.",
     "reason": "Reason: <strong>{reason}</strong>",
     "retry": "Please submit a new valid document from your account settings."
   },
   "inviteUser": {
-    "subject": "Welcome to KAMBRIQ — Set your password",
+    "subject": "Welcome to KAMBRIQ - Set your password",
     "heading": "Welcome, {firstName}!",
     "body": "A KAMBRIQ account has been created for you. Set your password to get started.",
     "button": "Set My Password",

@@ -18,7 +18,7 @@
     "updated": "Label de terrain mis à jour avec succès",
     "deleted": "Label de terrain supprimé avec succès",
     "codeTaken": "Un label avec le code {code} existe déjà",
-    "inUse": "Impossible de supprimer ce label — il est attribué à {count} terrain(s)"
+    "inUse": "Impossible de supprimer ce label - il est attribué à {count} terrain(s)"
   },
   "media": {
     "uploaded": "Média téléchargé avec succès",
@@ -31,14 +31,14 @@
     "deleted": "Document supprimé avec succès"
   },
   "reservation": {
-    "created": "Réservation créée — le terrain est maintenant réservé pour {clientName}",
+    "created": "Réservation créée - le terrain est maintenant réservé pour {clientName}",
     "notFound": "Réservation introuvable",
-    "confirmed": "Acompte confirmé — la réservation est maintenant active",
+    "confirmed": "Acompte confirmé - la réservation est maintenant active",
     "documentsReceived": "Documents client marqués comme reçus",
     "remainingPaymentConfirmed": "Paiement restant confirmé",
     "dossierStarted": "Dossier / transfert de titre démarré",
     "completed": "Vente finalisée avec succès",
-    "cancelled": "Réservation annulée — le terrain est de nouveau disponible",
+    "cancelled": "Réservation annulée - le terrain est de nouveau disponible",
     "alreadyActive": "Cette réservation a déjà un acompte confirmé",
     "notPending": "Seules les réservations en attente peuvent être confirmées",
     "notConfirmed": "Seules les réservations confirmées peuvent progresser",
@@ -49,7 +49,7 @@
   },
   "invite": {
     "sent": "Invitation envoyée à {email}",
-    "alreadyExists": "Un compte existe déjà pour {email} — invitation renvoyée"
+    "alreadyExists": "Un compte existe déjà pour {email} - invitation renvoyée"
   },
   "priceHistory": {
     "noChanges": "Aucun changement de prix enregistré pour ce terrain"

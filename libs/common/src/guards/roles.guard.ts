@@ -9,7 +9,7 @@ import { RoleCode } from '../types/roles.enum';
  *
  * ADMIN_GLOBAL > ADMIN_LANDS > AGENT > CLIENT
  *
- * Product-specific admin roles (ADMIN_KBS, ADMIN_KAMNET) are lateral —
+ * Product-specific admin roles (ADMIN_KBS, ADMIN_KAMNET) are lateral -
  * they do not inherit from each other or from ADMIN_LANDS.
  */
 const ROLE_HIERARCHY: Partial<Record<RoleCode, RoleCode[]>> = {

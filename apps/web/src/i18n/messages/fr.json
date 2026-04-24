@@ -11,7 +11,7 @@
     "profile": "Profil",
     "settings": "Paramètres",
     "signOut": "Se déconnecter",
-    "homeAriaLabel": "KAMBRIQ — Accueil"
+    "homeAriaLabel": "KAMBRIQ - Accueil"
   },
   "hero": {
     "title1": "Foncier camerounais :",
@@ -29,7 +29,7 @@
     },
     "transparency": {
       "title": "3 niveaux de sécurité",
-      "description": "KAMBRIQ TFL™, KAMBRIQ VEFL™, KAMBRIQ VEFIL™ — un label clair pour chaque situation foncière. Pour que vous compreniez exactement où vous en êtes."
+      "description": "KAMBRIQ TFL™, KAMBRIQ VEFL™, KAMBRIQ VEFIL™ - un label clair pour chaque situation foncière. Pour que vous compreniez exactement où vous en êtes."
     },
     "support": {
       "title": "Un accompagnement de A à Z",
@@ -65,7 +65,7 @@
     "title": "Comprendre le foncier camerounais",
     "subtitle": "Chaque semaine, un éclairage sur le foncier au Cameroun : les bases, les pièges, les réformes, la méthode.",
     "season1": {
-      "title": "Saison 1 — Comprendre le terrain sur lequel vous marchez",
+      "title": "Saison 1 - Comprendre le terrain sur lequel vous marchez",
       "items": [
         "Les 4 domaines fonciers au Cameroun",
         "Le titre foncier, c'est quoi exactement ?",
@@ -93,7 +93,7 @@
   },
   "homeCta": {
     "title": "Vous avez un projet foncier au Cameroun ?",
-    "subtitle": "Que vous cherchiez un terrain, que vous vouliez vérifier un bien, ou que vous ayez simplement des questions — parlons-en.",
+    "subtitle": "Que vous cherchiez un terrain, que vous vouliez vérifier un bien, ou que vous ayez simplement des questions - parlons-en.",
     "cta": "Nous contacter"
   },
   "products": {
@@ -588,9 +588,9 @@
         "title": "Structure des commissions",
         "subtitle": "Deux types de commissions, versées directement par KAMBRIQ.",
         "saleLabel": "Sur vente",
-        "saleDetail": "3% de la valeur de vente — versés à J+15 après validation de la transaction",
+        "saleDetail": "3% de la valeur de vente - versés à J+15 après validation de la transaction",
         "reservationLabel": "Sur réservation",
-        "reservationDetail": "1% de la valeur de vente — versés à la confirmation de la réservation"
+        "reservationDetail": "1% de la valeur de vente - versés à la confirmation de la réservation"
       },
       "badge": "Premium",
       "title": "KAMNET",
@@ -654,7 +654,7 @@
       }
     },
     "title": "Nos produits et services",
-    "subtitle": "Vérification, accompagnement à l'achat, formation — chaque service répond à une étape précise de votre projet foncier.",
+    "subtitle": "Vérification, accompagnement à l'achat, formation - chaque service répond à une étape précise de votre projet foncier.",
     "comingSoon": "Bientôt disponible",
     "lands": {
       "badge": "Disponible",
@@ -683,7 +683,7 @@
       {
         "id": "1",
         "q": "Qu'est-ce que KAMBRIQ ?",
-        "a": "KAMBRIQ est un conseil en stratégie foncière au Cameroun. Nous ne vendons pas de terrains — nous vérifions, sécurisons et accompagnons votre projet d'acquisition foncière."
+        "a": "KAMBRIQ est un conseil en stratégie foncière au Cameroun. Nous ne vendons pas de terrains - nous vérifions, sécurisons et accompagnons votre projet d'acquisition foncière."
       },
       {
         "id": "2",
@@ -698,12 +698,12 @@
       {
         "id": "4",
         "q": "Qu'est-ce que le domaine national ?",
-        "a": "C'est la catégorie foncière qui couvre plus de 95% du territoire camerounais. Sur le domaine national, personne n'est propriétaire — même pas le vendeur. Pour devenir propriétaire, il faut passer par l'immatriculation foncière."
+        "a": "C'est la catégorie foncière qui couvre plus de 95% du territoire camerounais. Sur le domaine national, personne n'est propriétaire - même pas le vendeur. Pour devenir propriétaire, il faut passer par l'immatriculation foncière."
       },
       {
         "id": "5",
         "q": "Que signifient les labels KAMBRIQ TFL™, VEFL™ et VEFIL™ ?",
-        "a": "Ce sont les 3 niveaux de sécurité de KAMBRIQ : KAMBRIQ TFL™ (immatriculation et lotissement faits — propriété immédiate à l'achat), KAMBRIQ VEFL™ (le titre foncier existe, le lotissement est en cours — propriété transférée à la fin du lotissement), KAMBRIQ VEFIL™ (immatriculation en cours, lotissement ensuite — le plus long des trois processus, risque plus élevé, accompagnement renforcé)."
+        "a": "Ce sont les 3 niveaux de sécurité de KAMBRIQ : KAMBRIQ TFL™ (immatriculation et lotissement faits - propriété immédiate à l'achat), KAMBRIQ VEFL™ (le titre foncier existe, le lotissement est en cours - propriété transférée à la fin du lotissement), KAMBRIQ VEFIL™ (immatriculation en cours, lotissement ensuite - le plus long des trois processus, risque plus élevé, accompagnement renforcé)."
       },
       {
         "id": "6",
@@ -891,7 +891,7 @@
     "agentAdvantages": "Avantages Agent KAMNET",
     "kambriqCommitment": "Engagement KAMBRIQ",
     "tfl": {
-      "name": "KAMBRIQ TFL™ — Titre Foncier Loti",
+      "name": "KAMBRIQ TFL™ - Titre Foncier Loti",
       "description": "L'immatriculation est faite et le lotissement est fait. La propriété vous est transférée immédiatement.",
       "advantages": {
         "client": "Vous devenez propriétaire dès la signature chez le notaire. Aucune procédure administrative supplémentaire.",
@@ -900,8 +900,8 @@
       }
     },
     "vefl": {
-      "name": "KAMBRIQ VEFL™ — Vente en État Futur de Lotissement",
-      "description": "L'immatriculation est terminée — le titre foncier existe. Le lotissement est en cours. La propriété vous est transférée après la fin du lotissement.",
+      "name": "KAMBRIQ VEFL™ - Vente en État Futur de Lotissement",
+      "description": "L'immatriculation est terminée - le titre foncier existe. Le lotissement est en cours. La propriété vous est transférée après la fin du lotissement.",
       "advantages": {
         "client": "L'existence du titre foncier sécurise votre achat. Vous obtiendrez un titre individuel à l'issue du lotissement. Délais plus courts qu'un VEFIL™.",
         "agent": "Bon équilibre prix/délai, accompagnement maîtrisé.",
@@ -909,7 +909,7 @@
       }
     },
     "vefil": {
-      "name": "KAMBRIQ VEFIL™ — Vente en État Futur d'Immatriculation et de Lotissement",
+      "name": "KAMBRIQ VEFIL™ - Vente en État Futur d'Immatriculation et de Lotissement",
       "description": "Le terrain est encore en cours d'immatriculation. Le lotissement viendra après. La propriété vous est transférée après la fin de l'immatriculation et du lotissement. C'est le processus le plus long.",
       "advantages": {
         "client": "Vous n'êtes PAS propriétaire à la signature. Vous devez attendre la fin de l'immatriculation ET du lotissement. Prix plus attractif, risque plus élevé.",
@@ -1161,7 +1161,7 @@
         "cancel": "Annuler",
         "confirmCancel": "Confirmer l'annulation",
         "confirmSuccess": "Acompte confirmé.",
-        "completeSuccess": "Vente finalisée — terrain marqué comme vendu.",
+        "completeSuccess": "Vente finalisée - terrain marqué comme vendu.",
         "cancelSuccess": "Réservation annulée."
       }
     },
@@ -1206,7 +1206,7 @@
   "about": {
     "hero": {
       "eyebrow": "À propos",
-      "title": "KAMBRIQ — Conseil en stratégie foncière au Cameroun",
+      "title": "KAMBRIQ - Conseil en stratégie foncière au Cameroun",
       "subtitle": "Conseil en stratégie foncière. Vérification, accompagnement, sécurisation des projets d'acquisition au Cameroun."
     },
     "mission": {
@@ -1263,7 +1263,7 @@
   "contact": {
     "hero": {
       "title": "Parlons de votre projet foncier",
-      "subtitle": "Que vous cherchiez un terrain, que vous vouliez vérifier un bien, ou que vous ayez simplement des questions — nous sommes là."
+      "subtitle": "Que vous cherchiez un terrain, que vous vouliez vérifier un bien, ou que vous ayez simplement des questions - nous sommes là."
     },
     "info": {
       "title": "Informations de contact",
@@ -1278,7 +1278,7 @@
       },
       "hours": {
         "label": "Horaires",
-        "value": "Lun–Ven, 8h–18h (WAT)"
+        "value": "Lun-Ven, 8h-18h (WAT)"
       }
     },
     "form": {
@@ -1307,47 +1307,47 @@
     "description": "KAMBRIQ accompagne la diaspora dans ses projets fonciers au Cameroun. 7 vérifications, 3 niveaux de sécurité, un accompagnement de A à Z.",
     "keywords": "foncier, Cameroun, terrains, titre foncier, KAMBRIQ, diaspora, vérification",
     "home": {
-      "title": "KAMBRIQ — Foncier camerounais vérifié et accompagné",
+      "title": "KAMBRIQ - Foncier camerounais vérifié et accompagné",
       "description": "KAMBRIQ accompagne la diaspora dans ses projets fonciers au Cameroun. 7 vérifications, 3 niveaux de sécurité, un accompagnement de A à Z."
     },
     "methode": {
-      "title": "Notre méthode — KAMBRIQ",
+      "title": "Notre méthode - KAMBRIQ",
       "description": "KAMBRIQ vérifie chaque terrain en 7 points avant de le proposer. Découvrez notre méthode et nos 3 niveaux de sécurité : TFL™, VEFL™, VEFIL™."
     },
     "verify": {
-      "title": "KAMBRIQ VERIFY™ — Vérification foncière au Cameroun",
+      "title": "KAMBRIQ VERIFY™ - Vérification foncière au Cameroun",
       "description": "Faites vérifier l'authenticité d'un terrain au Cameroun avant tout achat. 7 points de contrôle, rapport détaillé. 99€ ou gratuit si achat via KAMBRIQ."
     },
     "lands": {
-      "title": "KAMBRIQ LANDS — Terrains vérifiés au Cameroun",
+      "title": "KAMBRIQ LANDS - Terrains vérifiés au Cameroun",
       "description": "KAMBRIQ LANDS propose des terrains au Cameroun vérifiés en 7 points. 3 labels de sécurité (TFL™, VEFL™, VEFIL™). Accompagnement complet par un agent certifié."
     },
     "plan": {
-      "title": "KAMBRIQ PLAN™ — Paiement échelonné terrain Cameroun",
+      "title": "KAMBRIQ PLAN™ - Paiement échelonné terrain Cameroun",
       "description": "Achetez un terrain au Cameroun avec un paiement échelonné. Acompte de 5%, échéances selon vos capacités. Accompagnement KAMBRIQ de A à Z."
     },
     "kbs": {
-      "title": "KAMBRIQ Business School — Formation agent foncier Cameroun",
+      "title": "KAMBRIQ Business School - Formation agent foncier Cameroun",
       "description": "Formez-vous au foncier camerounais et devenez agent KAMNET certifié. Programme KCA, formation en ligne, certification reconnue."
     },
     "kamnet": {
-      "title": "KAMNET — Réseau d'agents fonciers certifiés KAMBRIQ",
+      "title": "KAMNET - Réseau d'agents fonciers certifiés KAMBRIQ",
       "description": "KAMNET est le réseau d'agents certifiés KAMBRIQ. Formés par KBS, ils accompagnent la diaspora dans ses projets fonciers au Cameroun."
     },
     "about": {
-      "title": "À propos — KAMBRIQ",
+      "title": "À propos - KAMBRIQ",
       "description": "KAMBRIQ est un conseil en stratégie foncière qui accompagne la diaspora camerounaise dans ses projets d'acquisition de terrains. Méthode, vérification, accompagnement."
     },
     "contact": {
-      "title": "Contact — KAMBRIQ",
+      "title": "Contact - KAMBRIQ",
       "description": "Contactez KAMBRIQ pour votre projet foncier au Cameroun. WhatsApp, email, formulaire. Réponse rapide, accompagnement personnalisé."
     },
     "faq": {
-      "title": "FAQ — KAMBRIQ",
+      "title": "FAQ - KAMBRIQ",
       "description": "Réponses aux questions les plus courantes sur l'achat de terrain au Cameroun, les titres fonciers, le domaine national, et les services KAMBRIQ."
     },
     "blog": {
-      "title": "Blog — KAMBRIQ",
+      "title": "Blog - KAMBRIQ",
       "description": "Articles éducatifs sur le foncier camerounais : titres fonciers, domaine national, pièges à éviter, réformes. Par KAMBRIQ, conseil en stratégie foncière."
     }
   },
@@ -1397,7 +1397,7 @@
       "tabVerify": "Vérifications",
       "tabAgent": "Mon agent",
       "tabProfile": "Profil",
-      "profilePlaceholder": "Paramètres de profil — à compléter lors de l'intégration API.",
+      "profilePlaceholder": "Paramètres de profil - à compléter lors de l'intégration API.",
       "statusInProgress": "En cours",
       "statusReserved": "Réservé",
       "statusCompleted": "Vendu"

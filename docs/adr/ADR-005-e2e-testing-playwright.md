@@ -9,8 +9,8 @@ Deciders: Kambriq Engineering Team
 ## Context and Problem Statement
 
 The Kambriq platform had unit tests (Jest, for API and shared library code) but no automated
-browser-level validation of the deployed web application. Critical flows — authentication,
-public route accessibility, health endpoints, protected route redirects — were verified
+browser-level validation of the deployed web application. Critical flows - authentication,
+public route accessibility, health endpoints, protected route redirects - were verified
 manually after each deployment.
 
 The risk: a broken auth redirect or a 500 on the login page could go undetected until a
@@ -32,7 +32,7 @@ This ADR documents the real test suite and CI integration built on that scaffold
 
 All tests live in `apps/web-e2e/src/` and run via `pnpm test:e2e`.
 
-### `health.spec.ts` — Health endpoint
+### `health.spec.ts` - Health endpoint
 
 | Test                                     | What it checks                              |
 | ---------------------------------------- | ------------------------------------------- |
@@ -40,7 +40,7 @@ All tests live in `apps/web-e2e/src/` and run via `pnpm test:e2e`.
 
 Validates the web container is running and the health route is reachable by the ALB.
 
-### `auth.spec.ts` — Authentication flow
+### `auth.spec.ts` - Authentication flow
 
 | Test                                   | What it checks                                                    |
 | -------------------------------------- | ----------------------------------------------------------------- |
@@ -49,7 +49,7 @@ Validates the web container is running and the health route is reachable by the 
 | Protected route redirects              | `GET /dashboard` → redirects to `/login` when unauthenticated     |
 | Invalid credentials handled gracefully | Submit bad credentials → stays on login page, no 500              |
 
-### `public-routes.spec.ts` — Public accessibility
+### `public-routes.spec.ts` - Public accessibility
 
 Tests that the following routes return HTTP < 400 and do **not** redirect to `/login`:
 
@@ -80,8 +80,8 @@ deployed environment.
 | Retries  | 0     | 1 (handles transient flakiness) |
 | Workers  | 1     | 2                               |
 | Chromium | ✅    | ✅                              |
-| Firefox  | —     | ✅                              |
-| WebKit   | —     | ✅                              |
+| Firefox  | -     | ✅                              |
+| WebKit   | -     | ✅                              |
 
 ---
 
@@ -99,7 +99,7 @@ deployed environment.
 
 ### After `deploy-dev` (develop push)
 
-`.github/workflows/ci.yml` — `e2e` job:
+`.github/workflows/ci.yml` - `e2e` job:
 
 ```
 push to develop
@@ -114,11 +114,11 @@ push to develop
         Upload playwright-report artifact (7-day retention)
 ```
 
-The `e2e` job `needs: [deploy-dev]` — it only runs if the deploy succeeds.
+The `e2e` job `needs: [deploy-dev]` - it only runs if the deploy succeeds.
 
 ### After `deploy-prd` (release tag)
 
-`.github/workflows/deploy-prd.yml` — steps appended after smoke test:
+`.github/workflows/deploy-prd.yml` - steps appended after smoke test:
 
 ```
 v* tag → deploy-prd.yml
@@ -172,7 +172,7 @@ To view a report: download the artifact zip, unzip, and open `index.html`. Or ru
 
 ## Consequences
 
-- **CI time**: E2E adds ~3–6 minutes to the develop push pipeline (Playwright installs + 3 browsers + test run). Accepted trade-off.
+- **CI time**: E2E adds ~3-6 minutes to the develop push pipeline (Playwright installs + 3 browsers + test run). Accepted trade-off.
 - **Flakiness**: Retries (`retries: 1` in CI) handle transient network hiccups against the deployed environment. Persistently flaky tests must be fixed, not skipped.
 - **BASE_URL dependency**: E2E against the deployed URL requires the deploy to succeed first. If `deploy-dev` fails, the `e2e` job is skipped automatically (not a failure).
 - **Cross-browser matrix**: Firefox and WebKit only run in CI to keep local iteration fast. Chromium runs everywhere.

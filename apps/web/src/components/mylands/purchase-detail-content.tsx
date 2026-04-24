@@ -80,10 +80,10 @@ export function PurchaseDetailContent({ id }: Props) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        {/* Left — journey */}
+        {/* Left - journey */}
         <JourneySteps reservation={reservation} />
 
-        {/* Right — documents + agent */}
+        {/* Right - documents + agent */}
         <div className="space-y-4">
           <PurchaseDocuments documents={reservation.land.documents ?? []} />
 

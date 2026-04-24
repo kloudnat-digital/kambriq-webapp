@@ -217,21 +217,16 @@ describe('UsersService', () => {
       const roles = [buildRole('CLIENT'), buildRole('ADMIN_KBS')];
       prisma.role.findMany.mockResolvedValue(roles);
       // $transaction with async callback
-      prisma.$transaction.mockImplementation(
-        (cb: (client: unknown) => Promise<unknown>) =>
-          cb({
-            userRole: {
-              deleteMany: jest.fn(),
-              createMany: jest.fn(),
-            },
-          }),
+      prisma.$transaction.mockImplementation((cb: (client: unknown) => Promise<unknown>) =>
+        cb({
+          userRole: {
+            deleteMany: jest.fn(),
+            createMany: jest.fn(),
+          },
+        }),
       );
 
-      await service.adminUpdate(
-        user.id,
-        { roleCodes: ['CLIENT', 'ADMIN_KBS'] },
-        'admin-1',
-      );
+      await service.adminUpdate(user.id, { roleCodes: ['CLIENT', 'ADMIN_KBS'] }, 'admin-1');
 
       expect(prisma.role.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -246,11 +241,7 @@ describe('UsersService', () => {
       prisma.role.findMany.mockResolvedValue([buildRole('CLIENT')]); // only 1 of 2 found
 
       await expect(
-        service.adminUpdate(
-          user.id,
-          { roleCodes: ['CLIENT', 'INVALID'] },
-          'admin-1',
-        ),
+        service.adminUpdate(user.id, { roleCodes: ['CLIENT', 'INVALID'] }, 'admin-1'),
       ).rejects.toThrow();
     });
   });
@@ -268,7 +259,7 @@ describe('UsersService', () => {
       expect(prisma.userRole.create).toHaveBeenCalled();
     });
 
-    it('is idempotent — does nothing if role already exists', async () => {
+    it('is idempotent - does nothing if role already exists', async () => {
       prisma.role.findUnique.mockResolvedValue(buildRole('KCA_CERTIFIED'));
       prisma.userRole.findUnique.mockResolvedValue({ id: 'existing' });
 
@@ -300,10 +291,7 @@ describe('UsersService', () => {
 
   describe('findAll', () => {
     it('returns paginated users', async () => {
-      const users = [
-        buildUserWithRoles(['CLIENT']),
-        buildUserWithRoles(['ADMIN_GLOBAL']),
-      ];
+      const users = [buildUserWithRoles(['CLIENT']), buildUserWithRoles(['ADMIN_GLOBAL'])];
       prisma.$transaction.mockResolvedValue([users, 2]);
 
       const result = await service.findAll({
@@ -390,8 +378,8 @@ describe('UsersService', () => {
         passwordHash: '$2b$10$hashdpassword',
       });
       prisma.user.findUnique
-        .mockResolvedValueOnce(user)       // service lookup
-        .mockResolvedValueOnce(null);       // uniqueness check for new email
+        .mockResolvedValueOnce(user) // service lookup
+        .mockResolvedValueOnce(null); // uniqueness check for new email
 
       (comparePassword as jest.Mock).mockResolvedValue(true);
 
@@ -426,9 +414,7 @@ describe('UsersService', () => {
       const user = buildUser({ id: 'u1', email: 'old@kambriq.com', passwordHash: '$2b$10$x' });
       const other = buildUser({ email: 'taken@kambriq.com' });
 
-      prisma.user.findUnique
-        .mockResolvedValueOnce(user)
-        .mockResolvedValueOnce(other);  // uniqueness check — email taken
+      prisma.user.findUnique.mockResolvedValueOnce(user).mockResolvedValueOnce(other); // uniqueness check - email taken
 
       (comparePassword as jest.Mock).mockResolvedValue(true);
 
@@ -475,9 +461,7 @@ describe('UsersService', () => {
     it('throws when token is invalid or expired', async () => {
       prisma.verificationToken.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.confirmEmailChange('u1', { token: 'bad-token' }),
-      ).rejects.toThrow();
+      await expect(service.confirmEmailChange('u1', { token: 'bad-token' })).rejects.toThrow();
     });
 
     it('throws when token belongs to a different user', async () => {
@@ -489,9 +473,7 @@ describe('UsersService', () => {
       });
       prisma.verificationToken.findUnique.mockResolvedValue(token);
 
-      await expect(
-        service.confirmEmailChange('u1', { token: token.token }),
-      ).rejects.toThrow();
+      await expect(service.confirmEmailChange('u1', { token: token.token })).rejects.toThrow();
     });
   });
 
@@ -549,9 +531,7 @@ describe('UsersService', () => {
           data: expect.objectContaining({ idVerificationStatus: 'verified' }),
         }),
       );
-      expect(email.send).toHaveBeenCalledWith(
-        expect.objectContaining({ template: 'idVerified' }),
-      );
+      expect(email.send).toHaveBeenCalledWith(expect.objectContaining({ template: 'idVerified' }));
     });
 
     it('sets status to rejected, stores reason, and sends idRejected email', async () => {
@@ -571,9 +551,7 @@ describe('UsersService', () => {
           }),
         }),
       );
-      expect(email.send).toHaveBeenCalledWith(
-        expect.objectContaining({ template: 'idRejected' }),
-      );
+      expect(email.send).toHaveBeenCalledWith(expect.objectContaining({ template: 'idRejected' }));
     });
 
     it('throws NotFoundException when no document is pending', async () => {
@@ -603,11 +581,7 @@ describe('UsersService', () => {
       const existing = buildUser({ email: 'existing@test.com' });
       prisma.user.findUnique.mockResolvedValue(existing);
 
-      const result = await service.findOrCreateClientUser(
-        'EXISTING@TEST.COM',
-        'Jane',
-        'Smith',
-      );
+      const result = await service.findOrCreateClientUser('EXISTING@TEST.COM', 'Jane', 'Smith');
 
       expect(result.isNew).toBe(false);
       expect(result.email).toBe(existing.email);
@@ -622,17 +596,11 @@ describe('UsersService', () => {
       prisma.userRole.create.mockResolvedValue({});
       prisma.verificationToken.create.mockResolvedValue({});
 
-      const result = await service.findOrCreateClientUser(
-        'new@test.com',
-        'Jane',
-        'Smith',
-      );
+      const result = await service.findOrCreateClientUser('new@test.com', 'Jane', 'Smith');
 
       expect(result.isNew).toBe(true);
       expect(prisma.verificationToken.create).toHaveBeenCalled();
-      expect(email.send).toHaveBeenCalledWith(
-        expect.objectContaining({ template: 'inviteUser' }),
-      );
+      expect(email.send).toHaveBeenCalledWith(expect.objectContaining({ template: 'inviteUser' }));
     });
   });
 });

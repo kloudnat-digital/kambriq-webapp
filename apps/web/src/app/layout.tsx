@@ -56,7 +56,7 @@ export async function generateMetadata(): Promise<Metadata> {
           url: '/og-image-1200x630.png',
           width: 1200,
           height: 630,
-          alt: 'KAMBRIQ — Foncier camerounais. Vérifié. Accompagné.',
+          alt: 'KAMBRIQ - Foncier camerounais. Vérifié. Accompagné.',
         },
       ],
     },

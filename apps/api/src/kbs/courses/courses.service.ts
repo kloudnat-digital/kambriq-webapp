@@ -382,7 +382,7 @@ export class KbsCoursesService {
 
   /**
    * Records that a candidate has completed (viewed/finished) a lesson.
-   * Idempotent — calling it twice for the same lesson is safe.
+   * Idempotent - calling it twice for the same lesson is safe.
    */
   async markLessonComplete(candidateId: string, lessonId: string) {
     const lesson = await this.prisma.kbsLesson.findUnique({
@@ -396,7 +396,7 @@ export class KbsCoursesService {
     await this.prisma.kbsLessonCompletion.upsert({
       where: { candidateId_lessonId: { candidateId, lessonId } },
       create: { candidateId, lessonId },
-      update: {}, // Already completed — no update needed
+      update: {}, // Already completed - no update needed
     });
 
     // Return count of completed lessons in the module so the client can show progress

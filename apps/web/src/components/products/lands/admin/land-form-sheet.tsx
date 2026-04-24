@@ -283,7 +283,7 @@ export function LandFormSheet({ open, onClose, land, labels, onSave }: LandFormS
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="f-pv">
-                  {t('form.pv')} <span className="text-xs text-muted-foreground">(0.1 – 2.0)</span>
+                  {t('form.pv')} <span className="text-xs text-muted-foreground">(0.1 - 2.0)</span>
                 </Label>
                 <Input
                   id="f-pv"

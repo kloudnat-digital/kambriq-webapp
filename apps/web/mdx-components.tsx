@@ -1,5 +1,5 @@
 /**
- * mdx-components.tsx — REQUIRED by Next.js App Router for MDX support.
+ * mdx-components.tsx - REQUIRED by Next.js App Router for MDX support.
  *
  * Maps every Markdown/MDX element to a styled React component.
  * This is the single place to control the visual style of all MDX content

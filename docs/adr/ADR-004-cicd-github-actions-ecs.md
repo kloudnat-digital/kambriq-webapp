@@ -1,4 +1,4 @@
-# ADR-004: CI/CD — Separated Build, Quality, and Deploy Pipelines
+# ADR-004: CI/CD - Separated Build, Quality, and Deploy Pipelines
 
 Date: 2026-04-17
 Last updated: 2026-04-17
@@ -22,18 +22,18 @@ We need a CI/CD pipeline for the Kambriq monorepo that:
 
 ## Decision Outcome
 
-**Chosen: Three-workflow separation — quality gate / image build / pure deploy**
+**Chosen: Three-workflow separation - quality gate / image build / pure deploy**
 
 ### Workflow Responsibilities
 
 | File                 | Trigger                                            | Responsibility                                                                                              |
 | -------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `ci.yml`             | push/PR to `develop` or `main`                     | Quality gate (lint, typecheck, test in parallel) + Docker build on `develop` push + auto-trigger deploy-dev |
-| `deploy-dev.yml`     | `workflow_call` from ci.yml or `workflow_dispatch` | Deploy API + web to dev — no build step                                                                     |
+| `deploy-dev.yml`     | `workflow_call` from ci.yml or `workflow_dispatch` | Deploy API + web to dev - no build step                                                                     |
 | `deploy-prd.yml`     | push `v*` tag or `workflow_dispatch`               | Build with cache + deploy API to prd                                                                        |
 | `release-please.yml` | push to `main`                                     | Create/update release PR, bump version, create tag                                                          |
 
-`migrate-dev.yml` and `migrate-prd.yml` have been removed — migrations are embedded in every deploy.
+`migrate-dev.yml` and `migrate-prd.yml` have been removed - migrations are embedded in every deploy.
 
 ---
 
@@ -68,7 +68,7 @@ The deployment pipeline depends on AWS infrastructure provisioned by Terraform (
 
 3. Populate GitHub Actions environment variables (see table below)
 
-4. Push to develop — automated pipeline takes over
+4. Push to develop - automated pipeline takes over
 ```
 
 ---
@@ -214,7 +214,7 @@ release-please merges to main → creates tag v1.2.3
   └─► deploy-prd.yml
         Validate: git tag == package.json version
         │
-        build (uses GHA cache from develop — fast, most layers hit)
+        build (uses GHA cache from develop - fast, most layers hit)
           docker buildx build --file docker/Dockerfile.api
           Push tags: v1.2.3, latest
           (note: prd deploy is API-only today; web prd to be added)
@@ -352,7 +352,7 @@ pnpm db:migrate:dev     # create + apply migrations for all 4 schemas
 pnpm db:seed            # seed test data (idempotent)
 pnpm db:setup           # db:migrate:dev + db:seed combined
 pnpm docker:dev:init    # start Docker Compose + db:setup
-pnpm db:studio          # open Prisma Studio on ports 5555–5558
+pnpm db:studio          # open Prisma Studio on ports 5555-5558
 ```
 
 ---
@@ -425,7 +425,7 @@ Without this exclusion, unauthenticated ALB health checks get redirected to `/lo
 
 | Workflow     | Group        | cancel-in-progress                         |
 | ------------ | ------------ | ------------------------------------------ |
-| `deploy-dev` | `deploy-dev` | `false` — never interrupt a running deploy |
+| `deploy-dev` | `deploy-dev` | `false` - never interrupt a running deploy |
 | `deploy-prd` | `deploy-prd` | `false`                                    |
 
 ---
@@ -461,12 +461,12 @@ aws ecs wait services-stable --cluster kambriq-dev-cluster --services kambriq-de
 
 | Scenario                                 | Wall clock                                                  |
 | ---------------------------------------- | ----------------------------------------------------------- |
-| PR quality check                         | ~2–3 min                                                    |
-| `develop` push (full path, warm cache)   | ~8–14 min (quality 3 min + builds 4–6 min + deploy 3–5 min) |
-| `develop` push (cold cache, first build) | ~15–25 min (Docker layers not yet cached)                   |
-| Manual redeploy (existing image)         | ~3–5 min (migrate + 2× ECS rolling update)                  |
-| Rollback to previous SHA                 | ~3–5 min                                                    |
-| Production release (`v*` tag)            | ~6–10 min (cached build fast + API deploy)                  |
+| PR quality check                         | ~2-3 min                                                    |
+| `develop` push (full path, warm cache)   | ~8-14 min (quality 3 min + builds 4-6 min + deploy 3-5 min) |
+| `develop` push (cold cache, first build) | ~15-25 min (Docker layers not yet cached)                   |
+| Manual redeploy (existing image)         | ~3-5 min (migrate + 2× ECS rolling update)                  |
+| Rollback to previous SHA                 | ~3-5 min                                                    |
+| Production release (`v*` tag)            | ~6-10 min (cached build fast + API deploy)                  |
 
 ---
 
@@ -495,7 +495,7 @@ remaining step.
 
 ---
 
-### Step 1 — Apply prd Terraform (kambriq-infra)
+### Step 1 - Apply prd Terraform (kambriq-infra)
 
 The ECS cluster, RDS, Redis, ALB, ECR, and IAM roles for production do not yet exist.
 
@@ -525,7 +525,7 @@ for the complete infrastructure bootstrap procedure.
 
 ---
 
-### Step 2 — Create GitHub Environment `prd`
+### Step 2 - Create GitHub Environment `prd`
 
 In **Settings → Environments → New environment** → name: `prd`:
 
@@ -561,11 +561,11 @@ In **Settings → Environments → New environment** → name: `prd`:
 
 ---
 
-### Step 3 — Add web service to `deploy-prd.yml`
+### Step 3 - Add web service to `deploy-prd.yml`
 
 `deploy-prd.yml` currently builds and deploys only the API. Add the following blocks:
 
-**After the API image push step — add web image build:**
+**After the API image push step - add web image build:**
 
 ```yaml
 - name: Build and push web image
@@ -585,7 +585,7 @@ In **Settings → Environments → New environment** → name: `prd`:
     cache-to: type=gha,mode=max,scope=web
 ```
 
-**After the API service is stable — add web service deploy:**
+**After the API service is stable - add web service deploy:**
 
 ```yaml
 - name: Render web task definition
@@ -607,9 +607,9 @@ In **Settings → Environments → New environment** → name: `prd`:
 
 ---
 
-### Step 4 — First production deployment
+### Step 4 - First production deployment
 
-Once steps 1–3 are complete, the pipeline is fully automated. Trigger the first production deploy:
+Once steps 1-3 are complete, the pipeline is fully automated. Trigger the first production deploy:
 
 ```
 1. Open PR: develop → main

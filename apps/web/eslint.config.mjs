@@ -44,7 +44,7 @@ export default [
     },
   },
 
-  // ── Prettier must be LAST — disables all formatting rules ─────────
+  // ── Prettier must be LAST - disables all formatting rules ─────────
   // (so ESLint and Prettier never fight over the same style decisions)
   prettierConfig,
 

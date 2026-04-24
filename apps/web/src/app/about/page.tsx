@@ -19,11 +19,11 @@ export default async function AboutPage() {
     <>
       <Navbar />
       <main className="pt-[73px]">
-        {/* Hero — short UI copy (eyebrow, title, subtitle) from next-intl JSON */}
+        {/* Hero - short UI copy (eyebrow, title, subtitle) from next-intl JSON */}
         <AboutHero />
 
         {/*
-         * Content — long-form narrative from MDX.
+         * Content - long-form narrative from MDX.
          * Edit:  apps/web/src/content/about/en.mdx  (English)
          *        apps/web/src/content/about/fr.mdx  (French)
          * Style: apps/web/mdx-components.tsx

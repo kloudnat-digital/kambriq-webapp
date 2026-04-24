@@ -1,6 +1,6 @@
 /**
  * Apply a decimal coefficient to an XAF integer using safe integer math.
- * Used for commission calculations: price × pv (Point Valeur, 0.1–2.0).
+ * Used for commission calculations: price × pv (Point Valeur, 0.1-2.0).
  *
  * Example: applyCoefficient(7_500_000, 1.2) -> 9_000_000
  */

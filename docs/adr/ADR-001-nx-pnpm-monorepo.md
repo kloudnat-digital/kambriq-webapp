@@ -16,7 +16,7 @@ The Kambriq platform has a NestJS API and a Next.js web frontend that share type
 
 - **Code sharing**: `@kambriq/common` must be consumable by both API and Web
 - **Single CI pipeline**: Lint, test, and build all packages with one workflow
-- **Selective builds**: Nx affected — only rebuild what changed
+- **Selective builds**: Nx affected - only rebuild what changed
 - **Dependency consistency**: One `pnpm-lock.yaml` across all packages
 - **Developer experience**: One `pnpm install`, one `pnpm test`
 
@@ -37,9 +37,9 @@ The Kambriq platform has a NestJS API and a Next.js web frontend that share type
 
 ```
 kambriq-webapp/
-├── apps/api/          @kambriq/api    — NestJS
-├── apps/web/          @kambriq/web    — Next.js
-├── libs/common/       @kambriq/common — Shared library
+├── apps/api/          @kambriq/api    - NestJS
+├── apps/web/          @kambriq/web    - Next.js
+├── libs/common/       @kambriq/common - Shared library
 └── prisma/            Shared schema directory
 ```
 
@@ -53,11 +53,11 @@ pnpm workspace is declared in `pnpm-workspace.yaml`. Nx handles build orchestrat
 
 **Good:**
 
-- `nx affected` rebuilds only changed packages — fast CI
+- `nx affected` rebuilds only changed packages - fast CI
 - Shared `@kambriq/common` consumed via TypeScript path alias, no publish step
-- Nx task pipeline: `build` depends on `^build` — correct dependency order
+- Nx task pipeline: `build` depends on `^build` - correct dependency order
 - pnpm strict hoisting prevents phantom dependencies
-- Single `pnpm-lock.yaml` — reproducible installs
+- Single `pnpm-lock.yaml` - reproducible installs
 
 **Bad:**
 
@@ -99,7 +99,7 @@ pnpm workspace is declared in `pnpm-workspace.yaml`. Nx handles build orchestrat
 
 ## Consequences
 
-- **`postinstall` hook**: Generates all 4 Prisma clients after every `pnpm install`. If any schema is broken, install fails — keep schemas valid at all times
-- **pnpm-workspace.yaml**: Currently only lists `apps/web`. The API is managed exclusively by Nx. This is intentional — adding `apps/api` to pnpm workspace caused conflicts with Nx resolution
+- **`postinstall` hook**: Generates all 4 Prisma clients after every `pnpm install`. If any schema is broken, install fails - keep schemas valid at all times
+- **pnpm-workspace.yaml**: Currently only lists `apps/web`. The API is managed exclusively by Nx. This is intentional - adding `apps/api` to pnpm workspace caused conflicts with Nx resolution
 - **CI note**: The `deploy-dev.yml` workflow must use `pnpm install --frozen-lockfile`, not `npm ci`. The `ci.yml` was already migrated; `deploy-dev.yml` still uses `npm ci` and must be fixed (see deployment blockers)
 - **Nx cache**: Nx task outputs are cached in `.nx/cache`. CI should restore this cache keyed on `pnpm-lock.yaml` for build speed

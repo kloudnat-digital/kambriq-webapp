@@ -208,7 +208,7 @@ model KbsExamAnswerSelection {
   @@unique([examAnswerId, answerId])
 }
 
-// Singleton row — admin updates via settings API
+// Singleton row - admin updates via settings API
 model KbsSettings {
   id                Int      @id @default(autoincrement())
   examQuestionCount Int      @default(20)

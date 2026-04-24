@@ -1,4 +1,4 @@
--- Kambriq — PostgreSQL initialization script
+-- Kambriq - PostgreSQL initialization script
 -- Runs once on first container startup (empty data directory).
 -- kambriq_core is created automatically by POSTGRES_DB in docker-compose.
 

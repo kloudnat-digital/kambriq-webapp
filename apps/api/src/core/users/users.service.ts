@@ -112,7 +112,7 @@ export class UsersService {
         where: { id: userId },
         data: { passwordHash: newHash },
       }),
-      // Revoke all active refresh tokens — other devices must re-login
+      // Revoke all active refresh tokens - other devices must re-login
       this.prisma.refreshToken.updateMany({
         where: { userId, revokedAt: null },
         data: { revokedAt: new Date() },
@@ -507,7 +507,7 @@ export class UsersService {
         where: { id: tokenRecord.id },
         data: { usedAt: new Date() },
       }),
-      // Revoke all sessions — the user must re-login with new email
+      // Revoke all sessions - the user must re-login with new email
       this.prisma.refreshToken.updateMany({
         where: { userId, revokedAt: null },
         data: { revokedAt: new Date() },

@@ -13,9 +13,9 @@ const config = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
   coverageDirectory: '../../coverage/apps/web',
   testEnvironment: 'jsdom',
-  // Runs before every test file — imports jest-dom custom matchers
+  // Runs before every test file - imports jest-dom custom matchers
   setupFilesAfterFramework: ['<rootDir>/src/test-setup.ts'],
-  // Where to find tests — both in src/ and the NX-generated specs/ folder
+  // Where to find tests - both in src/ and the NX-generated specs/ folder
   testMatch: [
     '<rootDir>/src/**/*.spec.{ts,tsx}',
     '<rootDir>/src/**/*.test.{ts,tsx}',

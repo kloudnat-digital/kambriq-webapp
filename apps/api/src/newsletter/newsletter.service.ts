@@ -25,7 +25,7 @@ export class NewsletterService {
       this.logger.log('SES contact list configured successfully');
     } else {
       this.sesClient = null;
-      this.logger.warn('SES not configured — subscriptions will be logged to console.');
+      this.logger.warn('SES not configured - subscriptions will be logged to console.');
     }
   }
 
@@ -62,7 +62,7 @@ export class NewsletterService {
       this.logger.log(`Contact list '${this.contactListName}' created`);
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AlreadyExistsException') {
-        return; // Already exists — nothing to do
+        return; // Already exists - nothing to do
       }
       throw error;
     }

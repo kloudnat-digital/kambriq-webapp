@@ -1,4 +1,4 @@
-# ADR-007: API i18n Strategy — nestjs-i18n with Per-User Language Resolution
+# ADR-007: API i18n Strategy - nestjs-i18n with Per-User Language Resolution
 
 Date: 2026-04-18
 Status: Accepted
@@ -31,7 +31,7 @@ Without a structured approach, developers tend to hardcode string literals in se
 ## Considered Options
 
 1. **nestjs-i18n with shared translation JSON files** ← chosen
-2. Return error codes only — let the frontend translate
+2. Return error codes only - let the frontend translate
 3. Custom translation service with in-memory maps
 4. Hardcode French (primary market language) everywhere
 
@@ -110,7 +110,7 @@ A single constant defines the fallback language for the entire API:
 export const DEFAULT_LANGUAGE = 'fr';
 ```
 
-It is exported from `@kambriq/common` and imported wherever a language value is needed but no user context is available. **No service should hardcode the string `'fr'` or `'en'` as a fallback** — always import and reference `DEFAULT_LANGUAGE` instead. This ensures a single change point if the default ever shifts.
+It is exported from `@kambriq/common` and imported wherever a language value is needed but no user context is available. **No service should hardcode the string `'fr'` or `'en'` as a fallback** - always import and reference `DEFAULT_LANGUAGE` instead. This ensures a single change point if the default ever shifts.
 
 ### Language Resolution Chain
 
@@ -188,14 +188,14 @@ Email templates live in `libs/common/src/i18n/en/email.json` and `fr/email.json`
 ### Positive
 
 - **Zero hardcoded strings**: All user-facing text goes through `this.t()`, making the full string inventory auditable by reading the JSON files.
-- **Single fallback point**: `DEFAULT_LANGUAGE` imported from `@kambriq/common` is the only place to change the API default language — no grep-and-replace required.
+- **Single fallback point**: `DEFAULT_LANGUAGE` imported from `@kambriq/common` is the only place to change the API default language - no grep-and-replace required.
 - **Per-user language at the right layer**: Language is resolved from the user record inside the service, not from an HTTP header, ensuring correctness even for background jobs and queue consumers.
 - **Shared with email**: Translation JSON files are used by both the HTTP response path and the email system with no duplication.
 - **Hot reload in development**: `watch: true` in the i18n module means translation file changes are reflected without restarting the API server.
 
 ### Negative / Trade-offs
 
-- **`private t()` boilerplate**: Every service that emits user-facing strings must define the same private helper and inject `I18nService`. This is repetitive but intentional — it keeps the translation call explicit and makes it easy to grep for all translation sites.
+- **`private t()` boilerplate**: Every service that emits user-facing strings must define the same private helper and inject `I18nService`. This is repetitive but intentional - it keeps the translation call explicit and makes it easy to grep for all translation sites.
 - **Admin operations default to French**: When an admin triggers an operation and no user language is available, `DEFAULT_LANGUAGE` (`'fr'`) is used. Admin-facing messages are therefore always in French unless the admin's own language is threaded through the call.
 - **No pluralization**: `nestjs-i18n` supports ICU message format for pluralization, but the current translation files use simple `{param}` interpolation only. If pluralization is needed, the message format and all call sites would need updating.
 
@@ -203,7 +203,7 @@ Email templates live in `libs/common/src/i18n/en/email.json` and `fr/email.json`
 
 ## Rejected Options
 
-### Return error codes only — let the frontend translate
+### Return error codes only - let the frontend translate
 
 Technically clean but impractical: the API is also consumed directly by mobile clients, third-party integrations, and Postman during development. Returning only machine-readable codes with no human message makes debugging significantly harder without a corresponding lookup table in every consumer.
 

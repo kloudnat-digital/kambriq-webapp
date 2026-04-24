@@ -224,7 +224,7 @@ export const LandDetailContent = ({ id }: Props) => {
           )}
         </div>
 
-        {/* Right — action panel */}
+        {/* Right - action panel */}
         <div className="space-y-4">
           <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <div className="mb-4">
@@ -251,7 +251,7 @@ export const LandDetailContent = ({ id }: Props) => {
             ) : (
               <div className="flex items-center gap-2 rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-500">
                 <XCircle className="size-4" />
-                {STATUS_LABEL_T[land.status] ?? land.status} — {t('notAvailable')}
+                {STATUS_LABEL_T[land.status] ?? land.status} - {t('notAvailable')}
               </div>
             )}
           </div>

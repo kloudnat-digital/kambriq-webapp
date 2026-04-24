@@ -169,7 +169,7 @@ export class KbsExamService {
       },
     });
 
-    // Schedule auto-expiry job — fires when the exam duration elapses.
+    // Schedule auto-expiry job - fires when the exam duration elapses.
     // The processor will force-submit and grade the exam if it is still IN_PROGRESS.
     const delayMs = exam.durationMinutes * 60_000;
     await this.kbsQueue.add(
@@ -252,7 +252,7 @@ export class KbsExamService {
       throw new BadRequestException(this.t('kbs.exam.notInProgress'));
     }
 
-    // Save final answers — same atomic slot+selection logic as saveAnswer
+    // Save final answers - same atomic slot+selection logic as saveAnswer
     for (const answer of dto.answers) {
       await this.prisma.$transaction(async (tx) => {
         const slot = await tx.kbsExamAnswer.upsert({

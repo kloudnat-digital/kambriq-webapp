@@ -78,14 +78,14 @@ pnpm db:migrate:deploy     # runs deploy for all 4 domains
 
 - Zero cross-domain database JOINs (enforced by separate connection strings)
 - Domain teams can add tables without reviewing other schemas
-- Prisma generates fully-typed clients per domain — no type pollution
+- Prisma generates fully-typed clients per domain - no type pollution
 - Independent migration history per domain
 
 **Bad:**
 
-- 4 Prisma clients open 4 connection pools — monitor total Postgres `max_connections`
+- 4 Prisma clients open 4 connection pools - monitor total Postgres `max_connections`
 - Cross-domain queries (e.g., show a user's KBS certificates) require API-level joins
-- `postinstall` runs `prisma generate` for all 4 schemas — if one is malformed, install blocks
+- `postinstall` runs `prisma generate` for all 4 schemas - if one is malformed, install blocks
 
 ### Alternative: Single Prisma schema (rejected)
 
@@ -93,7 +93,7 @@ pnpm db:migrate:deploy     # runs deploy for all 4 domains
 
 **Bad:**
 
-- All domain changes in one schema file — merge conflicts at scale
+- All domain changes in one schema file - merge conflicts at scale
 - Prisma multi-schema support (`previewFeatures = ["multiSchema"]`) doesn't provide the same isolation guarantees
 - One migration failure blocks all domains
 
@@ -103,7 +103,7 @@ pnpm db:migrate:deploy     # runs deploy for all 4 domains
 
 **Bad:**
 
-- Requires multiple deployed services — 4× the ECS cost
+- Requires multiple deployed services - 4× the ECS cost
 - Federation gateway adds latency
 - Premature for current team size
 
@@ -114,4 +114,4 @@ pnpm db:migrate:deploy     # runs deploy for all 4 domains
 - **Connection pool sizing**: With 4 clients × default pool size of 5 = 20 connections. RDS `max_connections` for db.t4g.micro is ~60. Monitor and tune `connection_limit` in `DATABASE_URL_*` query params if needed: `?connection_limit=3`
 - **Health check**: The `/api/v1/health/ready` endpoint runs `SELECT 1` on the **core** Prisma client only; the full `/health` endpoint checks core + KBS. The KamNet and Lands clients are not yet wired into the health controller (`apps/api/src/health/health.controller.ts`)
 - **Cross-domain foreign keys**: Deliberately absent. Use application-level references (store UUIDs, resolve at service layer)
-- **Future domains** (Verify, Valuation): Follow the same pattern — create `prisma/{domain}/schema.prisma` and add `DATABASE_URL_{DOMAIN}` to SSM
+- **Future domains** (Verify, Valuation): Follow the same pattern - create `prisma/{domain}/schema.prisma` and add `DATABASE_URL_{DOMAIN}` to SSM

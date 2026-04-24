@@ -42,7 +42,7 @@ COPY --from=builder /app/prisma ./prisma/
 
 # Pre-create Prisma client output dirs so the postinstall (prisma generate) can write.
 # The generated clients are overwritten by the COPY from builder below, but the
-# engine binaries extracted here (as root) remain — preventing EACCES when the
+# engine binaries extracted here (as root) remain - preventing EACCES when the
 # non-root appuser runs migrations at deploy time.
 RUN mkdir -p libs/common/src/prisma/core-client \
              libs/common/src/prisma/kbs-client \
@@ -51,7 +51,7 @@ RUN mkdir -p libs/common/src/prisma/core-client \
     pnpm install --frozen-lockfile --prod && \
     pnpm store prune
 
-# Copy pre-generated Prisma clients from builder — no prisma generate needed at runtime
+# Copy pre-generated Prisma clients from builder - no prisma generate needed at runtime
 COPY --from=builder /app/libs/common/src/prisma ./libs/common/src/prisma
 
 COPY --from=builder /app/dist/apps/api ./dist/apps/api

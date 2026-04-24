@@ -27,7 +27,7 @@ apps/api/src/
 ├── kbs/          Courses, Exams (BullMQ processor), Certificates
 ├── kamnet/       Agents, Applications, Commissions (BullMQ processor)
 ├── lands/        Parcels, Reservations, Labels
-├── health/       NestJS Terminus — checks core + KBS Prisma clients + system resources
+├── health/       NestJS Terminus - checks core + KBS Prisma clients + system resources
 └── newsletter/   SES subscription management
 ```
 
@@ -38,7 +38,7 @@ apps/api/src/
 app.use(helmet());
 app.enableCors({ origin: corsOrigins, credentials: true });
 
-// Validation + exception handling (order matters — most specific first)
+// Validation + exception handling (order matters - most specific first)
 app.useGlobalFilters(
   new GlobalExceptionFilter(), // catch-all
   new PrismaExceptionFilter(), // Prisma → HTTP codes
@@ -91,7 +91,7 @@ Next.js v16 with App Router provides SSR, static generation, and a clean route-b
 ```
 apps/web/src/
 ├── app/           App Router (RSC by default, client components where needed)
-│   ├── (auth)/    Login, register, password reset — unauthenticated routes
+│   ├── (auth)/    Login, register, password reset - unauthenticated routes
 │   ├── dashboard/ Agent + client dashboards
 │   ├── kbs/       Training, exams, certificates
 │   ├── kamnet/    Agent network
@@ -135,6 +135,6 @@ ARG NEXT_PUBLIC_APP_URL
 ## Consequences
 
 - **ECS port mapping**: The web container listens on port 3001 (`ENV PORT=3001` in `Dockerfile.web`). The ALB target group is set to `port=3000` in Terraform to avoid forced recreation; ECS registers IP targets at the actual container port (3001), overriding the TG default. The ECS security group explicitly allows both 3000 (API) and 3001 (web) from the ALB security group.
-- **Standalone output size**: ~120–200 MB Docker image for Next.js standalone. Use multi-stage builds (already implemented) to avoid including `node_modules` in the final image.
+- **Standalone output size**: ~120-200 MB Docker image for Next.js standalone. Use multi-stage builds (already implemented) to avoid including `node_modules` in the final image.
 - **Swagger in dev**: Swagger UI is served at `/api/docs` in non-production environments. Do not expose in production.
-- **React 19**: Using React 19 RC with Next.js 16 — some third-party libraries may have compatibility issues. Pin versions in `pnpm-lock.yaml`.
+- **React 19**: Using React 19 RC with Next.js 16 - some third-party libraries may have compatibility issues. Pin versions in `pnpm-lock.yaml`.
