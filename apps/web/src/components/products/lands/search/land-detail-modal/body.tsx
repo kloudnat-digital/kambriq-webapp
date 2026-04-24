@@ -49,7 +49,7 @@ export function ModalBody({ land, t, onSubDialog }: ModalBodyProps) {
                 <div className="relative aspect-video overflow-hidden">
                   <Image
                     src={img.url}
-                    alt={`${land.title} — photo ${i + 1}`}
+                    alt={`${land.title} - photo ${i + 1}`}
                     fill
                     className="object-cover"
                     sizes="768px"
@@ -75,7 +75,7 @@ export function ModalBody({ land, t, onSubDialog }: ModalBodyProps) {
               <div className="mt-1 flex items-center gap-1 text-sm text-gray-500">
                 <MapPin className="size-3.5 shrink-0" />
                 <span>
-                  {land.neighborhood}, {land.city} — {land.region}
+                  {land.neighborhood}, {land.city} - {land.region}
                 </span>
               </div>
             </div>

@@ -1,9 +1,9 @@
-# ADR-006: Content Strategy — MDX for Long-form + next-intl JSON for UI Copy
+# ADR-006: Content Strategy - MDX for Long-form + next-intl JSON for UI Copy
 
 Date: 2026-04-18
 Status: Accepted
 Deciders: Kambriq Engineering Team
-Last updated: 2026-04-18 (Phase 1–4 i18n completion)
+Last updated: 2026-04-18 (Phase 1-4 i18n completion)
 
 ---
 
@@ -11,8 +11,8 @@ Last updated: 2026-04-18 (Phase 1–4 i18n completion)
 
 The Kambriq web app needs a reliable, reviewable, and maintainable approach for managing page content in two languages (English and French). Content falls into two distinct categories:
 
-1. **Short, structured UI copy** — navigation labels, button text, hero subtitles, error messages, form placeholders. These are typically single sentences or short phrases, always bilingual, and tightly coupled to UI components.
-2. **Long-form narrative content** — about page story, mission and vision statements, FAQ answers, legal pages, product descriptions. These require proper prose formatting (headings, paragraphs, lists, bold text) and must be easy to write, proofread, and revise.
+1. **Short, structured UI copy** - navigation labels, button text, hero subtitles, error messages, form placeholders. These are typically single sentences or short phrases, always bilingual, and tightly coupled to UI components.
+2. **Long-form narrative content** - about page story, mission and vision statements, FAQ answers, legal pages, product descriptions. These require proper prose formatting (headings, paragraphs, lists, bold text) and must be easy to write, proofread, and revise.
 
 The challenge: no single format handles both categories equally well.
 
@@ -35,7 +35,7 @@ The challenge: no single format handles both categories equally well.
 ## Considered Options
 
 1. **MDX + next-intl JSON (hybrid)** ← chosen
-2. next-intl JSON only — all content in JSON files
+2. next-intl JSON only - all content in JSON files
 3. Headless CMS (Sanity, Contentful, Strapi)
 4. Markdown files only (without MDX)
 
@@ -43,7 +43,7 @@ The challenge: no single format handles both categories equally well.
 
 ## Decision Outcome
 
-**Chosen option: Hybrid — MDX for long-form content, next-intl JSON for UI copy.**
+**Chosen option: Hybrid - MDX for long-form content, next-intl JSON for UI copy.**
 
 Each tool is used for what it does best:
 
@@ -149,7 +149,7 @@ To add a new MDX page:
 3. Add a `case '{page}/en'` and `case '{page}/fr'` in the `loadContent` switch
 4. Call `loadContent` in the server component
 
-### next-intl JSON — Namespace Inventory
+### next-intl JSON - Namespace Inventory
 
 `src/i18n/messages/en.json` (mirrored by `fr.json`) is organized into top-level namespaces. Each namespace is consumed by a distinct set of components via `useTranslations(namespace)` (client) or `getTranslations(namespace)` (server async).
 
@@ -198,13 +198,13 @@ The `a11y` namespace deserves special mention: it contains strings that are only
 - **Familiar format**: Anyone who can write Markdown can contribute content
 - **Server-component native**: MDX components render on the server; no client bundle impact
 - **Bilingual by structure**: Locale is encoded in the file path (`en.mdx` vs `fr.mdx`), not in a runtime switch
-- **Complete coverage**: All user-facing text — public pages, internal app, legal, accessibility strings — is now bilingual
+- **Complete coverage**: All user-facing text - public pages, internal app, legal, accessibility strings - is now bilingual
 
 ### Negative / Trade-offs
 
 - **Turbopack constraint**: Remark/rehype plugins with function values are not serializable for Turbopack and cannot be passed to `createMDX`. Standard Markdown syntax (headings, bold, lists, links, blockquotes) covers all current needs without GFM extras (tables, strikethrough, task lists).
 - **No live editing**: Content changes require a code commit and CI/CD deployment. Acceptable at the current stage; a headless CMS can be adopted later if non-developer editors need to update content.
-- **`loadContent` switch statement**: Adding a new MDX page requires updating both the file system and `src/lib/content.ts`. This is intentional — it keeps imports statically analyzable by Turbopack and avoids dynamic `import()` paths.
+- **`loadContent` switch statement**: Adding a new MDX page requires updating both the file system and `src/lib/content.ts`. This is intentional - it keeps imports statically analyzable by Turbopack and avoids dynamic `import()` paths.
 - **No interpolation in MDX**: Dynamic values (e.g. user names, prices from the API) cannot be injected into MDX prose. Use next-intl JSON with `t('key', { value })` for those cases.
 
 ---

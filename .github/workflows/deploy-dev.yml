@@ -187,12 +187,12 @@ jobs:
             echo "[${ELAPSED}s] API: running=${RUNNING}/${DESIRED} rollout=${ROLLOUT}"
             if [[ "${ROLLOUT}" == "COMPLETED" ]]; then echo "✓ API stable"; break; fi
             if [[ "${ROLLOUT}" == "FAILED" ]]; then
-              echo "✗ API rollout FAILED — recent events:"; echo "${SVC}" | jq -r '.events[:5][]|.message'; exit 1
+              echo "✗ API rollout FAILED - recent events:"; echo "${SVC}" | jq -r '.events[:5][]|.message'; exit 1
             fi
             sleep $INTERVAL; ELAPSED=$((ELAPSED + INTERVAL))
           done
           if [[ $ELAPSED -ge $TIMEOUT ]]; then
-            echo "✗ Timed out waiting for API service after ${TIMEOUT}s — recent events:"
+            echo "✗ Timed out waiting for API service after ${TIMEOUT}s - recent events:"
             aws ecs describe-services --cluster "${ECS_CLUSTER}" --services "${ECS_SERVICE}" \
               --query "services[0].events[:8]" --output table; exit 1
           fi
@@ -238,7 +238,7 @@ jobs:
             echo "[${ELAPSED}s] Web: running=${RUNNING}/${DESIRED} rollout=${ROLLOUT}"
             if [[ "${ROLLOUT}" == "COMPLETED" ]]; then echo "✓ Web stable"; break; fi
             if [[ "${ROLLOUT}" == "FAILED" ]]; then
-              echo "✗ Web rollout FAILED — recent events:"; echo "${SVC}" | jq -r '.events[:5][]|.message'
+              echo "✗ Web rollout FAILED - recent events:"; echo "${SVC}" | jq -r '.events[:5][]|.message'
               # Show stopped task stop reason for root cause
               STOPPED="$(aws ecs list-tasks --cluster "${ECS_CLUSTER}" --service-name "${ECS_WEB_SERVICE}" \
                 --desired-status STOPPED --query "taskArns[0]" --output text 2>/dev/null || true)"
@@ -253,7 +253,7 @@ jobs:
             sleep $INTERVAL; ELAPSED=$((ELAPSED + INTERVAL))
           done
           if [[ $ELAPSED -ge $TIMEOUT ]]; then
-            echo "✗ Timed out waiting for Web service after ${TIMEOUT}s — recent events:"
+            echo "✗ Timed out waiting for Web service after ${TIMEOUT}s - recent events:"
             aws ecs describe-services --cluster "${ECS_CLUSTER}" --services "${ECS_WEB_SERVICE}" \
               --query "services[0].events[:8]" --output table
             # Dump stopped task reason so we know why health checks are failing

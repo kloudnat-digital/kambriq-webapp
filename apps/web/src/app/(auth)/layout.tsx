@@ -100,7 +100,7 @@ const AuthLayout = ({ children }: { children: ReactNode }) => {
 
       {/* Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <Link href="/" aria-label="KAMBRIQ — Accueil">
+        <Link href="/" aria-label="KAMBRIQ - Accueil">
           <KambriqLogo className="mx-auto" />
         </Link>
         <h2 className="mt-6 text-center text-2xl/9 font-bold tracking-tight text-gray-900">

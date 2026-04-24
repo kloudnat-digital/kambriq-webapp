@@ -202,7 +202,7 @@ export class KbsCandidatesService {
     const score = Math.round((correctCount / questions.length) * 100);
     const passed = score >= MODULE_PASSING_SCORE;
 
-    // Upsert progress record — always increment attempt counter
+    // Upsert progress record - always increment attempt counter
     await this.prisma.kbsCandidateProgress.upsert({
       where: {
         candidateId_moduleId: {

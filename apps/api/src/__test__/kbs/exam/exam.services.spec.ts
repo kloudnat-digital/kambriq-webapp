@@ -50,8 +50,8 @@ describe('KbsExamService', () => {
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
       prisma.kbsExamQuestion.count.mockResolvedValue(20); // pool exists
       prisma.kbsExam.findFirst
-        .mockResolvedValueOnce(null)              // 1st call: no active exam
-        .mockResolvedValueOnce(null);             // 2nd call: no last failed exam
+        .mockResolvedValueOnce(null) // 1st call: no active exam
+        .mockResolvedValueOnce(null); // 2nd call: no last failed exam
       prisma.kbsExam.count.mockResolvedValue(0); // 0 attempts
       prisma.kbsModule.count.mockResolvedValue(3);
       prisma.kbsCandidateProgress.count.mockResolvedValue(3); // all completed
@@ -87,9 +87,7 @@ describe('KbsExamService', () => {
       const candidate = buildCandidate({ status: 'EXAM_PENDING' });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
       prisma.kbsExamQuestion.count.mockResolvedValue(20);
-      prisma.kbsExam.findFirst.mockResolvedValue(
-        buildExam({ status: 'SCHEDULED' }),
-      );
+      prisma.kbsExam.findFirst.mockResolvedValue(buildExam({ status: 'SCHEDULED' }));
 
       const result = await service.checkEligibility(candidate.userId);
       expect(result.eligible).toBe(false);
@@ -134,9 +132,7 @@ describe('KbsExamService', () => {
       const candidate = buildCandidate({ status: 'CANDIDATE' });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
 
-      await expect(service.scheduleExam(candidate.userId)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.scheduleExam(candidate.userId)).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -184,13 +180,11 @@ describe('KbsExamService', () => {
     it('throws if exam does not belong to the candidate', async () => {
       const candidate = buildCandidate({ id: 'cand-1' });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
-      prisma.kbsExam.findUnique.mockResolvedValue(
-        buildExam({ candidateId: 'other-candidate' }),
-      );
+      prisma.kbsExam.findUnique.mockResolvedValue(buildExam({ candidateId: 'other-candidate' }));
 
-      await expect(
-        service.startExam(candidate.userId, 'exam-1'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.startExam(candidate.userId, 'exam-1')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('throws if exam is not in SCHEDULED status', async () => {
@@ -200,9 +194,9 @@ describe('KbsExamService', () => {
         buildExam({ candidateId: candidate.id, status: 'IN_PROGRESS' }),
       );
 
-      await expect(
-        service.startExam(candidate.userId, 'exam-1'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.startExam(candidate.userId, 'exam-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -221,20 +215,18 @@ describe('KbsExamService', () => {
       prisma.kbsExam.findUnique.mockResolvedValue(exam);
 
       // Mock transaction callback
-      prisma.$transaction.mockImplementation(
-        async (cb: (client: unknown) => Promise<unknown>) => {
-          const tx = {
-            kbsExamAnswer: {
-              upsert: jest.fn().mockResolvedValue({ id: 'ea1' }),
-            },
-            kbsExamAnswerSelection: {
-              deleteMany: jest.fn(),
-              createMany: jest.fn(),
-            },
-          };
-          return cb(tx);
-        },
-      );
+      prisma.$transaction.mockImplementation(async (cb: (client: unknown) => Promise<unknown>) => {
+        const tx = {
+          kbsExamAnswer: {
+            upsert: jest.fn().mockResolvedValue({ id: 'ea1' }),
+          },
+          kbsExamAnswerSelection: {
+            deleteMany: jest.fn(),
+            createMany: jest.fn(),
+          },
+        };
+        return cb(tx);
+      });
 
       await service.saveAnswer(candidate.userId, exam.id, {
         questionId: 'q1',
@@ -277,20 +269,18 @@ describe('KbsExamService', () => {
       prisma.kbsExam.update.mockResolvedValue({});
 
       // Mock per-answer transaction
-      prisma.$transaction.mockImplementation(
-        async (cb: (client: unknown) => Promise<unknown>) => {
-          const tx = {
-            kbsExamAnswer: {
-              upsert: jest.fn().mockResolvedValue({ id: 'ea1' }),
-            },
-            kbsExamAnswerSelection: {
-              deleteMany: jest.fn(),
-              createMany: jest.fn(),
-            },
-          };
-          return cb(tx);
-        },
-      );
+      prisma.$transaction.mockImplementation(async (cb: (client: unknown) => Promise<unknown>) => {
+        const tx = {
+          kbsExamAnswer: {
+            upsert: jest.fn().mockResolvedValue({ id: 'ea1' }),
+          },
+          kbsExamAnswerSelection: {
+            deleteMany: jest.fn(),
+            createMany: jest.fn(),
+          },
+        };
+        return cb(tx);
+      });
 
       await service.submitExam(candidate.userId, 'exam-1', {
         answers: [{ questionId: 'q1', answerIds: ['a1'] }],
@@ -342,9 +332,7 @@ describe('KbsExamService', () => {
         ],
       });
       prisma.kbsExam.findUnique.mockResolvedValue(exam);
-      prisma.$transaction.mockImplementation((ops: Promise<unknown>[]) =>
-        Promise.all(ops),
-      );
+      prisma.$transaction.mockImplementation((ops: Promise<unknown>[]) => Promise.all(ops));
       prisma.kbsExam.update.mockResolvedValue({});
       prisma.kbsCandidate.update.mockResolvedValue({});
 
@@ -381,9 +369,7 @@ describe('KbsExamService', () => {
         ],
       });
       prisma.kbsExam.findUnique.mockResolvedValue(exam);
-      prisma.$transaction.mockImplementation((ops: Promise<unknown>[]) =>
-        Promise.all(ops),
-      );
+      prisma.$transaction.mockImplementation((ops: Promise<unknown>[]) => Promise.all(ops));
       prisma.kbsExam.update.mockResolvedValue({});
       prisma.kbsCandidate.update.mockResolvedValue({});
 
@@ -399,7 +385,7 @@ describe('KbsExamService', () => {
     });
   });
 
-  // ----- ADMIN — CANCEL / RESET ----- //
+  // ----- ADMIN - CANCEL / RESET ----- //
 
   describe('cancelExam', () => {
     it('cancels a SCHEDULED exam with a reason', async () => {
@@ -414,13 +400,11 @@ describe('KbsExamService', () => {
     });
 
     it('throws if exam is already PASSED/FAILED', async () => {
-      prisma.kbsExam.findUnique.mockResolvedValue(
-        buildExam({ status: 'PASSED' }),
-      );
+      prisma.kbsExam.findUnique.mockResolvedValue(buildExam({ status: 'PASSED' }));
 
-      await expect(
-        service.cancelExam('ex1', { reason: 'Too late' }),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.cancelExam('ex1', { reason: 'Too late' })).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -446,9 +430,7 @@ describe('KbsExamService', () => {
     it('throws NotFoundException for unknown candidate', async () => {
       prisma.kbsCandidate.findUnique.mockResolvedValue(null);
 
-      await expect(service.resetAttempts('bad-id')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.resetAttempts('bad-id')).rejects.toThrow(NotFoundException);
     });
   });
 

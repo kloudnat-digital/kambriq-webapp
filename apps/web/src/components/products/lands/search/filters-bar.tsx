@@ -114,7 +114,7 @@ export default function FiltersBar() {
             onChange={(e) => setFilter('minPrice', e.target.value)}
             className="h-9 w-28"
           />
-          <span className="text-xs text-gray-400">–</span>
+          <span className="text-xs text-gray-400">-</span>
           <Input
             type="number"
             placeholder={t('maxPrice')}

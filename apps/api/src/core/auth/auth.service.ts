@@ -255,7 +255,7 @@ export class AuthService {
 
     // Infer "remember me" from the original token's duration.
     // Short tokens (24h) were session-only; long tokens (30d) were remembered.
-    // 2 days is a safe threshold — well above 24h, well below 30d.
+    // 2 days is a safe threshold - well above 24h, well below 30d.
     const durationMs = storedToken.expiresAt.getTime() - storedToken.createdAt.getTime();
     const wasRemembered = durationMs > 2 * 86_400_000;
 

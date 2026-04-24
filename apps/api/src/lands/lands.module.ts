@@ -10,9 +10,9 @@ import { LandsAdminController } from './controllers/lands-admin.controller';
 import { LandsClientController } from './controllers/lands-client.controller';
 
 /**
- * LANDS Module — Land Inventory & Sales
+ * LANDS Module - Land Inventory & Sales
  *
- * The LANDS module manages the core product — verified land parcels:
+ * The LANDS module manages the core product - verified land parcels:
  * - Land parcels (CRUD, publishing, archiving)
  * - Labels (TFL, VEFL, VEFIL land classification)
  * - Media (public images, maps via S3)

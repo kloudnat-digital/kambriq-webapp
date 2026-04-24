@@ -18,7 +18,7 @@
     "updated": "Land label updated successfully",
     "deleted": "Land label deleted successfully",
     "codeTaken": "A label with code {code} already exists",
-    "inUse": "Cannot delete this label — it is assigned to {count} land(s)"
+    "inUse": "Cannot delete this label - it is assigned to {count} land(s)"
   },
   "media": {
     "uploaded": "Media uploaded successfully",
@@ -31,14 +31,14 @@
     "deleted": "Document deleted successfully"
   },
   "reservation": {
-    "created": "Reservation created — land is now held for {clientName}",
+    "created": "Reservation created - land is now held for {clientName}",
     "notFound": "Reservation not found",
-    "confirmed": "Down payment confirmed — reservation is now active",
+    "confirmed": "Down payment confirmed - reservation is now active",
     "documentsReceived": "Client documents marked as received",
     "remainingPaymentConfirmed": "Remaining payment confirmed",
     "dossierStarted": "Dossier / title transfer started",
     "completed": "Sale completed successfully",
-    "cancelled": "Reservation cancelled — land is available again",
+    "cancelled": "Reservation cancelled - land is available again",
     "alreadyActive": "This reservation already has a confirmed down payment",
     "notPending": "Only pending reservations can be confirmed",
     "notConfirmed": "Only confirmed reservations can progress",
@@ -49,7 +49,7 @@
   },
   "invite": {
     "sent": "Invitation sent to {email}",
-    "alreadyExists": "An account already exists for {email} — invitation resent"
+    "alreadyExists": "An account already exists for {email} - invitation resent"
   },
   "priceHistory": {
     "noChanges": "No price changes recorded for this land"

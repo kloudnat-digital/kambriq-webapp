@@ -73,7 +73,7 @@ export class KamnetNetworkService {
       return this.buildTree(rootAgentId, safeDepth);
     }
 
-    // No root specified: load overview only — clamp depth to 1 and cap root count.
+    // No root specified: load overview only - clamp depth to 1 and cap root count.
     const overviewDepth = 1;
     const roots = await this.prisma.kamnetAgent.findMany({
       where: { sponsorId: null },

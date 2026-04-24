@@ -17,13 +17,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import {
-  CurrentUser,
-  PaginationQueryDto,
-  RequestUser,
-  RoleCode,
-  Roles,
-} from '@kambriq/common';
+import { CurrentUser, PaginationQueryDto, RequestUser, RoleCode, Roles } from '@kambriq/common';
 
 import {
   ReviewApplicationDto,
@@ -56,8 +50,18 @@ export class KamnetAdminController {
   @ApiOperation({ summary: 'List all KAMNET applications' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
-  @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'APPROVED', 'REJECTED'], description: 'Filter by application status' })
-  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search by applicant name or email' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['PENDING', 'APPROVED', 'REJECTED'],
+    description: 'Filter by application status',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search by applicant name or email',
+  })
   async listApplications(
     @Query() pagination: PaginationQueryDto,
     @Query() filters: ApplicationFilterDto,
@@ -91,13 +95,20 @@ export class KamnetAdminController {
   @ApiOperation({ summary: 'List all agents with filters' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
-  @ApiQuery({ name: 'tier', required: false, enum: ['JUNIOR', 'CONFIRMED', 'MANAGER'], description: 'Filter by agent tier' })
+  @ApiQuery({
+    name: 'tier',
+    required: false,
+    enum: ['JUNIOR', 'CONFIRMED', 'MANAGER'],
+    description: 'Filter by agent tier',
+  })
   @ApiQuery({ name: 'country', required: false, type: String, description: 'Filter by country' })
-  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search by agent code, name, or email' })
-  async listAgents(
-    @Query() pagination: PaginationQueryDto,
-    @Query() filters: AgentFilterDto,
-  ) {
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search by agent code, name, or email',
+  })
+  async listAgents(@Query() pagination: PaginationQueryDto, @Query() filters: AgentFilterDto) {
     return this.agentsService.findAll(pagination, filters);
   }
 
@@ -111,14 +122,10 @@ export class KamnetAdminController {
   @Patch('agents/:id/status')
   @ApiOperation({
     summary: 'Update agent status',
-    description:
-      'Manually set agent status (JUNIOR, CONFIRMED, MANAGER, SUSPENDED).',
+    description: 'Manually set agent status (JUNIOR, CONFIRMED, MANAGER, SUSPENDED).',
   })
   @ApiParam({ name: 'id', description: 'Agent ID' })
-  async updateAgentStatus(
-    @Param('id') id: string,
-    @Body() dto: UpdateAgentStatusDto,
-  ) {
+  async updateAgentStatus(@Param('id') id: string, @Body() dto: UpdateAgentStatusDto) {
     return this.agentsService.update(id, dto);
   }
 
@@ -126,10 +133,7 @@ export class KamnetAdminController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Suspend an agent' })
   @ApiParam({ name: 'id', description: 'Agent ID' })
-  async suspendAgent(
-    @CurrentUser() user: RequestUser,
-    @Param('id') id: string,
-  ) {
+  async suspendAgent(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.agentsService.suspend(id, user.id);
   }
 
@@ -137,10 +141,7 @@ export class KamnetAdminController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reactivate a suspended agent' })
   @ApiParam({ name: 'id', description: 'Agent ID' })
-  async reactivateAgent(
-    @CurrentUser() user: RequestUser,
-    @Param('id') id: string,
-  ) {
+  async reactivateAgent(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return this.agentsService.reactivate(id, user.id);
   }
 
@@ -159,7 +160,12 @@ export class KamnetAdminController {
   @ApiOperation({ summary: 'List all commission records' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
-  @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'VALIDATED', 'PAID'], description: 'Filter by commission status' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['PENDING', 'VALIDATED', 'PAID'],
+    description: 'Filter by commission status',
+  })
   @ApiQuery({ name: 'agentId', required: false, type: String, description: 'Filter by agent ID' })
   async listCommissions(
     @Query() pagination: PaginationQueryDto,
@@ -173,10 +179,7 @@ export class KamnetAdminController {
     summary: 'Update commission status (PENDING → VALIDATED → PAID)',
   })
   @ApiParam({ name: 'id', description: 'Commission ID' })
-  async updateCommissionStatus(
-    @Param('id') id: string,
-    @Body() dto: UpdateCommissionStatusDto,
-  ) {
+  async updateCommissionStatus(@Param('id') id: string, @Body() dto: UpdateCommissionStatusDto) {
     return this.commissionsService.updateStatus(id, dto);
   }
 
@@ -186,8 +189,21 @@ export class KamnetAdminController {
     description:
       'Returns the complete tree from a root agent or all root agents. Scoping by rootAgentId is strongly recommended for large networks.',
   })
-  @ApiQuery({ name: 'rootAgentId', required: false, type: String, description: 'Scope tree to a specific root agent. Without this, returns up to 50 root agents at depth 1 (overview mode).' })
-  @ApiQuery({ name: 'depth', required: false, type: Number, enum: [1, 2, 3], description: 'Tree depth (1–3). Only applies when rootAgentId is set; overview mode always uses depth 1.' })
+  @ApiQuery({
+    name: 'rootAgentId',
+    required: false,
+    type: String,
+    description:
+      'Scope tree to a specific root agent. Without this, returns up to 50 root agents at depth 1 (overview mode).',
+  })
+  @ApiQuery({
+    name: 'depth',
+    required: false,
+    type: Number,
+    enum: [1, 2, 3],
+    description:
+      'Tree depth (1-3). Only applies when rootAgentId is set; overview mode always uses depth 1.',
+  })
   async getFullTree(@Query() query: AdminNetworkTreeQueryDto) {
     return this.networkService.getFullTree(query.rootAgentId, query.depth);
   }

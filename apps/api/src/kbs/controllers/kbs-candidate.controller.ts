@@ -1,31 +1,12 @@
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { KbsCoursesService } from '../courses/courses.service';
 import { KbsCandidatesService } from '../candidates/candidates.service';
 import { KbsExamService } from '../exam/exam.service';
 import { KbsCertificatesService } from '../certificates/certificates.service';
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Patch,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
 import { CurrentUser, RequestUser } from '@kambriq/common';
 import { EnrollDto, SubmitQuizDto } from '../candidates/dto/candidate.dto';
-import {
-  RescheduleExamDto,
-  SaveAnswerDto,
-  SubmitExamDto,
-} from '../exam/dto/exam.dto';
+import { RescheduleExamDto, SaveAnswerDto, SubmitExamDto } from '../exam/dto/exam.dto';
 
 @ApiTags('KBS - Candidate')
 @ApiBearerAuth()
@@ -87,15 +68,11 @@ export class KbsCandidateController {
   @ApiParam({ name: 'courseId', description: 'Course ID (CUID)', example: 'clxxxxxxxxxxxxxx' })
   @ApiResponse({
     status: 200,
-    description:
-      'Module list returned, with progress indicators for enrolled candidates.',
+    description: 'Module list returned, with progress indicators for enrolled candidates.',
   })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 404, description: 'Course not found.' })
-  async getCourseModules(
-    @CurrentUser() user: RequestUser,
-    @Param('courseId') courseId: string,
-  ) {
+  async getCourseModules(@CurrentUser() user: RequestUser, @Param('courseId') courseId: string) {
     const candidate = await this.candidatesService.findByUserId(user.id);
     if (!candidate) {
       return this.coursesService.findModulesByCourseId(courseId);
@@ -106,8 +83,7 @@ export class KbsCandidateController {
   @Get('lesson/:lessonId')
   @ApiOperation({
     summary: 'Get lesson content',
-    description:
-      'Returns the full lesson including content URL (video, PDF, etc.) and metadata.',
+    description: 'Returns the full lesson including content URL (video, PDF, etc.) and metadata.',
   })
   @ApiParam({ name: 'lessonId', description: 'Lesson ID (CUID)', example: 'clxxxxxxxxxxxxxx' })
   @ApiResponse({ status: 200, description: 'Lesson content returned.' })
@@ -128,13 +104,10 @@ export class KbsCandidateController {
   @ApiResponse({ status: 200, description: 'Lesson marked complete. Returns module progress.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 404, description: 'Lesson not found.' })
-  async markLessonComplete(
-    @CurrentUser() user: RequestUser,
-    @Param('lessonId') lessonId: string,
-  ) {
+  async markLessonComplete(@CurrentUser() user: RequestUser, @Param('lessonId') lessonId: string) {
     const candidate = await this.candidatesService.findByUserId(user.id);
     if (!candidate) {
-      return { lessonId, completed: true }; // Not enrolled — still record nothing, just OK
+      return { lessonId, completed: true }; // Not enrolled - still record nothing, just OK
     }
     return this.coursesService.markLessonComplete(candidate.id, lessonId);
   }
@@ -190,8 +163,7 @@ export class KbsCandidateController {
   })
   @ApiResponse({
     status: 200,
-    description:
-      'Returns { eligible: boolean, reason?: string, requiredModules?: [] }.',
+    description: 'Returns { eligible: boolean, reason?: string, requiredModules?: [] }.',
   })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 404, description: 'Candidate not enrolled in KBS.' })
@@ -228,8 +200,7 @@ export class KbsCandidateController {
   @ApiResponse({ status: 200, description: 'Exam rescheduled.' })
   @ApiResponse({
     status: 400,
-    description:
-      'New date must be in the future, or exam is not in SCHEDULED status.',
+    description: 'New date must be in the future, or exam is not in SCHEDULED status.',
   })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({
@@ -265,10 +236,7 @@ export class KbsCandidateController {
     status: 404,
     description: 'Exam not found or does not belong to this candidate.',
   })
-  async startExam(
-    @CurrentUser() user: RequestUser,
-    @Param('examId') examId: string,
-  ) {
+  async startExam(@CurrentUser() user: RequestUser, @Param('examId') examId: string) {
     return this.examService.startExam(user.id, examId);
   }
 
@@ -352,10 +320,7 @@ export class KbsCandidateController {
     status: 404,
     description: 'Exam not found or does not belong to this candidate.',
   })
-  async getExamResults(
-    @CurrentUser() user: RequestUser,
-    @Param('examId') examId: string,
-  ) {
+  async getExamResults(@CurrentUser() user: RequestUser, @Param('examId') examId: string) {
     return this.examService.getExamResult(user.id, examId);
   }
 

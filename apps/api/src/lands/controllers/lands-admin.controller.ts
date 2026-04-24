@@ -54,7 +54,7 @@ export class LandsAdminController {
     description:
       'Creates a client account if it does not exist and sends a set-password invitation email. ' +
       'If the account already exists, resends the invitation. ' +
-      'This is a manual trigger — invitations are also sent automatically on reservation.',
+      'This is a manual trigger - invitations are also sent automatically on reservation.',
   })
   @ApiResponse({
     status: 200,
@@ -112,7 +112,7 @@ export class LandsAdminController {
 
   @Get()
   @ApiOperation({
-    summary: 'List all lands (admin view — includes unpublished)',
+    summary: 'List all lands (admin view - includes unpublished)',
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
@@ -277,7 +277,7 @@ export class LandsAdminController {
   @Post('reservations/:id/documents-received')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Step 3 — Mark client documents as received',
+    summary: 'Step 3 - Mark client documents as received',
     description:
       'Records that the client has submitted their required documents (ID, proof of address, etc.). Requires step 2 (down payment confirmed) to be done first.',
   })
@@ -289,7 +289,7 @@ export class LandsAdminController {
   @Post('reservations/:id/payment-confirmed')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Step 4 — Confirm remaining payment received',
+    summary: 'Step 4 - Confirm remaining payment received',
     description:
       'Records that the remaining balance has been received. Requires step 3 (documents received) to be done first.',
   })
@@ -301,7 +301,7 @@ export class LandsAdminController {
   @Post('reservations/:id/dossier-started')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Step 5 — Start dossier / title transfer',
+    summary: 'Step 5 - Start dossier / title transfer',
     description:
       'Records that the title transfer process has been initiated. Requires step 4 (remaining payment confirmed) to be done first.',
   })
@@ -313,7 +313,7 @@ export class LandsAdminController {
   @Post('reservations/:id/complete')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Step 6 — Complete a sale (finalize reservation)',
+    summary: 'Step 6 - Complete a sale (finalize reservation)',
     description:
       'Marks reservation as COMPLETED and land as SOLD. Only confirmed reservations can be completed.',
   })

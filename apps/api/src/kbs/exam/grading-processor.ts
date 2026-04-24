@@ -58,7 +58,7 @@ export class KbsGradingProcessor extends WorkerHost {
       return;
     }
 
-    // Only act if the exam is still IN_PROGRESS — candidate may have already submitted
+    // Only act if the exam is still IN_PROGRESS - candidate may have already submitted
     if (exam.status !== ExamStatus.IN_PROGRESS) {
       this.logger.log('Expire-exam job: exam already finalized, skipping', {
         examId,
@@ -89,7 +89,7 @@ export class KbsGradingProcessor extends WorkerHost {
     try {
       result = await this.examService.gradeExam(examId);
     } catch (err) {
-      this.logger.error('Grading failed — marking exam as FAILED', {
+      this.logger.error('Grading failed - marking exam as FAILED', {
         examId,
         error: err instanceof Error ? err.message : String(err),
       });

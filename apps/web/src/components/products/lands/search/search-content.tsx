@@ -43,7 +43,7 @@ export default function SearchContent() {
         <FiltersBar />
 
         <div className="flex min-h-0 flex-1">
-          {/* Map — hidden on mobile */}
+          {/* Map - hidden on mobile */}
           <div className="hidden border-r border-border md:block md:w-[50%]">
             <LandsMap lands={filteredLands} onLandClick={setSelectedLand} />
           </div>

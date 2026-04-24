@@ -15,7 +15,7 @@ export default function KbsExamPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Examen KBS — Module 3</h1>
+            <h1 className="text-xl font-bold text-gray-900">Examen KBS - Module 3</h1>
             <p className="text-xs text-gray-500">5 questions · Durée : 15 minutes</p>
           </div>
         </div>

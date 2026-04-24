@@ -5,7 +5,7 @@
     "notFound": "Application not found",
     "notPending": "This application is not in pending status",
     "invalidKca": "Your KCA certificate is invalid or expired. Please ensure you have a valid KBS certification.",
-    "approved": "Application approved — welcome to KAMNET!",
+    "approved": "Application approved - welcome to KAMNET!",
     "rejected": "Application has been rejected",
     "sponsorNotFound": "Sponsor with code {code} not found"
   },
@@ -36,7 +36,7 @@
     "landNotAvailable": "This land is not available for reservation",
     "alreadyReserved": "This land is already reserved",
     "downPaymentConfirmed": "Down payment confirmed for reservation {id}",
-    "completed": "Reservation completed — sale finalized",
+    "completed": "Reservation completed - sale finalized",
     "cancelled": "Reservation has been cancelled",
     "notPending": "This reservation is not in pending status",
     "notConfirmed": "This reservation has not been confirmed yet",

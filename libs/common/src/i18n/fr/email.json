@@ -11,7 +11,7 @@
     "heading": "Réinitialisation du mot de passe",
     "body": "Bonjour {firstName}, nous avons reçu une demande de réinitialisation de votre mot de passe.",
     "button": "Réinitialiser le mot de passe",
-    "expiry": "Ce lien expire dans 1 heure. Si vous n'avez pas fait cette demande, vous pouvez ignorer cet email — votre mot de passe ne sera pas modifié."
+    "expiry": "Ce lien expire dans 1 heure. Si vous n'avez pas fait cette demande, vous pouvez ignorer cet email - votre mot de passe ne sera pas modifié."
   },
   "passwordResetConfirmation": {
     "subject": "Votre mot de passe KAMBRIQ a été réinitialisé",
@@ -98,7 +98,7 @@
   "agentPromotion": {
     "subject": "🎉 Vous avez été promu sur KAMNET !",
     "heading": "Félicitations, {firstName} !",
-    "body": "Votre travail porte ses fruits — vous venez de gagner une promotion sur le réseau KAMNET.",
+    "body": "Votre travail porte ses fruits - vous venez de gagner une promotion sur le réseau KAMNET.",
     "tierLabel": "Votre nouveau rang :",
     "note": "Continuez à développer votre réseau et à conclure des ventes. Le prochain niveau est à portée de main."
   },
@@ -107,7 +107,7 @@
     "heading": "Changement d'adresse email",
     "body": "Bonjour {firstName}, vous avez demandé à changer votre adresse email vers <strong>{newEmail}</strong>. Cliquez ci-dessous pour confirmer.",
     "button": "Confirmer le changement",
-    "expiry": "Ce lien expire dans 24 heures. Si vous n'avez pas fait cette demande, ignorez cet email — votre adresse actuelle reste inchangée."
+    "expiry": "Ce lien expire dans 24 heures. Si vous n'avez pas fait cette demande, ignorez cet email - votre adresse actuelle reste inchangée."
   },
   "emailChangeConfirm": {
     "subject": "Votre adresse email KAMBRIQ a été modifiée",
@@ -122,14 +122,14 @@
     "note": "Votre compte est maintenant vérifié."
   },
   "idRejected": {
-    "subject": "Vérification d'identité — action requise",
+    "subject": "Vérification d'identité - action requise",
     "heading": "Document non accepté",
     "body": "Bonjour {firstName}, votre document d'identité n'a pas pu être validé.",
     "reason": "Motif : <strong>{reason}</strong>",
     "retry": "Veuillez soumettre un nouveau document valide depuis votre espace personnel."
   },
   "inviteUser": {
-    "subject": "Bienvenue sur KAMBRIQ — Définissez votre mot de passe",
+    "subject": "Bienvenue sur KAMBRIQ - Définissez votre mot de passe",
     "heading": "Bienvenue, {firstName} !",
     "body": "Un compte KAMBRIQ a été créé pour vous. Définissez votre mot de passe pour commencer.",
     "button": "Définir mon mot de passe",

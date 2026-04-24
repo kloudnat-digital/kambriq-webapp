@@ -1,4 +1,4 @@
-# ----- KAMBRIQ Web — Production Dockerfile ----- #
+# ----- KAMBRIQ Web - Production Dockerfile ----- #
 # Uses Next.js standalone output for minimal image size.
 # Requires next.config.ts to have: output: 'standalone'
 
@@ -10,11 +10,11 @@ RUN corepack enable
 
 WORKDIR /app
 
-# Copy manifests first — changes here invalidate the install cache layer
+# Copy manifests first - changes here invalidate the install cache layer
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json ./
 COPY apps/web/package.json ./apps/web/
 
-# pnpm store is mounted as a BuildKit cache — downloads are reused across builds
+# pnpm store is mounted as a BuildKit cache - downloads are reused across builds
 # even when pnpm-lock.yaml changes (only changed packages re-download).
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile --ignore-scripts
@@ -56,7 +56,7 @@ ENV NODE_ENV=production
 # strict next-auth configurations.
 ENV AUTH_TRUST_HOST=true
 
-# No HEALTHCHECK here — health is managed by the ECS/ALB target group health
+# No HEALTHCHECK here - health is managed by the ECS/ALB target group health
 # check (GET /health → 200). A Dockerfile HEALTHCHECK is redundant in Fargate
 # and causes false failures under CPU throttling (the node subprocess times out).
 

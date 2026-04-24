@@ -24,10 +24,10 @@ libs/
 └── common/                     # Shared library (guards, decorators, filters, i18n, services…)
 
 prisma/
-├── core/                       # Prisma schema & migrations — kambriq_core DB
-├── kbs/                        # Prisma schema & migrations — kambriq_kbs DB
-├── kamnet/                     # Prisma schema & migrations — kambriq_kamnet DB
-└── lands/                      # Prisma schema & migrations — kambriq_lands DB
+├── core/                       # Prisma schema & migrations - kambriq_core DB
+├── kbs/                        # Prisma schema & migrations - kambriq_kbs DB
+├── kamnet/                     # Prisma schema & migrations - kambriq_kamnet DB
+└── lands/                      # Prisma schema & migrations - kambriq_lands DB
 ```
 
 Each domain has a dedicated Prisma client generated into `libs/common/src/prisma/` and connects to its own database, ensuring full data isolation between concerns.
@@ -42,8 +42,8 @@ Each domain has a dedicated Prisma client generated into `libs/common/src/prisma
 | **KBS**       | `kambriq_kbs`       | Implemented | Training courses, exams, progress tracking, certificates |
 | **Kamnet**    | `kambriq_kamnet`    | Implemented | Agent network, tier promotions, referrals, commissions   |
 | **Lands**     | `kambriq_lands`     | Implemented | Land parcel listings, reservations, agent commissions    |
-| **Verify**    | `kambriq_verify`    | Planned     | —                                                        |
-| **Valuation** | `kambriq_valuation` | Planned     | —                                                        |
+| **Verify**    | `kambriq_verify`    | Planned     | -                                                        |
+| **Valuation** | `kambriq_valuation` | Planned     | -                                                        |
 
 ---
 
@@ -171,13 +171,13 @@ Swagger docs: [http://localhost:3000/api/v1/docs](http://localhost:3000/api/v1/d
 
 | Command                      | Description                                          |
 | ---------------------------- | ---------------------------------------------------- |
-| `pnpm db:migrate:dev`        | Create and apply migrations (dev) — all 4 schemas    |
+| `pnpm db:migrate:dev`        | Create and apply migrations (dev) - all 4 schemas    |
 | `pnpm db:migrate:dev:core`   | Migrations for Core DB only                          |
 | `pnpm db:migrate:dev:kbs`    | Migrations for KBS DB only                           |
 | `pnpm db:migrate:dev:kamnet` | Migrations for Kamnet DB only                        |
 | `pnpm db:migrate:dev:lands`  | Migrations for Lands DB only                         |
-| `pnpm db:migrate:deploy`     | Apply existing migrations (production) — all 4       |
-| `pnpm db:seed`               | Run seed script (idempotent — safe to re-run)        |
+| `pnpm db:migrate:deploy`     | Apply existing migrations (production) - all 4       |
+| `pnpm db:seed`               | Run seed script (idempotent - safe to re-run)        |
 | `pnpm db:setup`              | Migrate all + seed (shortcut for fresh environments) |
 | `pnpm db:generate:core`      | Regenerate Core Prisma client                        |
 | `pnpm db:generate:kbs`       | Regenerate KBS Prisma client                         |
@@ -203,7 +203,7 @@ Swagger docs: [http://localhost:3000/api/v1/docs](http://localhost:3000/api/v1/d
 
 ## Testing
 
-Unit tests are co-located in `__test__/` directories within each Nx project. The suite covers service-layer logic and shared library utilities; no database or external service is started — all dependencies are mocked.
+Unit tests are co-located in `__test__/` directories within each Nx project. The suite covers service-layer logic and shared library utilities; no database or external service is started - all dependencies are mocked.
 
 Coverage is tracked automatically on every push to `main` via [Codecov](https://codecov.io/gh/kloudnat-digital/kambriq-api). To generate reports locally:
 
@@ -213,7 +213,7 @@ pnpm test:cov:api      # apps/api only  → coverage/apps/api/
 pnpm test:cov:common   # libs/common only → coverage/libs/common/
 ```
 
-### `apps/api` — Domain services
+### `apps/api` - Domain services
 
 | Suite                                   | Covers                                                       |
 | --------------------------------------- | ------------------------------------------------------------ |
@@ -227,7 +227,7 @@ pnpm test:cov:common   # libs/common only → coverage/libs/common/
 | `kbs/exam/grading-processor`            | BullMQ job routing, pass/fail email dispatch, KCA role grant |
 | `kbs/certificates/certificates.service` | Certificate generation and public verification               |
 
-### `libs/common` — Shared library
+### `libs/common` - Shared library
 
 | Suite                             | Covers                                                                         |
 | --------------------------------- | ------------------------------------------------------------------------------ |
@@ -246,11 +246,11 @@ pnpm test:cov:common   # libs/common only → coverage/libs/common/
 | `NODE_ENV`               | Runtime environment                     | `development`           |
 | `PORT`                   | API listening port                      | `3000`                  |
 | `API_PREFIX`             | Global route prefix                     | `api/v1`                |
-| `DATABASE_URL_CORE`      | PostgreSQL connection — Core domain     | `postgresql://...`      |
-| `DATABASE_URL_KBS`       | PostgreSQL connection — KBS domain      | `postgresql://...`      |
-| `DATABASE_URL_KAMNET`    | PostgreSQL connection — Kamnet domain   | `postgresql://...`      |
-| `DATABASE_URL_LANDS`     | PostgreSQL connection — Lands domain    | `postgresql://...`      |
-| `JWT_SECRET`             | JWT signing secret (≥ 32 chars)         | —                       |
+| `DATABASE_URL_CORE`      | PostgreSQL connection - Core domain     | `postgresql://...`      |
+| `DATABASE_URL_KBS`       | PostgreSQL connection - KBS domain      | `postgresql://...`      |
+| `DATABASE_URL_KAMNET`    | PostgreSQL connection - Kamnet domain   | `postgresql://...`      |
+| `DATABASE_URL_LANDS`     | PostgreSQL connection - Lands domain    | `postgresql://...`      |
+| `JWT_SECRET`             | JWT signing secret (≥ 32 chars)         | -                       |
 | `JWT_ACCESS_EXPIRATION`  | Access token lifetime                   | `15m`                   |
 | `JWT_REFRESH_EXPIRATION` | Refresh token lifetime                  | `15d`                   |
 | `CORS_ORIGINS`           | Comma-separated allowed origins         | `http://localhost:3001` |
@@ -258,8 +258,8 @@ pnpm test:cov:common   # libs/common only → coverage/libs/common/
 | `THROTTLE_LIMIT`         | Max requests per window                 | `100`                   |
 | `REDIS_HOST`             | Redis hostname                          | `localhost`             |
 | `REDIS_PORT`             | Redis port                              | `6379`                  |
-| `AWS_ACCESS_KEY_ID`      | AWS credentials                         | —                       |
-| `AWS_SECRET_ACCESS_KEY`  | AWS credentials                         | —                       |
+| `AWS_ACCESS_KEY_ID`      | AWS credentials                         | -                       |
+| `AWS_SECRET_ACCESS_KEY`  | AWS credentials                         | -                       |
 | `AWS_S3_BUCKET`          | S3 bucket name for file uploads         | `kambriq-uploads`       |
 | `AWS_REGION`             | AWS region                              | `eu-west-3`             |
 | `EMAIL_FROM`             | Sender email address                    | `noreply@kambriq.com`   |
@@ -273,7 +273,7 @@ pnpm test:cov:common   # libs/common only → coverage/libs/common/
 
 All endpoints are prefixed with `/api/v1`. Authentication uses Bearer JWT tokens.
 
-### Core — Auth & Users
+### Core - Auth & Users
 
 | Method | Path             | Auth     | Description                |
 | ------ | ---------------- | -------- | -------------------------- |
@@ -283,7 +283,7 @@ All endpoints are prefixed with `/api/v1`. Authentication uses Bearer JWT tokens
 | GET    | `/users/profile` | Required | Get current user's profile |
 | PATCH  | `/users/:id`     | Required | Update user profile        |
 
-### KBS — Training & Exams
+### KBS - Training & Exams
 
 | Method | Path                              | Auth       | Description                          |
 | ------ | --------------------------------- | ---------- | ------------------------------------ |
@@ -348,7 +348,7 @@ Full interactive documentation is available at `/api/v1/docs` when running in de
 
 Running `pnpm db:seed` (or `pnpm docker:dev:init`) populates all four databases with demo data. All accounts use the password **`Test1234!`**.
 
-### Core — Users
+### Core - Users
 
 | Email                       | Role           | Notes                 |
 | --------------------------- | -------------- | --------------------- |
@@ -362,7 +362,7 @@ Running `pnpm db:seed` (or `pnpm docker:dev:init`) populates all four databases 
 | `amina.fall@kambriq.com`    | `AGENT`        | Agent (AGT-2025-0004) |
 | `paul.fouda@kambriq.com`    | `AGENT`        | Agent (AGT-2025-0005) |
 
-### Kamnet — Agent sponsorship tree
+### Kamnet - Agent sponsorship tree
 
 ```text
 Eric  (CONFIRMED, 6 sales)  ← root sponsor
@@ -372,13 +372,13 @@ Eric  (CONFIRMED, 6 sales)  ← root sponsor
 └── Paul   (JUNIOR, 0 sales)
 ```
 
-### KBS — Training data
+### KBS - Training data
 
 - 1 published course with 2 modules and 6 lessons
 - 5 enrolled candidates at various progress stages
 - 5 certificates (1 per agent)
 
-### Lands — Parcel data
+### Lands - Parcel data
 
 - 3 land labels, 5 land parcels (mixed availability)
 - 1 completed reservation linked to Eric's agent account

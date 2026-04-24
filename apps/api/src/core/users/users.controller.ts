@@ -10,22 +10,10 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { RolesService } from '../roles/roles.service';
-import {
-  CurrentUser,
-  PaginationQueryDto,
-  RequestUser,
-  RoleCode,
-  Roles,
-} from '@kambriq/common';
+import { CurrentUser, PaginationQueryDto, RequestUser, RoleCode, Roles } from '@kambriq/common';
 import {
   AdminUpdateUserDto,
   ChangePasswordDto,
@@ -67,10 +55,7 @@ export class UserController {
   @ApiResponse({ status: 200, description: 'Profile updated successfully.' })
   @ApiResponse({ status: 400, description: 'Validation error.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
-  async updateMe(
-    @CurrentUser() user: RequestUser,
-    @Body() dto: UpdateProfileDto,
-  ) {
+  async updateMe(@CurrentUser() user: RequestUser, @Body() dto: UpdateProfileDto) {
     return this.usersService.updateMe(user.id, dto);
   }
 
@@ -87,10 +72,7 @@ export class UserController {
     description: 'Current password is incorrect, or validation error.',
   })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
-  async changePassword(
-    @CurrentUser() user: RequestUser,
-    @Body() dto: ChangePasswordDto,
-  ) {
+  async changePassword(@CurrentUser() user: RequestUser, @Body() dto: ChangePasswordDto) {
     return this.usersService.changePassword(user.id, dto);
   }
 
@@ -105,10 +87,7 @@ export class UserController {
   @ApiResponse({ status: 400, description: 'Same email, wrong password, or validation error.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 409, description: 'New email already taken by another account.' })
-  async requestEmailChange(
-    @CurrentUser() user: RequestUser,
-    @Body() dto: RequestEmailChangeDto,
-  ) {
+  async requestEmailChange(@CurrentUser() user: RequestUser, @Body() dto: RequestEmailChangeDto) {
     return this.usersService.requestEmailChange(user.id, dto);
   }
 
@@ -117,16 +96,13 @@ export class UserController {
   @ApiOperation({
     summary: 'Confirm email address change',
     description:
-      'Validates the token sent to the new address and atomically swaps the email. All active sessions are revoked — the user must log in again with the new address.',
+      'Validates the token sent to the new address and atomically swaps the email. All active sessions are revoked - the user must log in again with the new address.',
   })
   @ApiResponse({ status: 200, description: 'Email updated. All sessions revoked.' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token, or no pending change.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 409, description: 'New email was claimed by another account.' })
-  async confirmEmailChange(
-    @CurrentUser() user: RequestUser,
-    @Body() dto: ConfirmEmailChangeDto,
-  ) {
+  async confirmEmailChange(@CurrentUser() user: RequestUser, @Body() dto: ConfirmEmailChangeDto) {
     return this.usersService.confirmEmailChange(user.id, dto);
   }
 
@@ -141,10 +117,7 @@ export class UserController {
   @ApiResponse({ status: 400, description: 'Validation error.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 403, description: 'Identity already verified.' })
-  async submitIdDocument(
-    @CurrentUser() user: RequestUser,
-    @Body() dto: SubmitIdDocumentDto,
-  ) {
+  async submitIdDocument(@CurrentUser() user: RequestUser, @Body() dto: SubmitIdDocumentDto) {
     return this.usersService.submitIdDocument(user.id, dto);
   }
 
@@ -207,8 +180,7 @@ export class UserController {
   @Roles(RoleCode.ADMIN_GLOBAL)
   @ApiOperation({
     summary: '[Admin] List all roles',
-    description:
-      'Returns all defined roles in the system. Requires ADMIN_GLOBAL role.',
+    description: 'Returns all defined roles in the system. Requires ADMIN_GLOBAL role.',
   })
   @ApiResponse({ status: 200, description: 'Role list returned.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
@@ -224,8 +196,7 @@ export class UserController {
   @Roles(RoleCode.ADMIN_GLOBAL)
   @ApiOperation({
     summary: '[Admin] Get a user by ID',
-    description:
-      'Returns the full profile of a specific user. Requires ADMIN_GLOBAL role.',
+    description: 'Returns the full profile of a specific user. Requires ADMIN_GLOBAL role.',
   })
   @ApiParam({ name: 'id', description: 'User ID (CUID)', example: 'clxxxxxxxxxxxxxx' })
   @ApiResponse({ status: 200, description: 'User found and returned.' })
@@ -271,7 +242,7 @@ export class UserController {
   @ApiOperation({
     summary: '[Admin] Grant a role to a user',
     description:
-      'Adds a single role to the user without touching existing roles. Idempotent — safe to call if the user already has the role. Requires ADMIN_GLOBAL role.',
+      'Adds a single role to the user without touching existing roles. Idempotent - safe to call if the user already has the role. Requires ADMIN_GLOBAL role.',
   })
   @ApiParam({ name: 'id', description: 'User ID (CUID)', example: 'clxxxxxxxxxxxxxx' })
   @ApiResponse({ status: 200, description: 'Role granted.' })
@@ -328,10 +299,7 @@ export class UserController {
     description: 'Insufficient permissions. Requires ADMIN_GLOBAL.',
   })
   @ApiResponse({ status: 404, description: 'User not found.' })
-  async blockUser(
-    @Param('id') userId: string,
-    @CurrentUser() admin: RequestUser,
-  ) {
+  async blockUser(@Param('id') userId: string, @CurrentUser() admin: RequestUser) {
     return this.usersService.blockUser(userId, admin.id);
   }
 
@@ -340,8 +308,7 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '[Admin] Unblock a user account',
-    description:
-      'Reactivates a previously blocked user account. Requires ADMIN_GLOBAL role.',
+    description: 'Reactivates a previously blocked user account. Requires ADMIN_GLOBAL role.',
   })
   @ApiParam({ name: 'id', description: 'User ID (CUID)', example: 'clxxxxxxxxxxxxxx' })
   @ApiResponse({ status: 200, description: 'User unblocked successfully.' })
@@ -351,10 +318,7 @@ export class UserController {
     description: 'Insufficient permissions. Requires ADMIN_GLOBAL.',
   })
   @ApiResponse({ status: 404, description: 'User not found.' })
-  async unblockUser(
-    @Param('id') userId: string,
-    @CurrentUser() admin: RequestUser,
-  ) {
+  async unblockUser(@Param('id') userId: string, @CurrentUser() admin: RequestUser) {
     return this.usersService.unblockUser(userId, admin.id);
   }
 }

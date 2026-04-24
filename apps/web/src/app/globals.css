@@ -3,10 +3,10 @@
 /* ─────────────────────────────────────────────────────────────
    KAMBRIQ DESIGN SYSTEM
    Brand colors:
-     Primary  — Forest Green  #32723B
-     Surface  — Warm Cream    #EEECE5
-     Accent   — Dark Brown    #4F2E04
-     Gold     — Golden Yellow #F1BD2F
+     Primary  - Forest Green  #32723B
+     Surface  - Warm Cream    #EEECE5
+     Accent   - Dark Brown    #4F2E04
+     Gold     - Golden Yellow #F1BD2F
    ───────────────────────────────────────────────────────────── */
 
 @theme {
@@ -16,7 +16,7 @@
 
   /* ── Brand Palette ───────────────────────────────────────── */
 
-  /* Primary — Forest Green #32723B */
+  /* Primary - Forest Green #32723B */
   --color-primary-50: #f0f7f1;
   --color-primary-100: #d9eddb;
   --color-primary-200: #b4dcb8;
@@ -29,7 +29,7 @@
   --color-primary-900: #122d19;
   --color-primary-950: #0a1a0e;
 
-  /* Accent — Dark Brown #4F2E04 */
+  /* Accent - Dark Brown #4F2E04 */
   --color-accent-50: #fdf8f0;
   --color-accent-100: #f7ead8;
   --color-accent-200: #efd4ac;
@@ -42,7 +42,7 @@
   --color-accent-900: #3a2108;
   --color-accent-950: #1e1104;
 
-  /* Gold — Golden Yellow #F1BD2F */
+  /* Gold - Golden Yellow #F1BD2F */
   --color-gold-50: #fefaeb;
   --color-gold-100: #fdf3c6;
   --color-gold-200: #fae78d;
@@ -55,7 +55,7 @@
   --color-gold-900: #523f0b;
   --color-gold-950: #2c2106;
 
-  /* Surface — Warm Cream #EEECE5 */
+  /* Surface - Warm Cream #EEECE5 */
   --color-surface-50: #fdfcfa;
   --color-surface-100: #eeece5; /* Brand anchor */
   --color-surface-200: #dedad0;

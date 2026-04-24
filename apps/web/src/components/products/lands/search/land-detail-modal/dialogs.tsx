@@ -128,7 +128,7 @@ export function ReservationDialog({ open, onClose, land, t }: SubProps) {
         <DialogHeader>
           <DialogTitle>{t('modal.actions.reservation.title')}</DialogTitle>
           <DialogDescription>
-            {land.title} — {formatXAF(land.price)}
+            {land.title} - {formatXAF(land.price)}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-3">

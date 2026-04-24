@@ -6,7 +6,7 @@
 
 ### Automated (normal flow)
 
-Push to `develop` — the CI pipeline handles everything:
+Push to `develop` - the CI pipeline handles everything:
 
 1. Quality checks (lint + typecheck + test)
 2. Build API image → `kambriq-api:sha-{7char}` + `kambriq-api:dev-latest`
@@ -26,7 +26,7 @@ Go to **Actions → Deploy Dev → Run workflow**, then set:
 
 ### Rollback
 
-Same as manual redeploy — supply the previous known-good SHA tags.
+Same as manual redeploy - supply the previous known-good SHA tags.
 
 ## Required GitHub Environment variables
 

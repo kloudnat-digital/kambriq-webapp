@@ -65,7 +65,7 @@ export class AuthController {
    * Returns the token fields that go in the response body.
    *
    * refreshToken IS included here because this endpoint is called server-to-server
-   * from next-auth's authorize() and jwt() callbacks — never from browser JS.
+   * from next-auth's authorize() and jwt() callbacks - never from browser JS.
    * next-auth encrypts it immediately into its own httpOnly session cookie.
    *
    * rememberMe is internal only and is always stripped.
@@ -111,7 +111,7 @@ export class AuthController {
     // Set refresh token in httpOnly cookie (session, no rememberMe on register)
     this.setRefreshCookie(res, result.tokens.refreshToken, false);
 
-    // Strip refreshToken and rememberMe from the response body —
+    // Strip refreshToken and rememberMe from the response body -
     // the client only needs the accessToken and expiresAt
     return { ...result, tokens: this.publicTokens(result.tokens) };
   }
@@ -131,7 +131,7 @@ export class AuthController {
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(dto);
 
-    // GracePeriodResponse — account soft-deleted, return as-is (no tokens)
+    // GracePeriodResponse - account soft-deleted, return as-is (no tokens)
     if ('requiresReactivation' in result) return result;
 
     this.setRefreshCookie(res, result.tokens.refreshToken, dto.rememberMe ?? false);
@@ -170,7 +170,7 @@ export class AuthController {
 
     const tokens = await this.authService.refreshTokens(token);
 
-    // Rotate the cookie — preserves whether the session was originally "remembered"
+    // Rotate the cookie - preserves whether the session was originally "remembered"
     this.setRefreshCookie(res, tokens.refreshToken, tokens.rememberMe ?? false);
 
     return this.publicTokens(tokens);

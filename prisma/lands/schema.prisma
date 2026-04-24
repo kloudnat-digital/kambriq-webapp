@@ -166,25 +166,25 @@ model LandReservation {
   clientPhone          String?
   status               LandReservationStatus   @default(PENDING)
 
-  // Step 2 — Down payment (5% acompte)
+  // Step 2 - Down payment (5% acompte)
   downPaymentAmount    Float?                  // Down payment amount in XAF (5% of land price)
   downPaymentConfirmed Boolean                 @default(false)
   confirmedBy          String?                 // admin userId who confirmed
   confirmedAt          DateTime?
 
-  // Step 3 — Client documents received (ID, proof of address, etc.)
+  // Step 3 - Client documents received (ID, proof of address, etc.)
   documentsReceivedAt  DateTime?
   documentsReceivedBy  String?                 // admin userId
 
-  // Step 4 — Remaining payments confirmed by admin
+  // Step 4 - Remaining payments confirmed by admin
   remainingPaymentConfirmedAt DateTime?
   remainingPaymentConfirmedBy String?          // admin userId
 
-  // Step 5 — Dossier / title transfer started
+  // Step 5 - Dossier / title transfer started
   dossierStartedAt     DateTime?
   dossierStartedBy     String?                 // admin userId
 
-  // Step 6 — Sale completed
+  // Step 6 - Sale completed
   completedAt          DateTime?
   completedBy          String?                 // admin userId
 
