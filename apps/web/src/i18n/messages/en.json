@@ -14,15 +14,40 @@
     "homeAriaLabel": "KAMBRIQ - Home"
   },
   "hero": {
-    "title1": "Cameroonian land:",
+    "eyebrow": "Land strategy advisory firm",
+    "title1": "Cameroonian land.",
+    "title2Lead": "Verified.",
+    "title2Tail": "Accompanied.",
     "title2": "buy with confidence, even from abroad.",
-    "subtitle": "KAMBRIQ verifies, secures, and guides you through your land project in Cameroon.",
-    "cta": "Discover our method",
-    "cta2": "Verify a land"
+    "subtitle": "We do not sell land. We verify, explain and accompany your land project - for the diaspora and local investors.",
+    "cta": "Talk about your project",
+    "cta2": "Discover the method",
+    "trust": {
+      "label": "Method certified on",
+      "points": "7 points",
+      "domains": "4 land domains",
+      "milestones": "5 purchase milestones"
+    },
+    "labels": {
+      "eyebrow": "Three labels, one clear read",
+      "title": "Each land receives a documented risk label.",
+      "tfl": { "summary": "Mastered risk. Verified land title, complete file." },
+      "vefl": { "summary": "Moderate risk. Deeper verification required." },
+      "vefil": { "summary": "Monitoring required. Land status to clarify before any commitment." },
+      "cta": "Understand the labels"
+    }
   },
   "why": {
-    "title": "Why the diaspora trusts us",
+    "eyebrow": "Why KAMBRIQ",
+    "title": "Cameroonian land is more than a title deed.",
+    "lead": "Over 95% of the territory falls under the national domain - no one owns it, not even the « seller ». Understanding the 4 land domains is the first step to a solid project.",
     "subtitle": "",
+    "eyebrows": {
+      "method": "Method",
+      "support": "Support",
+      "transparency": "Transparency",
+      "distance": "Network"
+    },
     "verification": {
       "title": "7 verifications",
       "description": "Every land goes through 7 control points before entering our catalogue. So you know exactly what you are buying."
@@ -40,8 +65,14 @@
       "description": "Every KAMNET agent is trained and certified by KAMBRIQ Business School. Your single point of contact, wherever you are."
     }
   },
+  "trustStrip": {
+    "lead": "No land enters the catalogue without ",
+    "emphasis": "KAMBRIQ VERIFY™",
+    "tail": "."
+  },
   "process": {
-    "title": "How it works",
+    "eyebrow": "How it works",
+    "title": "4 steps, one advisor, zero surprises.",
     "subtitle": "Tailored support, from your first contact to your title deed.",
     "step1": {
       "title": "Tell us about your project",
@@ -93,8 +124,10 @@
   },
   "homeCta": {
     "title": "Do you have a land project in Cameroon?",
-    "subtitle": "Whether you are looking for land, want to verify a property, or simply have questions - let's talk.",
-    "cta": "Contact us"
+    "titleLead": "Do you have a land project?",
+    "titleEm": "Let's talk.",
+    "subtitle": "A 30-minute conversation to understand your situation. Free, no commitment.",
+    "cta": "Book a call"
   },
   "products": {
     "verify": {
@@ -654,6 +687,7 @@
       }
     },
     "title": "Our products and services",
+    "sectionEyebrow": "The KAMBRIQ suite",
     "subtitle": "Verification, buying support, training - each service addresses a specific step in your land project.",
     "comingSoon": "Coming soon",
     "lands": {
@@ -735,9 +769,11 @@
     "verify": "KAMBRIQ VERIFY™",
     "kamnet": "KAMNET",
     "kbs": "KAMBRIQ Business School",
-    "support": "Support",
+    "support": "Resources",
     "about": "About us",
+    "methode": "Our method",
     "contact": "Contact",
+    "contactUs": "Contact us",
     "faq": "FAQ",
     "legal": "Legal",
     "mentions": "Legal notices",

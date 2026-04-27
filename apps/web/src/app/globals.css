@@ -1,79 +1,106 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap');
 @import 'tailwindcss';
 
 /* ─────────────────────────────────────────────────────────────
    KAMBRIQ DESIGN SYSTEM
    Brand colors:
-     Primary  - Forest Green  #32723B
-     Surface  - Warm Cream    #EEECE5
-     Accent   - Dark Brown    #4F2E04
-     Gold     - Golden Yellow #F1BD2F
+     Primary  - Teal     #1A7A6E  (links, primary CTA, focus accent)
+     Accent   - Navy     #0D1B2A  (dense text, hero/footer surfaces)
+     Gold     - Premium  #B8972A  (highlights, badges)
+     Surface  - Cream    #F0F4F5  (UI backgrounds — cool cream)
+     Cream-warm          #EFECE5  (brand surfaces — warm cream)
+
+   Logo-only colors (NEVER use for UI):
+     Forest   #123C21
+     Sun      #F0BC31
    ───────────────────────────────────────────────────────────── */
 
 @theme {
   /* ── Fonts ───────────────────────────────────────────────── */
-  --font-sans: Switzer, system-ui, sans-serif;
+  --font-serif: 'Cormorant Garamond', 'EB Garamond', Georgia, 'Times New Roman', serif;
+  --font-sans:
+    'DM Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Inter, Arial, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* ── Brand Palette ───────────────────────────────────────── */
 
-  /* Primary - Forest Green #32723B */
-  --color-primary-50: #f0f7f1;
-  --color-primary-100: #d9eddb;
-  --color-primary-200: #b4dcb8;
-  --color-primary-300: #82c389;
-  --color-primary-400: #52a45b;
-  --color-primary-500: #32723b; /* Brand anchor */
-  --color-primary-600: #275c2f;
-  --color-primary-700: #1f4825;
-  --color-primary-800: #183820;
-  --color-primary-900: #122d19;
-  --color-primary-950: #0a1a0e;
+  /* Primary - Teal #1A7A6E (was Forest Green) */
+  --color-primary-50: #eaf4f2;
+  --color-primary-100: #d6ece8;
+  --color-primary-200: #b7ddd7;
+  --color-primary-300: #8ac7bd;
+  --color-primary-400: #4fab9d;
+  --color-primary-500: #1a7a6e; /* Brand anchor */
+  --color-primary-600: #166b61;
+  --color-primary-700: #14645a;
+  --color-primary-800: #105046;
+  --color-primary-900: #0c3d36;
+  --color-primary-950: #082822;
 
-  /* Accent - Dark Brown #4F2E04 */
-  --color-accent-50: #fdf8f0;
-  --color-accent-100: #f7ead8;
-  --color-accent-200: #efd4ac;
-  --color-accent-300: #e4b478;
-  --color-accent-400: #d68e44;
-  --color-accent-500: #b86e23;
-  --color-accent-600: #8c511a;
-  --color-accent-700: #6b3c12;
-  --color-accent-800: #4f2e04; /* Brand anchor */
-  --color-accent-900: #3a2108;
-  --color-accent-950: #1e1104;
+  /* Accent - Navy #0D1B2A (was Dark Brown) */
+  --color-accent-50: #f0f4f5;
+  --color-accent-100: #dde4ea;
+  --color-accent-200: #b8c2cf;
+  --color-accent-300: #8a97a8;
+  --color-accent-400: #44566c;
+  --color-accent-500: #2a4059;
+  --color-accent-600: #1e3148;
+  --color-accent-700: #152538;
+  --color-accent-800: #0d1b2a; /* Brand anchor */
+  --color-accent-900: #08111b;
+  --color-accent-950: #04080f;
 
-  /* Gold - Golden Yellow #F1BD2F */
-  --color-gold-50: #fefaeb;
-  --color-gold-100: #fdf3c6;
-  --color-gold-200: #fae78d;
-  --color-gold-300: #f7d75b;
-  --color-gold-400: #f4c93f;
-  --color-gold-500: #f1bd2f; /* Brand anchor */
-  --color-gold-600: #ca9a1c;
-  --color-gold-700: #9c7713;
-  --color-gold-800: #74590f;
-  --color-gold-900: #523f0b;
-  --color-gold-950: #2c2106;
+  /* Gold - Premium #B8972A (was Golden Yellow) */
+  --color-gold-50: #faf3d9;
+  --color-gold-100: #f3e7be;
+  --color-gold-200: #edda9a;
+  --color-gold-300: #d9ba5b;
+  --color-gold-400: #c7a540;
+  --color-gold-500: #b8972a; /* Brand anchor */
+  --color-gold-600: #9f8225;
+  --color-gold-700: #8c711e;
+  --color-gold-800: #6e5817;
+  --color-gold-900: #503f11;
+  --color-gold-950: #2e230a;
 
-  /* Surface - Warm Cream #EEECE5 */
-  --color-surface-50: #fdfcfa;
-  --color-surface-100: #eeece5; /* Brand anchor */
-  --color-surface-200: #dedad0;
-  --color-surface-300: #cbc6b8;
-  --color-surface-400: #b3ae9f;
-  --color-surface-500: #928d7e;
-  --color-surface-600: #736e61;
-  --color-surface-700: #5a564b;
-  --color-surface-800: #403d35;
-  --color-surface-900: #2a2821;
-  --color-surface-950: #16150f;
+  /* Surface - Cool Cream #F0F4F5 (was Warm Cream) */
+  --color-surface-50: #f7f9f9;
+  --color-surface-100: #f0f4f5; /* Brand anchor */
+  --color-surface-200: #e2e6eb;
+  --color-surface-300: #c9d0d8;
+  --color-surface-400: #95a3b5;
+  --color-surface-500: #6b7a8f;
+  --color-surface-600: #44566c;
+  --color-surface-700: #2a4059;
+  --color-surface-800: #152538;
+  --color-surface-900: #0d1b2a;
+  --color-surface-950: #04080f;
+
+  /* Warm cream — for brand surfaces (trust strips, editorial sections) */
+  --color-cream-warm: #efece5;
+
+  /* ── Label Palette (the six KAMBRIQ labels) ──────────────── */
+  /* TFL™ — risk mastered (green) */
+  --color-tfl: #2e7d32;
+  --color-tfl-bg: #e8f5e9;
+  --color-tfl-border: #c3e6c5;
+
+  /* VEFL™ — moderate risk (amber) */
+  --color-vefl: #f57f17;
+  --color-vefl-bg: #fff8e1;
+  --color-vefl-border: #f7e3a0;
+
+  /* VEFIL™ — needs monitoring (orange) */
+  --color-vefil: #e65100;
+  --color-vefil-bg: #fff3e0;
+  --color-vefil-border: #f5cba1;
 
   /* ── Semantic Tokens (Light Mode) ────────────────────────── */
-  --color-background: var(--color-surface-50);
-  --color-foreground: var(--color-surface-900);
+  --color-background: #ffffff;
+  --color-foreground: var(--color-accent-800);
 
   --color-card: #ffffff;
-  --color-card-foreground: var(--color-surface-900);
+  --color-card-foreground: var(--color-accent-800);
 
   --color-muted: var(--color-surface-100);
   --color-muted-foreground: var(--color-surface-600);
@@ -86,7 +113,7 @@
   --color-primary-foreground: #ffffff;
 
   --color-secondary: var(--color-surface-100);
-  --color-secondary-foreground: var(--color-surface-800);
+  --color-secondary-foreground: var(--color-accent-800);
 
   --color-accent: var(--color-accent-800);
   --color-accent-foreground: #ffffff;
@@ -94,13 +121,13 @@
   --color-gold: var(--color-gold-500);
   --color-gold-foreground: #ffffff;
 
-  --color-destructive: #dc2626;
+  --color-destructive: #c0392b;
   --color-destructive-foreground: #ffffff;
 
-  --color-success: var(--color-primary-500);
+  --color-success: var(--color-tfl);
   --color-success-foreground: #ffffff;
 
-  --color-warning: #d97706;
+  --color-warning: var(--color-vefl);
   --color-warning-foreground: #ffffff;
 
   /* ── Border Radius ───────────────────────────────────────── */
@@ -112,9 +139,9 @@
   --radius-full: 9999px;
 
   /* ── Shadows ─────────────────────────────────────────────── */
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06);
-  --shadow-hover: 0 4px 12px 0 rgb(0 0 0 / 0.12), 0 2px 4px -1px rgb(0 0 0 / 0.08);
-  --shadow-modal: 0 20px 60px -10px rgb(0 0 0 / 0.2);
+  --shadow-card: 0 1px 3px 0 rgb(13 27 42 / 0.08), 0 1px 2px -1px rgb(13 27 42 / 0.06);
+  --shadow-hover: 0 4px 12px 0 rgb(13 27 42 / 0.12), 0 2px 4px -1px rgb(13 27 42 / 0.08);
+  --shadow-modal: 0 20px 60px -10px rgb(13 27 42 / 0.2);
 
   /* ── Transitions ─────────────────────────────────────────── */
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
@@ -135,4 +162,26 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Editorial serif used for marketing display headlines. Opt-in via .font-serif
+   (Tailwind) — sans remains the default for body and UI. */
+.serif,
+.font-display {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+/* Eyebrow utility — uppercase tracked label used above headlines */
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-primary);
 }

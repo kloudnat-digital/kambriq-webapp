@@ -1,8 +1,9 @@
 import type { FC, SVGProps } from 'react';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+
+import { Button } from '../ui/button';
+import Eyebrow from '../ui/eyebrow';
 
 interface SharedHeroProps {
   Icon: FC<SVGProps<SVGSVGElement>>;
@@ -16,7 +17,6 @@ interface SharedHeroProps {
 }
 
 const SharedHero: FC<SharedHeroProps> = ({
-  Icon,
   heroBadgeLabel,
   title,
   subtitle,
@@ -26,48 +26,36 @@ const SharedHero: FC<SharedHeroProps> = ({
   indicators,
 }) => {
   return (
-    <section className="overflow-hidden bg-background pt-14 pb-16 sm:pb-20">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="mx-auto max-w-3xl py-8 sm:py-12 lg:py-14">
-          <div className="mb-8 flex justify-center">
-            <Badge className="rounded-full bg-primary-100 px-3 py-1 text-primary-600 outline-1 outline-primary-700/50">
-              <Icon className="mr-1 size-3 flex-none" />
-              <span>{heroBadgeLabel}</span>
-            </Badge>
+    <section className="bg-surface-100">
+      <div className="mx-auto max-w-7xl px-6 py-20 lg:px-8 lg:py-28">
+        <div className="mx-auto max-w-3xl text-center">
+          <Eyebrow className="mb-4 flex justify-center">{heroBadgeLabel}</Eyebrow>
+          <h1 className="font-serif text-4xl leading-[1.05] font-semibold tracking-[-0.02em] text-pretty text-accent sm:text-5xl md:text-6xl">
+            {title}
+          </h1>
+          <p className="mt-5 text-lg leading-[1.65] text-surface-600">{subtitle}</p>
+          {children}
+          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+            <Button asChild size="lg">
+              <Link href={cta1.href}>{cta1.label}</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href={cta2.href}>
+                {cta2.label}
+                <ArrowRight />
+              </Link>
+            </Button>
           </div>
-          <div className="text-center">
-            <h1 className="text-5xl font-semibold tracking-tight text-balance text-gray-900 sm:text-7xl">
-              {title}
-            </h1>
-            <p className="mt-8 text-lg font-medium text-pretty text-gray-600 sm:text-xl/8">
-              {subtitle}
-            </p>
-            {children}
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-              <Button asChild size="lg" className="h-9">
-                <Link href={cta1.href}>{cta1.label}</Link>
-              </Button>
-              <Button
-                asChild
-                variant="ghost"
-                size="lg"
-                className="h-9 font-semibold text-gray-900 hover:bg-transparent hover:text-gray-900"
-              >
-                <Link href={cta2.href}>
-                  {cta2.label}
-                  <ArrowRight />
-                </Link>
-              </Button>
-            </div>
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-6 font-sans text-sm font-medium text-gray-700">
-              {indicators?.map(({ icon: Icon, label }) => (
+          {indicators && indicators.length > 0 && (
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-sm text-surface-600">
+              {indicators.map(({ icon: Icon, label }) => (
                 <div key={label} className="flex items-center gap-2">
-                  <Icon className="size-4 text-success" />
+                  <Icon className="size-4 text-primary" />
                   <span>{label}</span>
                 </div>
               ))}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </section>

@@ -21,35 +21,32 @@ export default async function PlanPage() {
   return (
     <>
       <Navbar />
-      <main className="bg-white pt-[73px]">
+      <main className="bg-white">
         {/* Hero */}
-        <section className="mx-auto max-w-3xl px-6 py-16 sm:px-8 sm:py-24">
-          <p className="text-sm font-semibold tracking-widest text-primary uppercase">
-            {t('eyebrow')}
-          </p>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
-            {t('title')}
-          </h1>
-          <p className="mt-6 text-lg/8 text-gray-600">{t('subtitle')}</p>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <Button asChild size="lg" className="h-9">
-              <Link href="/contact">{t('cta')}</Link>
-            </Button>
-            <Button
-              asChild
-              variant="ghost"
-              size="lg"
-              className="h-9 font-semibold text-gray-900 hover:bg-transparent hover:text-gray-900"
-            >
-              <Link href="/products/lands">
-                {t('cta2')} <ArrowRight />
-              </Link>
-            </Button>
+        <section className="bg-surface-100">
+          <div className="mx-auto max-w-3xl px-6 py-16 sm:px-8 sm:py-24">
+            <p className="text-[11px] font-semibold tracking-[0.14em] text-primary uppercase">
+              {t('eyebrow')}
+            </p>
+            <h1 className="mt-4 font-serif text-4xl leading-[1.05] font-semibold tracking-[-0.02em] text-pretty text-accent sm:text-5xl">
+              {t('title')}
+            </h1>
+            <p className="mt-5 text-lg leading-[1.65] text-surface-600">{t('subtitle')}</p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button asChild size="lg">
+                <Link href="/contact">{t('cta')}</Link>
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link href="/products/lands">
+                  {t('cta2')} <ArrowRight />
+                </Link>
+              </Button>
+            </div>
           </div>
         </section>
 
         {/* MDX content */}
-        <section className="border-t border-border/45 px-6 py-16 sm:px-8">
+        <section className="border-t border-border px-6 py-20 sm:px-8 sm:py-24">
           <div className="mx-auto max-w-3xl">
             <PlanContent />
           </div>

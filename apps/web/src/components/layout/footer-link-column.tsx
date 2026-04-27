@@ -15,14 +15,19 @@ interface FooterLinkColumnProps {
 const FooterLinkColumn: FC<FooterLinkColumnProps> = ({ heading, links }) => {
   return (
     <div>
-      <h3 className="text-sm/6 font-semibold">{heading}</h3>
-      <ul className="mt-6 space-y-4">
+      <h3 className="mb-4 text-xs font-semibold tracking-[0.12em] text-accent-300 uppercase">
+        {heading}
+      </h3>
+      <ul className="space-y-3">
         {links.map((link) => (
           <li key={link.href}>
             {link.disabled ? (
-              <span className="text-sm/6 opacity-60">{link.label}</span>
+              <span className="text-sm text-accent-200/60">{link.label}</span>
             ) : (
-              <Link href={link.href} className="text-sm/6 transition-opacity hover:opacity-80">
+              <Link
+                href={link.href}
+                className="text-sm text-accent-100 transition-colors hover:text-white"
+              >
                 {link.label}
               </Link>
             )}
