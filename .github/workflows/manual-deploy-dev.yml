@@ -1,0 +1,173 @@
+name: Manual Deploy Dev
+
+# ------------------------------------------------------------------------------
+# Manually build and deploy a feature branch to dev for visual / smoke testing
+# before merging the PR to develop.
+#
+# - Runs lint + web typecheck against the chosen branch.
+# - Builds and pushes the Web image with a branch-tagged image tag.
+# - Reuses the API image currently deployed to dev (no migration churn beyond
+#   what `prisma migrate deploy` would do anyway, which is a no-op when the
+#   schema hasn't changed).
+# - Calls deploy-dev.yml to roll out the new Web image alongside the existing
+#   API image.
+# - Skips e2e on purpose - those run against develop after the squash merge.
+#
+# Usage:
+#   gh workflow run manual-deploy-dev.yml --ref develop \
+#     -f branch=feat/your-branch-here
+# ------------------------------------------------------------------------------
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to build the Web image from (e.g. feat/design-system-refresh)"
+        type: string
+        required: true
+      run_seed:
+        description: "Run database seed (almost never needed)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    name: Quality / ${{ matrix.check }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        check: [lint, typecheck:web]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        if: matrix.check == 'lint'
+        run: pnpm run lint
+
+      - name: Typecheck web
+        if: matrix.check == 'typecheck:web'
+        run: pnpm run typecheck:web
+
+  build-web:
+    name: Build & push Web image
+    runs-on: ubuntu-latest
+    needs: [quality]
+    permissions:
+      id-token: write
+      contents: read
+    environment: dev
+    outputs:
+      image_tag: ${{ steps.tag.outputs.image_tag }}
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_WEB_REPO: ${{ vars.ECR_WEB_REPO }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Resolve image tag
+        id: tag
+        run: |
+          set -euo pipefail
+          SHA="$(git rev-parse --short=7 HEAD)"
+          BRANCH_SLUG="$(echo '${{ inputs.branch }}' | tr '/' '-' | tr -cd '[:alnum:]-' | cut -c1-30)"
+          IMAGE_TAG="${BRANCH_SLUG}-${SHA}"
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.web
+          push: true
+          tags: |
+            ${{ env.ECR_WEB_REPO }}:${{ env.IMAGE_TAG }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  resolve-api-tag:
+    name: Resolve current API image tag
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    environment: dev
+    outputs:
+      image_tag: ${{ steps.resolve.outputs.image_tag }}
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+      ECS_SERVICE: ${{ vars.ECS_SERVICE }}
+      CONTAINER_NAME: ${{ vars.CONTAINER_NAME || 'api' }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Read current API image tag from ECS
+        id: resolve
+        run: |
+          set -euo pipefail
+          TASK_DEF_ARN="$(aws ecs describe-services \
+            --cluster "${ECS_CLUSTER}" --services "${ECS_SERVICE}" \
+            --query "services[0].taskDefinition" --output text)"
+          IMAGE="$(aws ecs describe-task-definition \
+            --task-definition "${TASK_DEF_ARN}" \
+            --query "taskDefinition.containerDefinitions[?name=='${CONTAINER_NAME}'].image" \
+            --output text)"
+          IMAGE_TAG="${IMAGE##*:}"
+          echo "Current API image: ${IMAGE}"
+          echo "Resolved API tag : ${IMAGE_TAG}"
+          if [[ -z "${IMAGE_TAG}" || "${IMAGE_TAG}" == "${IMAGE}" ]]; then
+            echo "Failed to resolve API image tag from current task definition" >&2
+            exit 1
+          fi
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Deploy to dev
+    needs: [build-web, resolve-api-tag]
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-dev.yml
+    with:
+      api_image_tag: ${{ needs.resolve-api-tag.outputs.image_tag }}
+      web_image_tag: ${{ needs.build-web.outputs.image_tag }}
+      run_seed: ${{ inputs.run_seed }}
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
