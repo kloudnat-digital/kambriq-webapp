@@ -62,5 +62,4 @@ tmp
 out
 *.tsbuildinfo
 
-.claude/worktrees
-.claude/settings.local.json
+.claude/
