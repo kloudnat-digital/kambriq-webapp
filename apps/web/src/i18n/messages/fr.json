@@ -743,6 +743,7 @@
     "mentions": "Mentions légales",
     "terms": "Conditions d'utilisation",
     "privacy": "Politique de confidentialité",
+    "cookies": "Cookies",
     "rgpd": "RGPD",
     "newsletter": {
       "title": "Newsletter",
@@ -1356,6 +1357,7 @@
       "mentions": "Mentions légales",
       "terms": "CGU",
       "privacy": "Confidentialité",
+      "cookies": "Cookies",
       "rgpd": "RGPD"
     }
   },
