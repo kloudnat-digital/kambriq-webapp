@@ -1,296 +1,136 @@
 'use client';
 
-import { useState } from 'react';
+import type { FC } from 'react';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSession } from 'next-auth/react';
-import Link from 'next/link';
-import { ArrowLeft, MapPin, Maximize2, CheckCircle2, XCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { getLandById } from '@/lib/actions/lands';
 import { unwrap } from '@/lib/actions/unwrap';
-import { Spinner } from '@/components/ui/spinner';
-import { LandMap } from './land-map';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { BreadcrumbNav } from '@/components/ui/breadcrumb-nav';
+import { LAND_LABEL_CODE_STYLES, LAND_STATUS_OPTION_KEYS } from '@/constants/land';
+import type { LandDetail, LandLabelCode } from '@/types/lands';
+import { LandGallery } from './land-gallery';
+import { LandInfoPanel } from './land-info-panel';
+import { LandDocuments } from './land-documents';
+import { LandMap } from './land-map';
+import { ReserveForm } from './reserve-form';
 
-const LABEL_COLOR: Record<string, string> = {
-  TFL: 'bg-blue-100 text-blue-700 border-blue-200',
-  VEFL: 'bg-amber-100 text-amber-700 border-amber-200',
-  VEFIL: 'bg-purple-100 text-purple-700 border-purple-200',
-};
-
-const STATUS_BADGE: Record<string, string> = {
-  AVAILABLE: 'bg-green-100 text-green-700',
-  RESERVED: 'bg-orange-100 text-orange-700',
-  SOLD: 'bg-gray-100 text-gray-500',
-  ARCHIVED: 'bg-gray-100 text-gray-400',
-};
-
-interface LandDetail {
-  title: string;
-  status: string;
-  price: number;
-  sizeM2: number;
-  city?: string;
-  region?: string;
-  description?: string;
-  latitude?: number;
-  longitude?: number;
-  isVerified?: boolean;
-  tfNumber?: string;
-  label?: { code: string; name?: string };
-  media?: { url: string; order: number }[];
-  features?: string[];
-  documents?: { id: string; name: string; url: string }[];
-}
-
-const hasRole = (roles: string[], ...codes: string[]) => codes.some((c) => roles.includes(c));
-
-const formatPrice = (p: number) => new Intl.NumberFormat('fr-FR').format(p);
-
-interface Props {
+interface LandDetailContentProps {
   id: string;
+  currentUserId: string;
+  isAdmin: boolean;
+  canManageReservations: boolean;
 }
 
-export const LandDetailContent = ({ id }: Props) => {
+const LandDetailContent: FC<LandDetailContentProps> = ({
+  id,
+  currentUserId,
+  isAdmin,
+  canManageReservations,
+}) => {
   const t = useTranslations('app.landDetail');
-  const { data: session } = useSession();
-  const userRoles = (session?.user as { roles?: string[] })?.roles ?? [];
-  const canReserve = hasRole(userRoles, 'AGENT', 'ADMIN_LANDS', 'ADMIN_GLOBAL');
-  const isAdmin = hasRole(userRoles, 'ADMIN_LANDS', 'ADMIN_GLOBAL');
 
-  const STATUS_LABEL_T: Record<string, string> = {
-    AVAILABLE: t('statusAvailable'),
-    RESERVED: t('statusReserved'),
-    SOLD: t('statusSold'),
-    ARCHIVED: t('statusArchived'),
-  };
+  const STATUS_LABEL = Object.fromEntries(
+    LAND_STATUS_OPTION_KEYS.filter((o) => o.value).map((o) => [o.value, t(o.labelKey)]),
+  );
 
-  const [activeImg, setActiveImg] = useState(0);
-
-  const { data: land, isLoading } = useQuery<LandDetail>({
+  const { data: land } = useQuery<LandDetail>({
     queryKey: ['land', id],
     queryFn: () => getLandById(id).then(unwrap) as Promise<LandDetail>,
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Spinner className="size-6 text-primary" />
-      </div>
-    );
-  }
+  const media = useMemo(() => [...(land?.media ?? [])].sort((a, b) => a.order - b.order), [land]);
+
+  const deposit = useMemo(
+    () => Math.round(((land?.price ?? 0) * (land?.sizeM2 ?? 0) * 5) / 100),
+    [land],
+  );
 
   if (!land) return null;
 
-  const media = [...(land.media ?? [])].sort(
-    (a: { order: number }, b: { order: number }) => a.order - b.order,
-  );
-  const cover = media[activeImg] ?? null;
-
   return (
     <div className="space-y-6">
-      {/* Back */}
-      <div className="flex items-center gap-3">
-        <Link href="/lands" className="text-gray-400 hover:text-gray-600">
-          <ArrowLeft className="size-5" />
-        </Link>
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              'rounded border px-1.5 py-0.5 text-xs font-bold',
-              LABEL_COLOR[land.label?.code ?? ''] ?? 'border-gray-200 bg-gray-100 text-gray-600',
-            )}
-          >
-            {land.label?.code}
-          </span>
-          <span
-            className={cn(
-              'rounded-full px-2 py-0.5 text-xs font-medium',
-              STATUS_BADGE[land.status] ?? 'bg-gray-100 text-gray-500',
-            )}
-          >
-            {STATUS_LABEL_T[land.status] ?? land.status}
-          </span>
-          {land.isVerified && (
-            <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-              {t('verified')}
-            </span>
-          )}
-        </div>
+      <div className="w-full rounded-md border border-slate-200 bg-white p-6">
+        <BreadcrumbNav labels={{ [id]: land.title }} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        {/* Left */}
-        <div className="space-y-5">
-          {/* Gallery */}
-          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
-            <div className="relative h-64 sm:h-80">
-              {cover ? (
-                <img src={cover.url} alt={land.title} className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-gray-400">
-                  {t('noPhoto')}
-                </div>
-              )}
-            </div>
-            {media.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto p-3">
-                {media.map((m: { url: string; order: number }, i: number) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveImg(i)}
-                    className={cn(
-                      'h-14 w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-colors',
-                      activeImg === i ? 'border-primary' : 'border-transparent',
-                    )}
-                  >
-                    <img src={m.url} alt="" className="h-full w-full object-cover" />
-                  </button>
-                ))}
+      <div className="grid grid-cols-1 items-start gap-x-8 gap-y-8 lg:grid-cols-3">
+        <div className="lg:col-start-3 lg:row-start-1">
+          <LandInfoPanel land={land} />
+          <ReserveForm
+            key={land.reservations[0]?.id ?? 'new'}
+            landId={id}
+            deposit={deposit}
+            className="mt-5 hidden lg:block"
+            reservation={land.reservations[0]}
+            currentUserId={currentUserId}
+            isAdmin={isAdmin}
+            canManageReservations={canManageReservations}
+          />
+        </div>
+
+        <div className="lg:col-span-2 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+          <div className="flex w-full flex-col space-y-5 bg-white p-4 ring-1 ring-slate-900/5 sm:rounded-md">
+            <LandGallery media={media} title={land.title} />
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <Badge
+                  className={cn(
+                    'rounded border font-bold',
+                    LAND_LABEL_CODE_STYLES[(land.label?.code as LandLabelCode) ?? ''] ??
+                      'border-gray-200 bg-gray-100 text-gray-600',
+                  )}
+                >
+                  {land.label?.code}
+                </Badge>
+                <Badge className="font-medium">{STATUS_LABEL[land.status] ?? land.status}</Badge>
+                {land.isVerified && (
+                  <Badge className="bg-green-100 font-medium text-green-700">{t('verified')}</Badge>
+                )}
               </div>
-            )}
-          </div>
-
-          {/* Title + Location */}
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{land.title}</h1>
-            <p className="mt-1 flex items-center gap-1 text-sm text-gray-500">
-              <MapPin className="size-4" />
-              {[land.city, land.region].filter(Boolean).join(', ')}
-            </p>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <div className="rounded-xl border border-gray-200 bg-white p-4">
-              <p className="text-xs font-medium tracking-wide text-gray-400 uppercase">
-                {t('superficie')}
-              </p>
-              <p className="mt-1 flex items-center gap-1 text-lg font-bold text-gray-900">
-                <Maximize2 className="size-4 text-gray-400" />
-                {land.sizeM2?.toLocaleString('fr-FR')} m²
-              </p>
-            </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-4">
-              <p className="text-xs font-medium tracking-wide text-gray-400 uppercase">
-                {t('pricePerSqm')}
-              </p>
-              <p className="mt-1 text-lg font-bold text-gray-900">{formatPrice(land.price)} F</p>
-            </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-4">
-              <p className="text-xs font-medium tracking-wide text-gray-400 uppercase">
-                {t('totalEstimate')}
-              </p>
-              <p className="mt-1 text-lg font-bold text-gray-900">
-                {formatPrice(Math.round(land.price * land.sizeM2))} F
-              </p>
+              <div className="mt-2.5">
+                <h1 className="text-2xl font-bold text-slate-900">{land.title}</h1>
+                <p className="text-sm font-medium text-slate-500">
+                  {[land.neighborhood, land.city].filter(Boolean).join(', ')}
+                  {land.region ? ` - ${land.region}` : ''}
+                </p>
+              </div>
+              <div className="mt-4 text-sm text-slate-900">
+                <p>{land.description}</p>
+              </div>
             </div>
           </div>
 
-          {/* Description */}
-          {land.description && (
-            <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <h2 className="mb-2 text-sm font-semibold text-gray-900">{t('description')}</h2>
-              <p className="text-sm leading-relaxed text-gray-600">{land.description}</p>
-            </div>
-          )}
+          <LandDocuments documents={land.documents ?? []} />
 
-          {/* Map */}
           {land.latitude && land.longitude && (
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-              <div className="flex items-center gap-2 border-b border-gray-100 px-5 py-3">
-                <MapPin className="size-4 text-gray-400" />
-                <h2 className="text-sm font-semibold text-gray-900">{t('location')}</h2>
+            <div className="mt-5 flex flex-col bg-white p-4 ring-1 ring-slate-900/5 sm:rounded-md">
+              <div className="pb-5">
+                <h3 className="text-base font-semibold text-slate-900">{t('location')}</h3>
               </div>
-              <div className="h-64">
+              <div className="h-125">
                 <LandMap latitude={land.latitude} longitude={land.longitude} title={land.title} />
               </div>
             </div>
           )}
-
-          {/* Features */}
-          {land.features && land.features.length > 0 && (
-            <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <h2 className="mb-3 text-sm font-semibold text-gray-900">{t('features')}</h2>
-              <ul className="space-y-2">
-                {land.features.map((f: string, i: number) => (
-                  <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
-                    <CheckCircle2 className="size-4 shrink-0 text-green-500" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
 
-        {/* Right - action panel */}
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div className="mb-4">
-              <p className="text-2xl font-bold text-gray-900">
-                {formatPrice(land.price)} F
-                <span className="text-base font-normal text-gray-400">/m²</span>
-              </p>
-              <p className="text-sm text-gray-500">
-                {land.sizeM2?.toLocaleString('fr-FR')} m² • {land.label?.name ?? land.label?.code}
-              </p>
-            </div>
-
-            {land.status === 'AVAILABLE' && canReserve ? (
-              <Link
-                href={`/lands/${id}/reserve`}
-                className="flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
-              >
-                {t('reserve')}
-              </Link>
-            ) : land.status === 'AVAILABLE' ? (
-              <p className="rounded-xl bg-gray-50 px-4 py-3 text-center text-sm text-gray-500">
-                {t('contactAgent')}
-              </p>
-            ) : (
-              <div className="flex items-center gap-2 rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-500">
-                <XCircle className="size-4" />
-                {STATUS_LABEL_T[land.status] ?? land.status} - {t('notAvailable')}
-              </div>
-            )}
-          </div>
-
-          {/* Documents */}
-          {land.documents && land.documents.length > 0 && (
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="mb-3 text-sm font-semibold text-gray-900">Documents</h2>
-              <ul className="space-y-2">
-                {land.documents.map((doc: { id: string; name: string; url: string }) => (
-                  <li key={doc.id}>
-                    <a
-                      href={doc.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/5"
-                    >
-                      <span className="truncate">{doc.name}</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Admin actions */}
-          {isAdmin && (
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="mb-3 text-sm font-semibold text-gray-900">Actions admin</h2>
-              <Link
-                href={`/lands/${id}/edit`}
-                className="flex w-full items-center justify-center rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-              >
-                Modifier ce terrain
-              </Link>
-            </div>
-          )}
+        <div className="block lg:hidden">
+          <ReserveForm
+            landId={id}
+            deposit={deposit}
+            reservation={land.reservations[0]}
+            key={land.reservations[0]?.id ?? 'new'}
+            currentUserId={currentUserId}
+            isAdmin={isAdmin}
+            canManageReservations={canManageReservations}
+          />
         </div>
       </div>
     </div>
   );
 };
+
+export default LandDetailContent;

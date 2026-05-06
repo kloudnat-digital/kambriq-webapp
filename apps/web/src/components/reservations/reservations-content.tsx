@@ -1,93 +1,136 @@
 'use client';
 
-import { useState } from 'react';
+import type { FC } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import { Search } from 'lucide-react';
-import { getReservations } from '@/lib/actions/lands';
+import { getReservationsAction } from '@/lib/actions/lands';
 import { unwrap } from '@/lib/actions/unwrap';
-import { Input } from '@/components/ui/input';
+import { useDebounce } from '@/hooks/use-debounce';
 import { Spinner } from '@/components/ui/spinner';
+import { PaginationBar } from '@/components/ui/pagination';
 import { ReservationCard } from './reservation-card';
 import { cn } from '@/lib/utils';
+import type { LandReservation } from '@/types/lands';
+import type { PaginatedResponse } from '@/types/api';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
+import { LAND_RESERVATION_STATUS_OPTION_KEYS } from '@/constants/land';
+import { Badge } from '../ui/badge';
 
-const STATUSES = [
-  { value: '', label: 'Tous' },
-  { value: 'PENDING', label: 'En attente' },
-  { value: 'CONFIRMED', label: 'Confirmé' },
-  { value: 'DOCS_RECEIVED', label: 'Docs reçus' },
-  { value: 'PAYMENT_CONFIRMED', label: 'Paiement' },
-  { value: 'DOSSIER_STARTED', label: 'Dossier' },
-  { value: 'COMPLETED', label: 'Livré' },
-  { value: 'CANCELLED', label: 'Annulé' },
-];
+const PAGE_SIZE = 9;
 
-export const ReservationsContent = () => {
-  const { data: session } = useSession();
-  const userRoles = (session?.user as { roles?: string[] })?.roles ?? [];
-  const isAdmin = userRoles.includes('ADMIN_LANDS') || userRoles.includes('ADMIN_GLOBAL');
+interface ReservationsContentProps {
+  isAdmin: boolean;
+}
+
+const ReservationsContent: FC<ReservationsContentProps> = ({ isAdmin }) => {
+  const t = useTranslations('app.reservations');
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['reservations', search, status],
-    queryFn: () => getReservations({ search, status, limit: 50 }).then(unwrap),
+  const debouncedSearch = useDebounce(search, 300);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, status]);
+
+  const statusOptions = LAND_RESERVATION_STATUS_OPTION_KEYS.map((o) => ({
+    value: o.value,
+    label: t(o.labelKey),
+  }));
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['reservations', debouncedSearch, status, page],
+    queryFn: () =>
+      getReservationsAction({
+        ...(debouncedSearch && { search: debouncedSearch }),
+        ...(status && { status }),
+        page,
+        limit: PAGE_SIZE,
+      }).then(unwrap),
   });
 
-  const payload = data as { data?: unknown[]; meta?: { total: number } } | null;
-  const reservations = payload?.data ?? (Array.isArray(data) ? data : []);
-  const total = payload?.meta?.total ?? reservations.length;
+  const payload = data as PaginatedResponse<LandReservation> | null;
+  const reservations = payload?.data ?? [];
+  const total = payload?.meta?.total ?? 0;
+  const totalPages = payload?.meta?.totalPages ?? 1;
+
+  const toggleStatus = (value: string) => setStatus((prev) => (prev === value ? '' : value));
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-55 flex-1">
-          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-400" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher un client, terrain…"
-            className="pl-9"
-          />
+        <div className="relative max-w-96 min-w-55 flex-1">
+          <InputGroup>
+            <InputGroupInput
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('searchPlaceholder')}
+            />
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+          </InputGroup>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          {STATUSES.map((s) => (
-            <button
+          <Badge
+            role="button"
+            onClick={() => setStatus('')}
+            className={cn(
+              'font-medium transition-colors',
+              status === ''
+                ? 'bg-gray-900 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+            )}
+          >
+            {t('statusAll')}
+          </Badge>
+          {statusOptions.map((s) => (
+            <Badge
               key={s.value}
-              onClick={() => setStatus(s.value)}
+              role="button"
+              onClick={() => toggleStatus(s.value)}
               className={cn(
-                'rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+                'font-medium transition-colors',
                 status === s.value
                   ? 'bg-gray-900 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
               )}
             >
               {s.label}
-            </button>
+            </Badge>
           ))}
         </div>
       </div>
 
-      <p className="text-sm text-gray-500">
-        {total} réservation{total !== 1 ? 's' : ''}
-      </p>
+      <p className="text-sm text-gray-500">{t('totalCount', { total })}</p>
 
       {isLoading ? (
         <div className="flex h-64 items-center justify-center">
           <Spinner className="size-6 text-primary" />
         </div>
+      ) : error ? (
+        <div className="flex h-64 items-center justify-center text-sm text-red-500">
+          {(error as Error).message}
+        </div>
       ) : reservations.length === 0 ? (
         <div className="flex h-64 items-center justify-center text-sm text-gray-400">
-          Aucune réservation trouvée.
+          {t('noResults')}
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {(reservations as Parameters<typeof ReservationCard>[0]['reservation'][]).map((r) => (
-            <ReservationCard key={r.id} reservation={r} showAgent={isAdmin} />
+          {reservations.map((r) => (
+            <ReservationCard key={r.id} reservation={r} isAdmin={isAdmin} />
           ))}
         </div>
       )}
+
+      <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 };
+
+export default ReservationsContent;

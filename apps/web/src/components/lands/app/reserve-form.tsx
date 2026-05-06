@@ -2,230 +2,212 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import Link from 'next/link';
-import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { getLandById, createReservation } from '@/lib/actions/lands';
-import { unwrap } from '@/lib/actions/unwrap';
-import { Spinner } from '@/components/ui/spinner';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/input';
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Button } from '@/components/ui/button';
+import { useToastStore } from '@/store/toast.store';
+import type { ReserveLandFormSchema } from '@/validations/schema/lands';
+import { ReserveLandFormResolver, RESERVE_LAND_DEFAULTS } from '@/validations/schema/lands';
+import { createReservationAction, cancelReservationAction } from '@/lib/actions/lands';
+import { CancelReservationModal } from '@/components/reservations/cancel-reservation-modal';
+import { formatXAF } from '@/lib/money';
+import type { LandDetail } from '@/types/lands';
 import { cn } from '@/lib/utils';
-
-const formatPrice = (p: number) => new Intl.NumberFormat('fr-FR').format(p);
-
-interface LandSummary {
-  title: string;
-  price: number;
-  sizeM2: number;
-  label?: { code: string };
-  status?: string;
-}
 
 interface Props {
   landId: string;
+  deposit: number;
+  className?: string;
+  reservation?: LandDetail['reservations'][0];
+  currentUserId: string;
+  isAdmin: boolean;
+  canManageReservations?: boolean;
 }
 
-export const ReserveForm = ({ landId }: Props) => {
+export const ReserveForm = ({
+  landId,
+  deposit,
+  reservation,
+  className,
+  currentUserId,
+  isAdmin,
+  canManageReservations,
+}: Props) => {
   const router = useRouter();
   const t = useTranslations('app.reserveForm');
+  const { createToast } = useToastStore();
 
-  const { data: land, isLoading: landLoading } = useQuery<LandSummary>({
-    queryKey: ['land', landId],
-    queryFn: () => getLandById(landId).then(unwrap) as Promise<LandSummary>,
+  const defaultValues: ReserveLandFormSchema = reservation
+    ? {
+        name: reservation.clientName,
+        email: reservation.clientEmail,
+        phone: reservation.clientPhone,
+      }
+    : RESERVE_LAND_DEFAULTS;
+
+  const methods = useForm<ReserveLandFormSchema>({
+    resolver: zodResolver(ReserveLandFormResolver),
+    defaultValues,
   });
 
-  const [form, setForm] = useState({
-    clientName: '',
-    clientEmail: '',
-    clientPhone: '',
-  });
+  const { formState } = methods;
+  const { isSubmitting } = formState;
 
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [isCancelOpen, setIsCancelOpen] = useState(false);
 
-  const mutation = useMutation({
-    mutationFn: () => createReservation({ landId, ...form }).then(unwrap),
-    onSuccess: (data) => {
-      const id = (data as { id?: string })?.id;
-      if (id) router.push(`/reservations/${id}`);
-    },
-  });
+  const isReserved = Boolean(reservation);
+  const isDisabled = isReserved || isSubmitting;
+  const canCancel = isAdmin || reservation?.agentUserId === currentUserId;
 
-  const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, [key]: e.target.value }));
-    setFieldErrors((prev) => ({ ...prev, [key]: '' }));
-  };
+  const handleReserve = async (data: ReserveLandFormSchema) => {
+    const result = await createReservationAction({
+      landId,
+      clientName: data.name,
+      clientEmail: data.email,
+      clientPhone: data.phone,
+    });
 
-  const validate = () => {
-    const errors: Record<string, string> = {};
-    if (!form.clientName.trim()) errors.clientName = t('fullNameRequired');
-    if (!form.clientEmail.trim()) errors.clientEmail = t('emailRequired');
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.clientEmail))
-      errors.clientEmail = t('emailInvalid');
-    if (!form.clientPhone.trim()) errors.clientPhone = t('phoneRequired');
-    return errors;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const errors = validate();
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
+    if (!result.success) {
+      createToast({ status: 'error', title: result.error ?? t('apiError') });
       return;
     }
-    mutation.mutate();
+
+    createToast({ status: 'success', title: t('submit') });
+    router.push('/reservations');
   };
 
-  if (landLoading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Spinner className="size-6 text-primary" />
-      </div>
-    );
-  }
-
-  if (!land) return null;
-
-  const acompte = land.price && land.sizeM2 ? Math.round(land.price * land.sizeM2 * 0.05) : null;
+  const handleCancel = async (reason: string) => {
+    if (!reservation) return;
+    const result = await cancelReservationAction(reservation.id, reason);
+    if (!result.success) {
+      createToast({ status: 'error', title: result.error ?? t('apiError') });
+      return;
+    }
+    setIsCancelOpen(false);
+    createToast({ status: 'success', title: t('cancelSuccess') });
+    router.refresh();
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Back */}
-      <div className="flex items-center gap-3">
-        <Link href={`/lands/${landId}`} className="text-gray-400 hover:text-gray-600">
-          <ArrowLeft className="size-5" />
-        </Link>
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">{t('pageTitle')}</h1>
-          <p className="text-sm text-gray-500">{land.title}</p>
-        </div>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-sm font-semibold text-gray-900">{t('clientInfo')}</h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                  {t('fullName')} <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  value={form.clientName}
-                  onChange={set('clientName')}
-                  placeholder={t('fullNamePlaceholder')}
-                  className={cn(
-                    fieldErrors.clientName && 'border-red-400 focus-visible:ring-red-400',
-                  )}
-                />
-                {fieldErrors.clientName && (
-                  <p className="mt-1 text-xs text-red-500">{fieldErrors.clientName}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                  {t('email')} <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="email"
-                  value={form.clientEmail}
-                  onChange={set('clientEmail')}
-                  placeholder="email@exemple.com"
-                  className={cn(
-                    fieldErrors.clientEmail && 'border-red-400 focus-visible:ring-red-400',
-                  )}
-                />
-                {fieldErrors.clientEmail && (
-                  <p className="mt-1 text-xs text-red-500">{fieldErrors.clientEmail}</p>
-                )}
-                <p className="mt-1 text-xs text-gray-400">{t('emailHint')}</p>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                  {t('phone')} <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="tel"
-                  value={form.clientPhone}
-                  onChange={set('clientPhone')}
-                  placeholder={t('phonePlaceholder')}
-                  className={cn(
-                    fieldErrors.clientPhone && 'border-red-400 focus-visible:ring-red-400',
-                  )}
-                />
-                {fieldErrors.clientPhone && (
-                  <p className="mt-1 text-xs text-red-500">{fieldErrors.clientPhone}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* API error */}
-          {mutation.isError && (
-            <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              <AlertCircle className="mt-0.5 size-4 shrink-0" />
-              <span>{(mutation.error as Error)?.message ?? t('apiError')}</span>
-            </div>
+    <div className={cn('space-y-5', className)}>
+      <div
+        className={cn(
+          'w-full rounded-md bg-white p-4 ring-2',
+          isReserved ? 'ring-red-500' : 'ring-primary-500',
+        )}
+      >
+        <h2
+          className={cn(
+            'mb-4 text-base font-semibold',
+            isReserved ? 'text-red-500' : 'text-primary-500',
           )}
+        >
+          {isReserved ? t('reservedTitle') : t('pageTitle')}
+        </h2>
+        <form onSubmit={methods.handleSubmit(handleReserve)}>
+          <FieldGroup>
+            <div className="space-y-4">
+              <Controller
+                name="name"
+                control={methods.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="res-name">{t('fullName')}</FieldLabel>
+                    <Input
+                      {...field}
+                      id="res-name"
+                      type="text"
+                      disabled={isDisabled}
+                      aria-invalid={fieldState.invalid}
+                      placeholder={t('fullNamePlaceholder')}
+                      autoComplete="name"
+                    />
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
 
-          <button
-            type="submit"
-            disabled={mutation.isPending}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
-          >
-            {mutation.isPending && <Spinner className="size-4" />}
-            {t('submit')}
-          </button>
+              <Controller
+                name="email"
+                control={methods.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="res-email">{t('email')}</FieldLabel>
+                    <Input
+                      {...field}
+                      id="res-email"
+                      type="email"
+                      disabled={isDisabled}
+                      aria-invalid={fieldState.invalid}
+                      placeholder="you@example.com"
+                      autoComplete="email"
+                    />
+                    {fieldState.error && <FieldError errors={[fieldState.error]} />}
+                    <FieldDescription>{t('emailHint')}</FieldDescription>
+                  </Field>
+                )}
+              />
+
+              <Controller
+                name="phone"
+                control={methods.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="res-phone">{t('phone')}</FieldLabel>
+                    <Input
+                      {...field}
+                      id="res-phone"
+                      type="tel"
+                      disabled={isDisabled}
+                      aria-invalid={fieldState.invalid}
+                      placeholder={t('phonePlaceholder')}
+                      autoComplete="tel"
+                    />
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
+
+              <Field>
+                <FieldLabel>{t('summaryDeposit')}</FieldLabel>
+                <Input disabled type="text" value={formatXAF(deposit)} />
+              </Field>
+            </div>
+          </FieldGroup>
+
+          {!isReserved && (
+            <Button
+              type="submit"
+              className="mt-5 h-10 w-full"
+              disabled={isSubmitting || !canManageReservations}
+            >
+              {isSubmitting ? '…' : t('submit')}
+            </Button>
+          )}
         </form>
 
-        {/* Summary */}
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 text-sm font-semibold text-gray-900">{t('summary')}</h2>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">{t('summaryLand')}</span>
-                <span className="max-w-45 truncate text-right font-medium text-gray-900">
-                  {land.title}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">{t('summarySize')}</span>
-                <span className="font-medium text-gray-900">
-                  {land.sizeM2?.toLocaleString('fr-FR')} m²
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">{t('summaryPricePerSqm')}</span>
-                <span className="font-medium text-gray-900">{formatPrice(land.price)} F</span>
-              </div>
-              {acompte !== null && (
-                <>
-                  <div className="flex justify-between border-t border-gray-100 pt-3">
-                    <span className="text-gray-500">{t('summaryTotal')}</span>
-                    <span className="font-medium text-gray-900">
-                      {formatPrice(land.price * land.sizeM2)} F
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-primary">
-                    <span className="font-semibold">{t('summaryDeposit')}</span>
-                    <span className="font-bold">{formatPrice(acompte)} F</span>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-            <p className="font-medium">{t('note')}</p>
-            <p className="mt-1">{t('noteText')}</p>
-          </div>
-        </div>
+        {isReserved && canCancel && (
+          <Button
+            type="button"
+            variant="destructive"
+            className="mt-5 h-10 w-full"
+            disabled={isSubmitting || !canManageReservations}
+            onClick={() => setIsCancelOpen(true)}
+          >
+            {t('cancelButton')}
+          </Button>
+        )}
       </div>
+
+      <CancelReservationModal
+        open={isCancelOpen}
+        onOpenChange={setIsCancelOpen}
+        onConfirm={handleCancel}
+        isPending={isSubmitting}
+      />
     </div>
   );
 };

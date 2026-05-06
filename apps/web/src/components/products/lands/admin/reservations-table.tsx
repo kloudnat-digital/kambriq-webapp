@@ -1,8 +1,7 @@
 'use client';
 
-import { Search, CheckCircle2, Trophy, Eye, MapPin } from 'lucide-react';
+import { Search, CheckCircle2, Trophy, Eye } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,28 +15,31 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { formatXAF } from '@/lib/money';
-import type { AdminReservation } from './types';
-import { RESERVATION_STATUS_STYLES } from './constants';
+import type { LandReservation } from '@/types/lands';
+import { LAND_RESERVATION_STATUS_STYLES } from '@/constants/land';
+import type { FC } from 'react';
 
 type ReservationsTableProps = {
-  reservations: AdminReservation[];
+  reservations: LandReservation[];
   search: string;
   status: string;
   onSearchChange: (v: string) => void;
   onStatusChange: (v: string) => void;
-  onUpdate: (id: string, action: 'confirm' | 'complete' | 'cancel', reason?: string) => void;
-  onSelect: (res: AdminReservation) => void;
+  onConfirm: (id: string) => Promise<void>;
+  onComplete: (id: string) => Promise<void>;
+  onSelect: (res: LandReservation) => void;
 };
 
-export function ReservationsTable({
+const ReservationsTable: FC<ReservationsTableProps> = ({
   reservations,
   search,
   status,
   onSearchChange,
   onStatusChange,
-  onUpdate,
+  onConfirm,
+  onComplete,
   onSelect,
-}: ReservationsTableProps) {
+}) => {
   const t = useTranslations('landsAdmin');
 
   return (
@@ -111,20 +113,21 @@ export function ReservationsTable({
                   <tr key={res.id} className="transition-colors hover:bg-muted/20">
                     <td className="px-4 py-3">
                       <p className="font-medium text-foreground">{res.land.title}</p>
-                      <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="size-3" />
-                        {res.land.city}, {res.land.region}
-                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {formatXAF(res.land.price)}
+                      </p>
                     </td>
                     <td className="px-4 py-3">
                       <p className="font-medium">{res.clientName}</p>
                       <p className="text-xs text-muted-foreground">{res.clientPhone}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-sm">{res.agent.name}</p>
+                      <p className="font-mono text-xs text-muted-foreground">
+                        {res.agentUserId.substring(0, 8)}…
+                      </p>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <p className="font-semibold">{formatXAF(res.depositAmount)}</p>
+                      <p className="font-semibold">{formatXAF(res.downPaymentAmount)}</p>
                       <p
                         className={cn(
                           'mt-0.5 text-xs',
@@ -139,7 +142,7 @@ export function ReservationsTable({
                     <td className="px-4 py-3 text-center">
                       <Badge
                         variant="outline"
-                        className={cn('text-xs', RESERVATION_STATUS_STYLES[res.status])}
+                        className={cn('text-xs', LAND_RESERVATION_STATUS_STYLES[res.status])}
                       >
                         {t(`reservations.status.${res.status}`)}
                       </Badge>
@@ -158,10 +161,7 @@ export function ReservationsTable({
                             size="sm"
                             variant="outline"
                             className="h-7 gap-1 border-blue-300 text-xs text-blue-600"
-                            onClick={() => {
-                              onUpdate(res.id, 'confirm');
-                              toast.success(t('reservations.action.confirmSuccess'));
-                            }}
+                            onClick={() => onConfirm(res.id)}
                           >
                             <CheckCircle2 className="size-3" />
                             {t('reservations.action.confirm')}
@@ -171,10 +171,7 @@ export function ReservationsTable({
                           <Button
                             size="sm"
                             className="h-7 gap-1 text-xs"
-                            onClick={() => {
-                              onUpdate(res.id, 'complete');
-                              toast.success(t('reservations.action.completeSuccess'));
-                            }}
+                            onClick={() => onComplete(res.id)}
                           >
                             <Trophy className="size-3" />
                             {t('reservations.action.complete')}
@@ -199,4 +196,6 @@ export function ReservationsTable({
       </div>
     </>
   );
-}
+};
+
+export default ReservationsTable;

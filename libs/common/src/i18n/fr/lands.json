@@ -45,7 +45,8 @@
     "stepAlreadyDone": "Cette étape a déjà été enregistrée",
     "previousStepRequired": "L'étape précédente doit être complétée en premier",
     "conflict": "Ce terrain vient d'être réservé par un autre agent. Veuillez essayer une autre parcelle.",
-    "alreadyCompleted": "Impossible d'annuler une réservation finalisée"
+    "alreadyCompleted": "Impossible d'annuler une réservation finalisée",
+    "notOwner": "Vous ne pouvez annuler que les réservations que vous avez créées"
   },
   "invite": {
     "sent": "Invitation envoyée à {email}",

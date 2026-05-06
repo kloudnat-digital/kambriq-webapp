@@ -68,7 +68,7 @@ export default {
           language: data.user.language,
           accessToken: data.tokens.accessToken,
           refreshToken: data.tokens.refreshToken,
-          expiresAt: new Date(data.tokens.expiresAt).getTime(),
+          accessExpiresAt: new Date(data.tokens.accessExpiresAt).getTime(),
         };
       },
     }),
@@ -99,13 +99,12 @@ export default {
           },
           accessToken: user.accessToken,
           refreshToken: user.refreshToken,
-          expiresAt: user.expiresAt,
+          accessExpiresAt: user.accessExpiresAt,
         };
       }
 
-      // Access token still valid - return as-is
-      // 60s buffer so we refresh before it actually expires
-      if (Date.now() < token.expiresAt - 60_000) {
+      // 60s buffer so we refresh before the access token actually expires
+      if (Date.now() < token.accessExpiresAt - 60_000) {
         return token;
       }
 
@@ -125,7 +124,7 @@ export default {
           ...token,
           accessToken: data.accessToken,
           refreshToken: data.refreshToken ?? token.refreshToken,
-          expiresAt: new Date(data.expiresAt).getTime(),
+          accessExpiresAt: new Date(data.accessExpiresAt).getTime(),
           error: undefined,
         };
       } catch {
@@ -146,6 +145,26 @@ export default {
         accessToken: token.accessToken,
         error: token.error,
       };
+    },
+  },
+  events: {
+    /**
+     * Revoke the refresh token in the backend before next-auth destroys
+     * the session cookie. The endpoint is public (the refresh token itself
+     * is the proof of identity) so this works even if the access token has
+     * already expired.
+     */
+    async signOut(message) {
+      if (!('token' in message) || !message.token?.refreshToken) return;
+      try {
+        await fetch(`${API_URL}/api/v1/auth/logout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: message.token.refreshToken }),
+        });
+      } catch {
+        // best-effort: the next-auth session is gone regardless
+      }
     },
   },
 } satisfies NextAuthConfig;

@@ -20,7 +20,7 @@ export const NavLink = ({ item, onNavigate }: NavLinkProps) => {
       href={item.href}
       onClick={onNavigate}
       className={cn(
-        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+        'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
         isActive ? 'bg-primary text-white' : 'text-gray-400 hover:bg-white/10 hover:text-white',
       )}
     >

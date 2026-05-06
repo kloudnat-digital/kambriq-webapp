@@ -7,7 +7,6 @@ import { SessionProvider } from 'next-auth/react';
 import type { Session } from 'next-auth';
 import { ThemeProvider } from '@/components/theme-provider';
 import { TooltipProvider } from './ui/tooltip';
-import SessionSync from './session-sync';
 
 export const Providers = ({
   children,
@@ -37,10 +36,7 @@ export const Providers = ({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <TooltipProvider>
-            <SessionSync />
-            {children}
-          </TooltipProvider>
+          <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
         {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>

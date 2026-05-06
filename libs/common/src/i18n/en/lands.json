@@ -45,7 +45,8 @@
     "stepAlreadyDone": "This step has already been recorded",
     "previousStepRequired": "The previous step must be completed first",
     "conflict": "This land was just reserved by another agent. Please try a different parcel.",
-    "alreadyCompleted": "Cannot cancel a completed reservation"
+    "alreadyCompleted": "Cannot cancel a completed reservation",
+    "notOwner": "You can only cancel reservations you created"
   },
   "invite": {
     "sent": "Invitation sent to {email}",

@@ -1,3 +1,6 @@
+import { cache } from 'react';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -24,6 +27,9 @@ const baseFetch = async <T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
+    if (process.env.NODE_ENV !== 'production') {
+      console.error(`[API ${res.status}] ${path}`, JSON.stringify(body, null, 2));
+    }
     throw new Error(body?.message ?? `API error ${res.status} - ${path}`);
   }
 
@@ -31,7 +37,10 @@ const baseFetch = async <T>(
   if (res.status === 204) return undefined as T;
 
   // NestJS wraps responses: { success: true, data: T }
+  // Paginated responses are { success, data, meta }  interceptor passes them through unchanged.
+  // Preserve the full body when meta is present so callers can read pagination info.
   const body = await res.json();
+  if (body?.meta) return body as T;
   return (body?.data ?? body) as T;
 };
 
@@ -68,8 +77,23 @@ export const api = {
 //   const user = await serverApi.get<User>('/users/me')
 //   await serverApi.patch('/users/me', { firstName: 'Jean' })
 
+const getSession = cache(auth);
+
 const authedFetch = async <T>(path: string, options?: RequestInit): Promise<T> => {
-  const session = await auth();
+  const session = await getSession();
+  if (session?.error === 'RefreshTokenError') {
+    const referer = (await headers()).get('referer');
+    let callbackUrl = '/';
+    if (referer) {
+      try {
+        const url = new URL(referer);
+        callbackUrl = url.pathname + url.search;
+      } catch {
+        // ignore malformed referer
+      }
+    }
+    redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+  }
   const header = session?.accessToken ? `Bearer ${session.accessToken}` : undefined;
   return baseFetch<T>(path, options, header);
 };

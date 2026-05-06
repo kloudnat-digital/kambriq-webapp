@@ -26,7 +26,7 @@ const WhyKamnetAgent = async () => {
                 </div>
                 <div className="relative flex size-8 flex-none items-center justify-center bg-white">
                   <span className="flex size-6 items-center justify-center rounded-full bg-accent-700 text-accent-200 outline outline-accent-500">
-                    <span className="">{index + 1}</span>
+                    <span>{index + 1}</span>
                   </span>
                 </div>
                 <div className="flex-auto rounded-lg p-3 ring-1 ring-gray-200 ring-inset">

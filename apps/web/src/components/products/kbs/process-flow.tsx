@@ -18,12 +18,11 @@ const ProcessFlow = async () => {
       <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeader title={t('title')} subtitle={t('subtitle')} />
         <StepsContainer>
-          {steps.map(({ Icon, number, titleKey, descKey }, index) => (
+          {steps.map(({ Icon, number, titleKey, descKey }) => (
             <Step
               key={number}
               Icon={Icon}
               stepLabel={number}
-              isLast={index === steps.length - 1}
               title={t(titleKey)}
               description={t(descKey)}
             />

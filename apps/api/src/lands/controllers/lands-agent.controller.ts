@@ -147,6 +147,6 @@ export class LandsAgentController {
     @Param('id') id: string,
     @Body() dto: CancelLandReservationDto,
   ) {
-    return this.reservationsService.cancel(id, user.id, dto);
+    return this.reservationsService.cancel(id, user.id, dto, { enforceOwnership: true });
   }
 }

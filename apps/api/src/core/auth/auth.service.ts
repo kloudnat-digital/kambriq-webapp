@@ -194,6 +194,13 @@ export class AuthService {
       );
     }
 
+    if (user.loginAttempts > 0 || user.lockedUntil) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { loginAttempts: 0, lockedUntil: null },
+      });
+    }
+
     const roles = user.userRoles.map((ur) => ur.role.code);
     const tokens = await this.generateTokens(
       user.id,
@@ -537,6 +544,7 @@ export class AuthService {
       expiresIn: refreshExpiration,
     });
 
+    const accessExpiresAt = new Date(Date.now() + this.parseExpiry(accessExpiration));
     const expiresAt = new Date(Date.now() + this.parseExpiry(refreshExpiration));
 
     await this.prisma.refreshToken.create({
@@ -551,6 +559,7 @@ export class AuthService {
       accessToken,
       refreshToken,
       expiresAt,
+      accessExpiresAt,
       rememberMe,
     };
   }

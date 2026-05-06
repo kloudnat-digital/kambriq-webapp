@@ -1,4 +1,4 @@
-import type { AdminLand, AdminReservation, LandLabel } from './types';
+import type { Land, LandReservation, LandLabel } from '@/types/lands';
 
 export const MOCK_LABELS: LandLabel[] = [
   { id: 'lbl-1', code: 'TFL', name: 'Titre Foncier Loti' },
@@ -6,7 +6,7 @@ export const MOCK_LABELS: LandLabel[] = [
   { id: 'lbl-3', code: 'VEFIL', name: "Vente en État Futur d'Immatriculation et de Lotissement" },
 ];
 
-export const MOCK_ADMIN_LANDS: AdminLand[] = [
+export const MOCK_ADMIN_LANDS: Land[] = [
   {
     id: 'land-1',
     title: 'Terrain Dibamba',
@@ -133,7 +133,7 @@ export const MOCK_ADMIN_LANDS: AdminLand[] = [
   },
 ];
 
-export const MOCK_RESERVATIONS: AdminReservation[] = [
+export const MOCK_RESERVATIONS: LandReservation[] = [
   {
     id: 'res-1',
     land: { id: 'land-2', title: 'Terrain Yaoundé Bastos', region: 'Centre', city: 'Yaoundé' },

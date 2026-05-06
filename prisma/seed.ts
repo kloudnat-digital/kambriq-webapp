@@ -19,6 +19,7 @@
  *   paul.fouda@kambriq.com    AGENT  (AGT-2025-0005, N1 under Eric)
  */
 
+/* eslint-disable @nx/enforce-module-boundaries */
 import 'dotenv/config';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -89,7 +90,7 @@ const IDS = {
   AGENT_PAUL: '00000000-0000-0000-0000-d00000000005',
 
   // Lands
-  LABEL_TFL: '00000000-0000-0000-0000-e00000000001',
+  LABEL_TDT: '00000000-0000-0000-0000-e00000000001',
   LABEL_VEFL: '00000000-0000-0000-0000-e00000000002',
   LABEL_VEFIL: '00000000-0000-0000-0000-e00000000003',
   LAND_1: '00000000-0000-0000-0000-e00000000011',
@@ -728,8 +729,8 @@ async function seedLands() {
   // Labels
   const labels: Array<{ id: string; code: LandLabelCodes; name: string; description: string }> = [
     {
-      id: IDS.LABEL_TFL,
-      code: LandLabelCodes.TFL,
+      id: IDS.LABEL_TDT,
+      code: LandLabelCodes.TDT,
       name: 'Titre Foncier Loti',
       description:
         'Immatriculation faite et lotissement fait : un titre foncier individuel existe déjà. Propriété immédiate à la signature. Niveau de sécurité maximal.',
@@ -790,7 +791,7 @@ async function seedLands() {
       neighborhood: 'Akwa',
       sizeM2: 300,
       price: 8000000,
-      labelId: IDS.LABEL_TFL,
+      labelId: IDS.LABEL_TDT,
       status: LandStatus.AVAILABLE,
       isPublished: true,
       isVerified: true,
@@ -830,7 +831,7 @@ async function seedLands() {
       neighborhood: 'Bonanjo',
       sizeM2: 250,
       price: 15000000,
-      labelId: IDS.LABEL_TFL,
+      labelId: IDS.LABEL_TDT,
       status: LandStatus.RESERVED,
       isPublished: true,
       isVerified: true,
@@ -869,7 +870,7 @@ async function seedLands() {
       neighborhood: 'Town Centre',
       sizeM2: 350,
       price: 9000000,
-      labelId: IDS.LABEL_TFL,
+      labelId: IDS.LABEL_TDT,
       status: LandStatus.SOLD,
       isPublished: true,
       isVerified: true,

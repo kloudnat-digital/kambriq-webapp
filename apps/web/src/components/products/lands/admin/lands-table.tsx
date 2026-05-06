@@ -17,6 +17,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { PaginationBar } from '@/components/ui/pagination';
 import {
   Select,
   SelectContent,
@@ -33,40 +34,47 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { formatXAF } from '@/lib/money';
-import type { AdminLand } from './types';
-import { LAND_STATUS_STYLES, LABEL_STYLES } from './constants';
+import type { Land } from '@/types/lands';
+import { LAND_STATUS_STYLES, LAND_LABEL_CODE_STYLES } from '@/constants/land';
+import type { FC } from 'react';
 
 type LandsTableProps = {
-  lands: AdminLand[];
+  lands: Land[];
   regions: string[];
   search: string;
   region: string;
   label: string;
   status: string;
+  page: number;
+  totalPages: number;
   onSearchChange: (v: string) => void;
   onRegionChange: (v: string) => void;
   onLabelChange: (v: string) => void;
   onStatusChange: (v: string) => void;
-  onEdit: (land: AdminLand) => void;
-  onTogglePublish: (land: AdminLand) => void;
-  onArchive: (land: AdminLand) => void;
+  onPageChange: (page: number) => void;
+  onEdit: (land: Land) => void;
+  onTogglePublish: (land: Land) => void;
+  onArchive: (land: Land) => void;
 };
 
-export function LandsTable({
+const LandsTable: FC<LandsTableProps> = ({
   lands,
   regions,
   search,
   region,
   label,
   status,
+  page,
+  totalPages,
   onSearchChange,
   onRegionChange,
   onLabelChange,
   onStatusChange,
+  onPageChange,
   onEdit,
   onTogglePublish,
   onArchive,
-}: LandsTableProps) {
+}) => {
   const t = useTranslations('landsAdmin');
 
   return (
@@ -170,7 +178,7 @@ export function LandsTable({
                         <div className="relative size-10 shrink-0 overflow-hidden rounded-md bg-muted">
                           {land.media[0] ? (
                             <Image
-                              src={land.media[0].url}
+                              src={land.media[0].downloadUrl}
                               alt={land.title}
                               fill
                               className="object-cover"
@@ -199,7 +207,7 @@ export function LandsTable({
                         <span
                           className={cn(
                             'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold',
-                            LABEL_STYLES[land.label.code] ??
+                            LAND_LABEL_CODE_STYLES[land.label.code] ??
                               'border-gray-200 bg-gray-100 text-gray-700',
                           )}
                         >
@@ -279,6 +287,15 @@ export function LandsTable({
           </table>
         </div>
       </div>
+
+      <PaginationBar
+        page={page}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
+        className="mt-4"
+      />
     </>
   );
-}
+};
+
+export default LandsTable;

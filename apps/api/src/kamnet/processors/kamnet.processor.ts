@@ -1,9 +1,10 @@
-import { KAMNET_JOBS, QUEUES, SaleCompletedJobPayload } from '@kambriq/common';
+import { KAMNET_JOBS, QUEUES, RoleCode, SaleCompletedJobPayload } from '@kambriq/common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { KamnetAgentsService } from '../agents/agents.service';
 import { KamnetPrismaService } from '../prisma/kamnet-prisma.service';
 import { Job } from 'bullmq';
+import { UsersService } from '../../core/users/users.service';
 
 @Processor(QUEUES.KAMNET)
 export class KamnetProcessor extends WorkerHost {
@@ -11,6 +12,7 @@ export class KamnetProcessor extends WorkerHost {
 
   constructor(
     private readonly agentsService: KamnetAgentsService,
+    private readonly usersService: UsersService,
     private readonly prisma: KamnetPrismaService,
   ) {
     super();
@@ -35,23 +37,39 @@ export class KamnetProcessor extends WorkerHost {
       reservationId,
     });
 
-    // 1. Find the agent by user ID
+    // 1. Look up the user in core
+    const user = await this.usersService.findById(agentUserId).catch(() => null);
+
+    if (!user) {
+      this.logger.error('Sale completed but user not found - skipping', { agentUserId });
+      return null;
+    }
+
+    // 2. Look up the kamnet record
     const agent = await this.prisma.kamnetAgent.findUnique({
       where: { userId: agentUserId },
     });
 
     if (!agent) {
-      this.logger.error(
-        'Sale completed but no KAMNET agent found for user - skipping',
-        { agentUserId },
-      );
+      const roles = user.roles ?? [];
+      const isAdmin = roles.includes(RoleCode.ADMIN_LANDS) || roles.includes(RoleCode.ADMIN_GLOBAL);
+
+      if (isAdmin) {
+        this.logger.log('Admin completed sale - no agent commission to track', {
+          agentUserId,
+          reservationId,
+        });
+        return { skipped: true, reason: 'admin' };
+      }
+
+      this.logger.error('Agent missing from KAMNET table', { agentUserId });
       return null;
     }
 
-    // 2. Increment the agent's sales count
+    // 3. Increment the agent's sales count
     await this.agentsService.incrementSales(agent.id);
 
-    // 3. Check if the agent qualifies for a tier upgrade
+    // 4. Check if the agent qualifies for a tier upgrade
     const promotion = await this.agentsService.checkPromotion(agent.id);
 
     if (promotion) {

@@ -41,10 +41,9 @@ const Hero: FC = () => {
               {t('hero.subtitle')}
             </p>
 
-            {/* CTAs */}
-            <div className="flex flex-col items-center justify-center gap-3 pt-2 sm:flex-row lg:justify-start">
-              <Button asChild size="lg">
-                <Link href="/contact">{t('hero.cta')}</Link>
+            <div className="flex flex-col justify-center gap-4 sm:flex-row lg:justify-start">
+              <Button asChild size="lg" className="h-9">
+                <Link href="/methode">{t('hero.cta')}</Link>
               </Button>
               <Button
                 asChild

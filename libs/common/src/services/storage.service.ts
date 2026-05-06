@@ -28,18 +28,15 @@ export class StorageService {
     this.accessKeyId = this.config.get<string>('AWS_ACCESS_KEY_ID');
     this.secretAccessKey = this.config.get<string>('AWS_SECRET_ACCESS_KEY');
 
-    if (
-      this.bucket &&
-      this.region &&
-      this.accessKeyId &&
-      this.secretAccessKey
-    ) {
+    if (this.bucket && this.region && this.accessKeyId && this.secretAccessKey) {
       this.s3 = new S3Client({
         region: this.region,
         credentials: {
           accessKeyId: this.accessKeyId,
           secretAccessKey: this.secretAccessKey,
         },
+        requestChecksumCalculation: 'WHEN_REQUIRED',
+        responseChecksumValidation: 'WHEN_REQUIRED',
       });
 
       this.isConfigured = true;
@@ -72,10 +69,8 @@ export class StorageService {
     contentType: string,
     expiresInSec = 1800,
   ): Promise<{ uploadUrl: string; fileUrl: string }> {
-    const fileUrl = this.getPublicUrl(key);
-
     if (!this.isConfigured || !this.s3) {
-      return { uploadUrl: fileUrl, fileUrl };
+      return { uploadUrl: this.getPublicUrl(key), fileUrl: key };
     }
 
     const command = new PutObjectCommand({
@@ -88,7 +83,7 @@ export class StorageService {
       expiresIn: expiresInSec,
     });
 
-    return { uploadUrl, fileUrl };
+    return { uploadUrl, fileUrl: key };
   }
 
   /**

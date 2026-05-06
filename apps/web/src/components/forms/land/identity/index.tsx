@@ -79,7 +79,8 @@ export function LandIdentityFields<T extends FieldValues>({
             <Textarea
               {...field}
               id="f-desc"
-              rows={3}
+              rows={10}
+              className="max-h-36 resize-none overflow-y-auto"
               placeholder={fields.description.placeholder}
               disabled={isSubmitting}
             />

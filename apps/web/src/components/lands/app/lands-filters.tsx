@@ -1,72 +1,75 @@
 'use client';
 
 import { Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-
-const LABELS = ['TFL', 'VEFL', 'VEFIL'];
-const STATUSES = [
-  { value: '', label: 'Tous' },
-  { value: 'AVAILABLE', label: 'Disponible' },
-  { value: 'RESERVED', label: 'Réservé' },
-];
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
+import { useTranslations } from 'next-intl';
+import { LAND_LABEL_CODES, type StatusOption } from '@/constants/land';
+import type { FC } from 'react';
+import { Badge } from '@/components/ui/badge';
 
 interface LandsFiltersProps {
   search: string;
   labelCode: string;
   status: string;
+  statuses: StatusOption[];
   onChange: (key: string, value: string) => void;
 }
 
-export const LandsFilters = ({ search, labelCode, status, onChange }: LandsFiltersProps) => {
+const LandsFilters: FC<LandsFiltersProps> = ({ search, labelCode, status, statuses, onChange }) => {
+  const t = useTranslations('app.landsPage');
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      {/* Search */}
-      <div className="relative min-w-[220px] flex-1">
-        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-400" />
-        <Input
-          value={search}
-          onChange={(e) => onChange('search', e.target.value)}
-          placeholder="Rechercher par zone, label…"
-          className="pl-9"
-        />
+    <div className="flex w-full flex-wrap items-center gap-3">
+      <div className="relative max-w-96 min-w-55 flex-1">
+        <InputGroup>
+          <InputGroupInput
+            value={search}
+            onChange={(e) => onChange('search', e.target.value)}
+            placeholder={t('searchPlaceholder')}
+          />
+          <InputGroupAddon>
+            <Search />
+          </InputGroupAddon>
+        </InputGroup>
       </div>
 
-      {/* Label pills */}
       <div className="flex items-center gap-1.5">
-        {['', ...LABELS].map((l) => (
-          <button
+        {(['', ...LAND_LABEL_CODES] as string[]).map((l) => (
+          <Badge
             key={l}
+            role="button"
             onClick={() => onChange('labelCode', l)}
             className={cn(
-              'rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
+              'font-medium transition-colors',
               labelCode === l
                 ? 'bg-gray-900 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
             )}
           >
-            {l || 'Tous'}
-          </button>
+            {l || t('allLabels')}
+          </Badge>
         ))}
       </div>
 
-      {/* Status pills */}
       <div className="flex items-center gap-1.5">
-        {STATUSES.map((s) => (
-          <button
+        {statuses.map((s) => (
+          <Badge
             key={s.value}
+            role="button"
             onClick={() => onChange('status', s.value)}
             className={cn(
-              'rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
+              'font-medium transition-colors',
               status === s.value
                 ? 'bg-gray-900 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
             )}
           >
             {s.label}
-          </button>
+          </Badge>
         ))}
       </div>
     </div>
   );
 };
+
+export default LandsFilters;

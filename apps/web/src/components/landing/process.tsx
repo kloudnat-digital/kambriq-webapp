@@ -23,6 +23,7 @@ const Process = async () => {
           className="mx-auto max-w-3xl text-left"
         />
 
+<<<<<<< HEAD
         <div className="mt-14 grid gap-10 md:grid-cols-2 lg:grid-cols-4">
           {steps.map(({ number, key }) => (
             <div key={key} className="relative">
@@ -36,6 +37,19 @@ const Process = async () => {
                 {t(`${key}.description` as 'step1.description')}
               </p>
             </div>
+=======
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
+        <SectionHeader title={t('title')} subtitle={t('subtitle')} />
+        <StepsContainer>
+          {steps.map(({ Icon, number, key }) => (
+            <Step
+              key={key}
+              Icon={Icon}
+              stepLabel={number}
+              title={t(`${key}.title` as 'step1.title')}
+              description={t(`${key}.description` as 'step1.description')}
+            />
+>>>>>>> c0c6b1f (feat(lands): update auth, enforce reservation ownership, fix admin stats)
           ))}
         </div>
       </div>

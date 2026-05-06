@@ -1,11 +1,6 @@
 import { I18nService } from 'nestjs-i18n';
 import slugify from 'slugify';
-import {
-  ConflictException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   CreateLandDto,
   UpdateLandDto,
@@ -17,6 +12,7 @@ import {
 import {
   buildPaginatedResponse,
   LandMediaType,
+  LandReservationStatus,
   LandStatus,
   PaginationQuery,
   StorageService,
@@ -227,14 +223,26 @@ export class LandsService {
           media: {
             where: { type: LandMediaType.IMAGE },
             orderBy: { order: 'asc' },
-            take: 3, // First 3 images for thumbnail display
+            take: 3,
           },
         },
       }),
       this.prisma.land.count({ where }),
     ]);
 
-    return buildPaginatedResponse(lands, total, page, limit);
+    const landsWithUrls = await Promise.all(
+      lands.map(async (land) => ({
+        ...land,
+        media: await Promise.all(
+          land.media.map(async (m) => ({
+            ...m,
+            downloadUrl: await this.storageService.getDownloadUrl(m.url),
+          })),
+        ),
+      })),
+    );
+
+    return buildPaginatedResponse(landsWithUrls, total, page, limit);
   }
 
   // ----- Admin: List All Lands ----- //
@@ -262,7 +270,21 @@ export class LandsService {
         take: limit,
         orderBy: { [sort || 'createdAt']: order || 'desc' },
         include: {
-          label: { select: { code: true, name: true } },
+          media: {
+            select: {
+              id: true,
+              url: true,
+            },
+          },
+          documents: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              isPrivate: true,
+            },
+          },
+          label: { select: { code: true, name: true, id: true } },
           _count: {
             select: { media: true, documents: true, reservations: true },
           },
@@ -271,7 +293,19 @@ export class LandsService {
       this.prisma.land.count({ where }),
     ]);
 
-    return buildPaginatedResponse(lands, total, page, limit);
+    const landsWithUrls = await Promise.all(
+      lands.map(async (land) => ({
+        ...land,
+        media: await Promise.all(
+          land.media.map(async (m) => ({
+            ...m,
+            downloadUrl: await this.storageService.getDownloadUrl(m.url),
+          })),
+        ),
+      })),
+    );
+
+    return buildPaginatedResponse(landsWithUrls, total, page, limit);
   }
 
   // ----- Get Land Detail ----- //
@@ -291,6 +325,8 @@ export class LandsService {
             status: true,
             clientName: true,
             agentUserId: true,
+            clientEmail: true,
+            clientPhone: true,
             createdAt: true,
           },
         },
@@ -457,6 +493,17 @@ export class LandsService {
       where: { id: landId },
       data: { status },
     });
+  }
+
+  // ----- Admin: Global Stats -----
+  async getStats() {
+    const [available, reserved, sold, pendingReservations] = await Promise.all([
+      this.prisma.land.count({ where: { status: LandStatus.AVAILABLE } }),
+      this.prisma.land.count({ where: { status: LandStatus.RESERVED } }),
+      this.prisma.land.count({ where: { status: LandStatus.SOLD } }),
+      this.prisma.landReservation.count({ where: { status: LandReservationStatus.PENDING } }),
+    ]);
+    return { available, reserved, sold, pendingReservations };
   }
 
   // ----- Private Helpers ----- //

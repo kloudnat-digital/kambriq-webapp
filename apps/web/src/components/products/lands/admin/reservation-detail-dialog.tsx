@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { CheckCircle2, XCircle, Trophy, MapPin, User, Phone, Mail, Calendar } from 'lucide-react';
-import { toast } from 'sonner';
 
 import {
   Dialog,
@@ -20,7 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { formatXAF } from '@/lib/money';
-import type { AdminReservation } from './types';
+import type { LandReservation } from '@/types/lands';
 
 const STATUS_STYLES: Record<string, string> = {
   PENDING: 'border-amber-300 bg-amber-50 text-amber-700',
@@ -30,12 +29,20 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 type Props = {
-  reservation: AdminReservation | null;
+  reservation: LandReservation | null;
   onClose: () => void;
-  onUpdate: (id: string, action: 'confirm' | 'complete' | 'cancel', reason?: string) => void;
+  onConfirm: (id: string) => Promise<void>;
+  onComplete: (id: string) => Promise<void>;
+  onCancel: (id: string, reason: string) => Promise<void>;
 };
 
-export function ReservationDetailDialog({ reservation, onClose, onUpdate }: Props) {
+export function ReservationDetailDialog({
+  reservation,
+  onClose,
+  onConfirm,
+  onComplete,
+  onCancel,
+}: Props) {
   const t = useTranslations('landsAdmin');
   const [cancelMode, setCancelMode] = useState(false);
   const [reason, setReason] = useState('');
@@ -43,22 +50,14 @@ export function ReservationDetailDialog({ reservation, onClose, onUpdate }: Prop
 
   if (!reservation) return null;
 
-  async function handleAction(action: 'confirm' | 'complete' | 'cancel') {
-    if (action === 'cancel' && !cancelMode) {
-      setCancelMode(true);
-      return;
-    }
+  const run = async (fn: () => Promise<void>) => {
     setLoading(true);
-    // TODO: wire to PATCH /lands/admin/reservations/:id/{action}
-    await new Promise((r) => setTimeout(r, 600));
-    if (!reservation) return;
-    onUpdate(reservation.id, action, reason);
-    toast.success(t(`reservations.action.${action}Success`));
+    await fn();
     setLoading(false);
     setCancelMode(false);
     setReason('');
     onClose();
-  }
+  };
 
   const canConfirm = reservation.status === 'PENDING';
   const canComplete = reservation.status === 'CONFIRMED';
@@ -99,7 +98,7 @@ export function ReservationDetailDialog({ reservation, onClose, onUpdate }: Prop
 
           <Separator />
 
-          {/* Terrain */}
+          {/* Land */}
           <div className="rounded-lg bg-muted/40 p-3">
             <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
               {t('reservations.land')}
@@ -107,7 +106,7 @@ export function ReservationDetailDialog({ reservation, onClose, onUpdate }: Prop
             <p className="font-semibold text-gray-900">{reservation.land.title}</p>
             <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
               <MapPin className="size-3" />
-              {reservation.land.city}, {reservation.land.region}
+              {formatXAF(reservation.land.price)}
             </div>
           </div>
 
@@ -123,7 +122,7 @@ export function ReservationDetailDialog({ reservation, onClose, onUpdate }: Prop
               </div>
               <div className="flex items-center gap-1.5 text-gray-700">
                 <Phone className="size-3.5 text-muted-foreground" />
-                {reservation.clientPhone}
+                {reservation.clientPhone ?? '-'}
               </div>
               <div className="col-span-2 flex items-center gap-1.5 text-gray-700">
                 <Mail className="size-3.5 text-muted-foreground" />
@@ -134,11 +133,13 @@ export function ReservationDetailDialog({ reservation, onClose, onUpdate }: Prop
 
           <Separator />
 
-          {/* Agent + Acompte */}
+          {/* Agent + Deposit */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg bg-muted/40 p-3">
               <p className="text-xs text-muted-foreground">{t('reservations.agent')}</p>
-              <p className="mt-0.5 text-sm font-semibold text-gray-900">{reservation.agent.name}</p>
+              <p className="mt-0.5 font-mono text-xs font-semibold text-gray-900">
+                {reservation.agentUserId.substring(0, 8)}…
+              </p>
             </div>
             <div
               className={cn(
@@ -150,7 +151,7 @@ export function ReservationDetailDialog({ reservation, onClose, onUpdate }: Prop
             >
               <p className="text-xs text-muted-foreground">{t('reservations.deposit')}</p>
               <p className="mt-0.5 text-sm font-bold text-gray-900">
-                {formatXAF(reservation.depositAmount)}
+                {formatXAF(reservation.downPaymentAmount)}
               </p>
               <p
                 className={cn(
@@ -165,12 +166,12 @@ export function ReservationDetailDialog({ reservation, onClose, onUpdate }: Prop
             </div>
           </div>
 
-          {reservation.reason && (
+          {reservation.cancelReason && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-3">
               <p className="mb-1 text-xs font-medium text-red-600">
                 {t('reservations.cancelReason')}
               </p>
-              <p className="text-sm text-red-700">{reservation.reason}</p>
+              <p className="text-sm text-red-700">{reservation.cancelReason}</p>
             </div>
           )}
 
@@ -199,7 +200,7 @@ export function ReservationDetailDialog({ reservation, onClose, onUpdate }: Prop
               </Button>
               <Button
                 variant="destructive"
-                onClick={() => handleAction('cancel')}
+                onClick={() => run(() => onCancel(reservation.id, reason))}
                 disabled={loading || !reason.trim()}
               >
                 <XCircle className="size-4" />
@@ -212,7 +213,7 @@ export function ReservationDetailDialog({ reservation, onClose, onUpdate }: Prop
                 <Button
                   variant="outline"
                   className="text-destructive hover:text-destructive"
-                  onClick={() => handleAction('cancel')}
+                  onClick={() => setCancelMode(true)}
                   disabled={loading}
                 >
                   <XCircle className="size-4" />
@@ -223,7 +224,7 @@ export function ReservationDetailDialog({ reservation, onClose, onUpdate }: Prop
                 <Button
                   variant="outline"
                   className="border-blue-300 text-blue-600"
-                  onClick={() => handleAction('confirm')}
+                  onClick={() => run(() => onConfirm(reservation.id))}
                   disabled={loading}
                 >
                   <CheckCircle2 className="size-4" />
@@ -231,7 +232,7 @@ export function ReservationDetailDialog({ reservation, onClose, onUpdate }: Prop
                 </Button>
               )}
               {canComplete && (
-                <Button onClick={() => handleAction('complete')} disabled={loading}>
+                <Button onClick={() => run(() => onComplete(reservation.id))} disabled={loading}>
                   <Trophy className="size-4" />
                   {t('reservations.action.complete')}
                 </Button>

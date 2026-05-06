@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatXAF } from '@/lib/money';
-import { LABEL_STYLES } from '@/components/products/lands/admin/constants';
+import { LAND_LABEL_CODE_STYLES } from '@/components/products/lands/admin/constants';
 import type { MockLand } from '@/data/mock-lands';
 
 type Props = { lands: MockLand[] };
@@ -51,7 +51,11 @@ export const CompareCards = ({ lands }: Props) => {
                 sizes="400px"
               />
               <div className="absolute top-3 left-3">
-                <Badge className={LABEL_STYLES[land.label.code as keyof typeof LABEL_STYLES]}>
+                <Badge
+                  className={
+                    LAND_LABEL_CODE_STYLES[land.label.code as keyof typeof LAND_LABEL_CODE_STYLES]
+                  }
+                >
                   {land.label.code}
                 </Badge>
               </div>

@@ -39,7 +39,7 @@ export const createLandSchema = z.object({
   longitude: z.number().min(-180).max(180).optional(),
   sizeM2: z.number().int().positive('Size must be positive'),
   price: z.number().int().positive('Price must be positive'), // In XAF
-  labelId: z.uuid('Invalid label ID'),
+  labelId: z.string().min(1, 'Label ID is required'),
   pv: z.number().min(0.1).max(2.0).default(1.0), // Point Valeur (commission coefficient)
   ownerType: z.enum(LandOwnerType).default(LandOwnerType.KAMBRIQ),
   partnerId: z.uuid().optional(),
@@ -61,7 +61,7 @@ export const updateLandSchema = z.object({
   longitude: z.number().min(-180).max(180).optional(),
   sizeM2: z.number().int().positive().optional(),
   price: z.number().int().positive().optional(), // Triggers price history
-  labelId: z.uuid().optional(),
+  labelId: z.string().optional(),
   pv: z.number().min(0.1).max(2.0).optional(),
   ownerType: z.enum(LandOwnerType).optional(),
   partnerId: z.uuid().optional(),

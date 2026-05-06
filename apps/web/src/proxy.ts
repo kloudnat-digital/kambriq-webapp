@@ -1,105 +1,37 @@
-import NextAuth from 'next-auth';
-import authConfig from './auth.config';
-import { AUTH_ROUTES } from './routes';
 import { NextResponse } from 'next/server';
-
-const { auth } = NextAuth(authConfig);
-
-// Paths accessible without authentication
-const PUBLIC_PATHS = [
-  '/',
-  '/login',
-  '/register',
-  '/verify-email',
-  '/forgot-password',
-  '/reset-password',
-  '/reactivate',
-  '/about',
-  '/contact',
-  '/faq',
-  '/blog',
-  '/methode',
-  '/plan',
-  '/legal',
-  '/products',
-  '/verify-certificate',
-];
-
-// Paths where authenticated users should be redirected to their role home
-// '/' uses exact match; others use startsWith
-const REDIRECT_WHEN_AUTHED = ['/', '/login', '/register'];
-
-// Role-gated sections. Each entry: pathname prefix → allowed role codes.
-// A match requires the user to have at least one of the listed role codes.
-// Unauthenticated users are redirected to /login regardless of these rules.
-const ROLE_GATES: Array<{ prefix: string; roles: string[] }> = [
-  { prefix: '/admin/kbs', roles: ['ADMIN_KBS', 'ADMIN_GLOBAL', 'ROOT'] },
-  { prefix: '/admin/kamnet', roles: ['ADMIN_KAMNET', 'ADMIN_GLOBAL', 'ROOT'] },
-  { prefix: '/admin', roles: ['OPS', 'ADMIN_LANDS', 'ADMIN_GLOBAL', 'ROOT'] },
-  { prefix: '/agent', roles: ['AGENT', 'OPS', 'ADMIN_GLOBAL', 'ROOT'] },
-];
-
-const LOCALES = ['fr', 'en'];
-
-const stripLocale = (pathname: string) => {
-  const segments = pathname.split('/');
-  if (segments.length > 1 && LOCALES.includes(segments[1])) {
-    return '/' + segments.slice(2).join('/') || '/';
-  }
-  return pathname;
-};
-
-const isPublic = (pathname: string) => {
-  const bare = stripLocale(pathname);
-  return PUBLIC_PATHS.some((p) => bare === p || bare.startsWith(p + '/'));
-};
-
-const matchGate = (pathname: string) => {
-  const bare = stripLocale(pathname);
-  return ROLE_GATES.find((g) => bare === g.prefix || bare.startsWith(g.prefix + '/'));
-};
-
-const getDefaultRoute = (roleCodes: string[]): string => {
-  if (roleCodes.includes('CLIENT')) return '/mylands';
-  if (
-    roleCodes.includes('AGENT') ||
-    roleCodes.includes('ADMIN_LANDS') ||
-    roleCodes.includes('ADMIN_GLOBAL')
-  )
-    return '/lands';
-  if (roleCodes.includes('ADMIN_KBS')) return '/admin/kbs';
-  if (roleCodes.includes('ADMIN_KAMNET')) return '/admin/kamnet';
-  return '/mylands';
-};
+import { auth } from './auth';
+import { AUTH_ROUTES, getDefaultRoute, isPublic, matchGate, REDIRECT_WHEN_AUTHED } from './routes';
 
 export default auth((req) => {
   const { nextUrl, auth: session } = req;
   const pathname = nextUrl.pathname;
   const isAuthenticated = !!session?.user;
+  const hasSessionError = session?.error === 'RefreshTokenError';
+  const roles = session?.user?.roles ?? [];
 
-  const rawRoles =
-    (session?.user as unknown as { roles?: Array<{ code: string } | string> })?.roles ?? [];
-  const roles = rawRoles.map((r) => (typeof r === 'string' ? r : r.code));
+  // Refresh failed → redirect to login. NextAuth replaces the broken session on re-login.
+  if (isAuthenticated && hasSessionError) {
+    const loginUrl = new URL(AUTH_ROUTES.LOGIN, nextUrl.origin);
+    loginUrl.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
 
-  // Authenticated user on landing/auth pages → redirect to their role home
-  if (isAuthenticated) {
-    const bare = stripLocale(pathname);
+  // Authenticated user (with valid session) on landing/auth pages → redirect to their role home
+  if (isAuthenticated && !hasSessionError) {
     const shouldRedirect = REDIRECT_WHEN_AUTHED.some((p) =>
-      p === '/' ? bare === '/' : bare.startsWith(p),
+      p === '/' ? pathname === '/' : pathname.startsWith(p),
     );
     if (shouldRedirect) {
       return NextResponse.redirect(new URL(getDefaultRoute(roles), nextUrl.origin));
     }
   }
 
-  // Unauthenticated user on a protected route → redirect to login
   if (!isAuthenticated && !isPublic(pathname)) {
     const loginUrl = new URL(AUTH_ROUTES.LOGIN, nextUrl.origin);
     loginUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Authenticated user hitting a role-gated section → redirect to their home if not allowed
   if (isAuthenticated) {
     const gate = matchGate(pathname);
     if (gate && !gate.roles.some((r) => roles.includes(r))) {

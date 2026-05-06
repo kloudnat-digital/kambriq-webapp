@@ -12,7 +12,6 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { useTranslations } from 'next-intl';
-import { LAND_LABELS } from '@/constants/land';
 import type { LandLabel } from '@/types/lands';
 
 interface LandClassificationProps<T extends FieldValues> {

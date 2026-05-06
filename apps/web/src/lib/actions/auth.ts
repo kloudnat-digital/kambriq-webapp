@@ -3,9 +3,8 @@
 import { AuthError } from 'next-auth';
 import { signIn, signOut } from '@/auth';
 import { api } from '@/lib/api/server';
-import { APP_ROUTES, AUTH_ROUTES } from '@/routes';
+import { AUTH_ROUTES } from '@/routes';
 import { createAction, ServerActionError } from './create-action';
-import { logger } from '@/lib/logger';
 import { getAuthErrorCause, parseReactivationSignal } from './utils/auth';
 import { redirect } from 'next/navigation';
 
@@ -16,7 +15,7 @@ export const logInAction = createAction(
         email: credentials.email,
         password: credentials.password,
         rememberMe: String(credentials.rememberMe),
-        redirectTo: APP_ROUTES.HOME,
+        redirectTo: '/',
       });
     } catch (error) {
       if (error instanceof AuthError) {
@@ -45,15 +44,10 @@ export const logInAction = createAction(
 );
 
 export const logOutAction = async (): Promise<void> => {
-  try {
-    await api.post('/auth/logout');
-  } catch (error) {
-    // Best-effort revoke - next-auth session is destroyed regardless
-    logger.warn('Failed to revoke session on API', {
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
-  await signOut({ redirectTo: APP_ROUTES.HOME });
+  // Backend revocation happens in auth.config events.signOut, where the JWT is still
+  // accessible. Calling the logout endpoint here would only ever hit a request without
+  // the refresh token (server-side fetch doesn't carry browser cookies).
+  await signOut({ redirectTo: '/' });
 };
 
 export const registerAction = createAction(
@@ -139,7 +133,7 @@ export const autoSignIn = async (email: string, password: string): Promise<void>
       email,
       password,
       rememberMe: 'false',
-      redirectTo: APP_ROUTES.HOME,
+      redirectTo: '/',
     });
   } catch (error) {
     if (error instanceof AuthError) {
