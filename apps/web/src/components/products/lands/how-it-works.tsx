@@ -20,12 +20,11 @@ const HowItWorks = async () => {
       <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeader title={t('title')} subtitle={t('subtitle')} />
         <StepsContainer>
-          {steps.map(({ Icon, number, key }, index) => (
+          {steps.map(({ Icon, number, key }) => (
             <Step
               key={key}
               Icon={Icon}
               stepLabel={number}
-              isLast={index === steps.length - 1}
               title={t(`${key}.title` as 'step1.title')}
               description={t(`${key}.description` as 'step1.description')}
             />

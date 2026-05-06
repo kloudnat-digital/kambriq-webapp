@@ -26,7 +26,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatXAF } from '@/lib/money';
-import { LABEL_STYLES } from '@/components/products/lands/admin/constants';
+import { LAND_LABEL_CODE_STYLES } from '@/components/products/lands/admin/constants';
 import type { MockLand } from '@/data/mock-lands';
 
 type Props = { lands: MockLand[] };
@@ -116,7 +116,13 @@ export const CompareTable = ({ lands }: Props) => {
                     </span>
                   )}
                   {row.key === 'label' && (
-                    <Badge className={LABEL_STYLES[land.label.code as keyof typeof LABEL_STYLES]}>
+                    <Badge
+                      className={
+                        LAND_LABEL_CODE_STYLES[
+                          land.label.code as keyof typeof LAND_LABEL_CODE_STYLES
+                        ]
+                      }
+                    >
                       {land.label.code}
                     </Badge>
                   )}

@@ -62,7 +62,11 @@ export class NewsletterService {
       this.logger.log(`Contact list '${this.contactListName}' created`);
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AlreadyExistsException') {
-        return; // Already exists - nothing to do
+        return;
+      }
+      if (error instanceof Error && error.name === 'AccessDeniedException') {
+        this.logger.warn(`No permission to create contact list - assuming it already exists`);
+        return;
       }
       throw error;
     }

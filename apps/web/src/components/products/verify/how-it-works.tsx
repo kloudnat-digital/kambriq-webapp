@@ -24,7 +24,6 @@ const HowItWorks = async () => {
               key={key}
               Icon={Icon}
               stepLabel={number}
-              isLast={index === steps.length - 1}
               title={t(`steps.${index}.title`)}
               description={t(`steps.${index}.description`)}
             />

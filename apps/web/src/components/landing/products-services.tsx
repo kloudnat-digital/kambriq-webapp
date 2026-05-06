@@ -4,7 +4,6 @@ import { getTranslations } from 'next-intl/server';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Badge } from '../ui/badge';
 import SectionHeader from '@/components/section/header';
 
 const ProductsServices = async () => {
@@ -15,35 +14,31 @@ const ProductsServices = async () => {
       Icon: MapPin,
       key: 'lands',
       href: '/products/lands',
-      available: true,
     },
     {
       Icon: Signature,
       key: 'verify',
       href: '/products/verify',
-      available: true,
     },
     {
       Icon: Network,
       key: 'kamnet',
       href: '/products/kamnet',
-      available: true,
     },
     {
       Icon: Building2,
       key: 'kbs',
       href: '/products/kbs',
-      available: true,
     },
   ];
 
   return (
-    <section className="bg-muted/30 py-20 md:py-28">
+    <section className="border-t border-border/45 bg-muted/30 py-20 md:py-28">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeader title={t('title')} subtitle={t('subtitle')} />
 
         <div className="mx-auto mt-16 grid max-w-7xl gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3">
-          {products.map(({ Icon, key, href, available }) => (
+          {products.map(({ Icon, key, href }) => (
             <div
               key={key}
               className={cn(
@@ -53,9 +48,7 @@ const ProductsServices = async () => {
               <div
                 className={cn(
                   'mb-6 flex size-16 items-center justify-center rounded-lg',
-                  available
-                    ? 'bg-primary/10 text-primary'
-                    : 'bg-secondary text-secondary-foreground',
+                  'bg-primary/10 text-primary',
                 )}
               >
                 <Icon className={cn('h-8 w-8 transition-transform duration-300')} />
@@ -68,22 +61,16 @@ const ProductsServices = async () => {
                 {t(`${key}.description` as 'lands.description')}
               </p>
 
-              {available ? (
-                <Button
-                  asChild
-                  variant="ghost"
-                  className="group/btn -ml-4 text-primary hover:bg-primary/5 hover:text-primary"
-                >
-                  <Link href={href} className="flex items-center gap-2">
-                    {t(`${key}.cta` as 'lands.cta')}
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
-                  </Link>
-                </Button>
-              ) : (
-                <Badge variant={'secondary'} className="py-3">
-                  {t('comingSoon')}
-                </Badge>
-              )}
+              <Button
+                asChild
+                variant="ghost"
+                className="group/btn -ml-4 text-primary hover:bg-primary/5 hover:text-primary"
+              >
+                <Link href={href} className="flex items-center gap-2">
+                  {t(`${key}.cta` as 'lands.cta')}
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
+                </Link>
+              </Button>
             </div>
           ))}
         </div>

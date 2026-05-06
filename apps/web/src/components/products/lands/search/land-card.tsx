@@ -11,7 +11,7 @@ import { formatXAFCompact } from '@/lib/money';
 import { useLandsSearchStore } from '@/store/lands-search.store';
 import type { MockLand } from '@/data/mock-lands';
 
-const LABEL_STYLES: Record<string, string> = {
+const LAND_LABEL_CODE_STYLES: Record<string, string> = {
   TFL: 'bg-primary-500/10 text-primary-700 border-primary-500/30',
   VEFL: 'bg-gold-500/10 text-gold-700 border-gold-500/30',
   VEFIL: 'bg-accent-500/10 text-accent-700 border-accent-500/30',
@@ -47,7 +47,8 @@ export default function LandCard({ land, onDetails }: LandCardProps) {
           <span
             className={cn(
               'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold',
-              LABEL_STYLES[land.label.code] ?? 'border-gray-200 bg-gray-100 text-gray-700',
+              LAND_LABEL_CODE_STYLES[land.label.code] ??
+                'border-gray-200 bg-gray-100 text-gray-700',
             )}
           >
             {land.label.code}

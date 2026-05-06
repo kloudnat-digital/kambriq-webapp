@@ -23,7 +23,7 @@ const WhyKambriq = async () => {
             {features.map(({ Icon, titleKey, descKey }) => (
               <div key={titleKey} className="relative pl-16">
                 <div className="text-base/7 font-semibold text-gray-900">
-                  <div className="absolute top-0 left-0 flex size-10 items-center justify-center rounded-lg bg-primary">
+                  <div className="absolute top-0 left-0 flex size-10 items-center justify-center rounded-md bg-primary">
                     <Icon className="size-6 text-background" />
                   </div>
                   {t(`${titleKey}.title` as `verification.title`)}

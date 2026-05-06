@@ -7,34 +7,62 @@ export const AUTH_ROUTES = {
   REACTIVATE: '/reactivate',
 };
 
-export const PROTECTED_ROUTES = {
-  DASHBOARD: '/dashboard',
+export const PUBLIC_PATHS = [
+  '/',
+  '/login',
+  '/register',
+  '/verify-email',
+  '/forgot-password',
+  '/reset-password',
+  '/reactivate',
+  '/about',
+  '/contact',
+  '/faq',
+  '/blog',
+  '/methode',
+  '/plan',
+  '/legal',
+  '/products',
+  '/verify-certificate',
+];
+
+export const REDIRECT_WHEN_AUTHED = ['/', '/login', '/register'];
+
+export const ROLE_GATES: Array<{ prefix: string; roles: string[] }> = [
+  { prefix: '/admin/kbs', roles: ['ADMIN_KBS', 'ADMIN_GLOBAL'] },
+  { prefix: '/admin/kamnet', roles: ['ADMIN_KAMNET', 'ADMIN_GLOBAL'] },
+  { prefix: '/admin/lands', roles: ['ADMIN_LANDS', 'ADMIN_GLOBAL'] },
+  { prefix: '/admin/reservations', roles: ['ADMIN_LANDS', 'ADMIN_GLOBAL'] },
+  { prefix: '/admin/verify', roles: ['ADMIN_LANDS', 'ADMIN_GLOBAL'] },
+  { prefix: '/agent', roles: ['AGENT', 'ADMIN_GLOBAL'] },
+  { prefix: '/land', roles: ['AGENT', 'ADMIN_GLOBAL'] },
+];
+
+export const ROLE_DEFAULTS: Record<string, string> = {
+  CLIENT: '/mylands',
+  AGENT: '/lands',
+  ADMIN_LANDS: '/lands',
+  ADMIN_GLOBAL: '/lands',
+  ADMIN_KBS: '/admin/kbs',
+  ADMIN_KAMNET: '/admin/kamnet',
 };
 
-export const APP_ROUTES = {
-  HOME: '/',
-  LANDS: '/lands',
-  LANDS_NEW: '/lands/new',
-  LAND_DETAIL: (id: string) => `/lands/${id}`,
-  LAND_RESERVE: (id: string) => `/lands/${id}/reserve`,
-  MY_LANDS: '/mylands',
-  PURCHASE_DETAIL: (id: string) => `/mylands/purchase/${id}`,
-  RESERVATIONS: '/reservations',
-  RESERVATION_DETAIL: (id: string) => `/reservations/${id}`,
-  INVITE: '/invite',
+export const ADMIN_LANDS_ROLES: readonly string[] = ['ADMIN_LANDS', 'ADMIN_GLOBAL'];
+
+export const isAdminLands = (roles: string[]) => roles.some((r) => ADMIN_LANDS_ROLES.includes(r));
+
+export const canManageReservations = (roles: string[]) =>
+  isAdminLands(roles) || roles.includes('AGENT');
+
+export const isPublic = (pathname: string) => {
+  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
 };
 
-export const PUBLIC_ROUTES = {};
+export const matchGate = (pathname: string) => {
+  return ROLE_GATES.find((g) => pathname === g.prefix || pathname.startsWith(g.prefix + '/'));
+};
 
-/** Returns the home route for a given set of role codes */
-export const getDefaultRoute = (roleCodes: string[]): string => {
-  if (roleCodes.includes('CLIENT')) return APP_ROUTES.MY_LANDS;
-  if (
-    roleCodes.includes('AGENT') ||
-    roleCodes.includes('ADMIN_LANDS') ||
-    roleCodes.includes('ADMIN_GLOBAL')
-  ) {
-    return APP_ROUTES.LANDS;
-  }
-  return APP_ROUTES.HOME;
+export const getDefaultRoute = (roles: string[]) => {
+  for (const r of roles) if (ROLE_DEFAULTS[r]) return ROLE_DEFAULTS[r];
+  return '/mylands';
 };

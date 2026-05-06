@@ -53,10 +53,10 @@ const nextConfig: WithNxOptions = {
   // Allow Next.js image optimisation for external domains
   images: {
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+      // S3 buckets - update with the actual bucket hostname when configured
+      { protocol: 'https', hostname: '**.amazonaws.com' },
+      { protocol: 'https', hostname: '**.cloudfront.net' },
     ],
   },
 };

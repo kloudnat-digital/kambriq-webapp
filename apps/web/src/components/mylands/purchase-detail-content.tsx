@@ -8,12 +8,8 @@ import { Spinner } from '@/components/ui/spinner';
 import { JourneySteps } from './journey-steps';
 import { PurchaseDocuments } from './purchase-documents';
 import { cn } from '@/lib/utils';
-
-const LABEL_COLOR: Record<string, string> = {
-  TFL: 'bg-blue-100 text-blue-700',
-  VEFL: 'bg-amber-100 text-amber-700',
-  VEFIL: 'bg-purple-100 text-purple-700',
-};
+import { LAND_LABEL_CODE_STYLES } from '@/constants/land';
+import type { LandLabelCode } from '@/types/lands';
 
 interface Props {
   id: string;
@@ -66,7 +62,8 @@ export function PurchaseDetailContent({ id }: Props) {
             <span
               className={cn(
                 'rounded-full px-2 py-0.5 text-xs font-semibold',
-                LABEL_COLOR[reservation.land.label.code] ?? 'bg-gray-100 text-gray-600',
+                LAND_LABEL_CODE_STYLES[(reservation.land.label.code as LandLabelCode) ?? ''] ??
+                  'bg-gray-100 text-gray-600',
               )}
             >
               {reservation.land.label.code}

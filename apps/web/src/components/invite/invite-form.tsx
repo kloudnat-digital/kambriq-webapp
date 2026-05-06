@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { inviteClient } from '@/lib/actions/lands';
+import { inviteClientAction } from '@/lib/actions/lands';
 import { unwrap } from '@/lib/actions/unwrap';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
@@ -26,7 +26,7 @@ export const InviteForm = () => {
   const [success, setSuccess] = useState(false);
 
   const mutation = useMutation({
-    mutationFn: () => inviteClient(form).then(unwrap),
+    mutationFn: () => inviteClientAction(form).then(unwrap),
     onSuccess: () => {
       setSuccess(true);
       setForm(empty);

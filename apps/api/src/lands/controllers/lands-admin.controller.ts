@@ -152,6 +152,46 @@ export class LandsAdminController {
     return this.landsService.findAll(pagination, filters);
   }
 
+  @Get('reservations')
+  @ApiOperation({ summary: 'List all land reservations' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'],
+    description: 'Filter by reservation status',
+  })
+  @ApiQuery({
+    name: 'agentUserId',
+    required: false,
+    type: String,
+    description: 'Filter by agent user ID',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search by client name or email',
+  })
+  async listReservations(
+    @Query() pagination: PaginationQueryDto,
+    @Query() filters: LandReservationFilterDto,
+  ) {
+    return this.reservationsService.findAll(pagination, filters);
+  }
+
+  @Get('stats')
+  @ApiOperation({
+    summary: 'Get global lands stats',
+    description:
+      'Returns counts across the whole system, independent of table filters: ' +
+      'available, reserved, sold lands and pending reservations.',
+  })
+  async getStats() {
+    return this.landsService.getStats();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get full land detail (admin view)' })
   @ApiParam({ name: 'id', description: 'Land ID' })
@@ -232,35 +272,6 @@ export class LandsAdminController {
   @ApiParam({ name: 'id', description: 'Land ID' })
   async getPriceHistory(@Param('id') id: string) {
     return this.landsService.getPriceHistory(id);
-  }
-
-  @Get('reservations')
-  @ApiOperation({ summary: 'List all land reservations' })
-  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
-  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
-  @ApiQuery({
-    name: 'status',
-    required: false,
-    enum: ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'],
-    description: 'Filter by reservation status',
-  })
-  @ApiQuery({
-    name: 'agentUserId',
-    required: false,
-    type: String,
-    description: 'Filter by agent user ID',
-  })
-  @ApiQuery({
-    name: 'search',
-    required: false,
-    type: String,
-    description: 'Search by client name or email',
-  })
-  async listReservations(
-    @Query() pagination: PaginationQueryDto,
-    @Query() filters: LandReservationFilterDto,
-  ) {
-    return this.reservationsService.findAll(pagination, filters);
   }
 
   @Post('reservations/:id/confirm')

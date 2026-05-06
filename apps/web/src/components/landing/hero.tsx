@@ -48,7 +48,6 @@ const Hero: FC = () => {
               </p>
             </div>
 
-            {/* CTAs */}
             <div className="flex flex-col justify-center gap-4 sm:flex-row lg:justify-start">
               <Button asChild size="lg" className="h-9">
                 <Link href="/methode">{t('hero.cta')}</Link>

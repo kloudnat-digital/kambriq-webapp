@@ -1,19 +1,16 @@
 import type { FC, SVGProps } from 'react';
 
 interface StepProps {
-  isLast?: boolean;
   title: string;
   Icon: FC<SVGProps<SVGSVGElement>>;
   stepLabel: string;
   description: string;
 }
 
-const Step: FC<StepProps> = ({ isLast, title, Icon, stepLabel, description }) => {
+const Step: FC<StepProps> = ({ title, Icon, stepLabel, description }) => {
   return (
     <div className="group relative">
-      {!isLast && (
-        <div className="absolute top-12 left-[calc(50%+2rem)] hidden h-0.5 w-[calc(100%-4rem)] bg-linear-to-r from-primary/30 to-transparent lg:block" />
-      )}
+      <div className="absolute top-12 left-[calc(50%+2rem)] hidden h-0.5 w-[calc(100%-4rem)] bg-linear-to-r from-primary/30 to-transparent lg:block lg:group-last:hidden" />
 
       <div className="relative h-full rounded-lg border border-border bg-background p-6 sm:p-8">
         <div className="absolute -top-3 -right-3 flex size-10 items-center justify-center rounded-lg bg-primary text-base font-semibold text-secondary shadow-lg sm:-top-4 sm:-right-4 sm:size-12 sm:rounded-xl sm:text-lg">

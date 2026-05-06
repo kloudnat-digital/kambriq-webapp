@@ -17,7 +17,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 lg:flex lg:flex-col">
         <Sidebar
           userRoles={userRoles}
@@ -27,9 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         />
       </aside>
 
-      {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Mobile top bar */}
         <header className="flex h-14 shrink-0 items-center gap-4 border-b border-gray-200 bg-white px-4 lg:hidden">
           <MobileNav
             userRoles={userRoles}
@@ -40,7 +37,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <span className="text-sm font-bold tracking-widest text-gray-900 uppercase">KAMBRIQ</span>
         </header>
 
-        {/* Page content */}
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>

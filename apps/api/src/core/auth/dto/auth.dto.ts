@@ -80,6 +80,7 @@ export class TokenResponse {
   declare accessToken: string;
   declare refreshToken: string;
   declare expiresAt: Date;
+  declare accessExpiresAt: Date;
   /** Internal: whether this was a "remember me" session. Used by the controller to set cookie maxAge. */
   rememberMe?: boolean;
 }

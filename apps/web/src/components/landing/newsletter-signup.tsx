@@ -31,7 +31,7 @@ const NewsletterSignup: FC<NewsletterSignupProps> = ({ className }) => {
   const handleSubmit = async (data: SubscribeNewsletterSchema) => {
     const result = await subscribeNewsletterAction(data.email);
     if (result.success) {
-      createToast({ status: 'success', title: t('success') });
+      createToast({ status: 'success', title: t('success.title') });
       methods.reset();
     } else {
       createToast({ status: 'error', title: result.error });

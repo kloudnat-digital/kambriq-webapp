@@ -31,7 +31,7 @@ export const RegisterResolver = z.object({
   }),
   password: passwordStrength,
   phone: z.string().regex(/^(237)?6[0-9]{8}$/, {
-    error: 'Enter a valid Cameroonian mobile number (e.g. +237 6XX XXX XXX)',
+    error: 'Enter a valid Cameroonian mobile number (e.g. 695123456 or 237695123456)',
   }),
 });
 

@@ -49,7 +49,7 @@ export default function KamnetApplyPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gray-50/50 pt-[73px]">
+      <main className="min-h-screen bg-gray-50/50 pt-18.25">
         <div className="mx-auto max-w-xl px-6 py-14 sm:px-8">
           <div className="mb-6 flex items-center justify-between">
             <h1 className="text-2xl font-bold">Candidature KAMNET</h1>

@@ -2,19 +2,17 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 
 import { Button } from '@/components/ui/button';
+import SectionHeader from '../section/header';
 
 const LandingCta = async () => {
   const t = await getTranslations('homeCta');
 
   return (
-    <section className="bg-card py-20 md:py-28">
-      <div className="mx-auto max-w-2xl px-6 text-center lg:px-8">
-        <h2 className="text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
-          {t('title')}
-        </h2>
-        <p className="mx-auto mt-6 max-w-xl text-lg/8 text-gray-600">{t('subtitle')}</p>
-        <div className="mt-10">
-          <Button asChild size="lg">
+    <section className="border-t border-border/45 py-20 md:py-28">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <SectionHeader title={t('title')} subtitle={t('subtitle')} />
+        <div className="mt-10 flex justify-center">
+          <Button asChild size="lg" className="h-9">
             <Link href="/contact">{t('cta')}</Link>
           </Button>
         </div>

@@ -333,8 +333,17 @@ export class LandReservationsService {
   }
 
   // ----- Cancel Reservation ----- //
-  async cancel(reservationId: string, userId: string, dto: CancelLandReservationDto) {
+  async cancel(
+    reservationId: string,
+    userId: string,
+    dto: CancelLandReservationDto,
+    opts?: { enforceOwnership?: boolean },
+  ) {
     const reservation = await this.findByIdOrThrow(reservationId);
+
+    if (opts?.enforceOwnership && reservation.agentUserId !== userId) {
+      throw new ForbiddenException(this.t('lands.reservation.notOwner'));
+    }
 
     if (reservation.status === LandReservationStatus.COMPLETED) {
       throw new ForbiddenException(this.t('lands.reservation.alreadyCompleted'));
@@ -399,7 +408,7 @@ export class LandReservationsService {
       throw new NotFoundException(this.t('lands.reservation.notFound'));
     }
 
-    return reservation;
+    return { ...reservation, currentStep: this.computeStep(reservation) };
   }
 
   // ----- Agent: My Reservations ----- //
@@ -435,7 +444,11 @@ export class LandReservationsService {
       this.prisma.landReservation.count({ where }),
     ]);
 
-    return buildPaginatedResponse(reservations, total, page, limit);
+    const mapped = reservations.map((reservation) => ({
+      ...reservation,
+      currentStep: this.computeStep(reservation),
+    }));
+    return buildPaginatedResponse(mapped, total, page, limit);
   }
 
   // ----- Client: Single Purchase Detail ----- //
@@ -526,14 +539,25 @@ export class LandReservationsService {
         orderBy: { [sort || 'createdAt']: order || 'desc' },
         include: {
           land: {
-            select: { id: true, title: true, price: true, status: true },
+            select: {
+              id: true,
+              title: true,
+              price: true,
+              status: true,
+              sizeM2: true,
+              label: { select: { code: true } },
+            },
           },
         },
       }),
       this.prisma.landReservation.count({ where }),
     ]);
 
-    return buildPaginatedResponse(reservations, total, page, limit);
+    const mapped = reservations.map((reservation) => ({
+      ...reservation,
+      currentStep: this.computeStep(reservation),
+    }));
+    return buildPaginatedResponse(mapped, total, page, limit);
   }
 
   // ----- Admin: Invite Client (manual resend) ----- //
@@ -568,5 +592,22 @@ export class LandReservationsService {
 
   private t(key: string, lang = 'fr', args?: Record<string, unknown>): string {
     return this.i18n.translate(key, { lang, args }) as string;
+  }
+
+  private computeStep(reservation: {
+    status: LandReservationStatus;
+    confirmedAt: Date | null;
+    documentsReceivedAt: Date | null;
+    remainingPaymentConfirmedAt: Date | null;
+    dossierStartedAt: Date | null;
+    completedAt: Date | null;
+  }): number {
+    if (reservation.status === LandReservationStatus.CANCELLED) return 0;
+    if (reservation.completedAt) return 6;
+    if (reservation.dossierStartedAt) return 5;
+    if (reservation.remainingPaymentConfirmedAt) return 4;
+    if (reservation.documentsReceivedAt) return 3;
+    if (reservation.confirmedAt) return 2;
+    return 1;
   }
 }

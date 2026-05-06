@@ -27,7 +27,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { formatXAF } from '@/lib/money';
 import type { MockLand } from '@/data/mock-lands';
-import { LABEL_STYLES, DOCS, type SubDialog } from './constants';
+import { LAND_LABEL_CODE_STYLES, DOCS, type SubDialog } from './constants';
 
 type ModalBodyProps = {
   land: MockLand;
@@ -97,7 +97,8 @@ export function ModalBody({ land, t, onSubDialog }: ModalBodyProps) {
             <span
               className={cn(
                 'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold',
-                LABEL_STYLES[land.label.code] ?? 'border-gray-200 bg-gray-100 text-gray-700',
+                LAND_LABEL_CODE_STYLES[land.label.code] ??
+                  'border-gray-200 bg-gray-100 text-gray-700',
               )}
             >
               {land.label.code}

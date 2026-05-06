@@ -1,12 +1,12 @@
 import { auth } from '@/auth';
+import { isAdminLands } from '@/routes';
 
 export const getUserRoles = async (): Promise<string[]> => {
   const session = await auth();
-  return (session?.user as { roles?: string[] })?.roles ?? [];
+  return session?.user?.roles ?? [];
 };
 
-export const isAdminRole = (roles: string[]) =>
-  roles.includes('ADMIN_LANDS') || roles.includes('ADMIN_GLOBAL');
+export const isAdminRole = isAdminLands;
 
 export const buildQuery = (params: Record<string, unknown>): string => {
   const search = new URLSearchParams(

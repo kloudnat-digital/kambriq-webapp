@@ -15,8 +15,8 @@ declare module 'next-auth' {
     language: string;
     accessToken: string;
     refreshToken: string;
-    /** Unix timestamp in ms */
-    expiresAt: number;
+    /** Unix timestamp in ms - when the access token expires */
+    accessExpiresAt: number;
   }
 
   /**
@@ -54,8 +54,8 @@ declare module 'next-auth/jwt' {
     };
     accessToken: string;
     refreshToken: string;
-    /** Unix timestamp in ms */
-    expiresAt: number;
+    /** Unix timestamp in ms - when the access token expires */
+    accessExpiresAt: number;
     error?: 'RefreshTokenError';
   }
 }
