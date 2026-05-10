@@ -10,8 +10,13 @@
  */
 import type { MDXComponents } from 'mdx/types';
 
+import { Callout } from '@/components/mdx/callout';
+import { DocumentMeta } from '@/components/mdx/document-meta';
+
 export function useMDXComponents(components: MDXComponents): MDXComponents {
   return {
+    Callout,
+    DocumentMeta,
     // Headings
     h1: ({ children }) => (
       <h1 className="mb-6 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">

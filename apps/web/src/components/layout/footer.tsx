@@ -55,6 +55,7 @@ const Footer: FC = async () => {
                   { href: '/legal/mentions', label: t('mentions') },
                   { href: '/legal/terms', label: t('terms') },
                   { href: '/legal/privacy', label: t('privacy') },
+                  { href: '/legal/cookies', label: t('cookies') },
                   { href: '/legal/rgpd', label: t('rgpd') },
                 ]}
               />
