@@ -1,41 +1,43 @@
-import { Search, CreditCard, FileCheck, Signature } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
 import SectionHeader from '@/components/section/header';
-import Step from '../steps/step';
-import StepsContainer from '../steps';
 
 const Process = async () => {
   const t = await getTranslations('process');
 
   const steps = [
-    { Icon: Search, number: '01', key: 'step1' },
-    { Icon: Signature, number: '02', key: 'step2' },
-    { Icon: CreditCard, number: '03', key: 'step3' },
-    { Icon: FileCheck, number: '04', key: 'step4' },
+    { number: '01', key: 'step1' },
+    { number: '02', key: 'step2' },
+    { number: '03', key: 'step3' },
+    { number: '04', key: 'step4' },
   ] as const;
 
   return (
-    <section className="relative overflow-hidden bg-card py-20 md:py-28">
-      <div className="pointer-events-none absolute inset-0 opacity-10">
-        <div className="absolute top-20 left-10 h-72 w-72 rounded-full bg-primary blur-3xl" />
-        <div className="absolute right-10 bottom-20 h-96 w-96 rounded-full bg-accent blur-3xl" />
-      </div>
+    <section className="bg-surface-100 py-24 md:py-28">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <SectionHeader
+          eyebrow={t('eyebrow')}
+          title={t('title')}
+          subtitle={t('subtitle')}
+          align="left"
+          className="mx-auto max-w-3xl text-left"
+        />
 
-      <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
-        <SectionHeader title={t('title')} subtitle={t('subtitle')} />
-        <StepsContainer>
-          {steps.map(({ Icon, number, key }, index) => (
-            <Step
-              key={key}
-              Icon={Icon}
-              stepLabel={number}
-              isLast={index === steps.length - 1}
-              title={t(`${key}.title` as 'step1.title')}
-              description={t(`${key}.description` as 'step1.description')}
-            />
+        <div className="mt-14 grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+          {steps.map(({ number, key }) => (
+            <div key={key} className="relative">
+              <div className="font-serif text-7xl leading-none font-medium text-gold italic opacity-90">
+                {number}
+              </div>
+              <h3 className="mt-3 text-lg font-semibold text-accent">
+                {t(`${key}.title` as 'step1.title')}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-surface-600">
+                {t(`${key}.description` as 'step1.description')}
+              </p>
+            </div>
           ))}
-        </StepsContainer>
+        </div>
       </div>
     </section>
   );

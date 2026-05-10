@@ -1,15 +1,27 @@
 import { useTranslations } from 'next-intl';
 
+import Eyebrow from '@/components/ui/eyebrow';
+
 export const AboutHero = () => {
   const t = useTranslations('about');
   return (
-    <section className="bg-gradient-to-b from-primary-900 to-primary-800 px-6 py-24 text-white sm:px-8">
-      <div className="mx-auto max-w-4xl text-center">
-        <p className="mb-4 text-sm font-medium tracking-widest text-primary-300 uppercase">
+    <section className="relative overflow-hidden bg-accent px-6 py-24 text-white sm:px-8">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-50"
+        style={{
+          background:
+            'radial-gradient(circle at 50% 50%, rgba(240, 188, 49, 0.10), transparent 60%)',
+        }}
+      />
+      <div className="relative mx-auto max-w-4xl text-center">
+        <Eyebrow tone="gold" className="flex justify-center">
           {t('hero.eyebrow')}
-        </p>
-        <h1 className="mb-6 text-4xl font-bold sm:text-5xl">{t('hero.title')}</h1>
-        <p className="text-lg leading-relaxed text-primary-100">{t('hero.subtitle')}</p>
+        </Eyebrow>
+        <h1 className="mt-4 font-serif text-4xl leading-[1.05] font-semibold tracking-[-0.02em] text-white sm:text-5xl md:text-6xl">
+          {t('hero.title')}
+        </h1>
+        <p className="mt-5 text-lg leading-[1.65] text-accent-200">{t('hero.subtitle')}</p>
       </div>
     </section>
   );

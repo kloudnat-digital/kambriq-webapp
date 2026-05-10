@@ -14,15 +14,42 @@
     "homeAriaLabel": "KAMBRIQ - Accueil"
   },
   "hero": {
-    "title1": "Foncier camerounais :",
+    "eyebrow": "Cabinet de conseil en stratégie foncière",
+    "title1": "Foncier camerounais.",
+    "title2Lead": "Vérifié.",
+    "title2Tail": "Accompagné.",
     "title2": "achetez en confiance, même depuis l'étranger.",
-    "subtitle": "KAMBRIQ vérifie, sécurise et vous accompagne dans votre projet foncier au Cameroun.",
-    "cta": "Découvrir notre méthode",
-    "cta2": "Vérifier un terrain"
+    "subtitle": "Nous ne vendons pas de terrains. Nous vérifions, expliquons et accompagnons votre projet foncier - pour la diaspora et les investisseurs locaux.",
+    "cta": "Parlons de votre projet",
+    "cta2": "Découvrir la méthode",
+    "trust": {
+      "label": "Méthode certifiée sur",
+      "points": "7 points",
+      "domains": "4 domaines fonciers",
+      "milestones": "5 jalons d'achat"
+    },
+    "labels": {
+      "eyebrow": "Trois labels, une lecture claire",
+      "title": "Chaque terrain reçoit un label de risque documenté.",
+      "tfl": { "summary": "Risque maîtrisé. Titre foncier vérifié, dossier complet." },
+      "vefl": { "summary": "Risque modéré. Vérification approfondie nécessaire." },
+      "vefil": {
+        "summary": "Surveillance requise. Statut foncier à éclaircir avant tout engagement."
+      },
+      "cta": "Comprendre les labels"
+    }
   },
   "why": {
-    "title": "Pourquoi la diaspora nous fait confiance",
+    "eyebrow": "Pourquoi KAMBRIQ",
+    "title": "Le foncier camerounais ne se résume pas à un titre.",
+    "lead": "Plus de 95 % du territoire relève du domaine national - personne n'en est propriétaire, même pas le « vendeur ». Comprendre les 4 domaines fonciers est la première étape d'un projet solide.",
     "subtitle": "",
+    "eyebrows": {
+      "method": "Méthode",
+      "support": "Accompagnement",
+      "transparency": "Transparence",
+      "distance": "Réseau"
+    },
     "verification": {
       "title": "7 vérifications",
       "description": "Chaque terrain passe par 7 points de contrôle avant d'entrer dans notre catalogue. Pour que vous sachiez exactement ce que vous achetez."
@@ -40,8 +67,14 @@
       "description": "Chaque agent KAMNET est formé et certifié par KAMBRIQ Business School. Votre interlocuteur unique, où que vous soyez."
     }
   },
+  "trustStrip": {
+    "lead": "Aucun terrain n'entre au catalogue sans ",
+    "emphasis": "KAMBRIQ VERIFY™",
+    "tail": "."
+  },
   "process": {
-    "title": "Comment ça marche",
+    "eyebrow": "Comment ça marche",
+    "title": "4 étapes, un conseiller, zéro surprise.",
     "subtitle": "Un accompagnement sur-mesure, de votre premier contact jusqu'à votre titre foncier.",
     "step1": {
       "title": "Parlez-nous de votre projet",
@@ -93,8 +126,10 @@
   },
   "homeCta": {
     "title": "Vous avez un projet foncier au Cameroun ?",
-    "subtitle": "Que vous cherchiez un terrain, que vous vouliez vérifier un bien, ou que vous ayez simplement des questions - parlons-en.",
-    "cta": "Nous contacter"
+    "titleLead": "Vous avez un projet foncier ?",
+    "titleEm": "Parlons-en.",
+    "subtitle": "Un échange de 30 minutes pour comprendre votre situation. Gratuit, sans engagement.",
+    "cta": "Prendre rendez-vous"
   },
   "products": {
     "verify": {
@@ -654,6 +689,7 @@
       }
     },
     "title": "Nos produits et services",
+    "sectionEyebrow": "La suite KAMBRIQ",
     "subtitle": "Vérification, accompagnement à l'achat, formation - chaque service répond à une étape précise de votre projet foncier.",
     "comingSoon": "Bientôt disponible",
     "lands": {
@@ -735,9 +771,11 @@
     "verify": "KAMBRIQ VERIFY™",
     "kamnet": "KAMNET",
     "kbs": "KAMBRIQ Business School",
-    "support": "Support",
+    "support": "Ressources",
     "about": "À propos",
+    "methode": "Notre méthode",
     "contact": "Contact",
+    "contactUs": "Nous contacter",
     "faq": "FAQ",
     "legal": "Légal",
     "mentions": "Mentions légales",

@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import Navbar from '@/components/layout/navbar';
 import Footer from '@/components/layout/footer';
 import Hero from '@/components/landing/hero';
+import TrustStrip from '@/components/landing/trust-strip';
 import WhyKambriq from '@/components/landing/why-kambriq';
 import Process from '@/components/landing/process';
 import ProductsServices from '@/components/landing/products-services';
@@ -22,6 +23,7 @@ export default async function HomePage() {
       <Navbar />
       <main className="min-h-screen">
         <Hero />
+        <TrustStrip />
         <WhyKambriq />
         <Process />
         <ProductsServices />

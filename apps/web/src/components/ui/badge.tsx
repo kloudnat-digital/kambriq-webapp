@@ -16,6 +16,12 @@ const badgeVariants = cva(
         outline: 'border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground',
         ghost: 'hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50',
         link: 'text-primary underline-offset-4 hover:underline',
+        teal: 'bg-primary-50 text-primary-700',
+        navy: 'bg-surface-100 text-accent-800',
+        gold: 'bg-gold-50 text-gold-700',
+        tfl: 'bg-[var(--color-tfl-bg)] text-[var(--color-tfl)]',
+        vefl: 'bg-[var(--color-vefl-bg)] text-[var(--color-vefl)]',
+        vefil: 'bg-[var(--color-vefil-bg)] text-[var(--color-vefil)]',
       },
     },
     defaultVariants: {
