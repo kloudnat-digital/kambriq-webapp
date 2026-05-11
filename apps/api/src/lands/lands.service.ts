@@ -274,6 +274,7 @@ export class LandsService {
             select: {
               id: true,
               url: true,
+              type: true,
             },
           },
           documents: {
