@@ -59,7 +59,7 @@ export interface Land {
   isPublished: boolean;
   isVerified: boolean;
   status: LandStatus;
-  media: { id: string; url: string; downloadUrl: string }[];
+  media: Array<{ id: string; url: string; downloadUrl: string; type: LandMediaType }>;
   documents?: LandDocument[];
   createdAt: string;
   updatedAt: string;
