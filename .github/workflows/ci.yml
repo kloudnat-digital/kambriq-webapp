@@ -225,6 +225,8 @@ jobs:
         env:
           BASE_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
           CI: "true"
+          E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
+          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
 
       - name: Upload Playwright report
         if: always()
