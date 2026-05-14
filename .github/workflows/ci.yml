@@ -8,7 +8,7 @@ name: CI
 #      (after all quality checks pass).
 #   3. Trigger the deploy-dev workflow automatically once both images are ready.
 #
-# Production deploys are handled by deploy-prd.yml (triggered by release tags).
+# Production deploys workflow has been removed. Will be reintroduced for go-live.
 # ------------------------------------------------------------------------------
 
 on:
