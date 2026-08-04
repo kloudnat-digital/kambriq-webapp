@@ -16,8 +16,10 @@ import { RolesService } from '../roles/roles.service';
 import { CurrentUser, PaginationQueryDto, RequestUser, RoleCode, Roles } from '@kambriq/common';
 import {
   AdminUpdateUserDto,
+  AvatarUploadUrlDto,
   ChangePasswordDto,
   ConfirmEmailChangeDto,
+  IdDocumentUploadUrlDto,
   RequestEmailChangeDto,
   ReviewIdDocumentDto,
   RoleCodeDto,
@@ -57,6 +59,35 @@ export class UserController {
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   async updateMe(@CurrentUser() user: RequestUser, @Body() dto: UpdateProfileDto) {
     return this.usersService.updateMe(user.id, dto);
+  }
+
+  @Post('me/avatar/upload-url')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Generate a presigned S3 URL for avatar upload',
+    description:
+      'Returns { upladUrl, fileUrl }. Uplad the file directly to upladUrl, then send the fileUrl via PATCH /users/me as avatarUrl',
+  })
+  @ApiResponse({ status: 200, description: 'Presigned upload URL returned.' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
+  async getAvatarUploadUrl(@CurrentUser() user: RequestUser, @Body() dto: AvatarUploadUrlDto) {
+    return this.usersService.getAvatarUploadUrl(user.id, dto);
+  }
+
+  @Post('me/id-document/upload-url')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Generate a presigned S3 URL for ID document upload',
+    description:
+      'Returns { uploadUrl, fileUrl }. Upload the file directly to uploadUrl, then send the fileUrl(s) via PATCH /users/me/id-document as idDocumentUrls[].',
+  })
+  @ApiResponse({ status: 200, description: 'Presigned upload URL returned.' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
+  async getIdDocumentUploadUrl(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: IdDocumentUploadUrlDto,
+  ) {
+    return this.usersService.getIdDocumentUploadUrl(user.id, dto);
   }
 
   @Patch('me/password')

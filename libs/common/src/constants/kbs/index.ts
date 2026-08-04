@@ -13,10 +13,7 @@ export const enum CandidateStatus {
 export const STATUS_TRANSITIONS: Record<string, string[]> = {
   [CandidateStatus.CANDIDATE]: [CandidateStatus.IN_TRAINING],
   [CandidateStatus.IN_TRAINING]: [CandidateStatus.EXAM_PENDING],
-  [CandidateStatus.EXAM_PENDING]: [
-    CandidateStatus.CERTIFIED,
-    CandidateStatus.FAILED,
-  ],
+  [CandidateStatus.EXAM_PENDING]: [CandidateStatus.CERTIFIED, CandidateStatus.FAILED],
   [CandidateStatus.FAILED]: [CandidateStatus.EXAM_PENDING],
   [CandidateStatus.CERTIFIED]: [],
 } as const;
@@ -30,7 +27,7 @@ export const enum ExamStatus {
   CANCELLED = 'CANCELLED',
 }
 export const VALID_STATUSES = [
-  'ENROLLED',
+  'CANDIDATE',
   'IN_TRAINING',
   'EXAM_PENDING',
   'CERTIFIED',

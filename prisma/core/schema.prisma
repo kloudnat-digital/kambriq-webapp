@@ -64,13 +64,17 @@ model UserRole {
 model UserProfile {
   id        String   @id @default(uuid())
   userId    String   @unique
-  avatarUrl String?
+  avatarUrl String?  // S3 key
   address   String?
   city      String?
   country   String?
 
+// Notification preferences
+  emailNotifications  Boolean @default(false)
+  whatsappNotifications  Boolean @default(false)
+
   // Identity verification
-  idDocumentUrl        String?
+  idDocumentUrls       String[]  @default([])
   idVerificationStatus String    @default("none") // none | pending | verified | rejected
   idVerifiedAt         DateTime?
   idVerifiedBy         String?

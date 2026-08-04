@@ -8,6 +8,7 @@ import { I18nService } from 'nestjs-i18n';
 import { Test, TestingModule } from '@nestjs/testing';
 import { KbsExamService } from '../../../kbs/exam/exam.service';
 import { KbsPrismaService } from '../../../kbs/prisma/kbs-prisma.service';
+import { UsersService } from '../../../core/users/users.service';
 import {
   buildCandidate,
   buildExam,
@@ -36,6 +37,7 @@ describe('KbsExamService', () => {
         { provide: KbsPrismaService, useValue: prisma },
         { provide: I18nService, useValue: mockI18n() },
         { provide: getQueueToken(QUEUES.KBS), useValue: queue },
+        { provide: UsersService, useValue: { findManyByIds: jest.fn().mockResolvedValue([]) } },
       ],
     }).compile();
 
@@ -140,7 +142,7 @@ describe('KbsExamService', () => {
 
   describe('startExam', () => {
     it('returns questions without correct answers and sets IN_PROGRESS', async () => {
-      const candidate = buildCandidate();
+      const candidate = buildCandidate({ status: 'EXAM_PENDING' });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
 
       const exam = buildExam({
@@ -178,7 +180,7 @@ describe('KbsExamService', () => {
     });
 
     it('throws if exam does not belong to the candidate', async () => {
-      const candidate = buildCandidate({ id: 'cand-1' });
+      const candidate = buildCandidate({ id: 'cand-1', status: 'EXAM_PENDING' });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
       prisma.kbsExam.findUnique.mockResolvedValue(buildExam({ candidateId: 'other-candidate' }));
 
@@ -188,7 +190,7 @@ describe('KbsExamService', () => {
     });
 
     it('throws if exam is not in SCHEDULED status', async () => {
-      const candidate = buildCandidate();
+      const candidate = buildCandidate({ status: 'EXAM_PENDING' });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
       prisma.kbsExam.findUnique.mockResolvedValue(
         buildExam({ candidateId: candidate.id, status: 'IN_PROGRESS' }),
@@ -204,7 +206,7 @@ describe('KbsExamService', () => {
 
   describe('saveAnswer', () => {
     it('upserts answer slot and replaces selections atomically', async () => {
-      const candidate = buildCandidate();
+      const candidate = buildCandidate({ status: 'EXAM_PENDING' });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
 
       const exam = buildExam({
@@ -238,7 +240,7 @@ describe('KbsExamService', () => {
     });
 
     it('throws if exam is not IN_PROGRESS', async () => {
-      const candidate = buildCandidate();
+      const candidate = buildCandidate({ status: 'EXAM_PENDING' });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
       prisma.kbsExam.findUnique.mockResolvedValue(
         buildExam({ candidateId: candidate.id, status: 'SUBMITTED' }),
@@ -257,7 +259,7 @@ describe('KbsExamService', () => {
 
   describe('submitExam', () => {
     it('sets status to SUBMITTED and enqueues grading job', async () => {
-      const candidate = buildCandidate();
+      const candidate = buildCandidate({ status: 'EXAM_PENDING' });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
       prisma.kbsExam.findUnique.mockResolvedValue(
         buildExam({

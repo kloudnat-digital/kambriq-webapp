@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from '../../../core/users/users.service';
 import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
-import { comparePassword, EmailService } from '@kambriq/common';
+import { comparePassword, EmailService, StorageService } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 import { ConfigService } from '@nestjs/config';
 
@@ -18,6 +18,7 @@ import {
   mockCorePrisma,
   mockEmailService,
   mockI18n,
+  mockStorageService,
   resetIdCounter,
 } from '../../utils';
 import {
@@ -45,6 +46,7 @@ describe('UsersService', () => {
         { provide: EmailService, useValue: email },
         { provide: I18nService, useValue: mockI18n() },
         { provide: ConfigService, useValue: mockConfigService() },
+        { provide: StorageService, useValue: mockStorageService() },
       ],
     }).compile();
 
@@ -486,7 +488,7 @@ describe('UsersService', () => {
       prisma.userProfile.upsert.mockResolvedValue({});
 
       const result = await service.submitIdDocument('u1', {
-        idDocumentUrl: 'https://s3.example.com/docs/id.jpg',
+        idDocumentUrls: ['https://s3.example.com/docs/id.jpg'],
       });
 
       expect(prisma.userProfile.upsert).toHaveBeenCalledWith(
@@ -494,7 +496,7 @@ describe('UsersService', () => {
           update: expect.objectContaining({ idVerificationStatus: 'pending' }),
         }),
       );
-      expect(result).toHaveProperty('message');
+      expect(result).toHaveProperty('id', 'u1');
     });
 
     it('throws ForbiddenException if identity is already verified', async () => {
@@ -505,7 +507,9 @@ describe('UsersService', () => {
       prisma.user.findUnique.mockResolvedValue(user);
 
       await expect(
-        service.submitIdDocument('u1', { idDocumentUrl: 'https://s3.example.com/new.jpg' }),
+        service.submitIdDocument('u1', {
+          idDocumentUrls: ['https://s3.example.com/new.jpg'],
+        }),
       ).rejects.toThrow();
     });
   });
@@ -515,7 +519,7 @@ describe('UsersService', () => {
   describe('reviewIdDocument', () => {
     const pendingProfile = {
       userId: 'u1',
-      idDocumentUrl: 'https://s3.example.com/doc.jpg',
+      idDocumentUrls: ['https://s3.example.com/doc.jpg'],
       idVerificationStatus: 'pending',
       user: { email: 'u@test.com', firstName: 'John', preferredLanguage: 'fr' },
     };

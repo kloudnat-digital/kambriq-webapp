@@ -207,15 +207,18 @@ export class KamnetAgentsService {
       to: newTier,
     });
 
-    await this.emailService.send({
-      to: user.email,
-      template: 'agentPromotion',
-      lang: user.language || 'fr',
-      args: {
-        firstName: user.firstName || user.email,
-        newTier,
+    await this.emailService.sendUpdate(
+      {
+        to: user.email,
+        template: 'agentPromotion',
+        lang: user.language || 'fr',
+        args: {
+          firstName: user.firstName || user.email,
+          newTier,
+        },
       },
-    });
+      user.profile,
+    );
 
     return update;
   }

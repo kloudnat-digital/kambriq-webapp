@@ -47,7 +47,8 @@ model KbsLesson {
   moduleId    String
   title       String
   contentType String   // video | pdf | html | text
-  contentUrl  String   // S3 key or external URL
+  contentUrl  String?   // S3 key or external URL - used for video/pdf
+  content     String?  @db.Text // inline body - used for html/text
   duration    Int      // estimated duration in minutes
   order       Int
   createdAt   DateTime @default(now())
@@ -123,6 +124,8 @@ model KbsCandidate {
   id                 String    @id @default(uuid())
   userId             String    @unique
   sponsorCode        String?
+  cvUrl              String?
+  engagementAcceptedAt DateTime
   status             String    // CANDIDATE | IN_TRAINING | EXAM_PENDING | CERTIFIED | FAILED
   maxAttempts        Int       @default(3)
   retakeCooldownDays Int       @default(7)
@@ -211,9 +214,11 @@ model KbsExamAnswerSelection {
 // Singleton row - admin updates via settings API
 model KbsSettings {
   id                Int      @id @default(autoincrement())
+  activeCourseId    String?
   examQuestionCount Int      @default(20)
   quizQuestionCount Int      @default(10)
-  quizMaxAttempts   Int      @default(0) // 0 = unlimited
+  quizMaxAttempts   Int      @default(5)
+  quizCooldownMinutes Int      @default(60)
   updatedAt         DateTime @updatedAt
 }
 

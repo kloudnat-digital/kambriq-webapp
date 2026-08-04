@@ -5,7 +5,7 @@ import { KbsExamService } from '../exam/exam.service';
 import { KbsCertificatesService } from '../certificates/certificates.service';
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
 import { CurrentUser, RequestUser } from '@kambriq/common';
-import { EnrollDto, SubmitQuizDto } from '../candidates/dto/candidate.dto';
+import { CvUploadUrlDto, EnrollDto, SubmitQuizDto } from '../candidates/dto/candidate.dto';
 import { RescheduleExamDto, SaveAnswerDto, SubmitExamDto } from '../exam/dto/exam.dto';
 
 @ApiTags('KBS - Candidate')
@@ -35,6 +35,19 @@ export class KbsCandidateController {
     return this.candidatesService.enroll(user.id, dto);
   }
 
+  @Post('cv/upload-url')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Generate a presigned S3 URL for CV upload',
+    description:
+      'Returns { uploadUrl, fileUrl }. Upload the file directly to uploadUrl, then send the fileUrl in the `cvUrl` field of POST /kbs/enroll.',
+  })
+  @ApiResponse({ status: 200, description: 'Presigned upload URL returned.' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
+  async getCvUploadUrl(@CurrentUser() user: RequestUser, @Body() dto: CvUploadUrlDto) {
+    return this.candidatesService.getCvUploadUrl(user.id, dto);
+  }
+
   @Get('me')
   @ApiOperation({
     summary: 'Get my KBS candidate profile',
@@ -46,6 +59,22 @@ export class KbsCandidateController {
   @ApiResponse({ status: 404, description: 'User is not enrolled in KBS.' })
   async getMyProfile(@CurrentUser() user: RequestUser) {
     return this.candidatesService.getMyProfile(user.id);
+  }
+
+  @Get('me/overview')
+  @ApiOperation({
+    summary: 'Get my full KBS training path (aggregated dashboard view)',
+    description:
+      "Single-call view for the candidate dashboard: candidate profile, active course, per-module status (locked/in_progress/completed), quiz state, overall completion percentage, and the recommended next action ('lesson' | 'mcq' | 'exam' | 'certified').",
+  })
+  @ApiResponse({ status: 200, description: 'Parcours returned.' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
+  @ApiResponse({
+    status: 404,
+    description: 'User is not enrolled in KBS, or active course is missing.',
+  })
+  async getMyParcours(@CurrentUser() user: RequestUser) {
+    return this.candidatesService.getMyOverview(user.id);
   }
 
   @Get('courses')
@@ -93,6 +122,34 @@ export class KbsCandidateController {
     return this.coursesService.findLessonById(lessonId);
   }
 
+  @Get('lessons/:lessonId/view')
+  @ApiOperation({
+    summary: 'Get lesson viewer payload (aggregated)',
+    description:
+      'Single-call view for the lesson screen: lesson metadata, module info, signed content URL (for video/pdf) OR inline content (for html/text), completion timestamp for the candidate, and prev/next navigation refs.',
+  })
+  @ApiParam({ name: 'lessonId', description: 'Lesson ID (CUID)', example: 'clxxxxxxxxxxxxxx' })
+  @ApiResponse({ status: 200, description: 'Lesson view returned.' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
+  @ApiResponse({ status: 404, description: 'Lesson not found.' })
+  async getLessonView(@CurrentUser() user: RequestUser, @Param('lessonId') lessonId: string) {
+    return this.coursesService.findLessonView(lessonId, user.id);
+  }
+
+  @Get('modules/:moduleId/detail')
+  @ApiOperation({
+    summary: 'Get module detail (aggregated view for module viewer)',
+    description:
+      'Single-call view for the module screen: module info, ordered lessons with per-lesson completion for the candidate, and quiz state (unlocked, attempts, score, passed, next attempt time in cooldown).',
+  })
+  @ApiParam({ name: 'moduleId', description: 'Module ID (CUID)', example: 'clxxxxxxxxxxxxxx' })
+  @ApiResponse({ status: 200, description: 'Module detail returned.' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
+  @ApiResponse({ status: 404, description: 'Module not found.' })
+  async getModuleDetail(@CurrentUser() user: RequestUser, @Param('moduleId') moduleId: string) {
+    return this.coursesService.findModuleDetail(moduleId, user.id);
+  }
+
   @Post('lesson/:lessonId/complete')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -105,11 +162,7 @@ export class KbsCandidateController {
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 404, description: 'Lesson not found.' })
   async markLessonComplete(@CurrentUser() user: RequestUser, @Param('lessonId') lessonId: string) {
-    const candidate = await this.candidatesService.findByUserId(user.id);
-    if (!candidate) {
-      return { lessonId, completed: true }; // Not enrolled - still record nothing, just OK
-    }
-    return this.coursesService.markLessonComplete(candidate.id, lessonId);
+    return this.coursesService.markLessonComplete(user.id, lessonId);
   }
 
   @Get('modules/:moduleId/quiz')
@@ -125,8 +178,8 @@ export class KbsCandidateController {
   })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 404, description: 'Module or quiz not found.' })
-  async getModuleQuiz(@Param('moduleId') moduleId: string) {
-    return this.coursesService.findQuestionsForQuiz(moduleId);
+  async getModuleQuiz(@CurrentUser() user: RequestUser, @Param('moduleId') moduleId: string) {
+    return this.coursesService.findQuestionsForQuiz(moduleId, user.id);
   }
 
   @Post('modules/:moduleId/quiz')

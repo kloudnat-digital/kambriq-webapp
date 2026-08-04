@@ -7,6 +7,7 @@ export interface BreadcrumbItem {
   label: string;
   href: string;
   isLast: boolean;
+  clickable: boolean;
 }
 
 // Known static path segments and their translation keys in app.breadcrumbs
@@ -24,6 +25,10 @@ const STATIC_SEGMENTS: Record<string, string> = {
   compare: 'compare',
   search: 'search',
 };
+
+// Segments that are part of the URL structure but have no page of their own.
+// Rendered as plain text (no link) so users don't get a 404.
+const NON_CLICKABLE_SEGMENTS = new Set<string>(['purchase']);
 
 export function useBreadcrumbs(labels: Record<string, string> = {}): BreadcrumbItem[] {
   const pathname = usePathname();
@@ -44,6 +49,6 @@ export function useBreadcrumbs(labels: Record<string, string> = {}): BreadcrumbI
       label = seg;
     }
 
-    return { label, href, isLast };
+    return { label, href, isLast, clickable: !NON_CLICKABLE_SEGMENTS.has(seg) };
   });
 }

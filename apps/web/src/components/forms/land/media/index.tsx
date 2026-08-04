@@ -43,7 +43,7 @@ const LandMediaFields: FC<LandMediaProps> = ({
       <input
         ref={ref}
         type="file"
-        accept="image/*,video/*"
+        accept="image/jpeg/image/png,image/webp,video/*"
         multiple
         className="hidden"
         onChange={(e) => {

@@ -5,6 +5,7 @@ import { StorageService } from '@kambriq/common/services/storage.service';
 import { KbsCoursesService } from '../../../kbs/courses/courses.service';
 import { KbsPrismaService } from '../../../kbs/prisma/kbs-prisma.service';
 import {
+  buildCandidate,
   buildCourse,
   buildLesson,
   buildModule,
@@ -61,9 +62,7 @@ describe('KbsCoursesService', () => {
     it('throws NotFoundException for missing course', async () => {
       prisma.kbsCourse.findUnique.mockResolvedValue(null);
 
-      await expect(service.findCourseById('bad-id')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findCourseById('bad-id')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -97,9 +96,7 @@ describe('KbsCoursesService', () => {
     it('throws NotFoundException if course does not exist', async () => {
       prisma.kbsCourse.findUnique.mockResolvedValue(null);
 
-      await expect(service.deleteCourse('nope')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteCourse('nope')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -139,17 +136,13 @@ describe('KbsCoursesService', () => {
     it('throws NotFoundException if module is missing', async () => {
       prisma.kbsModule.findUnique.mockResolvedValue(null);
 
-      await expect(service.deleteModule('bad-id')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteModule('bad-id')).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('reorderModules', () => {
     it('updates order for each module in a transaction', async () => {
-      prisma.$transaction.mockImplementation((ops: Promise<unknown>[]) =>
-        Promise.all(ops),
-      );
+      prisma.$transaction.mockImplementation((ops: Promise<unknown>[]) => Promise.all(ops));
 
       await service.reorderModules({
         courseId: 'c1',
@@ -178,9 +171,7 @@ describe('KbsCoursesService', () => {
     it('throws NotFoundException for missing lesson', async () => {
       prisma.kbsLesson.findUnique.mockResolvedValue(null);
 
-      await expect(service.findLessonById('bad')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findLessonById('bad')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -188,7 +179,12 @@ describe('KbsCoursesService', () => {
 
   describe('findQuestionsForQuiz', () => {
     it('returns shuffled questions without correct answers exposed', async () => {
+      prisma.kbsCandidate.findUnique.mockResolvedValue(buildCandidate({ status: 'IN_TRAINING' }));
+      prisma.kbsModule.findUnique.mockResolvedValue(
+        buildModule({ id: 'mod1', order: 1, title: 'Module 1' }),
+      );
       prisma.kbsSettings.findFirst.mockResolvedValue({ quizQuestionCount: 10 });
+      prisma.kbsCandidateProgress.findUnique.mockResolvedValue({ attempts: 0 });
       const questions = Array.from({ length: 5 }, (_, i) =>
         buildQuestion({
           id: `q${i}`,
@@ -200,11 +196,11 @@ describe('KbsCoursesService', () => {
       );
       prisma.kbsQuestion.findMany.mockResolvedValue(questions);
 
-      const result = await service.findQuestionsForQuiz('mod1');
+      const result = await service.findQuestionsForQuiz('mod1', 'u1');
 
-      expect(result.length).toBeLessThanOrEqual(10);
+      expect(result.questions.length).toBeLessThanOrEqual(10);
       // Verify no isCorrect field is exposed
-      for (const q of result) {
+      for (const q of result.questions) {
         for (const a of q.answers) {
           expect(a).not.toHaveProperty('isCorrect');
         }
@@ -214,9 +210,7 @@ describe('KbsCoursesService', () => {
 
   describe('createQuestion', () => {
     it('creates a question with answers under a module', async () => {
-      prisma.kbsModule.findUnique.mockResolvedValue(
-        buildModule({ id: 'mod1' }),
-      );
+      prisma.kbsModule.findUnique.mockResolvedValue(buildModule({ id: 'mod1' }));
       const question = buildQuestion();
       prisma.kbsQuestion.create.mockResolvedValue(question);
 
@@ -240,7 +234,7 @@ describe('KbsCoursesService', () => {
   describe('getUploadUrl', () => {
     it('generates S3 upload URL with correct key structure', async () => {
       const result = await service.getUploadUrl({
-        fileName: 'lesson1.mp4',
+        filename: 'lesson1.mp4',
         contentType: 'video/mp4',
         moduleId: 'mod1',
         lessonId: 'les1',

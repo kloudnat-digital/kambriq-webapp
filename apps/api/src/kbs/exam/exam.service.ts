@@ -19,7 +19,6 @@ import {
   PaginationQuery,
   QUEUES,
 } from '@kambriq/common';
-import { KbsPrismaService } from '../prisma/kbs-prisma.service';
 import { I18nService } from 'nestjs-i18n';
 import {
   CancelExamDto,
@@ -28,6 +27,8 @@ import {
   SubmitExamDto,
   UpdateExamQuestionDto,
 } from './dto/exam.dto';
+import { KbsPrismaService } from '../prisma/kbs-prisma.service';
+import { UsersService } from '../../core/users/users.service';
 
 @Injectable()
 export class KbsExamService {
@@ -37,46 +38,60 @@ export class KbsExamService {
     private readonly prisma: KbsPrismaService,
     @InjectQueue(QUEUES.KBS) private readonly kbsQueue: Queue,
     private readonly i18n: I18nService,
+    private readonly usersService: UsersService,
   ) {}
 
   // ----- Check Eligibility ---------------------------
   async checkEligibility(userId: string) {
+    // Non-throwing lookup so CANDIDATE-status users get a proper "not eligible"
+    // response instead of a 403.
     const candidate = await this.findCandidateByUserIdOrThrow(userId);
 
-    // Must be in EXAM_PENDING or FAILED (for retake) OR certified with expired certificate (renewal)
-    const allowedStatuses = [CandidateStatus.EXAM_PENDING, CandidateStatus.FAILED];
+    if (candidate.status === CandidateStatus.CANDIDATE) {
+      return {
+        ...(await this.buildBaseEligibility(candidate)),
+        eligible: false,
+        reason: this.t('kbs.enrollment.awaitingVerification'),
+        nextAttemptAt: null,
+        activeExamId: null,
+      };
+    }
 
-    // Check if certified but certificate expired (renewal case)
+    if (candidate.status === CandidateStatus.IN_TRAINING) {
+      return {
+        ...(await this.buildBaseEligibility(candidate)),
+        eligible: false,
+        reason: this.t('kbs.exam.completeAllModules'),
+        nextAttemptAt: null,
+        activeExamId: null,
+      };
+    }
+
+    // Certified but certificate expired → renewal path
     if (candidate.status === CandidateStatus.CERTIFIED) {
       const cert = await this.prisma.kbsCertificate.findUnique({
         where: { candidateId: candidate.id },
       });
       if (cert && cert.validUntil < new Date()) {
-        // Certification expired - eligible for renewal exam
         return await this.checkEligibilityRules(candidate, true);
       }
       return {
+        ...(await this.buildBaseEligibility(candidate)),
         eligible: false,
         reason: this.t('kbs.exam.alreadyCertified'),
+        nextAttemptAt: null,
+        activeExamId: null,
       };
     }
 
-    if (!allowedStatuses.includes(candidate.status as CandidateStatus)) {
-      return {
-        eligible: false,
-        reason: this.t('kbs.exam.statusNotAllowed', undefined, {
-          status: candidate.status,
-        }),
-      };
-    }
-
+    // EXAM_PENDING or FAILED → run the full eligibility rules
     return await this.checkEligibilityRules(candidate, false);
   }
 
   // ----- Schedule & Start Exam
 
   async scheduleExam(userId: string) {
-    const candidate = await this.findCandidateByUserIdOrThrow(userId);
+    const candidate = await this.requireVerifiedCandidateByUserIdOrThrow(userId);
     const eligibility = await this.checkEligibility(userId);
 
     if (!eligibility.eligible) {
@@ -110,7 +125,7 @@ export class KbsExamService {
   }
 
   async startExam(userId: string, examId: string) {
-    const candidate = await this.findCandidateByUserIdOrThrow(userId);
+    const candidate = await this.requireVerifiedCandidateByUserIdOrThrow(userId);
     const exam = await this.findExamOrThrow(examId);
 
     const now = DateTime.utc();
@@ -198,7 +213,7 @@ export class KbsExamService {
 
   // ----- Save Answer (autosave during exam) ---------------------------
   async saveAnswer(userId: string, examId: string, dto: SaveAnswerDto) {
-    const candidate = await this.findCandidateByUserIdOrThrow(userId);
+    const candidate = await this.requireVerifiedCandidateByUserIdOrThrow(userId);
     const exam = await this.findExamOrThrow(examId);
 
     if (exam.candidateId !== candidate.id) {
@@ -241,7 +256,7 @@ export class KbsExamService {
 
   // ----- Submit Exam (for grading via BullMQ) ------------------------
   async submitExam(userId: string, examId: string, dto: SubmitExamDto) {
-    const candidate = await this.findCandidateByUserIdOrThrow(userId);
+    const candidate = await this.requireVerifiedCandidateByUserIdOrThrow(userId);
     const exam = await this.findExamOrThrow(examId);
 
     if (exam.candidateId !== candidate.id) {
@@ -299,7 +314,7 @@ export class KbsExamService {
 
   // ----- Get Results ---------------------------
   async getExamResult(userId: string, examId: string) {
-    const candidate = await this.findCandidateByUserIdOrThrow(userId);
+    const candidate = await this.requireVerifiedCandidateByUserIdOrThrow(userId);
     const exam = await this.prisma.kbsExam.findUnique({
       where: { id: examId },
       include: {
@@ -368,6 +383,7 @@ export class KbsExamService {
 
   // ----- History ---------------------------
   async getExamHistory(userId: string) {
+    // Non-throwing lookup: a CANDIDATE-status user just has an empty history.
     const candidate = await this.findCandidateByUserIdOrThrow(userId);
     const exams = await this.prisma.kbsExam.findMany({
       where: { candidateId: candidate.id },
@@ -394,7 +410,7 @@ export class KbsExamService {
 
   // ----- Reschedule Exam ---------------------------
   async rescheduleExam(userId: string, examId: string, scheduledAt: Date) {
-    const candidate = await this.findCandidateByUserIdOrThrow(userId);
+    const candidate = await this.requireVerifiedCandidateByUserIdOrThrow(userId);
     const exam = await this.findExamOrThrow(examId);
 
     if (exam.candidateId !== candidate.id) {
@@ -467,12 +483,30 @@ export class KbsExamService {
         skip,
         take: limit,
         orderBy: { [sort]: order },
-        include: { candidate: { select: { userId: true } } },
+        include: { candidate: { select: { id: true, userId: true } } },
       }),
       this.prisma.kbsExam.count({ where }),
     ]);
 
-    return buildPaginatedResponse(exams, total, page, limit);
+    const users = await this.usersService.findManyByIds(exams.map((e) => e.candidate.userId));
+    const userById = new Map(users.map((u) => [u.id, u]));
+
+    const data = exams.map((e) => {
+      const u = userById.get(e.candidate.userId);
+      return {
+        id: e.id,
+        candidateId: e.candidate.id,
+        candidateName: u ? `${u.firstName} ${u.lastName}`.trim() : '',
+        attemptNumber: e.attemptNumber,
+        status: e.status,
+        score: e.score,
+        scheduledAt: e.scheduledAt,
+        startedAt: e.startedAt,
+        submittedAt: e.submittedAt,
+      };
+    });
+
+    return buildPaginatedResponse(data, total, page, limit);
   }
 
   // ----- Exam Grading - BullMQ ---------------------------
@@ -666,38 +700,36 @@ export class KbsExamService {
   ) {
     await this.ensureQuestionPoolAvailable();
 
+    const base = await this.buildBaseEligibility(candidate);
+
     // Check for active exam
     const activeExam = await this.prisma.kbsExam.findFirst({
       where: {
         candidateId: candidate.id,
         status: { in: [ExamStatus.SCHEDULED, ExamStatus.IN_PROGRESS] },
       },
+      select: { id: true },
     });
 
     if (activeExam) {
       return {
+        ...base,
         eligible: false,
         reason: this.t('kbs.exam.activeExam'),
+        nextAttemptAt: null,
         activeExamId: activeExam.id,
       };
     }
 
-    // Check max attempts within the current reset cycle
-    const completedAttempts = await this.prisma.kbsExam.count({
-      where: {
-        candidateId: candidate.id,
-        cycle: candidate.currentCycle,
-        status: {
-          in: [ExamStatus.PASSED, ExamStatus.FAILED, ExamStatus.SUBMITTED],
-        },
-      },
-    });
-    if (completedAttempts >= candidate.maxAttempts) {
+    if (base.attemptsUsed >= candidate.maxAttempts) {
       return {
+        ...base,
         eligible: false,
         reason: this.t('kbs.exam.maxAttempts', undefined, {
           max: candidate.maxAttempts,
         }),
+        nextAttemptAt: null,
+        activeExamId: null,
       };
     }
 
@@ -709,19 +741,23 @@ export class KbsExamService {
         status: ExamStatus.FAILED,
       },
       orderBy: { submittedAt: 'desc' },
+      select: { submittedAt: true },
     });
+
     if (lastFailed?.submittedAt) {
       const cooldownEnd = new Date(lastFailed.submittedAt);
       cooldownEnd.setDate(cooldownEnd.getDate() + candidate.retakeCooldownDays);
       if (new Date() < cooldownEnd) {
         return {
+          ...base,
           eligible: false,
           reason: this.t('kbs.exam.cooldownActive', undefined, {
             date: DateTime.fromJSDate(cooldownEnd).toRelative({
               base: DateTime.now(),
             }),
           }),
-          retakeAvailableAt: cooldownEnd,
+          nextAttemptAt: cooldownEnd.toISOString(),
+          activeExamId: null,
         };
       }
     }
@@ -734,20 +770,56 @@ export class KbsExamService {
       });
       if (completedModules < totalModules) {
         return {
+          ...base,
           eligible: false,
           reason: this.t('kbs.exam.trainingIncomplete', undefined, {
             completed: completedModules,
             total: totalModules,
           }),
+          nextAttemptAt: null,
+          activeExamId: null,
         };
       }
     }
 
     return {
+      ...base,
       eligible: true,
-      attemptsUsed: completedAttempts,
-      attemtsRemaining: candidate.maxAttempts - completedAttempts,
+      reason: null,
+      nextAttemptAt: null,
+      activeExamId: null,
     };
+  }
+
+  private async buildBaseEligibility(candidate: {
+    id: string;
+    maxAttempts: number;
+    retakeCooldownDays: number;
+    currentCycle: number;
+  }) {
+    const completedAttempts = await this.prisma.kbsExam.count({
+      where: {
+        candidateId: candidate.id,
+        cycle: candidate.currentCycle,
+        status: {
+          in: [ExamStatus.PASSED, ExamStatus.FAILED, ExamStatus.SUBMITTED],
+        },
+      },
+    });
+    return {
+      attemptsUsed: completedAttempts,
+      attemptsLeft: Math.max(0, candidate.maxAttempts - completedAttempts),
+      maxAttempts: candidate.maxAttempts,
+      cooldownDays: candidate.retakeCooldownDays,
+    };
+  }
+
+  private async requireVerifiedCandidateByUserIdOrThrow(userId: string) {
+    const candidate = await this.findCandidateByUserIdOrThrow(userId);
+    if (candidate.status === CandidateStatus.CANDIDATE) {
+      throw new ForbiddenException(this.t('kbs.enrollment.awaitingVerification'));
+    }
+    return candidate;
   }
 
   private async ensureQuestionPoolAvailable() {

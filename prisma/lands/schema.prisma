@@ -47,6 +47,12 @@ enum LandReservationStatus {
   CANCELLED
 }
 
+enum LandClientDocumentType {
+  ID_CARD
+  PROOF_OF_ADDRESS
+  OTHER
+}
+
 // ----- LANDS Module ----- //
 /**
 * Classification of land titles
@@ -151,6 +157,33 @@ model LandDocument {
   @@index([landId])
 }
 
+
+// ----- Land Client Documents ----- //
+/**
+* Land Documents uploaded by clients during the purchase process
+*/
+model LandClientDocument {
+  id              String                 @id @default(uuid())
+  reservationId   String
+  type            LandClientDocumentType
+  name            String
+  url             String                 // S3 key
+  uploadedAt      DateTime               @default(now())
+  uploadedBy      String                 // Client user id
+
+  // Soft delete. Set by client (self-delete before validation) or admin (reject with reason).
+  deletedAt       DateTime?
+  deletedBy       String?                // userId (client or admin)
+  rejectionReason String?                // set only when admin rejects
+
+  reservation     LandReservation        @relation(fields: [reservationId], references: [id])
+
+  // Uniqueness on active rows is enforced in application code (no DB partial-unique here).
+  // Multiple historical (soft-deleted) rows per (reservationId, type) are expected.
+  @@index([reservationId, type])
+  @@index([reservationId])
+}
+
 // ----- Land Documents ----- //
 /**
 * Created when an agent reserves a land for a client.
@@ -199,6 +232,7 @@ model LandReservation {
   @@unique([landId], where: { status: { not: "CANCELLED" } })
   @@index([agentUserId])
   @@index([status])
+  landClientDocuments LandClientDocument[]
 }
 
 // ----- Price History ----- //

@@ -1,38 +1,44 @@
-import {
-  ConflictException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { Test, TestingModule } from '@nestjs/testing';
+import { EmailService, StorageService } from '@kambriq/common';
+import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
 import { UsersService } from '../../../core/users/users.service';
 import { KbsCandidatesService } from '../../../kbs/candidates/candidates.service';
 import { KbsPrismaService } from '../../../kbs/prisma/kbs-prisma.service';
 import {
   buildCandidate,
   buildModule,
+  mockCorePrisma,
+  mockEmailService,
   mockI18n,
   mockKbsPrisma,
+  mockStorageService,
   resetIdCounter,
 } from '../../utils';
 
 describe('KbsCandidatesService', () => {
   let service: KbsCandidatesService;
   let prisma: ReturnType<typeof mockKbsPrisma>;
+  let corePrisma: ReturnType<typeof mockCorePrisma>;
   let usersService: { addRole: jest.Mock };
 
   beforeEach(async () => {
     jest.clearAllMocks();
     resetIdCounter();
     prisma = mockKbsPrisma();
+    corePrisma = mockCorePrisma();
     usersService = { addRole: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KbsCandidatesService,
         { provide: KbsPrismaService, useValue: prisma },
+        { provide: CorePrismaService, useValue: corePrisma },
         { provide: I18nService, useValue: mockI18n() },
         { provide: UsersService, useValue: usersService },
+        { provide: StorageService, useValue: mockStorageService() },
+        { provide: EmailService, useValue: mockEmailService() },
       ],
     }).compile();
 
@@ -44,10 +50,20 @@ describe('KbsCandidatesService', () => {
   describe('enroll', () => {
     it('creates a candidate and assigns CANDIDATE_KBS role', async () => {
       prisma.kbsCandidate.findUnique.mockResolvedValue(null);
+      corePrisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        email: 'user@test.com',
+        firstName: 'Alice',
+        preferredLanguage: 'fr',
+        profile: { idDocumentUrls: ['s3://key'] },
+      });
       const candidate = buildCandidate({ userId: 'u1' });
       prisma.kbsCandidate.create.mockResolvedValue(candidate);
 
-      const result = await service.enroll('u1', { sponsorCode: 'SP001' });
+      const result = await service.enroll('u1', {
+        sponsorCode: 'SP001',
+        engagementAccepted: true,
+      });
 
       expect(prisma.kbsCandidate.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -65,7 +81,9 @@ describe('KbsCandidatesService', () => {
     it('throws ConflictException if already enrolled', async () => {
       prisma.kbsCandidate.findUnique.mockResolvedValue(buildCandidate());
 
-      await expect(service.enroll('u1', {})).rejects.toThrow(ConflictException);
+      await expect(service.enroll('u1', { engagementAccepted: true })).rejects.toThrow(
+        ConflictException,
+      );
       expect(prisma.kbsCandidate.create).not.toHaveBeenCalled();
     });
   });
@@ -107,9 +125,7 @@ describe('KbsCandidatesService', () => {
     it('throws NotFoundException if not enrolled', async () => {
       prisma.kbsCandidate.findUnique.mockResolvedValue(null);
 
-      await expect(service.getMyProfile('u1')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getMyProfile('u1')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -178,9 +194,7 @@ describe('KbsCandidatesService', () => {
       const candidate = buildCandidate({ status: 'CERTIFIED' });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
 
-      await expect(service.submitQuiz('u1', 'mod1', quizDto)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.submitQuiz('u1', 'mod1', quizDto)).rejects.toThrow(ForbiddenException);
     });
 
     it('enforces prerequisite completion before quiz', async () => {
@@ -193,9 +207,7 @@ describe('KbsCandidatesService', () => {
       prisma.kbsModule.findMany.mockResolvedValue([{ id: 'mod_prev' }]);
       prisma.kbsCandidateProgress.count.mockResolvedValue(0); // not completed
 
-      await expect(service.submitQuiz('u1', 'mod2', quizDto)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.submitQuiz('u1', 'mod2', quizDto)).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -232,11 +244,7 @@ describe('KbsCandidatesService', () => {
         status: 'CERTIFIED',
       });
 
-      expect(usersService.addRole).toHaveBeenCalledWith(
-        'u1',
-        'KCA_CERTIFIED',
-        'admin-1',
-      );
+      expect(usersService.addRole).toHaveBeenCalledWith('u1', 'KCA_CERTIFIED', 'admin-1');
     });
 
     it('rejects invalid state transitions', async () => {

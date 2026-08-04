@@ -1,18 +1,19 @@
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { auth } from '@/auth';
 import { Sidebar } from '@/components/app-shell/sidebar';
 import { MobileNav } from '@/components/app-shell/mobile-nav';
-import { getRoleLabel, getInitials } from '@/lib/user';
+import { getRoleLabelKey, getInitials } from '@/lib/user';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
+  const [session, t] = await Promise.all([auth(), getTranslations('app.nav')]);
   if (!session?.user) redirect('/login');
 
   const user = session.user;
 
   const userRoles = user.roles ?? [];
-  const userName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Utilisateur';
-  const userRole = getRoleLabel(userRoles);
+  const userName = [user.firstName, user.lastName].filter(Boolean).join(' ') || t('userFallback');
+  const userRole = t(getRoleLabelKey(userRoles));
   const initials = getInitials(user.firstName, user.lastName);
 
   return (

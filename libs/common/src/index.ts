@@ -33,6 +33,7 @@ export * from './constants/email';
 export * from './constants/i18n';
 export * from './constants/kamnet';
 export * from './constants/lands';
+export * from './constants/phone';
 
 // ----- Services -----
 export { StorageService } from './services/storage.service';

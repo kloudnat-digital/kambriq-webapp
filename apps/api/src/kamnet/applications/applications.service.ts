@@ -98,12 +98,15 @@ export class KamnetApplicationsService {
     });
 
     const user = await this.usersService.findById(userId);
-    await this.emailService.send({
-      to: user.email,
-      template: 'applicationSubmitted',
-      lang: user.language || 'fr',
-      args: { firstName: user.firstName || user.email },
-    });
+    await this.emailService.sendUpdate(
+      {
+        to: user.email,
+        template: 'applicationSubmitted',
+        lang: user.language || 'fr',
+        args: { firstName: user.firstName || user.email },
+      },
+      user.profile,
+    );
 
     this.logger.log('New KAMNET application submitted', {
       userId,
@@ -177,15 +180,18 @@ export class KamnetApplicationsService {
 
       await this.usersService.addRole(application.userId, RoleCode.AGENT, adminUserId);
 
-      await this.emailService.send({
-        to: user.email,
-        template: 'applicationApproved',
-        lang,
-        args: {
-          firsName: user.firstName || user.email,
-          agentCode,
+      await this.emailService.sendUpdate(
+        {
+          to: user.email,
+          template: 'applicationApproved',
+          lang,
+          args: {
+            firsName: user.firstName || user.email,
+            agentCode,
+          },
         },
-      });
+        user.profile,
+      );
 
       this.logger.log('KAMNET application approved', {
         applicationId,
@@ -197,15 +203,18 @@ export class KamnetApplicationsService {
       return { application: update, agent };
     }
 
-    await this.emailService.send({
-      to: user.email,
-      template: 'applicationRejected',
-      lang,
-      args: {
-        firstName: user.firstName || user.email,
-        reason: dto.reviewNote || '',
+    await this.emailService.sendUpdate(
+      {
+        to: user.email,
+        template: 'applicationRejected',
+        lang,
+        args: {
+          firstName: user.firstName || user.email,
+          reason: dto.reviewNote || '',
+        },
       },
-    });
+      user.profile,
+    );
   }
 
   // ----- Admin: List Applications ----- //

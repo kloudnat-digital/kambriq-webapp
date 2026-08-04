@@ -1,14 +1,19 @@
-export const getRoleLabel = (codes: string[]): string => {
-  if (codes.includes('ROOT')) return 'Super Admin';
-  if (codes.includes('ADMIN_GLOBAL')) return 'Administrateur Global';
-  if (codes.includes('OPS')) return 'Ops KAMBRIQ';
-  if (codes.includes('ADMIN_LANDS')) return 'Admin Terrains';
-  if (codes.includes('ADMIN_KBS')) return 'Admin KBS';
-  if (codes.includes('ADMIN_KAMNET')) return 'Admin KAMNET';
-  if (codes.includes('AGENT')) return 'Agent KAMNET';
-  if (codes.includes('PARTNER')) return 'Partenaire';
-  if (codes.includes('CLIENT')) return 'Client';
-  return 'Utilisateur';
+/**
+ * Returns a translation key under `app.nav.role.*` for the highest-priority
+ * role the user holds. Resolve via `useTranslations('app.nav')` or
+ * `getTranslations('app.nav')` at the call site.
+ */
+export const getRoleLabelKey = (codes: string[]): string => {
+  if (codes.includes('ROOT')) return 'role.root';
+  if (codes.includes('ADMIN_GLOBAL')) return 'role.adminGlobal';
+  if (codes.includes('OPS')) return 'role.ops';
+  if (codes.includes('ADMIN_LANDS')) return 'role.adminLands';
+  if (codes.includes('ADMIN_KBS')) return 'role.adminKbs';
+  if (codes.includes('ADMIN_KAMNET')) return 'role.adminKamnet';
+  if (codes.includes('AGENT')) return 'role.agent';
+  if (codes.includes('PARTNER')) return 'role.partner';
+  if (codes.includes('CLIENT')) return 'role.client';
+  return 'role.user';
 };
 
 export const getInitials = (firstName?: string | null, lastName?: string | null): string => {

@@ -135,6 +135,74 @@
     "button": "Set My Password",
     "expiry": "This link expires in 24 hours. If you didn't request this account, you can safely ignore this email."
   },
+  "kbsEnrollmentReceived": {
+    "subject": "Your KBS application has been received",
+    "heading": "Application received",
+    "body": "Hi {firstName}, we have received your application to the KBS (Kambriq Business School) training program.",
+    "paymentIntro": "To finalize your registration, please proceed with the training fee payment:",
+    "amount": "Amount: €249",
+    "instructions": "Payment instructions will be sent to you by our team. Please contact us at contact@kambriq.com to receive the details.",
+    "note": "Once payment is received, your application will be validated within 48 business hours and you will be able to access your training path."
+  },
+  "reservationCreated": {
+    "subject": "New reservation created",
+    "heading": "Reservation confirmed on your side",
+    "body": "Hi {firstName}, you just reserved a land for {clientName}.",
+    "landInfo": "Land: <strong>{landTitle}</strong> — {price} XAF",
+    "note": "The client has been notified and will receive their portal access shortly."
+  },
+  "clientPortalAccess": {
+    "subject": "Welcome to your KAMBRIQ client portal",
+    "heading": "Welcome to KAMBRIQ",
+    "body": "Hi {clientName}, your reservation has been opened and a client portal has been set up for you.",
+    "landInfo": "Land: <strong>{landTitle}</strong> — {price} XAF",
+    "agent": "Your KAMNET agent: {agentName}",
+    "note": "You can track every step of your acquisition from your portal."
+  },
+  "reservationConfirmed": {
+    "subject": "Your down payment has been received",
+    "heading": "Down payment confirmed",
+    "body": "Hi {firstName}, the down payment for your reservation {reservationId} has been received and validated.",
+    "note": "We will keep you informed as your file progresses."
+  },
+  "reservationCancelled": {
+    "subject": "Your reservation has been cancelled",
+    "heading": "Reservation cancelled",
+    "body": "Hi {firstName}, your reservation on {landTitle} has been cancelled.",
+    "reason": "Reason: <strong>{reason}</strong>",
+    "note": "If you have any questions, please contact your KAMNET agent."
+  },
+  "clientDocumentUploaded": {
+    "subject": "New client document uploaded",
+    "heading": "A client document was uploaded",
+    "body": "Hi {firstName}, your client {clientName} just uploaded a {docType} document for the reservation on {landTitle}.",
+    "note": "Please review and approve the documents in the admin dashboard once the file is complete."
+  },
+  "clientDocumentRejected": {
+    "subject": "Your document was not accepted",
+    "heading": "Document rejected",
+    "body": "Hi {clientName}, we were unable to validate your {docType} for the reservation on {landTitle}.",
+    "reason": "Reason: <strong>{reason}</strong>",
+    "retry": "Please log in to your portal and upload a new document."
+  },
+  "clientDocumentsValidated": {
+    "subject": "Your documents have been validated",
+    "heading": "Documents validated",
+    "body": "Hi {clientName}, your documents for the reservation on {landTitle} have been reviewed and validated by KAMBRIQ.",
+    "note": "We are now waiting for the final payment to proceed to the next step."
+  },
+  "paymentConfirmed": {
+    "subject": "Payment received",
+    "heading": "Final payment confirmed",
+    "body": "Hi {clientName}, your remaining payment for the reservation on {landTitle} has been received.",
+    "note": "Your file will now move to title transfer."
+  },
+  "dossierStarted": {
+    "subject": "Your title transfer has started",
+    "heading": "Title transfer in progress",
+    "body": "Hi {clientName}, the title transfer for your land {landTitle} has officially started.",
+    "note": "Final documents will be delivered to you once the transfer is complete."
+  },
   "footer": {
     "copyright": "© {year} KAMBRIQ. All rights reserved.",
     "ignore": "If you didn't request this email, you can safely ignore it."

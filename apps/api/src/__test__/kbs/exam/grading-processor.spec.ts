@@ -27,9 +27,7 @@ describe('KbsGradingProcessor', () => {
     resetIdCounter();
     examService = { gradeExam: jest.fn() };
     usersService = {
-      findById: jest
-        .fn()
-        .mockResolvedValue(buildUserResponse({ language: 'fr' })),
+      findById: jest.fn().mockResolvedValue(buildUserResponse({ language: 'fr' })),
       addRole: jest.fn(),
     };
     emailService = mockEmailService();
@@ -106,8 +104,9 @@ describe('KbsGradingProcessor', () => {
       );
 
       // Send pass email
-      expect(emailService.send).toHaveBeenCalledWith(
+      expect(emailService.sendUpdate).toHaveBeenCalledWith(
         expect.objectContaining({ template: 'examPassed' }),
+        null,
       );
     });
   });
@@ -129,20 +128,17 @@ describe('KbsGradingProcessor', () => {
       await processor.process(job);
 
       // No KCA role enqueued
-      expect(queue.add).not.toHaveBeenCalledWith(
-        KBS_JOBS.GRANT_KCA_ROLE,
-        expect.anything(),
-        expect.anything(),
-      );
+      expect(queue.add).not.toHaveBeenCalledWith(KBS_JOBS.GRANT_KCA_ROLE, expect.anything(), null);
 
       // Fail email with retake info
-      expect(emailService.send).toHaveBeenCalledWith(
+      expect(emailService.sendUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           template: 'examFailed',
           args: expect.objectContaining({
             attemptsLeft: 2, // 3 - 1
           }),
         }),
+        null,
       );
     });
   });

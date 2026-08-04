@@ -4,6 +4,7 @@ import {
   LandMediaType,
   LandOwnerType,
   LandReservationStatus,
+  LandClientDocumentType,
   LandStatus,
 } from '../../prisma/lands-client/enums';
 
@@ -14,6 +15,7 @@ export {
   LandOwnerType,
   LandReservationStatus,
   LandStatus,
+  LandClientDocumentType,
 };
 
 export enum LandMediaCategory {

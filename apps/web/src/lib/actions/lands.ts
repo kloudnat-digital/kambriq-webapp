@@ -4,7 +4,7 @@ import { serverApi } from '@/lib/api/server';
 import { createAction, ServerActionError } from './create-action';
 import { getUserRoles, isAdminRole, buildQuery } from './utils/lands';
 import type { CreateLandFormSchema } from '@/validations/schema/lands';
-import type { LandLabel } from '@/types/lands';
+import type { LandClientDocumentType, LandLabel } from '@/types/lands';
 
 // ---- Purchases ----
 
@@ -15,6 +15,49 @@ export const getMyPurchases = createAction(async () => {
 export const getPurchaseDetail = createAction(async (id: string) => {
   return serverApi.get(`/lands/client/purchases/${id}`);
 });
+
+export const getClientDocumentUploadUrlAction = createAction(
+  async (
+    reservationId: string,
+    data: { type: LandClientDocumentType; filename: string; contentType: string },
+  ) => {
+    return serverApi.post<{ uploadUrl: string; fileUrl: string }>(
+      `/lands/client/purchases/${reservationId}/documents/upload-url`,
+      data,
+    );
+  },
+);
+
+export const registerClientDocumentAction = createAction(
+  async (
+    reservationId: string,
+    data: { type: LandClientDocumentType; url: string; name: string },
+  ) => {
+    return serverApi.post(`/lands/client/purchases/${reservationId}/documents`, data);
+  },
+);
+
+export const deleteClientDocumentAction = createAction(
+  async (reservationId: string, documentId: string) => {
+    return serverApi.delete(`/lands/client/purchases/${reservationId}/documents/${documentId}`);
+  },
+);
+
+export const rejectClientDocumentAction = createAction(
+  async (reservationId: string, documentId: string, reason: string) => {
+    try {
+      return await serverApi.post(
+        `/lands/admin/reservations/${reservationId}/documents/${documentId}/reject`,
+        { reason },
+      );
+    } catch (error) {
+      throw new ServerActionError(
+        error instanceof Error ? error.message : 'Document rejection failed.',
+        400,
+      );
+    }
+  },
+);
 
 // ---- Lands ----
 

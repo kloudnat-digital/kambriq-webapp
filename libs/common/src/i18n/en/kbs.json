@@ -2,7 +2,9 @@
   "enrollment": {
     "alreadyEnrolled": "You are already enrolled in KBS",
     "success": "Enrolled in KBS successfully",
-    "notEnrolled": "You are not enrolled in KBS"
+    "notEnrolled": "You are not enrolled in KBS",
+    "idRequired": "Please submit your ID document first",
+    "awaitingVerification": "Your enrollment is awaiting admin validation. You'll get access to the training once approved."
   },
   "course": {
     "notFound": "Course {id} not found",
@@ -42,7 +44,9 @@
     "attemptsReset": "Exam attempts reset. Candidate can retake the exam.",
     "notYetAvailable": "The exam is not yet available.",
     "startWindowExpired": "The exam start window has expired.",
-    "candidateNotFound": "Candidate {id} not found"
+    "candidateNotFound": "Candidate {id} not found",
+    "completeAllModules": "Complete every module of the programme before taking the exam.",
+    "notInTraining": "You must be in training to submit a quiz."
   },
   "certificate": {
     "notFound": "Certificate not found",

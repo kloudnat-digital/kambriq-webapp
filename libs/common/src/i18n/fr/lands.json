@@ -46,7 +46,12 @@
     "previousStepRequired": "L'étape précédente doit être complétée en premier",
     "conflict": "Ce terrain vient d'être réservé par un autre agent. Veuillez essayer une autre parcelle.",
     "alreadyCompleted": "Impossible d'annuler une réservation finalisée",
-    "notOwner": "Vous ne pouvez annuler que les réservations que vous avez créées"
+    "notOwner": "Vous ne pouvez annuler que les réservations que vous avez créées",
+    "clientDocsMissing": "Tous les documents client requis doivent être envoyés avant validation",
+    "cannotUploadDocs": "Cette réservation n'accepte plus d'envoi de documents",
+    "docNotFound": "Document introuvable",
+    "docDeleted": "Document supprimé",
+    "docRejected": "Document rejeté"
   },
   "invite": {
     "sent": "Invitation envoyée à {email}",

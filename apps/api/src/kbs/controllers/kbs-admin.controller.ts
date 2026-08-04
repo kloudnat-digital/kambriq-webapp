@@ -41,10 +41,12 @@ import {
   UpdateLessonDto,
   UpdateModuleDto,
   UpdateQuestionDto,
-} from '../courses/course.dto';
+} from '../courses/dto/course.dto';
 import { CancelExamDto, CreateExamQuestionDto, UpdateExamQuestionDto } from '../exam/dto/exam.dto';
 import { CandidateFilterDto, UpdateCandidateStatusDto } from '../candidates/dto/candidate.dto';
 import { IssueCertificateDto, RevokeCertificateDto } from '../certificates/dto/certificate.dto';
+import { KbsSettingsService } from '../settings/settings.service';
+import { UpdateSettingsDto } from '../settings/dto/settings.dto';
 
 @ApiTags('KBS - Admin')
 @ApiBearerAuth()
@@ -56,6 +58,7 @@ export class KbsAdminController {
     private readonly candidatesService: KbsCandidatesService,
     private readonly examService: KbsExamService,
     private readonly certificatesService: KbsCertificatesService,
+    private readonly settingsService: KbsSettingsService,
   ) {}
 
   // ─── Courses ───────────────────────────────────────────────────────────────
@@ -75,6 +78,18 @@ export class KbsAdminController {
   })
   async createCourse(@Body() dto: CreateCourseDto) {
     return this.coursesService.createCourse(dto);
+  }
+
+  @Get('courses')
+  @ApiOperation({
+    summary: 'List all courses',
+    description: 'Returns every KBS course with basic module information for admin selection UIs.',
+  })
+  @ApiResponse({ status: 200, description: 'Courses returned.' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions.' })
+  async listCourses() {
+    return this.coursesService.findAllCourses();
   }
 
   @Get('courses/:id')
@@ -644,5 +659,33 @@ export class KbsAdminController {
   @ApiResponse({ status: 403, description: 'Insufficient permissions.' })
   async listCertificates(@Query() query: PaginationQueryDto) {
     return this.certificatesService.findAll(query);
+  }
+
+  @Get('settings')
+  @ApiOperation({
+    summary: 'Get the KBS settings singleton',
+    description:
+      'Returns the singleton settings row (active course, question counts, quiz attempts and cooldown). Auto-creates a default row on first call if none exists.',
+  })
+  @ApiResponse({ status: 200, description: 'Settings returned.' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions.' })
+  async getSettings() {
+    return this.settingsService.getSettings();
+  }
+
+  @Patch('settings')
+  @ApiOperation({
+    summary: 'Update the KBS settings singleton',
+    description:
+      'Partial update of the settings row. Only the provided fields are applied. If `activeCourseId` is provided, it must reference an existing course.',
+  })
+  @ApiResponse({ status: 200, description: 'Settings updated.' })
+  @ApiResponse({ status: 400, description: 'Validation error.' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions.' })
+  @ApiResponse({ status: 404, description: 'Referenced course not found.' })
+  async updateSettings(@Body() dto: UpdateSettingsDto) {
+    return this.settingsService.updateSettings(dto);
   }
 }

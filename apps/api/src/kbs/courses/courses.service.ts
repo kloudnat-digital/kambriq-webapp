@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { KbsPrismaService } from '../prisma/kbs-prisma.service';
 import {
   CreateCourseDto,
@@ -11,8 +11,14 @@ import {
   UpdateLessonDto,
   UpdateModuleDto,
   UpdateQuestionDto,
-} from './course.dto';
-import { DEFAULT_QUIZ_QUESTION_COUNT, StorageService } from '@kambriq/common';
+} from './dto/course.dto';
+import {
+  CandidateStatus,
+  DEFAULT_LANGUAGE,
+  DEFAULT_QUIZ_QUESTION_COUNT,
+  MODULE_PASSING_SCORE,
+  StorageService,
+} from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 
 @Injectable()
@@ -118,6 +124,95 @@ export class KbsCoursesService {
         _count: { select: { questions: true, lessons: true } },
       },
     });
+  }
+
+  async findModuleDetail(moduleId: string, userId: string) {
+    const candidate = await this.requireVerifiedCandidateByUserIdOrThrow(userId);
+
+    const mod = await this.prisma.kbsModule.findUnique({
+      where: { id: moduleId },
+      include: {
+        lessons: {
+          orderBy: { order: 'desc' },
+          select: {
+            id: true,
+            order: true,
+            title: true,
+            duration: true,
+            contentType: true,
+          },
+        },
+      },
+    });
+
+    if (!mod)
+      throw new NotFoundException(
+        this.t('kbs.module.notFound', DEFAULT_LANGUAGE, { id: moduleId }),
+      );
+
+    const settings = await this.prisma.kbsSettings.findFirst();
+    const quizQuestionCount = settings.quizQuestionCount ?? 10;
+    const quizMaxAttempts = settings.quizMaxAttempts ?? 5;
+    const cooldownMinutes = settings.quizCooldownMinutes ?? 0;
+
+    const [lessonCompletions, progress] = await Promise.all([
+      this.prisma.kbsLessonCompletion.findMany({
+        where: {
+          candidateId: candidate.id,
+          lessonId: { in: mod.lessons.map((l) => l.id) },
+        },
+        select: { lessonId: true, completedAt: true },
+      }),
+      this.prisma.kbsCandidateProgress.findUnique({
+        where: {
+          candidateId_moduleId: { candidateId: candidate.id, moduleId: mod.id },
+        },
+        select: { attempts: true, score: true, passed: true, updatedAt: true },
+      }),
+    ]);
+
+    const completionByLessionId = new Map(
+      lessonCompletions.map((c) => [c.lessonId, c.completedAt]),
+    );
+    const lessons = mod.lessons.map((l) => ({
+      id: l.id,
+      order: l.order,
+      title: l.title,
+      duration: l.duration,
+      contentType: l.contentType,
+      completedAt: completionByLessionId.get(l.id) ?? null,
+    }));
+
+    const allLessonsDone = lessons.length > 0 && lessons.every((l) => l.completedAt !== null);
+    const attempts = progress?.attempts ?? 0;
+    const passed = progress?.passed ?? false;
+    const attemptsExhausted = quizMaxAttempts > 0 && attempts >= quizMaxAttempts;
+
+    let nextAttemptAt: Date | null = null;
+    if (progress?.updatedAt && cooldownMinutes > 0 && !passed && !attemptsExhausted) {
+      const candidate = new Date(progress.updatedAt.getTime() + cooldownMinutes * 60 * 1000);
+      if (candidate > new Date()) nextAttemptAt = candidate;
+    }
+
+    return {
+      module: {
+        id: mod.id,
+        order: mod.order,
+        title: mod.title,
+        description: mod.description,
+      },
+      lessons,
+      quiz: {
+        unlocked: allLessonsDone && !nextAttemptAt && !attemptsExhausted,
+        attempts,
+        maxAttempts: quizMaxAttempts,
+        cooldownMinutes,
+        nextAttemptAt: nextAttemptAt?.toISOString() ?? null,
+        score: progress?.score ?? null,
+        passed,
+        questionCount: quizQuestionCount,
+      },
+    };
   }
 
   async findModulesWithProgress(courseId: string, candidateId: string) {
@@ -229,10 +324,70 @@ export class KbsCoursesService {
 
     if (!lesson) throw new NotFoundException(this.t('kbs.lesson.notFound', undefined, { id }));
 
-    // Generate download URL from S3
-    const contentUrl = await this.storage.getDownloadUrl(lesson.contentUrl);
+    const contentUrl =
+      lesson.contentUrl && (lesson.contentType === 'VIDEO' || lesson.contentType === 'PDF')
+        ? await this.storage.getDownloadUrl(lesson.contentUrl)
+        : null;
 
     return { ...lesson, contentUrl };
+  }
+
+  async findLessonView(id: string, userId: string) {
+    const candidate = await this.requireVerifiedCandidateByUserIdOrThrow(userId);
+
+    const lesson = await this.prisma.kbsLesson.findUnique({
+      where: { id },
+      include: {
+        module: {
+          select: {
+            id: true,
+            order: true,
+            title: true,
+            lessons: {
+              select: { id: true, order: true, title: true },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    if (!lesson) throw new NotFoundException(this.t('kbs.lesson.notFound', undefined, { id }));
+
+    const completion = await this.prisma.kbsLessonCompletion.findUnique({
+      where: {
+        candidateId_lessonId: { candidateId: candidate.id, lessonId: lesson.id },
+      },
+      select: { completedAt: true },
+    });
+
+    const siblings = lesson.module.lessons;
+    const currentIndex = siblings.findIndex((l) => l.id === lesson.id);
+    const prev = currentIndex > 0 ? siblings[currentIndex - 1] : null;
+    const next = currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : null;
+
+    const signedContentUrl = (lesson.contentUrl =
+      lesson.contentUrl && (lesson.contentType === 'VIDEO' || lesson.contentType === 'PDF')
+        ? await this.storage.getDownloadUrl(lesson.contentUrl)
+        : null);
+
+    return {
+      id: lesson.id,
+      moduleId: lesson.module.id,
+      moduleOrder: lesson.module.order,
+      moduleTitle: lesson.module.title,
+      order: lesson.order,
+      title: lesson.title,
+      contentType: lesson.contentType,
+      duration: lesson.duration,
+      contentUrl: signedContentUrl,
+      content: lesson.content,
+      completedAt: completion?.completedAt ?? null,
+      navigation: {
+        prev: prev ? { id: prev.id, order: prev.order, title: prev.title } : null,
+        next: next ? { id: next.id, order: next.order, title: next.title } : null,
+      },
+    };
   }
 
   async createLesson(dto: CreateLessonDto) {
@@ -267,11 +422,30 @@ export class KbsCoursesService {
   }
 
   // ----- Questions + Answers ---------------------------
-  async findQuestionsForQuiz(moduleId: string) {
-    const settings = await this.prisma.kbsSettings.findFirst();
-    const questionCount = settings?.quizQuestionCount ?? DEFAULT_QUIZ_QUESTION_COUNT;
+  async findQuestionsForQuiz(moduleId: string, userId: string) {
+    const candidate = await this.requireVerifiedCandidateByUserIdOrThrow(userId);
 
-    const questions = await this.prisma.kbsQuestion.findMany({
+    const [mod, settings] = await Promise.all([
+      this.prisma.kbsModule.findUnique({
+        where: { id: moduleId },
+        select: { id: true, order: true, title: true },
+      }),
+      this.prisma.kbsSettings.findFirst(),
+    ]);
+
+    if (!mod) {
+      throw new NotFoundException(this.t('kbs.module.notFound', undefined, { id: moduleId }));
+    }
+
+    const progress = await this.prisma.kbsCandidateProgress.findUnique({
+      where: {
+        candidateId_moduleId: { candidateId: candidate.id, moduleId },
+      },
+      select: { attempts: true },
+    });
+
+    const questionCount = settings?.quizQuestionCount ?? DEFAULT_QUIZ_QUESTION_COUNT;
+    const raw = await this.prisma.kbsQuestion.findMany({
       where: { moduleId },
       include: {
         answers: {
@@ -279,10 +453,19 @@ export class KbsCoursesService {
         },
       },
     });
-
-    return this.shuffle(questions)
+    const questions = this.shuffle(raw)
       .slice(0, questionCount)
       .map((q) => ({ ...q, answers: this.shuffle(q.answers) }));
+
+    return {
+      moduleId: mod.id,
+      moduleOrder: mod.order,
+      moduleTitle: mod.title,
+      passingScore: MODULE_PASSING_SCORE,
+      attempts: progress?.attempts ?? 0,
+      maxAttempts: settings?.quizMaxAttempts ?? 0,
+      questions,
+    };
   }
 
   async findQuestionsAdmin(moduleId: string) {
@@ -373,7 +556,7 @@ export class KbsCoursesService {
       'content',
       dto.moduleId || 'general',
       dto.lessonId || 'uploads',
-      `${Date.now()}-${dto.fileName}`,
+      `${Date.now()}-${dto.filename}`,
     );
     return this.storage.getUploadUrl(key, dto.contentType);
   }
@@ -384,7 +567,9 @@ export class KbsCoursesService {
    * Records that a candidate has completed (viewed/finished) a lesson.
    * Idempotent - calling it twice for the same lesson is safe.
    */
-  async markLessonComplete(candidateId: string, lessonId: string) {
+  async markLessonComplete(userId: string, lessonId: string) {
+    const candidate = await this.requireVerifiedCandidateByUserIdOrThrow(userId);
+
     const lesson = await this.prisma.kbsLesson.findUnique({
       where: { id: lessonId },
       select: { id: true, moduleId: true },
@@ -394,8 +579,8 @@ export class KbsCoursesService {
     }
 
     await this.prisma.kbsLessonCompletion.upsert({
-      where: { candidateId_lessonId: { candidateId, lessonId } },
-      create: { candidateId, lessonId },
+      where: { candidateId_lessonId: { candidateId: candidate.id, lessonId } },
+      create: { candidateId: candidate.id, lessonId },
       update: {}, // Already completed - no update needed
     });
 
@@ -405,7 +590,7 @@ export class KbsCoursesService {
     });
     const moduleCompleted = await this.prisma.kbsLessonCompletion.count({
       where: {
-        candidateId,
+        candidateId: candidate.id,
         lesson: { moduleId: lesson.moduleId },
       },
     });
@@ -425,6 +610,17 @@ export class KbsCoursesService {
       select: { lessonId: true, completedAt: true },
     });
     return completions;
+  }
+
+  private async requireVerifiedCandidateByUserIdOrThrow(userId: string) {
+    const candidate = await this.prisma.kbsCandidate.findUnique({ where: { userId } });
+    if (!candidate) {
+      throw new NotFoundException(this.t('kbs.enrollment.notEnrolled'));
+    }
+    if (candidate.status === CandidateStatus.CANDIDATE) {
+      throw new ForbiddenException(this.t('kbs.enrollment.awaitingVerification'));
+    }
+    return candidate;
   }
 
   private shuffle<T>(array: T[]): T[] {

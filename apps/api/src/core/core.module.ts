@@ -12,6 +12,7 @@ import { UserController } from './users/users.controller';
 import { JwtStrategy } from './auth/strategies/jwt.strategy';
 import { CoreCleanupProcessor } from './cleanup/cleanup.processor';
 import { CleanupScheduler } from './cleanup/cleanup.scheduler';
+import { StorageService } from '@kambriq/common';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { CleanupScheduler } from './cleanup/cleanup.scheduler';
     RolesService,
     CoreCleanupProcessor,
     CleanupScheduler,
+    StorageService,
   ],
   // Export services needed by other modules (e.g., KbsModule)
   exports: [UsersService, RolesService, CorePrismaService],

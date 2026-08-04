@@ -28,10 +28,12 @@ export const BreadcrumbNav = ({ labels }: Props) => {
             <BreadcrumbItem>
               {item.isLast ? (
                 <BreadcrumbPage>{item.label}</BreadcrumbPage>
-              ) : (
+              ) : item.clickable ? (
                 <BreadcrumbLink asChild>
                   <Link href={item.href}>{item.label}</Link>
                 </BreadcrumbLink>
+              ) : (
+                <span className="text-muted-foreground">{item.label}</span>
               )}
             </BreadcrumbItem>
           </Fragment>
