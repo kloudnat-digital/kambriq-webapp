@@ -1,5 +1,6 @@
 import { CAMEROON_REGIONS } from '@/constants/country';
 import * as z from 'zod';
+import { phoneRequired } from './phone';
 
 export const CreateLandFormResolver = z.object({
   title: z.string().min(3, { error: 'Title must be at least 3 characters' }),
@@ -22,7 +23,7 @@ export const CreateLandFormResolver = z.object({
 export const ReserveLandFormResolver = z.object({
   name: z.string().min(3, { error: 'Name must be at least 3 characters' }),
   email: z.email({ error: 'Invalid email address' }),
-  phone: z.string().min(10, { error: 'Phone number must be at least 10 digits' }),
+  phone: phoneRequired(),
 });
 
 export type CreateLandFormSchema = z.infer<typeof CreateLandFormResolver>;
@@ -57,5 +58,15 @@ export const CancelReservationFormResolver = z.object({
 export type CancelReservationFormSchema = z.infer<typeof CancelReservationFormResolver>;
 
 export const CANCEL_RESERVATION_DEFAULTS: CancelReservationFormSchema = {
+  reason: '',
+};
+
+export const RejectClientDocumentFormResolver = z.object({
+  reason: z.string().min(5, { error: 'Reason must be at least 5 characters' }),
+});
+
+export type RejectClientDocumentFormSchema = z.infer<typeof RejectClientDocumentFormResolver>;
+
+export const REJECT_CLIENT_DOCUMENT_DEFAULTS: RejectClientDocumentFormSchema = {
   reason: '',
 };

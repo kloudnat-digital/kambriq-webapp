@@ -509,7 +509,7 @@ export class LandsService {
 
   // ----- Private Helpers ----- //
 
-  async findByIdOrThrow(landId: string) {
+  private async findByIdOrThrow(landId: string) {
     const land = await this.prisma.land.findUnique({
       where: { id: landId },
     });

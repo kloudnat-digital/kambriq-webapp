@@ -409,6 +409,88 @@ const templates = defineTemplates({
       i18n,
     ),
   }),
+
+  clientDocumentUploaded: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.clientDocumentUploaded.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.clientDocumentUploaded.heading', lang)}</h1>
+      <p>${t(i18n, 'email.clientDocumentUploaded.body', lang, args)}</p>
+      <p>${t(i18n, 'email.clientDocumentUploaded.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  clientDocumentRejected: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.clientDocumentRejected.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.clientDocumentRejected.heading', lang)}</h1>
+      <p>${t(i18n, 'email.clientDocumentRejected.body', lang, args)}</p>
+      <p>${t(i18n, 'email.clientDocumentRejected.reason', lang, args)}</p>
+      <p>${t(i18n, 'email.clientDocumentRejected.retry', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  clientDocumentsValidated: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.clientDocumentsValidated.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.clientDocumentsValidated.heading', lang)}</h1>
+      <p>${t(i18n, 'email.clientDocumentsValidated.body', lang, args)}</p>
+      <p>${t(i18n, 'email.clientDocumentsValidated.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  paymentConfirmed: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.paymentConfirmed.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.paymentConfirmed.heading', lang)}</h1>
+      <p>${t(i18n, 'email.paymentConfirmed.body', lang, args)}</p>
+      <p>${t(i18n, 'email.paymentConfirmed.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  dossierStarted: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.dossierStarted.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.dossierStarted.heading', lang)}</h1>
+      <p>${t(i18n, 'email.dossierStarted.body', lang, args)}</p>
+      <p>${t(i18n, 'email.dossierStarted.note', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  kbsEnrollmentReceived: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.kbsEnrollmentReceived.subject', lang),
+    html: layout(
+      `
+    <h1>${t(i18n, 'email.kbsEnrollmentReceived.heading', lang)}</h1>
+    <p>${t(i18n, 'email.kbsEnrollmentReceived.body', lang, args)}</p>
+    <p>${t(i18n, 'email.kbsEnrollmentReceived.paymentIntro', lang)}</p>
+    <p><strong>${t(i18n, 'email.kbsEnrollmentReceived.amount', lang)}</strong></p>
+    <p>${t(i18n, 'email.kbsEnrollmentReceived.instructions', lang)}</p>
+    <p>${t(i18n, 'email.kbsEnrollmentReceived.note', lang)}</p>
+  `,
+      lang,
+      i18n,
+    ),
+  }),
 });
 
 export type TemplateKey = keyof typeof templates;

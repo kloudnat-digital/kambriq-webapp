@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { phoneRequired } from './phone';
 
 export const LoginResolver = z.object({
   email: z.email({
@@ -30,9 +31,7 @@ export const RegisterResolver = z.object({
     error: 'Please provide a valid email address',
   }),
   password: passwordStrength,
-  phone: z.string().regex(/^(237)?6[0-9]{8}$/, {
-    error: 'Enter a valid Cameroonian mobile number (e.g. 695123456 or 237695123456)',
-  }),
+  phone: phoneRequired(),
 });
 
 export type RegisterSchema = z.infer<typeof RegisterResolver>;

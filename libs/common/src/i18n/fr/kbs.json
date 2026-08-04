@@ -2,7 +2,9 @@
   "enrollment": {
     "alreadyEnrolled": "Vous êtes déjà inscrit au KBS",
     "success": "Inscription au KBS réussie",
-    "notEnrolled": "Vous n'êtes pas inscrit au KBS"
+    "notEnrolled": "Vous n'êtes pas inscrit au KBS",
+    "idRequired": "Veuillez d'abord soumettre votre pièce d'identité",
+    "awaitingVerification": "Votre inscription est en attente de validation par un administrateur. Vous aurez accès à la formation dès validation."
   },
   "course": {
     "notFound": "Cours {id} introuvable",
@@ -42,7 +44,9 @@
     "attemptsReset": "Tentatives d'examen réinitialisées. Le candidat peut repasser l'examen.",
     "notYetAvailable": "L'examen n'est pas encore disponible.",
     "startWindowExpired": "La fenêtre de démarrage de l'examen a expiré.",
-    "candidateNotFound": "Candidat {id} introuvable"
+    "candidateNotFound": "Candidat {id} introuvable",
+    "completeAllModules": "Terminez tous les modules du programme avant de passer l'examen.",
+    "notInTraining": "Vous devez être en cours de formation pour soumettre un QCM."
   },
   "certificate": {
     "notFound": "Certificat introuvable",

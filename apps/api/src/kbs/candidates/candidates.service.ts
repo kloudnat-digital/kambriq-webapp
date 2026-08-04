@@ -8,16 +8,25 @@ import {
 } from '@nestjs/common';
 import { UsersService } from '../../core/users/users.service';
 import { KbsPrismaService } from '../prisma/kbs-prisma.service';
-import { EnrollDto, SubmitQuizDto, UpdateCandidateStatusDto } from './dto/candidate.dto';
+import {
+  CvUploadUrlDto,
+  EnrollDto,
+  SubmitQuizDto,
+  UpdateCandidateStatusDto,
+} from './dto/candidate.dto';
 import {
   buildPaginatedResponse,
   CandidateStatus,
+  DEFAULT_LANGUAGE,
+  EmailService,
   MODULE_PASSING_SCORE,
   PaginationQuery,
   RoleCode,
   STATUS_TRANSITIONS,
+  StorageService,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
+import { CorePrismaService } from '../../core/prisma/core-prisma.service';
 
 @Injectable()
 export class KbsCandidatesService {
@@ -25,9 +34,20 @@ export class KbsCandidatesService {
 
   constructor(
     private readonly prisma: KbsPrismaService,
+    private readonly corePrisma: CorePrismaService,
     private readonly i18n: I18nService,
     private readonly userService: UsersService,
+    private readonly storage: StorageService,
+    private readonly emailService: EmailService,
   ) {}
+
+  // ----- Get CV upload URL ---------------------------------------
+  async getCvUploadUrl(userId: string, dto: CvUploadUrlDto) {
+    const timestamp = Date.now();
+    const name = dto.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const key = this.storage.buildKey('kbs', 'candidates', userId, 'cv', `${timestamp}-${name}`);
+    return this.storage.getUploadUrl(key, dto.contentType);
+  }
 
   // ----- Enroll ------------------------------------------
   async enroll(userId: string, dto: EnrollDto) {
@@ -39,15 +59,40 @@ export class KbsCandidatesService {
       throw new ConflictException(this.t('kbs.enrollment.alreadyEnrolled'));
     }
 
+    const user = await this.corePrisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: { select: { idDocumentUrls: true } } },
+    });
+
+    if (!user) {
+      throw new NotFoundException(this.t('user.notFound', DEFAULT_LANGUAGE, { id: userId }));
+    }
+
+    if (!user.profile || user.profile.idDocumentUrls.length === 0) {
+      throw new BadRequestException(this.t('kbs.enrollment.idRequired'));
+    }
+
     const candidate = await this.prisma.kbsCandidate.create({
       data: {
         userId,
+        cvUrl: dto.cvUrl,
         sponsorCode: dto.sponsorCode,
+        engagementAcceptedAt: new Date(),
         status: CandidateStatus.CANDIDATE,
       },
     });
 
     await this.userService.addRole(userId, RoleCode.CANDIDATE_KBS);
+
+    const lang = user.preferredLanguage || DEFAULT_LANGUAGE;
+    await this.emailService.send({
+      to: user.email,
+      template: 'kbsEnrollmentReceived',
+      lang,
+      args: {
+        firstName: user.firstName,
+      },
+    });
 
     this.logger.log(`User ${userId} enrolled in KBS`, {
       sponsor: dto.sponsorCode,
@@ -106,23 +151,173 @@ export class KbsCandidatesService {
     };
   }
 
+  // ----- Candidate Progress Overview --------------------
+
+  async getMyOverview(userId: string) {
+    const candidate = await this.prisma.kbsCandidate.findUnique({
+      where: { userId },
+      include: {
+        progress: true,
+        lessonCompletions: { select: { lessonId: true } },
+        certificate: { select: { kcaNumber: true } },
+      },
+    });
+
+    if (!candidate) {
+      throw new NotFoundException(this.t('kbs.enrollment.notEnrolled'));
+    }
+    if (candidate.status === CandidateStatus.CANDIDATE) {
+      throw new ForbiddenException(this.t('kbs.enrollment.awaitingVerification'));
+    }
+
+    const settings = await this.prisma.kbsSettings.findFirst();
+    const activeCourseId = settings.activeCourseId ?? null;
+
+    if (!activeCourseId) {
+      return {
+        candidate: {
+          id: candidate.id,
+          status: candidate.status,
+          sponsorCode: candidate.sponsorCode,
+          enrolledAt: candidate.enrolledAt,
+          certifiedAt: candidate.certifiedAt,
+          currentCycle: candidate.currentCycle,
+        },
+        course: null,
+        overall: {
+          percent: 0,
+          modulesDone: 0,
+          modulesTotal: 0,
+          currentModuleOrder: null,
+          nextAction: 'lesson' as const,
+        },
+        modules: [],
+      };
+    }
+
+    const course = await this.prisma.kbsCourse.findUnique({
+      where: { id: activeCourseId },
+      include: {
+        modules: {
+          orderBy: { order: 'asc' },
+          include: {
+            lessons: {
+              select: { id: true, order: true },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    if (!course) {
+      throw new NotFoundException(
+        this.t('kbs.course.notFound', DEFAULT_LANGUAGE, { id: activeCourseId }),
+      );
+    }
+
+    const completedLessonIdSet = new Set(candidate.lessonCompletions.map((c) => c.lessonId));
+    const progressByModuleId = new Map(candidate.progress.map((p) => [p.moduleId, p]));
+
+    let previousPassed = true;
+
+    const moduleViews = course.modules.map((mod) => {
+      const p = progressByModuleId.get(mod.id);
+      const passed = !!p?.passed;
+
+      const moduleLessonIds = mod.lessons.map((l) => l.id);
+      const completedInModule = moduleLessonIds.filter((id) => completedLessonIdSet.has(id));
+      const lessonsCompleted = completedInModule.length;
+      const lessonsCount = mod.lessons.length;
+      const allLessonsDone = lessonsCount > 0 && lessonsCompleted === lessonsCount;
+
+      const firstUncompleted = mod.lessons.find((l) => !completedLessonIdSet.has(l.id));
+      const currentLessonOrder = firstUncompleted?.order ?? null;
+
+      let status: 'locked' | 'in_progress' | 'completed';
+      if (passed) status = 'completed';
+      else if (!previousPassed) status = 'locked';
+      else status = 'in_progress';
+
+      const view = {
+        id: mod.id,
+        order: mod.order,
+        title: mod.title,
+        lessonsCount,
+        lessonsCompleted,
+        currentLessonOrder,
+        status,
+        quiz: {
+          unlocked: status !== 'locked' && allLessonsDone,
+          attempts: p?.attempts ?? 0,
+          score: p?.score ?? 0,
+          passed,
+        },
+      };
+
+      previousPassed = passed;
+      return view;
+    });
+
+    const modulesTotal = moduleViews.length;
+    const modulesDone = moduleViews.filter((m) => m.status === 'completed').length;
+    const percent = modulesTotal > 0 ? Math.round((modulesDone / modulesTotal) * 100) : 0;
+
+    const firstNotDone = moduleViews.find((m) => m.status !== 'completed');
+    const currentModuleOrder = firstNotDone?.order ?? null;
+
+    let nextAction: 'lesson' | 'mcq' | 'exam' | 'certified';
+
+    if (candidate.status === CandidateStatus.CERTIFIED) {
+      nextAction = 'certified';
+    } else if (modulesDone === modulesTotal && modulesTotal > 0) {
+      nextAction = 'exam';
+    } else if (firstNotDone) {
+      nextAction =
+        firstNotDone.lessonsCompleted === firstNotDone.lessonsCount &&
+        firstNotDone &&
+        firstNotDone.lessonsCompleted > 0
+          ? 'mcq'
+          : 'lesson';
+    } else {
+      nextAction = 'lesson';
+    }
+
+    return {
+      candidate: {
+        id: candidate.id,
+        status: candidate.status,
+        sponsorCode: candidate.sponsorCode,
+        enrolledAt: candidate.enrolledAt,
+        certifiedAt: candidate.certifiedAt,
+        currentCycle: candidate.currentCycle,
+      },
+      course: {
+        id: course.id,
+        title: course.title,
+        totalModules: modulesTotal,
+      },
+      overall: {
+        percent,
+        modulesDone,
+        modulesTotal,
+        currentModuleOrder,
+        nextAction,
+      },
+      modules: moduleViews,
+    };
+  }
+
   // ----- Quiz Submission --------------------
 
   async submitQuiz(userId: string, moduleId: string, dto: SubmitQuizDto) {
     // Find Candidate
-    const candidate = await this.findCandidateByUserIdOrThrow(userId);
+    const candidate = await this.requireVerifiedCandidateByUserIdOrThrow(userId);
 
-    // Validate candidate is in training
-    if (
-      ![CandidateStatus.IN_TRAINING, CandidateStatus.CANDIDATE].includes(
-        candidate.status as CandidateStatus,
-      )
-    ) {
-      throw new ForbiddenException(
-        this.t('kbs.exam.statusNotAllowed', undefined, {
-          status: candidate.status,
-        }),
-      );
+    // Only IN_TRAINING candidates can submit quizzes (CANDIDATE was already
+    // blocked by the gate above; EXAM_PENDING/CERTIFIED/FAILED are done with training).
+    if (candidate.status !== CandidateStatus.IN_TRAINING) {
+      throw new ForbiddenException(this.t('kbs.exam.notInTraining'));
     }
 
     // Validate module exists
@@ -226,7 +421,7 @@ export class KbsCandidatesService {
       },
     });
 
-    if (passed && candidate.status === CandidateStatus.IN_TRAINING) {
+    if (passed) {
       await this.checkAndTransitionToExamPending(candidate.id);
     }
 
@@ -281,16 +476,26 @@ export class KbsCandidatesService {
       this.prisma.kbsCandidate.count({ where }),
     ]);
 
-    const data = candidates.map((c) => ({
-      id: c.id,
-      userId: c.userId,
-      status: c.status,
-      sponsorCode: c.sponsorCode,
-      enrolledAt: c.enrolledAt,
-      certifiedAt: c.certifiedAt,
-      modulesCompleted: c.progress.filter((p) => p.passed).length,
-      kcaNumber: c.certificate?.kcaNumber || null,
-    }));
+    const users = await this.userService.findManyByIds(candidates.map((c) => c.userId));
+    const userById = new Map(users.map((u) => [u.id, u]));
+
+    const data = candidates.map((c) => {
+      const u = userById.get(c.userId);
+
+      return {
+        id: c.id,
+        userId: c.userId,
+        firstName: u?.firstName ?? null,
+        lastName: u?.lastName ?? null,
+        email: u?.email ?? null,
+        status: c.status,
+        sponsorCode: c.sponsorCode,
+        enrolledAt: c.enrolledAt,
+        certifiedAt: c.certifiedAt,
+        modulesCompleted: c.progress.filter((p) => p.passed).length,
+        kcaNumber: c.certificate?.kcaNumber || null,
+      };
+    });
 
     return buildPaginatedResponse(data, total, page, limit);
   }
@@ -312,6 +517,7 @@ export class KbsCandidatesService {
             attemptNumber: true,
             score: true,
             status: true,
+            scheduledAt: true,
             startedAt: true,
             submittedAt: true,
           },
@@ -326,7 +532,33 @@ export class KbsCandidatesService {
           id: candidateId,
         }),
       );
-    return candidate;
+
+    const user = await this.userService.findById(candidate.userId);
+    const idDocumentKeys = user.profile?.idDocumentUrls ?? [];
+
+    const [idDocumentUrls, cvUrl] = await Promise.all([
+      Promise.all(idDocumentKeys.map((k) => this.storage.getDownloadUrl(k))),
+      candidate.cvUrl ? this.storage.getDownloadUrl(candidate.cvUrl) : Promise.resolve(null),
+    ]);
+
+    return {
+      ...candidate,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      idVerificationStatus: user.profile?.idVerificationStatus ?? 'none',
+      cvUrl,
+      idDocumentUrls,
+      progress: candidate.progress.map((p) => ({
+        moduleId: p.moduleId,
+        moduleOrder: p.module.order,
+        moduleTitle: p.module.title,
+        passed: p.passed,
+        score: p.score,
+        attempts: p.attempts,
+      })),
+    };
   }
 
   async updateStatus(candidateId: string, adminUserId: string, dto: UpdateCandidateStatusDto) {
@@ -416,20 +648,38 @@ export class KbsCandidatesService {
   }
 
   private async checkAndTransitionToExamPending(candidateId: string) {
-    const totalModules = await this.prisma.kbsModule.count();
+    const settings = await this.prisma.kbsSettings.findFirst();
+    const activeCourseId = settings?.activeCourseId;
+    if (!activeCourseId) return;
+
+    const totalModules = await this.prisma.kbsModule.count({ where: { courseId: activeCourseId } });
     const completedModules = await this.prisma.kbsCandidateProgress.count({
-      where: { candidateId, passed: true },
+      where: { candidateId, passed: true, module: { courseId: activeCourseId } },
     });
 
-    if (completedModules >= totalModules && totalModules > 0) {
-      await this.prisma.kbsCandidate.update({
-        where: { id: candidateId },
-        data: { status: CandidateStatus.EXAM_PENDING },
-      });
+    if (totalModules === 0 || completedModules < totalModules) return;
+
+    const result = await this.prisma.kbsCandidate.updateMany({
+      where: {
+        id: candidateId,
+        status: { in: [CandidateStatus.IN_TRAINING] },
+      },
+      data: { status: CandidateStatus.EXAM_PENDING },
+    });
+
+    if (result.count > 0) {
       this.logger.log(
         `Candidate ${candidateId} auto-transitioned to ${CandidateStatus.EXAM_PENDING}`,
       );
     }
+  }
+
+  private async requireVerifiedCandidateByUserIdOrThrow(userId: string) {
+    const candidate = await this.findCandidateByUserIdOrThrow(userId);
+    if (candidate.status === CandidateStatus.CANDIDATE) {
+      throw new ForbiddenException(this.t('kbs.enrollment.awaitingVerification'));
+    }
+    return candidate;
   }
 
   private t(key: string, lang = 'fr', args?: Record<string, unknown>): string {

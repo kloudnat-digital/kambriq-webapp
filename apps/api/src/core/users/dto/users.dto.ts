@@ -1,4 +1,4 @@
-import { SUPPORTED_LANGUAGES } from '@kambriq/common';
+import { CM_PHONE_ERROR, CM_PHONE_REGEX, SUPPORTED_LANGUAGES } from '@kambriq/common';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
@@ -8,25 +8,36 @@ const passwordFieldSchema = z
   .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
   .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
   .regex(/\d/, 'Password must contain at least one number')
-  .regex(
-    /[!@#$%^&*(),.?":{}|<>]/,
-    'Password must contain at least one special character',
-  );
+  .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Password must contain at least one special character');
 
 // ----- Update Own Profile -----
 export const updateProfileSchema = z.object({
   firstName: z.string().min(1).max(100).optional(),
   lastName: z.string().min(1).max(100).optional(),
-  phone: z.string().optional(),
+  phone: z
+    .string()
+    .optional()
+    .refine((v) => !v || CM_PHONE_REGEX.test(v), CM_PHONE_ERROR),
   language: z.enum(SUPPORTED_LANGUAGES).optional(),
 
-  avatarUrl: z.url().optional(),
+  avatarUrl: z.string().optional(),
   address: z.string().optional(),
   city: z.string().optional(),
   country: z.string().optional(),
+
+  emailNotifications: z.boolean().optional(),
+  whatsappNotifications: z.boolean().optional(),
 });
 
 export class UpdateProfileDto extends createZodDto(updateProfileSchema) {}
+
+// ----- Avatar Upload URL-----
+export const avatarUploadUrlSchema = z.object({
+  filename: z.string().min(1, 'Filename is required'),
+  contentType: z.string().min(1, 'Content type is required'),
+});
+
+export class AvatarUploadUrlDto extends createZodDto(avatarUploadUrlSchema) {}
 
 // ----- Change Password -----
 export const changePasswordSchema = z
@@ -50,29 +61,36 @@ export class AdminUpdateUserDto extends createZodDto(adminUpdateUserSchema) {}
 
 // ----- Request email change -----
 export const requestEmailChangeSchema = z.object({
-  newEmail: z.string().email('Invalid email address'),
+  newEmail: z.email('Invalid email address'),
   currentPassword: z.string().min(1, 'Current password is required'),
 });
 
-export class RequestEmailChangeDto extends createZodDto(
-  requestEmailChangeSchema,
-) {}
+export class RequestEmailChangeDto extends createZodDto(requestEmailChangeSchema) {}
 
 // ----- Confirm email change -----
 export const confirmEmailChangeSchema = z.object({
   token: z.string().min(1, 'Token is required'),
 });
 
-export class ConfirmEmailChangeDto extends createZodDto(
-  confirmEmailChangeSchema,
-) {}
+export class ConfirmEmailChangeDto extends createZodDto(confirmEmailChangeSchema) {}
 
 // ----- Submit ID document -----
 export const submitIdDocumentSchema = z.object({
-  idDocumentUrl: z.string().url('Must be a valid URL'),
+  idDocumentUrls: z
+    .array(z.string().min(1, 'Must be a valid URL'))
+    .min(1, 'At least one ID document is required')
+    .max(2, 'At most 2 Id document files are allowed'),
 });
 
 export class SubmitIdDocumentDto extends createZodDto(submitIdDocumentSchema) {}
+
+// ----- ID document upload URL -----
+export const idDocumentUploadUrlSchema = z.object({
+  filename: z.string().min(1, 'Filename is required'),
+  contentType: z.string().min(1, 'Content type is required'),
+});
+
+export class IdDocumentUploadUrlDto extends createZodDto(idDocumentUploadUrlSchema) {}
 
 // ----- Admin: review ID document -----
 export const reviewIdDocumentSchema = z
@@ -112,6 +130,9 @@ export interface UserResponse {
     address: string | null;
     city: string | null;
     country: string | null;
+    emailNotifications: boolean;
+    whatsappNotifications: boolean;
+    idDocumentUrls: string[];
     idVerificationStatus: string;
     idVerifiedAt: string | null;
   } | null;

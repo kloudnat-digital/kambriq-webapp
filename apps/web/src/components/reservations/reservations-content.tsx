@@ -76,18 +76,6 @@ const ReservationsContent: FC<ReservationsContentProps> = ({ isAdmin }) => {
           </InputGroup>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <Badge
-            role="button"
-            onClick={() => setStatus('')}
-            className={cn(
-              'font-medium transition-colors',
-              status === ''
-                ? 'bg-gray-900 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
-            )}
-          >
-            {t('statusAll')}
-          </Badge>
           {statusOptions.map((s) => (
             <Badge
               key={s.value}

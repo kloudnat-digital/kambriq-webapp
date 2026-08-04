@@ -1,24 +1,22 @@
+import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
-import { PlaceholderPage } from '@/components/placeholder-page';
+import { getMyCandidate } from '@/lib/actions/kbs';
+import { KbsEnrollForm } from '@/components/kbs/kbs-enroll-form';
 
 export async function generateMetadata() {
-  const t = await getTranslations('app.enroll');
+  const t = await getTranslations('app.kbs.enroll');
   return { title: t('pageTitle') };
 }
 
-export default function KbsEnrollPage() {
+export default async function KbsEnrollPage() {
+  const res = await getMyCandidate();
+  if (res.success && res.data) redirect('/kbs');
+
   return (
-    <PlaceholderPage
-      namespace="app.enroll"
-      titleKey="pageTitle"
-      subtitleKey="subtitle"
-      features={[
-        'Formulaire de candidature',
-        "Choix du mode d'admission (parrainage ou libre)",
-        'Code parrain (si applicable)',
-        'Paiement de la formation (249\u00A0\u20AC TTC)',
-      ]}
-      roles={['Tous les utilisateurs authentifiés']}
-    />
+    <div className="flex min-h-full justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-150">
+        <KbsEnrollForm />
+      </div>
+    </div>
   );
 }

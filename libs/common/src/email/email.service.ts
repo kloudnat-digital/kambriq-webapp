@@ -29,9 +29,7 @@ export interface EmailJobPayload {
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
 
-  constructor(
-    @InjectQueue(QUEUES.NOTIFICATIONS) private readonly notifQueue: Queue,
-  ) {}
+  constructor(@InjectQueue(QUEUES.NOTIFICATIONS) private readonly notifQueue: Queue) {}
 
   async send(payload: EmailJobPayload): Promise<void> {
     await this.notifQueue.add(NOTIFICATIONS_JOBS.SEND_EMAIL, payload, {
@@ -49,6 +47,26 @@ export class EmailService {
       template: payload.template,
       lang: payload.lang,
     });
+  }
+
+  /**
+   * Send an informational update email, respecting the recipient's opt-out.
+   * Use this for state-change / progress / achievement notifications.
+   * NEVER use this for auth, security, compliance or onboarding emails —
+   * those must always reach the user regardless of preference.
+   */
+  async sendUpdate(
+    payload: EmailJobPayload,
+    prefs: { emailNotifications: boolean } | null,
+  ): Promise<void> {
+    if (prefs && !prefs.emailNotifications) {
+      this.logger.debug('Update email skipped by user preference', {
+        to: payload.to,
+        template: payload.template,
+      });
+      return;
+    }
+    return this.send(payload);
   }
 
   async sendBatch(payloads: EmailJobPayload[]): Promise<void> {

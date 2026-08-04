@@ -1,4 +1,7 @@
 import {
+  CM_PHONE_ERROR,
+  CM_PHONE_REGEX,
+  LandClientDocumentType,
   LandDocumentType,
   LandLabelCodes,
   LandMediaCategory,
@@ -116,7 +119,7 @@ export const createLandReservationSchema = z.object({
   landId: z.uuid('Invalid land ID'),
   clientName: z.string().min(1, 'Client name is required').max(200),
   clientEmail: z.email('Invalid client email'),
-  clientPhone: z.string().max(30),
+  clientPhone: z.string().regex(CM_PHONE_REGEX, CM_PHONE_ERROR),
 });
 
 export class CreateLandReservationDto extends createZodDto(createLandReservationSchema) {}
@@ -141,7 +144,10 @@ export const inviteClientSchema = z.object({
   email: z.email('Invalid email address'),
   firstName: z.string().min(1, 'First name is required').max(100),
   lastName: z.string().min(1, 'Last name is required').max(100),
-  phone: z.string().max(30).optional(),
+  phone: z
+    .string()
+    .optional()
+    .refine((v) => !v || CM_PHONE_REGEX.test(v), CM_PHONE_ERROR),
 });
 
 export class InviteClientDto extends createZodDto(inviteClientSchema) {}
@@ -155,3 +161,27 @@ export const getUploadUrlSchema = z.object({
 });
 
 export class GetUploadUrlDto extends createZodDto(getUploadUrlSchema) {}
+
+// ----- Client Documents ----- //
+
+export const getClientDocumentUploadUrlSchema = z.object({
+  type: z.enum(LandClientDocumentType),
+  filename: z.string().min(1, 'Filename is required'),
+  contentType: z.string().min(1, 'Content type is required'),
+});
+
+export class GetClientDocumentUploadUrlDto extends createZodDto(getClientDocumentUploadUrlSchema) {}
+
+export const registerClientDocumentSchema = z.object({
+  type: z.enum(LandClientDocumentType),
+  url: z.string().min(1, 'File URL/key is required'),
+  name: z.string().min(1, 'Document name is required').max(300),
+});
+
+export class RegisterClientDocumentDto extends createZodDto(registerClientDocumentSchema) {}
+
+export const rejectClientDocumentSchema = z.object({
+  reason: z.string().min(1, 'Rejection reason is required').max(1000),
+});
+
+export class RejectClientDocumentDto extends createZodDto(rejectClientDocumentSchema) {}

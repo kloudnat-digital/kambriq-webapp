@@ -34,6 +34,7 @@ import {
   LandReservationFilterDto,
   CancelLandReservationDto,
   InviteClientDto,
+  RejectClientDocumentDto,
 } from '../dto/lands.dto';
 
 @ApiTags('LANDS - Admin')
@@ -343,5 +344,24 @@ export class LandsAdminController {
     @Body() dto: CancelLandReservationDto,
   ) {
     return this.reservationsService.cancel(id, user.id, dto);
+  }
+
+  @Post('reservations/:id/documents/:documentId/reject')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Reject a client-uploaded document',
+    description:
+      'Soft-deletes the document with a rejection reason. If docs were already validated, ' +
+      'reopens step 3 by clearing documentsReceivedAt/documentsReceivedBy.',
+  })
+  @ApiParam({ name: 'id', description: 'Reservation ID' })
+  @ApiParam({ name: 'documentId', description: 'Document ID' })
+  async rejectClientDocument(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Param('documentId') documentId: string,
+    @Body() dto: RejectClientDocumentDto,
+  ) {
+    return this.reservationsService.rejectClientDocument(user.id, id, documentId, dto.reason);
   }
 }

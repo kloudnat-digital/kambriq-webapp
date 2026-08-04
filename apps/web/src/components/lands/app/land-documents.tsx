@@ -25,7 +25,7 @@ export const LandDocuments = ({ documents }: LandDocumentsProps) => {
               <p className="text-sm/6 text-slate-900">{doc.name}</p>
             </div>
             <Button size="sm" asChild variant="outline">
-              <a href={doc.url} target="_blank" rel="noopener noreferrer">
+              <a href={doc.downloadUrl} target="_blank" rel="noopener noreferrer">
                 {t('download')}
               </a>
             </Button>

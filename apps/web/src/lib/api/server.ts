@@ -9,6 +9,15 @@ if (!API_URL && process.env.NODE_ENV === 'production') {
 }
 const resolvedApiUrl = API_URL ?? 'http://localhost:3000';
 
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 // Core
 
 const baseFetch = async <T>(
@@ -30,7 +39,7 @@ const baseFetch = async <T>(
     if (process.env.NODE_ENV !== 'production') {
       console.error(`[API ${res.status}] ${path}`, JSON.stringify(body, null, 2));
     }
-    throw new Error(body?.message ?? `API error ${res.status} - ${path}`);
+    throw new ApiError(body?.message ?? `API error ${res.status} - ${path}`, res.status);
   }
 
   // 204 No Content - nothing to parse
@@ -87,7 +96,10 @@ const authedFetch = async <T>(path: string, options?: RequestInit): Promise<T> =
     if (referer) {
       try {
         const url = new URL(referer);
-        callbackUrl = url.pathname + url.search;
+        const path = url.pathname + url.search;
+        if (!path.startsWith('/login')) {
+          callbackUrl = path;
+        }
       } catch {
         // ignore malformed referer
       }

@@ -10,9 +10,9 @@ import {
   LAND_LABEL_CODE_STYLES,
   LAND_RESERVATION_STATUS_LABEL_KEYS,
   LAND_RESERVATION_STATUS_STYLES,
+  TOTAL_STEPS,
 } from '@/constants/land';
-
-const TOTAL_STEPS = 6;
+import { formatDate } from '@/lib/date';
 
 interface Props {
   isAdmin: boolean;
@@ -24,12 +24,6 @@ export const ReservationCard = ({ reservation: r, isAdmin }: Props) => {
   const locale = useLocale();
 
   const isCancelled = r.status === 'CANCELLED';
-
-  const formattedDate = new Date(r.createdAt).toLocaleDateString(locale, {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
 
   return (
     <Link href={`/reservations/${r.id}`} className="group block">
@@ -72,25 +66,32 @@ export const ReservationCard = ({ reservation: r, isAdmin }: Props) => {
             {isAdmin && <span className="ml-2 text-xs text-gray-400">{r.clientEmail}</span>}
           </div>
 
-          {!isCancelled && (
-            <div>
-              <div className="mb-1 flex items-center justify-between text-xs text-gray-400">
-                <span>{t('step', { current: r.currentStep, total: TOTAL_STEPS })}</span>
-                <span>{Math.round((r.currentStep / TOTAL_STEPS) * 100)}%</span>
-              </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-                <div
-                  className={cn(
-                    'h-full rounded-full transition-all',
-                    r.currentStep === TOTAL_STEPS ? 'bg-primary-500' : 'bg-primary-600',
-                  )}
-                  style={{ width: `${(r.currentStep / TOTAL_STEPS) * 100}%` }}
-                />
-              </div>
+          <div>
+            <div className="mb-1 flex items-center justify-between text-xs text-gray-400">
+              <span>{t('step', { current: r.currentStep, total: TOTAL_STEPS })}</span>
+              <span>{Math.round((r.currentStep / TOTAL_STEPS) * 100)}%</span>
             </div>
-          )}
+            <div
+              className={cn(
+                'h-1.5 w-full overflow-hidden rounded-full',
+                isCancelled ? 'bg-red-100' : 'bg-gray-100',
+              )}
+            >
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all',
+                  r.currentStep === TOTAL_STEPS ? 'bg-primary-500' : 'bg-primary-600',
+                )}
+                style={{ width: `${(r.currentStep / TOTAL_STEPS) * 100}%` }}
+              />
+            </div>
+          </div>
 
-          <p className="mt-3 text-xs text-gray-400">{t('reservedOn', { date: formattedDate })}</p>
+          <p className="mt-3 text-xs text-gray-400">
+            {t(isCancelled ? 'cancelledOn' : 'reservedOn', {
+              date: formatDate(isCancelled ? r.updatedAt : r.createdAt, locale),
+            })}
+          </p>
         </div>
       </div>
     </Link>

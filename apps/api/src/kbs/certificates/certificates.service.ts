@@ -96,18 +96,22 @@ export class KbsCertificatesService {
     // Send certificate email
     const user = await this.usersService.findById(candidate.userId);
     const lang = user.language || 'fr';
-    await this.emailService.send({
-      to: user.email,
-      template: 'certificateIssued',
-      lang,
-      args: {
-        firstName: user.firstName,
-        kcaNumber,
-        validUntil: DateTime.fromJSDate(certificate.validUntil).toLocaleString(DateTime.DATE_MED, {
-          locale: lang,
-        }),
+    await this.emailService.sendUpdate(
+      {
+        to: user.email,
+        template: 'certificateIssued',
+        lang,
+        args: {
+          firstName: user.firstName,
+          kcaNumber,
+          validUntil: DateTime.fromJSDate(certificate.validUntil).toLocaleString(
+            DateTime.DATE_MED,
+            { locale: lang },
+          ),
+        },
       },
-    });
+      user.profile,
+    );
 
     this.logger.log('Certificate issued', { candidateId, kcaNumber });
     return certificate;
@@ -118,7 +122,16 @@ export class KbsCertificatesService {
   async findByUserId(userId: string) {
     const candidate = await this.prisma.kbsCandidate.findUnique({
       where: { userId },
-      include: { certificate: true },
+      include: {
+        certificate: true,
+        progress: { select: { passed: true } },
+        exams: {
+          where: { status: 'PASSED' },
+          orderBy: { submittedAt: 'desc' },
+          select: { score: true },
+          take: 1,
+        },
+      },
     });
 
     if (!candidate) {
@@ -129,12 +142,33 @@ export class KbsCertificatesService {
       return null;
     }
 
+    const [user, settings] = await Promise.all([
+      this.usersService.findById(candidate.userId),
+      this.prisma.kbsSettings.findFirst({ select: { activeCourseId: true } }),
+    ]);
+
+    const modulesTotal = settings?.activeCourseId
+      ? await this.prisma.kbsModule.count({
+          where: { courseId: settings.activeCourseId },
+        })
+      : 0;
+    const modulesCompleted = candidate.progress.filter((p) => p.passed).length;
+
     return {
+      id: candidate.certificate.id,
       kcaNumber: candidate.certificate.kcaNumber,
       issueDate: candidate.certificate.issueDate,
       validUntil: candidate.certificate.validUntil,
-      isValid: candidate.certificate.validUntil > new Date(),
       pdfUrl: candidate.certificate.pdfUrl,
+      revokedAt: candidate.certificate.revokedAt,
+      isValid: candidate.certificate.validUntil > new Date() && !candidate.certificate.revokedAt,
+      candidate: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+      finalScore: candidate.exams[0]?.score ?? null,
+      modulesCompleted,
+      modulesTotal,
     };
   }
 
@@ -233,8 +267,8 @@ export class KbsCertificatesService {
         include: {
           candidate: {
             select: {
+              id: true,
               userId: true,
-              status: true,
             },
           },
         },
@@ -242,7 +276,29 @@ export class KbsCertificatesService {
       this.prisma.kbsCertificate.count(),
     ]);
 
-    return buildPaginatedResponse(certificates, total, page, limit);
+    const users = await this.usersService.findManyByIds(
+      certificates.map((c) => c.candidate.userId),
+    );
+    const userById = new Map(users.map((u) => [u.id, u]));
+
+    const data = certificates.map((c) => {
+      const u = userById.get(c.candidate.userId);
+      return {
+        id: c.id,
+        kcaNumber: c.kcaNumber,
+        issueDate: c.issueDate,
+        validUntil: c.validUntil,
+        revokedAt: c.revokedAt,
+        candidate: {
+          id: c.candidate.id,
+          firstName: u?.firstName ?? null,
+          lastName: u?.lastName ?? null,
+          email: u?.email ?? null,
+        },
+      };
+    });
+
+    return buildPaginatedResponse(data, total, page, limit);
   }
 
   // ----- Private Helpers ---------------------------

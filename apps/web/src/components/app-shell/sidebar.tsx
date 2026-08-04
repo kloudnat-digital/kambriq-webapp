@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { NavLink } from './nav-item';
 import { UserMenu } from './user-menu';
 import { filterNavForRoles, NAV_SECTIONS } from '@/lib/nav';
@@ -15,6 +16,7 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ userRoles, userName, userRole, initials, onNavigate }: SidebarProps) => {
+  const t = useTranslations('app.nav');
   const sections = filterNavForRoles(NAV_SECTIONS, userRoles);
 
   return (
@@ -39,9 +41,9 @@ export const Sidebar = ({ userRoles, userName, userRole, initials, onNavigate }:
       {/* Navigation */}
       <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
         {sections.map((section) => (
-          <div key={section.label}>
+          <div key={section.labelKey}>
             <p className="mb-2 px-3 text-[10px] font-semibold tracking-widest text-gray-500 uppercase">
-              {section.label}
+              {t(section.labelKey)}
             </p>
             <div className="space-y-0.5">
               {section.items.map((item) => (

@@ -85,7 +85,7 @@ export default {
      * On first sign-in: `user` is populated - we copy everything into the token.
      * On subsequent calls: we check if the access token has expired and refresh it.
      */
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       // Initial sign-in - populate the token from the user returned by authorize()
       if (user) {
         return {
@@ -101,6 +101,37 @@ export default {
           refreshToken: user.refreshToken,
           accessExpiresAt: user.accessExpiresAt,
         };
+      }
+
+      // Explicit refresh triggered by session.update() on the client - re-fetch
+      // the user from the backend so newly-granted roles (e.g. CANDIDATE_KBS
+      // after enrollment) become visible without requiring a re-login.
+      if (trigger === 'update') {
+        try {
+          const res = await fetch(`${API_URL}/api/v1/users/me`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token.accessToken}`,
+            },
+          });
+          if (res.ok) {
+            const { data } = await res.json();
+            return {
+              ...token,
+              user: {
+                id: data.id,
+                email: data.email,
+                firstName: data.firstName,
+                lastName: data.lastName,
+                roles: data.roles,
+                language: data.language,
+              },
+            };
+          }
+        } catch {
+          // fall through and keep the existing token
+        }
       }
 
       // 60s buffer so we refresh before the access token actually expires

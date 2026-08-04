@@ -3,6 +3,8 @@ import type { LandLabelCode, LandReservationStatus, LandStatus } from '@/types/l
 export type StatusOption = { value: string; label: string };
 export type StatusOptionKey = { value: string; labelKey: string };
 
+export const TOTAL_STEPS = 6;
+
 export const LAND_LABEL_CODES: LandLabelCode[] = ['TFL', 'VEFL', 'VEFIL'];
 
 export const LAND_STATUS_OPTION_KEYS: StatusOptionKey[] = [
@@ -19,9 +21,6 @@ export const LAND_RESERVATION_STATUS_OPTION_KEYS: StatusOptionKey[] = [
   { value: '', labelKey: 'statusAll' },
   { value: 'PENDING', labelKey: 'statusPending' },
   { value: 'CONFIRMED', labelKey: 'statusConfirmed' },
-  { value: 'DOCS_RECEIVED', labelKey: 'statusDocsReceived' },
-  { value: 'PAYMENT_CONFIRMED', labelKey: 'statusPaymentConfirmed' },
-  { value: 'DOSSIER_STARTED', labelKey: 'statusDossierStarted' },
   { value: 'COMPLETED', labelKey: 'statusCompleted' },
   { value: 'CANCELLED', labelKey: 'statusCancelled' },
 ];

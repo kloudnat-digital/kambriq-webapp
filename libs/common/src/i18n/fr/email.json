@@ -135,6 +135,74 @@
     "button": "Définir mon mot de passe",
     "expiry": "Ce lien expire dans 24 heures. Si vous n'avez pas demandé ce compte, vous pouvez ignorer cet email."
   },
+  "kbsEnrollmentReceived": {
+    "subject": "Votre candidature KBS a bien été reçue",
+    "heading": "Candidature reçue",
+    "body": "Bonjour {firstName}, nous avons bien reçu votre candidature à la formation KBS (Kambriq Business School).",
+    "paymentIntro": "Pour finaliser votre inscription, merci de procéder au paiement des frais de formation :",
+    "amount": "Montant : 249 €",
+    "instructions": "Les instructions de paiement vous seront transmises par notre équipe. Veuillez nous contacter à contact@kambriq.com pour recevoir les détails.",
+    "note": "Une fois le paiement reçu, votre candidature sera validée sous 48h ouvrées et vous pourrez accéder à votre parcours de formation."
+  },
+  "reservationCreated": {
+    "subject": "Nouvelle réservation créée",
+    "heading": "Réservation confirmée de votre côté",
+    "body": "Bonjour {firstName}, vous venez de réserver un terrain pour {clientName}.",
+    "landInfo": "Terrain : <strong>{landTitle}</strong> — {price} XAF",
+    "note": "Le client a été notifié et recevra son accès au portail sous peu."
+  },
+  "clientPortalAccess": {
+    "subject": "Bienvenue sur votre portail client KAMBRIQ",
+    "heading": "Bienvenue chez KAMBRIQ",
+    "body": "Bonjour {clientName}, votre réservation a été ouverte et un portail client a été créé pour vous.",
+    "landInfo": "Terrain : <strong>{landTitle}</strong> — {price} XAF",
+    "agent": "Votre agent KAMNET : {agentName}",
+    "note": "Vous pouvez suivre chaque étape de votre acquisition depuis votre portail."
+  },
+  "reservationConfirmed": {
+    "subject": "Votre acompte a été reçu",
+    "heading": "Acompte confirmé",
+    "body": "Bonjour {firstName}, l'acompte pour votre réservation {reservationId} a été reçu et validé.",
+    "note": "Nous vous tiendrons informé(e) de l'avancement de votre dossier."
+  },
+  "reservationCancelled": {
+    "subject": "Votre réservation a été annulée",
+    "heading": "Réservation annulée",
+    "body": "Bonjour {firstName}, votre réservation sur {landTitle} a été annulée.",
+    "reason": "Raison : <strong>{reason}</strong>",
+    "note": "Pour toute question, veuillez contacter votre agent KAMNET."
+  },
+  "clientDocumentUploaded": {
+    "subject": "Nouveau document client envoyé",
+    "heading": "Un document client a été envoyé",
+    "body": "Bonjour {firstName}, votre client {clientName} vient d'envoyer un document {docType} pour la réservation sur {landTitle}.",
+    "note": "Veuillez vérifier et valider les documents depuis le tableau de bord admin une fois le dossier complet."
+  },
+  "clientDocumentRejected": {
+    "subject": "Votre document n'a pas été accepté",
+    "heading": "Document rejeté",
+    "body": "Bonjour {clientName}, nous n'avons pas pu valider votre document {docType} pour la réservation sur {landTitle}.",
+    "reason": "Raison : <strong>{reason}</strong>",
+    "retry": "Veuillez vous connecter à votre portail et envoyer un nouveau document."
+  },
+  "clientDocumentsValidated": {
+    "subject": "Vos documents ont été validés",
+    "heading": "Documents validés",
+    "body": "Bonjour {clientName}, vos documents pour la réservation sur {landTitle} ont été vérifiés et validés par KAMBRIQ.",
+    "note": "Nous attendons maintenant le paiement final pour passer à l'étape suivante."
+  },
+  "paymentConfirmed": {
+    "subject": "Paiement reçu",
+    "heading": "Paiement final confirmé",
+    "body": "Bonjour {clientName}, votre paiement restant pour la réservation sur {landTitle} a bien été reçu.",
+    "note": "Votre dossier passe maintenant au transfert de titre foncier."
+  },
+  "dossierStarted": {
+    "subject": "Votre transfert de titre a commencé",
+    "heading": "Transfert de titre en cours",
+    "body": "Bonjour {clientName}, le transfert de titre pour votre terrain {landTitle} a officiellement démarré.",
+    "note": "Les documents finaux vous seront remis une fois le transfert terminé."
+  },
   "footer": {
     "copyright": "© {year} KAMBRIQ. Tous droits réservés.",
     "ignore": "Si vous n'avez pas demandé cet email, vous pouvez l'ignorer en toute sécurité."

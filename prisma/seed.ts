@@ -730,7 +730,7 @@ async function seedLands() {
   const labels: Array<{ id: string; code: LandLabelCodes; name: string; description: string }> = [
     {
       id: IDS.LABEL_TDT,
-      code: LandLabelCodes.TDT,
+      code: LandLabelCodes.TFL,
       name: 'Titre Foncier Loti',
       description:
         'Immatriculation faite et lotissement fait : un titre foncier individuel existe déjà. Propriété immédiate à la signature. Niveau de sécurité maximal.',

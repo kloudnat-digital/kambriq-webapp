@@ -9,8 +9,10 @@ import {
 import { CorePrismaService } from '../prisma/core-prisma.service';
 import {
   AdminUpdateUserDto,
+  AvatarUploadUrlDto,
   ChangePasswordDto,
   ConfirmEmailChangeDto,
+  IdDocumentUploadUrlDto,
   RequestEmailChangeDto,
   ReviewIdDocumentDto,
   SubmitIdDocumentDto,
@@ -28,6 +30,7 @@ import {
   IdVerificationStatus,
   PaginationQuery,
   RESET_TOKEN_EXPIRY_HOURS,
+  StorageService,
   VerificationTokenType,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
@@ -43,11 +46,12 @@ export class UsersService {
     private readonly emailService: EmailService,
     private readonly i18n: I18nService,
     private readonly config: ConfigService,
+    private readonly storage: StorageService,
   ) {}
 
   // ----- Get Me ------------------------------------------
   async getMe(userId: string): Promise<UserResponse> {
-    return this.toUserResponse(await this.findByIdOrThrow(userId));
+    return await this.toUserResponse(await this.findByIdOrThrow(userId));
   }
 
   // ----- Update Me ---------------------------------------
@@ -64,6 +68,10 @@ export class UsersService {
     if (dto.address !== undefined) profileFields.address = dto.address;
     if (dto.city !== undefined) profileFields.city = dto.city;
     if (dto.country !== undefined) profileFields.country = dto.country;
+    if (dto.emailNotifications !== undefined)
+      profileFields.emailNotifications = dto.emailNotifications;
+    if (dto.whatsappNotifications !== undefined)
+      profileFields.whatsappNotifications = dto.whatsappNotifications;
 
     if (Object.keys(userFields).length > 0) {
       await this.prisma.user.update({
@@ -80,6 +88,22 @@ export class UsersService {
     }
 
     return this.getMe(userId);
+  }
+
+  // ----- Get avatar upload URL ---------------------------------------
+  async getAvatarUploadUrl(userId: string, dto: AvatarUploadUrlDto) {
+    const timestamp = Date.now();
+    const name = dto.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const key = this.storage.buildKey('users', userId, 'avatar', `${timestamp}-${name}`);
+    return this.storage.getUploadUrl(key, dto.contentType);
+  }
+
+  // ----- Get ID Document upload URL ---------------------------------------
+  async getIdDocumentUploadUrl(userId: string, dto: IdDocumentUploadUrlDto) {
+    const timestamp = Date.now();
+    const name = dto.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const key = this.storage.buildKey('users', userId, 'id-documents', `${timestamp}-${name}`);
+    return this.storage.getUploadUrl(key, dto.contentType);
   }
 
   // ----- Change own password -----------------------------
@@ -187,7 +211,22 @@ export class UsersService {
 
   // ----- Admin: Get User by ID ---------------------------
   async findById(userId: string): Promise<UserResponse> {
-    return this.toUserResponse(await this.findByIdOrThrow(userId));
+    return await this.toUserResponse(await this.findByIdOrThrow(userId));
+  }
+
+  // ----- Internal: Get Users by ID ---------------------------
+  async findManyByIds(ids: string[]) {
+    if (ids.length === 0) return [];
+    return this.prisma.user.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+      },
+    });
   }
 
   // ----- Admin: Update user (active status, roles) -------
@@ -225,7 +264,7 @@ export class UsersService {
     }
 
     this.logger.log('Admin updated user', { userId, changes: dto, adminId });
-    return this.toUserResponse(await this.findByIdOrThrow(userId));
+    return await this.toUserResponse(await this.findByIdOrThrow(userId));
   }
 
   async blockUser(userId: string, adminId: string): Promise<UserResponse> {
@@ -257,7 +296,7 @@ export class UsersService {
       },
     });
 
-    return this.toUserResponse(await this.findByIdOrThrow(userId));
+    return await this.toUserResponse(await this.findByIdOrThrow(userId));
   }
 
   async unblockUser(userId: string, adminId: string): Promise<UserResponse> {
@@ -290,7 +329,7 @@ export class UsersService {
       },
     });
 
-    return this.toUserResponse(await this.findByIdOrThrow(userId));
+    return await this.toUserResponse(await this.findByIdOrThrow(userId));
   }
 
   // ----- Check if a user has a specific role ------------
@@ -527,7 +566,7 @@ export class UsersService {
   }
 
   // ----- Submit ID document (user) --------------------------------
-  async submitIdDocument(userId: string, dto: SubmitIdDocumentDto): Promise<{ message: string }> {
+  async submitIdDocument(userId: string, dto: SubmitIdDocumentDto) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { preferredLanguage: true, profile: { select: { idVerificationStatus: true } } },
@@ -546,18 +585,20 @@ export class UsersService {
       where: { userId },
       create: {
         userId,
-        idDocumentUrl: dto.idDocumentUrl,
+        idDocumentUrls: dto.idDocumentUrls,
         idVerificationStatus: IdVerificationStatus.PENDING,
       },
       update: {
-        idDocumentUrl: dto.idDocumentUrl,
+        idDocumentUrls: dto.idDocumentUrls,
         idVerificationStatus: IdVerificationStatus.PENDING,
         idRejectionReason: null,
+        idVerifiedAt: null,
+        idVerifiedBy: null,
       },
     });
 
     this.logger.log('ID document submitted', { userId });
-    return { message: this.t('user.idVerification.submitted', lang) };
+    return this.getMe(userId);
   }
 
   // ----- Admin: review ID document --------------------------------
@@ -571,7 +612,7 @@ export class UsersService {
       include: { user: { select: { email: true, firstName: true, preferredLanguage: true } } },
     });
 
-    if (!profile || !profile.idDocumentUrl) {
+    if (!profile || profile.idDocumentUrls.length === 0) {
       throw new NotFoundException(this.t('user.idVerification.noDocument', 'en'));
     }
 
@@ -640,7 +681,7 @@ export class UsersService {
     return user;
   }
 
-  private toUserResponse(user: {
+  private async toUserResponse(user: {
     id: string;
     email: string;
     firstName: string;
@@ -657,10 +698,17 @@ export class UsersService {
       address: string | null;
       city: string | null;
       country: string | null;
+      emailNotifications: boolean;
+      whatsappNotifications: boolean;
+      idDocumentUrls: string[];
       idVerificationStatus: string;
       idVerifiedAt: Date | null;
     } | null;
-  }): UserResponse {
+  }): Promise<UserResponse> {
+    const avatarUrl = user.profile?.avatarUrl
+      ? await this.storage.getDownloadUrl(user.profile.avatarUrl)
+      : null;
+
     return {
       id: user.id,
       email: user.email,
@@ -675,10 +723,13 @@ export class UsersService {
       lastLoginAt: user.lastLoginAt?.toISOString() || null,
       profile: user.profile
         ? {
-            avatarUrl: user.profile.avatarUrl || null,
-            address: user.profile.address || null,
+            avatarUrl,
             city: user.profile.city || null,
+            address: user.profile.address || null,
             country: user.profile.country || null,
+            emailNotifications: user.profile.emailNotifications,
+            whatsappNotifications: user.profile.whatsappNotifications,
+            idDocumentUrls: user.profile.idDocumentUrls,
             idVerificationStatus: user.profile.idVerificationStatus,
             idVerifiedAt: user.profile.idVerifiedAt?.toISOString() || null,
           }

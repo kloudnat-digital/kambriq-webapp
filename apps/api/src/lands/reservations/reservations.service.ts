@@ -20,10 +20,12 @@ import {
   EmailService,
   KAMNET_JOBS,
   LandStatus,
+  LandClientDocumentType,
   PaginationQuery,
   QUEUES,
   LandReservationStatus,
   SaleCompletedJobPayload,
+  StorageService,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 
@@ -56,6 +58,7 @@ export class LandReservationsService {
     private readonly prisma: LandsPrismaService,
     private readonly usersService: UsersService,
     private readonly emailService: EmailService,
+    private readonly storageService: StorageService,
     private readonly i18n: I18nService,
     @InjectQueue(QUEUES.KAMNET) private readonly kamnetQueue: Queue<SaleCompletedJobPayload>,
   ) {}
@@ -158,17 +161,20 @@ export class LandReservationsService {
 
     // 8. Notify the agent
     const agentUser = await this.usersService.findById(agentUserId);
-    await this.emailService.send({
-      to: agentUser.email,
-      template: 'reservationCreated',
-      lang: agentUser.language || 'fr',
-      args: {
-        firstName: agentUser.firstName || agentUser.email,
-        clientName: dto.clientName,
-        landTitle: land.title,
-        price: String(land.price),
+    await this.emailService.sendUpdate(
+      {
+        to: agentUser.email,
+        template: 'reservationCreated',
+        lang: agentUser.language || 'fr',
+        args: {
+          firstName: agentUser.firstName || agentUser.email,
+          clientName: dto.clientName,
+          landTitle: land.title,
+          price: String(land.price),
+        },
       },
-    });
+      agentUser.profile,
+    );
 
     this.logger.log('Land reservation created', {
       reservationId: reservation.id,
@@ -214,15 +220,19 @@ export class LandReservationsService {
     });
 
     // Notify client and agent
-    await this.emailService.send({
-      to: reservation.clientEmail,
-      template: 'reservationConfirmed',
-      lang: 'fr',
-      args: {
-        firstName: reservation.clientName,
-        reservationId: reservationId.substring(0, 8),
+    const clientPrefs = await this.resolveClientPrefs(reservation.clientUserId);
+    await this.emailService.sendUpdate(
+      {
+        to: reservation.clientEmail,
+        template: 'reservationConfirmed',
+        lang: 'fr',
+        args: {
+          firstName: reservation.clientName,
+          reservationId: reservationId.substring(0, 8),
+        },
       },
-    });
+      clientPrefs,
+    );
 
     this.logger.log('Reservation down payment confirmed', {
       reservationId,
@@ -243,10 +253,26 @@ export class LandReservationsService {
       throw new ConflictException(this.t('lands.reservation.stepAlreadyDone'));
     }
 
+    const present = await this.prisma.landClientDocument.findMany({
+      where: { reservationId, deletedAt: null },
+      select: { type: true },
+    });
+
+    const types = new Set(present.map((d) => d.type));
+    const allUploaded = LandReservationsService.REQUIRED_CLIENT_DOC_TYPES.every((t) =>
+      types.has(t),
+    );
+
+    if (!allUploaded) {
+      throw new ForbiddenException(this.t('lands.reservation.clientDocsMissing'));
+    }
+
     await this.prisma.landReservation.update({
       where: { id: reservationId },
       data: { documentsReceivedAt: new Date(), documentsReceivedBy: adminUserId },
     });
+
+    await this.notifyClientStep(reservation, 'clientDocumentsValidated');
 
     this.logger.log('Reservation documents received', { reservationId, adminUserId });
     return { message: this.t('lands.reservation.documentsReceived') };
@@ -268,6 +294,8 @@ export class LandReservationsService {
       data: { remainingPaymentConfirmedAt: new Date(), remainingPaymentConfirmedBy: adminUserId },
     });
 
+    await this.notifyClientStep(reservation, 'paymentConfirmed');
+
     this.logger.log('Reservation remaining payment confirmed', { reservationId, adminUserId });
     return { message: this.t('lands.reservation.remainingPaymentConfirmed') };
   }
@@ -287,6 +315,8 @@ export class LandReservationsService {
       where: { id: reservationId },
       data: { dossierStartedAt: new Date(), dossierStartedBy: adminUserId },
     });
+
+    await this.notifyClientStep(reservation, 'dossierStarted');
 
     this.logger.log('Reservation dossier started', { reservationId, adminUserId });
     return { message: this.t('lands.reservation.dossierStarted') };
@@ -370,16 +400,20 @@ export class LandReservationsService {
       where: { id: reservation.landId },
     });
 
-    await this.emailService.send({
-      to: reservation.clientEmail,
-      template: 'reservationCancelled',
-      lang: 'fr',
-      args: {
-        firstName: reservation.clientName,
-        landTitle: land?.title || 'N/A',
-        reason: dto.reason,
+    const cancelPrefs = await this.resolveClientPrefs(reservation.clientUserId);
+    await this.emailService.sendUpdate(
+      {
+        to: reservation.clientEmail,
+        template: 'reservationCancelled',
+        lang: 'fr',
+        args: {
+          firstName: reservation.clientName,
+          landTitle: land?.title || 'N/A',
+          reason: dto.reason,
+        },
       },
-    });
+      cancelPrefs,
+    );
 
     this.logger.log('Reservation cancelled', {
       reservationId,
@@ -401,6 +435,7 @@ export class LandReservationsService {
             label: { select: { code: true, name: true } },
           },
         },
+        landClientDocuments: { where: { deletedAt: null } },
       },
     });
 
@@ -408,7 +443,27 @@ export class LandReservationsService {
       throw new NotFoundException(this.t('lands.reservation.notFound'));
     }
 
-    return { ...reservation, currentStep: this.computeStep(reservation) };
+    // Generate presigned download URLs for client-uploaded documents.
+    const clientDocumentsWithUrls = await Promise.all(
+      reservation.landClientDocuments.map(async (d) => ({
+        ...d,
+        downloadUrl: await this.storageService.getDownloadUrl(d.url),
+      })),
+    );
+
+    // Slot-by-type view (same shape as findOneForClient) so admin/agent UI can
+    // render a card per required type without duplicating the requirement list.
+    const requiredDocuments = LandReservationsService.REQUIRED_CLIENT_DOC_TYPES.map((type) => {
+      const document = clientDocumentsWithUrls.find((d) => d.type === type) ?? null;
+      return { type, uploaded: !!document, document };
+    });
+
+    return {
+      ...reservation,
+      currentStep: this.computeStep(reservation),
+      clientDocuments: clientDocumentsWithUrls,
+      requiredDocuments,
+    };
   }
 
   // ----- Agent: My Reservations ----- //
@@ -471,6 +526,7 @@ export class LandReservationsService {
             },
           },
         },
+        landClientDocuments: { where: { deletedAt: null } },
       },
     });
 
@@ -481,7 +537,42 @@ export class LandReservationsService {
       throw new ForbiddenException();
     }
 
-    return reservation;
+    // Generate presigned download URLs for KAMBRIQ-provided documents.
+    const documentsWithUrls = await Promise.all(
+      reservation.land.documents.map(async (d) => ({
+        ...d,
+        downloadUrl: await this.storageService.getDownloadUrl(d.url),
+      })),
+    );
+
+    // Generate presigned download URLs for client-uploaded documents.
+    const clientDocumentsWithUrls = await Promise.all(
+      reservation.landClientDocuments.map(async (d) => ({
+        ...d,
+        downloadUrl: await this.storageService.getDownloadUrl(d.url),
+      })),
+    );
+
+    // Slot-by-type view so the UI can render a card per required type without
+    // duplicating the requirement list on the frontend.
+    const requiredDocuments = LandReservationsService.REQUIRED_CLIENT_DOC_TYPES.map((type) => {
+      const document = clientDocumentsWithUrls.find((d) => d.type === type) ?? null;
+      return { type, uploaded: !!document, document };
+    });
+
+    // Attach agent details (firstName, lastName, email, phone) from Core users.
+    const [enriched] = await this.attachAgents([reservation]);
+
+    return {
+      ...enriched,
+      currentStep: this.computeStep(reservation),
+      land: {
+        ...enriched.land,
+        documents: documentsWithUrls,
+      },
+      clientDocuments: clientDocumentsWithUrls,
+      requiredDocuments,
+    };
   }
 
   // ----- Client: My Purchases ----- //
@@ -512,7 +603,9 @@ export class LandReservationsService {
       this.prisma.landReservation.count({ where: { clientUserId } }),
     ]);
 
-    return buildPaginatedResponse(reservations, total, page, limit);
+    const mapped = reservations.map((r) => ({ ...r, currentStep: this.computeStep(r) }));
+    const enriched = await this.attachAgents(mapped);
+    return buildPaginatedResponse(enriched, total, page, limit);
   }
 
   // ----- Admin: All Reservations ----- //
@@ -578,7 +671,177 @@ export class LandReservationsService {
     };
   }
 
+  async getClientDocumentUploadUrl(
+    clientUserId: string,
+    reservationId: string,
+    dto: {
+      type: LandClientDocumentType;
+      filename: string;
+      contentType: string;
+    },
+  ) {
+    const reservation = await this.findReservationForClientOrThrow(clientUserId, reservationId);
+    this.assertCanUploadClientDocs(reservation);
+
+    const timestamp = Date.now();
+    const safeName = dto.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const key = this.storageService.buildKey(
+      'lands',
+      'client-documents',
+      reservationId,
+      `${dto.type}-${timestamp}-${safeName}`,
+    );
+
+    return this.storageService.getUploadUrl(key, dto.contentType);
+  }
+
+  async registerClientDocument(
+    clientUserId: string,
+    reservationId: string,
+    dto: {
+      type: LandClientDocumentType;
+      url: string;
+      name: string;
+    },
+  ) {
+    const reservation = await this.findReservationForClientOrThrow(clientUserId, reservationId);
+    this.assertCanUploadClientDocs(reservation);
+
+    // Soft-delete any active doc of the same type, then insert a fresh row.
+    // Multiple historical rows per (reservationId, type) are preserved for audit.
+    const document = await this.prisma.$transaction(async (tx) => {
+      await tx.landClientDocument.updateMany({
+        where: { reservationId, type: dto.type, deletedAt: null },
+        data: { deletedAt: new Date(), deletedBy: clientUserId },
+      });
+      return tx.landClientDocument.create({
+        data: {
+          reservationId,
+          type: dto.type,
+          url: dto.url,
+          name: dto.name,
+          uploadedBy: clientUserId,
+        },
+      });
+    });
+
+    await this.notifyAgentDocumentUploaded(reservation, dto.type);
+
+    return document;
+  }
+
+  // ----- Client: Delete own document (soft) -----
+  async deleteClientDocument(clientUserId: string, reservationId: string, documentId: string) {
+    const reservation = await this.findReservationForClientOrThrow(clientUserId, reservationId);
+    this.assertCanUploadClientDocs(reservation);
+
+    const document = await this.prisma.landClientDocument.findFirst({
+      where: { id: documentId, reservationId, deletedAt: null },
+    });
+    if (!document) {
+      throw new NotFoundException(this.t('lands.reservation.docNotFound'));
+    }
+
+    await this.prisma.landClientDocument.update({
+      where: { id: documentId },
+      data: { deletedAt: new Date(), deletedBy: clientUserId },
+    });
+
+    this.logger.log('Client document deleted by client', {
+      reservationId,
+      documentId,
+      clientUserId,
+    });
+    return { message: this.t('lands.reservation.docDeleted') };
+  }
+
+  // ----- Admin: Reject a client document -----
+  async rejectClientDocument(
+    adminUserId: string,
+    reservationId: string,
+    documentId: string,
+    reason: string,
+  ) {
+    const reservation = await this.findByIdOrThrow(reservationId);
+
+    const document = await this.prisma.landClientDocument.findFirst({
+      where: { id: documentId, reservationId, deletedAt: null },
+    });
+    if (!document) {
+      throw new NotFoundException(this.t('lands.reservation.docNotFound'));
+    }
+
+    // If docs were already validated, rejection reopens step 3.
+    const reopenStep =
+      reservation.documentsReceivedAt !== null
+        ? [
+            this.prisma.landReservation.update({
+              where: { id: reservationId },
+              data: { documentsReceivedAt: null, documentsReceivedBy: null },
+            }),
+          ]
+        : [];
+
+    await this.prisma.$transaction([
+      this.prisma.landClientDocument.update({
+        where: { id: documentId },
+        data: {
+          deletedAt: new Date(),
+          deletedBy: adminUserId,
+          rejectionReason: reason,
+        },
+      }),
+      ...reopenStep,
+    ]);
+
+    await this.notifyClientDocumentRejected(reservation, document.type, reason);
+
+    this.logger.log('Client document rejected by admin', {
+      reservationId,
+      documentId,
+      adminUserId,
+      reason,
+    });
+    return { message: this.t('lands.reservation.docRejected') };
+  }
+
   // ----- Private Helpers ----- //
+
+  private static readonly REQUIRED_CLIENT_DOC_TYPES = [
+    LandClientDocumentType.ID_CARD,
+    LandClientDocumentType.PROOF_OF_ADDRESS,
+  ];
+
+  // Block uploads when the reservation is no longer in a state to receive docs.
+  // Past states: cancelled, completed, or docs already validated by admin.
+  private assertCanUploadClientDocs(reservation: {
+    status: LandReservationStatus;
+    documentsReceivedAt: Date | null;
+  }) {
+    if (
+      reservation.status === LandReservationStatus.CANCELLED ||
+      reservation.status === LandReservationStatus.COMPLETED ||
+      reservation.documentsReceivedAt
+    ) {
+      throw new ForbiddenException(this.t('lands.reservation.cannotUploadDocs'));
+    }
+  }
+
+  private async findReservationForClientOrThrow(clientUserId: string, reservationId: string) {
+    const reservation = await this.prisma.landReservation.findUnique({
+      where: { id: reservationId },
+    });
+
+    if (!reservation) {
+      throw new NotFoundException(this.t('lands.reservation.notFound'));
+    }
+
+    if (reservation.clientUserId !== clientUserId) {
+      throw new ForbiddenException();
+    }
+
+    return reservation;
+  }
 
   private async findByIdOrThrow(reservationId: string) {
     const reservation = await this.prisma.landReservation.findUnique({
@@ -592,6 +855,155 @@ export class LandReservationsService {
 
   private t(key: string, lang = 'fr', args?: Record<string, unknown>): string {
     return this.i18n.translate(key, { lang, args }) as string;
+  }
+
+  // ----- Email notification helpers -----
+  // Fire-and-forget: failures are logged but never break the API response.
+
+  private docTypeLabel(type: LandClientDocumentType, lang: string): string {
+    const labels: Record<string, Record<string, string>> = {
+      en: {
+        ID_CARD: 'ID card',
+        PROOF_OF_ADDRESS: 'proof of address',
+        OTHER: 'document',
+      },
+      fr: {
+        ID_CARD: "pièce d'identité",
+        PROOF_OF_ADDRESS: 'justificatif de domicile',
+        OTHER: 'document',
+      },
+    };
+    return labels[lang]?.[type] ?? type;
+  }
+
+  private async notifyAgentDocumentUploaded(
+    reservation: { agentUserId: string; clientName: string; landId: string },
+    docType: LandClientDocumentType,
+  ): Promise<void> {
+    try {
+      const [agent, land] = await Promise.all([
+        this.usersService.findById(reservation.agentUserId).catch(() => null),
+        this.prisma.land.findUnique({ where: { id: reservation.landId } }),
+      ]);
+      if (!agent || !land) return;
+
+      const lang = agent.language || 'fr';
+      await this.emailService.sendUpdate(
+        {
+          to: agent.email,
+          template: 'clientDocumentUploaded',
+          lang,
+          args: {
+            firstName: agent.firstName || agent.email,
+            clientName: reservation.clientName,
+            landTitle: land.title,
+            docType: this.docTypeLabel(docType, lang),
+          },
+        },
+        agent.profile,
+      );
+    } catch (error) {
+      this.logger.warn('clientDocumentUploaded email failed', { error });
+    }
+  }
+
+  private async resolveClientLang(clientUserId: string | null): Promise<string> {
+    if (!clientUserId) return 'fr';
+    const user = await this.usersService.findById(clientUserId).catch(() => null);
+    return user?.language || 'fr';
+  }
+
+  private async resolveClientPrefs(
+    clientUserId: string | null,
+  ): Promise<{ emailNotifications: boolean } | null> {
+    if (!clientUserId) return null;
+    const user = await this.usersService.findById(clientUserId).catch(() => null);
+    return user?.profile ?? null;
+  }
+
+  private async notifyClientStep(
+    reservation: {
+      clientUserId: string | null;
+      clientName: string;
+      clientEmail: string;
+      landId: string;
+    },
+    template: 'clientDocumentsValidated' | 'paymentConfirmed' | 'dossierStarted',
+  ): Promise<void> {
+    try {
+      const [land, lang, prefs] = await Promise.all([
+        this.prisma.land.findUnique({ where: { id: reservation.landId } }),
+        this.resolveClientLang(reservation.clientUserId),
+        this.resolveClientPrefs(reservation.clientUserId),
+      ]);
+      if (!land) return;
+
+      await this.emailService.sendUpdate(
+        {
+          to: reservation.clientEmail,
+          template,
+          lang,
+          args: {
+            clientName: reservation.clientName,
+            landTitle: land.title,
+          },
+        },
+        prefs,
+      );
+    } catch (error) {
+      this.logger.warn(`${template} email failed`, { error });
+    }
+  }
+
+  private async notifyClientDocumentRejected(
+    reservation: {
+      clientUserId: string | null;
+      clientName: string;
+      clientEmail: string;
+      landId: string;
+    },
+    docType: LandClientDocumentType,
+    reason: string,
+  ): Promise<void> {
+    try {
+      const [land, lang, prefs] = await Promise.all([
+        this.prisma.land.findUnique({ where: { id: reservation.landId } }),
+        this.resolveClientLang(reservation.clientUserId),
+        this.resolveClientPrefs(reservation.clientUserId),
+      ]);
+      if (!land) return;
+
+      await this.emailService.sendUpdate(
+        {
+          to: reservation.clientEmail,
+          template: 'clientDocumentRejected',
+          lang,
+          args: {
+            clientName: reservation.clientName,
+            landTitle: land.title,
+            docType: this.docTypeLabel(docType, lang),
+            reason,
+          },
+        },
+        prefs,
+      );
+    } catch (error) {
+      this.logger.warn('clientDocumentRejected email failed', { error });
+    }
+  }
+
+  private async attachAgents<T extends { agentUserId: string }>(reservations: T[]) {
+    const ids = [...new Set(reservations.map((r) => r.agentUserId))];
+    const users = await this.usersService.findManyByIds(ids);
+    const byId = new Map(users.map((u) => [u.id, u]));
+
+    return reservations.map((r) => {
+      const user = byId.get(r.agentUserId);
+      return {
+        ...r,
+        agent: user,
+      };
+    });
   }
 
   private computeStep(reservation: {

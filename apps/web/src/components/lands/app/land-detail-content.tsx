@@ -16,6 +16,7 @@ import { LandInfoPanel } from './land-info-panel';
 import { LandDocuments } from './land-documents';
 import { LandMap } from './land-map';
 import { ReserveForm } from './reserve-form';
+import { Spinner } from '@/components/ui/spinner';
 
 interface LandDetailContentProps {
   id: string;
@@ -36,7 +37,7 @@ const LandDetailContent: FC<LandDetailContentProps> = ({
     LAND_STATUS_OPTION_KEYS.filter((o) => o.value).map((o) => [o.value, t(o.labelKey)]),
   );
 
-  const { data: land } = useQuery<LandDetail>({
+  const { data: land, isPending } = useQuery<LandDetail>({
     queryKey: ['land', id],
     queryFn: () => getLandById(id).then(unwrap) as Promise<LandDetail>,
   });
@@ -47,6 +48,14 @@ const LandDetailContent: FC<LandDetailContentProps> = ({
     () => Math.round(((land?.price ?? 0) * (land?.sizeM2 ?? 0) * 5) / 100),
     [land],
   );
+
+  if (isPending) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Spinner className="size-6 text-primary" />
+      </div>
+    );
+  }
 
   if (!land) return null;
 

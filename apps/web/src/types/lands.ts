@@ -77,6 +77,7 @@ export interface LandReservation {
   downPaymentConfirmed: boolean;
   cancelReason?: string;
   createdAt: string;
+  updatedAt: string;
   currentStep: number;
   land: {
     id: string;
@@ -94,6 +95,7 @@ export interface LandDetailDocument {
   id: string;
   name: string;
   url: string;
+  downloadUrl: string;
 }
 
 export interface LandDetail {
@@ -168,4 +170,103 @@ export interface LandReservationDetail {
   updatedAt: string;
   land: LandDetail;
   currentStep: number;
+  clientDocuments: Array<ClientUploadedDocument>;
+  requiredDocuments: Array<{
+    type: LandClientDocumentType;
+    uploaded: boolean;
+    document: ClientUploadedDocument | null;
+  }>;
+}
+
+export interface ClientPurchase {
+  id: string;
+  agentUserId: string;
+  status: LandReservationStatus;
+  createdAt: string;
+  currentStep: number;
+  land: {
+    id: string;
+    title: string;
+    region: string;
+    city: string | null;
+    price: number;
+    sizeM2: number;
+    label: { code: LandLabelCode; name: string };
+  };
+  agent: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+}
+
+export interface ClientPurchaseDetail {
+  id: string;
+  landId: string;
+  agentUserId: string;
+  clientUserId: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string | null;
+  status: LandReservationStatus;
+  downPaymentAmount: number;
+  downPaymentConfirmed: boolean;
+  confirmedBy: string | null;
+  confirmedAt: string | null;
+  documentsReceivedAt: string | null;
+  documentsReceivedBy: string | null;
+  remainingPaymentConfirmedAt: string | null;
+  remainingPaymentConfirmedBy: string | null;
+  dossierStartedAt: string | null;
+  dossierStartedBy: string | null;
+  completedAt: string | null;
+  completedBy: string | null;
+  cancelReason: string | null;
+  cancelledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  currentStep: number;
+  land: {
+    id: string;
+    title: string;
+    region: string;
+    city: string | null;
+    price: number;
+    sizeM2: number;
+    label: { code: LandLabelCode; name: string };
+    documents: Array<{
+      id: string;
+      name: string;
+      type: LandDocumentType;
+      url: string;
+      downloadUrl: string;
+    }>;
+  };
+  agent: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string | null;
+  };
+  clientDocuments: Array<ClientUploadedDocument>;
+  requiredDocuments: Array<{
+    type: LandClientDocumentType;
+    uploaded: boolean;
+    document: ClientUploadedDocument | null;
+  }>;
+}
+
+export type LandClientDocumentType = 'ID_CARD' | 'PROOF_OF_ADDRESS' | 'OTHER';
+
+export interface ClientUploadedDocument {
+  id: string;
+  reservationId: string;
+  type: LandClientDocumentType;
+  name: string;
+  url: string;
+  uploadedAt: string;
+  uploadedBy: string;
+  downloadUrl: string;
 }

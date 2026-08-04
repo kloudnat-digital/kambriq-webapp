@@ -71,8 +71,9 @@ describe('KbsCertificatesService', () => {
         'KCA_CERTIFIED',
         'admin-1',
       );
-      expect(emailService.send).toHaveBeenCalledWith(
+      expect(emailService.sendUpdate).toHaveBeenCalledWith(
         expect.objectContaining({ template: 'certificateIssued' }),
+        null,
       );
     });
 
@@ -84,17 +85,17 @@ describe('KbsCertificatesService', () => {
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
       prisma.kbsCandidateProgress.findFirst.mockResolvedValue({ passed: true });
 
-      await expect(
-        service.issueCertificate(candidate.id, 'admin-1'),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.issueCertificate(candidate.id, 'admin-1')).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('throws NotFoundException if candidate does not exist', async () => {
       prisma.kbsCandidate.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.issueCertificate('bad-id', 'admin-1'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.issueCertificate('bad-id', 'admin-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -170,10 +171,7 @@ describe('KbsCertificatesService', () => {
           data: expect.objectContaining({ status: 'EXAM_PENDING' }),
         }),
       );
-      expect(usersService.removeRole).toHaveBeenCalledWith(
-        candidate.userId,
-        'KCA_CERTIFIED',
-      );
+      expect(usersService.removeRole).toHaveBeenCalledWith(candidate.userId, 'KCA_CERTIFIED');
       expect(result).toHaveProperty('revokedAt');
     });
 
@@ -233,9 +231,7 @@ describe('KbsCertificatesService', () => {
     });
 
     it('returns null if candidate has no certificate', async () => {
-      prisma.kbsCandidate.findUnique.mockResolvedValue(
-        buildCandidate({ certificate: null }),
-      );
+      prisma.kbsCandidate.findUnique.mockResolvedValue(buildCandidate({ certificate: null }));
 
       const result = await service.findByUserId('u1');
       expect(result).toBeNull();
@@ -244,9 +240,7 @@ describe('KbsCertificatesService', () => {
     it('throws NotFoundException if not enrolled', async () => {
       prisma.kbsCandidate.findUnique.mockResolvedValue(null);
 
-      await expect(service.findByUserId('u1')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findByUserId('u1')).rejects.toThrow(NotFoundException);
     });
   });
 });

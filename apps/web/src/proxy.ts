@@ -10,7 +10,10 @@ export default auth((req) => {
   const roles = session?.user?.roles ?? [];
 
   // Refresh failed → redirect to login. NextAuth replaces the broken session on re-login.
-  if (isAuthenticated && hasSessionError) {
+  // Skip if already on a public route (including /login) to avoid redirect loops:
+  // the session keeps its error flag until the user actually signs in again, so a
+  // naive redirect would bounce /login → /login → /login.
+  if (isAuthenticated && hasSessionError && !isPublic(pathname)) {
     const loginUrl = new URL(AUTH_ROUTES.LOGIN, nextUrl.origin);
     loginUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(loginUrl);

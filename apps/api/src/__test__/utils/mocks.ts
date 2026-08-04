@@ -72,6 +72,7 @@ export const mockKbsPrisma = () => ({
     count: fn(),
   },
   kbsCandidateProgress: {
+    findUnique: fn(),
     findFirst: fn(),
     findMany: fn(),
     upsert: fn(),
@@ -166,6 +167,7 @@ export const mockI18n = () => ({
 export const mockEmailService = () => ({
   send: jest.fn(() => Promise.resolve(undefined)),
   sendBatch: jest.fn(() => Promise.resolve(undefined)),
+  sendUpdate: jest.fn(() => Promise.resolve(undefined)),
 });
 
 // ----- JwtService ------ //

@@ -58,6 +58,7 @@ const nextConfig: WithNxOptions = {
       { protocol: 'https', hostname: '**.amazonaws.com' },
       { protocol: 'https', hostname: '**.cloudfront.net' },
     ],
+    unoptimized: process.env.NODE_ENV !== 'production',
   },
 };
 

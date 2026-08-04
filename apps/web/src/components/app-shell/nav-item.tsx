@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/lib/nav';
 
@@ -12,7 +13,10 @@ interface NavLinkProps {
 
 export const NavLink = ({ item, onNavigate }: NavLinkProps) => {
   const pathname = usePathname();
-  const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+  const t = useTranslations('app.nav');
+  const isActive = item.exact
+    ? pathname === item.href
+    : pathname === item.href || pathname.startsWith(item.href + '/');
   const Icon = item.icon;
 
   return (
@@ -25,7 +29,7 @@ export const NavLink = ({ item, onNavigate }: NavLinkProps) => {
       )}
     >
       <Icon className="size-4 shrink-0" />
-      {item.label}
+      {t(item.labelKey)}
     </Link>
   );
 };
