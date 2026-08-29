@@ -302,9 +302,18 @@ jobs:
       # The tag is baked into the image at build time (docker/Dockerfile.*), so
       # an image cannot claim a tag it was not built as.
       - name: Verify API version
-        if: env.SMOKE_TEST_URL != '' || env.VERSION_CHECK_URL != ''
         run: |
           set -euo pipefail
+          # Deliberately not guarded by an `if:`. A missing URL means we cannot
+          # prove the deploy landed, and an unprovable deploy must fail rather
+          # than skip - skipping is the silent pass this gate exists to close.
+          # Note these are environment-scoped variables: they only resolve in a
+          # job declaring `environment: dev`.
+          if [[ -z "${VERSION_CHECK_URL:-}" && -z "${SMOKE_TEST_URL:-}" ]]; then
+            echo "Neither VERSION_CHECK_URL nor SMOKE_TEST_URL is set for this environment," >&2
+            echo "so the deployed version cannot be verified. Refusing to report success." >&2
+            exit 1
+          fi
           VERSION_URL="${VERSION_CHECK_URL:-${SMOKE_TEST_URL%/health/*}/health/version}"
           echo "Verifying ${VERSION_URL}"
           echo "Expecting imageTag=${API_IMAGE_TAG}"
@@ -337,9 +346,13 @@ jobs:
           exit 1
 
       - name: Verify Web version
-        if: env.WEB_HEALTH_URL != ''
         run: |
           set -euo pipefail
+          if [[ -z "${WEB_HEALTH_URL:-}" ]]; then
+            echo "Neither WEB_HEALTH_URL nor NEXT_PUBLIC_APP_URL is set for this environment," >&2
+            echo "so the deployed frontend cannot be verified. Refusing to report success." >&2
+            exit 1
+          fi
           WEB_URL="${WEB_HEALTH_URL%/}/health"
           if [[ -z "${NEW_WEB_TASK_DEF_ARN:-}" ]]; then
             echo "NOTE: no web task definition was registered this run (ECS_WEB_SERVICE or ECS_WEB_TASK_DEFINITION unset)."
