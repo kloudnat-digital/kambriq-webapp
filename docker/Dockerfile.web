@@ -60,4 +60,22 @@ ENV AUTH_TRUST_HOST=true
 # check (GET /health → 200). A Dockerfile HEALTHCHECK is redundant in Fargate
 # and causes false failures under CPU throttling (the node subprocess times out).
 
+# ----- Build metadata -----
+# Filled by ci.yml from the commit being built. Placed late so a metadata-only
+# change does not invalidate the dependency and build layers above.
+ARG GIT_SHA=unknown
+ARG GIT_REF=unknown
+ARG BUILD_TIME=unknown
+ARG IMAGE_TAG=unknown
+ARG APP_VERSION=unknown
+ENV GIT_SHA=${GIT_SHA} \
+    GIT_REF=${GIT_REF} \
+    BUILD_TIME=${BUILD_TIME} \
+    IMAGE_TAG=${IMAGE_TAG} \
+    APP_VERSION=${APP_VERSION}
+LABEL org.opencontainers.image.revision="${GIT_SHA}" \
+      org.opencontainers.image.version="${IMAGE_TAG}" \
+      org.opencontainers.image.created="${BUILD_TIME}" \
+      org.opencontainers.image.source="https://github.com/kloudnat-digital/kambriq-webapp"
+
 CMD ["node", "apps/web/server.js"]
