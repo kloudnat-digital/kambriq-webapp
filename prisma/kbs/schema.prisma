@@ -125,7 +125,7 @@ model KbsCandidate {
   userId             String    @unique
   sponsorCode        String?
   cvUrl              String?
-  engagementAcceptedAt DateTime
+  engagementAcceptedAt DateTime?
   status             String    // CANDIDATE | IN_TRAINING | EXAM_PENDING | CERTIFIED | FAILED
   maxAttempts        Int       @default(3)
   retakeCooldownDays Int       @default(7)
