@@ -10,6 +10,7 @@ import {
 } from '@nestjs/terminus';
 import { CorePrismaService } from '../core/prisma/core-prisma.service';
 import { KbsPrismaService } from '../kbs/prisma/kbs-prisma.service';
+import { BuildInfo, getBuildInfo } from './build-info';
 
 @ApiTags('Health')
 @Controller('health')
@@ -36,8 +37,7 @@ export class HealthController {
   })
   @ApiResponse({
     status: 503,
-    description:
-      'One or more indicators are unhealthy. See response body for details.',
+    description: 'One or more indicators are unhealthy. See response body for details.',
   })
   check(): Promise<HealthCheckResult> {
     return this.health.check([
@@ -57,8 +57,7 @@ export class HealthController {
       () => this.memory.checkRSS('memory_rss', 1024 * 1024 * 1024),
 
       // Disk usage < 90%
-      () =>
-        this.disk.checkStorage('disk', { thresholdPercent: 0.9, path: '/' }),
+      () => this.disk.checkStorage('disk', { thresholdPercent: 0.9, path: '/' }),
 
       async () => {
         try {
@@ -103,5 +102,20 @@ export class HealthController {
     } catch {
       return { status: 'error' };
     }
+  }
+
+  @Public()
+  @Get('version')
+  @ApiOperation({
+    summary: 'Build and version info',
+    description:
+      'Returns the build metadata baked into the running image: image tag, commit SHA, build time and process start time. Does not touch the database, so it stays answerable even when a dependency is down. The deploy pipeline polls this after each rollout and fails the deploy if the served imageTag is not the tag it just deployed.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Build metadata of the instance serving this request.',
+  })
+  version(): BuildInfo {
+    return getBuildInfo();
   }
 }

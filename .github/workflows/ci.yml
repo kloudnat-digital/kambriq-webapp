@@ -100,12 +100,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Resolve image tag
+      - name: Resolve image tag and build metadata
         id: tag
         run: |
           IMAGE_TAG="sha-${GITHUB_SHA::7}"
+          BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          APP_VERSION="$(node -p "require('./package.json').version" 2>/dev/null || echo unknown)"
           echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
           echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
+          echo "BUILD_TIME=${BUILD_TIME}" >> "$GITHUB_ENV"
+          echo "APP_VERSION=${APP_VERSION}" >> "$GITHUB_ENV"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -128,6 +132,12 @@ jobs:
           tags: |
             ${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}
             ${{ env.ECR_REPO }}:dev-latest
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+            GIT_REF=${{ github.ref_name }}
+            BUILD_TIME=${{ env.BUILD_TIME }}
+            IMAGE_TAG=${{ env.IMAGE_TAG }}
+            APP_VERSION=${{ env.APP_VERSION }}
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
@@ -149,12 +159,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Resolve image tag
+      - name: Resolve image tag and build metadata
         id: tag
         run: |
           IMAGE_TAG="sha-${GITHUB_SHA::7}"
+          BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          APP_VERSION="$(node -p "require('./package.json').version" 2>/dev/null || echo unknown)"
           echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
           echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
+          echo "BUILD_TIME=${BUILD_TIME}" >> "$GITHUB_ENV"
+          echo "APP_VERSION=${APP_VERSION}" >> "$GITHUB_ENV"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -180,6 +194,11 @@ jobs:
           build-args: |
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
+            GIT_SHA=${{ github.sha }}
+            GIT_REF=${{ github.ref_name }}
+            BUILD_TIME=${{ env.BUILD_TIME }}
+            IMAGE_TAG=${{ env.IMAGE_TAG }}
+            APP_VERSION=${{ env.APP_VERSION }}
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
 
