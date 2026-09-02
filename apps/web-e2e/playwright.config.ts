@@ -16,8 +16,32 @@ const webServer = process.env['BASE_URL']
       cwd: workspaceRoot,
     };
 
+// Where Playwright writes its report and its per-test artifacts.
+//
+// nxE2EPreset derives these paths from the workspace layout and from whether the
+// repo uses the TS solution setup, so the effective location is neither visible
+// in this file nor stable across an nx upgrade. CI has to name the path in its
+// upload-artifact step, so it is pinned here rather than inferred.
+// Keep in sync with .github/workflows/ci.yml.
+const artifactRoot = '../../dist/.playwright/apps/web-e2e';
+
 export default defineConfig({
   ...nxE2EPreset(__filename, { testDir: './src' }),
+
+  // Same values the preset resolves to today, stated explicitly so they cannot drift.
+  outputDir: `${artifactRoot}/test-output`,
+  reporter: [
+    [
+      'html',
+      {
+        outputFolder: `${artifactRoot}/playwright-report`,
+        // Never try to open a browser on a CI runner.
+        open: process.env['CI'] ? 'never' : 'on-failure',
+      },
+    ],
+    // Readable progress in the CI log, alongside the HTML report.
+    ['list'],
+  ],
 
   // Global timeout for each test
   timeout: 30_000,
