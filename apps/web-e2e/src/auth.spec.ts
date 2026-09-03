@@ -31,4 +31,24 @@ test.describe('Authentication', () => {
     // Should stay on login page (no crash/redirect to 500)
     await expect(page).toHaveURL(/login/);
   });
+
+  // The two checks below hit the NextAuth route handler directly. The proxy
+  // matcher excludes /api, so they exercise the auth endpoints themselves
+  // rather than the redirect middleware, and they need no account.
+  test('GET /api/auth/providers returns json with credentials provider', async ({ request }) => {
+    const response = await request.get('/api/auth/providers');
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body).toHaveProperty('credentials');
+    expect(body.credentials).toHaveProperty('id', 'credentials');
+  });
+
+  test('GET /api/auth/csrf returns a csrfToken', async ({ request }) => {
+    const response = await request.get('/api/auth/csrf');
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body).toHaveProperty('csrfToken');
+    expect(typeof body.csrfToken).toBe('string');
+    expect(body.csrfToken.length).toBeGreaterThan(20);
+  });
 });
