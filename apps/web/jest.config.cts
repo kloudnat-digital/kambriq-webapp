@@ -13,8 +13,14 @@ const config = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
   coverageDirectory: '../../coverage/apps/web',
   testEnvironment: 'jsdom',
-  // Runs before every test file - imports jest-dom custom matchers
-  setupFilesAfterFramework: ['<rootDir>/src/test-setup.ts'],
+  // The web project is wired into the `test` target by this change but has no
+  // tests yet; the generated placeholder it used to carry was deleted because
+  // it could not run. Tests land in the following change.
+  passWithNoTests: true,
+  // Runs before every test file - imports jest-dom custom matchers.
+  // The key is setupFilesAfterEnv; setupFilesAfterFramework is not a Jest
+  // option, so this setup file was silently never loaded.
+  setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
   // Where to find tests - both in src/ and the NX-generated specs/ folder
   testMatch: [
     '<rootDir>/src/**/*.spec.{ts,tsx}',
