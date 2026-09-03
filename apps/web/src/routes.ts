@@ -7,6 +7,17 @@ export const AUTH_ROUTES = {
   REACTIVATE: '/reactivate',
 };
 
+// Paths the middleware lets through without a session.
+//
+// Some entries are prefixes rather than pages: /legal, /products and
+// /verify-certificate have no index page, so a bare request to them 404s while
+// their sub-pages are public and reachable. isPublic() matches on `p` or
+// `p + '/'`, so the prefix is doing real work and must not be "tidied away".
+//
+// /reactivate is listed and has no page at all, which is a genuine bug but not
+// a bug in this list: lib/actions/auth.ts redirects there when the API answers
+// REACTIVATION_REQUIRED, so a user in the soft-delete grace period is sent to a
+// 404 today. The entry is correct and must stay; the missing page is the fix.
 export const PUBLIC_PATHS = [
   '/',
   '/login',

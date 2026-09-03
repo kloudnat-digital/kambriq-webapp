@@ -12,11 +12,11 @@ const config = {
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
   coverageDirectory: '../../coverage/apps/web',
+  // Match apps/api and libs/common so Codecov receives the same shape.
+  // Without lcov here the web project produced only an HTML report, which
+  // nothing consumes.
+  coverageReporters: ['lcov', 'text-summary'],
   testEnvironment: 'jsdom',
-  // The web project is wired into the `test` target by this change but has no
-  // tests yet; the generated placeholder it used to carry was deleted because
-  // it could not run. Tests land in the following change.
-  passWithNoTests: true,
   // Runs before every test file - imports jest-dom custom matchers.
   // The key is setupFilesAfterEnv; setupFilesAfterFramework is not a Jest
   // option, so this setup file was silently never loaded.
