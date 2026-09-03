@@ -111,7 +111,6 @@ jobs:
           OVERRIDES="$(jq -nc --arg name "${CONTAINER_NAME}" '{
             containerOverrides: [{
               name: $name,
-              environment: [{name: "ALLOW_DB_PUSH", value: "true"}],
               command: ["node", "prisma/run-migrations.js"]
             }]
           }')"

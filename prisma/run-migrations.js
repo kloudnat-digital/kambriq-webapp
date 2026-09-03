@@ -53,6 +53,18 @@ function runMigrations() {
     throw new Error('No prisma schema directories found');
   }
 
+  // ALLOW_DB_PUSH is no longer set by deploy-dev.yml. All four modules were
+  // baselined on 2026-09-02, so every one of them has a migrations/ directory
+  // and this flag is never consulted on a normal deploy.
+  //
+  // The branch below is kept deliberately. It is not dead code: it is the guard
+  // that fires when a NEW module is added with no migrations/ yet. Without it,
+  // such a module would fall through to `migrate deploy`, find zero migrations,
+  // apply nothing, and report success, leaving the service to start against a
+  // database whose tables were never created. Failing loudly here is the point.
+  //
+  // Setting ALLOW_DB_PUSH=true by hand on a one-off task remains available as a
+  // deliberate escape hatch. Nothing sets it automatically any more.
   const allowDbPush = process.env.ALLOW_DB_PUSH === 'true';
 
   for (const name of schemaDirs) {
