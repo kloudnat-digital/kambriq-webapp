@@ -177,7 +177,6 @@ Register API task definition
 Run Prisma migrations (blocking)
   ecs run-task (one-off Fargate, new task def revision)
     command: node prisma/run-migrations.js
-    env: ALLOW_DB_PUSH=true
   ecs wait tasks-stopped
   check exit code == 0  ─── non-zero → workflow fails, service NOT updated
   │
@@ -311,13 +310,14 @@ runMigrations()
     If migrations/ directory exists and is non-empty:
       → prisma migrate deploy   (applies pending SQL files, safe for prod)
     Else (no migration history yet):
-      If ALLOW_DB_PUSH=true:
-        → prisma db push --accept-data-loss  (pushes schema directly)
-      Else:
-        → exits non-zero (explicit failure in prod)
+      → exits non-zero (explicit failure)
+      → unless ALLOW_DB_PUSH=true is set by hand, which then runs
+        prisma db push --accept-data-loss
 ```
 
-`ALLOW_DB_PUSH=true` is always set by the workflow. This enables first-time deploys where no migration history exists yet. Once migrations are created with `pnpm db:migrate:dev`, subsequent deploys use `migrate deploy`.
+`ALLOW_DB_PUSH` is **no longer set by the workflow**. All four modules were baselined on 2026-09-02 with a `0_init` migration (`prisma/<module>/migrations/0_init/migration.sql`), so every deploy now takes the `migrate deploy` path and `db push` is never reached.
+
+The `db push` branch is kept as a guard rather than removed. If a module is added later with no `migrations/` directory, the deploy fails loudly with a named error. Removing the branch would instead let that module fall through to `migrate deploy`, find zero migrations, apply nothing and report success, leaving the service to start against a database whose tables were never created. Setting `ALLOW_DB_PUSH=true` by hand on a one-off task remains available as a deliberate escape hatch.
 
 ### First deployment
 
@@ -325,7 +325,7 @@ runMigrations()
 1. Terraform apply → RDS created (empty databases)
 2. CI push to develop → migration task runs
    ensureDatabases() creates: kambriq_core, kambriq_kbs, kambriq_kamnet, kambriq_lands
-   No migrations exist yet → prisma db push for each schema (ALLOW_DB_PUSH=true)
+   prisma migrate deploy applies 0_init to each empty database
 3. API and web services updated
 4. Seed: trigger deploy-dev.yml manually with run_seed=true
 ```
