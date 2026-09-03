@@ -79,7 +79,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage/apps/api/lcov.info,coverage/libs/common/lcov.info
+          files: coverage/apps/api/lcov.info,coverage/libs/common/lcov.info,coverage/apps/web/lcov.info
           fail_ci_if_error: false
 
   # -- Build and push API image (develop push only) -----------------------------
