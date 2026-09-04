@@ -196,6 +196,33 @@ The seed ran clean locally and died in the container with
 from **source** under `tsx`, and the image copied two subdirectories of
 `libs/common/src`. **The two differ by a `COPY` line nobody reads.**
 
+### Two write paths to one destination is one path too many
+
+Reported by Visquis, 2026-09-04, and it cost a file.
+
+A document was written into the Google Drive **synced folder** on disk, verified
+present. The same document also existed in Drive as an earlier **connector**
+upload. Trashing that connector object deleted the synced file **on disk** as
+well: Drive had reconciled the two by name and treated them as one object.
+
+**A file written correctly, verified present, and then removed by a cleanup aimed
+at something else entirely.** Neither action was wrong on its own. The defect was
+that two mechanisms were writing to one destination, so a correct operation in
+one became a destructive one in the other — and nothing in either path could see
+the collision.
+
+**The rule: once a document exists in the synced folder, the connector must not
+touch it.** Documents go in as bytes — `cp`, then `cmp` against the source, and
+report the result. The connector is retired for documents, not because it is
+slower but because its bytes proved unverifiable: a 119 781-byte brief was
+uploaded as a 12 735-byte paraphrase, and nothing checked it. `cmp` is the
+difference between placing a file and asserting you placed it.
+
+**This is the same shape as the other entries above**, arriving from a direction
+nobody was watching. Where a missing `await` produced a value that satisfied
+every shallow check, here a correct cleanup produced a deletion that satisfied
+every expectation — the object it targeted did go away.
+
 ---
 
 ## 4. Invariants somebody will otherwise break
