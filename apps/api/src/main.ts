@@ -1,4 +1,3 @@
-import type { Response as ExpressResponse } from 'express';
 import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -39,7 +38,13 @@ async function bootstrap() {
   const prefix = process.env.API_PREFIX || 'api';
   app.setGlobalPrefix(prefix);
 
-  // ----- Global filters (Order Matters: Most specific first) --------
+  // ----- Global filters --------
+  // Nest tries the LAST-registered matching filter first, so this list reads
+  // catch-all first, most specific last. Both `GlobalExceptionFilter` and
+  // `PrismaExceptionFilter` are `@Catch()`; `PrismaExceptionFilter` delegates
+  // to the global one for anything that is not a Prisma error, so the chain
+  // always terminates in a JSON envelope. It used to rethrow, and a rethrow
+  // from a filter escapes Nest entirely into Express's default error page.
   app.useGlobalFilters(
     new GlobalExceptionFilter(), // Catch-all (last resort)
     new PrismaExceptionFilter(), // Prisma Errors → HTTP codes
@@ -71,30 +76,6 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup(`${prefix}/docs`, app, document);
   }
-
-  // ----- Unmatched routes -----
-  // Nest's own not-found handler sits outside the global filter chain, so an
-  // unmatched URL fell through to Express's default error page: an HTML body
-  // carrying the full stack, `/app/node_modules/.pnpm/...` paths and the exact
-  // pinned version of every framework package. A wrong URL handed a stranger a
-  // dependency inventory.
-  //
-  // `app.use()` hands the middleware straight to Express, and the router is not
-  // mounted until `init()`. Registering this before `init()` would put it ahead
-  // of every controller and 404 the entire API, so the explicit `init()` here is
-  // load-bearing, not tidiness. `listen()` below is a no-op initialiser once
-  // `isInitialized` is set.
-  await app.init();
-  app.use((req: { originalUrl?: string; url: string }, res: ExpressResponse) => {
-    res.status(404).json({
-      success: false,
-      statusCode: 404,
-      message: 'Not Found',
-      error: 'Not Found',
-      timestamp: new Date().toISOString(),
-      path: (req.originalUrl ?? req.url).split('?')[0],
-    });
-  });
 
   // ----- Graceful Shutdown -----
   // Enables NestJS to intercept SIGTERM and call OnModuleDestroy hooks
