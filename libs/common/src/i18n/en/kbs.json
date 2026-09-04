@@ -21,7 +21,8 @@
   "quiz": {
     "alreadyPassed": "Module quiz already passed",
     "pass": "Quiz passed! Score: {score}%",
-    "fail": "Quiz not passed. Score: {score}% (required: {required}%)"
+    "fail": "Quiz not passed. Score: {score}% (required: {required}%)",
+    "incompleteSubmission": "Incomplete submission: the whole quiz must be submitted."
   },
   "exam": {
     "notFound": "Exam {id} not found",

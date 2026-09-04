@@ -227,6 +227,47 @@ through a real attempt. That is one ephemeral ECS task on `kambriq-dev-api:100`,
 all four modules in the single task, nothing surviving it.
 **Cost: none.**
 
+### K1 — A perfect quiz scored 33% — `EN COURS`
+
+The first quiz submission that ever reached the grader, on the reset dev:
+
+```
+{"score":33,"passed":false,"correctCount":10,"totalQuestions":30}
+```
+
+Ten questions asked, ten answered correctly, **33%, failed**.
+
+`submitQuiz` computed `correctCount / questions.length`, where `questions` is
+every question in the module. `findQuestionsForQuiz` serves `quizQuestionCount`
+of them. Pool 30, quiz 10, perfect score 33% — below the 70% pass mark, so
+**nobody could pass a quiz, and nobody could reach the exam.** The whole KBS
+journey ended at the first module.
+
+**B3 is what exposed it.** The module pools held five questions, the draw was
+`min(5, 10) = 5`, pool and served set were the same number, and the denominator
+was accidentally right. Seeding a real bank made the two quantities differ for
+the first time. The same shape as the coverage denominator: arithmetic that
+stays internally consistent while measuring the wrong population.
+
+**The tests could not have caught it.** Both `submitQuiz` tests used a pool of
+two questions and submitted two answers. `correctCount / questions.length` and
+`correctCount / quizLength` are indistinguishable when the two are equal. **A
+fixture where two different quantities happen to be the same number cannot tell
+you which one the code used** — that is the third time this week a test was
+green because its fixture collapsed the distinction it existed to check.
+
+**Decision:** score over the quiz length. A submission that does not cover the
+whole quiz is **refused, with both numbers**, rather than normalised: scoring a
+partial submission out of the full length guesses at intent, and scoring it out
+of its own length lets a client send its one confident answer and score 100%.
+
+**Proof:** mutation, taken. Restoring `questions.length` fails 2; removing the
+completeness check fails 1. Fixtures now hold pool 30 against quiz 10.
+`EN COURS` until a candidate passes a quiz on dev. **Cost: none.**
+
+**Checked, not assumed:** `gradeExam` divides by `exam.totalQuestions`, the count
+recorded when the exam was served. That one is right.
+
 ### N2 — The global exception filter never ran — `EN COURS`
 
 Probing dev after the A3 deploy, not reading code, found it:

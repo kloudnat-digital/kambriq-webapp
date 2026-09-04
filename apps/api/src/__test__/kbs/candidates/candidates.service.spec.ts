@@ -132,62 +132,81 @@ describe('KbsCandidatesService', () => {
   // ----- SUBMIT QUIZ ----- //
 
   describe('submitQuiz', () => {
-    const quizDto = {
-      answers: [
-        { questionId: 'q1', answerIds: ['a1'] },
-        { questionId: 'q2', answerIds: ['a3'] },
-      ],
-    };
+    /**
+     * The fixtures separate the module POOL from the QUIZ LENGTH on purpose.
+     *
+     * The tests this block replaces used a pool of two questions and submitted
+     * two answers. Pool and quiz length were the same number, so
+     * `correctCount / questions.length` and `correctCount / quizLength` were
+     * indistinguishable and the denominator defect could not appear. On dev,
+     * with a pool of 30 and a quiz of 10, a candidate who answered all ten
+     * correctly scored 33% and failed: nobody could pass a quiz, so nobody
+     * could reach the exam.
+     *
+     * A fixture where two different quantities happen to be equal cannot tell
+     * you which one the code used.
+     */
+    const POOL = 30;
+    const QUIZ_LENGTH = 10;
 
-    it('grades quiz and returns score + pass/fail', async () => {
-      const candidate = buildCandidate({ status: 'IN_TRAINING' });
-      prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
+    const pool = Array.from({ length: POOL }, (_, i) => ({
+      id: `q${i + 1}`,
+      answers: [{ id: `a${i + 1}`, isCorrect: true }],
+    }));
 
-      const mod = buildModule({ id: 'mod1', order: 1, course: { id: 'c1' } });
-      prisma.kbsModule.findUnique.mockResolvedValue(mod);
+    const answersFor = (count: number, wrong = 0) =>
+      Array.from({ length: count }, (_, i) => ({
+        questionId: `q${i + 1}`,
+        answerIds: [i < count - wrong ? `a${i + 1}` : 'a_wrong'],
+      }));
+
+    const quizDto = { answers: answersFor(QUIZ_LENGTH) };
+
+    const arrangeQuiz = () => {
+      prisma.kbsCandidate.findUnique.mockResolvedValue(buildCandidate({ status: 'IN_TRAINING' }));
+      prisma.kbsModule.findUnique.mockResolvedValue(
+        buildModule({ id: 'mod1', order: 1, course: { id: 'c1' } }),
+      );
       prisma.kbsModule.findMany.mockResolvedValue([]); // no prerequisites
-
-      // Two questions, candidate answers both correctly
-      prisma.kbsQuestion.findMany.mockResolvedValue([
-        { id: 'q1', answers: [{ id: 'a1', isCorrect: true }] },
-        { id: 'q2', answers: [{ id: 'a3', isCorrect: true }] },
-      ]);
+      prisma.kbsSettings.findFirst.mockResolvedValue({ quizQuestionCount: QUIZ_LENGTH });
+      prisma.kbsQuestion.findMany.mockResolvedValue(pool);
       prisma.kbsCandidateProgress.upsert.mockResolvedValue({});
       prisma.kbsCandidateProgress.count.mockResolvedValue(0);
       prisma.kbsModule.count.mockResolvedValue(3);
+    };
+
+    it('scores out of the quiz length, not the module pool', async () => {
+      arrangeQuiz();
 
       const result = await service.submitQuiz('u1', 'mod1', quizDto);
 
+      expect(result.correctCount).toBe(QUIZ_LENGTH);
+      expect(result.totalQuestions).toBe(QUIZ_LENGTH);
+      // 10/10, not 10/30. The defect scored this 33 and failed the candidate.
       expect(result.score).toBe(100);
       expect(result.passed).toBe(true);
-      expect(result.correctCount).toBe(2);
-      expect(result.totalQuestions).toBe(2);
     });
 
     it('fails quiz when score < MODULE_PASSING_SCORE', async () => {
-      const candidate = buildCandidate({ status: 'IN_TRAINING' });
-      prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
-      prisma.kbsModule.findUnique.mockResolvedValue(
-        buildModule({ order: 1, course: { id: 'c1' } }),
-      );
-      prisma.kbsModule.findMany.mockResolvedValue([]);
+      arrangeQuiz();
 
-      // 2 questions, candidate gets 1 wrong → 50% < 70%
-      prisma.kbsQuestion.findMany.mockResolvedValue([
-        { id: 'q1', answers: [{ id: 'a1', isCorrect: true }] },
-        { id: 'q2', answers: [{ id: 'a3', isCorrect: true }] },
-      ]);
-      prisma.kbsCandidateProgress.upsert.mockResolvedValue({});
-
+      // 5 of 10 correct -> 50% < 70%
       const result = await service.submitQuiz('u1', 'mod1', {
-        answers: [
-          { questionId: 'q1', answerIds: ['a1'] }, // correct
-          { questionId: 'q2', answerIds: ['a_wrong'] }, // wrong
-        ],
+        answers: answersFor(QUIZ_LENGTH, 5),
       });
 
       expect(result.score).toBe(50);
       expect(result.passed).toBe(false);
+    });
+
+    it('refuses a submission that does not cover the whole quiz, and names both numbers', async () => {
+      arrangeQuiz();
+
+      // Scoring 9 answers out of 9 would let a client submit only the answers it
+      // is sure of and score 100%.
+      await expect(
+        service.submitQuiz('u1', 'mod1', { answers: answersFor(QUIZ_LENGTH - 1) }),
+      ).rejects.toThrow(/reçu 9, attendu 10/);
     });
 
     it('rejects if candidate status is not IN_TRAINING or CANDIDATE', async () => {
