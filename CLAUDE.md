@@ -122,6 +122,91 @@ The API answers `{success, data}`, the web answers flat. That gap broke the smok
 test's health-body check and nobody saw it.
 **Decision:** one representative route per module. **Cost: none.**
 
+### Z1 — Three never-used access keys, one of them full admin — `A DECIDER`, prepared not applied
+
+**This outranks every number in the cost table.** `gitops.admin` holds an
+**Active** access key created 2026-02-24 whose `LastUsedDate` is `None`. It
+reaches `AdministratorAccess` through the `gitops-admin` group, of which it is
+the only member. **A full-admin credential nobody has ever used is a credential
+nobody would notice being used.**
+
+Re-checked at 2026-09-04T10:49Z, not at first sight:
+
+| User              | Key                    | Last used  | Service                           |
+| ----------------- | ---------------------- | ---------- | --------------------------------- |
+| `gitops.admin`    | `AKIAQYAF4F4JLEEQ5ARN` | **never**  | —                                 |
+| `ses-kambriq-app` | `AKIAQYAF4F4JNP3WKQMQ` | **never**  | —                                 |
+| `kambriq-app-dev` | `AKIAQYAF4F4JLQKD3DWT` | **never**  | —                                 |
+| `kambriq-app-dev` | `AKIAQYAF4F4JH34UGKU5` | 2026-08-27 | `s3`                              |
+| `vmiaff`          | `AKIAQYAF4F4JNTH6MZ2I` | 2026-09-04 | `logs` — **in use, do not touch** |
+
+#### Nothing depends on them — checked, not assumed
+
+_"Never used" says nothing has used them yet. The question was whether anything
+is about to._
+
+- **Every workflow in both repos authenticates by OIDC.** `configure-aws-credentials@v4`
+  with `role-to-assume: ${{ secrets.AWS_ROLE_ARN }}` and `id-token: write`, in
+  `ci.yml`, `deploy-dev.yml`, `manual-deploy-dev.yml`, `terraform-plan.yml`,
+  `terraform-apply.yml` and `smoke-test.yml`. **No workflow in either repo
+  references a static AWS key.**
+- The roles CI assumes — `kambriq-dev-github-actions`,
+  `kambriq-infra-github-actions` — are trusted to
+  `oidc-provider/token.actions.githubusercontent.com`. **No IAM user is involved
+  in the trust path.**
+- The running tasks use `kambriq-dev-ecs-task-api` and
+  `kambriq-dev-ecs-task-execution`. Roles, not users — as S1 proved with an
+  `ASIA…` STS credential.
+- The application no longer reads static credentials at all. `env.validation.ts`
+  says so in a comment, and `storage.service.ts` records the gate that used to
+  require them.
+- **`/kambriq/dev/api/AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` do not exist
+  on dev.** Terraform can create them
+  (`modules/ssm-app-parameters/main.tf:425,439`) but both are
+  `count = var.… != "" ? 1 : 0` and neither variable is set in any `envs/`
+  tfvars, so an apply creates nothing.
+
+**One thing that is not clean, and is worth knowing before deciding.** The
+`kambriq-infra` repo still holds six static-key secrets —
+`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `_DEV` / `_PROD` of each. **No
+workflow references any of them.** They are orphaned key material sitting in a
+repo whose CI does not need it. Which keys they contain cannot be read back;
+whoever decides on the IAM keys should decide on these at the same time, because
+deactivating a key does not remove its copy from a secret store.
+
+#### Prepared. Not applied.
+
+Deactivate, never delete — reversible in one call, and the key's identity and
+audit trail survive.
+
+```bash
+# Deactivate — reversible
+aws iam update-access-key --user-name gitops.admin     --access-key-id AKIAQYAF4F4JLEEQ5ARN --status Inactive
+aws iam update-access-key --user-name ses-kambriq-app  --access-key-id AKIAQYAF4F4JNP3WKQMQ --status Inactive
+aws iam update-access-key --user-name kambriq-app-dev  --access-key-id AKIAQYAF4F4JLQKD3DWT --status Inactive
+
+# Verify
+aws iam list-access-keys --user-name gitops.admin    --query 'AccessKeyMetadata[].[AccessKeyId,Status]' --output text
+aws iam list-access-keys --user-name ses-kambriq-app --query 'AccessKeyMetadata[].[AccessKeyId,Status]' --output text
+aws iam list-access-keys --user-name kambriq-app-dev --query 'AccessKeyMetadata[].[AccessKeyId,Status]' --output text
+
+# Reverse, if anything turns out to need one
+aws iam update-access-key --user-name <user> --access-key-id <key> --status Active
+```
+
+**The fourth key is deliberately not in that list.** `kambriq-app-dev`'s
+`AKIAQYAF4F4JH34UGKU5` **has** been used — `s3`, 2026-08-27, eight days ago and
+before S1 removed static credentials from the API. Nothing should be using it
+now, but "should" is not the standard applied to the other three, so it is listed
+separately for its own decision rather than folded in on a similar-looking
+argument.
+
+**`vmiaff`'s key is in active use and is not a candidate.**
+
+**This is a credential change on Visquis's account. It does not happen without
+his explicit word.** **Cost: none** — IAM users and keys are free; this is
+entirely about blast radius.
+
 ### F1 — Coverage ratchet — `A DECIDER`
 
 No threshold yet: one that fails on arrival teaches everyone to ignore it. Add
@@ -158,6 +243,53 @@ bastion, no EBS volume, Container Insights off. `EBS:VolumeUsage.gp3` is now
 **Where the money goes: the NAT gateway is the single largest line, ~24% of the
 bill excluding tax, and it exists to give two Fargate tasks outbound internet.**
 Nothing else is close.
+
+### X3 — Dev RDS keeps `BackupRetentionPeriod: 0` — `DECIDE, A FAIRE` → decided
+
+**Decided: it stays 0 on dev.** Recorded as a FinOps choice so nobody closes it
+later by reflex, seeing a zero and assuming it is a gap.
+
+Automated backups and point-in-time recovery cost money, and the thing they would
+protect is **reproducible**: `migrate deploy` ×4 plus an idempotent seed rebuilds
+dev from an empty schema. That was proven twice today — once locally against a
+throwaway PostgreSQL 15 cluster, and once against dev itself when the four
+databases were dropped and re-seeded for S2. A backup buys nothing that
+`prisma db execute` + `migrate deploy` + `tsx prisma/seed.ts` does not already
+buy, and dev holds no data anybody would mourn.
+
+**This must be revisited the moment prd exists.** Prd will hold data that is not
+reproducible from a seed script, and every argument above stops applying on the
+day the first real user account is created. `docs/adr/ADR-005` is the prd
+bootstrap document; the retention period belongs on that checklist as an explicit
+decision rather than a default carried over from dev.
+
+**Cost: none — it is a saving**, roughly the snapshot storage of a 20 GB gp3
+volume, and it is deliberate rather than absent.
+
+### X4 — RDS log group retention capped — `PROUVE`
+
+`/aws/rds/instance/kambriq-postgres-dev/postgresql` had `retentionInDays: None` —
+never expire — holding 5.85 MB and growing, while every other group in the
+account is capped. Unbounded retention is a bill that grows while nobody looks at
+it.
+
+Set to **7 days**, matching `/ecs/kambriq-dev-api` and `/ecs/kambriq-dev-web`.
+
+```
+before:  /aws/rds/instance/kambriq-postgres-dev/postgresql   None   5852463
+after:   /aws/rds/instance/kambriq-postgres-dev/postgresql   7      5852463
+```
+
+**Applied outside Terraform, and that is worth saying plainly.** The ECS log
+groups are `aws_cloudwatch_log_group` resources with
+`retention_in_days = var.log_retention_days`; this one is created by RDS itself
+when log exports are enabled, so Terraform never declared it and there is nothing
+to drift against today. It is still undeclared infrastructure state, and it
+belongs in the RDS module the next time that module is touched — otherwise the
+next person to read the Terraform will believe every log group is described
+there.
+
+**Cost: a small reduction**, and it stops an unbounded one.
 
 ### X2 — NAT gateway — `DECIDE, A FAIRE`, option 2
 
@@ -219,7 +351,7 @@ before prd sends anything, independently of cost.
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | B1  | SES: the API had never sent an email. Static-credential gate, no `ses:` grant, and the MessageId was never logged                                                                                                                                                                                                                                                              | infra #16 #17 #18; webapp #39 #41 | `messageId=010701a06a9fd24c-51cc2bd1-7d70-4715-a7a0-ee582c49ea1e-000000`; `AWS/SES Send` 1.0 and `Delivery` 1.0 at 03:43 and 04:14, `Bounce` none, from zero datapoints before                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Contact list free; two IAM policies free; one SSM parameter removed |
 | Q1  | `CERTIFIED` was set by grading, on the score alone: certified with no certificate, no `kcaNumber` and nobody's name against it. `certificate/me` answered `{"data":null}` to somebody the API called certified — and grading also granted `KCA_CERTIFIED`, which gates the KAMNET agent routes, so **passing an exam made somebody an agent before any human had approved it** | webapp #54                        | Live on dev, `:108` / `sha-4be405b`, same candidate either side of one admin call. **Before issuance:** `EXAM_PASSED`, `certifiedAt: null`, `nextAction: awaiting-certificate`, `certificate/me: null`, roles `[CLIENT, CANDIDATE_KBS]`. **After issuance:** `CERTIFIED`, `certifiedAt` set, `nextAction: certified`, `KCA-20260904-LNG8`, certificates 7 → 8, roles `[CLIENT, CANDIDATE_KBS, KCA_CERTIFIED]`. The role arriving with the credential and not before it is the half that mattered. Five mutations, all firing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | None — no migration, the column is a `String`                       |
-| V1  | A completed sale whose agent lookup failed logged an error and returned `null`, so BullMQ marked the job **completed**: sale recorded, job green, commission never created, and the only symptom available to anybody was an agent noticing they had not been paid. All four processors did the same on an unknown job name                                                    | webapp #58                        | Live on dev, `kambriq-dev-api:112` / `sha-fef4391`. Enqueued `kamnet.definitely-unknown-job` on the `kamnet` queue: `BEFORE failed=0 completed=0` → `AFTER failed=1 completed=0`, `reason=Unknown KAMNET job: kamnet.definitely-unknown-job`. It landed on the **failed** set with its reason, where before it would have completed silently. Eight tails, eight mutations, each observed failing alone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | None                                                                |
+| V1  | A completed sale whose agent lookup failed logged an error and returned `null`, so BullMQ marked the job **completed**: sale recorded, job green, commission never created, and the only symptom available to anybody was an agent noticing they had not been paid. All four processors did the same on an unknown job name                                                    | webapp #58                        | Live on dev, `kambriq-dev-api:112` / `sha-fef4391`. Enqueued `kamnet.definitely-unknown-job` on the `kamnet` queue: `BEFORE failed=0 completed=0` → `AFTER failed=1 completed=0`, `reason=Unknown KAMNET job: kamnet.definitely-unknown-job`. It landed on the **failed** set with its reason, where before it would have completed silently. **Stated limit, not closed:** the probe queue used default job options, so `attemptsMade=1` — it proves the destination, not the three-attempt retry policy. Eight tails, eight mutations, each observed failing alone                                                                                                                                                                                                                                                                                                                                                                                                                                                          | None                                                                |
 | W1  | `/reactivate` was in `PUBLIC_PATHS` with no page. `lib/actions/auth.ts` redirects there on `REACTIVATION_REQUIRED`, so a user in the soft-delete grace period — undoing a deletion, on a clock — hit a 404                                                                                                                                                                     | webapp #57                        | Live on dev, `kambriq-dev-web:71` / `sha-68f6c7f`: `/reactivate` **200** (was 404), `id="email"` and `id="password"` present. `days=12` → _"Il vous reste 12 jours"_; `days=1` → _"1 jour"_; `days=999999` and `days=<script>` and no `days` → the neutral _"Votre compte est encore dans sa période de restauration"_. Four tails, four mutations, each observed failing alone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | None                                                                |
 | B3  | KBS not demonstrable: `KbsQuestion` and `KbsExamQuestion` empty since the seed's single run on 2026-02-26, so the largest module (21 routes) could not be exercised                                                                                                                                                                                                            | webapp #47 #49 #50 #51            | Live on dev, `kambriq-dev-api:105`: quiz serves **10**, scores 100/10 and passes; exam serves **20**, `totalQuestions` 20, scores 100, `PASSED`; candidate status changed; **certificates 5 → 6** (`KCA-20260904-N4OY`) — **issued by an explicit admin call during the proof, not by passing.** The exam produced no certificate: `certificate/me` answered `{"data":null}` and the count moved only after `POST /kbs/admin/certificates/:id`. So 5 → 6 proves **issuance works when somebody triggers it**; it is not proof of an end-to-end certification chain, and the chain is deliberately not automatic (Q1). `/kbs/public/verify` returns `valid: true`. Idempotency: two local runs, identical counts. Distribution guard **demonstrated, not asserted**: forcing `9/8/8/5` fails all four banks on `<= 8`; `9/9/9/3`, the per-bank shape of a `31/31/29/10` skew, fails the same way; and `8/8/8/6` — upper bound satisfied — fails all four on `>= 7`, so both tails are observed rather than inferred. 235 tests | None                                                                |
 | K2  | A candidate who passed every module was told to "finish all the modules". `checkAndTransitionToExamPending` returned silently on a null `activeCourseId` that the seed never set; `me/overview` answered `course: null` for the same reason                                                                                                                                    | webapp #51                        | `EXAM_PENDING` and `eligible: true` on dev after the fix; `me/overview` returns the course. Mutation: removing the log fails 1, reverting the seed's `update` branch fails 1. `kbsCandidate.updateMany` was absent from the shared mock — the defect was shielding the gap in its own coverage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | None                                                                |
@@ -434,6 +566,16 @@ served a five-question quiz. The test written to cover that path was itself
 accepting the shortfall it existed to catch — so the defect and its guard were
 both absent, and the suite reported green. An upper bound is not a length
 assertion. Assert the exact number.
+
+**A test can defend a bug as firmly as it defends a fix.**
+`grading-processor.spec.ts` asserted `returns null for unknown job types`. It was
+green **for exactly as long as the defect existed**, and it would have failed the
+day somebody fixed it — the test standing between the codebase and its own
+repair. This is the strongest form of the pattern found this week: not a test
+that cannot fail, but a test that fails when the code becomes correct. The
+assertion was accurate about the code and wrong about the requirement, and
+nothing in a green suite can tell those two apart. When a test blocks a fix, read
+the requirement before you read the test.
 
 **A fixture that cannot distinguish the thing being tested from the thing it is
 compared against.** Three of this week's defects survived on it, and it is the
