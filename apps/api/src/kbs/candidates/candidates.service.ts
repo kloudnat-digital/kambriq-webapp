@@ -678,7 +678,17 @@ export class KbsCandidatesService {
   private async checkAndTransitionToExamPending(candidateId: string) {
     const settings = await this.prisma.kbsSettings.findFirst();
     const activeCourseId = settings?.activeCourseId;
-    if (!activeCourseId) return;
+    if (!activeCourseId) {
+      // Returning quietly here strands the candidate: they have passed every
+      // module, the transition to EXAM_PENDING never happens, and no error
+      // reaches them or the log. The state is recoverable by an admin, but only
+      // once somebody knows to look. This is the one line that tells them.
+      this.logger.error(
+        'Candidate passed a module but no active course is configured, so the transition to EXAM_PENDING cannot run. Set kbsSettings.activeCourseId. %o',
+        { candidateId },
+      );
+      return;
+    }
 
     const totalModules = await this.prisma.kbsModule.count({ where: { courseId: activeCourseId } });
     const completedModules = await this.prisma.kbsCandidateProgress.count({

@@ -227,6 +227,40 @@ through a real attempt. That is one ephemeral ECS task on `kambriq-dev-api:100`,
 all four modules in the single task, nothing surviving it.
 **Cost: none.**
 
+### K2 — The candidate who finished everything and was told to finish — `EN COURS`
+
+With K1 deployed, both quizzes scored 100 and passed. Then:
+
+```
+GET /kbs/exam/eligibility
+{"eligible":false,"reason":"Terminez tous les modules du programme avant de passer l'examen."}
+```
+
+Told to finish the modules they had just finished.
+
+`checkAndTransitionToExamPending` reads `kbsSettings.activeCourseId` and, when it
+is null, **returns**. No throw, no log, no field in the response. **The seed never
+set it.** So the transition to `EXAM_PENDING` could not run, and the candidate
+stayed `IN_TRAINING` for ever. `me/overview` answered `course: null,
+modulesTotal: 0` to somebody who had just completed six lessons — same line, same
+cause.
+
+**Decision:** the seed sets `activeCourseId`, on `create` **and on `update`** —
+any environment seeded before this already has the settings row, so a
+create-only fix leaves it null exactly where the defect was observed. And the
+early return logs at `error` naming the field to set: the state is recoverable by
+an admin, but only once somebody knows to look.
+
+**The defect was shielding the gap in its own coverage.** `kbsCandidate.updateMany`
+— the call that performs the transition — **was not in the shared prisma mock at
+all**. No test ever reached it, because every test read a null `activeCourseId`
+from those same mocks and returned first. Adding the two tests required adding
+the mock.
+
+**Proof:** mutation, taken. Removing the log fails 1; reverting the seed's
+`update` branch to `{}` fails 1. `EN COURS` until a candidate reaches
+`EXAM_PENDING` on dev. **Cost: none.**
+
 ### K1 — A perfect quiz scored 33% — `EN COURS`
 
 The first quiz submission that ever reached the grader, on the reset dev:
