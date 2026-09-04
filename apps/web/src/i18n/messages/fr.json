@@ -197,9 +197,21 @@
         "title": "Programme de formation KAMBRIQ Business School",
         "subtitle": "6 modules complets pour devenir un Agent Certifié KAMBRIQ (KCA)",
         "features": [
-          { "name": "Durée totale", "title": "8 semaines", "description": "À votre rythme" },
-          { "name": "Format", "title": "100% en ligne", "description": "Accessible 24/7" },
-          { "name": "Modules", "title": "6 modules", "description": "32 leçons" }
+          {
+            "name": "Durée totale",
+            "title": "8 semaines",
+            "description": "À votre rythme"
+          },
+          {
+            "name": "Format",
+            "title": "100% en ligne",
+            "description": "Accessible 24/7"
+          },
+          {
+            "name": "Modules",
+            "title": "6 modules",
+            "description": "32 leçons"
+          }
         ]
       },
       "admission": {
@@ -829,6 +841,18 @@
       "waitMessage": "Veuillez patienter pendant que nous vérifions votre email.",
       "errorMessage": "Le lien a peut-être expiré ou a déjà été utilisé.",
       "goToLogin": "Accéder à la connexion",
+      "backToLogin": "Retour à la connexion"
+    },
+    "reactivate": {
+      "title": "Réactiver votre compte",
+      "subtitle": "Votre compte est en cours de suppression, mais il peut encore être restauré.",
+      "graceOne": "Il vous reste 1 jour pour réactiver votre compte.",
+      "graceOther": "Il vous reste {days} jours pour réactiver votre compte.",
+      "graceUnknown": "Votre compte est encore dans sa période de restauration.",
+      "explanation": "Saisissez vos identifiants pour annuler la suppression. Vos données et votre progression sont conservées.",
+      "email": "Email",
+      "password": "Mot de passe",
+      "submit": "Réactiver mon compte",
       "backToLogin": "Retour à la connexion"
     }
   },

@@ -134,24 +134,56 @@ The API answers `{success, data}`, the web answers flat. That gap broke the smok
 test's health-body check and nobody saw it.
 **Decision:** one representative route per module. **Cost: none.**
 
-### W1 — `/reactivate` 404 — `DECIDE, A FAIRE`
+### W1 — `/reactivate` 404 — `EN COURS`
 
-Listed in `PUBLIC_PATHS`, has no page. `lib/actions/auth.ts:30` redirects there on
-`REACTIVATION_REQUIRED`, so a user in the soft-delete grace period hits a 404.
+Listed in `PUBLIC_PATHS`, no page behind it. `lib/actions/auth.ts:30` redirects
+there on `REACTIVATION_REQUIRED`, so a user in the soft-delete grace period —
+somebody trying to undo a deletion, on a clock — hit a 404.
 
 **Decision: keep both entries. The missing pages are the bug, not the entries.
 Build the missing `/reactivate` page.**
 
 **Instruction withdrawn, recorded so nobody re-issues it.** The original
 instruction was "fix or remove `/reactivate` and `/legal` from `PUBLIC_PATHS`".
-It was withdrawn once the investigation showed that `isPublic` matches `p` or
+It was withdrawn once the investigation showed `isPublic` matches `p` or
 `p + '/'`, so the `/legal` entry is what makes `/legal/privacy`, `/terms`,
 `/mentions` and `/rgpd` public. Removing it would send four legal pages to the
 login screen. `/products` and `/verify-certificate` are prefixes in the same way.
 
-`/reactivate`'s entry is correct; there is simply no page behind it, so a user in
-the soft-delete grace period hits a 404 after `lib/actions/auth.ts:30` redirects
-them. **Cost: none.**
+**Built.** `app/(auth)/reactivate/page.tsx`, on the same form pattern as the
+sibling auth pages, wired to the `reactivateAccountAction` that already existed.
+The `days` query parameter is display-only and attacker-controllable, so it is
+parsed defensively (integer, 1–365, otherwise a neutral message); the grace
+period is enforced by the API, which re-checks it on `POST /auth/reactivate`. A
+wrong number there misleads, it cannot extend anybody's window. `userId` arrives
+in the query string and is deliberately unused — the API reactivates on email and
+password, so the user proves who they are rather than the URL asserting it.
+
+**The guard is for the class, not the route.** `routes-have-pages.spec.ts`
+asserts every `PUBLIC_PATHS` entry either resolves to a `page.tsx` or is declared
+prefix-only **with at least one child page**, and that every `AUTH_ROUTES` target
+is public so a redirect cannot bounce to login. `isPublic` and `proxy` were
+already tested; both answer _"is this path public?"_ and both would have gone on
+answering "yes" for a path that renders nothing. This asserts the other half.
+
+**Proof: one mutation per tail**, under the rule written today, each observed
+failing on its own with its own `Expected/Received`:
+
+| Tail                         | Mutation                               | Observed                                |
+| ---------------------------- | -------------------------------------- | --------------------------------------- |
+| entry has a page             | delete `reactivate/page.tsx`           | `Expected value: "/reactivate"`         |
+| prefix has a child           | add `/legal-old` with nothing under it | `Expected length: not 0 / Received: []` |
+| redirect target is public    | drop `/reactivate` from `PUBLIC_PATHS` | `Expected value: "/reactivate"`         |
+| the collector found anything | force `ROUTES = []`                    | `Expected: > 20 / Received: 0`          |
+
+**A defect in my own measurement, recorded rather than tidied away.** The first
+collector treated `[param]` as a non-path segment along with `(group)`, `@slot`
+and `_private`, so `/verify-certificate/[certificateNumber]` collapsed to
+`/verify-certificate` and the test reported that route as "having no child page".
+A dynamic segment is a real path segment. The failure was in the measurement and
+was read, for a moment, as a defect in the routes.
+
+`EN COURS` until `/reactivate` answers 200 on dev. **Cost: none.**
 
 ### F1 — Coverage ratchet — `A DECIDER`
 
