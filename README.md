@@ -169,25 +169,25 @@ Swagger docs: [http://localhost:3000/api/v1/docs](http://localhost:3000/api/v1/d
 
 ### Database scripts
 
-| Command                      | Description                                          |
-| ---------------------------- | ---------------------------------------------------- |
-| `pnpm db:migrate:dev`        | Create and apply migrations (dev) - all 4 schemas    |
-| `pnpm db:migrate:dev:core`   | Migrations for Core DB only                          |
-| `pnpm db:migrate:dev:kbs`    | Migrations for KBS DB only                           |
-| `pnpm db:migrate:dev:kamnet` | Migrations for Kamnet DB only                        |
-| `pnpm db:migrate:dev:lands`  | Migrations for Lands DB only                         |
-| `pnpm db:migrate:deploy`     | Apply existing migrations (production) - all 4       |
-| `pnpm db:seed`               | Run seed script (idempotent - safe to re-run)        |
-| `pnpm db:setup`              | Migrate all + seed (shortcut for fresh environments) |
-| `pnpm db:generate:core`      | Regenerate Core Prisma client                        |
-| `pnpm db:generate:kbs`       | Regenerate KBS Prisma client                         |
-| `pnpm db:generate:kamnet`    | Regenerate Kamnet Prisma client                      |
-| `pnpm db:generate:lands`     | Regenerate Lands Prisma client                       |
-| `pnpm db:studio:core`        | Open Prisma Studio for Core DB (port 5555)           |
-| `pnpm db:studio:kbs`         | Open Prisma Studio for KBS DB (port 5556)            |
-| `pnpm db:studio:kamnet`      | Open Prisma Studio for Kamnet DB (port 5557)         |
-| `pnpm db:studio:lands`       | Open Prisma Studio for Lands DB (port 5558)          |
-| `pnpm db:reset`              | Reset all databases (dev only)                       |
+| Command                      | Description                                                                         |
+| ---------------------------- | ----------------------------------------------------------------------------------- |
+| `pnpm db:migrate:dev`        | Create and apply migrations (dev) - all 4 schemas                                   |
+| `pnpm db:migrate:dev:core`   | Migrations for Core DB only                                                         |
+| `pnpm db:migrate:dev:kbs`    | Migrations for KBS DB only                                                          |
+| `pnpm db:migrate:dev:kamnet` | Migrations for Kamnet DB only                                                       |
+| `pnpm db:migrate:dev:lands`  | Migrations for Lands DB only                                                        |
+| `pnpm db:migrate:deploy`     | Apply existing migrations (production) - all 4                                      |
+| `pnpm db:seed`               | Run seed script (idempotent AND restorative - a re-run puts consumed fixtures back) |
+| `pnpm db:setup`              | Migrate all + seed (shortcut for fresh environments)                                |
+| `pnpm db:generate:core`      | Regenerate Core Prisma client                                                       |
+| `pnpm db:generate:kbs`       | Regenerate KBS Prisma client                                                        |
+| `pnpm db:generate:kamnet`    | Regenerate Kamnet Prisma client                                                     |
+| `pnpm db:generate:lands`     | Regenerate Lands Prisma client                                                      |
+| `pnpm db:studio:core`        | Open Prisma Studio for Core DB (port 5555)                                          |
+| `pnpm db:studio:kbs`         | Open Prisma Studio for KBS DB (port 5556)                                           |
+| `pnpm db:studio:kamnet`      | Open Prisma Studio for Kamnet DB (port 5557)                                        |
+| `pnpm db:studio:lands`       | Open Prisma Studio for Lands DB (port 5558)                                         |
+| `pnpm db:reset`              | Reset all databases (dev only)                                                      |
 
 ### Docker scripts
 
@@ -258,8 +258,6 @@ pnpm test:cov:common   # libs/common only → coverage/libs/common/
 | `THROTTLE_LIMIT`         | Max requests per window                 | `100`                   |
 | `REDIS_HOST`             | Redis hostname                          | `localhost`             |
 | `REDIS_PORT`             | Redis port                              | `6379`                  |
-| `AWS_ACCESS_KEY_ID`      | AWS credentials                         | -                       |
-| `AWS_SECRET_ACCESS_KEY`  | AWS credentials                         | -                       |
 | `AWS_S3_BUCKET`          | S3 bucket name for file uploads         | `kambriq-uploads`       |
 | `AWS_REGION`             | AWS region                              | `eu-central-1`          |
 | `EMAIL_FROM`             | Sender email address                    | `noreply@kambriq.com`   |
@@ -268,6 +266,13 @@ pnpm test:cov:common   # libs/common only → coverage/libs/common/
 | `STORAGE_TRANSPORT`      | `s3` stores files, `disabled` throws    | `s3`                    |
 | `FRONTEND_URL`           | Frontend origin (used in email links)   | `http://localhost:3001` |
 | `SALT_ROUNDS`            | bcrypt salt rounds for password hashing | `12`                    |
+
+AWS credentials are **not** environment variables. On Fargate the SDK resolves
+them from the ECS task role through the default provider chain; locally it uses
+whatever `~/.aws` or `AWS_PROFILE` provides. `AWS_ACCESS_KEY_ID` and
+`AWS_SECRET_ACCESS_KEY` were listed here and read by `storage.service.ts` as a
+gate — they are never set on Fargate, so every upload and download was dead until
+that gate was removed. Do not reintroduce them.
 
 ---
 
@@ -311,7 +316,7 @@ Full interactive documentation is available at `/api/v1/docs` when running in de
 .
 ├── apps/
 │   ├── api/                        # NestJS API application
-│   └── api-e2e/                    # End-to-end tests
+│   └── api-e2e/                    # The four delivery journeys, against a DEPLOYED api
 ├── libs/
 │   └── common/                     # Shared library
 │       └── src/
@@ -337,7 +342,7 @@ Full interactive documentation is available at `/api/v1/docs` when running in de
 │   ├── kbs/                        # KBS schema, migrations, config
 │   ├── kamnet/                     # Kamnet schema, migrations, config
 │   ├── lands/                      # Lands schema, migrations, config
-│   └── seed.ts                     # Idempotent seed script (all domains)
+│   └── seed.ts                     # Idempotent + restorative seed (all domains)
 ├── docker/
 │   ├── docker-compose.yml          # Dev infrastructure
 │   └── init.sql                    # Creates all 4 databases on first Postgres boot
@@ -377,13 +382,26 @@ Eric  (CONFIRMED, 6 sales)  ← root sponsor
 ### KBS - Training data
 
 - 1 published course with 2 modules and 6 lessons
+- **120 questions**: 60 quiz (30 per module, against a quiz of 10) and 60 exam
+  (against an exam of 20) - a 3.0x pool in both cases, so retiring a question does
+  not silently shrink the exercise
 - 5 enrolled candidates at various progress stages
-- 5 certificates (1 per agent)
+- 5 certificates (1 per agent) - **seeded artefacts, not earned**: they exist
+  against zero exam rows, so do not read them as evidence the grading path works
+
+> **The question bank has had no editorial and no legal validation pass.** It is
+> dev seed content, fit to prove the engine and the journey, and **not fit to
+> teach** until somebody qualified has read it.
+> `apps/web/src/content/methode/fr.mdx` is the single authoritative source for the
+> TFL, VEFL and VEFIL definitions, for the bank and for editorial content alike.
 
 ### Lands - Parcel data
 
-- 3 land labels, 5 land parcels (mixed availability)
-- 1 completed reservation linked to Eric's agent account
+- 3 land labels, 20 land parcels (18 available), 1 confirmed reservation linked
+  to Eric's agent account
+- The pool is deliberately larger than one pass consumes, and a re-run **restores
+  it**: reserving a parcel moves it AVAILABLE -> RESERVED -> SOLD, and `pnpm
+db:seed` puts it back
 
 ---
 
