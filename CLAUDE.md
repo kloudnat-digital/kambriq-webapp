@@ -199,8 +199,59 @@ version used `['"`]…['"`]`and flagged the French question bank: in`"Il a chang
 finished. Back-referencing the quote fixed it. Found by the measurement, in the
 measurement.
 
-`EN COURS` until dev shows a reservation creating a client who holds `CLIENT` and
-reaches a portal route, and `GET /users` returning rows. **Cost: none.**
+**Live on dev, `kambriq-dev-api:116` / `sha-f069f9d`:**
+
+```
+GET  /users?limit=3        200  rows: 3  total: 14   first row: {id, email, firstName, …}
+POST /lands/reservations   201  clientUserId ba2c538c-…
+GET  /users/ba2c538c-…          CLIENT USER ROLES: ['CLIENT']
+```
+
+**Taking the third part of that proof — the client reaching a portal route —
+found a fourth defect on the same journey**, recorded as R2 below.
+**Cost: none.**
+
+### R2 — The invited client could set a password and still not log in — `EN COURS`
+
+The client used the set-password link from their invite email, got **204**, and
+then:
+
+```
+POST /auth/login  ->  401  "Veuillez vérifier votre adresse email avant de vous connecter"
+GET  /users/<id>  ->  emailVerified: false, roles: ['CLIENT']
+```
+
+They were invited by an agent, **proved control of the mailbox by returning a
+secret delivered to it**, and were told to prove it again with a verification
+link they were never sent. There is no way out of that state from the client's
+side. Every step before the login succeeded, which is why nothing surfaced it.
+
+**Decision:** consuming a password-reset token marks the address verified. It is
+the same evidence `verify-email` accepts — a secret sent to that address and
+returned. Requiring it twice is not extra safety, it is a dead end.
+
+**The existing test asserted `$transaction` had been called and never what it
+was called with**, so the entire content of that write was unexamined.
+
+**Proof: two tails, two mutations**, each observed failing alone — dropping
+`emailVerified` fails _"marks the email verified"_; dropping the password and
+lockout fields fails _"still sets the password and clears the lockout"_, so the
+new field cannot quietly displace the old ones.
+
+`EN COURS` until an invited client logs in and reaches `/lands/client/purchases`
+on dev. **Cost: none.**
+
+**A measurement defect of mine, on the way.** I read `inbox[0]` from the client's
+mailbox, found no link, and was about to record "the invite email carries no
+link". There were **two** messages: the newest was the portal-access notice, and
+the invite with a valid 64-hex token was the second. Reading the first element of
+a list is not reading the list. That is the fifth of these this week, and the
+second where I nearly filed a defect that did not exist.
+
+**One real thing did come out of that email, though.** The portal-access notice
+says _"Votre agent KAMNET : 00000000-0000-4000-8000-b00000000005"_ — it prints
+the agent's raw user UUID where a name belongs, to a client. Not fixed here;
+recorded.
 
 ### Z1 — Three never-used access keys, one of them full admin — `A DECIDER`, prepared not applied
 

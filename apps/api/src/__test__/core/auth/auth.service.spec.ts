@@ -400,6 +400,63 @@ describe('AuthService', () => {
         expect.objectContaining({ template: 'passwordResetConfirmation' }),
       );
     });
+
+    /**
+     * Consuming the token proves control of the mailbox.
+     *
+     * A client invited by a land reservation used their set-password link, got
+     * a 204, and could not log in: `emailVerified` was still false and login
+     * refuses an unverified address. They had proved ownership of that mailbox
+     * by the only means the system has, and were told to prove it again with a
+     * link they were never sent. Every step before the login succeeded, which is
+     * why nothing surfaced it.
+     *
+     * The assertion above this one checked `$transaction` was called and never
+     * what it was called with — so the whole content of the write was
+     * unexamined.
+     */
+    it('marks the email verified, because the token was delivered to it', async () => {
+      const token = buildVerificationToken({
+        type: VerificationTokenType.PASSWORD_RESET,
+        user: {
+          id: 'u1',
+          email: 'test@kambriq.com',
+          firstName: 'Alice',
+          preferredLanguage: 'fr',
+        },
+      });
+      prisma.verificationToken.findUnique.mockResolvedValue(token);
+
+      await service.resetPassword({ token: token.token, newPassword: 'NewStr0ng!Pass' });
+
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: token.userId },
+          data: expect.objectContaining({ emailVerified: true }),
+        }),
+      );
+    });
+
+    it('still sets the password and clears the lockout', async () => {
+      const token = buildVerificationToken({
+        type: VerificationTokenType.PASSWORD_RESET,
+        user: {
+          id: 'u1',
+          email: 'test@kambriq.com',
+          firstName: 'Alice',
+          preferredLanguage: 'fr',
+        },
+      });
+      prisma.verificationToken.findUnique.mockResolvedValue(token);
+
+      await service.resetPassword({ token: token.token, newPassword: 'NewStr0ng!Pass' });
+
+      const data = (prisma.user.update.mock.calls[0]?.[0] as { data: Record<string, unknown> })
+        .data;
+      expect(data['passwordHash']).toBeDefined();
+      expect(data['loginAttempts']).toBe(0);
+      expect(data['lockedUntil']).toBeNull();
+    });
   });
 
   // ----- REACTIVATE ACCOUNT ----- //
