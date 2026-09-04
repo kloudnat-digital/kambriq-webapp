@@ -26,6 +26,25 @@ export const call = async (
     ...(opts.body === undefined ? {} : { body: JSON.stringify(opts.body) }),
   });
   const body = await res.text();
+
+  /**
+   * 429 is never a legitimate result here, so it is named rather than asserted
+   * against.
+   *
+   * The API throttles at `THROTTLE_LIMIT` requests per `THROTTLE_TTL`. Running
+   * this suite back to back exhausts that, and the failure then surfaces as
+   * "expected 200, received 429" on a login — which reads as a broken auth path
+   * and is not. In CI the suite runs once per deploy and never sees it; a human
+   * re-running it three times in a minute will, and should be told what happened
+   * instead of debugging the product.
+   */
+  if (res.status === 429) {
+    throw new Error(
+      `${method} ${path} was rate limited (429). This suite ran too soon after a ` +
+        `previous run - wait for the throttle window and retry. Not a product failure.`,
+    );
+  }
+
   return {
     status: res.status,
     body,

@@ -958,6 +958,23 @@ restorative seed is not deployed yet. **The automated journey reproduced the
 Monday problem before the fix reached the environment**, which is the strongest
 argument for it existing.
 
+**The suite returns the parcel it consumes.** Each run reserves one, and the pool
+went **18 → 15 in three runs** before anybody noticed. At one deploy per change
+that empties inside a fortnight, and the next tester finds an empty catalogue and
+reports a bug that is not there. **A restorative seed is not enough if nothing
+re-runs it**, and a test that relies on somebody else tidying up has a hidden
+prerequisite. Journey 4 now cancels its reservation and asserts the parcel is
+`AVAILABLE` again — which is the restorative property proved _through the API_
+rather than against the database. Stable at 14 across consecutive runs; removing
+the cancellation fails the assertion.
+
+**And the suite can throttle itself.** Run back to back it exhausts
+`THROTTLE_LIMIT`, and the failure surfaced as _"expected 200, received 429"_ on a
+**login** — which reads as a broken auth path and is not. `call()` now names a
+429 explicitly rather than letting it be asserted against. In CI the suite runs
+once per deploy and never meets it; a human re-running it three times in a minute
+will, and should be told what happened instead of debugging the product.
+
 **Deleted rather than annotated:** `api-e2e` previously held one spec asserting
 `GET /api` returns `{ message: 'Hello API' }` — a route that does not exist, in a
 project CI never ran. A test nobody runs, asserting something untrue, is worse
