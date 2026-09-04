@@ -86,19 +86,16 @@ export class EmailProcessor extends WorkerHost {
         }),
       );
 
-      this.logger.log('Email sent', {
-        to,
-        subject,
-        messageId: result.MessageId,
-      });
+      // The MessageId goes in the message string, not a metadata object.
+      // nestjs-pino treats Logger.log's second argument as the *context*, so
+      // `logger.log('Email sent', { messageId })` silently dropped it and the
+      // only record of a send was an unattributable "Email sent" line.
+      this.logger.log(`Email sent to ${to} messageId=${result.MessageId} subject="${subject}"`);
       return { delivered: true, messageId: result.MessageId, to, subject };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error('Failed to send email', {
-        to,
-        subject,
-        error: message,
-      });
+      // Same reason as above: interpolate, do not pass an object.
+      this.logger.error(`Failed to send email to ${to} subject="${subject}" error=${message}`);
       throw error;
     }
   }
