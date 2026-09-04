@@ -267,7 +267,7 @@ before prd sends anything, independently of cost.
 
 ---
 
-## Two habits this register enforces
+## The habits this register enforces
 
 **Prove it, do not infer it.** A green deploy concealed the SES failure from
 February to September. Verify against the external system — the SES `Send`
@@ -311,6 +311,29 @@ proving, so the proof measured the old build and appeared to show the fix
 failing. Wait for the running task definition's image tag to equal
 `sha-$(git rev-parse --short HEAD)`. A monotonic counter is not an identifier of
 what is in the build.
+
+**One mutation proves one expectation. An assertion with several tails needs one
+mutation per tail, each observed failing on its own.**
+
+This is a rule for every proof written from today, W1 and V1 included. It comes
+out of the per-bank distribution bounds, which assert two things —
+`>= floor(N/4)` and `<= ceil(N/4)`. Two mutations were run through that
+assertion, `9/8/8/5` and `9/9/9/3`, and both were reported as proving it. Both
+only ever produced `Expected: <= 8, Received: 9`. **Jest stops at the first
+failing expectation**, so the lower bound never executed in either run: half the
+guard was decorative while the proof looked complete. It took a third shape,
+`8/8/8/6` — nothing above 8, one position at 6 — before `>= 7` was ever seen
+firing.
+
+The general form: a mutation tells you that _an_ expectation caught it, never
+that _the_ expectation you had in mind did. So for each expectation in an
+assertion, construct the input that violates that one and leaves the others
+satisfied, and read the actual `Expected/Received` rather than the test name.
+If a tail cannot be violated in isolation, say so in the register instead of
+counting it as proven.
+
+A good deal of this week's mutation work has this shape and is not being
+re-audited before Monday — the rule binds new proofs, and retrofitting waits.
 
 **An assertion whose failure has never been observed is a claim.**
 The per-bank distribution bounds were written, and then described as something
