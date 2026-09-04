@@ -227,6 +227,96 @@ through a real attempt. That is one ephemeral ECS task on `kambriq-dev-api:100`,
 all four modules in the single task, nothing surviving it.
 **Cost: none.**
 
+### N2 — The global exception filter never ran — `EN COURS`
+
+Probing dev after the A3 deploy, not reading code, found it:
+
+```
+POST /auth/login  wrong password   401  text/html   <pre>UnauthorizedException ... at AuthService.login
+GET  /users/me    no token         401  text/html
+GET  /nope                         404  text/html   ... /app/node_modules/.pnpm/@nestjs+core@11.1.17/...
+POST /auth        bad body         400  application/json   {"success":false,...}   <- the only correct one
+```
+
+**Root cause.** `PrismaExceptionFilter` is `@Catch()` — a catch-all — and Nest
+selects the **last-registered** matching filter. It is registered after
+`GlobalExceptionFilter`, so it wins for every exception, and for anything
+non-Prisma it did `throw exception`. A throw from inside a filter is not
+"pass it along": it escapes Nest's exception layer into **Express's default
+error handler**, which answers with an HTML page carrying the full stack. Only
+validation errors looked right, because `ZodExceptionFilter` is
+`@Catch(ZodValidationException)` and handles its own.
+
+`GlobalExceptionFilter` **never executed once**, in any environment, ever.
+
+**Two chantiers were resting on that filter.** E1 removed the stack from a body
+this filter builds — a body no client had received. N1's envelope contract held
+on success paths and on nothing else: every error response broke it.
+
+**And my own account of E1 was wrong.** I recorded the leak as "the
+`NODE_ENV === 'development'` branch in the global exception filter". The HTML
+shape said otherwise and I did not read it. The `NODE_ENV` branch was real and
+worth removing; it was not what leaked.
+
+**Decision:** `PrismaExceptionFilter` delegates to `GlobalExceptionFilter`
+instead of rethrowing, so the chain always terminates in a JSON envelope
+regardless of which filter Nest picks. Also removes the not-found middleware
+attempted earlier in the A3 PR: it was registered after an explicit `app.init()`
+and could never run, because Nest mounts its own not-found **route** during
+`init()`. Deployed, and it did not fire once.
+
+**The mechanism: test the chain, not the filter.**
+`global-exception.filter.spec.ts` calls the filter directly. It was green
+throughout the period the filter never ran, and it stays green under the
+mutation that restores the defect — 57 of 57. A unit test of a filter proves the
+filter; it cannot prove the filter is reached. The new test boots a real HTTP
+server with `main.ts`'s exact `useGlobalFilters` wiring and reads what a client
+receives. Restoring `throw exception` fails 5 of its cases.
+
+**Proof:** mutation, taken. `EN COURS` until dev answers JSON on 401, 403, 404
+and an unmatched URL. **Cost: none.**
+
+### S2 — Every seeded identifier is rejected by the API's own validation — `EN COURS`
+
+Found by taking the B3 live proof: the quiz served 10 questions, and submitting
+answers to them returned
+
+```
+400  {"field":"answers.0.questionId","message":"Invalid UUID","code":"invalid_format"}
+```
+
+The seed writes `00000000-0000-0000-0000-<prefix><counter>` — **47 hardcoded ids
+and 480 generated ones, 47 of 47 rejected**. PostgreSQL stores them happily; as
+far as the `uuid` column is concerned they are valid. `z.uuid()` is not: RFC 4122
+puts the version in the first nibble of group 3 (1-8) and the variant in the
+first nibble of group 4 (8, 9, a or b), and the seed wrote `0` for both.
+
+**Twenty-three request-body fields across KBS, KAMNET and LANDS are declared
+`z.uuid()`.** A tester sending a seeded id to any of them gets a 400 that reads
+like their own mistake. Submitting a quiz answer, saving an exam answer,
+attaching a lead to a seeded parcel — all unreachable with the data seeded for
+exactly that purpose. This is delivery-checklist item 3, and B3 could not have
+met it.
+
+**Why nothing caught it.** The two systems disagreed silently. The write side
+(Prisma → Postgres) accepted the value and the read side returned it; only a
+request carrying an id in a **body** ever met the stricter rule, and no test
+did that.
+
+**Decision:** the seed emits RFC-valid ids — same prefix scheme, version nibble
+`4` and variant nibble `8`, so `…-a00000000001` becomes
+`00000000-0000-4000-8000-a00000000001` and the a/b/c/d/e/f convention is intact.
+A test runs every id the seed emits — literals and both generators, 600 of them —
+through the same validator the controllers use, and asserts the literal count is
+above 40 so an empty match cannot read as a pass.
+**Proof:** mutation, taken, on a literal and on a generator.
+**Cost: none.**
+
+**Blocked on a decision — see `D1` below.** New ids mean the rows already on dev
+are the old ones. A re-seed keyed on the new ids would not replace them: roles
+and questions would double, and `kbsCandidate.userId` would point at user ids
+that no longer exist. Dev needs a clean reset for this to land.
+
 ### A3 — Every verification email carried a dead link — `EN COURS`
 
 Found by taking checklist item 1 for real: registering on dev, fetching the mail
@@ -288,10 +378,12 @@ not-found handler sits outside the global filter chain, so `GET /api/v1/nope`
 fell through to Express's default error page: an HTML body with the full stack,
 `/app/node_modules/.pnpm/...` paths, and the exact pinned version of every
 framework package (`@nestjs/core@11.1.17`, `router@2.2.0`, `class-validator`).
-A mistyped URL handed a stranger a dependency inventory. Closed in the A3 PR with
-an explicit JSON 404 handler registered **after** `app.init()` — `app.use()` hands
-middleware straight to Express and the router is not mounted until `init()`, so
-registering it a few lines earlier would have 404'd the entire API.
+A mistyped URL handed a stranger a dependency inventory. The A3 PR attempted a JSON 404
+handler registered after an explicit `app.init()`. **It was deployed and it never
+fired**, because Nest mounts its own not-found _route_ during `init()`, ahead of
+anything registered afterwards. The real cause was N2 below, and the attribution
+in this entry — "the `NODE_ENV === 'development'` branch in the global exception
+filter" — was **wrong**: that filter had never run. Closed by N2.
 **Cost: none.**
 
 ### T1 — Guards and roles untested — `DECIDE, A FAIRE`
