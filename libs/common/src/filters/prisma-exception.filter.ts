@@ -24,7 +24,10 @@ export class PrismaExceptionFilter implements ExceptionFilter {
 
     this.logger.warn('Prisma Error %o', {
       code: prismaError.code,
-      path: request.url,
+      // Path only, never the query string. Query strings carry search terms and
+      // password-reset tokens; the diagnostic value is in the path. The Prisma
+      // message is kept deliberately: it names columns, not values.
+      path: request.url.split('?')[0],
       message,
       status,
     });
