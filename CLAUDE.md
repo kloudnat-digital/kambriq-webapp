@@ -238,6 +238,80 @@ before prd sends anything, independently of cost.
 
 ---
 
+## Role-grant inventory — read-only, folded into V1
+
+V1 asks of a job: _can this report success while doing nothing?_ Pointed at
+permissions the question becomes: **can a user award themselves a role by
+completing an action, with no human and no verified fact in between?** Every
+place in the codebase that writes a role association, and what stands between the
+trigger and the grant.
+
+| #   | Site                                                        | Trigger                                    | What stands between                                                                | Verdict                        |
+| --- | ----------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------- | ------------------------------ |
+| 1   | `auth.service.ts:89` → `CLIENT`                             | anybody registering                        | nothing — and nothing should. `CLIENT` is the baseline                             | Fine                           |
+| 2   | `users.service.ts:414` → `CLIENT`                           | an agent reserving a land for a new client | nothing needed                                                                     | **Broken — see below**         |
+| 3   | `candidates.service.ts:86` → `CANDIDATE_KBS`                | the user calling `POST /kbs/enroll`        | **nothing. Self-service**                                                          | See below                      |
+| 4   | `candidates.service.ts:631` → `KCA_CERTIFIED`               | admin sets status `CERTIFIED`              | `@Roles(ADMIN_KBS, ADMIN_GLOBAL)`, `grantedBy` recorded                            | Fine                           |
+| 5   | `certificates.service.ts:101` → `KCA_CERTIFIED`             | admin issues a certificate                 | `@Roles(ADMIN_KBS, ADMIN_GLOBAL)`, requires a passed **exam**, `issuedBy` recorded | Fine — this is the fix from Q1 |
+| 6   | `certificates.service.ts:251` → **removes** `KCA_CERTIFIED` | admin revokes                              | admin + mandatory reason                                                           | Fine                           |
+| 7   | `applications.service.ts:181` → `AGENT`                     | admin approves a KAMNET application        | `@Roles(ADMIN_KAMNET, ADMIN_GLOBAL)`, `grantedBy` recorded                         | Fine                           |
+| 8   | `users.controller.ts:289` / `:313` → any role               | admin grants or revokes directly           | `@Roles(ADMIN_GLOBAL)` only                                                        | Fine                           |
+| 9   | `users.service.ts:257` → replaces the whole role set        | admin updates a user with `roleCodes`      | `@Roles(ADMIN_GLOBAL)`                                                             | Fine                           |
+| —   | `grading-processor.ts:183` → `KCA_CERTIFIED`                | **nothing enqueues it any more**           | —                                                                                  | Dormant — see below            |
+
+### The answer to the question asked
+
+**`KCA_CERTIFIED` was the only role a user could award themselves by completing
+an action, and it is now closed.** Every other grant sits behind an `ADMIN_*`
+guard and records `grantedBy`. Nothing else crosses an authorization boundary on
+a business event.
+
+### Three things the sweep turned up anyway
+
+**1. A client created by a reservation gets no role at all — proven on dev.**
+`findOrCreateClientUser` looks up `where: { code: 'client' }`. The stored code is
+`'CLIENT'`. Postgres string comparison is case-sensitive, so the lookup returns
+`null`, and `if (clientRole)` swallows it:
+
+```
+POST /lands/reservations  ->  201, clientUserId bc880e1e-…
+GET  /users/bc880e1e-…    ->  ROLES: []
+      (contrast, a seeded user: ROLES: ['KCA_CERTIFIED','AGENT'])
+```
+
+`@Roles(RoleCode.CLIENT)` gates `lands-client.controller.ts` — the **entire
+client portal**. So the client is emailed portal access and then refused by every
+route in it. The reservation succeeds, the email sends, the job is green, and the
+only symptom is a client who cannot log into the thing they were just invited to.
+The same `if (clientRole)` guard sits on the registration path at
+`auth.service.ts:89`, which is correct only because that one spells the constant
+`RoleCode.CLIENT`. **One word, one casing, one silent guard.** Not fixed here —
+report only, as asked.
+
+**2. `CANDIDATE_KBS` is self-service and gates nothing.** `POST /kbs/enroll`
+grants it to the caller with no human in the loop. There is no
+`@Roles(RoleCode.CANDIDATE_KBS)` anywhere in the codebase, so the role carries no
+authority: it is a label, not a permission. Harmless today, and worth knowing
+before somebody gates something on it and assumes a check happened.
+
+**3. A dormant `KCA_CERTIFIED` grant.** `grading-processor.ts:183` still handles
+`KBS_JOBS.GRANT_KCA_ROLE` and still calls `addRole(userId, KCA_CERTIFIED)` with
+**no `grantedBy`**. Since Q1, nothing enqueues that job. The handler was kept
+deliberately so that any job already sitting on the queue would drain rather than
+hit V1's new "unknown job name throws" — but what remains is an unreachable code
+path that grants an authorization on a score, and unreachable is one `queue.add`
+away from reachable. It should go once the queue is confirmed empty of them.
+
+### Also found, and not about roles
+
+`GET /users` returns **`{"data":[{},{},{}],"meta":{"total":14,…}}`** — the admin
+user list serialises every row to an empty object while the pagination meta is
+correct. The endpoint answers 200 and looks healthy from every angle except the
+one that matters. Not investigated further; recorded so it is not discovered
+again from scratch.
+
+---
+
 ## Account audit — `051551940370`, all regions, read-only
 
 Swept on 2026-09-04 across all 17 enabled regions. **Report only; nothing was
