@@ -153,3 +153,35 @@ describe('the seed restores the fixtures it owns', () => {
     expect(available).toBeGreaterThanOrEqual(15);
   });
 });
+
+/**
+ * The seed must check what it claims, not announce it.
+ *
+ * The first restorative fix keyed `landReservation.upsert` on a non-unique
+ * column, printed nothing for lands, and exited non-zero. The exhaustion proof
+ * still looked right — parcels were restored before the failure, so the counts
+ * moved — and it was read as passing. The success line never printed and its
+ * absence was not noticed.
+ */
+describe('the seed verifies its own postcondition', () => {
+  const landsBlock = SEED.slice(SEED.indexOf('async function seedLands'));
+
+  it('counts the available parcels back before reporting them', () => {
+    expect(landsBlock).toContain('Lands seed postcondition failed');
+    expect(landsBlock).toContain(
+      'const actualAvailable = await lands.land.count({ where: { status: LandStatus.AVAILABLE } })',
+    );
+  });
+
+  it('reports the counted number, not the intended one', () => {
+    const log = landsBlock.slice(landsBlock.indexOf('✓ Lands seeded'));
+    expect(log).toContain('${actualAvailable} available');
+  });
+
+  it('keys the seeded reservation on its own id, which is unique', () => {
+    // `landId` carries no unique constraint: a parcel may have several
+    // reservations over its life, and Postgres refuses the ON CONFLICT.
+    expect(landsBlock).toContain('where: { id: IDS.LAND_RESERVATION_SEEDED }');
+    expect(landsBlock).not.toContain('where: { landId: IDS.LAND_3 }');
+  });
+});

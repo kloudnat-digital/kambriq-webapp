@@ -540,18 +540,45 @@ ids, never the seeded reservation itself.
 as ten quiz questions against a threshold of ten.** 5 parcels → **20**, of which
 **18 AVAILABLE**. A journey consumes one; a suite run consumes a handful.
 
-**Proof, by exhaustion and recovery:**
+**Proof, by exhaustion and recovery — with the exit code read every time:**
 
 ```
-seed          AVAILABLE=18  reservations=1
-exhaust       AVAILABLE=0   reservations=19   <- the wall a tester hits
-re-seed       AVAILABLE=18  reservations=1    <- restored
-exhaust again AVAILABLE=0
-re-seed       AVAILABLE=18  reservations=1
+seed             Lands seeded (3 labels, 20 parcels, 18 available, 1 reservation)  exit=0
+                 AVAILABLE=18  reservations=1
+exhaust          AVAILABLE=0   reservations=19   <- the wall a tester hits
+re-seed          ... 18 available ...                                              exit=0
+                 AVAILABLE=18  reservations=1    <- restored
+exhaust again    AVAILABLE=0
+re-seed          ... 18 available ...                                              exit=0
+                 AVAILABLE=18  reservations=1
 ```
 
-**Mutations, three tails**, each observed failing alone: `update: {}` restored;
-the reservation cleanup deleted; the pool cut back to five.
+**The first version of this proof was wrong, and it is the sharpest measurement
+defect of the week.** `landReservation.upsert` keyed on `landId`, which carries
+no unique constraint — Postgres refuses the `ON CONFLICT`. It had passed
+silently while `update` was `{}`, because Prisma took a find-then-write path;
+giving the update real fields made it emit `INSERT … ON CONFLICT` and the latent
+mismatch surfaced. The seed **exited 1**.
+
+And I reported the proof as passing. The parcels are restored _before_ the
+reservation upsert, so `AVAILABLE` moved 0 → 18 exactly as predicted, and I read
+the numbers I expected to move. **I grepped for the success line, it never
+printed, and I did not notice its absence** — then piped the command so `$?` was
+`tail`'s status rather than the seed's.
+
+**So the seed now checks its own postcondition** rather than announcing one: it
+counts the AVAILABLE parcels back and throws if the number is not the one it
+claims, and the log prints the counted number rather than the intended one.
+
+```
+Lands seed postcondition failed: expected 18 AVAILABLE parcels, found 0.
+The fixtures were not restored.                                    exit=1
+```
+
+**Mutations, six tails**, each observed failing alone: `update: {}` restored; the
+reservation cleanup deleted; the pool cut back to five; the reservation keyed on
+`landId` again; the log reporting the intended count rather than the counted one;
+and the postcondition itself, watched failing against an unrestored pool.
 
 ### F3 — The four journeys, automated — `EN COURS`
 
@@ -1057,6 +1084,13 @@ week: an invented route (`/kamnet/me`) whose 404 was read as a missing guard,
 when a route that is not there cannot be unguarded; and a root URL built without
 its trailing slash, which the ALB handed to the web app, whose 404 page was read
 as the API's.
+
+**A success line that never printed is not a success.** Twice today I read a
+result from the numbers I expected to move rather than from the process that
+produced them: a seed exiting 1 whose parcels had already been restored, and an
+exit code taken from `tail` because the command was piped. **Check the status,
+and check that the thing you were waiting for actually appeared** — absence of a
+line is not the same as absence of a problem.
 
 **Gate on the commit, never on the revision number.** I waited for
 `kambriq-dev-api` revision `>= 106`, read `COMPLETED`, and took the Q1 proof
