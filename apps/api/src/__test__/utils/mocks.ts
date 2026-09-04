@@ -68,6 +68,11 @@ export const mockKbsPrisma = () => ({
     findUnique: fn(),
     findMany: fn(),
     create: fn(),
+    // `updateMany` is how the EXAM_PENDING transition is written. It was absent
+    // here, and no test noticed - because `checkAndTransitionToExamPending`
+    // read a null `activeCourseId` from these same mocks and returned before
+    // reaching it. The defect was shielding the gap in its own coverage.
+    updateMany: fn(),
     update: fn(),
     count: fn(),
   },

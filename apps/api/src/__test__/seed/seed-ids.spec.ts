@@ -79,3 +79,29 @@ describe('seed identifiers are valid UUIDs by the API’s own rule', () => {
     });
   });
 });
+
+/**
+ * The seed must configure the active course.
+ *
+ * `checkAndTransitionToExamPending` reads `kbsSettings.activeCourseId` first and
+ * returns when it is null, and `me/overview` answers `course: null,
+ * modulesTotal: 0` for the same reason. The seed created the settings row with
+ * `update: {}` and never set the field, so on dev a candidate passed every
+ * module, stayed IN_TRAINING, and was told to "finish all the modules" they had
+ * just finished.
+ *
+ * `update` has to set it as well as `create`: any environment seeded before this
+ * already has the settings row, so a create-only fix would leave it null exactly
+ * where the defect was observed.
+ */
+describe('seed configures the active course', () => {
+  it('sets activeCourseId on create and on update', () => {
+    const block = SEED.slice(SEED.indexOf('kbsSettings.upsert'));
+    const upsert = block.slice(0, block.indexOf('});') + 3);
+
+    expect(upsert).toContain('activeCourseId: IDS.KBS_COURSE');
+    // Both branches, not just the one that runs on an empty database.
+    expect(upsert.match(/activeCourseId: IDS\.KBS_COURSE/g)).toHaveLength(2);
+    expect(upsert).not.toMatch(/update:\s*\{\s*\}/);
+  });
+});

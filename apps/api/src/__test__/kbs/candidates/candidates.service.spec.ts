@@ -199,6 +199,52 @@ describe('KbsCandidatesService', () => {
       expect(result.passed).toBe(false);
     });
 
+    /**
+     * A candidate who has passed everything and cannot sit the exam must not be
+     * silent.
+     *
+     * `checkAndTransitionToExamPending` reads `kbsSettings.activeCourseId` and
+     * returned early when it was null. The seed never set it, so on dev a
+     * candidate passed both modules, stayed `IN_TRAINING`, and `eligibility`
+     * answered "finish all the modules" to somebody who had finished all the
+     * modules. Nothing was logged and nothing failed.
+     */
+    it('logs loudly when no active course is configured, instead of stranding the candidate', async () => {
+      arrangeQuiz();
+      prisma.kbsSettings.findFirst.mockResolvedValue({
+        quizQuestionCount: QUIZ_LENGTH,
+        activeCourseId: null,
+      });
+      const logged = jest.spyOn(service['logger'], 'error').mockImplementation(() => undefined);
+
+      const result = await service.submitQuiz('u1', 'mod1', quizDto);
+
+      expect(result.passed).toBe(true);
+      expect(logged).toHaveBeenCalledWith(
+        expect.stringContaining('no active course is configured'),
+        expect.objectContaining({ candidateId: expect.any(String) }),
+      );
+    });
+
+    it('transitions to EXAM_PENDING once every module of the active course is passed', async () => {
+      arrangeQuiz();
+      prisma.kbsSettings.findFirst.mockResolvedValue({
+        quizQuestionCount: QUIZ_LENGTH,
+        activeCourseId: 'course-1',
+      });
+      prisma.kbsModule.count.mockResolvedValue(2);
+      prisma.kbsCandidateProgress.count.mockResolvedValue(2);
+      prisma.kbsCandidate.updateMany.mockResolvedValue({ count: 1 });
+
+      await service.submitQuiz('u1', 'mod1', quizDto);
+
+      expect(prisma.kbsCandidate.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { status: 'EXAM_PENDING' },
+        }),
+      );
+    });
+
     it('refuses a submission that does not cover the whole quiz, and names both numbers', async () => {
       arrangeQuiz();
 

@@ -440,10 +440,24 @@ async function seedKbs() {
   }
 
   // Settings (singleton)
+  // `activeCourseId` is not decoration. `checkAndTransitionToExamPending` reads
+  // it first and returns early when it is null, so a candidate who has passed
+  // every module stays IN_TRAINING for ever with nothing logged, and
+  // `me/overview` answers `course: null, modulesTotal: 0` to somebody who has
+  // just completed six lessons. Both were observed on dev before this line.
+  //
+  // `update` sets it too: the settings row already exists on any environment
+  // seeded before this, and `update: {}` would have left it null there.
   await kbs.kbsSettings.upsert({
     where: { id: 1 },
-    create: { id: 1, examQuestionCount: 20, quizQuestionCount: 10, quizMaxAttempts: 0 },
-    update: {},
+    create: {
+      id: 1,
+      examQuestionCount: 20,
+      quizQuestionCount: 10,
+      quizMaxAttempts: 0,
+      activeCourseId: IDS.KBS_COURSE,
+    },
+    update: { activeCourseId: IDS.KBS_COURSE },
   });
 
   // -------------------------------------------------------------------------
