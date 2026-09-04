@@ -105,23 +105,6 @@ top level of the JSON, which is what the migration buys.
 changes, and it should not ride along with a change whose value is that it is
 mechanical. **Cost: none.**
 
-### T1 — Guards and roles untested — `DECIDE, A FAIRE`
-
-`lands` and `kamnet`: 18 files, 1 026 uncovered lines, zero tests.
-
-**Decision:** one auth-required check and one wrong-role check **per controller** —
-13 controllers, not 133 routes. `lands` and `kamnet` first.
-**Proof:** adding a route without `@Roles` fails a test.
-**Cost:** seconds of CI. Deliberate FinOps choice — at the API layer rather than
-e2e, where three browsers over 133 routes would cost 40 minutes of runner time
-nobody waits for.
-
-### N1 — Response envelope contract — `DECIDE, A FAIRE`
-
-The API answers `{success, data}`, the web answers flat. That gap broke the smoke
-test's health-body check and nobody saw it.
-**Decision:** one representative route per module. **Cost: none.**
-
 ### R1 — A role code written as a string, and a list of promises — `EN COURS`
 
 Three defects the role sweep found while looking for something else. Two of them
@@ -381,6 +364,79 @@ decided together, because doing only the first leaves the exposure intact.
 **This is a credential change on Visquis's account. It does not happen without
 his explicit word.** **Cost: none** — IAM users and keys are free; this is
 entirely about blast radius.
+
+### T1 / N1 — Guards, roles and the envelope contract — `EN COURS`
+
+**The live sweep, `kambriq-dev-api:117` / `sha-d27d6e0`.** Every guarded
+controller, probed with no token, with a role the hierarchy does **not** imply,
+and with an allowed role:
+
+| Controller      | Route                        | no token   | wrong role           | right role |
+| --------------- | ---------------------------- | ---------- | -------------------- | ---------- |
+| `core/users`    | `/users`                     | 401        | 403 (`ADMIN_KBS`)    | 200        |
+| `kbs/admin`     | `/kbs/admin/candidates`      | 401        | 403 (`ADMIN_KAMNET`) | 200        |
+| `kbs/candidate` | `/kbs/courses`               | 401        | —                    | 200        |
+| `kamnet/admin`  | `/kamnet/admin/applications` | 401        | 403 (`ADMIN_KBS`)    | 200        |
+| `kamnet/agent`  | `/kamnet/agents/me`          | 401        | 403 (`CLIENT`)       | 200        |
+| `kamnet/agent`  | `/kamnet/applications/me`    | 401        | 403 (`CLIENT`)       | 200        |
+| `lands/admin`   | `/lands/admin/reservations`  | 401        | 403 (`ADMIN_KBS`)    | 200        |
+| `lands/agent`   | `/lands`                     | 401        | 403 (`CLIENT`)       | 200        |
+| `lands/client`  | `/lands/client/purchases`    | 401        | 403 (`ADMIN_KBS`)    | 200        |
+| `health`        | `/health`                    | 200 public | —                    | —          |
+| `kbs/public`    | `/kbs/public/verify/:kca`    | 200 public | —                    | —          |
+
+The wrong-role column is chosen against `ROLE_HIERARCHY`, not by convenience:
+`ADMIN_GLOBAL` implies everything, so it can never be a wrong role, and
+`ADMIN_KBS` is lateral to `ADMIN_LANDS` and `ADMIN_KAMNET`, which is what makes
+it a real refusal rather than an accident of ordering.
+
+**The regression mechanism is about the opt-out, because that is where the risk
+is.** `JwtAuthGuard` and `RolesGuard` are global, so every route is
+authenticated unless a decorator removes it. `route-guards.spec.ts` therefore
+pins the **public surface as a list** — 9 on `auth`, 3 on `health`, 1 on
+`kbs/public`, 1 on `newsletter`, 0 everywhere else — so adding a `@Public()`
+becomes an edit to that list and a reviewed decision, rather than a line nobody
+sees. It also pins the class-level `@Roles` on the five role-gated controllers:
+**a deleted `@Roles` downgrades an admin controller to "any authenticated user"
+without changing a single response shape.**
+
+**The envelope contract asserts on content, because shape is what the defect
+preserves.** `GET /users` served `{"success":true,"data":[{},{},{}],"meta":{"total":14}}`
+— 200, correct envelope, correct pagination, no data. A contract test checking
+`{success, data}` would have passed it; so would `Array.isArray(data)`,
+`data.length === 3`, or `meta.total`. **Every one of those is true of a list of
+Promises.** `envelope-contract.spec.ts` boots a real server, serves that exact
+defect from a probe route, shows every shape assertion passing on it, and then
+fails it on content — no empty objects, nothing serialising to `{}` or
+`[object …]`. `expectCarriesContent` is exported for each module's list
+endpoints to reuse.
+
+**Proof: seven tails, seven mutations**, each observed failing alone:
+
+| #   | Mutation                                        | Test that fired                                                                 |
+| --- | ----------------------------------------------- | ------------------------------------------------------------------------------- |
+| 1   | a `@Public()` slipped onto an admin controller  | exposes exactly the declared number of public routes — `Expected 0, Received 1` |
+| 2   | class-level `@Roles` deleted                    | still declares its class-level roles — `Received string: ""`                    |
+| 3   | a declared public route removed                 | the same test, the other way — `Expected 1, Received 0`                         |
+| 4   | the global `RolesGuard` unwired                 | the global guards are wired, so authentication is opt-out                       |
+| 5   | the controller scanner finds nothing            | found the controllers at all — `Expected >= 13, Received 0`                     |
+| 6   | the envelope stops wrapping                     | wraps a plain payload in `{ success, data }`                                    |
+| 7   | **the content check weakened to a shape check** | rejects a list of unawaited promises — _"Received function did not throw"_      |
+
+**Mutation 7 is the one that matters.** It does not break the code; it weakens
+the test. The contract test cannot be quietly downgraded to a shape check,
+because the defect-reproduction case stops failing and says so.
+
+**Two defects in my own probe, recorded.** I invented `/kamnet/me`, which does
+not exist, and read its 404 as a missing guard — a route that is not there cannot
+be unguarded. And I built the API root URL as `API + ''`, hit
+`https://dev.kambriq.com/api/v1` with no trailing slash, and got the **Next.js**
+404 page: without the slash the ALB does not match the API rule and falls through
+to the web service. `/api/v1/` answers 401 and `/api/v1/nope` answers a JSON 404,
+so N2 holds. Both were defects in the measurement, and both were briefly read as
+defects in the thing measured.
+
+`EN COURS` until the sweep runs from CI rather than by hand. **Cost: none.**
 
 ### F1 — Coverage ratchet — `A DECIDER`
 
