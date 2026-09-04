@@ -8,6 +8,7 @@ import {
   CandidateStatus,
   DEFAULT_LANGUAGE,
   EmailService,
+  ExamStatus,
   PaginationQuery,
   RoleCode,
 } from '@kambriq/common';
@@ -40,15 +41,20 @@ export class KbsCertificatesService {
       );
     }
 
-    // Requirement: status must be CERTIFIED or has passed exam
-    const passedExam = await this.prisma.kbsCandidateProgress.findFirst({
-      where: {
-        candidateId,
-        passed: true,
-      },
+    // Requirement: the candidate has passed the final exam, or is already
+    // certified (re-issue). `kbsCandidateProgress` records MODULE quizzes, not
+    // the exam, so on its own it would let anybody who passed one quiz be
+    // issued a certificate. The exam is the thing being certified, so it is the
+    // exam that is checked.
+    const passedExam = await this.prisma.kbsExam.findFirst({
+      where: { candidateId, status: ExamStatus.PASSED },
     });
 
-    if (candidate.status !== CandidateStatus.CERTIFIED && !passedExam) {
+    if (
+      candidate.status !== CandidateStatus.CERTIFIED &&
+      candidate.status !== CandidateStatus.EXAM_PASSED &&
+      !passedExam
+    ) {
       this.logger.warn(
         'Attempt to issue certificate failed - candidate has not passed final exam %o',
         { candidateId, status: candidate.status },
@@ -82,11 +88,12 @@ export class KbsCertificatesService {
       },
     });
 
-    //Ensure candidate status is updated to CERTIFIED if not already
+    // Issuance is what confers certification: the status and its date are set
+    // here, in the same act that creates the document and records `issuedBy`.
     if (candidate.status !== CandidateStatus.CERTIFIED) {
       await this.prisma.kbsCandidate.update({
         where: { id: candidateId },
-        data: { status: CandidateStatus.CERTIFIED },
+        data: { status: CandidateStatus.CERTIFIED, certifiedAt: new Date() },
       });
     }
 

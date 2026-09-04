@@ -47,7 +47,8 @@
     "startWindowExpired": "La fenêtre de démarrage de l'examen a expiré.",
     "candidateNotFound": "Candidat {id} introuvable",
     "completeAllModules": "Terminez tous les modules du programme avant de passer l'examen.",
-    "notInTraining": "Vous devez être en cours de formation pour soumettre un QCM."
+    "notInTraining": "Vous devez être en cours de formation pour soumettre un QCM.",
+    "awaitingCertificate": "Examen réussi. Votre certificat est en cours d'émission."
   },
   "certificate": {
     "notFound": "Certificat introuvable",

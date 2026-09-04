@@ -423,7 +423,16 @@ describe('KbsExamService', () => {
       );
     });
 
-    it('sets PASSED + CERTIFIED when score >= passingScore', async () => {
+    /**
+     * The test this replaces was called "sets PASSED + CERTIFIED" and asserted
+     * only that the EXAM was PASSED. It never looked at the candidate status at
+     * all - the half of its own name that turned out to be wrong was the half it
+     * did not check.
+     *
+     * Passing gives EXAM_PASSED and no `certifiedAt`. `certifiedAt` is the date
+     * on the certificate, and issuance is what puts it there.
+     */
+    it('sets the exam PASSED and the candidate EXAM_PASSED, certifying nothing', async () => {
       const exam = buildExam({
         id: 'ex1',
         candidateId: 'cand1',
@@ -453,6 +462,19 @@ describe('KbsExamService', () => {
           data: expect.objectContaining({ status: 'PASSED' }),
         }),
       );
+
+      expect(prisma.kbsCandidate.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: 'EXAM_PASSED' }),
+        }),
+      );
+
+      // Not CERTIFIED, and no certification date.
+      const candidateData = (
+        prisma.kbsCandidate.update.mock.calls[0]?.[0] as { data: Record<string, unknown> }
+      ).data;
+      expect(candidateData['status']).not.toBe('CERTIFIED');
+      expect(candidateData).not.toHaveProperty('certifiedAt');
     });
   });
 

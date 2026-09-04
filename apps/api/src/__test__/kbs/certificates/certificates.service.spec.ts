@@ -57,7 +57,7 @@ describe('KbsCertificatesService', () => {
         certificate: null,
       });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
-      prisma.kbsCandidateProgress.findFirst.mockResolvedValue({ passed: true });
+      prisma.kbsExam.findFirst.mockResolvedValue({ id: 'ex1', status: 'PASSED' });
 
       const cert = buildCertificate({ candidateId: candidate.id });
       prisma.kbsCertificate.create.mockResolvedValue(cert);
@@ -77,13 +77,69 @@ describe('KbsCertificatesService', () => {
       );
     });
 
+    /**
+     * Issuance is the act that confers certification.
+     *
+     * The candidate arrives at EXAM_PASSED - what the exam earned them - and
+     * leaves CERTIFIED with a `certifiedAt` date, a `kcaNumber`, an `issuedBy`
+     * and the KCA_CERTIFIED role. Before this, grading set the status and the
+     * date and the role, and issuance was a formality that created a row.
+     */
+    it('turns EXAM_PASSED into CERTIFIED, and stamps certifiedAt', async () => {
+      const candidate = buildCandidate({ status: 'EXAM_PASSED', certificate: null });
+      prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
+      prisma.kbsExam.findFirst.mockResolvedValue({ id: 'ex1', status: 'PASSED' });
+      prisma.kbsCertificate.create.mockResolvedValue(
+        buildCertificate({ candidateId: candidate.id }),
+      );
+      prisma.kbsCandidate.update.mockResolvedValue({});
+
+      await service.issueCertificate(candidate.id, 'admin-1');
+
+      expect(prisma.kbsCandidate.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: 'CERTIFIED',
+            certifiedAt: expect.any(Date),
+          }),
+        }),
+      );
+      expect(usersService.addRole).toHaveBeenCalledWith(
+        candidate.userId,
+        'KCA_CERTIFIED',
+        'admin-1',
+      );
+    });
+
+    /**
+     * `kbsCandidateProgress` records MODULE quizzes, not the exam.
+     *
+     * The precondition read it, so `passed: true` on one module quiz satisfied
+     * "has passed exam". A candidate who had answered ten questions about
+     * module 1 and never sat the certification exam could be issued a KCA
+     * certificate. The exam is the thing being certified, so it is the exam
+     * that is checked.
+     */
+    it('refuses a candidate who passed a quiz but never sat the exam', async () => {
+      const candidate = buildCandidate({ status: 'IN_TRAINING', certificate: null });
+      prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
+      prisma.kbsCandidateProgress.findFirst.mockResolvedValue({ passed: true }); // a quiz
+      prisma.kbsExam.findFirst.mockResolvedValue(null); // no passed exam
+
+      await expect(service.issueCertificate(candidate.id, 'admin-1')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prisma.kbsCertificate.create).not.toHaveBeenCalled();
+      expect(usersService.addRole).not.toHaveBeenCalled();
+    });
+
     it('throws ConflictException if certificate already exists', async () => {
       const candidate = buildCandidate({
         status: 'CERTIFIED',
         certificate: buildCertificate(),
       });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
-      prisma.kbsCandidateProgress.findFirst.mockResolvedValue({ passed: true });
+      prisma.kbsExam.findFirst.mockResolvedValue({ id: 'ex1', status: 'PASSED' });
 
       await expect(service.issueCertificate(candidate.id, 'admin-1')).rejects.toThrow(
         ConflictException,

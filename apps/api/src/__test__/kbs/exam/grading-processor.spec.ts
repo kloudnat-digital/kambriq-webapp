@@ -85,7 +85,16 @@ describe('KbsGradingProcessor', () => {
   });
 
   describe('handleGradeExam - passed', () => {
-    it('enqueues KCA role grant and sends pass email', async () => {
+    /**
+     * Passing an exam must not grant the credential's role.
+     *
+     * `KCA_CERTIFIED` gates the KAMNET agent routes. Granting it on the score
+     * alone made somebody an agent before any certificate existed and before
+     * any human had approved it - an authorisation preceding the credential it
+     * represents. `issueCertificate` grants it now, in the same act that creates
+     * the document and records who issued it.
+     */
+    it('sends the pass email and does NOT grant the KCA role', async () => {
       examService.gradeExam.mockResolvedValue({ score: 85, passed: true });
 
       const job = makeJob(KBS_JOBS.GRADE_EXAM, {
@@ -96,11 +105,10 @@ describe('KbsGradingProcessor', () => {
 
       await processor.process(job);
 
-      // Enqueue KCA role
-      expect(queue.add).toHaveBeenCalledWith(
+      expect(queue.add).not.toHaveBeenCalledWith(
         KBS_JOBS.GRANT_KCA_ROLE,
-        expect.objectContaining({ userId: 'u1' }),
-        expect.any(Object),
+        expect.anything(),
+        expect.anything(),
       );
 
       // Send pass email

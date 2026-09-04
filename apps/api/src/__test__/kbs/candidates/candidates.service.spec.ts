@@ -296,7 +296,7 @@ describe('KbsCandidatesService', () => {
 
     it('grants KCA_CERTIFIED role on transition to CERTIFIED', async () => {
       const candidate = buildCandidate({
-        status: 'EXAM_PENDING',
+        status: 'EXAM_PASSED',
         userId: 'u1',
       });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
@@ -310,6 +310,38 @@ describe('KbsCandidatesService', () => {
       });
 
       expect(usersService.addRole).toHaveBeenCalledWith('u1', 'KCA_CERTIFIED', 'admin-1');
+    });
+
+    /**
+     * The state machine, stated as a test rather than as a comment.
+     *
+     * `EXAM_PENDING -> CERTIFIED` was the transition grading used, and it is the
+     * one that let the API call somebody certified with no certificate. It is
+     * now not a legal transition at all: certification is reachable only through
+     * EXAM_PASSED, and only issuance performs it.
+     */
+    it('refuses EXAM_PENDING -> CERTIFIED: passing is not issuing', async () => {
+      const candidate = buildCandidate({ status: 'EXAM_PENDING', userId: 'u1' });
+      prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
+
+      await expect(
+        service.updateStatus(candidate.id, 'admin-1', { status: 'CERTIFIED' }),
+      ).rejects.toThrow();
+
+      expect(usersService.addRole).not.toHaveBeenCalled();
+    });
+
+    it('allows EXAM_PENDING -> EXAM_PASSED without granting anything', async () => {
+      const candidate = buildCandidate({ status: 'EXAM_PENDING', userId: 'u1' });
+      prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
+      prisma.kbsCandidate.update.mockResolvedValue({ ...candidate, status: 'EXAM_PASSED' });
+
+      const result = await service.updateStatus(candidate.id, 'admin-1', {
+        status: 'EXAM_PASSED',
+      });
+
+      expect(result.status).toBe('EXAM_PASSED');
+      expect(usersService.addRole).not.toHaveBeenCalled();
     });
 
     it('rejects invalid state transitions', async () => {
