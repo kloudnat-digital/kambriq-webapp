@@ -265,6 +265,7 @@ pnpm test:cov:common   # libs/common only → coverage/libs/common/
 | `EMAIL_FROM`             | Sender email address                    | `noreply@kambriq.com`   |
 | `EMAIL_FROM_NAME`        | Sender display name                     | `KAMBRIQ`               |
 | `EMAIL_TRANSPORT`        | `ses` sends mail, `console` only logs   | `ses`                   |
+| `STORAGE_TRANSPORT`      | `s3` stores files, `disabled` throws    | `s3`                    |
 | `FRONTEND_URL`           | Frontend origin (used in email links)   | `http://localhost:3001` |
 | `SALT_ROUNDS`            | bcrypt salt rounds for password hashing | `12`                    |
 

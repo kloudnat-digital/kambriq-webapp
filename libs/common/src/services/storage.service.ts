@@ -16,44 +16,56 @@ import { ConfigService } from '@nestjs/config';
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
   private readonly s3: S3Client | null;
-  private readonly bucket?: string;
-  private readonly region?: string;
-  private readonly accessKeyId?: string;
-  private readonly secretAccessKey?: string;
-  private readonly isConfigured: boolean;
+  private readonly bucket: string;
+  private readonly region: string;
+  private readonly transport: 's3' | 'disabled';
 
   constructor(private readonly config: ConfigService) {
-    this.bucket = this.config.get<string>('AWS_S3_BUCKET');
-    this.region = this.config.get<string>('AWS_S3_REGION');
-    this.accessKeyId = this.config.get<string>('AWS_ACCESS_KEY_ID');
-    this.secretAccessKey = this.config.get<string>('AWS_SECRET_ACCESS_KEY');
+    this.bucket = this.config.get<string>('AWS_S3_BUCKET', '');
+    this.region = this.config.get<string>('AWS_S3_REGION', '');
+    this.transport =
+      this.config.get<string>('STORAGE_TRANSPORT', 's3') === 'disabled' ? 'disabled' : 's3';
 
-    if (this.bucket && this.region && this.accessKeyId && this.secretAccessKey) {
-      this.s3 = new S3Client({
-        region: this.region,
-        credentials: {
-          accessKeyId: this.accessKeyId,
-          secretAccessKey: this.secretAccessKey,
-        },
-        requestChecksumCalculation: 'WHEN_REQUIRED',
-        responseChecksumValidation: 'WHEN_REQUIRED',
-      });
-
-      this.isConfigured = true;
-      this.logger.log('S3 StorageService configured %o', {
-        bucket: this.bucket,
-        region: this.region,
-      });
-    } else {
+    // Disabling storage must be a choice, never an inference from absent
+    // configuration. The previous gate required AWS_ACCESS_KEY_ID and
+    // AWS_SECRET_ACCESS_KEY, which are not in the task definition and never
+    // have been, so on Fargate the client was never built and every upload and
+    // download silently returned an unusable URL with HTTP 200.
+    if (this.transport === 'disabled') {
       this.s3 = null;
-      this.isConfigured = false;
-      this.logger.warn('S3 StorageService not configured %o', {
-        bucket: this.bucket,
-        region: this.region,
-        accessKeyId: !!this.accessKeyId,
-        secretAccessKey: !!this.secretAccessKey,
-      });
+      this.logger.warn('STORAGE_TRANSPORT=disabled - S3 is off; storage calls will throw.');
+      return;
     }
+
+    // Misconfiguration is fatal at startup rather than at the first upload.
+    if (!this.bucket || !this.region) {
+      throw new Error(
+        'StorageService: AWS_S3_BUCKET and AWS_S3_REGION are required when ' +
+          "STORAGE_TRANSPORT is 's3'. Set them, or set STORAGE_TRANSPORT=disabled " +
+          'to run without storage.',
+      );
+    }
+
+    // No explicit credentials: the default provider chain resolves the ECS task
+    // role on Fargate and the developer profile locally.
+    this.s3 = new S3Client({
+      region: this.region,
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
+    });
+
+    this.logger.log(`S3 StorageService configured bucket=${this.bucket} region=${this.region}`);
+  }
+
+  /**
+   * Fail loudly rather than returning a value the caller cannot distinguish
+   * from a working one.
+   */
+  private assertEnabled(operation: string): S3Client {
+    if (!this.s3) {
+      throw new Error(`StorageService: cannot ${operation} because STORAGE_TRANSPORT=disabled.`);
+    }
+    return this.s3;
   }
 
   /**
@@ -69,9 +81,7 @@ export class StorageService {
     contentType: string,
     expiresInSec = 1800,
   ): Promise<{ uploadUrl: string; fileUrl: string }> {
-    if (!this.isConfigured || !this.s3) {
-      return { uploadUrl: this.getPublicUrl(key), fileUrl: key };
-    }
+    const s3 = this.assertEnabled('create an upload URL');
 
     const command = new PutObjectCommand({
       Bucket: this.bucket,
@@ -79,7 +89,7 @@ export class StorageService {
       ContentType: contentType,
     });
 
-    const uploadUrl = await getSignedUrl(this.s3, command, {
+    const uploadUrl = await getSignedUrl(s3, command, {
       expiresIn: expiresInSec,
     });
 
@@ -90,23 +100,21 @@ export class StorageService {
    * Generate a presigned URL for downloading a file from S3 (GET)
    * @param key - The S3 object key (e.g. "kbs/content/module1/lesson.pdf")
    * @param expiresInSec - TTL for the presigned URL in seconds (default: 1800s = 30min)
-   * @returns A presigned URL for downloading the file, or the public URL if S3 is not configured
+   * @returns A presigned URL for downloading the file
    */
   async getDownloadUrl(key: string, expiresInSec = 1800): Promise<string> {
     if (key.startsWith('http://') || key.startsWith('https://')) {
       return key;
     }
 
-    if (!this.isConfigured || !this.s3) {
-      return this.getPublicUrl(key);
-    }
+    const s3 = this.assertEnabled('create a download URL');
 
     const command = new GetObjectCommand({
       Bucket: this.bucket,
       Key: key,
     });
 
-    return await getSignedUrl(this.s3, command, { expiresIn: expiresInSec });
+    return await getSignedUrl(s3, command, { expiresIn: expiresInSec });
   }
 
   /**
@@ -115,19 +123,16 @@ export class StorageService {
    * @returns void
    */
   async deleteObject(key: string): Promise<void> {
-    if (!this.isConfigured || !this.s3) {
-      this.logger.warn('S3 not configured - Cannot delete object %o', { key });
-      return;
-    }
+    const s3 = this.assertEnabled('delete an object');
 
-    await this.s3.send(
+    await s3.send(
       new DeleteObjectCommand({
         Bucket: this.bucket,
         Key: key,
       }),
     );
 
-    this.logger.log('Deleted S3 object %o', { key });
+    this.logger.log(`Deleted S3 object key=${key}`);
   }
 
   /**
@@ -137,12 +142,5 @@ export class StorageService {
    */
   buildKey(...parts: string[]): string {
     return parts.filter(Boolean).join('/');
-  }
-
-  /**
-   * Get the public URL for an s3 object
-   */
-  private getPublicUrl(key: string): string {
-    return `https://${this.bucket || 'mock-bucket'}.s3.${this.region}.amazonaws.com/${key}`;
   }
 }
