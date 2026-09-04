@@ -148,6 +148,16 @@ export class LandReservationsService {
     });
 
     // 7. Send client portal access email
+    //
+    // The agent is resolved BEFORE this email, not four lines after it. The
+    // `agentName` argument used to carry `agentUserId` with the comment "will be
+    // enriched in the controller"; it never was, and the client received
+    // "Votre agent KAMNET : 00000000-0000-4000-8000-b00000000005". The lookup
+    // that produces the real name was already happening immediately below, for
+    // the agent's own notification.
+    const agentUser = await this.usersService.findById(agentUserId);
+    const agentName = [agentUser.firstName, agentUser.lastName].filter(Boolean).join(' ').trim();
+
     await this.emailService.send({
       to: dto.clientEmail,
       template: 'clientPortalAccess',
@@ -156,12 +166,13 @@ export class LandReservationsService {
         clientName: dto.clientName,
         landTitle: land.title,
         price: String(land.price),
-        agentName: agentUserId, // Will be enriched in controller
+        // Empty rather than an id: the template omits the line when there is no
+        // name, which is the only honest option if the name cannot be reached.
+        agentName,
       },
     });
 
     // 8. Notify the agent
-    const agentUser = await this.usersService.findById(agentUserId);
     await this.emailService.sendUpdate(
       {
         to: agentUser.email,

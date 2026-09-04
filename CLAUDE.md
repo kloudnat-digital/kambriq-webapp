@@ -194,6 +194,96 @@ GET  /users/ba2c538c-…          CLIENT USER ROLES: ['CLIENT']
 found a fourth defect on the same journey**, recorded as R2 below.
 **Cost: none.**
 
+### P2 — The unawaited promise, closed as a class — `EN COURS`
+
+Twice in one day. `?token=[object Promise]` in every verification link (A3), and
+`[{},{},{}]` from a map over an async method (`GET /users`). **Same defect, two
+surfaces, both invisible because a Promise satisfies every shallow check written
+against it** — length two, truthy, serialises without throwing.
+
+**The sweep.** Every `map`/`filter`/`forEach`/`some`/`every`/`find`/`flatMap`/
+`reduce`/`sort` callback in `apps/api/src` and `libs/common/src` that calls an
+async function — 159 files, 242 known async names. **Twelve sites, all twelve
+correctly inside `Promise.all`**, in `lands.service.ts`,
+`reservations.service.ts`, `network.service.ts` and `users.service.ts`. Zero
+unawaited.
+
+**And the scanner's own limits, measured rather than assumed.** Planting the live
+defect back at `users.service.ts:225` — `map(u => this.toUserResponse(u))` — the
+scanner catches it. Planting an unwrapped `map(async …)` at
+`lands.service.ts:234` it **does not**, because a nested `Promise.all` on the
+following line sits inside its window. The heuristic is sound for the delegating
+form and unsound for the arrow form. Said plainly rather than reported as "zero
+findings".
+
+**So the mechanism is not the scanner. It is the type.**
+
+`buildPaginatedResponse<T>(data: T[])` accepted anything, so a list of unawaited
+Promises bound `T = Promise<UserResponse>` and compiled cleanly. **An
+unconstrained generic will happily be a Promise** — the type system had every
+opportunity and inferred its way past it. Constraining it:
+
+```ts
+type NotPromise<T> = T extends Promise<unknown> ? never : T;
+export const buildPaginatedResponse = <T>(data: NotPromise<T>[], …)
+```
+
+Planting the shipped code back now gives:
+
+```
+users.service.ts(226,35): error TS2345: Argument of type 'Promise<UserResponse>[]'
+  is not assignable to parameter of type 'never[]'.
+```
+
+**It covers 14 call sites across 10 services** — every paginated endpoint in the
+API, which is where lists live and where this defect surfaces — and it fails in
+`tsc`, so it is caught before the code runs at all. Same shape as banning bare
+role-code literals: **make the wrong thing unwriteable rather than correcting one
+instance of it.**
+
+**On a lint rule, and its coverage.** `@typescript-eslint/no-misused-promises`
+would catch the `forEach(async …)` form, and neither it nor
+`no-floating-promises` catches a `map` whose Promises are _used_ as data — which
+is both of the defects we actually had. It would also only run over `apps/api`,
+because CI runs `nx lint api` alone. A rule that misses the two real cases and
+half the tree is not worth the claim of coverage; the type constraint runs in the
+`typecheck` job and catches the real one.
+
+**Not covered, and named:** an async arrow inside a `map` whose result is not
+handed to `buildPaginatedResponse`. The twelve existing sites are all correct
+today, and nothing structural stops a thirteenth being wrong.
+
+### P3 — An identifier where a customer expects a name — `EN COURS`
+
+The client portal email read **"Votre agent KAMNET :
+00000000-0000-4000-8000-b00000000005"**. `reservations.service.ts` passed
+`agentName: agentUserId` with the comment _"will be enriched in the controller"_.
+It never was — and the lookup producing the real name was already running **four
+lines below**, for the agent's own notification.
+
+**Fixed both ways, as asked.** The agent is now resolved before the client email
+and the real name used; and the template renders the agent line **only when there
+is a name**, so if it cannot be reached the field is absent rather than filled
+with an id.
+
+**Plus a guard where every template argument already passes.** `EmailService.send`
+now rejects any `…Name` argument whose value is UUID-shaped. Deliberately
+narrow — only fields named `…Name`, only UUID-shaped values. No human is called
+`00000000-0000-4000-8000-b00000000005`. It sits beside the `[object …]` check
+from A3 and covers templates nobody has written yet.
+
+**Proof: three tails**, each observed failing alone — removing the guard; making
+the guard over-fire on a real name (caught by the "queues a name" test, so it
+cannot become over-broad silently); and restoring the unconditional agent line.
+
+**A defect in my own test stub, recorded.** The first i18n stub appended every
+argument to every key, so `agentName=` appeared in the body line and the "omits
+the agent line" assertion failed against a template behaving correctly. The stub
+now reads the real `fr/email.json` and substitutes `{placeholders}`. **A stub
+that does not resemble the thing it stands in for tests the stub.**
+
+`EN COURS` until dev sends a portal email carrying a name. **Cost: none.**
+
 ### R2 — The invited client could set a password and still not log in — `EN COURS`
 
 The client used the set-password link from their invite email, got **204**, and
@@ -236,25 +326,41 @@ says _"Votre agent KAMNET : 00000000-0000-4000-8000-b00000000005"_ — it prints
 the agent's raw user UUID where a name belongs, to a client. Not fixed here;
 recorded.
 
-### Z1 — Three never-used access keys, one of them full admin — `A DECIDER`, prepared not applied
+### Z1 — Three never-used access keys, one of them full admin — `PROUVE`, applied 2026-09-04
 
-**This outranks every number in the cost table.** `gitops.admin` holds an
-**Active** access key created 2026-02-24 whose `LastUsedDate` is `None`. It
-reaches `AdministratorAccess` through the `gitops-admin` group, of which it is
-the only member. **A full-admin credential nobody has ever used is a credential
-nobody would notice being used.**
+**Authorized and run.** Deactivated, not deleted — reversible in one call.
 
-Re-checked at 2026-09-04T10:49Z, not at first sight:
+| User                                   | Key                    | Before | After                                  |
+| -------------------------------------- | ---------------------- | ------ | -------------------------------------- |
+| `gitops.admin` (`AdministratorAccess`) | `AKIAQYAF4F4JLEEQ5ARN` | Active | **Inactive**                           |
+| `ses-kambriq-app`                      | `AKIAQYAF4F4JNP3WKQMQ` | Active | **Inactive**                           |
+| `kambriq-app-dev`                      | `AKIAQYAF4F4JLQKD3DWT` | Active | **Inactive**                           |
+| `kambriq-app-dev`                      | `AKIAQYAF4F4JH34UGKU5` | Active | **Active — untouched, dated decision** |
+| `vmiaff`                               | `AKIAQYAF4F4JNTH6MZ2I` | Active | Active — in use                        |
 
-| User              | Key                    | Last used  | Service                           |
-| ----------------- | ---------------------- | ---------- | --------------------------------- |
-| `gitops.admin`    | `AKIAQYAF4F4JLEEQ5ARN` | **never**  | —                                 |
-| `ses-kambriq-app` | `AKIAQYAF4F4JNP3WKQMQ` | **never**  | —                                 |
-| `kambriq-app-dev` | `AKIAQYAF4F4JLQKD3DWT` | **never**  | —                                 |
-| `kambriq-app-dev` | `AKIAQYAF4F4JH34UGKU5` | 2026-08-27 | `s3`                              |
-| `vmiaff`          | `AKIAQYAF4F4JNTH6MZ2I` | 2026-09-04 | `logs` — **in use, do not touch** |
+`LastUsedDate` was re-read immediately before acting and all three still returned
+`None`. The check was run again rather than trusted from an hour earlier.
 
-#### Nothing depends on them — checked, not assumed
+**Reversal — one command each:**
+
+```bash
+aws iam update-access-key --user-name gitops.admin    --access-key-id AKIAQYAF4F4JLEEQ5ARN --status Active
+aws iam update-access-key --user-name ses-kambriq-app --access-key-id AKIAQYAF4F4JNP3WKQMQ --status Active
+aws iam update-access-key --user-name kambriq-app-dev --access-key-id AKIAQYAF4F4JLQKD3DWT --status Active
+```
+
+**The six secrets are gone.** `kambriq-infra` before: 11 secrets. After: 5.
+Removed — `AWS_ACCESS_KEY_ID`, `AWS_ACCESS_KEY_ID_DEV`, `AWS_ACCESS_KEY_ID_PROD`,
+`AWS_SECRET_ACCESS_KEY`, `AWS_SECRET_ACCESS_KEY_DEV`,
+`AWS_SECRET_ACCESS_KEY_PROD`. Remaining — `ARTIFACT_BUCKET_NAME_DEV`,
+`ARTIFACT_BUCKET_NAME_PROD`, `AWS_REGION`, `AWS_REGION_DEV`, `AWS_REGION_PROD`.
+**This half has no reversal**; the credentials would have to be reissued. That
+asymmetry was stated before it was authorized, not after.
+
+**Still dated:** `AKIAQYAF4F4JH34UGKU5` on **Tuesday 8 September 2026**, after
+re-checking `LastUsedDate` first. **Cost: none.**
+
+### Nothing depends on them — checked, not assumed
 
 _"Never used" says nothing has used them yet. The question was whether anything
 is about to._
@@ -818,6 +924,18 @@ directly, so it proves the filter and never that the filter is reached;
 because the defect returned before reaching it. In each case the fixture
 collapsed the very distinction it existed to check. A test whose two candidate
 explanations produce identical output has not chosen between them.
+
+**Reading the first element of a list is not reading the list.** I fetched the
+invited client's mailbox, read `inbox[0]`, found no link, and was one sentence
+from filing _"the invite email carries no link"_ as a defect — which would then
+have been investigated as one. There were **two** messages; the newest was the
+portal notice and the invite, with a valid 64-hex token, was the second. Same
+family as the other measurement defects: **a conclusion drawn from a sample and
+presented as a reading of the whole.** The others in this family from the same
+week: an invented route (`/kamnet/me`) whose 404 was read as a missing guard,
+when a route that is not there cannot be unguarded; and a root URL built without
+its trailing slash, which the ALB handed to the web app, whose 404 page was read
+as the API's.
 
 **Gate on the commit, never on the revision number.** I waited for
 `kambriq-dev-api` revision `>= 106`, read `COMPLETED`, and took the Q1 proof
