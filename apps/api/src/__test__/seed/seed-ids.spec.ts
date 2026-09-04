@@ -105,3 +105,51 @@ describe('seed configures the active course', () => {
     expect(upsert).not.toMatch(/update:\s*\{\s*\}/);
   });
 });
+
+/**
+ * A seeded fixture must be returned to its seeded state by a re-run.
+ *
+ * `land.upsert` used `update: {}`, so re-seeding changed nothing about an
+ * existing parcel. A tester reserving parcels moves them AVAILABLE -> RESERVED
+ * -> SOLD and no amount of re-seeding gave them back: five parcels, five
+ * reservations, and the sixth run looks like a broken platform rather than an
+ * exhausted fixture. The seed printed "5 parcels seeded" every time, over a pool
+ * it had not restored.
+ *
+ * Idempotent means "running twice is not worse than running once". Restorative
+ * means "running again puts it back". The seed claimed the first and was read as
+ * the second.
+ */
+describe('the seed restores the fixtures it owns', () => {
+  const landsBlock = SEED.slice(SEED.indexOf('async function seedLands'));
+
+  it('resets the parcel status a journey mutates, rather than update: {}', () => {
+    const upsert = landsBlock.slice(
+      landsBlock.indexOf('lands.land.upsert'),
+      landsBlock.indexOf('lands.landReservation.upsert'),
+    );
+    expect(upsert).toContain('status: parcel.status');
+    expect(upsert).not.toMatch(/update:\s*\{\s*\}/);
+  });
+
+  it('clears the reservations a journey created against seeded parcels', () => {
+    expect(landsBlock).toContain('lands.landReservation.deleteMany');
+    // Only the seed's own parcels, and never the seeded reservation itself.
+    expect(landsBlock).toContain('landId: { in: seededParcelIds }');
+    expect(landsBlock).toContain('id: { not: IDS.LAND_RESERVATION_SEEDED }');
+  });
+
+  /**
+   * A pool that survives one pass is the same zero-margin mistake as ten quiz
+   * questions against a threshold of ten. A full journey pass consumes one
+   * parcel; a suite run consumes a handful.
+   */
+  it('seeds a parcel pool with real margin, not exactly enough', () => {
+    const ids = [...landsBlock.matchAll(/id: IDS\.LAND_(\d+),/g)].map((m) => Number(m[1]));
+    const parcelCount = new Set(ids).size;
+    expect(parcelCount).toBeGreaterThanOrEqual(20);
+
+    const available = [...landsBlock.matchAll(/status: LandStatus\.AVAILABLE,/g)].length;
+    expect(available).toBeGreaterThanOrEqual(15);
+  });
+});

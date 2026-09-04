@@ -68,7 +68,8 @@
     "docker:dev:logs": "docker compose -f docker/docker-compose.yml logs -f",
     "docker:build": "docker build -f docker/Dockerfile.api -t kambriq-api .",
     "postinstall": "pnpm run db:generate:core && pnpm run db:generate:kbs && pnpm run db:generate:kamnet && pnpm run db:generate:lands",
-    "prepare": "husky || true"
+    "prepare": "husky || true",
+    "test:journeys": "npx nx journeys api-e2e"
   },
   "private": true,
   "engines": {

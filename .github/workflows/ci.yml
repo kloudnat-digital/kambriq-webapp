@@ -217,6 +217,42 @@ jobs:
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
 
+  # -- The four delivery journeys, against deployed dev -------------------------
+  #
+  # These are the journeys the delivery is defined by. They ran by hand on
+  # 2026-09-04, which means once, by one person, on one build - nothing stopped
+  # them regressing the next day.
+  #
+  # EXPECTED_SHA is the gate. A live proof taken against the wrong build proves
+  # nothing about the change it was meant to certify, and that happened this week:
+  # a deploy was gated on an ECS revision counter, the counter advanced for an
+  # unrelated merge, and a fix appeared to fail against a build that did not
+  # contain it. A monotonic counter says something changed, not what is running.
+  journeys:
+    name: Delivery journeys (dev)
+    runs-on: ubuntu-latest
+    needs: [deploy-dev]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run the four journeys
+        run: pnpm test:journeys
+        env:
+          KAMBRIQ_API_URL: ${{ vars.KAMBRIQ_API_URL || 'https://dev.kambriq.com/api/v1' }}
+          EXPECTED_SHA: ${{ github.sha }}
+          CI: "true"
+
   # -- E2E tests against deployed dev (post-deploy) -----------------------------
   e2e:
     name: E2E Tests (dev)
