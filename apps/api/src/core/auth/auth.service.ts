@@ -22,13 +22,11 @@ import {
   TokenResponse,
 } from './dto/auth.dto';
 import {
-  comparePassword,
   DEFAULT_LANGUAGE,
   EMAIL_TOKEN_EXPIRY_HOURS,
   EmailAlreadyExistsException,
   EmailService,
   GRACE_PERIOD_DAYS,
-  hashPassword,
   InvalidCredentialsException,
   InvalidRefreshTokenException,
   JwtPayload,
@@ -37,6 +35,9 @@ import {
   RESET_TOKEN_EXPIRY_HOURS,
   RoleCode,
   VerificationTokenType,
+  comparePassword,
+  hashPassword,
+  maskEmail,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 
@@ -109,7 +110,7 @@ export class AuthService {
     const roles = clientRole ? [RoleCode.CLIENT] : [];
     const tokens = await this.generateTokens(user.id, user.email, roles, lang);
 
-    this.logger.log('User registered', { userId: user.id, lang });
+    this.logger.log('User registered %o', { userId: user.id, lang });
 
     return {
       user: {
@@ -146,7 +147,7 @@ export class AuthService {
         const daysRemaining = Math.ceil(
           (GRACE_PERIOD_DAYS * 86_400_000 - (Date.now() - user.deletedAt.getTime())) / 86_400_000,
         );
-        this.logger.log('Inactive user within grace period attempted login', {
+        this.logger.log('Inactive user within grace period attempted login %o', {
           userId: user.id,
           daysRemaining,
         });
@@ -210,7 +211,7 @@ export class AuthService {
       dto.rememberMe ?? false,
     );
 
-    this.logger.log('User logged in', { userId: user.id });
+    this.logger.log('User logged in %o', { userId: user.id });
 
     return {
       tokens,
@@ -274,7 +275,7 @@ export class AuthService {
       wasRemembered,
     );
 
-    this.logger.log('Token refreshed', { userId: storedToken.user.id });
+    this.logger.log('Token refreshed %o', { userId: storedToken.user.id });
 
     return { ...tokens, rememberMe: wasRemembered };
   }
@@ -287,7 +288,9 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
 
-    this.logger.log('User logged out', { refreshTokenHash: tokenHash });
+    // The refresh-token hash is an authentication artefact and is deliberately
+    // not logged; the userId is enough to trace a logout.
+    this.logger.log('User logged out');
   }
 
   // ----- Verify Email ------------------------------------------
@@ -320,7 +323,7 @@ export class AuthService {
       }),
     ]);
 
-    this.logger.log('Email verified', { userId: tokenRecord.userId });
+    this.logger.log('Email verified %o', { userId: tokenRecord.userId });
     return { message: this.t('auth.email.verified', lang) };
   }
 
@@ -351,9 +354,9 @@ export class AuthService {
       },
     });
 
-    this.logger.log('Verification email resent', {
+    this.logger.log('Verification email resent %o', {
       userId: user.id,
-      email: user.email,
+      email: maskEmail(user.email),
     });
     return { message: this.t('auth.email.verificationSent', lang) };
   }
@@ -382,9 +385,9 @@ export class AuthService {
         },
       });
 
-      this.logger.log('Password reset email sent', {
+      this.logger.log('Password reset email sent %o', {
         userId: user.id,
-        email: user.email,
+        email: maskEmail(user.email),
       });
       return { message: this.t('auth.password.resetSent', lang) };
     }
@@ -446,7 +449,7 @@ export class AuthService {
       });
     }
 
-    this.logger.log('Password reset successful', {
+    this.logger.log('Password reset successful %o', {
       userId: tokenRecord.userId,
     });
     return { message: this.t('auth.password.resetSuccess', lang) };
@@ -499,7 +502,7 @@ export class AuthService {
       },
     });
 
-    this.logger.log('Account reactivated', { userId: user.id });
+    this.logger.log('Account reactivated %o', { userId: user.id });
 
     return {
       user: {
@@ -580,7 +583,7 @@ export class AuthService {
           lockedUntil: lockUntil,
         },
       });
-      this.logger.warn(`Account locked due to too many failed attempts`, {
+      this.logger.warn(`Account locked due to too many failed attempts %o`, {
         userId: data.userId,
         lockUntil: LOCK_DURATION_MINUTES,
       });

@@ -11,6 +11,7 @@ export { validateEnv, envSchema, type EnvConfig } from './config/env.validation'
 // ----- Utils -----
 export { hashPassword, comparePassword } from './utils/hash.util';
 export { applyCoefficient, formatXAF, formatXAFCompact } from './utils/money.util';
+export { maskEmail, changedKeys } from './utils/log-redact';
 
 // ----- DTOs -----
 export {

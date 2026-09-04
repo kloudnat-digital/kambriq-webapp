@@ -1,3 +1,4 @@
+import { maskEmail } from '@kambriq/common';
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SESv2Client, CreateContactCommand } from '@aws-sdk/client-sesv2';
@@ -30,7 +31,7 @@ export class NewsletterService {
           EmailAddress: email,
         }),
       );
-      this.logger.log('Newsletter subscription registered', { email });
+      this.logger.log('Newsletter subscription registered %o', { email: maskEmail(email) });
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AlreadyExistsException') {
         throw new ConflictException('This email is already subscribed.');

@@ -44,7 +44,7 @@ export class CoreCleanupProcessor extends WorkerHost {
       }),
     ]);
 
-    this.logger.log('Token cleanup complete', {
+    this.logger.log('Token cleanup complete %o', {
       deletedRefreshTokens: deletedRefresh.count,
       deletedVerificationTokens: deletedVerification.count,
     });
@@ -71,7 +71,7 @@ export class CoreCleanupProcessor extends WorkerHost {
       },
     });
 
-    this.logger.log('User purge complete', { purgedUsers: result.count });
+    this.logger.log('User purge complete %o', { purgedUsers: result.count });
     return { purgedUsers: result.count };
   }
 }

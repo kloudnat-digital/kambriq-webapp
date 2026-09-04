@@ -1,10 +1,4 @@
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpStatus,
-  Logger,
-} from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus, Logger } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 @Catch()
@@ -28,7 +22,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     };
     const { status, message } = this.mapPrismaError(prismaError);
 
-    this.logger.warn('Prisma Error', {
+    this.logger.warn('Prisma Error %o', {
       code: prismaError.code,
       path: request.url,
       message,
@@ -65,8 +59,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     switch (error.code) {
       // Unique constraint failed
       case 'P2002': {
-        const target =
-          (error.meta?.['target'] as string[])?.join(', ') || 'field';
+        const target = (error.meta?.['target'] as string[])?.join(', ') || 'field';
         return {
           status: HttpStatus.CONFLICT,
           message: `A record with this ${target} already exists`,

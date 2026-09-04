@@ -31,7 +31,7 @@ export class KamnetProcessor extends WorkerHost {
   private async handleSaleCompleted(payload: SaleCompletedJobPayload) {
     const { agentUserId, landId, reservationId } = payload;
 
-    this.logger.log('Processing sale completion', {
+    this.logger.log('Processing sale completion %o', {
       agentUserId,
       landId,
       reservationId,
@@ -41,7 +41,7 @@ export class KamnetProcessor extends WorkerHost {
     const user = await this.usersService.findById(agentUserId).catch(() => null);
 
     if (!user) {
-      this.logger.error('Sale completed but user not found - skipping', { agentUserId });
+      this.logger.error('Sale completed but user not found - skipping %o', { agentUserId });
       return null;
     }
 
@@ -55,14 +55,14 @@ export class KamnetProcessor extends WorkerHost {
       const isAdmin = roles.includes(RoleCode.ADMIN_LANDS) || roles.includes(RoleCode.ADMIN_GLOBAL);
 
       if (isAdmin) {
-        this.logger.log('Admin completed sale - no agent commission to track', {
+        this.logger.log('Admin completed sale - no agent commission to track %o', {
           agentUserId,
           reservationId,
         });
         return { skipped: true, reason: 'admin' };
       }
 
-      this.logger.error('Agent missing from KAMNET table', { agentUserId });
+      this.logger.error('Agent missing from KAMNET table %o', { agentUserId });
       return null;
     }
 
@@ -73,7 +73,7 @@ export class KamnetProcessor extends WorkerHost {
     const promotion = await this.agentsService.checkPromotion(agent.id);
 
     if (promotion) {
-      this.logger.log('Agent promoted after sale', {
+      this.logger.log('Agent promoted after sale %o', {
         agentId: agent.id,
         agentCode: agent.agentCode,
         newTier: promotion.tier,

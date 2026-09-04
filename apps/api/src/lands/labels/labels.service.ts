@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { LandsPrismaService } from '../prisma/lands-prisma.service';
 import { I18nService } from 'nestjs-i18n';
 import { CreateLabelDto, UpdateLabelDto } from '../dto/lands.dto';
@@ -25,9 +20,7 @@ export class LandsLabelsService {
     });
 
     if (existing) {
-      throw new ConflictException(
-        this.t('lands.label.codeTaken', undefined, { code: dto.code }),
-      );
+      throw new ConflictException(this.t('lands.label.codeTaken', undefined, { code: dto.code }));
     }
 
     const label = await this.prisma.landLabel.create({
@@ -38,7 +31,7 @@ export class LandsLabelsService {
       },
     });
 
-    this.logger.log('Land label created', {
+    this.logger.log('Land label created %o', {
       labelId: label.id,
       code: label.code,
     });
@@ -58,7 +51,7 @@ export class LandsLabelsService {
       },
     });
 
-    this.logger.log('Land label updated', {
+    this.logger.log('Land label updated %o', {
       labelId: label.id,
       code: label.code,
     });
@@ -75,16 +68,14 @@ export class LandsLabelsService {
     });
 
     if (landCount > 0) {
-      throw new ConflictException(
-        this.t('lands.label.inUse', undefined, { count: landCount }),
-      );
+      throw new ConflictException(this.t('lands.label.inUse', undefined, { count: landCount }));
     }
 
     await this.prisma.landLabel.delete({
       where: { id: labelId },
     });
 
-    this.logger.log('Land label deleted', {
+    this.logger.log('Land label deleted %o', {
       labelId: label.id,
       code: label.code,
     });

@@ -83,7 +83,7 @@ export class LandsService {
       include: { label: true },
     });
 
-    this.logger.log('Land created', {
+    this.logger.log('Land created %o', {
       landId: land.id,
       slug,
       adminUserId,
@@ -118,7 +118,7 @@ export class LandsService {
         },
       });
 
-      this.logger.log('Land price changed', {
+      this.logger.log('Land price changed %o', {
         landId,
         from: land.price,
         to: dto.price,
@@ -158,7 +158,7 @@ export class LandsService {
       include: { label: true },
     });
 
-    this.logger.log('Land updated', { landId, adminUserId });
+    this.logger.log('Land updated %o', { landId, adminUserId });
     return updated;
   }
 
@@ -171,7 +171,7 @@ export class LandsService {
       data: { status: LandStatus.ARCHIVED, isPublished: false },
     });
 
-    this.logger.log('Land archived', { landId, adminUserId });
+    this.logger.log('Land archived %o', { landId, adminUserId });
     return updated;
   }
 
@@ -392,7 +392,7 @@ export class LandsService {
       },
     });
 
-    this.logger.log('Media added to land', {
+    this.logger.log('Media added to land %o', {
       landId: dto.landId,
       mediaId: media.id,
     });
@@ -415,7 +415,7 @@ export class LandsService {
     // Delete from DB
     await this.prisma.landMedia.delete({ where: { id: mediaId } });
 
-    this.logger.log('Media deleted', { mediaId, landId: media.landId });
+    this.logger.log('Media deleted %o', { mediaId, landId: media.landId });
   }
 
   // ----- Add Document ----- //
@@ -433,7 +433,7 @@ export class LandsService {
       },
     });
 
-    this.logger.log('Document added to land', {
+    this.logger.log('Document added to land %o', {
       landId: dto.landId,
       documentId: document.id,
     });
@@ -456,7 +456,7 @@ export class LandsService {
     // Delete from DB
     await this.prisma.landDocument.delete({ where: { id: documentId } });
 
-    this.logger.log('Document deleted', { documentId, landId: doc.landId });
+    this.logger.log('Document deleted %o', { documentId, landId: doc.landId });
   }
 
   // ----- Get Price History ----- //

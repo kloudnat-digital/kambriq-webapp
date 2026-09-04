@@ -40,14 +40,14 @@ export class StorageService {
       });
 
       this.isConfigured = true;
-      this.logger.log('S3 StorageService configured', {
+      this.logger.log('S3 StorageService configured %o', {
         bucket: this.bucket,
         region: this.region,
       });
     } else {
       this.s3 = null;
       this.isConfigured = false;
-      this.logger.warn('S3 StorageService not configured', {
+      this.logger.warn('S3 StorageService not configured %o', {
         bucket: this.bucket,
         region: this.region,
         accessKeyId: !!this.accessKeyId,
@@ -116,7 +116,7 @@ export class StorageService {
    */
   async deleteObject(key: string): Promise<void> {
     if (!this.isConfigured || !this.s3) {
-      this.logger.warn('S3 not configured - Cannot delete object', { key });
+      this.logger.warn('S3 not configured - Cannot delete object %o', { key });
       return;
     }
 
@@ -127,7 +127,7 @@ export class StorageService {
       }),
     );
 
-    this.logger.log('Deleted S3 object', { key });
+    this.logger.log('Deleted S3 object %o', { key });
   }
 
   /**

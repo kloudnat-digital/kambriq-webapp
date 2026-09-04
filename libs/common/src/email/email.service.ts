@@ -42,7 +42,7 @@ export class EmailService {
       removeOnFail: 100,
     });
 
-    this.logger.debug('Email queued', {
+    this.logger.debug('Email queued %o', {
       to: payload.to,
       template: payload.template,
       lang: payload.lang,
@@ -60,7 +60,7 @@ export class EmailService {
     prefs: { emailNotifications: boolean } | null,
   ): Promise<void> {
     if (prefs && !prefs.emailNotifications) {
-      this.logger.debug('Update email skipped by user preference', {
+      this.logger.debug('Update email skipped by user preference %o', {
         to: payload.to,
         template: payload.template,
       });

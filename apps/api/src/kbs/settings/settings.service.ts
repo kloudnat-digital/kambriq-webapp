@@ -37,7 +37,7 @@ export class KbsSettingsService {
       data: dto,
     });
 
-    this.logger.log('KBS settings updated', { changed: Object.keys(dto) });
+    this.logger.log('KBS settings updated %o', { changed: Object.keys(dto) });
     return updated;
   }
 

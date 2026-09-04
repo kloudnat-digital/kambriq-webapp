@@ -41,7 +41,7 @@ export class EmailProcessor extends WorkerHost {
     // the bug: they are never set in the task definition, so the client was
     // never built and every send silently became a console log.
     this.sesClient = new SESv2Client({ region });
-    this.logger.log('SES transport active', {
+    this.logger.log('SES transport active %o', {
       region,
       fromAddress: this.fromAddress,
       fromName: this.fromName,

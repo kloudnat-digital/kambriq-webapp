@@ -46,7 +46,7 @@ export class KbsGradingProcessor extends WorkerHost {
     job: Job<{ examId: string; candidateId: string; userId: string }>,
   ) {
     const { examId, candidateId, userId } = job.data;
-    this.logger.log('Checking exam for auto-expiry', { examId });
+    this.logger.log('Checking exam for auto-expiry %o', { examId });
 
     const exam = await this.kbsPrisma.kbsExam.findUnique({
       where: { id: examId },
@@ -54,7 +54,7 @@ export class KbsGradingProcessor extends WorkerHost {
     });
 
     if (!exam) {
-      this.logger.warn('Expire-exam job: exam not found', { examId });
+      this.logger.warn('Expire-exam job: exam not found %o', { examId });
       return;
     }
 
@@ -67,7 +67,7 @@ export class KbsGradingProcessor extends WorkerHost {
       return;
     }
 
-    this.logger.warn('Auto-expiring abandoned exam', { examId, candidateId });
+    this.logger.warn('Auto-expiring abandoned exam %o', { examId, candidateId });
 
     await this.kbsPrisma.kbsExam.update({
       where: { id: examId },
@@ -83,13 +83,13 @@ export class KbsGradingProcessor extends WorkerHost {
 
   private async handleGradeExam(job: Job<{ examId: string; candidateId: string; userId: string }>) {
     const { examId, candidateId, userId } = job.data;
-    this.logger.log('Grading Exam', { examId, candidateId, userId });
+    this.logger.log('Grading Exam %o', { examId, candidateId, userId });
 
     let result: { score: number; passed: boolean };
     try {
       result = await this.examService.gradeExam(examId);
     } catch (err) {
-      this.logger.error('Grading failed - marking exam as FAILED', {
+      this.logger.error('Grading failed - marking exam as FAILED %o', {
         examId,
         error: err instanceof Error ? err.message : String(err),
       });
@@ -135,7 +135,7 @@ export class KbsGradingProcessor extends WorkerHost {
         where: { id: candidateId },
       });
       if (!candidate) {
-        this.logger.error('Candidate not found during grading', { candidateId });
+        this.logger.error('Candidate not found during grading %o', { candidateId });
         return;
       }
       const totalAttempts = await this.kbsPrisma.kbsExam.count({
@@ -168,7 +168,7 @@ export class KbsGradingProcessor extends WorkerHost {
       );
     }
 
-    this.logger.log('Exam graded', {
+    this.logger.log('Exam graded %o', {
       examId,
       percentage: result.score,
       candidateId,
@@ -180,9 +180,9 @@ export class KbsGradingProcessor extends WorkerHost {
 
   private async handleGrantKcaRole(job: Job<{ userId: string; examId: string }>) {
     const { userId, examId } = job.data;
-    this.logger.log('Granting KCA role', { userId, examId });
+    this.logger.log('Granting KCA role %o', { userId, examId });
     await this.usersService.addRole(userId, RoleCode.KCA_CERTIFIED);
-    this.logger.log('KCA role granted', { userId });
+    this.logger.log('KCA role granted %o', { userId });
     return { userId, role: RoleCode.KCA_CERTIFIED };
   }
 }

@@ -167,7 +167,7 @@ export class KamnetAgentsService {
     });
 
     if (!agent || agent.suspendedAt) {
-      this.logger.warn('Promotion check: Agent not found or suspended', {
+      this.logger.warn('Promotion check: Agent not found or suspended %o', {
         agentId,
       });
       return null;
@@ -201,7 +201,7 @@ export class KamnetAgentsService {
 
     const user = await this.usersService.findById(agent.userId);
 
-    this.logger.log('Agent promoted', {
+    this.logger.log('Agent promoted %o', {
       agentId,
       from: agent.tier,
       to: newTier,
@@ -235,7 +235,7 @@ export class KamnetAgentsService {
       data: { tier: dto.tier },
     });
 
-    this.logger.log('Admin updated agent tier', {
+    this.logger.log('Admin updated agent tier %o', {
       agentId,
       from: agent.tier,
       to: dto.tier,
@@ -268,7 +268,7 @@ export class KamnetAgentsService {
       args: { firstName: user.firstName || user.email },
     });
 
-    this.logger.warn('Agent suspended', {
+    this.logger.warn('Agent suspended %o', {
       agentId,
       adminUserId,
     });
@@ -300,7 +300,7 @@ export class KamnetAgentsService {
       args: { firstName: user.firstName || user.email },
     });
 
-    this.logger.log('Agent reactivated', {
+    this.logger.log('Agent reactivated %o', {
       agentId,
       adminUserId,
     });

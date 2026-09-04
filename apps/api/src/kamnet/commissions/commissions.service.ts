@@ -55,7 +55,7 @@ export class KamnetCommissionsService {
       },
     });
 
-    this.logger.log('Commission record created', {
+    this.logger.log('Commission record created %o', {
       commissionId: commission.id,
       agentId: dto.agentId,
       amount: dto.amount,
@@ -89,7 +89,7 @@ export class KamnetCommissionsService {
       },
     });
 
-    this.logger.log('Commission status updated', {
+    this.logger.log('Commission status updated %o', {
       commissionId,
       from: commission.status,
       to: dto.status,
