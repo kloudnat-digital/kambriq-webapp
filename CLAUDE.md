@@ -490,6 +490,35 @@ decided together, because doing only the first leaves the exposure intact.
 his explicit word.** **Cost: none** — IAM users and keys are free; this is
 entirely about blast radius.
 
+### F4 — A green local run says nothing about the image — `EN COURS`
+
+The restorative seed ran clean locally and **died in the container**:
+
+```
+Error: Cannot find module '../libs/common/src/types/roles.enum'
+```
+
+The image copied `libs/common/src/prisma` and `libs/common/src/i18n` and nothing
+else — correct for the compiled API, whose `dist/apps/api/main.js` has the rest
+bundled. But **`prisma/seed.ts` runs from source under `tsx` inside that image**,
+so it resolves imports against a tree that only holds two of its directories. The
+moment the seed imported the `RoleCode` enum — a change made _to remove_ string
+literals — it stopped working where it matters.
+
+**Decision:** copy the directory, not a list of its children.
+`COPY --from=builder /app/libs/common/src ./libs/common/src`. The next import the
+seed needs is then already there, rather than failing once in production and
+being fixed once.
+
+**Proof: three tails**, each observed failing alone — the narrow copies
+reinstated; the seed importing outside `libs/common/src`; `prisma/` narrowed to a
+subdirectory.
+
+**The lesson belongs with the measurement family.** I ran the seed against a
+local database, watched it succeed, and took that as evidence about a container
+built from a different subset of the same repository. **Local success is not
+deployment success, and the two differ by a `COPY` line nobody reads.**
+
 ### F2 — The seed restores what a journey consumes — `EN COURS`
 
 **Idempotent is not restorative, and the difference was a Monday problem.**
