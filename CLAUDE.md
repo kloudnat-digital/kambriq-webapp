@@ -20,7 +20,13 @@ disagreement, this file wins.
 2. **Every chantier states its cost impact, and every added resource carries its
    own.** `None` is a valid answer and must be written down. A resource with no
    stated cost is not finished.
-3. **Work the order.** Do not reorder for convenience.
+3. **Work the order.** Do not reorder for convenience. Measurements (`X*`) are
+   not sequential items: run them during deploy waits.
+4. **Cheapest wins.** Standing direction from Visquis: on every infrastructure
+   choice, take the cheapest option. The bill is already considered too high. We
+   are dev-only; prd does not exist yet, and dev and future prd should share
+   resources wherever sharing is cheaper. The trade must be written down, never
+   defaulted into.
 
 ### States
 
@@ -33,9 +39,11 @@ disagreement, this file wins.
 
 ### Order
 
-`S1` → `V1` → `B3` → `C2` → `C1` → `T1` → `N1`. `C2` and `C1` are already
-`PROUVE`. `L2` runs alongside; it is a prerequisite for trusting any other
-proof, since it is why proofs went unseen.
+`S1` live proof → `B3` → `V1` → the remaining garde-fous (`T1`, `N1`).
+
+S1 and B3 are the two blockers to a tester. V1 is money-correctness. The
+garde-fous protect what comes after. `X1`, `X2` and `M1` are measurements and
+decisions, run during deploy waits rather than queued behind builds.
 
 ---
 
@@ -116,10 +124,15 @@ logout is no longer logged at all; five email addresses are masked
 the latter carries clientName, clientEmail and clientPhone) are reduced to their
 changed key names. Helpers live in `libs/common/src/utils/log-redact.ts`.
 
-Two kept deliberately, with the reasoning recorded: the global exception filter's
-message and stack, which are the whole point of the chantier, and the Prisma
-filter's `request.url` and error message. Both can echo user input in rare cases;
-being blind to every stack trace is the larger harm.
+The global exception filter's message and stack are kept: they are the whole
+point of the chantier, and it logs no URL.
+
+The Prisma filter takes a third option rather than either of mine. It now logs
+**the pathname only**, `request.url.split('?')[0]`, because query strings carry
+search terms and password-reset tokens while the diagnostic value is in the path.
+The Prisma error message is kept deliberately: it names **columns, not values**.
+The response body still returns the full URL, which is the caller's own request
+and part of the API contract. Landed in webapp #45.
 
 ### L3 — Migrate logging to PinoLogger structured fields — `DECIDE, A FAIRE`
 
@@ -159,18 +172,24 @@ The API answers `{success, data}`, the web answers flat. That gap broke the smok
 test's health-body check and nobody saw it.
 **Decision:** one representative route per module. **Cost: none.**
 
-### W1 — `/reactivate` 404 — `A DECIDER`
+### W1 — `/reactivate` 404 — `DECIDE, A FAIRE`
 
 Listed in `PUBLIC_PATHS`, has no page. `lib/actions/auth.ts:30` redirects there on
 `REACTIVATION_REQUIRED`, so a user in the soft-delete grace period hits a 404.
 
-**Open question.** The instruction was "fix or remove `/reactivate` and `/legal`
-from `PUBLIC_PATHS`". Investigation says remove **neither**: `isPublic` matches
-`p` or `p + '/'`, so `/legal` is what makes `/legal/privacy`, `/terms`,
-`/mentions` and `/rgpd` public — removing it sends four legal pages to the login
-screen. Same for `/products` and `/verify-certificate`. `/reactivate`'s entry is
-correct; the missing **page** is the bug, and it is app work. Awaiting
-confirmation before any removal. **Cost: none.**
+**Decision: keep both entries. The missing pages are the bug, not the entries.
+Build the missing `/reactivate` page.**
+
+**Instruction withdrawn, recorded so nobody re-issues it.** The original
+instruction was "fix or remove `/reactivate` and `/legal` from `PUBLIC_PATHS`".
+It was withdrawn once the investigation showed that `isPublic` matches `p` or
+`p + '/'`, so the `/legal` entry is what makes `/legal/privacy`, `/terms`,
+`/mentions` and `/rgpd` public. Removing it would send four legal pages to the
+login screen. `/products` and `/verify-certificate` are prefixes in the same way.
+
+`/reactivate`'s entry is correct; there is simply no page behind it, so a user in
+the soft-delete grace period hits a 404 after `lib/actions/auth.ts:30` redirects
+them. **Cost: none.**
 
 ### F1 — Coverage ratchet — `A DECIDER`
 
@@ -183,15 +202,83 @@ If prd shares this account and region, dev test subscriptions mix with real
 subscribers. Options in `kambriq-infra` ADR-005 §1.1.
 **Cost:** depends on the option; a separate prd account is the largest.
 
-### X1 — Cost note rebase — `A DECIDER`
+### X1 — Cost note rebased on July and August — `PROUVE`
 
-The note rests on February–April bills, so on infrastructure that no longer
-exists. Needs a recent bill before any decision, including the Scaleway comparison.
+The February–April note described infrastructure that no longer exists: no
+bastion, no EBS volume, Container Insights off. `EBS:VolumeUsage.gp3` is now
+**$0.17/month**. Rebuilt from Cost Explorer, USD, excluding tax:
 
-### X2 — NAT gateway — `A DECIDER` by Ulrich, on his own PR
+| Service             | Jul        | **Aug**    | Detail                                    |
+| ------------------- | ---------- | ---------- | ----------------------------------------- |
+| **NAT Gateway**     | 39.04      | **39.06**  | hours 38.69 + bytes 0.37, **one** gateway |
+| ECS Fargate         | 31.72      | **31.69**  | vCPU 25.99 + GB 5.70                      |
+| ALB                 | 20.11      | **20.13**  | usage 20.09, LCU 0.04                     |
+| RDS                 | 16.88      | **16.88**  | `db.t4g.micro`, 20 GB, single-AZ          |
+| CloudWatch          | 15.90      | **14.55**  | almost all `MetricMonitorUsage`           |
+| ElastiCache         | 13.39      | **13.39**  | `cache.t4g.micro`, 1 node                 |
+| Public IPv4         | 12.55      | **12.37**  | ~3.3 addresses at 3.72                    |
+| Route 53            | 7.59       | 7.59       |                                           |
+| KMS                 | 6.00       | 5.99       |                                           |
+| EC2 compute         | 3.31       | 2.87       |                                           |
+| ECR                 | 0.05       | 0.09       |                                           |
+| Registrar           | 17.00      | 0.00       | annual, July only                         |
+| **Total excl. tax** | **183.54** | **164.83** | incl. tax: 220.24 / 197.79                |
 
-Largest remaining line. Removing it means Fargate tasks on public subnets:
-changes the security posture, lives in shared state, and would break ECS Exec.
+**Where the money goes: the NAT gateway is the single largest line, ~24% of the
+bill excluding tax, and it exists to give two Fargate tasks outbound internet.**
+Nothing else is close.
+
+### X2 — NAT gateway — `DECIDE, A FAIRE`, option 2
+
+Priced against the X1 baseline. One NAT gateway, two private subnets in
+`eu-central-1a` / `1b`, **zero VPC endpoints today**.
+
+| Option                        | Monthly                                | Delta       |
+| ----------------------------- | -------------------------------------- | ----------- |
+| 1. Keep NAT                   | **$39.06** + ~$3.72 EIP                | baseline    |
+| **2. Public subnets, no NAT** | 2 task IPs × 3.72 = **$7.44**          | **−$35.34** |
+| 3. VPC endpoints              | 6 interface × 2 AZ × 8.18 = **$98.20** | **+$59.14** |
+
+Option 3's arithmetic rather than the assumption: `ecr.api`, `ecr.dkr`, `logs`,
+`ssm`, `ssmmessages`, `email-smtp` are billed **per AZ** at $0.011/hr in
+eu-central-1 = $8.18/AZ/month. S3's gateway endpoint is free and does not help.
+**Six endpoints across two AZs cost 2.5× the NAT gateway.** The NAT rate is
+verified against the bill itself: 38.69 ÷ 744h = $0.052/hr, exactly one gateway
+at list. The endpoint figure is list price, not observed, since the account has
+none.
+
+**ECS Exec survives option 2.** It reaches SSM over `ssmmessages` outbound; a
+public IP with an IGW route provides that. Exec breaks under option 3 done
+badly, not under option 2.
+
+**Blast radius, written down rather than defaulted into:** tasks become directly
+addressable at the network layer. Today the security group admits only the ALB,
+so effective exposure is unchanged, but a future SG mistake goes from
+"unreachable" to "internet-reachable". That is the trade for $35/month.
+Implementation is Ulrich's, on his own PR.
+
+### M1 — Mutualisation of dev and future prd — `DECIDE, A FAIRE`
+
+Cheapest wins, per the standing direction. Priced per resource against the
+August baseline. "Saving" is shared versus duplicated, per month.
+
+| Resource                                | Saving                      | Blast radius: what a dev incident does to prd                                                                                                                                                                                                 |
+| --------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| VPC, subnets, **NAT**                   | **$39.06** (already shared) | dev saturating NAT bandwidth throttles prd egress                                                                                                                                                                                             |
+| **ALB**, host-based routing             | **$20.13**                  | a bad dev listener rule can misroute prd traffic; shared access logs                                                                                                                                                                          |
+| **RDS**, one instance, database per env | **$16.88**                  | a dev migration or runaway query starves prd; dev filling the 20 GB volume takes prd down                                                                                                                                                     |
+| **ElastiCache**, key prefixes           | **$13.39**                  | a dev job flood evicts prd keys; `FLUSHALL` in dev wipes prd                                                                                                                                                                                  |
+| ECR, shared repos, per-env tags         | ~$0.05                      | a lifecycle policy deleting a tag prd still runs                                                                                                                                                                                              |
+| **SES**, already shared                 | no fixed cost               | **largest of all, and already live**: one contact list per account per region, so dev test subscriptions mix with real prd subscribers; and dev bounces damage the shared sending reputation, which can throttle or sandbox the whole account |
+
+**Total if everything is shared rather than duplicated: ~$89.46/month, about 54%
+of the August bill excluding tax.**
+
+Recommendation: share VPC/NAT, ALB and ECR. RDS and ElastiCache are the two
+where the blast radius is a real production risk rather than an inconvenience —
+share them only if prd traffic is genuinely small, and revisit at the first sign
+of contention. SES is already shared and its constraint (`P1`) needs resolving
+before prd sends anything, independently of cost.
 
 ---
 
