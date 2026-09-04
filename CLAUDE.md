@@ -49,62 +49,6 @@ decisions, run during deploy waits rather than queued behind builds.
 
 ## Open
 
-### V1 — Commissions and job names — `EN COURS`
-
-`kamnet.processor.ts` — a completed sale whose user lookup fails logged an error,
-returned `null`, and BullMQ marked the job **completed**. The sale was recorded,
-the job was green, and the agent's commission was never created. Nothing held a
-count of sales that produced no commission, so the only symptom available to
-anybody was **an agent noticing they had not been paid**.
-
-All four processors returned `null` on an unknown job name, so a renamed constant
-would drain every job of that kind from the queue with a green tick and a `warn`
-nobody reads — silently stopping emails, cleanup, grading or commissions
-depending on which name moved.
-
-**Decision, implemented.** An unrecoverable failure fails the job; an unknown job
-name throws. A failed job keeps its payload on the failed set, where it is
-countable and replayable once the cause is fixed. **A sale whose agent cannot be
-resolved is not a sale to skip; it is a sale somebody has to look at.**
-
-The one legitimate skip is kept and made explicit: an admin closing a sale has no
-commission to track, and still resolves with `{ skipped: true, reason: 'admin' }`
-rather than a bare `null` — the difference between _"nothing to do"_ and
-_"something went wrong and I am not telling you"_.
-
-Both throws name `agentUserId` and `reservationId`, so a failed job can be traced
-back to the sale without opening the payload.
-
-**The commission path had no tests at all.** `handleSaleCompleted` is the only
-thing that turns a completed sale into an agent's commission, and nothing
-exercised it. `kamnet.processor.spec.ts` is new.
-
-**And one existing test pinned the defect.** `grading-processor.spec.ts` asserted
-`returns null for unknown job types`, and was green for exactly as long as the
-defect existed. A test can pin a defect as firmly as it pins a fix: that
-assertion was correct about the code and wrong about the requirement.
-
-**Proof: eight tails, eight mutations**, each observed failing on its own under
-the rule written today:
-
-| #   | Mutation                          | Test that fired                                    |
-| --- | --------------------------------- | -------------------------------------------------- |
-| 1   | KAMNET unknown job returns `null` | throws rather than completing the job              |
-| 2   | user-not-found returns `null`     | fails the job when the user does not exist in core |
-| 3   | the error stops naming the ids    | names the agent and the reservation                |
-| 4   | agent-row-missing returns `null`  | fails when the user has no KAMNET agent row        |
-| 5   | the admin skip throws too         | completes with an explicit skip reason             |
-| 6   | CORE unknown job returns `null`   | CoreCleanupProcessor throws                        |
-| 7   | KBS unknown job returns `null`    | KbsGradingProcessor throws                         |
-| 8   | EMAIL unknown job returns `null`  | EmailProcessor throws                              |
-
-Mutation 5 is there deliberately: a guard that starts failing the cases it was
-supposed to allow is a regression too, and only a mutation in that direction
-catches it.
-
-`EN COURS` until dev shows an unknown job on the **failed** set rather than the
-completed one. **Cost: none.**
-
 ### L2 — Logging drops metadata at 106 call sites — `EN COURS`
 
 `nestjs-pino`'s `Logger.call` takes the **last** optional param as context and
@@ -275,6 +219,7 @@ before prd sends anything, independently of cost.
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | B1  | SES: the API had never sent an email. Static-credential gate, no `ses:` grant, and the MessageId was never logged                                                                                                                                                                                                                                                              | infra #16 #17 #18; webapp #39 #41 | `messageId=010701a06a9fd24c-51cc2bd1-7d70-4715-a7a0-ee582c49ea1e-000000`; `AWS/SES Send` 1.0 and `Delivery` 1.0 at 03:43 and 04:14, `Bounce` none, from zero datapoints before                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Contact list free; two IAM policies free; one SSM parameter removed |
 | Q1  | `CERTIFIED` was set by grading, on the score alone: certified with no certificate, no `kcaNumber` and nobody's name against it. `certificate/me` answered `{"data":null}` to somebody the API called certified — and grading also granted `KCA_CERTIFIED`, which gates the KAMNET agent routes, so **passing an exam made somebody an agent before any human had approved it** | webapp #54                        | Live on dev, `:108` / `sha-4be405b`, same candidate either side of one admin call. **Before issuance:** `EXAM_PASSED`, `certifiedAt: null`, `nextAction: awaiting-certificate`, `certificate/me: null`, roles `[CLIENT, CANDIDATE_KBS]`. **After issuance:** `CERTIFIED`, `certifiedAt` set, `nextAction: certified`, `KCA-20260904-LNG8`, certificates 7 → 8, roles `[CLIENT, CANDIDATE_KBS, KCA_CERTIFIED]`. The role arriving with the credential and not before it is the half that mattered. Five mutations, all firing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | None — no migration, the column is a `String`                       |
+| V1  | A completed sale whose agent lookup failed logged an error and returned `null`, so BullMQ marked the job **completed**: sale recorded, job green, commission never created, and the only symptom available to anybody was an agent noticing they had not been paid. All four processors did the same on an unknown job name                                                    | webapp #58                        | Live on dev, `kambriq-dev-api:112` / `sha-fef4391`. Enqueued `kamnet.definitely-unknown-job` on the `kamnet` queue: `BEFORE failed=0 completed=0` → `AFTER failed=1 completed=0`, `reason=Unknown KAMNET job: kamnet.definitely-unknown-job`. It landed on the **failed** set with its reason, where before it would have completed silently. Eight tails, eight mutations, each observed failing alone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | None                                                                |
 | W1  | `/reactivate` was in `PUBLIC_PATHS` with no page. `lib/actions/auth.ts` redirects there on `REACTIVATION_REQUIRED`, so a user in the soft-delete grace period — undoing a deletion, on a clock — hit a 404                                                                                                                                                                     | webapp #57                        | Live on dev, `kambriq-dev-web:71` / `sha-68f6c7f`: `/reactivate` **200** (was 404), `id="email"` and `id="password"` present. `days=12` → _"Il vous reste 12 jours"_; `days=1` → _"1 jour"_; `days=999999` and `days=<script>` and no `days` → the neutral _"Votre compte est encore dans sa période de restauration"_. Four tails, four mutations, each observed failing alone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | None                                                                |
 | B3  | KBS not demonstrable: `KbsQuestion` and `KbsExamQuestion` empty since the seed's single run on 2026-02-26, so the largest module (21 routes) could not be exercised                                                                                                                                                                                                            | webapp #47 #49 #50 #51            | Live on dev, `kambriq-dev-api:105`: quiz serves **10**, scores 100/10 and passes; exam serves **20**, `totalQuestions` 20, scores 100, `PASSED`; candidate status changed; **certificates 5 → 6** (`KCA-20260904-N4OY`) — **issued by an explicit admin call during the proof, not by passing.** The exam produced no certificate: `certificate/me` answered `{"data":null}` and the count moved only after `POST /kbs/admin/certificates/:id`. So 5 → 6 proves **issuance works when somebody triggers it**; it is not proof of an end-to-end certification chain, and the chain is deliberately not automatic (Q1). `/kbs/public/verify` returns `valid: true`. Idempotency: two local runs, identical counts. Distribution guard **demonstrated, not asserted**: forcing `9/8/8/5` fails all four banks on `<= 8`; `9/9/9/3`, the per-bank shape of a `31/31/29/10` skew, fails the same way; and `8/8/8/6` — upper bound satisfied — fails all four on `>= 7`, so both tails are observed rather than inferred. 235 tests | None                                                                |
 | K2  | A candidate who passed every module was told to "finish all the modules". `checkAndTransitionToExamPending` returned silently on a null `activeCourseId` that the seed never set; `me/overview` answered `course: null` for the same reason                                                                                                                                    | webapp #51                        | `EXAM_PENDING` and `eligible: true` on dev after the fix; `me/overview` returns the course. Mutation: removing the log fails 1, reverting the seed's `update` branch fails 1. `kbsCandidate.updateMany` was absent from the shared mock — the defect was shielding the gap in its own coverage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | None                                                                |
@@ -290,6 +235,104 @@ before prd sends anything, independently of cost.
 | A1  | e2e uploaded an empty report every run while reporting green                                                                                                                                                                                                                                                                                                                   | webapp #32                        | `playwright-report` 207 530 bytes, was absent                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | None                                                                |
 | A2  | `scripts/smoke-test.sh` died on its first passing check under `set -e`                                                                                                                                                                                                                                                                                                         | infra #15                         | 8 passed / 0 failed under the CI OIDC role                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | None                                                                |
 | L1  | The SES MessageId was logged in a metadata object that `nestjs-pino` drops                                                                                                                                                                                                                                                                                                     | webapp #41                        | Mutation: restoring the object form fails 1 of 30 tests                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | None                                                                |
+
+---
+
+## Account audit — `051551940370`, all regions, read-only
+
+Swept on 2026-09-04 across all 17 enabled regions. **Report only; nothing was
+deleted, disabled or modified.** Hosted zones excluded from the verdicts by
+instruction; the Route 53 line is noted for the bill only.
+
+**Fifteen of seventeen regions hold nothing but their default VPC and its default
+security group** — ap-northeast-1/2/3, ap-south-1, ap-southeast-1/2, ca-central-1,
+eu-north-1, eu-west-2, eu-west-3, sa-east-1, us-east-1, us-east-2, us-west-1,
+us-west-2. All free, all AWS-created. Everything below is in `eu-central-1`
+except where stated.
+
+### Useful to KAMBRIQ
+
+| Resource                                                       | What it is                               | Referenced by                                | Aug cost           | Verdict                          |
+| -------------------------------------------------------------- | ---------------------------------------- | -------------------------------------------- | ------------------ | -------------------------------- |
+| `kambriq-dev-alb`                                              | Application load balancer, `active`      | ACM `dev.kambriq.com`, both ECS services     | $20.13             | Keep                             |
+| `kambriq-dev-cluster` + 2 Fargate services                     | api and web                              | CI/CD deploys into it                        | $31.72             | Keep                             |
+| `kambriq-postgres-dev`                                         | RDS `db.t4g.micro`, 20 GB gp3, single-AZ | four `DATABASE_URL_*` SSM params             | $16.88             | Keep — **but see backups below** |
+| `kambriq-dev-redis-001`                                        | ElastiCache `cache.t4g.micro`, redis 7.1 | BullMQ, `REDIS_HOST`                         | $13.39             | Keep                             |
+| `nat-04b75312a0fdb779c`                                        | One NAT, in `subnet-085728f14e8c9bc9c`   | private subnets `10.0.2.0/24`, `10.0.3.0/24` | $39.25 (EC2-Other) | Keep for now — X2                |
+| 3 Elastic IPs                                                  | all **associated**                       | NAT + ALB                                    | in VPC $12.37      | Keep                             |
+| `kambriq-media-dev`                                            | S3, 50 objects, 67 MB                    | `AWS_S3_BUCKET`, proven by S1                | $0.00              | Keep                             |
+| ECR `kambriq-api` / `kambriq-web`                              | 10.4 GB across both                      | CI/CD                                        | $0.09              | Keep                             |
+| 45 SSM parameters `/kambriq/dev/**`                            | app config                               | the task definitions                         | free               | Keep                             |
+| ACM `dev.kambriq.com`                                          | issued, in use                           | the ALB listener                             | free               | Keep                             |
+| `/ecs/kambriq-dev-api` (40 MB), `/ecs/kambriq-dev-web` (65 KB) | log groups, 7-day retention              | the services                                 | $0.00 in Sept      | Keep                             |
+
+### Another project's, sitting in this account
+
+| Resource                                         | What it is                                                      | Referenced by                                  | Cost                       | Verdict                                                                       |
+| ------------------------------------------------ | --------------------------------------------------------------- | ---------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------- |
+| 3 customer-managed KMS keys                      | all described `production-fotomena-eks cluster encryption key`  | **nothing — the EKS cluster no longer exists** | $5.99 Aug, ~$3/mo standing | Not KAMBRIQ's. Somebody who knows fotomena should decide                      |
+| `/aws/eks/production-fotomena-eks/cluster`       | log group, 0 bytes, 90-day retention                            | nothing                                        | $0.00                      | Debris from the same cluster                                                  |
+| `aws-ecs-linux-cluster` (**eu-west-1**)          | ECS cluster: 0 instances, 0 services, 0 tasks                   | nothing                                        | free                       | Empty, not KAMBRIQ's                                                          |
+| 20 SSM parameters `/Dorigine/**` (**eu-west-1**) | Firebase, recaptcha and mail keys for a project called Dorigine | nothing in this repo                           | free                       | Not KAMBRIQ's — **contains secrets, so worth a decision rather than a shrug** |
+| `kloudnat-infra-shared-store`                    | S3, 6 objects, 305 KB                                           | Terraform remote state                         | $0.00                      | Shared tooling, keep                                                          |
+| Route 53                                         | 11 hosted zones; 10 are not KAMBRIQ's                           | —                                              | ~$5.50/mo of the $7.59     | Excluded by instruction, noted for the bill                                   |
+
+### Debris
+
+| Resource                                                     | What it is                                   | Cost  | Verdict                                |
+| ------------------------------------------------------------ | -------------------------------------------- | ----- | -------------------------------------- |
+| `kambriq-artifacts-b9321a78`                                 | S3, **0 objects**, not declared in Terraform | $0.00 | Created outside IaC, never used        |
+| `kambriq-logs-b9321a78`                                      | S3, **0 objects**, not declared in Terraform | $0.00 | Same                                   |
+| `/ecs/kambriq-dev`                                           | log group, 0 bytes                           | $0.00 | No such service; a renamed leftover    |
+| `/aws/ecs/containerinsights/kambriq-dev-cluster/performance` | log group, 0 bytes, 1-day retention          | $0.00 | Left by the Container Insights removal |
+| `RDSOSMetrics`                                               | log group, 0 bytes, 30-day retention         | $0.00 | Enhanced monitoring is off; harmless   |
+| default VPC `vpc-388b5c52` (eu-central-1) + 15 more          | 0 instances each                             | free  | AWS-created, unused                    |
+
+### Three findings that are not about cost
+
+**1. An unused `AdministratorAccess` key.** `gitops.admin` holds
+`AKIAQYAF4F4JLEEQ5ARN`, **Active**, created 2026-02-24, `LastUsedDate: None` —
+never used once. It reaches `AdministratorAccess` through the `gitops-admin`
+group, of which it is the only member. A full-admin credential that has never
+been used is one nobody would notice being used. This is the audit's most
+important line and it costs nothing to hold.
+
+Two more never-used active keys: `ses-kambriq-app` (`AKIAQYAF4F4JNP3WKQMQ`) and
+one of `kambriq-app-dev`'s pair (`AKIAQYAF4F4JLQKD3DWT`). The other
+`kambriq-app-dev` key last saw `s3` on **2026-08-27** — before S1 removed static
+credentials from the API, so nothing should be using it now either.
+
+**2. `kambriq-postgres-dev` has `BackupRetentionPeriod: 0`.** No automated
+backups, no point-in-time recovery. That is defensible for a disposable dev
+database — it is a saving, and I reset it deliberately today — but it should be a
+recorded choice rather than a default nobody looked at, and prd must not inherit
+it.
+
+**3. `/aws/rds/instance/kambriq-postgres-dev/postgresql` has no retention.**
+`retentionInDays: None` means never expire; it holds 5.85 MB and grows. Every
+other log group here is capped at 7 or 30 days. Costs nothing today, unbounded by
+construction.
+
+### What the bill actually is
+
+August, excluding tax: **$164.83**. September month-to-date at day 4: $23.07
+excluding tax.
+
+A flat projection would put September at ~$173, and that is wrong: **Route 53
+hosted-zone fees are charged once at the start of the month**, so the $5.51 sat
+in the first four days is already the whole month rather than a seventh of it.
+Multiplying it by 7.5 invents $36. The usage-based lines — ECS, ELB, RDS,
+ElastiCache, NAT, VPC — do project linearly, and they land close to August.
+
+**Not ours, and standing:** ~$3/mo of KMS for a cluster that no longer exists,
+plus ~$5/mo of hosted zones excluded by instruction. Call it **$8/mo of a
+~$165 bill that belongs to somebody else** — real, small, and not where the money
+is. The money is NAT ($39), ECS ($32), ALB ($20), RDS ($17) and ElastiCache
+($13), all of which are load-bearing today.
+
+**CloudWatch is confirmed at $0.00 in September**, from $14.55 in August, and
+`containerInsights` reads `disabled` on the cluster itself. Checked at the source
+rather than assumed.
 
 ---
 
