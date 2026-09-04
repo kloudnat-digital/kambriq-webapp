@@ -55,6 +55,13 @@ function getRouteConfig(
       accountLink: null,
       showBackToHome: true,
     };
+  if (pathname.includes('/reactivate'))
+    return {
+      title: t('reactivate.title'),
+      subtitle: t('reactivate.subtitle'),
+      accountLink: null,
+      showBackToHome: true,
+    };
   if (pathname.includes('/verify-email'))
     return {
       title: t('verifyEmail.title'),

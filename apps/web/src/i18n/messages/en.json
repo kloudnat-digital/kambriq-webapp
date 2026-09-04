@@ -197,9 +197,21 @@
         "title": "KAMBRIQ Business School training program",
         "subtitle": "6 complete modules to become a KAMBRIQ Certified Agent (KCA)",
         "features": [
-          { "name": "Total duration", "title": "8 weeks", "description": "At your own pace" },
-          { "name": "Format", "title": "100% online", "description": "Accessible 24/7" },
-          { "name": "Modules", "title": "6 modules", "description": "32 lessons" }
+          {
+            "name": "Total duration",
+            "title": "8 weeks",
+            "description": "At your own pace"
+          },
+          {
+            "name": "Format",
+            "title": "100% online",
+            "description": "Accessible 24/7"
+          },
+          {
+            "name": "Modules",
+            "title": "6 modules",
+            "description": "32 lessons"
+          }
         ]
       },
       "admission": {
@@ -830,6 +842,18 @@
       "errorMessage": "The link may have expired or has already been used.",
       "goToLogin": "Go to login",
       "backToLogin": "Back to login"
+    },
+    "reactivate": {
+      "title": "Reactivate your account",
+      "subtitle": "Your account is scheduled for deletion, but it can still be restored.",
+      "graceOne": "You have 1 day left to reactivate your account.",
+      "graceOther": "You have {days} days left to reactivate your account.",
+      "graceUnknown": "Your account is still within its restoration window.",
+      "explanation": "Enter your credentials to cancel the deletion. Your data and progress are kept.",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Reactivate my account",
+      "backToLogin": "Back to sign in"
     }
   },
   "landsHero": {
