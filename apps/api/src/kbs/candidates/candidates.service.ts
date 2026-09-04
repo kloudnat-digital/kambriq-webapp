@@ -267,10 +267,15 @@ export class KbsCandidatesService {
     const firstNotDone = moduleViews.find((m) => m.status !== 'completed');
     const currentModuleOrder = firstNotDone?.order ?? null;
 
-    let nextAction: 'lesson' | 'mcq' | 'exam' | 'certified';
+    let nextAction: 'lesson' | 'mcq' | 'exam' | 'awaiting-certificate' | 'certified';
 
     if (candidate.status === CandidateStatus.CERTIFIED) {
       nextAction = 'certified';
+    } else if (candidate.status === CandidateStatus.EXAM_PASSED) {
+      // Distinct from 'certified' on purpose. The screen that renders this has
+      // to be able to say "passed, certificate on its way" without inferring it
+      // from a null certificate.
+      nextAction = 'awaiting-certificate';
     } else if (modulesDone === modulesTotal && modulesTotal > 0) {
       nextAction = 'exam';
     } else if (firstNotDone) {

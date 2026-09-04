@@ -67,6 +67,18 @@ export class KbsExamService {
       };
     }
 
+    // Passed, waiting on an admin to issue the certificate. Not eligible for
+    // another exam, and not certified either - the candidate is told which.
+    if (candidate.status === CandidateStatus.EXAM_PASSED) {
+      return {
+        ...(await this.buildBaseEligibility(candidate)),
+        eligible: false,
+        reason: this.t('kbs.exam.awaitingCertificate'),
+        nextAttemptAt: null,
+        activeExamId: null,
+      };
+    }
+
     // Certified but certificate expired → renewal path
     if (candidate.status === CandidateStatus.CERTIFIED) {
       const cert = await this.prisma.kbsCertificate.findUnique({
@@ -573,11 +585,12 @@ export class KbsExamService {
       },
     });
 
+    // Passing earns EXAM_PASSED. `certifiedAt` belongs to issuance, not to a
+    // score: it is the date on the document, and there is no document yet.
     await this.prisma.kbsCandidate.update({
       where: { id: exam.candidateId },
       data: {
-        status: passed ? CandidateStatus.CERTIFIED : CandidateStatus.FAILED,
-        ...(passed && { certifiedAt: new Date() }),
+        status: passed ? CandidateStatus.EXAM_PASSED : CandidateStatus.FAILED,
       },
     });
 
