@@ -1,16 +1,13 @@
-import { waitForPortOpen } from '@nx/node/utils';
-
-/* eslint-disable */
-var __TEARDOWN_MESSAGE__: string;
-
+/**
+ * These suites run against a DEPLOYED api, not a local process.
+ *
+ * The previous setup waited for a port on localhost and the one spec asserted
+ * `GET /api` returned `{ message: 'Hello API' }` - a route that does not exist,
+ * in a project CI never ran. A test nobody runs, asserting something untrue, is
+ * worse than no test: it reads as coverage.
+ */
 module.exports = async function () {
-  // Start services that that the app needs to run (e.g. database, docker-compose, etc.).
-  console.log('\nSetting up...\n');
-
-  const host = process.env.HOST ?? 'localhost';
-  const port = process.env.PORT ? Number(process.env.PORT) : 3000;
-  await waitForPortOpen(port, { host });
-
-  // Hint: Use `globalThis` to pass variables to global teardown.
-  globalThis.__TEARDOWN_MESSAGE__ = '\nTearing down...\n';
+  const target = process.env.KAMBRIQ_API_URL ?? 'https://dev.kambriq.com/api/v1';
+  console.log(`\napi-e2e target: ${target}\n`);
+  globalThis.__TEARDOWN_MESSAGE__ = '\napi-e2e done\n';
 };

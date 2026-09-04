@@ -107,6 +107,22 @@ const IDS = {
   LAND_3: '00000000-0000-4000-8000-e00000000013',
   LAND_4: '00000000-0000-4000-8000-e00000000014',
   LAND_5: '00000000-0000-4000-8000-e00000000015',
+  LAND_RESERVATION_SEEDED: '00000000-0000-4000-8000-e00000000031',
+  LAND_6: '00000000-0000-4000-8000-e00000000016',
+  LAND_7: '00000000-0000-4000-8000-e00000000017',
+  LAND_8: '00000000-0000-4000-8000-e00000000018',
+  LAND_9: '00000000-0000-4000-8000-e00000000019',
+  LAND_10: '00000000-0000-4000-8000-e00000000020',
+  LAND_11: '00000000-0000-4000-8000-e00000000021',
+  LAND_12: '00000000-0000-4000-8000-e00000000022',
+  LAND_13: '00000000-0000-4000-8000-e00000000023',
+  LAND_14: '00000000-0000-4000-8000-e00000000024',
+  LAND_15: '00000000-0000-4000-8000-e00000000025',
+  LAND_16: '00000000-0000-4000-8000-e00000000026',
+  LAND_17: '00000000-0000-4000-8000-e00000000027',
+  LAND_18: '00000000-0000-4000-8000-e00000000028',
+  LAND_19: '00000000-0000-4000-8000-e00000000029',
+  LAND_20: '00000000-0000-4000-8000-e00000000030',
 };
 
 const SEED_DATE = new Date('2025-01-01T00:00:00Z');
@@ -1002,17 +1018,346 @@ async function seedLands() {
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
     },
+    {
+      id: IDS.LAND_6,
+      title: 'Parcelle Douala Bonapriso',
+      slug: 'parcelle-douala-bonapriso',
+      description:
+        'Parcelle de 400 m² à Bonapriso, Douala. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Littoral',
+      city: 'Douala',
+      neighborhood: 'Bonapriso',
+      sizeM2: 400,
+      price: 14000000,
+      labelId: IDS.LABEL_TDT,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: true,
+      verifiedAt: SEED_DATE,
+      titleNumber: 'TF-CM-LT-2025-005',
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_7,
+      title: 'Parcelle Yaoundé Nsimeyong',
+      slug: 'parcelle-yaounde-nsimeyong',
+      description:
+        'Parcelle de 320 m² à Nsimeyong, Yaoundé. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Centre',
+      city: 'Yaoundé',
+      neighborhood: 'Nsimeyong',
+      sizeM2: 320,
+      price: 7200000,
+      labelId: IDS.LABEL_VEFL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_8,
+      title: 'Parcelle Douala Logbessou',
+      slug: 'parcelle-douala-logbessou',
+      description:
+        'Parcelle de 500 m² à Logbessou, Douala. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Littoral',
+      city: 'Douala',
+      neighborhood: 'Logbessou',
+      sizeM2: 500,
+      price: 6800000,
+      labelId: IDS.LABEL_VEFIL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_9,
+      title: 'Parcelle Yaoundé Odza',
+      slug: 'parcelle-yaounde-odza',
+      description:
+        'Parcelle de 380 m² à Odza, Yaoundé. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Centre',
+      city: 'Yaoundé',
+      neighborhood: 'Odza',
+      sizeM2: 380,
+      price: 6100000,
+      labelId: IDS.LABEL_VEFL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_10,
+      title: 'Parcelle Bafoussam Tamdja',
+      slug: 'parcelle-bafoussam-tamdja',
+      description:
+        'Parcelle de 450 m² à Tamdja, Bafoussam. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Ouest',
+      city: 'Bafoussam',
+      neighborhood: 'Tamdja',
+      sizeM2: 450,
+      price: 4900000,
+      labelId: IDS.LABEL_TDT,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: true,
+      verifiedAt: SEED_DATE,
+      titleNumber: 'TF-CM-OU-2025-006',
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_11,
+      title: 'Parcelle Limbé Mile 4',
+      slug: 'parcelle-limbe-mile-4',
+      description:
+        'Parcelle de 520 m² à Mile 4, Limbé. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Sud-Ouest',
+      city: 'Limbé',
+      neighborhood: 'Mile 4',
+      sizeM2: 520,
+      price: 7600000,
+      labelId: IDS.LABEL_VEFIL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_12,
+      title: 'Parcelle Kribi Mpangou',
+      slug: 'parcelle-kribi-mpangou',
+      description:
+        'Parcelle de 700 m² à Mpangou, Kribi. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Sud',
+      city: 'Kribi',
+      neighborhood: 'Mpangou',
+      sizeM2: 700,
+      price: 8900000,
+      labelId: IDS.LABEL_VEFL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_13,
+      title: 'Parcelle Garoua Plateau',
+      slug: 'parcelle-garoua-plateau',
+      description:
+        'Parcelle de 600 m² à Plateau, Garoua. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Nord',
+      city: 'Garoua',
+      neighborhood: 'Plateau',
+      sizeM2: 600,
+      price: 3800000,
+      labelId: IDS.LABEL_TDT,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: true,
+      verifiedAt: SEED_DATE,
+      titleNumber: 'TF-CM-NO-2025-007',
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_14,
+      title: 'Parcelle Bertoua Nkolbikon',
+      slug: 'parcelle-bertoua-nkolbikon',
+      description:
+        'Parcelle de 480 m² à Nkolbikon, Bertoua. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Est',
+      city: 'Bertoua',
+      neighborhood: 'Nkolbikon',
+      sizeM2: 480,
+      price: 3400000,
+      labelId: IDS.LABEL_VEFIL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_15,
+      title: 'Parcelle Ngaoundéré Dang',
+      slug: 'parcelle-ngaoundere-dang',
+      description:
+        'Parcelle de 550 m² à Dang, Ngaoundéré. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Adamaoua',
+      city: 'Ngaoundéré',
+      neighborhood: 'Dang',
+      sizeM2: 550,
+      price: 3600000,
+      labelId: IDS.LABEL_VEFL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_16,
+      title: 'Parcelle Douala Yassa',
+      slug: 'parcelle-douala-yassa',
+      description:
+        'Parcelle de 420 m² à Yassa, Douala. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Littoral',
+      city: 'Douala',
+      neighborhood: 'Yassa',
+      sizeM2: 420,
+      price: 5400000,
+      labelId: IDS.LABEL_VEFIL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_17,
+      title: 'Parcelle Yaoundé Mfandena',
+      slug: 'parcelle-yaounde-mfandena',
+      description:
+        'Parcelle de 300 m² à Mfandena, Yaoundé. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Centre',
+      city: 'Yaoundé',
+      neighborhood: 'Mfandena',
+      sizeM2: 300,
+      price: 9800000,
+      labelId: IDS.LABEL_TDT,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: true,
+      verifiedAt: SEED_DATE,
+      titleNumber: 'TF-CM-CT-2025-008',
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_18,
+      title: 'Parcelle Edéa Centre',
+      slug: 'parcelle-edea-centre',
+      description:
+        'Parcelle de 360 m² à Centre, Edéa. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Littoral',
+      city: 'Edéa',
+      neighborhood: 'Centre',
+      sizeM2: 360,
+      price: 4200000,
+      labelId: IDS.LABEL_VEFL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_19,
+      title: 'Parcelle Buea Molyko',
+      slug: 'parcelle-buea-molyko',
+      description:
+        'Parcelle de 340 m² à Molyko, Buea. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Sud-Ouest',
+      city: 'Buea',
+      neighborhood: 'Molyko',
+      sizeM2: 340,
+      price: 7100000,
+      labelId: IDS.LABEL_VEFL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_20,
+      title: 'Parcelle Maroua Domayo',
+      slug: 'parcelle-maroua-domayo',
+      description:
+        'Parcelle de 580 m² à Domayo, Maroua. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Extrême-Nord',
+      city: 'Maroua',
+      neighborhood: 'Domayo',
+      sizeM2: 580,
+      price: 2900000,
+      labelId: IDS.LABEL_VEFIL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
   ];
 
+  /**
+   * Idempotent is not restorative, and the difference is a Monday problem.
+   *
+   * `update: {}` meant a re-run changed nothing about an existing parcel. A
+   * tester reserving parcels moves them AVAILABLE -> RESERVED -> SOLD, and no
+   * amount of re-seeding gave them back: five parcels, five reservations, and
+   * the sixth run looks like a broken platform rather than an exhausted fixture.
+   * The seed said "5 parcels seeded" every time while the pool it described was
+   * empty — a success message over a state it had not restored.
+   *
+   * A seeded fixture must be returned to its seeded state by a re-run. So the
+   * update clause sets the fields a journey mutates, and the reservations a
+   * journey created against seeded parcels are removed first — otherwise the
+   * unique `landId` still ties the parcel to somebody's test run.
+   *
+   * Only rows the seed owns are touched: reservations on seeded parcel ids,
+   * excluding the seeded reservation itself. A tester's parcels, if they ever
+   * create any, are none of the seed's business.
+   */
+  const seededParcelIds = parcels.map((p) => p.id);
+
+  await lands.landReservation.deleteMany({
+    where: {
+      landId: { in: seededParcelIds },
+      id: { not: IDS.LAND_RESERVATION_SEEDED },
+    },
+  });
+
   for (const parcel of parcels) {
-    await lands.land.upsert({ where: { id: parcel.id }, create: parcel, update: {} });
+    await lands.land.upsert({
+      where: { id: parcel.id },
+      create: parcel,
+      // The mutable surface of a parcel, reset. `status` is what a journey
+      // changes; the rest are here because a half-restored fixture is worse than
+      // an unrestored one - it looks correct.
+      update: {
+        status: parcel.status,
+        isPublished: parcel.isPublished,
+        price: parcel.price,
+        labelId: parcel.labelId,
+      },
+    });
   }
 
   // Reservation for LAND_3 (Bonanjo) - CONFIRMED, by Eric for a client
   await lands.landReservation.upsert({
     where: { landId: IDS.LAND_3 },
     create: {
-      id: '00000000-0000-4000-8000-e00000000031',
+      id: IDS.LAND_RESERVATION_SEEDED,
       landId: IDS.LAND_3,
       agentUserId: IDS.USER_ERIC,
       clientName: 'Alphonse Bello',
@@ -1024,10 +1369,17 @@ async function seedLands() {
       confirmedBy: IDS.USER_ADMIN_LANDS,
       confirmedAt: new Date('2025-02-01'),
     },
-    update: {},
+    update: {
+      status: LandReservationStatus.CONFIRMED,
+      downPaymentConfirmed: true,
+    },
   });
 
-  console.log('  ✓ Lands seeded (3 labels, 5 parcels, 1 reservation)');
+  console.log(
+    `  ✓ Lands seeded (3 labels, ${parcels.length} parcels, ${
+      parcels.filter((p) => p.status === LandStatus.AVAILABLE).length
+    } available, 1 reservation)`,
+  );
 }
 
 // ---------------------------------------------------------------------------

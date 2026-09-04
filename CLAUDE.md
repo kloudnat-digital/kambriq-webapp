@@ -357,6 +357,25 @@ Removed — `AWS_ACCESS_KEY_ID`, `AWS_ACCESS_KEY_ID_DEV`, `AWS_ACCESS_KEY_ID_PRO
 **This half has no reversal**; the credentials would have to be reissued. That
 asymmetry was stated before it was authorized, not after.
 
+**And I destroyed the one piece of metadata that was recoverable.** The
+instruction to record the six names and their `updatedAt` dates arrived after the
+deletion had run. `gh secret list` prints name **and** date; I piped it through
+`awk '{print $1}'` and kept only the column I thought I needed, twice, before
+deleting the rows. The dates are not recoverable — the org audit log needs admin
+this account does not have.
+
+What survives is the six names —
+`AWS_ACCESS_KEY_ID`, `AWS_ACCESS_KEY_ID_DEV`, `AWS_ACCESS_KEY_ID_PROD`,
+`AWS_SECRET_ACCESS_KEY`, `AWS_SECRET_ACCESS_KEY_DEV`,
+`AWS_SECRET_ACCESS_KEY_PROD` — and the dates of the five that remain, which run
+2025-11-26 to 2025-12-08. It is _likely_ the deleted six were set in the same
+window. **That is inference, not evidence, and it is marked as such because the
+evidence is gone.**
+
+The lesson belongs with the measurement defects: **I reduced a reading to the
+column I expected to need, and then destroyed the source.** A projection is safe
+while the original is still there. This one was not.
+
 **Still dated:** `AKIAQYAF4F4JH34UGKU5` on **Tuesday 8 September 2026**, after
 re-checking `LastUsedDate` first. **Cost: none.**
 
@@ -470,6 +489,79 @@ decided together, because doing only the first leaves the exposure intact.
 **This is a credential change on Visquis's account. It does not happen without
 his explicit word.** **Cost: none** — IAM users and keys are free; this is
 entirely about blast radius.
+
+### F2 — The seed restores what a journey consumes — `EN COURS`
+
+**Idempotent is not restorative, and the difference was a Monday problem.**
+`land.upsert` used `update: {}`, so a re-run changed nothing about an existing
+parcel. Reserving moves a parcel AVAILABLE → RESERVED → SOLD and no amount of
+re-seeding gave it back. Five parcels, five consumed by this week's proofs, and
+**the sixth run looks like a broken platform rather than an exhausted fixture** —
+while the seed printed _"5 parcels seeded"_ over a pool it had not restored. A
+success message about a state it never checked.
+
+**The property, not the instance.** A seeded fixture must be returned to its
+seeded state by a re-run. The update clause now sets the fields a journey mutates
+(`status`, `isPublished`, `price`, `labelId`), and reservations created against
+seeded parcels are deleted first — the unique `landId` otherwise keeps the parcel
+tied to somebody's test run. Only rows the seed owns are touched: seeded parcel
+ids, never the seeded reservation itself.
+
+**Margin, because a pool that survives one pass is the same zero-margin mistake
+as ten quiz questions against a threshold of ten.** 5 parcels → **20**, of which
+**18 AVAILABLE**. A journey consumes one; a suite run consumes a handful.
+
+**Proof, by exhaustion and recovery:**
+
+```
+seed          AVAILABLE=18  reservations=1
+exhaust       AVAILABLE=0   reservations=19   <- the wall a tester hits
+re-seed       AVAILABLE=18  reservations=1    <- restored
+exhaust again AVAILABLE=0
+re-seed       AVAILABLE=18  reservations=1
+```
+
+**Mutations, three tails**, each observed failing alone: `update: {}` restored;
+the reservation cleanup deleted; the pool cut back to five.
+
+### F3 — The four journeys, automated — `EN COURS`
+
+Proven by hand on 2026-09-04 means **proven once, by one person, on one build**.
+`apps/api-e2e/src/journeys/` runs the same four against a deployed API, in CI,
+after every deploy to dev.
+
+| Journey         | What it holds                                                                                                                                                                                                                               |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 — signup      | registers, **refuses login until verified**, extracts a real 64-hex token from the mailbox, verifies, logs in                                                                                                                               |
+| 2 — upload      | presigned URL carries `X-Amz-Signature`, PUT 200, the file is attached and readable back                                                                                                                                                    |
+| 3 — KBS         | quiz serves **exactly 10** and scores **out of 10**; no `isCorrect` reaches the candidate; exam serves **20**; grading gives **`EXAM_PASSED`** and **no certificate**; an admin issues one and the count moves; public verify returns valid |
+| 4 — reservation | the created client holds **`CLIENT`**; the set-password token is found **anywhere in the mailbox**; the client logs in and the portal returns their purchase                                                                                |
+
+**Each assertion is a defect this week produced.** They are not a description of
+the product, they are the scar tissue.
+
+**The sha gate is in `beforeAll`.** `EXPECTED_SHA` is the commit under test and
+the suite refuses to certify a build whose `/health/version` does not match it.
+Unset locally, the gate **prints what it found** rather than passing quietly — an
+unset variable must not read as a passing gate.
+
+**Two defects in the spec itself, on first run.** The quiz payload is
+`{ moduleId, questions: [...] }` and I read `data` as the array; `start` answers
+200 and I asserted 201. Both were the spec being wrong about the API, and both
+failed loudly enough to say so.
+
+**And the ninth assertion is currently failing on purpose:** journey 4 reports
+`available.length` is 0, because dev's parcel pool is exhausted and the
+restorative seed is not deployed yet. **The automated journey reproduced the
+Monday problem before the fix reached the environment**, which is the strongest
+argument for it existing.
+
+**Deleted rather than annotated:** `api-e2e` previously held one spec asserting
+`GET /api` returns `{ message: 'Hello API' }` — a route that does not exist, in a
+project CI never ran. A test nobody runs, asserting something untrue, is worse
+than no test: it reads as coverage.
+
+`EN COURS` until the CI job runs green against a re-seeded dev. **Cost: none.**
 
 ### T1 / N1 — Guards, roles and the envelope contract — `EN COURS`
 
