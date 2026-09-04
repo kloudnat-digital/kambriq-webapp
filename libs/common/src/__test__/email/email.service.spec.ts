@@ -12,10 +12,7 @@ describe('EmailService', () => {
     queue = mockQueue();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        EmailService,
-        { provide: getQueueToken(QUEUES.NOTIFICATIONS), useValue: queue },
-      ],
+      providers: [EmailService, { provide: getQueueToken(QUEUES.NOTIFICATIONS), useValue: queue }],
     }).compile();
 
     service = module.get(EmailService);
@@ -75,5 +72,54 @@ describe('EmailService', () => {
         ]),
       );
     });
+  });
+});
+
+/**
+ * The guard that catches the missing `await` for every template at once.
+ *
+ * A dead link in an auth email is invisible from every side except the
+ * recipient's: the queue accepts the job, the worker renders the template, SES
+ * delivers, and the metrics say success. Throwing here is the loud failure.
+ */
+describe('EmailService: unresolved interpolation arguments', () => {
+  let service: EmailService;
+  let queue: { add: jest.Mock };
+
+  beforeEach(async () => {
+    queue = { add: jest.fn().mockResolvedValue({ id: 'job-1' }) };
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [EmailService, { provide: getQueueToken(QUEUES.NOTIFICATIONS), useValue: queue }],
+    }).compile();
+    service = module.get(EmailService);
+  });
+
+  it.each([
+    ['[object Promise]', 'a missing await'],
+    ['[object Object]', 'an object where a string was expected'],
+  ])('refuses to queue an email whose argument is %s (%s)', async (bad) => {
+    await expect(
+      service.send({
+        to: 'user@kambriq.com',
+        template: 'verification',
+        lang: 'fr',
+        args: { firstName: 'Alice', verificationUrl: `https://dev.kambriq.com/v?token=${bad}` },
+      }),
+    ).rejects.toThrow(/verificationUrl/);
+
+    expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  it('queues an email whose arguments are all resolved', async () => {
+    await expect(
+      service.send({
+        to: 'user@kambriq.com',
+        template: 'verification',
+        lang: 'fr',
+        args: { firstName: 'Alice', verificationUrl: 'https://dev.kambriq.com/v?token=abc123' },
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(queue.add).toHaveBeenCalledTimes(1);
   });
 });
