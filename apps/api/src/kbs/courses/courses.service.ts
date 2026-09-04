@@ -1,4 +1,10 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { KbsPrismaService } from '../prisma/kbs-prisma.service';
 import {
   CreateCourseDto,
@@ -453,6 +459,15 @@ export class KbsCoursesService {
         },
       },
     });
+    // The draw is per module and sliced to questionCount. A module pool below
+    // that length would silently serve a shorter quiz, the same defect as the
+    // exam pool: no wrong number appears anywhere, the exercise just shrinks.
+    if (raw.length < questionCount) {
+      throw new ServiceUnavailableException(
+        `${this.t('kbs.exam.noQuestions')} (module ${moduleId}: pool ${raw.length}, requis ${questionCount})`,
+      );
+    }
+
     const questions = this.shuffle(raw)
       .slice(0, questionCount)
       .map((q) => ({ ...q, answers: this.shuffle(q.answers) }));

@@ -178,6 +178,22 @@ describe('KbsCoursesService', () => {
   // ----- Questions ----- //
 
   describe('findQuestionsForQuiz', () => {
+    it('refuses when the module pool is below quizQuestionCount', async () => {
+      prisma.kbsCandidate.findUnique.mockResolvedValue(buildCandidate({ status: 'IN_TRAINING' }));
+      prisma.kbsModule.findUnique.mockResolvedValue(
+        buildModule({ id: 'mod1', order: 1, title: 'Module 1' }),
+      );
+      prisma.kbsSettings.findFirst.mockResolvedValue({ quizQuestionCount: 10 });
+      prisma.kbsCandidateProgress.findUnique.mockResolvedValue({ attempts: 0 });
+      prisma.kbsQuestion.findMany.mockResolvedValue(
+        Array.from({ length: 9 }, (_, i) => buildQuestion({ id: `q${i}`, answers: [] })),
+      );
+
+      // Serving 9 questions as a 10-question quiz is the silent shortfall this
+      // guard exists to prevent. The message must name both numbers.
+      await expect(service.findQuestionsForQuiz('mod1', 'u1')).rejects.toThrow(/pool 9, requis 10/);
+    });
+
     it('returns shuffled questions without correct answers exposed', async () => {
       prisma.kbsCandidate.findUnique.mockResolvedValue(buildCandidate({ status: 'IN_TRAINING' }));
       prisma.kbsModule.findUnique.mockResolvedValue(
@@ -185,7 +201,7 @@ describe('KbsCoursesService', () => {
       );
       prisma.kbsSettings.findFirst.mockResolvedValue({ quizQuestionCount: 10 });
       prisma.kbsCandidateProgress.findUnique.mockResolvedValue({ attempts: 0 });
-      const questions = Array.from({ length: 5 }, (_, i) =>
+      const questions = Array.from({ length: 30 }, (_, i) =>
         buildQuestion({
           id: `q${i}`,
           answers: [
@@ -198,7 +214,11 @@ describe('KbsCoursesService', () => {
 
       const result = await service.findQuestionsForQuiz('mod1', 'u1');
 
-      expect(result.questions.length).toBeLessThanOrEqual(10);
+      // EXACTLY quizQuestionCount, not "at most". The previous assertion was
+      // toBeLessThanOrEqual(10) against a fixture of 5, so it passed while the
+      // service served a five-question quiz: a short pool was silently accepted
+      // by the very test meant to cover it.
+      expect(result.questions.length).toBe(10);
       // Verify no isCorrect field is exposed
       for (const q of result.questions) {
         for (const a of q.answers) {

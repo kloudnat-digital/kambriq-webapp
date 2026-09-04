@@ -1,3 +1,11 @@
+import {
+  MODULE_1_QUIZ,
+  MODULE_2_QUIZ,
+  MODULE_1_EXAM,
+  MODULE_2_EXAM,
+  orderAnswers,
+  type SeedQuestion,
+} from './seed-data/kbs-questions';
 /**
  * Kambriq - Database seed script
  *
@@ -438,6 +446,104 @@ async function seedKbs() {
     update: {},
   });
 
+  // -------------------------------------------------------------------------
+  // Question pools: quiz (KbsQuestion) and exam (KbsExamQuestion)
+  //
+  // Sized from the code, not from taste:
+  //   - the quiz draw is PER MODULE, sliced to quizQuestionCount (10):
+  //     courses.service.ts findQuestionsForQuiz -> findMany({ where: { moduleId } })
+  //   - the exam pool check and draw are GLOBAL, sliced to examQuestionCount (20):
+  //     exam.service.ts ensureQuestionPoolAvailable -> count() with no where
+  //
+  // 30 per module gives the quiz a 3x margin and the exam a 3x global margin, so
+  // a predicate added later to either findMany has to remove two thirds of the
+  // pool before the guards refuse. Content is real, not templated: a tester must
+  // be able to spot a wrong grade, which needs one defensibly correct answer and
+  // three defensibly wrong ones.
+  //
+  // No KbsExam rows are seeded on purpose. An exam is candidate state, not
+  // content: a pre-seeded one sits in SCHEDULED/IN_PROGRESS and
+  // checkEligibilityRules then refuses to schedule another, so it would block
+  // the tester rather than help. Seed the pool, not the state.
+  // -------------------------------------------------------------------------
+  const quizBank: Array<[string, SeedQuestion[]]> = [
+    [IDS.KBS_MODULE_1, MODULE_1_QUIZ],
+    [IDS.KBS_MODULE_2, MODULE_2_QUIZ],
+  ];
+  const examBank: Array<[string, SeedQuestion[]]> = [
+    [IDS.KBS_MODULE_1, MODULE_1_EXAM],
+    [IDS.KBS_MODULE_2, MODULE_2_EXAM],
+  ];
+
+  // Deterministic ids so re-running upserts instead of duplicating.
+  //
+  // The last UUID segment must be exactly 12 hex characters. Prefixes a-e are
+  // already taken by the IDS block above (roles a, users b, KBS c, kamnet d,
+  // lands e), so these use f with a family digit: f1 quiz question, f2 quiz
+  // answer, f3 exam question, f4 exam answer. Reusing an existing prefix would
+  // have let an upsert silently overwrite a real row rather than fail.
+  const qId = (mod: number, n: number, exam: boolean) =>
+    `00000000-0000-0000-0000-f${exam ? '3' : '1'}${mod}${String(n).padStart(9, '0')}`;
+  const aId = (mod: number, n: number, a: number, exam: boolean) =>
+    `00000000-0000-0000-0000-f${exam ? '4' : '2'}${mod}${String(n).padStart(5, '0')}${String(a).padStart(4, '0')}`;
+
+  let quizQuestions = 0;
+  let quizAnswers = 0;
+  let examQuestions = 0;
+  let examAnswers = 0;
+  let globalIndex = 0;
+
+  for (const [modIndex, [moduleId, bank]] of quizBank.entries()) {
+    for (const [i, item] of bank.entries()) {
+      const id = qId(modIndex + 1, i + 1, false);
+      await kbs.kbsQuestion.upsert({
+        where: { id },
+        create: { id, moduleId, text: item.q, type: 'SINGLE' },
+        update: {},
+      });
+      quizQuestions++;
+
+      for (const [a, answer] of orderAnswers(item, globalIndex).entries()) {
+        const answerId = aId(modIndex + 1, i + 1, a + 1, false);
+        await kbs.kbsAnswer.upsert({
+          where: { id: answerId },
+          create: { id: answerId, questionId: id, text: answer.text, isCorrect: answer.isCorrect },
+          update: {},
+        });
+        quizAnswers++;
+      }
+      globalIndex++;
+    }
+  }
+
+  for (const [modIndex, [moduleId, bank]] of examBank.entries()) {
+    for (const [i, item] of bank.entries()) {
+      const id = qId(modIndex + 1, i + 1, true);
+      await kbs.kbsExamQuestion.upsert({
+        where: { id },
+        create: { id, moduleId, text: item.q, type: 'SINGLE' },
+        update: {},
+      });
+      examQuestions++;
+
+      for (const [a, answer] of orderAnswers(item, globalIndex).entries()) {
+        const answerId = aId(modIndex + 1, i + 1, a + 1, true);
+        await kbs.kbsExamQuestionAnswer.upsert({
+          where: { id: answerId },
+          create: { id: answerId, questionId: id, text: answer.text, isCorrect: answer.isCorrect },
+          update: {},
+        });
+        examAnswers++;
+      }
+      globalIndex++;
+    }
+  }
+
+  console.log(
+    `  ✓ Question pools seeded (${quizQuestions} quiz / ${quizAnswers} answers, ` +
+      `${examQuestions} exam / ${examAnswers} answers)`,
+  );
+
   // Candidates (5 agents who completed the training)
   const candidates = [
     { id: IDS.KBS_CAND_ERIC, userId: IDS.USER_ERIC },
@@ -482,7 +588,9 @@ async function seedKbs() {
     });
   }
 
-  console.log('  ✓ KBS seeded (1 course, 2 modules, 6 lessons, 5 candidates, 5 certificates)');
+  console.log(
+    '  ✓ KBS seeded (1 course, 2 modules, 6 lessons, 60 quiz + 60 exam questions, 5 candidates, 5 certificates)',
+  );
 }
 
 // ---------------------------------------------------------------------------

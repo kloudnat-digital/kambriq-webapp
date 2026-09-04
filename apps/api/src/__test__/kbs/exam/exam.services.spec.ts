@@ -19,6 +19,7 @@ import {
 } from '../../utils';
 import { getQueueToken } from '@nestjs/bullmq';
 import { QUEUES } from '@kambriq/common/constants/queue';
+import { DEFAULT_EXAM_QUESTION_COUNT } from '@kambriq/common/constants/kbs';
 
 describe('KbsExamService', () => {
   let service: KbsExamService;
@@ -177,6 +178,74 @@ describe('KbsExamService', () => {
           data: expect.objectContaining({ status: 'IN_PROGRESS' }),
         }),
       );
+    });
+
+    /**
+     * The exam runs at its stated length or it does not run.
+     *
+     * The old guard was `poolSize === 0`, so a pool of 19 against a required 20
+     * produced a 19-question certification exam with no wrong number anywhere:
+     * `totalQuestions` was set from `shuffled.length` and the score divided by
+     * that. This asserts the exact length at the real default, not an upper
+     * bound - `toBeLessThanOrEqual(20)` would pass on a shrunken exam, which is
+     * precisely how the quiz path stayed green while serving five questions.
+     */
+    it('serves exactly examQuestionCount questions at the real default of 20', async () => {
+      const candidate = buildCandidate({ status: 'EXAM_PENDING' });
+      prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
+
+      const exam = buildExam({
+        candidateId: candidate.id,
+        status: 'SCHEDULED',
+        scheduledAt: new Date(Date.now() - 60_000),
+      });
+      prisma.kbsExam.findUnique.mockResolvedValue(exam);
+      prisma.kbsSettings.findFirst.mockResolvedValue(null); // falls back to the default
+      prisma.kbsExamQuestion.count.mockResolvedValue(60);
+
+      const questions = Array.from({ length: 60 }, (_, i) => ({
+        id: `eq${i}`,
+        text: `Question ${i}`,
+        type: 'SINGLE',
+        module: { id: 'mod1', title: 'Module 1' },
+        answers: [
+          { id: `ea${i}_1`, text: 'A' },
+          { id: `ea${i}_2`, text: 'B' },
+        ],
+      }));
+      prisma.kbsExamQuestion.findMany.mockResolvedValue(questions);
+      prisma.kbsExam.update.mockResolvedValue({});
+
+      const result = await service.startExam(candidate.userId, exam.id);
+
+      expect(result.questions).toHaveLength(DEFAULT_EXAM_QUESTION_COUNT);
+      expect(result.totalQuestions).toBe(DEFAULT_EXAM_QUESTION_COUNT);
+      expect(prisma.kbsExam.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ totalQuestions: DEFAULT_EXAM_QUESTION_COUNT }),
+        }),
+      );
+    });
+
+    it('refuses to start, loudly, when the pool is one question short', async () => {
+      const candidate = buildCandidate({ status: 'EXAM_PENDING' });
+      prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
+
+      const exam = buildExam({
+        candidateId: candidate.id,
+        status: 'SCHEDULED',
+        scheduledAt: new Date(Date.now() - 60_000),
+      });
+      prisma.kbsExam.findUnique.mockResolvedValue(exam);
+      prisma.kbsSettings.findFirst.mockResolvedValue({ examQuestionCount: 20 });
+      prisma.kbsExamQuestion.count.mockResolvedValue(19);
+
+      // The shortfall must name both numbers. A generic "no questions" message
+      // sends whoever is on call looking for an empty table.
+      await expect(service.startExam(candidate.userId, exam.id)).rejects.toThrow(
+        /pool 19, requis 20/,
+      );
+      expect(prisma.kbsExam.update).not.toHaveBeenCalled();
     });
 
     it('throws if exam does not belong to the candidate', async () => {
