@@ -33,10 +33,21 @@ export const envSchema = z.object({
   // ----- AWS -----
   AWS_ACCESS_KEY_ID: z.string().optional(),
   AWS_SECRET_ACCESS_KEY: z.string().optional(),
-  AWS_REGION: z.string().default('eu-west-3'),
+  // eu-central-1 is where every Kambriq resource lives: RDS, ECS, SES, SSM.
+  // eu-west-3 was a copy-paste default that never matched any deployment.
+  AWS_REGION: z.string().default('eu-central-1'),
 
   // ----- SES Contact Lists -----
+  // Must match the aws_sesv2_contact_list resource in kambriq-infra
+  // (envs/dev/ses-newsletter.tf). Coupled by convention only.
   AWS_SES_CONTACT_LIST_NAME: z.string().default('kambriq-newsletter'),
+
+  // ----- Email transport -----
+  // 'ses' sends for real. 'console' logs instead, and must be asked for
+  // explicitly: the previous behaviour fell back to logging whenever AWS
+  // credentials happened to be absent, which on Fargate is always, so the
+  // application silently sent nothing for months while reporting success.
+  EMAIL_TRANSPORT: z.enum(['ses', 'console']).default('ses'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

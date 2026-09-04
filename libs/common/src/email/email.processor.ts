@@ -15,6 +15,7 @@ export class EmailProcessor extends WorkerHost {
   private readonly sesClient: SESv2Client | null;
   private readonly fromAddress: string;
   private readonly fromName: string;
+  private readonly transport: 'ses' | 'console';
 
   constructor(
     private readonly config: ConfigService,
@@ -22,32 +23,29 @@ export class EmailProcessor extends WorkerHost {
   ) {
     super();
 
-    this.fromAddress = this.config.get<string>(
-      'EMAIL_FROM',
-      'noreply@kambriq.com',
-    );
+    this.fromAddress = this.config.get<string>('EMAIL_FROM', 'noreply@kambriq.com');
     this.fromName = this.config.get<string>('EMAIL_FROM_NAME', 'KAMBRIQ Team');
 
-    const accessKeyId = this.config.get<string>('AWS_ACCESS_KEY_ID');
-    const secretAccessKey = this.config.get<string>('AWS_SECRET_ACCESS_KEY');
-    const region = this.config.get<string>('AWS_REGION', 'eu-west-3');
+    const region = this.config.get<string>('AWS_REGION', 'eu-central-1');
+    this.transport =
+      this.config.get<string>('EMAIL_TRANSPORT', 'ses') === 'console' ? 'console' : 'ses';
 
-    if (accessKeyId && secretAccessKey) {
-      this.sesClient = new SESv2Client({
-        region,
-        credentials: { accessKeyId, secretAccessKey },
-      });
-      this.logger.log('SES Configured successfully', {
-        region,
-        fromAddress: this.fromAddress,
-        fromName: this.fromName,
-      });
-    } else {
+    if (this.transport === 'console') {
       this.sesClient = null;
-      this.logger.warn(
-        'SES not configured - Emails will be logged to console.',
-      );
+      this.logger.warn('EMAIL_TRANSPORT=console - emails will be logged, not sent.');
+      return;
     }
+
+    // No explicit credentials. The default provider chain resolves the ECS task
+    // role on Fargate and the developer profile locally. Passing static keys was
+    // the bug: they are never set in the task definition, so the client was
+    // never built and every send silently became a console log.
+    this.sesClient = new SESv2Client({ region });
+    this.logger.log('SES transport active', {
+      region,
+      fromAddress: this.fromAddress,
+      fromName: this.fromName,
+    });
   }
 
   async process(job: Job<EmailJobPayload>): Promise<unknown> {
@@ -58,25 +56,22 @@ export class EmailProcessor extends WorkerHost {
 
     const { to, lang, template, args } = job.data;
 
-    const { subject, html } = buildEmail(
-      template,
-      lang as SupportedLanguage,
-      args,
-      this.i18n,
-    );
+    const { subject, html } = buildEmail(template, lang as SupportedLanguage, args, this.i18n);
 
-    if (!this.sesClient) {
+    if (this.transport === 'console' || !this.sesClient) {
       this.logger.log(
-        `@[dev-email]\n` +
+        `@[console-email]\n` +
           `To:        ${to}\n` +
           `Subject:   ${subject}\n` +
           `Template:  ${template} (${lang})\n` +
           `Preview:   ${this.stripHtml(html).substring(0, 200)}...`,
       );
 
-      return { delivered: false, reason: 'dev-mode', to, subject };
+      return { delivered: false, transport: 'console', to, subject };
     }
 
+    // Any SES failure rethrows below, so the BullMQ job fails and retries
+    // rather than completing while having delivered nothing.
     try {
       const result = await this.sesClient.send(
         new SendEmailCommand({
