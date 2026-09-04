@@ -9,7 +9,6 @@ export const QUEUES = {
 // ----- Job names - specific operations within queues -----
 export const KBS_JOBS = {
   GRADE_EXAM: 'kbs.grade-exam',
-  GRANT_KCA_ROLE: 'kbs.grant-kca-role',
   AUTO_TRANSITION_STATUS: 'kbs.auto-transition-status',
   EXPIRE_EXAM: 'kbs.expire-exam',
 } as const;

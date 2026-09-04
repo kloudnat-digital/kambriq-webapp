@@ -375,7 +375,19 @@ const templates = defineTemplates({
       <h1>${t(i18n, 'email.clientPortalAccess.heading', lang)}</h1>
       <p>${t(i18n, 'email.clientPortalAccess.body', lang, args)}</p>
       <p>${t(i18n, 'email.clientPortalAccess.landInfo', lang, args)}</p>
-      <p>${t(i18n, 'email.clientPortalAccess.agent', lang, args)}</p>
+      ${
+        /**
+         * The agent line renders only when there is a name to put in it.
+         *
+         * This field carried `agentUserId` with the comment "will be enriched in
+         * the controller", and the enrichment never happened: the client was
+         * emailed "Votre agent KAMNET : 00000000-0000-4000-8000-b00000000005".
+         * An internal identifier in front of a customer is a leak and an
+         * embarrassment at the same time. If the name cannot be reached, the
+         * line does not belong in the email.
+         */
+        args['agentName'] ? `<p>${t(i18n, 'email.clientPortalAccess.agent', lang, args)}</p>` : ''
+      }
       <p>${t(i18n, 'email.clientPortalAccess.note', lang)}</p>
     `,
       lang,

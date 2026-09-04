@@ -1,3 +1,11 @@
+import {
+  MODULE_1_QUIZ,
+  MODULE_2_QUIZ,
+  MODULE_1_EXAM,
+  MODULE_2_EXAM,
+  orderAnswers,
+  type SeedQuestion,
+} from './seed-data/kbs-questions';
 /**
  * Kambriq - Database seed script
  *
@@ -39,6 +47,7 @@ import {
   LandOwnerType,
   LandReservationStatus,
 } from '../libs/common/src/prisma/lands-client/client';
+import { RoleCode } from '../libs/common/src/types/roles.enum';
 import * as bcrypt from 'bcryptjs';
 
 // ---------------------------------------------------------------------------
@@ -47,57 +56,73 @@ import * as bcrypt from 'bcryptjs';
 
 const IDS = {
   // Roles (Core)
-  ROLE_ADMIN_GLOBAL: '00000000-0000-0000-0000-a00000000001',
-  ROLE_CLIENT: '00000000-0000-0000-0000-a00000000002',
-  ROLE_CANDIDATE_KBS: '00000000-0000-0000-0000-a00000000003',
-  ROLE_KCA_CERTIFIED: '00000000-0000-0000-0000-a00000000004',
-  ROLE_AGENT: '00000000-0000-0000-0000-a00000000005',
-  ROLE_ADMIN_KBS: '00000000-0000-0000-0000-a00000000006',
-  ROLE_ADMIN_KAMNET: '00000000-0000-0000-0000-a00000000007',
-  ROLE_ADMIN_LANDS: '00000000-0000-0000-0000-a00000000008',
+  ROLE_ADMIN_GLOBAL: '00000000-0000-4000-8000-a00000000001',
+  ROLE_CLIENT: '00000000-0000-4000-8000-a00000000002',
+  ROLE_CANDIDATE_KBS: '00000000-0000-4000-8000-a00000000003',
+  ROLE_KCA_CERTIFIED: '00000000-0000-4000-8000-a00000000004',
+  ROLE_AGENT: '00000000-0000-4000-8000-a00000000005',
+  ROLE_ADMIN_KBS: '00000000-0000-4000-8000-a00000000006',
+  ROLE_ADMIN_KAMNET: '00000000-0000-4000-8000-a00000000007',
+  ROLE_ADMIN_LANDS: '00000000-0000-4000-8000-a00000000008',
 
   // Users (Core)
-  USER_ADMIN_GLOBAL: '00000000-0000-0000-0000-b00000000001',
-  USER_ADMIN_KBS: '00000000-0000-0000-0000-b00000000002',
-  USER_ADMIN_KAMNET: '00000000-0000-0000-0000-b00000000003',
-  USER_ADMIN_LANDS: '00000000-0000-0000-0000-b00000000004',
-  USER_ERIC: '00000000-0000-0000-0000-b00000000005',
-  USER_SYLVIE: '00000000-0000-0000-0000-b00000000006',
-  USER_BORIS: '00000000-0000-0000-0000-b00000000007',
-  USER_AMINA: '00000000-0000-0000-0000-b00000000008',
-  USER_PAUL: '00000000-0000-0000-0000-b00000000009',
+  USER_ADMIN_GLOBAL: '00000000-0000-4000-8000-b00000000001',
+  USER_ADMIN_KBS: '00000000-0000-4000-8000-b00000000002',
+  USER_ADMIN_KAMNET: '00000000-0000-4000-8000-b00000000003',
+  USER_ADMIN_LANDS: '00000000-0000-4000-8000-b00000000004',
+  USER_ERIC: '00000000-0000-4000-8000-b00000000005',
+  USER_SYLVIE: '00000000-0000-4000-8000-b00000000006',
+  USER_BORIS: '00000000-0000-4000-8000-b00000000007',
+  USER_AMINA: '00000000-0000-4000-8000-b00000000008',
+  USER_PAUL: '00000000-0000-4000-8000-b00000000009',
 
   // KBS
-  KBS_COURSE: '00000000-0000-0000-0000-c00000000001',
-  KBS_MODULE_1: '00000000-0000-0000-0000-c00000000002',
-  KBS_MODULE_2: '00000000-0000-0000-0000-c00000000003',
-  KBS_CAND_ERIC: '00000000-0000-0000-0000-c00000000011',
-  KBS_CAND_SYLVIE: '00000000-0000-0000-0000-c00000000012',
-  KBS_CAND_BORIS: '00000000-0000-0000-0000-c00000000013',
-  KBS_CAND_AMINA: '00000000-0000-0000-0000-c00000000014',
-  KBS_CAND_PAUL: '00000000-0000-0000-0000-c00000000015',
-  KBS_CERT_ERIC: '00000000-0000-0000-0000-c00000000021',
-  KBS_CERT_SYLVIE: '00000000-0000-0000-0000-c00000000022',
-  KBS_CERT_BORIS: '00000000-0000-0000-0000-c00000000023',
-  KBS_CERT_AMINA: '00000000-0000-0000-0000-c00000000024',
-  KBS_CERT_PAUL: '00000000-0000-0000-0000-c00000000025',
+  KBS_COURSE: '00000000-0000-4000-8000-c00000000001',
+  KBS_MODULE_1: '00000000-0000-4000-8000-c00000000002',
+  KBS_MODULE_2: '00000000-0000-4000-8000-c00000000003',
+  KBS_CAND_ERIC: '00000000-0000-4000-8000-c00000000011',
+  KBS_CAND_SYLVIE: '00000000-0000-4000-8000-c00000000012',
+  KBS_CAND_BORIS: '00000000-0000-4000-8000-c00000000013',
+  KBS_CAND_AMINA: '00000000-0000-4000-8000-c00000000014',
+  KBS_CAND_PAUL: '00000000-0000-4000-8000-c00000000015',
+  KBS_CERT_ERIC: '00000000-0000-4000-8000-c00000000021',
+  KBS_CERT_SYLVIE: '00000000-0000-4000-8000-c00000000022',
+  KBS_CERT_BORIS: '00000000-0000-4000-8000-c00000000023',
+  KBS_CERT_AMINA: '00000000-0000-4000-8000-c00000000024',
+  KBS_CERT_PAUL: '00000000-0000-4000-8000-c00000000025',
 
   // Kamnet
-  AGENT_ERIC: '00000000-0000-0000-0000-d00000000001',
-  AGENT_SYLVIE: '00000000-0000-0000-0000-d00000000002',
-  AGENT_BORIS: '00000000-0000-0000-0000-d00000000003',
-  AGENT_AMINA: '00000000-0000-0000-0000-d00000000004',
-  AGENT_PAUL: '00000000-0000-0000-0000-d00000000005',
+  AGENT_ERIC: '00000000-0000-4000-8000-d00000000001',
+  AGENT_SYLVIE: '00000000-0000-4000-8000-d00000000002',
+  AGENT_BORIS: '00000000-0000-4000-8000-d00000000003',
+  AGENT_AMINA: '00000000-0000-4000-8000-d00000000004',
+  AGENT_PAUL: '00000000-0000-4000-8000-d00000000005',
 
   // Lands
-  LABEL_TDT: '00000000-0000-0000-0000-e00000000001',
-  LABEL_VEFL: '00000000-0000-0000-0000-e00000000002',
-  LABEL_VEFIL: '00000000-0000-0000-0000-e00000000003',
-  LAND_1: '00000000-0000-0000-0000-e00000000011',
-  LAND_2: '00000000-0000-0000-0000-e00000000012',
-  LAND_3: '00000000-0000-0000-0000-e00000000013',
-  LAND_4: '00000000-0000-0000-0000-e00000000014',
-  LAND_5: '00000000-0000-0000-0000-e00000000015',
+  LABEL_TDT: '00000000-0000-4000-8000-e00000000001',
+  LABEL_VEFL: '00000000-0000-4000-8000-e00000000002',
+  LABEL_VEFIL: '00000000-0000-4000-8000-e00000000003',
+  LAND_1: '00000000-0000-4000-8000-e00000000011',
+  LAND_2: '00000000-0000-4000-8000-e00000000012',
+  LAND_3: '00000000-0000-4000-8000-e00000000013',
+  LAND_4: '00000000-0000-4000-8000-e00000000014',
+  LAND_5: '00000000-0000-4000-8000-e00000000015',
+  LAND_RESERVATION_SEEDED: '00000000-0000-4000-8000-e00000000031',
+  LAND_6: '00000000-0000-4000-8000-e00000000016',
+  LAND_7: '00000000-0000-4000-8000-e00000000017',
+  LAND_8: '00000000-0000-4000-8000-e00000000018',
+  LAND_9: '00000000-0000-4000-8000-e00000000019',
+  LAND_10: '00000000-0000-4000-8000-e00000000020',
+  LAND_11: '00000000-0000-4000-8000-e00000000021',
+  LAND_12: '00000000-0000-4000-8000-e00000000022',
+  LAND_13: '00000000-0000-4000-8000-e00000000023',
+  LAND_14: '00000000-0000-4000-8000-e00000000024',
+  LAND_15: '00000000-0000-4000-8000-e00000000025',
+  LAND_16: '00000000-0000-4000-8000-e00000000026',
+  LAND_17: '00000000-0000-4000-8000-e00000000027',
+  LAND_18: '00000000-0000-4000-8000-e00000000028',
+  LAND_19: '00000000-0000-4000-8000-e00000000029',
+  LAND_20: '00000000-0000-4000-8000-e00000000030',
 };
 
 const SEED_DATE = new Date('2025-01-01T00:00:00Z');
@@ -161,49 +186,49 @@ async function seedCore() {
   const roles = [
     {
       id: IDS.ROLE_ADMIN_GLOBAL,
-      code: 'ADMIN_GLOBAL',
+      code: RoleCode.ADMIN_GLOBAL,
       name: 'Global Administrator',
       description: 'Full platform access',
     },
     {
       id: IDS.ROLE_CLIENT,
-      code: 'CLIENT',
+      code: RoleCode.CLIENT,
       name: 'Client',
       description: 'Portal access for land buyers',
     },
     {
       id: IDS.ROLE_CANDIDATE_KBS,
-      code: 'CANDIDATE_KBS',
+      code: RoleCode.CANDIDATE_KBS,
       name: 'KBS Candidate',
       description: 'Enrolled in KBS training',
     },
     {
       id: IDS.ROLE_KCA_CERTIFIED,
-      code: 'KCA_CERTIFIED',
+      code: RoleCode.KCA_CERTIFIED,
       name: 'KCA Certified',
       description: 'Holds a valid KCA certificate',
     },
     {
       id: IDS.ROLE_AGENT,
-      code: 'AGENT',
+      code: RoleCode.AGENT,
       name: 'KAMNET Agent',
       description: 'Certified commercial agent',
     },
     {
       id: IDS.ROLE_ADMIN_KBS,
-      code: 'ADMIN_KBS',
+      code: RoleCode.ADMIN_KBS,
       name: 'KBS Administrator',
       description: 'Manages courses, exams and certificates',
     },
     {
       id: IDS.ROLE_ADMIN_KAMNET,
-      code: 'ADMIN_KAMNET',
+      code: RoleCode.ADMIN_KAMNET,
       name: 'KAMNET Administrator',
       description: 'Manages agents and commissions',
     },
     {
       id: IDS.ROLE_ADMIN_LANDS,
-      code: 'ADMIN_LANDS',
+      code: RoleCode.ADMIN_LANDS,
       name: 'LANDS Administrator',
       description: 'Manages land inventory and reservations',
     },
@@ -423,7 +448,7 @@ async function seedKbs() {
   ];
 
   for (let i = 0; i < lessons.length; i++) {
-    const lessonId = `00000000-0000-0000-0000-c0000000003${i + 1}`;
+    const lessonId = `00000000-0000-4000-8000-c0000000003${i + 1}`;
     await kbs.kbsLesson.upsert({
       where: { id: lessonId },
       create: { id: lessonId, ...lessons[i] },
@@ -432,11 +457,123 @@ async function seedKbs() {
   }
 
   // Settings (singleton)
+  // `activeCourseId` is not decoration. `checkAndTransitionToExamPending` reads
+  // it first and returns early when it is null, so a candidate who has passed
+  // every module stays IN_TRAINING for ever with nothing logged, and
+  // `me/overview` answers `course: null, modulesTotal: 0` to somebody who has
+  // just completed six lessons. Both were observed on dev before this line.
+  //
+  // `update` sets it too: the settings row already exists on any environment
+  // seeded before this, and `update: {}` would have left it null there.
   await kbs.kbsSettings.upsert({
     where: { id: 1 },
-    create: { id: 1, examQuestionCount: 20, quizQuestionCount: 10, quizMaxAttempts: 0 },
-    update: {},
+    create: {
+      id: 1,
+      examQuestionCount: 20,
+      quizQuestionCount: 10,
+      quizMaxAttempts: 0,
+      activeCourseId: IDS.KBS_COURSE,
+    },
+    update: { activeCourseId: IDS.KBS_COURSE },
   });
+
+  // -------------------------------------------------------------------------
+  // Question pools: quiz (KbsQuestion) and exam (KbsExamQuestion)
+  //
+  // Sized from the code, not from taste:
+  //   - the quiz draw is PER MODULE, sliced to quizQuestionCount (10):
+  //     courses.service.ts findQuestionsForQuiz -> findMany({ where: { moduleId } })
+  //   - the exam pool check and draw are GLOBAL, sliced to examQuestionCount (20):
+  //     exam.service.ts ensureQuestionPoolAvailable -> count() with no where
+  //
+  // 30 per module gives the quiz a 3x margin and the exam a 3x global margin, so
+  // a predicate added later to either findMany has to remove two thirds of the
+  // pool before the guards refuse. Content is real, not templated: a tester must
+  // be able to spot a wrong grade, which needs one defensibly correct answer and
+  // three defensibly wrong ones.
+  //
+  // No KbsExam rows are seeded on purpose. An exam is candidate state, not
+  // content: a pre-seeded one sits in SCHEDULED/IN_PROGRESS and
+  // checkEligibilityRules then refuses to schedule another, so it would block
+  // the tester rather than help. Seed the pool, not the state.
+  // -------------------------------------------------------------------------
+  const quizBank: Array<[string, SeedQuestion[]]> = [
+    [IDS.KBS_MODULE_1, MODULE_1_QUIZ],
+    [IDS.KBS_MODULE_2, MODULE_2_QUIZ],
+  ];
+  const examBank: Array<[string, SeedQuestion[]]> = [
+    [IDS.KBS_MODULE_1, MODULE_1_EXAM],
+    [IDS.KBS_MODULE_2, MODULE_2_EXAM],
+  ];
+
+  // Deterministic ids so re-running upserts instead of duplicating.
+  //
+  // The last UUID segment must be exactly 12 hex characters. Prefixes a-e are
+  // already taken by the IDS block above (roles a, users b, KBS c, kamnet d,
+  // lands e), so these use f with a family digit: f1 quiz question, f2 quiz
+  // answer, f3 exam question, f4 exam answer. Reusing an existing prefix would
+  // have let an upsert silently overwrite a real row rather than fail.
+  const qId = (mod: number, n: number, exam: boolean) =>
+    `00000000-0000-4000-8000-f${exam ? '3' : '1'}${mod}${String(n).padStart(9, '0')}`;
+  const aId = (mod: number, n: number, a: number, exam: boolean) =>
+    `00000000-0000-4000-8000-f${exam ? '4' : '2'}${mod}${String(n).padStart(5, '0')}${String(a).padStart(4, '0')}`;
+
+  let quizQuestions = 0;
+  let quizAnswers = 0;
+  let examQuestions = 0;
+  let examAnswers = 0;
+  let globalIndex = 0;
+
+  for (const [modIndex, [moduleId, bank]] of quizBank.entries()) {
+    for (const [i, item] of bank.entries()) {
+      const id = qId(modIndex + 1, i + 1, false);
+      await kbs.kbsQuestion.upsert({
+        where: { id },
+        create: { id, moduleId, text: item.q, type: 'SINGLE' },
+        update: {},
+      });
+      quizQuestions++;
+
+      for (const [a, answer] of orderAnswers(item, globalIndex).entries()) {
+        const answerId = aId(modIndex + 1, i + 1, a + 1, false);
+        await kbs.kbsAnswer.upsert({
+          where: { id: answerId },
+          create: { id: answerId, questionId: id, text: answer.text, isCorrect: answer.isCorrect },
+          update: {},
+        });
+        quizAnswers++;
+      }
+      globalIndex++;
+    }
+  }
+
+  for (const [modIndex, [moduleId, bank]] of examBank.entries()) {
+    for (const [i, item] of bank.entries()) {
+      const id = qId(modIndex + 1, i + 1, true);
+      await kbs.kbsExamQuestion.upsert({
+        where: { id },
+        create: { id, moduleId, text: item.q, type: 'SINGLE' },
+        update: {},
+      });
+      examQuestions++;
+
+      for (const [a, answer] of orderAnswers(item, globalIndex).entries()) {
+        const answerId = aId(modIndex + 1, i + 1, a + 1, true);
+        await kbs.kbsExamQuestionAnswer.upsert({
+          where: { id: answerId },
+          create: { id: answerId, questionId: id, text: answer.text, isCorrect: answer.isCorrect },
+          update: {},
+        });
+        examAnswers++;
+      }
+      globalIndex++;
+    }
+  }
+
+  console.log(
+    `  ✓ Question pools seeded (${quizQuestions} quiz / ${quizAnswers} answers, ` +
+      `${examQuestions} exam / ${examAnswers} answers)`,
+  );
 
   // Candidates (5 agents who completed the training)
   const candidates = [
@@ -482,7 +619,9 @@ async function seedKbs() {
     });
   }
 
-  console.log('  ✓ KBS seeded (1 course, 2 modules, 6 lessons, 5 candidates, 5 certificates)');
+  console.log(
+    '  ✓ KBS seeded (1 course, 2 modules, 6 lessons, 60 quiz + 60 exam questions, 5 candidates, 5 certificates)',
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -636,7 +775,7 @@ async function seedKamnet() {
   ];
 
   for (let i = 0; i < leads.length; i++) {
-    const leadId = `00000000-0000-0000-0000-d0000000010${i + 1}`;
+    const leadId = `00000000-0000-4000-8000-d0000000010${i + 1}`;
     await kamnet.kamnetLead.upsert({
       where: { id: leadId },
       create: { id: leadId, ...leads[i], createdAt: new Date(`2025-0${i + 2}-15`) },
@@ -658,7 +797,7 @@ async function seedKamnet() {
     {
       agentId: IDS.AGENT_ERIC,
       landId: IDS.LAND_5,
-      reservationId: '00000000-0000-0000-0000-f00000000001',
+      reservationId: '00000000-0000-4000-8000-f00000000001',
       level: 0,
       pv: 1.0,
       tpc: 0.05,
@@ -668,7 +807,7 @@ async function seedKamnet() {
     {
       agentId: IDS.AGENT_ERIC,
       landId: IDS.LAND_3,
-      reservationId: '00000000-0000-0000-0000-f00000000002',
+      reservationId: '00000000-0000-4000-8000-f00000000002',
       level: 0,
       pv: 1.0,
       tpc: 0.05,
@@ -678,7 +817,7 @@ async function seedKamnet() {
     {
       agentId: IDS.AGENT_SYLVIE,
       landId: IDS.LAND_5,
-      reservationId: '00000000-0000-0000-0000-f00000000001',
+      reservationId: '00000000-0000-4000-8000-f00000000001',
       level: 1,
       pv: 1.0,
       tpc: 0.02,
@@ -688,7 +827,7 @@ async function seedKamnet() {
     {
       agentId: IDS.AGENT_BORIS,
       landId: IDS.LAND_3,
-      reservationId: '00000000-0000-0000-0000-f00000000002',
+      reservationId: '00000000-0000-4000-8000-f00000000002',
       level: 1,
       pv: 1.0,
       tpc: 0.02,
@@ -698,7 +837,7 @@ async function seedKamnet() {
     {
       agentId: IDS.AGENT_ERIC,
       landId: IDS.LAND_1,
-      reservationId: '00000000-0000-0000-0000-f00000000003',
+      reservationId: '00000000-0000-4000-8000-f00000000003',
       level: 0,
       pv: 1.0,
       tpc: 0.05,
@@ -708,7 +847,7 @@ async function seedKamnet() {
   ];
 
   for (let i = 0; i < commissions.length; i++) {
-    const commId = `00000000-0000-0000-0000-d0000000020${i + 1}`;
+    const commId = `00000000-0000-4000-8000-d0000000020${i + 1}`;
     await kamnet.kamnetCommission.upsert({
       where: { id: commId },
       create: { id: commId, ...commissions[i] },
@@ -879,17 +1018,355 @@ async function seedLands() {
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
     },
+    {
+      id: IDS.LAND_6,
+      title: 'Parcelle Douala Bonapriso',
+      slug: 'parcelle-douala-bonapriso',
+      description:
+        'Parcelle de 400 m² à Bonapriso, Douala. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Littoral',
+      city: 'Douala',
+      neighborhood: 'Bonapriso',
+      sizeM2: 400,
+      price: 14000000,
+      labelId: IDS.LABEL_TDT,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: true,
+      verifiedAt: SEED_DATE,
+      titleNumber: 'TF-CM-LT-2025-005',
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_7,
+      title: 'Parcelle Yaoundé Nsimeyong',
+      slug: 'parcelle-yaounde-nsimeyong',
+      description:
+        'Parcelle de 320 m² à Nsimeyong, Yaoundé. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Centre',
+      city: 'Yaoundé',
+      neighborhood: 'Nsimeyong',
+      sizeM2: 320,
+      price: 7200000,
+      labelId: IDS.LABEL_VEFL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_8,
+      title: 'Parcelle Douala Logbessou',
+      slug: 'parcelle-douala-logbessou',
+      description:
+        'Parcelle de 500 m² à Logbessou, Douala. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Littoral',
+      city: 'Douala',
+      neighborhood: 'Logbessou',
+      sizeM2: 500,
+      price: 6800000,
+      labelId: IDS.LABEL_VEFIL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_9,
+      title: 'Parcelle Yaoundé Odza',
+      slug: 'parcelle-yaounde-odza',
+      description:
+        'Parcelle de 380 m² à Odza, Yaoundé. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Centre',
+      city: 'Yaoundé',
+      neighborhood: 'Odza',
+      sizeM2: 380,
+      price: 6100000,
+      labelId: IDS.LABEL_VEFL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_10,
+      title: 'Parcelle Bafoussam Tamdja',
+      slug: 'parcelle-bafoussam-tamdja',
+      description:
+        'Parcelle de 450 m² à Tamdja, Bafoussam. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Ouest',
+      city: 'Bafoussam',
+      neighborhood: 'Tamdja',
+      sizeM2: 450,
+      price: 4900000,
+      labelId: IDS.LABEL_TDT,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: true,
+      verifiedAt: SEED_DATE,
+      titleNumber: 'TF-CM-OU-2025-006',
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_11,
+      title: 'Parcelle Limbé Mile 4',
+      slug: 'parcelle-limbe-mile-4',
+      description:
+        'Parcelle de 520 m² à Mile 4, Limbé. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Sud-Ouest',
+      city: 'Limbé',
+      neighborhood: 'Mile 4',
+      sizeM2: 520,
+      price: 7600000,
+      labelId: IDS.LABEL_VEFIL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_12,
+      title: 'Parcelle Kribi Mpangou',
+      slug: 'parcelle-kribi-mpangou',
+      description:
+        'Parcelle de 700 m² à Mpangou, Kribi. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Sud',
+      city: 'Kribi',
+      neighborhood: 'Mpangou',
+      sizeM2: 700,
+      price: 8900000,
+      labelId: IDS.LABEL_VEFL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_13,
+      title: 'Parcelle Garoua Plateau',
+      slug: 'parcelle-garoua-plateau',
+      description:
+        'Parcelle de 600 m² à Plateau, Garoua. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Nord',
+      city: 'Garoua',
+      neighborhood: 'Plateau',
+      sizeM2: 600,
+      price: 3800000,
+      labelId: IDS.LABEL_TDT,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: true,
+      verifiedAt: SEED_DATE,
+      titleNumber: 'TF-CM-NO-2025-007',
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_14,
+      title: 'Parcelle Bertoua Nkolbikon',
+      slug: 'parcelle-bertoua-nkolbikon',
+      description:
+        'Parcelle de 480 m² à Nkolbikon, Bertoua. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Est',
+      city: 'Bertoua',
+      neighborhood: 'Nkolbikon',
+      sizeM2: 480,
+      price: 3400000,
+      labelId: IDS.LABEL_VEFIL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_15,
+      title: 'Parcelle Ngaoundéré Dang',
+      slug: 'parcelle-ngaoundere-dang',
+      description:
+        'Parcelle de 550 m² à Dang, Ngaoundéré. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Adamaoua',
+      city: 'Ngaoundéré',
+      neighborhood: 'Dang',
+      sizeM2: 550,
+      price: 3600000,
+      labelId: IDS.LABEL_VEFL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_16,
+      title: 'Parcelle Douala Yassa',
+      slug: 'parcelle-douala-yassa',
+      description:
+        'Parcelle de 420 m² à Yassa, Douala. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Littoral',
+      city: 'Douala',
+      neighborhood: 'Yassa',
+      sizeM2: 420,
+      price: 5400000,
+      labelId: IDS.LABEL_VEFIL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_17,
+      title: 'Parcelle Yaoundé Mfandena',
+      slug: 'parcelle-yaounde-mfandena',
+      description:
+        'Parcelle de 300 m² à Mfandena, Yaoundé. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Centre',
+      city: 'Yaoundé',
+      neighborhood: 'Mfandena',
+      sizeM2: 300,
+      price: 9800000,
+      labelId: IDS.LABEL_TDT,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: true,
+      verifiedAt: SEED_DATE,
+      titleNumber: 'TF-CM-CT-2025-008',
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_18,
+      title: 'Parcelle Edéa Centre',
+      slug: 'parcelle-edea-centre',
+      description:
+        'Parcelle de 360 m² à Centre, Edéa. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Littoral',
+      city: 'Edéa',
+      neighborhood: 'Centre',
+      sizeM2: 360,
+      price: 4200000,
+      labelId: IDS.LABEL_VEFL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_19,
+      title: 'Parcelle Buea Molyko',
+      slug: 'parcelle-buea-molyko',
+      description:
+        'Parcelle de 340 m² à Molyko, Buea. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Sud-Ouest',
+      city: 'Buea',
+      neighborhood: 'Molyko',
+      sizeM2: 340,
+      price: 7100000,
+      labelId: IDS.LABEL_VEFL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
+    {
+      id: IDS.LAND_20,
+      title: 'Parcelle Maroua Domayo',
+      slug: 'parcelle-maroua-domayo',
+      description:
+        'Parcelle de 580 m² à Domayo, Maroua. Terrain viabilisé, accès routier, dossier complet chez KAMBRIQ.',
+      region: 'Extrême-Nord',
+      city: 'Maroua',
+      neighborhood: 'Domayo',
+      sizeM2: 580,
+      price: 2900000,
+      labelId: IDS.LABEL_VEFIL,
+      status: LandStatus.AVAILABLE,
+      isPublished: true,
+      isVerified: false,
+      titleNumber: null,
+      pv: 1.0,
+      ownerType: LandOwnerType.KAMBRIQ,
+    },
   ];
 
+  /**
+   * Idempotent is not restorative, and the difference is a Monday problem.
+   *
+   * `update: {}` meant a re-run changed nothing about an existing parcel. A
+   * tester reserving parcels moves them AVAILABLE -> RESERVED -> SOLD, and no
+   * amount of re-seeding gave them back: five parcels, five reservations, and
+   * the sixth run looks like a broken platform rather than an exhausted fixture.
+   * The seed said "5 parcels seeded" every time while the pool it described was
+   * empty — a success message over a state it had not restored.
+   *
+   * A seeded fixture must be returned to its seeded state by a re-run. So the
+   * update clause sets the fields a journey mutates, and the reservations a
+   * journey created against seeded parcels are removed first — otherwise the
+   * unique `landId` still ties the parcel to somebody's test run.
+   *
+   * Only rows the seed owns are touched: reservations on seeded parcel ids,
+   * excluding the seeded reservation itself. A tester's parcels, if they ever
+   * create any, are none of the seed's business.
+   */
+  const seededParcelIds = parcels.map((p) => p.id);
+
+  await lands.landReservation.deleteMany({
+    where: {
+      landId: { in: seededParcelIds },
+      id: { not: IDS.LAND_RESERVATION_SEEDED },
+    },
+  });
+
   for (const parcel of parcels) {
-    await lands.land.upsert({ where: { id: parcel.id }, create: parcel, update: {} });
+    await lands.land.upsert({
+      where: { id: parcel.id },
+      create: parcel,
+      // The mutable surface of a parcel, reset. `status` is what a journey
+      // changes; the rest are here because a half-restored fixture is worse than
+      // an unrestored one - it looks correct.
+      update: {
+        status: parcel.status,
+        isPublished: parcel.isPublished,
+        price: parcel.price,
+        labelId: parcel.labelId,
+      },
+    });
   }
 
   // Reservation for LAND_3 (Bonanjo) - CONFIRMED, by Eric for a client
+  // Keyed on the reservation's own id, not `landId`.
+  //
+  // `LandReservation.landId` has no unique constraint - a parcel can carry
+  // several reservations over its life. `upsert({ where: { landId } })` was
+  // therefore never valid, and Postgres says so plainly:
+  // "no unique or exclusion constraint matching the ON CONFLICT specification".
+  // It passed silently while `update` was `{}`, because Prisma took a
+  // find-then-write path; giving the update real fields made it emit
+  // `INSERT ... ON CONFLICT` and the latent mismatch surfaced at once.
   await lands.landReservation.upsert({
-    where: { landId: IDS.LAND_3 },
+    where: { id: IDS.LAND_RESERVATION_SEEDED },
     create: {
-      id: '00000000-0000-0000-0000-e00000000031',
+      id: IDS.LAND_RESERVATION_SEEDED,
       landId: IDS.LAND_3,
       agentUserId: IDS.USER_ERIC,
       clientName: 'Alphonse Bello',
@@ -901,10 +1378,38 @@ async function seedLands() {
       confirmedBy: IDS.USER_ADMIN_LANDS,
       confirmedAt: new Date('2025-02-01'),
     },
-    update: {},
+    update: {
+      status: LandReservationStatus.CONFIRMED,
+      downPaymentConfirmed: true,
+    },
   });
 
-  console.log('  ✓ Lands seeded (3 labels, 5 parcels, 1 reservation)');
+  /**
+   * The seed checks its own postcondition instead of announcing one.
+   *
+   * The first version of the restorative fix printed nothing for lands and
+   * exited non-zero, because `landReservation.upsert` keyed on a non-unique
+   * column. The exhaustion proof still *looked* right — parcels had been
+   * restored before the failure, so the counts moved as expected — and it was
+   * read as passing. The success line never printed and its absence was not
+   * noticed.
+   *
+   * So the last thing this function does is read back what it claims. A seed
+   * that says "18 available" has now counted them.
+   */
+  const expectedAvailable = parcels.filter((p) => p.status === LandStatus.AVAILABLE).length;
+  const actualAvailable = await lands.land.count({ where: { status: LandStatus.AVAILABLE } });
+
+  if (actualAvailable !== expectedAvailable) {
+    throw new Error(
+      `Lands seed postcondition failed: expected ${expectedAvailable} AVAILABLE parcels, found ${actualAvailable}. ` +
+        `The fixtures were not restored.`,
+    );
+  }
+
+  console.log(
+    `  ✓ Lands seeded (3 labels, ${parcels.length} parcels, ${actualAvailable} available, 1 reservation)`,
+  );
 }
 
 // ---------------------------------------------------------------------------

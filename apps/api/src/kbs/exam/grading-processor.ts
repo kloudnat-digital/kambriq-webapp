@@ -1,11 +1,4 @@
-import {
-  EmailService,
-  EXAM_PASSING_SCORE,
-  ExamStatus,
-  KBS_JOBS,
-  QUEUES,
-  RoleCode,
-} from '@kambriq/common';
+import { EmailService, EXAM_PASSING_SCORE, ExamStatus, KBS_JOBS, QUEUES } from '@kambriq/common';
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { KbsExamService } from './exam.service';
@@ -32,13 +25,10 @@ export class KbsGradingProcessor extends WorkerHost {
     switch (job.name) {
       case KBS_JOBS.GRADE_EXAM:
         return this.handleGradeExam(job);
-      case KBS_JOBS.GRANT_KCA_ROLE:
-        return this.handleGrantKcaRole(job);
       case KBS_JOBS.EXPIRE_EXAM:
         return this.handleExpireExam(job);
       default:
-        this.logger.warn(`Unknown KBS job: ${job.name}`);
-        return null;
+        throw new Error(`Unknown KBS job: ${job.name}`);
     }
   }
 
@@ -109,14 +99,14 @@ export class KbsGradingProcessor extends WorkerHost {
     const lang = user.language || 'fr';
 
     if (result.passed) {
-      await this.kbsQueue.add(
-        KBS_JOBS.GRANT_KCA_ROLE,
-        { userId, examId },
-        {
-          jobId: `grant-kca-${userId}`,
-        },
-      );
-
+      // The KCA_CERTIFIED role is NOT granted here.
+      //
+      // It used to be, on the strength of the score alone. That role gates the
+      // KAMNET agent routes (`@Roles(RoleCode.KCA_CERTIFIED)`), so passing an
+      // exam made somebody an agent before any certificate existed and before
+      // any human had approved it. An authorisation must not precede the
+      // credential it represents. `issueCertificate` grants it, in the same act
+      // that creates the document and records who issued it.
       await this.emailService.sendUpdate(
         {
           to: user.email,
@@ -176,13 +166,5 @@ export class KbsGradingProcessor extends WorkerHost {
     });
 
     return result;
-  }
-
-  private async handleGrantKcaRole(job: Job<{ userId: string; examId: string }>) {
-    const { userId, examId } = job.data;
-    this.logger.log('Granting KCA role %o', { userId, examId });
-    await this.usersService.addRole(userId, RoleCode.KCA_CERTIFIED);
-    this.logger.log('KCA role granted %o', { userId });
-    return { userId, role: RoleCode.KCA_CERTIFIED };
   }
 }

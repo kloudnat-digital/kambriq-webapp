@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { RoleCode } from '@kambriq/common';
 import { UsersService } from '../../../core/users/users.service';
 import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
 import { comparePassword, EmailService, StorageService } from '@kambriq/common';
@@ -292,8 +293,24 @@ describe('UsersService', () => {
   // ----- FIND ALL (paginated) ----- //
 
   describe('findAll', () => {
-    it('returns paginated users', async () => {
-      const users = [buildUserWithRoles(['CLIENT']), buildUserWithRoles(['ADMIN_GLOBAL'])];
+    /**
+     * The assertion this replaces checked `toHaveLength(2)` and `meta.total`.
+     *
+     * It was green while the endpoint served
+     * `{"success":true,"data":[{},{},{}],"meta":{"total":14,…}}` — because
+     * `toUserResponse` is async and the map was not awaited, so `data` was an
+     * array of pending Promises. **An array of two Promises has length two.**
+     * Length could not tell the two cases apart, and neither could the envelope
+     * or the pagination.
+     *
+     * Assert on content. Shape and count are exactly what a defect of this kind
+     * preserves.
+     */
+    it('returns users, not promises', async () => {
+      const users = [
+        buildUserWithRoles([RoleCode.CLIENT]),
+        buildUserWithRoles([RoleCode.ADMIN_GLOBAL]),
+      ];
       prisma.$transaction.mockResolvedValue([users, 2]);
 
       const result = await service.findAll({
@@ -306,6 +323,17 @@ describe('UsersService', () => {
       expect(result.success).toBe(true);
       expect(result.data).toHaveLength(2);
       expect(result.meta.total).toBe(2);
+
+      // The rows carry the answer, and a Promise serialises to `{}`.
+      for (const row of result.data) {
+        expect(row).not.toBeInstanceOf(Promise);
+        expect(Object.keys(row as object).length).toBeGreaterThan(0);
+        expect(row).toHaveProperty('email');
+        expect(row).toHaveProperty('id');
+      }
+
+      expect(result.data[0]).toMatchObject({ roles: [RoleCode.CLIENT] });
+      expect(JSON.parse(JSON.stringify(result.data[0]))).toHaveProperty('email');
     });
   });
 
@@ -592,19 +620,55 @@ describe('UsersService', () => {
       expect(email.send).not.toHaveBeenCalled();
     });
 
-    it('creates new user, assigns client role, and sends invite email', async () => {
-      prisma.user.findUnique.mockResolvedValue(null); // no existing user
-      const newUser = buildUser({ email: 'new@test.com' });
-      prisma.user.create.mockResolvedValue(newUser);
-      prisma.role.findUnique.mockResolvedValue(buildRole('client'));
+    /**
+     * The test this replaces was called "creates new user, **assigns client
+     * role**, and sends invite email" and never asserted the role.
+     *
+     * Its mock returned `buildRole('client')` for any lookup, so the real defect
+     * — querying `code: 'client'` against a stored `'CLIENT'`, getting `null`,
+     * and creating a user with no roles — could not appear. The name claimed the
+     * behaviour; the assertions covered the two things either side of it.
+     */
+    const arrangeNewUser = () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue(buildUser({ id: 'new-1', email: 'new@test.com' }));
       prisma.userRole.create.mockResolvedValue({});
       prisma.verificationToken.create.mockResolvedValue({});
+    };
+
+    it('looks the role up by the constant, and actually assigns it', async () => {
+      arrangeNewUser();
+      // Answers only for the exact stored code. A mock that answers for anything
+      // is how the casing defect stayed invisible.
+      prisma.role.findUnique.mockImplementation((args: { where: { code: string } }) =>
+        Promise.resolve(
+          args.where.code === RoleCode.CLIENT ? buildRole(RoleCode.CLIENT, { id: 'role-c' }) : null,
+        ),
+      );
 
       const result = await service.findOrCreateClientUser('new@test.com', 'Jane', 'Smith');
 
       expect(result.isNew).toBe(true);
-      expect(prisma.verificationToken.create).toHaveBeenCalled();
+      expect(prisma.role.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { code: RoleCode.CLIENT } }),
+      );
+      expect(prisma.userRole.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { userId: 'new-1', roleId: 'role-c' } }),
+      );
       expect(email.send).toHaveBeenCalledWith(expect.objectContaining({ template: 'inviteUser' }));
+    });
+
+    it('fails loudly when the client role is missing, instead of creating a roleless user', async () => {
+      arrangeNewUser();
+      prisma.role.findUnique.mockResolvedValue(null);
+
+      await expect(service.findOrCreateClientUser('new@test.com', 'Jane', 'Smith')).rejects.toThrow(
+        /CLIENT role is missing/,
+      );
+
+      // The old code carried on: user row created, no role, invite email sent.
+      expect(prisma.userRole.create).not.toHaveBeenCalled();
+      expect(email.send).not.toHaveBeenCalled();
     });
   });
 });

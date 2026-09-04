@@ -55,3 +55,10 @@ export const ResetPasswordResolver = z
   });
 
 export type ResetPasswordSchema = z.infer<typeof ResetPasswordResolver>;
+
+export const ReactivateResolver = z.object({
+  email: z.email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+export type ReactivateSchema = z.infer<typeof ReactivateResolver>;

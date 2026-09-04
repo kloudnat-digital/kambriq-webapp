@@ -19,6 +19,7 @@ import {
   CandidateStatus,
   DEFAULT_LANGUAGE,
   EmailService,
+  DEFAULT_QUIZ_QUESTION_COUNT,
   MODULE_PASSING_SCORE,
   PaginationQuery,
   RoleCode,
@@ -266,10 +267,15 @@ export class KbsCandidatesService {
     const firstNotDone = moduleViews.find((m) => m.status !== 'completed');
     const currentModuleOrder = firstNotDone?.order ?? null;
 
-    let nextAction: 'lesson' | 'mcq' | 'exam' | 'certified';
+    let nextAction: 'lesson' | 'mcq' | 'exam' | 'awaiting-certificate' | 'certified';
 
     if (candidate.status === CandidateStatus.CERTIFIED) {
       nextAction = 'certified';
+    } else if (candidate.status === CandidateStatus.EXAM_PASSED) {
+      // Distinct from 'certified' on purpose. The screen that renders this has
+      // to be able to say "passed, certificate on its way" without inferring it
+      // from a null certificate.
+      nextAction = 'awaiting-certificate';
     } else if (modulesDone === modulesTotal && modulesTotal > 0) {
       nextAction = 'exam';
     } else if (firstNotDone) {
@@ -378,6 +384,33 @@ export class KbsCandidatesService {
       throw new BadRequestException(this.t('kbs.exam.noQuestions'));
     }
 
+    /**
+     * Grade over the questions that were asked, not over the module's pool.
+     *
+     * The score was `correctCount / questions.length`, where `questions` is
+     * every question in the module. `findQuestionsForQuiz` serves
+     * `quizQuestionCount` of them. With a pool of 30 and a quiz of 10, a
+     * candidate who answered all ten correctly scored 10/30 = 33% and failed.
+     * Nobody could pass a quiz, so nobody could reach the exam.
+     *
+     * It was invisible until B3 because the module pools held five questions:
+     * the draw was `min(5, 10) = 5`, the pool was 5, and the denominator was
+     * accidentally right. Seeding a real bank is what exposed it - the same
+     * shape as the coverage denominator, an arithmetic that stays internally
+     * consistent while measuring the wrong population.
+     *
+     * A submission that does not cover the served quiz is refused rather than
+     * normalised. Scoring a partial submission out of the full quiz length
+     * would be a guess about intent, and scoring it out of its own length would
+     * let a client submit its one confident answer and score 100%.
+     */
+    const quizLength = settings?.quizQuestionCount ?? DEFAULT_QUIZ_QUESTION_COUNT;
+    if (dto.answers.length !== quizLength) {
+      throw new BadRequestException(
+        `${this.t('kbs.quiz.incompleteSubmission')} (reçu ${dto.answers.length}, attendu ${quizLength})`,
+      );
+    }
+
     // Grade: exact-set match (handles both SINGLE and MULTIPLE question types)
     let correctCount = 0;
     for (const submission of dto.answers) {
@@ -394,7 +427,7 @@ export class KbsCandidatesService {
       if (isCorrect) correctCount++;
     }
 
-    const score = Math.round((correctCount / questions.length) * 100);
+    const score = Math.round((correctCount / quizLength) * 100);
     const passed = score >= MODULE_PASSING_SCORE;
 
     // Upsert progress record - always increment attempt counter
@@ -437,7 +470,7 @@ export class KbsCandidatesService {
       score,
       passed,
       correctCount,
-      totalQuestions: questions.length,
+      totalQuestions: quizLength,
       passingScore: MODULE_PASSING_SCORE,
       attemptsUsed:
         (settings?.quizMaxAttempts ?? 0) > 0
@@ -650,7 +683,17 @@ export class KbsCandidatesService {
   private async checkAndTransitionToExamPending(candidateId: string) {
     const settings = await this.prisma.kbsSettings.findFirst();
     const activeCourseId = settings?.activeCourseId;
-    if (!activeCourseId) return;
+    if (!activeCourseId) {
+      // Returning quietly here strands the candidate: they have passed every
+      // module, the transition to EXAM_PENDING never happens, and no error
+      // reaches them or the log. The state is recoverable by an admin, but only
+      // once somebody knows to look. This is the one line that tells them.
+      this.logger.error(
+        'Candidate passed a module but no active course is configured, so the transition to EXAM_PENDING cannot run. Set kbsSettings.activeCourseId. %o',
+        { candidateId },
+      );
+      return;
+    }
 
     const totalModules = await this.prisma.kbsModule.count({ where: { courseId: activeCourseId } });
     const completedModules = await this.prisma.kbsCandidateProgress.count({

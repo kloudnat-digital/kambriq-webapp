@@ -21,7 +21,8 @@
   "quiz": {
     "alreadyPassed": "Le quiz du module est déjà réussi",
     "pass": "Quiz réussi ! Score : {score}%",
-    "fail": "Quiz non réussi. Score : {score}% (requis : {required}%)"
+    "fail": "Quiz non réussi. Score : {score}% (requis : {required}%)",
+    "incompleteSubmission": "Réponses incomplètes : le quiz doit être soumis en entier."
   },
   "exam": {
     "notFound": "Examen {id} introuvable",
@@ -46,7 +47,8 @@
     "startWindowExpired": "La fenêtre de démarrage de l'examen a expiré.",
     "candidateNotFound": "Candidat {id} introuvable",
     "completeAllModules": "Terminez tous les modules du programme avant de passer l'examen.",
-    "notInTraining": "Vous devez être en cours de formation pour soumettre un QCM."
+    "notInTraining": "Vous devez être en cours de formation pour soumettre un QCM.",
+    "awaitingCertificate": "Examen réussi. Votre certificat est en cours d'émission."
   },
   "certificate": {
     "notFound": "Certificat introuvable",

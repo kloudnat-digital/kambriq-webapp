@@ -14,10 +14,14 @@ export const AUTH_ROUTES = {
 // their sub-pages are public and reachable. isPublic() matches on `p` or
 // `p + '/'`, so the prefix is doing real work and must not be "tidied away".
 //
-// /reactivate is listed and has no page at all, which is a genuine bug but not
-// a bug in this list: lib/actions/auth.ts redirects there when the API answers
-// REACTIVATION_REQUIRED, so a user in the soft-delete grace period is sent to a
-// 404 today. The entry is correct and must stay; the missing page is the fix.
+// /reactivate is listed and now has a page. It did not: lib/actions/auth.ts
+// redirects there when the API answers REACTIVATION_REQUIRED, so a user in the
+// soft-delete grace period was sent to a 404. The entry was always correct; the
+// missing page was the bug.
+//
+// routes-have-pages.spec.ts now asserts that every entry here either resolves to
+// a page or is declared prefix-only with at least one child, so the next entry
+// added without a page fails in CI rather than in front of a user.
 export const PUBLIC_PATHS = [
   '/',
   '/login',

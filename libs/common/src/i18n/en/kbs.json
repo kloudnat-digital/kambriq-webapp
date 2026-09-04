@@ -21,7 +21,8 @@
   "quiz": {
     "alreadyPassed": "Module quiz already passed",
     "pass": "Quiz passed! Score: {score}%",
-    "fail": "Quiz not passed. Score: {score}% (required: {required}%)"
+    "fail": "Quiz not passed. Score: {score}% (required: {required}%)",
+    "incompleteSubmission": "Incomplete submission: the whole quiz must be submitted."
   },
   "exam": {
     "notFound": "Exam {id} not found",
@@ -46,7 +47,8 @@
     "startWindowExpired": "The exam start window has expired.",
     "candidateNotFound": "Candidate {id} not found",
     "completeAllModules": "Complete every module of the programme before taking the exam.",
-    "notInTraining": "You must be in training to submit a quiz."
+    "notInTraining": "You must be in training to submit a quiz.",
+    "awaitingCertificate": "Exam passed. Your certificate is awaiting issuance."
   },
   "certificate": {
     "notFound": "Certificate not found",

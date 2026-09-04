@@ -92,7 +92,7 @@ export class AuthService {
     }
 
     // Send verification email
-    const verificationToken = this.createVerificationToken(
+    const verificationToken = await this.createVerificationToken(
       user.id,
       VerificationTokenType.EMAIL_VERIFICATION,
     );
@@ -423,10 +423,24 @@ export class AuthService {
 
     const passwordHash = await hashPassword(newPassword);
 
+    /**
+     * Consuming this token proves control of the mailbox, so the address is
+     * verified.
+     *
+     * A client invited by a land reservation received a set-password link,
+     * used it, got a 204 — and could not log in, because `emailVerified` was
+     * still false and login refuses an unverified address. They had proved
+     * ownership of that mailbox by the only means the system has, and were told
+     * to go and prove it again with a link they were never sent.
+     *
+     * It is the same evidence `verify-email` accepts: a secret delivered to that
+     * address and returned. Requiring it twice is not extra safety, it is a dead
+     * end — and the dead end was silent, because every step before it succeeded.
+     */
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: tokenRecord.userId },
-        data: { passwordHash, loginAttempts: 0, lockedUntil: null },
+        data: { passwordHash, loginAttempts: 0, lockedUntil: null, emailVerified: true },
       }),
       this.prisma.verificationToken.update({
         where: { id: tokenRecord.id },

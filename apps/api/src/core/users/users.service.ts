@@ -27,6 +27,7 @@ import {
   IdVerificationStatus,
   PaginationQuery,
   RESET_TOKEN_EXPIRY_HOURS,
+  RoleCode,
   StorageService,
   VerificationTokenType,
   buildPaginatedResponse,
@@ -207,7 +208,21 @@ export class UsersService {
       this.prisma.user.count(),
     ]);
 
-    const data = users.map((user) => this.toUserResponse(user));
+    /**
+     * `Promise.all`, because `toUserResponse` is async.
+     *
+     * Without it `data` was an array of **pending Promises**, and
+     * `JSON.stringify` renders a Promise as `{}`. The endpoint answered
+     * `{"success":true,"data":[{},{},{}],"meta":{"total":14,…}}`: 200, correct
+     * envelope, correct pagination, and no data. Every signal healthy except the
+     * one carrying the answer.
+     *
+     * This is the same missing `await` as the verification email, which shipped
+     * `?token=[object Promise]` — the second time the same mistake has reached
+     * dev on a different surface. TypeScript cannot separate the two forms here
+     * either: `Promise<T>[]` is a perfectly good array.
+     */
+    const data = await Promise.all(users.map((user) => this.toUserResponse(user)));
     return buildPaginatedResponse(data, total, page, limit);
   }
 
@@ -407,14 +422,32 @@ export class UsersService {
       },
     });
 
+    /**
+     * `RoleCode.CLIENT`, not `'client'`.
+     *
+     * This read `where: { code: 'client' }` while the stored code is `'CLIENT'`.
+     * Postgres comparison is case-sensitive, so the lookup returned `null` and
+     * the `if` below swallowed it: the client was created with **no roles at
+     * all**. `@Roles(RoleCode.CLIENT)` gates the whole client portal, so the
+     * reservation returned 201, the portal-access email sent, the job was green,
+     * and the only symptom was a person who could not get into the thing they
+     * had just been invited to.
+     *
+     * The missing role is now a failure rather than a silence. A client user
+     * without the client role is not a user worth keeping: the row would exist,
+     * the email would promise access, and the access would not be there.
+     */
     const clientRole = await this.prisma.role.findUnique({
-      where: { code: 'client' },
+      where: { code: RoleCode.CLIENT },
     });
-    if (clientRole) {
-      await this.prisma.userRole.create({
-        data: { userId: newUser.id, roleId: clientRole.id },
-      });
+    if (!clientRole) {
+      throw new Error(
+        `Cannot create a client user: the ${RoleCode.CLIENT} role is missing from the database.`,
+      );
     }
+    await this.prisma.userRole.create({
+      data: { userId: newUser.id, roleId: clientRole.id },
+    });
 
     // Generate a password-reset token so the user can set their password on first login
     const rawToken = crypto.randomBytes(32).toString('hex');

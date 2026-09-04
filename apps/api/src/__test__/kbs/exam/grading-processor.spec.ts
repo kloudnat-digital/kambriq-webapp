@@ -67,25 +67,44 @@ describe('KbsGradingProcessor', () => {
       expect(examService.gradeExam).toHaveBeenCalledWith('ex1');
     });
 
-    it('routes GRANT_KCA_ROLE jobs correctly', async () => {
-      const job = makeJob(KBS_JOBS.GRANT_KCA_ROLE, {
-        userId: 'u1',
-        examId: 'ex1',
-      });
-
-      await processor.process(job);
-
-      expect(usersService.addRole).toHaveBeenCalledWith('u1', 'KCA_CERTIFIED');
+    /**
+     * The KCA role grant is gone from this processor entirely.
+     *
+     * It was unreachable after Q1 moved the grant to certificate issuance, and
+     * an unreachable path that hands out an authorization on a score - without
+     * even a `grantedBy` - is one `queue.add` away from reachable. The `kbs`
+     * queue was checked empty first (waiting 0, active 0, delayed 0, paused 0,
+     * failed 0; only historical completions carried the name), so no in-flight
+     * job could be orphaned by removing it.
+     *
+     * It now falls to the default branch and throws, like any other name this
+     * processor does not handle.
+     */
+    it('no longer routes the retired KCA role grant - it throws like any unknown name', async () => {
+      await expect(
+        processor.process(makeJob('kbs.grant-kca-role', { userId: 'u1' })),
+      ).rejects.toThrow(/Unknown KBS job: kbs\.grant-kca-role/);
+      expect(usersService.addRole).not.toHaveBeenCalled();
     });
 
-    it('returns null for unknown job types', async () => {
-      const result = await processor.process(makeJob('unknown.job', {}));
-      expect(result).toBeNull();
+    it('throws on an unknown job name, so BullMQ fails it instead of completing it', async () => {
+      await expect(processor.process(makeJob('unknown.job', {}))).rejects.toThrow(
+        /Unknown KBS job: unknown\.job/,
+      );
     });
   });
 
   describe('handleGradeExam - passed', () => {
-    it('enqueues KCA role grant and sends pass email', async () => {
+    /**
+     * Passing an exam must not grant the credential's role.
+     *
+     * `KCA_CERTIFIED` gates the KAMNET agent routes. Granting it on the score
+     * alone made somebody an agent before any certificate existed and before
+     * any human had approved it - an authorisation preceding the credential it
+     * represents. `issueCertificate` grants it now, in the same act that creates
+     * the document and records who issued it.
+     */
+    it('sends the pass email and does NOT grant the KCA role', async () => {
       examService.gradeExam.mockResolvedValue({ score: 85, passed: true });
 
       const job = makeJob(KBS_JOBS.GRADE_EXAM, {
@@ -96,11 +115,10 @@ describe('KbsGradingProcessor', () => {
 
       await processor.process(job);
 
-      // Enqueue KCA role
-      expect(queue.add).toHaveBeenCalledWith(
-        KBS_JOBS.GRANT_KCA_ROLE,
-        expect.objectContaining({ userId: 'u1' }),
-        expect.any(Object),
+      expect(queue.add).not.toHaveBeenCalledWith(
+        'kbs.grant-kca-role',
+        expect.anything(),
+        expect.anything(),
       );
 
       // Send pass email
@@ -128,7 +146,7 @@ describe('KbsGradingProcessor', () => {
       await processor.process(job);
 
       // No KCA role enqueued
-      expect(queue.add).not.toHaveBeenCalledWith(KBS_JOBS.GRANT_KCA_ROLE, expect.anything(), null);
+      expect(queue.add).not.toHaveBeenCalledWith('kbs.grant-kca-role', expect.anything(), null);
 
       // Fail email with retake info
       expect(emailService.sendUpdate).toHaveBeenCalledWith(

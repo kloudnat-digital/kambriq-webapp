@@ -458,7 +458,7 @@ export class KbsAdminController {
     name: 'status',
     required: false,
     description: 'Filter by candidate status',
-    enum: ['CANDIDATE', 'IN_TRAINING', 'EXAM_PENDING', 'CERTIFIED', 'FAILED'],
+    enum: ['CANDIDATE', 'IN_TRAINING', 'EXAM_PENDING', 'EXAM_PASSED', 'CERTIFIED', 'FAILED'],
   })
   @ApiQuery({
     name: 'search',
@@ -499,7 +499,7 @@ export class KbsAdminController {
   @ApiOperation({
     summary: 'Update candidate status',
     description:
-      'Manually transitions a candidate status. Only valid state machine transitions are accepted: CANDIDATE → IN_TRAINING → EXAM_PENDING → CERTIFIED | FAILED. FAILED → EXAM_PENDING is allowed for retakes.',
+      'Manually transitions a candidate status. Only valid state machine transitions are accepted: CANDIDATE → IN_TRAINING → EXAM_PENDING → EXAM_PASSED → CERTIFIED, or EXAM_PENDING → FAILED. FAILED → EXAM_PENDING is allowed for retakes. Passing the exam gives EXAM_PASSED; only issuing a certificate gives CERTIFIED.',
   })
   @ApiParam({
     name: 'id',
@@ -591,7 +591,7 @@ export class KbsAdminController {
   @ApiOperation({
     summary: 'Issue a KCA certificate to a candidate',
     description:
-      'Manually issues a KCA certificate. The candidate must have CERTIFIED status or a passing exam. Generates a unique KCA number valid for 2 years, grants the KCA_CERTIFIED role, and sends a confirmation email.',
+      'Issues a KCA certificate. The candidate must have passed the final exam (EXAM_PASSED) or already be certified. This is the act that confers certification: it sets the status to CERTIFIED, records certifiedAt and issuedBy, generates a unique KCA number valid for 2 years, grants the KCA_CERTIFIED role, and sends a confirmation email.',
   })
   @ApiParam({
     name: 'candidateId',

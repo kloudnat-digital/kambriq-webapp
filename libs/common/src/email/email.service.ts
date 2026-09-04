@@ -31,7 +31,59 @@ export class EmailService {
 
   constructor(@InjectQueue(QUEUES.NOTIFICATIONS) private readonly notifQueue: Queue) {}
 
+  /**
+   * An interpolation argument that stringifies to `[object Promise]` or
+   * `[object Object]` is always a defect, never content. It is what a missing
+   * `await` looks like by the time it reaches a template: the send succeeds,
+   * SES delivers, the user receives the mail, and the link in it is dead. That
+   * failure is invisible from every side except the recipient's.
+   *
+   * `${await f()}` and `${f()}` differ by five characters and nothing in the
+   * type system separates them - both produce a `string`. So the check is here,
+   * at the one place every template argument passes through, and it throws
+   * rather than warns: an auth email with a dead link is worse than no email.
+   */
+  private assertNoUnresolvedArgs(payload: EmailJobPayload): void {
+    for (const [key, value] of Object.entries(payload.args)) {
+      if (typeof value === 'string' && value.includes('[object ')) {
+        throw new Error(
+          `Email argument "${key}" contains an unresolved value for template ` +
+            `"${payload.template}" - this is a missing await, not content.`,
+        );
+      }
+    }
+  }
+
+  /**
+   * A field called `…Name` must not carry an identifier.
+   *
+   * `clientPortalAccess` was sent with `agentName: agentUserId` and the comment
+   * "will be enriched in the controller". It never was, so clients received
+   * **"Votre agent KAMNET : 00000000-0000-4000-8000-b00000000005"** — a UUID
+   * where a person's name belongs. A leak and an embarrassment in one line.
+   *
+   * The check lives here for the same reason the `[object …]` one does: this is
+   * the single place every template argument passes through, so it covers
+   * templates nobody has written yet. It is deliberately narrow — only fields
+   * whose name ends in `Name`, only values shaped like a UUID. No human is
+   * called `00000000-0000-4000-8000-b00000000005`.
+   */
+  private assertNoIdentifiersInNames(payload: EmailJobPayload): void {
+    const UUID_SHAPED = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    for (const [key, value] of Object.entries(payload.args)) {
+      if (key.endsWith('Name') && typeof value === 'string' && UUID_SHAPED.test(value.trim())) {
+        throw new Error(
+          `Email argument "${key}" is an identifier, not a name, for template ` +
+            `"${payload.template}" - a customer must never be shown an internal id.`,
+        );
+      }
+    }
+  }
+
   async send(payload: EmailJobPayload): Promise<void> {
+    this.assertNoUnresolvedArgs(payload);
+    this.assertNoIdentifiersInNames(payload);
+
     await this.notifQueue.add(NOTIFICATIONS_JOBS.SEND_EMAIL, payload, {
       attempts: 3,
       backoff: {
