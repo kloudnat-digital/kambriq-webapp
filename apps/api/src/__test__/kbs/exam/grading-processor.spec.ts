@@ -78,9 +78,20 @@ describe('KbsGradingProcessor', () => {
       expect(usersService.addRole).toHaveBeenCalledWith('u1', 'KCA_CERTIFIED');
     });
 
-    it('returns null for unknown job types', async () => {
-      const result = await processor.process(makeJob('unknown.job', {}));
-      expect(result).toBeNull();
+    /**
+     * This test used to assert `toBeNull()`, and it was green for exactly as
+     * long as the defect existed. A resolved promise marks a BullMQ job
+     * completed, so returning null for an unrecognised name reports success for
+     * work never done: rename a constant, deploy, and every job of that kind
+     * drains from the queue with a green tick.
+     *
+     * A test can pin a defect as firmly as it pins a fix. The assertion was
+     * correct about the code and wrong about the requirement.
+     */
+    it('throws on an unknown job name, so BullMQ fails it instead of completing it', async () => {
+      await expect(processor.process(makeJob('unknown.job', {}))).rejects.toThrow(
+        /Unknown KBS job: unknown\.job/,
+      );
     });
   });
 

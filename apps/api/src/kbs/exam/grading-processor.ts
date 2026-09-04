@@ -37,8 +37,7 @@ export class KbsGradingProcessor extends WorkerHost {
       case KBS_JOBS.EXPIRE_EXAM:
         return this.handleExpireExam(job);
       default:
-        this.logger.warn(`Unknown KBS job: ${job.name}`);
-        return null;
+        throw new Error(`Unknown KBS job: ${job.name}`);
     }
   }
 
