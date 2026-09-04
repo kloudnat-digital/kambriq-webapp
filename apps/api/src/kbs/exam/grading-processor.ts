@@ -1,11 +1,4 @@
-import {
-  EmailService,
-  EXAM_PASSING_SCORE,
-  ExamStatus,
-  KBS_JOBS,
-  QUEUES,
-  RoleCode,
-} from '@kambriq/common';
+import { EmailService, EXAM_PASSING_SCORE, ExamStatus, KBS_JOBS, QUEUES } from '@kambriq/common';
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { KbsExamService } from './exam.service';
@@ -32,8 +25,6 @@ export class KbsGradingProcessor extends WorkerHost {
     switch (job.name) {
       case KBS_JOBS.GRADE_EXAM:
         return this.handleGradeExam(job);
-      case KBS_JOBS.GRANT_KCA_ROLE:
-        return this.handleGrantKcaRole(job);
       case KBS_JOBS.EXPIRE_EXAM:
         return this.handleExpireExam(job);
       default:
@@ -175,13 +166,5 @@ export class KbsGradingProcessor extends WorkerHost {
     });
 
     return result;
-  }
-
-  private async handleGrantKcaRole(job: Job<{ userId: string; examId: string }>) {
-    const { userId, examId } = job.data;
-    this.logger.log('Granting KCA role %o', { userId, examId });
-    await this.usersService.addRole(userId, RoleCode.KCA_CERTIFIED);
-    this.logger.log('KCA role granted %o', { userId });
-    return { userId, role: RoleCode.KCA_CERTIFIED };
   }
 }

@@ -122,6 +122,86 @@ The API answers `{success, data}`, the web answers flat. That gap broke the smok
 test's health-body check and nobody saw it.
 **Decision:** one representative route per module. **Cost: none.**
 
+### R1 — A role code written as a string, and a list of promises — `EN COURS`
+
+Three defects the role sweep found while looking for something else. Two of them
+break journeys the functional tests are about to certify, so they were fixed
+rather than filed.
+
+**1. A client created by a reservation had no roles.**
+`findOrCreateClientUser` read `where: { code: 'client' }` against a stored
+`'CLIENT'`. Case-sensitive comparison, `null`, and an `if (clientRole)` that
+swallowed it. `@Roles(RoleCode.CLIENT)` gates the whole client portal, so the
+reservation returned 201, the portal-access email sent, the job was green, and
+**the only symptom was a person who could not get into the thing they had just
+been invited to.** The week's pattern with somebody at the end of it.
+
+**The one-word change is not the deliverable.** A string literal where a constant
+exists is the defect; the casing is how it surfaced. `RoleCode.CLIENT` cannot be
+miscased — TypeScript rejects `RoleCode.Client`, and you do not need a database
+to find out. Registration was correct only by the accident of having spelled the
+constant, and accidents do not survive the next person in the file.
+
+**So the literal is banned.** `role-code-literals.spec.ts` scans
+`apps/api/src`, `libs/common/src` and `prisma/` and fails on any role code
+written as a bare string, in either case. The enum is the single exemption; the
+seed now uses `RoleCode.*` too, so the codes the database stores and the codes
+the application looks up come from one declaration. A missing role is now a
+throw rather than a silence: a client user without the client role is a row whose
+email promises access that is not there.
+
+**Enforced as a test, not a lint rule, on purpose.** CI runs `nx lint api` only,
+so a rule covering `libs/common` and `prisma/` would not actually run — and an
+enforcement that does not run is worse than none, because it reads as covered.
+
+**2. `GET /users` returned `[{},{},{}]` with `meta.total: 14`.**
+`toUserResponse` is async and the map was not awaited, so `data` was an array of
+pending Promises, and `JSON.stringify` renders a Promise as `{}`. **200, correct
+envelope, correct pagination, no data.** Every signal healthy except the one
+carrying the answer.
+
+**It is the same missing `await` as A3**, which shipped `?token=[object
+Promise]` — the second time the same mistake reached dev on a different surface.
+`Promise<T>[]` is a perfectly good array, so the type system separates the two no
+better here than it did there.
+
+**Its test asserted `toHaveLength(2)`.** An array of two Promises has length two.
+Shape, count, envelope and pagination are exactly what this class of defect
+preserves. **The envelope contract tests in the remaining scope must assert on
+content** — a contract test checking `{success, data}` would have passed this
+one, which is the whole reason to write them differently.
+
+**3. The dormant `GRANT_KCA_ROLE` handler is gone.** Confirmed empty first, not
+assumed: `waiting 0, active 0, delayed 0, paused 0, failed 0` on the `kbs`
+queue, with the name appearing only among historical completions. It now falls to
+the default branch and throws. The constant is removed too, so re-enabling it is
+a decision rather than an accident.
+
+**`CANDIDATE_KBS` needs no action, only this line.** It is granted self-service
+on enrolment and there is no `@Roles(RoleCode.CANDIDATE_KBS)` anywhere. **A label
+that looks like a permission is a trap for whoever gates on it next assuming a
+check exists.**
+
+**Proof: seven tails, seven mutations**, each observed failing alone:
+
+| #   | Mutation                                   | Test that fired                                                      |
+| --- | ------------------------------------------ | -------------------------------------------------------------------- |
+| 1   | `code: 'client'` restored                  | no file writes CLIENT as a string literal                            |
+| 2   | `code: 'CLIENT'` — right value, wrong form | the same test, so the ban is on the literal not the casing           |
+| 3   | missing role silent again                  | fails loudly when the client role is missing                         |
+| 4   | lookup kept, assignment dropped            | looks the role up by the constant, and actually assigns it           |
+| 5   | the retired KCA grant routed again         | no longer routes the retired KCA role grant                          |
+| 6   | the user list stops awaiting               | returns users, not promises — `Expected constructor: not Promise`    |
+| 7   | the convention scanner finds no files      | is looking at the source tree at all — `Expected: > 50, Received: 0` |
+
+**A defect in my own matcher, recorded rather than tidied away.** The first
+version used `['"`]…['"`]`and flagged the French question bank: in`"Il a changé d'agent"` the apostrophe opened a match the closing double quote
+finished. Back-referencing the quote fixed it. Found by the measurement, in the
+measurement.
+
+`EN COURS` until dev shows a reservation creating a client who holds `CLIENT` and
+reaches a portal route, and `GET /users` returning rows. **Cost: none.**
+
 ### Z1 — Three never-used access keys, one of them full admin — `A DECIDER`, prepared not applied
 
 **This outranks every number in the cost table.** `gitops.admin` holds an
