@@ -1354,8 +1354,17 @@ async function seedLands() {
   }
 
   // Reservation for LAND_3 (Bonanjo) - CONFIRMED, by Eric for a client
+  // Keyed on the reservation's own id, not `landId`.
+  //
+  // `LandReservation.landId` has no unique constraint - a parcel can carry
+  // several reservations over its life. `upsert({ where: { landId } })` was
+  // therefore never valid, and Postgres says so plainly:
+  // "no unique or exclusion constraint matching the ON CONFLICT specification".
+  // It passed silently while `update` was `{}`, because Prisma took a
+  // find-then-write path; giving the update real fields made it emit
+  // `INSERT ... ON CONFLICT` and the latent mismatch surfaced at once.
   await lands.landReservation.upsert({
-    where: { landId: IDS.LAND_3 },
+    where: { id: IDS.LAND_RESERVATION_SEEDED },
     create: {
       id: IDS.LAND_RESERVATION_SEEDED,
       landId: IDS.LAND_3,
@@ -1375,10 +1384,31 @@ async function seedLands() {
     },
   });
 
+  /**
+   * The seed checks its own postcondition instead of announcing one.
+   *
+   * The first version of the restorative fix printed nothing for lands and
+   * exited non-zero, because `landReservation.upsert` keyed on a non-unique
+   * column. The exhaustion proof still *looked* right — parcels had been
+   * restored before the failure, so the counts moved as expected — and it was
+   * read as passing. The success line never printed and its absence was not
+   * noticed.
+   *
+   * So the last thing this function does is read back what it claims. A seed
+   * that says "18 available" has now counted them.
+   */
+  const expectedAvailable = parcels.filter((p) => p.status === LandStatus.AVAILABLE).length;
+  const actualAvailable = await lands.land.count({ where: { status: LandStatus.AVAILABLE } });
+
+  if (actualAvailable !== expectedAvailable) {
+    throw new Error(
+      `Lands seed postcondition failed: expected ${expectedAvailable} AVAILABLE parcels, found ${actualAvailable}. ` +
+        `The fixtures were not restored.`,
+    );
+  }
+
   console.log(
-    `  ✓ Lands seeded (3 labels, ${parcels.length} parcels, ${
-      parcels.filter((p) => p.status === LandStatus.AVAILABLE).length
-    } available, 1 reservation)`,
+    `  ✓ Lands seeded (3 labels, ${parcels.length} parcels, ${actualAvailable} available, 1 reservation)`,
   );
 }
 
