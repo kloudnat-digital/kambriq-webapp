@@ -386,5 +386,32 @@ describe('journey 4 - an agent reserves a parcel and the client reaches the port
     const purchases = portal.json<{ data: Array<{ landId: string }> }>().data;
     expect(purchases.length).toBeGreaterThan(0);
     expect(purchases[0].landId).toBe(available[0].id);
+
+    /**
+     * Give the parcel back.
+     *
+     * This suite runs on every deploy to dev and each run consumes one parcel.
+     * The pool went 18 -> 15 in three runs before anybody noticed; at roughly one
+     * deploy per change it empties inside a fortnight, and the next tester finds
+     * an empty catalogue and reports a bug that is not there. **The seed being
+     * restorative is not enough if nothing re-runs it**, and a test that depends
+     * on somebody else tidying up is a test with a hidden prerequisite.
+     *
+     * Cancelling is also the assertion: the parcel must come back to AVAILABLE,
+     * which is the restorative property proved through the API rather than
+     * against the database.
+     */
+    const reservationId = reserved.json<{ data: { id: string } }>().data.id;
+    const cancelled = await call('POST', `/lands/admin/reservations/${reservationId}/cancel`, {
+      token: admin,
+      body: { reason: 'automated journey cleanup - returning the fixture parcel' },
+    });
+    expect(cancelled.status).toBe(200);
+
+    const after = await call('GET', '/lands?limit=50', { token: agent });
+    const parcel = after
+      .json<{ data: Array<{ id: string; status: string }> }>()
+      .data.find((l) => l.id === available[0].id);
+    expect(parcel?.status).toBe('AVAILABLE');
   });
 });
