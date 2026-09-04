@@ -47,6 +47,7 @@ import {
   LandOwnerType,
   LandReservationStatus,
 } from '../libs/common/src/prisma/lands-client/client';
+import { RoleCode } from '../libs/common/src/types/roles.enum';
 import * as bcrypt from 'bcryptjs';
 
 // ---------------------------------------------------------------------------
@@ -169,49 +170,49 @@ async function seedCore() {
   const roles = [
     {
       id: IDS.ROLE_ADMIN_GLOBAL,
-      code: 'ADMIN_GLOBAL',
+      code: RoleCode.ADMIN_GLOBAL,
       name: 'Global Administrator',
       description: 'Full platform access',
     },
     {
       id: IDS.ROLE_CLIENT,
-      code: 'CLIENT',
+      code: RoleCode.CLIENT,
       name: 'Client',
       description: 'Portal access for land buyers',
     },
     {
       id: IDS.ROLE_CANDIDATE_KBS,
-      code: 'CANDIDATE_KBS',
+      code: RoleCode.CANDIDATE_KBS,
       name: 'KBS Candidate',
       description: 'Enrolled in KBS training',
     },
     {
       id: IDS.ROLE_KCA_CERTIFIED,
-      code: 'KCA_CERTIFIED',
+      code: RoleCode.KCA_CERTIFIED,
       name: 'KCA Certified',
       description: 'Holds a valid KCA certificate',
     },
     {
       id: IDS.ROLE_AGENT,
-      code: 'AGENT',
+      code: RoleCode.AGENT,
       name: 'KAMNET Agent',
       description: 'Certified commercial agent',
     },
     {
       id: IDS.ROLE_ADMIN_KBS,
-      code: 'ADMIN_KBS',
+      code: RoleCode.ADMIN_KBS,
       name: 'KBS Administrator',
       description: 'Manages courses, exams and certificates',
     },
     {
       id: IDS.ROLE_ADMIN_KAMNET,
-      code: 'ADMIN_KAMNET',
+      code: RoleCode.ADMIN_KAMNET,
       name: 'KAMNET Administrator',
       description: 'Manages agents and commissions',
     },
     {
       id: IDS.ROLE_ADMIN_LANDS,
-      code: 'ADMIN_LANDS',
+      code: RoleCode.ADMIN_LANDS,
       name: 'LANDS Administrator',
       description: 'Manages land inventory and reservations',
     },

@@ -299,7 +299,7 @@ export class UserController {
       'Removes a single role from the user without touching other roles. Silently succeeds if the user does not have the role. Requires ADMIN_GLOBAL role.',
   })
   @ApiParam({ name: 'id', description: 'User ID (CUID)', example: 'clxxxxxxxxxxxxxx' })
-  @ApiParam({ name: 'roleCode', description: 'Role code to remove', example: 'ADMIN_KBS' })
+  @ApiParam({ name: 'roleCode', description: 'Role code to remove', example: RoleCode.ADMIN_KBS })
   @ApiResponse({ status: 200, description: 'Role revoked.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions.' })

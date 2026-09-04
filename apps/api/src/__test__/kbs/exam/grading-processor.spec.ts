@@ -67,27 +67,26 @@ describe('KbsGradingProcessor', () => {
       expect(examService.gradeExam).toHaveBeenCalledWith('ex1');
     });
 
-    it('routes GRANT_KCA_ROLE jobs correctly', async () => {
-      const job = makeJob(KBS_JOBS.GRANT_KCA_ROLE, {
-        userId: 'u1',
-        examId: 'ex1',
-      });
-
-      await processor.process(job);
-
-      expect(usersService.addRole).toHaveBeenCalledWith('u1', 'KCA_CERTIFIED');
+    /**
+     * The KCA role grant is gone from this processor entirely.
+     *
+     * It was unreachable after Q1 moved the grant to certificate issuance, and
+     * an unreachable path that hands out an authorization on a score - without
+     * even a `grantedBy` - is one `queue.add` away from reachable. The `kbs`
+     * queue was checked empty first (waiting 0, active 0, delayed 0, paused 0,
+     * failed 0; only historical completions carried the name), so no in-flight
+     * job could be orphaned by removing it.
+     *
+     * It now falls to the default branch and throws, like any other name this
+     * processor does not handle.
+     */
+    it('no longer routes the retired KCA role grant - it throws like any unknown name', async () => {
+      await expect(
+        processor.process(makeJob('kbs.grant-kca-role', { userId: 'u1' })),
+      ).rejects.toThrow(/Unknown KBS job: kbs\.grant-kca-role/);
+      expect(usersService.addRole).not.toHaveBeenCalled();
     });
 
-    /**
-     * This test used to assert `toBeNull()`, and it was green for exactly as
-     * long as the defect existed. A resolved promise marks a BullMQ job
-     * completed, so returning null for an unrecognised name reports success for
-     * work never done: rename a constant, deploy, and every job of that kind
-     * drains from the queue with a green tick.
-     *
-     * A test can pin a defect as firmly as it pins a fix. The assertion was
-     * correct about the code and wrong about the requirement.
-     */
     it('throws on an unknown job name, so BullMQ fails it instead of completing it', async () => {
       await expect(processor.process(makeJob('unknown.job', {}))).rejects.toThrow(
         /Unknown KBS job: unknown\.job/,
@@ -117,7 +116,7 @@ describe('KbsGradingProcessor', () => {
       await processor.process(job);
 
       expect(queue.add).not.toHaveBeenCalledWith(
-        KBS_JOBS.GRANT_KCA_ROLE,
+        'kbs.grant-kca-role',
         expect.anything(),
         expect.anything(),
       );
@@ -147,7 +146,7 @@ describe('KbsGradingProcessor', () => {
       await processor.process(job);
 
       // No KCA role enqueued
-      expect(queue.add).not.toHaveBeenCalledWith(KBS_JOBS.GRANT_KCA_ROLE, expect.anything(), null);
+      expect(queue.add).not.toHaveBeenCalledWith('kbs.grant-kca-role', expect.anything(), null);
 
       // Fail email with retake info
       expect(emailService.sendUpdate).toHaveBeenCalledWith(
