@@ -227,6 +227,45 @@ through a real attempt. That is one ephemeral ECS task on `kambriq-dev-api:100`,
 all four modules in the single task, nothing surviving it.
 **Cost: none.**
 
+### A3 — Every verification email carried a dead link — `EN COURS`
+
+Found by taking checklist item 1 for real: registering on dev, fetching the mail
+from the recipient's mailbox, and opening the link.
+
+```
+<a href="https://dev.kambriq.com/verify-email?token=[object Promise]">
+```
+
+`auth.service.ts:95` called `createVerificationToken` — an `async` method —
+**without `await`**, so the template literal interpolated the Promise itself.
+Lines 341 and 372 (resend, password reset) had the `await`. Registration, the one
+path every new user takes, did not.
+
+**Every layer reported success.** The queue accepted the job, the worker rendered
+the template, SES delivered, `Send` and `Delivery` both recorded 1.0, the mailbox
+received a well-formed email. The only party who could see the failure was the
+recipient, and there had never been one. **No user has ever been able to verify
+their address on dev.** That is delivery-checklist item 1, and B1 proving a send
+did not prove it — a send is not a signup.
+
+**Decision:** the `await`, plus a guard at the one place every template argument
+passes through. `EmailService.send` now throws when any argument stringifies to
+`[object …]`. That is never content; it is what a missing `await` looks like by
+the time it reaches a template. `${await f()}` and `${f()}` differ by five
+characters and the type system cannot separate them — both produce a `string`.
+The guard covers every template at once, including ones not written yet.
+
+**The existing test passed throughout.** It asserted `email.send` was called with
+the right `to`, `template` and `lang`, and never opened `args`. Asserting that an
+email was sent is not asserting that it is usable — the same shape as the quiz
+test in B3.
+
+**Proof:** mutation, taken. Removing the `await` fails _"puts the real
+verification token in the link, not an unresolved promise"_; removing the guard
+fails both `[object Promise]` and `[object Object]` cases. `EN COURS` until a
+real signup on dev completes verification and logs in.
+**Cost: none.**
+
 ### E1 — Stack traces in HTTP response bodies — `EN COURS`
 
 Found while taking the S1 live proof: a failed login returned
@@ -240,8 +279,20 @@ by accident, anyone who mistypes a password reads the internals.
 where it is useful and where it is not addressable by a stranger. There is no
 environment in which shipping it to the client is the right default, so it does
 not need to be a setting.
-**Proof:** by mutation. **Cost: none.** Folded into the B3 PR rather than queued —
-it is a three-line change and it was found on the way past.
+**Proof:** by mutation — putting the stack back under `NODE_ENV=development`
+fails _"omits the stack when NODE_ENV is development"_. Landed in webapp #47.
+
+**Half-done, and caught by probing rather than by reading.** The filter covers
+every exception Nest routes through it — and **not** an unmatched URL. Nest's
+not-found handler sits outside the global filter chain, so `GET /api/v1/nope`
+fell through to Express's default error page: an HTML body with the full stack,
+`/app/node_modules/.pnpm/...` paths, and the exact pinned version of every
+framework package (`@nestjs/core@11.1.17`, `router@2.2.0`, `class-validator`).
+A mistyped URL handed a stranger a dependency inventory. Closed in the A3 PR with
+an explicit JSON 404 handler registered **after** `app.init()` — `app.use()` hands
+middleware straight to Express and the router is not mounted until `init()`, so
+registering it a few lines earlier would have 404'd the entire API.
+**Cost: none.**
 
 ### T1 — Guards and roles untested — `DECIDE, A FAIRE`
 

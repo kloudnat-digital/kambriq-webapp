@@ -92,7 +92,7 @@ export class AuthService {
     }
 
     // Send verification email
-    const verificationToken = this.createVerificationToken(
+    const verificationToken = await this.createVerificationToken(
       user.id,
       VerificationTokenType.EMAIL_VERIFICATION,
     );

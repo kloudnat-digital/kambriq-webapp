@@ -117,6 +117,46 @@ describe('AuthService', () => {
       expect(result.user.roles).toContain(RoleCode.CLIENT);
       expect(result.tokens.accessToken).toBe('jwt-access-token');
     });
+
+    /**
+     * The link has to work, not merely be sent.
+     *
+     * `createVerificationToken` is async. Registration called it without
+     * `await`, so the template literal interpolated the Promise and every
+     * verification email went out with `?token=[object Promise]`. The send
+     * succeeded, SES delivered, the mailbox received it, and no new user could
+     * ever verify their address.
+     *
+     * The assertion above this one passed throughout: it checked `to`,
+     * `template` and `lang`, and never opened `args`. Asserting that an email
+     * was sent is not asserting that it is usable.
+     */
+    it('puts the real verification token in the link, not an unresolved promise', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue(buildUser({ id: 'user-1', email: dto.email }));
+      prisma.role.findUnique.mockResolvedValue(buildRole(RoleCode.CLIENT, { id: 'role-1' }));
+      prisma.userRole.create.mockResolvedValue({});
+      prisma.verificationToken.updateMany.mockResolvedValue({ count: 0 });
+      prisma.verificationToken.create.mockResolvedValue({});
+      prisma.refreshToken.create.mockResolvedValue({});
+
+      await service.register(dto);
+
+      // The token the service actually persisted.
+      const createArg = prisma.verificationToken.create.mock.calls[0]?.[0] as {
+        data: { token: string };
+      };
+      const persisted = createArg.data.token;
+      expect(persisted).toMatch(/^[0-9a-f]{64}$/);
+
+      const sendCalls = email.send.mock.calls as unknown as Array<
+        [{ args: { verificationUrl: string } }]
+      >;
+      const sendArg = sendCalls[0][0];
+      const sentUrl = sendArg.args.verificationUrl;
+      expect(sentUrl).toContain(`token=${persisted}`);
+      expect(sentUrl).not.toContain('[object');
+    });
   });
 
   // ----- LOGIN ----- //

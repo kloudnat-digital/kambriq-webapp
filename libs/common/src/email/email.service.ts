@@ -31,7 +31,32 @@ export class EmailService {
 
   constructor(@InjectQueue(QUEUES.NOTIFICATIONS) private readonly notifQueue: Queue) {}
 
+  /**
+   * An interpolation argument that stringifies to `[object Promise]` or
+   * `[object Object]` is always a defect, never content. It is what a missing
+   * `await` looks like by the time it reaches a template: the send succeeds,
+   * SES delivers, the user receives the mail, and the link in it is dead. That
+   * failure is invisible from every side except the recipient's.
+   *
+   * `${await f()}` and `${f()}` differ by five characters and nothing in the
+   * type system separates them - both produce a `string`. So the check is here,
+   * at the one place every template argument passes through, and it throws
+   * rather than warns: an auth email with a dead link is worse than no email.
+   */
+  private assertNoUnresolvedArgs(payload: EmailJobPayload): void {
+    for (const [key, value] of Object.entries(payload.args)) {
+      if (typeof value === 'string' && value.includes('[object ')) {
+        throw new Error(
+          `Email argument "${key}" contains an unresolved value for template ` +
+            `"${payload.template}" - this is a missing await, not content.`,
+        );
+      }
+    }
+  }
+
   async send(payload: EmailJobPayload): Promise<void> {
+    this.assertNoUnresolvedArgs(payload);
+
     await this.notifQueue.add(NOTIFICATIONS_JOBS.SEND_EMAIL, payload, {
       attempts: 3,
       backoff: {
