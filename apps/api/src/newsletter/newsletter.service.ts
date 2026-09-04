@@ -1,40 +1,28 @@
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SESv2Client, CreateContactCommand, CreateContactListCommand } from '@aws-sdk/client-sesv2';
+import { SESv2Client, CreateContactCommand } from '@aws-sdk/client-sesv2';
 
 @Injectable()
 export class NewsletterService {
   private readonly logger = new Logger(NewsletterService.name);
-  private readonly sesClient: SESv2Client | null;
+  private readonly sesClient: SESv2Client;
   private readonly contactListName: string;
 
   constructor(private readonly config: ConfigService) {
-    const accessKeyId = this.config.get<string>('AWS_ACCESS_KEY_ID');
-    const secretAccessKey = this.config.get<string>('AWS_SECRET_ACCESS_KEY');
-    const region = this.config.get<string>('AWS_REGION', 'eu-west-3');
+    const region = this.config.get<string>('AWS_REGION', 'eu-central-1');
     this.contactListName = this.config.get<string>(
       'AWS_SES_CONTACT_LIST_NAME',
       'kambriq-newsletter',
     );
 
-    if (accessKeyId && secretAccessKey) {
-      this.sesClient = new SESv2Client({
-        region,
-        credentials: { accessKeyId, secretAccessKey },
-      });
-      this.logger.log('SES contact list configured successfully');
-    } else {
-      this.sesClient = null;
-      this.logger.warn('SES not configured - subscriptions will be logged to console.');
-    }
+    // No explicit credentials: the default provider chain resolves the ECS task
+    // role on Fargate and the developer profile locally. The previous static-key
+    // gate meant the client was never built in any deployed environment, so
+    // subscribe() resolved successfully while storing nothing.
+    this.sesClient = new SESv2Client({ region });
   }
 
   async subscribe(email: string): Promise<void> {
-    if (!this.sesClient) {
-      this.logger.log(`[dev-newsletter] Subscribe: ${email}`);
-      return;
-    }
-
     try {
       await this.sesClient.send(
         new CreateContactCommand({
@@ -47,27 +35,8 @@ export class NewsletterService {
       if (error instanceof Error && error.name === 'AlreadyExistsException') {
         throw new ConflictException('This email is already subscribed.');
       }
-      throw error;
-    }
-  }
-
-  // Called once on app startup to ensure the contact list exists.
-  async ensureContactList(): Promise<void> {
-    if (!this.sesClient) return;
-
-    try {
-      await this.sesClient.send(
-        new CreateContactListCommand({ ContactListName: this.contactListName }),
-      );
-      this.logger.log(`Contact list '${this.contactListName}' created`);
-    } catch (error: unknown) {
-      if (error instanceof Error && error.name === 'AlreadyExistsException') {
-        return;
-      }
-      if (error instanceof Error && error.name === 'AccessDeniedException') {
-        this.logger.warn(`No permission to create contact list - assuming it already exists`);
-        return;
-      }
+      // Anything else propagates. There is deliberately no degraded path: a
+      // subscription that cannot be stored must not look like one that was.
       throw error;
     }
   }

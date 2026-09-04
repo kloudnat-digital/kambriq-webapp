@@ -261,9 +261,10 @@ pnpm test:cov:common   # libs/common only → coverage/libs/common/
 | `AWS_ACCESS_KEY_ID`      | AWS credentials                         | -                       |
 | `AWS_SECRET_ACCESS_KEY`  | AWS credentials                         | -                       |
 | `AWS_S3_BUCKET`          | S3 bucket name for file uploads         | `kambriq-uploads`       |
-| `AWS_REGION`             | AWS region                              | `eu-west-3`             |
+| `AWS_REGION`             | AWS region                              | `eu-central-1`          |
 | `EMAIL_FROM`             | Sender email address                    | `noreply@kambriq.com`   |
 | `EMAIL_FROM_NAME`        | Sender display name                     | `KAMBRIQ`               |
+| `EMAIL_TRANSPORT`        | `ses` sends mail, `console` only logs   | `ses`                   |
 | `FRONTEND_URL`           | Frontend origin (used in email links)   | `http://localhost:3001` |
 | `SALT_ROUNDS`            | bcrypt salt rounds for password hashing | `12`                    |
 
