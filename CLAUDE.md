@@ -117,349 +117,31 @@ top level of the JSON, which is what the migration buys.
 changes, and it should not ride along with a change whose value is that it is
 mechanical. **Cost: none.**
 
-### B3 — Seed: KBS not demonstrable — `EN COURS`
-
-Seed ran once, 2026-02-26. `KbsQuestion` and `KbsExam` were empty, so the largest
-module (21 routes) could not be exercised. `LandMedia` / `LandDocument` are empty
-too and stay that way — they need real files, and S1 has only just unblocked that.
-
-**What ships.** A bank of **120 questions** in `prisma/seed-data/kbs-questions.ts`,
-30 per bank across four banks: quiz module 1, quiz module 2, exam module 1, exam
-module 2. Seeded as 60 quiz questions (30 per module) and 60 exam questions, each
-with four answers and exactly one correct.
-
-**Sizing, and the ratio written down.** The quiz draws 10 per module against a
-per-module pool of 30 — **3.0×**. The exam draws `examQuestionCount` = 20 against
-a pool of 60 — **3.0×**. Both sit above the shortfall thresholds with room for a
-question to be retired without anyone re-deriving the arithmetic.
-
-**Zero `KbsExam` rows, deliberately.** An exam row is a candidate's attempt, not
-reference data. Seeding attempts would fabricate history.
-
-**The five certificates are seeded artefacts, not earned certifications.** They
-exist against zero exam rows: nobody sat anything. They are there so the
-certificate list and PDF routes have something to render. Do not read them as
-evidence that the grading path works — that is what B3's live proof is for.
-
-**Deterministic answer position, and the trade.** The correct answer's position is
-derived from the running global index through `POSITION_CYCLE`, not from the
-position the author happened to type. The first draft had `isCorrect: a === 1` for
-every question: the correct answer was always option 1, so a grader bug that
-always marks option 1 correct would have graded 100%. That is a test that cannot
-fail — this project's recurring defect, appearing inside the fix for the recurring
-defect. The trade accepted in exchange: the layout is predictable to anyone who
-reads the seed file. Acceptable for dev fixture data, and it would not be
-acceptable for a bank used in production.
-
-**Per-bank distribution, measured rather than assumed.** Bounds are asserted per
-bank at `[floor(N/4), ceil(N/4)]` = `[7,8]` for 30, with a maximum run of 3 —
-never on the aggregate, which can look level while one bank is skewed. Measured
-in the seeded database: quiz M1 `7/7/8/8`, quiz M2 `8/8/7/7`, exam M1 `8/8/7/7`,
-exam M2 `7/7/8/8`. The concern that raised this was right and the scheme survived
-it. The alternative — indexing per bank — was **tested rather than adopted**, and
-it was worse: four identical `7/7/8/8` banks and a global `28/28/32/32`. That is
-how we know the running global index is doing real work.
-
-**Editorial and legal caveat — read this before reusing the bank anywhere.**
-This is dev seed content. It has had **no editorial and no legal validation pass**.
-It is fit to prove the engine and the journey; it is **not fit to teach** until
-somebody qualified has read it. `apps/web/src/content/methode/fr.mdx` is the
-single authoritative source for the three label definitions — TFL, VEFL, VEFIL —
-for the question bank and for editorial content alike. The pinning test in
-`apps/api/src/__test__/seed/kbs-label-definitions.spec.ts` covers **the bank
-only**. The published season 2 corpus never defines the three labels, so nothing
-wrong is public. **Season 3 launches Tuesday 8 September and its entire subject is
-those three labels**; it needs its own anchoring to the same source, and that is
-Visquis's work, not this register's.
-
-**Why a mechanism and not more care.** Writing this bank I regenerated the VEFL
-definition from fluent generation without reading `fr.mdx`, and implied a VEFL
-parcel has no title. The authoritative text says the opposite: _"Le titre foncier
-existe déjà - l'immatriculation est faite"_. That is the inverse of the product,
-in agent training material. Commits `1691b67` and `21ceed7` had already corrected
-these definitions **twice**. Vigilance had failed twice; it does not get a third
-try. The pinning test fails when the bank contradicts the mdx **and** when the mdx
-itself moves, and it says in its own comment that it cannot verify legal
-correctness — a green run is not a legal review.
-
-**Guards folded into this PR, not reported for later.**
-
-- `exam.service.ts` — `ensureQuestionPoolAvailable` was `poolSize === 0`. A pool
-  of 19 against a required 20 produced a 19-question certification exam with no
-  wrong number anywhere: `totalQuestions` came from `shuffled.length` and the
-  score divided by that, so a 4/5 became 80% and the candidate was certified. Now
-  `poolSize < required`, and the message names both numbers.
-- `courses.service.ts` — the same shortfall per module on the quiz path.
-- Both messages carry `(pool N, requis M)`. A generic _"no questions"_ sends
-  whoever is on call looking for an empty table.
-
-**Proof — mutation, taken.** Restoring `poolSize === 0` fails _"refuses to start,
-loudly, when the pool is one question short"_. Shrinking the draw to
-`questionCount - 1` fails 2 tests. Stripping the numbers from the message fails 1.
-Reintroducing the historical VEFL error fails the label pin; moving the mdx line
-fails it from the other side. 174 tests green with all mutations reverted.
-
-**Proof — idempotency, taken locally.** Throwaway PostgreSQL 15 cluster, four
-databases, `migrate deploy` ×4, then `tsx prisma/seed.ts` twice. Counts after run
-1 and after run 2 are byte-identical:
-
-```
-core.User 9        kbs.KbsQuestion (quiz) 60     kbs.KbsCandidate 5
-core.Role 8        kbs.KbsAnswer (quiz)  240     kbs.KbsCertificate 5
-kbs.KbsModule 2    kbs.KbsExamQuestion    60     kbs.KbsExam 0
-kbs.KbsCourse 1    kbs.KbsExamQuestionAnswer 240 kamnet.KamnetAgent 5
-kbs.KbsLesson 6                                  lands.Land 5
-```
-
-The second run created nothing. Referential integrity checked in the seeded
-database: zero questions with anything other than exactly one correct answer, in
-either bank.
-
-**A near miss worth recording.** The first ID generator reused prefixes `c`, `d`
-and `e`, all already taken by existing `IDS` (roles `a`, users `b`, KBS `c`,
-kamnet `d`, lands `e`). An upsert on a colliding ID **overwrites a real row**.
-Only `f` was free. It also emitted a 10-character final UUID segment where 12 are
-required, which would have failed on the first insert.
-
-**`EN COURS`, not `PROUVE`.** The remaining proof needs the deployed environment:
-a quiz returning 10, an exam returning 20, and the certificate count moving 5 → 6
-through a real attempt. That is one ephemeral ECS task on `kambriq-dev-api:100`,
-all four modules in the single task, nothing surviving it.
-**Cost: none.**
-
-### K2 — The candidate who finished everything and was told to finish — `EN COURS`
-
-With K1 deployed, both quizzes scored 100 and passed. Then:
-
-```
-GET /kbs/exam/eligibility
-{"eligible":false,"reason":"Terminez tous les modules du programme avant de passer l'examen."}
-```
-
-Told to finish the modules they had just finished.
-
-`checkAndTransitionToExamPending` reads `kbsSettings.activeCourseId` and, when it
-is null, **returns**. No throw, no log, no field in the response. **The seed never
-set it.** So the transition to `EXAM_PENDING` could not run, and the candidate
-stayed `IN_TRAINING` for ever. `me/overview` answered `course: null,
-modulesTotal: 0` to somebody who had just completed six lessons — same line, same
-cause.
-
-**Decision:** the seed sets `activeCourseId`, on `create` **and on `update`** —
-any environment seeded before this already has the settings row, so a
-create-only fix leaves it null exactly where the defect was observed. And the
-early return logs at `error` naming the field to set: the state is recoverable by
-an admin, but only once somebody knows to look.
-
-**The defect was shielding the gap in its own coverage.** `kbsCandidate.updateMany`
-— the call that performs the transition — **was not in the shared prisma mock at
-all**. No test ever reached it, because every test read a null `activeCourseId`
-from those same mocks and returned first. Adding the two tests required adding
-the mock.
-
-**Proof:** mutation, taken. Removing the log fails 1; reverting the seed's
-`update` branch to `{}` fails 1. `EN COURS` until a candidate reaches
-`EXAM_PENDING` on dev. **Cost: none.**
-
-### K1 — A perfect quiz scored 33% — `EN COURS`
-
-The first quiz submission that ever reached the grader, on the reset dev:
-
-```
-{"score":33,"passed":false,"correctCount":10,"totalQuestions":30}
-```
-
-Ten questions asked, ten answered correctly, **33%, failed**.
-
-`submitQuiz` computed `correctCount / questions.length`, where `questions` is
-every question in the module. `findQuestionsForQuiz` serves `quizQuestionCount`
-of them. Pool 30, quiz 10, perfect score 33% — below the 70% pass mark, so
-**nobody could pass a quiz, and nobody could reach the exam.** The whole KBS
-journey ended at the first module.
-
-**B3 is what exposed it.** The module pools held five questions, the draw was
-`min(5, 10) = 5`, pool and served set were the same number, and the denominator
-was accidentally right. Seeding a real bank made the two quantities differ for
-the first time. The same shape as the coverage denominator: arithmetic that
-stays internally consistent while measuring the wrong population.
-
-**The tests could not have caught it.** Both `submitQuiz` tests used a pool of
-two questions and submitted two answers. `correctCount / questions.length` and
-`correctCount / quizLength` are indistinguishable when the two are equal. **A
-fixture where two different quantities happen to be the same number cannot tell
-you which one the code used** — that is the third time this week a test was
-green because its fixture collapsed the distinction it existed to check.
-
-**Decision:** score over the quiz length. A submission that does not cover the
-whole quiz is **refused, with both numbers**, rather than normalised: scoring a
-partial submission out of the full length guesses at intent, and scoring it out
-of its own length lets a client send its one confident answer and score 100%.
-
-**Proof:** mutation, taken. Restoring `questions.length` fails 2; removing the
-completeness check fails 1. Fixtures now hold pool 30 against quiz 10.
-`EN COURS` until a candidate passes a quiz on dev. **Cost: none.**
-
-**Checked, not assumed:** `gradeExam` divides by `exam.totalQuestions`, the count
-recorded when the exam was served. That one is right.
-
-### N2 — The global exception filter never ran — `EN COURS`
-
-Probing dev after the A3 deploy, not reading code, found it:
-
-```
-POST /auth/login  wrong password   401  text/html   <pre>UnauthorizedException ... at AuthService.login
-GET  /users/me    no token         401  text/html
-GET  /nope                         404  text/html   ... /app/node_modules/.pnpm/@nestjs+core@11.1.17/...
-POST /auth        bad body         400  application/json   {"success":false,...}   <- the only correct one
-```
-
-**Root cause.** `PrismaExceptionFilter` is `@Catch()` — a catch-all — and Nest
-selects the **last-registered** matching filter. It is registered after
-`GlobalExceptionFilter`, so it wins for every exception, and for anything
-non-Prisma it did `throw exception`. A throw from inside a filter is not
-"pass it along": it escapes Nest's exception layer into **Express's default
-error handler**, which answers with an HTML page carrying the full stack. Only
-validation errors looked right, because `ZodExceptionFilter` is
-`@Catch(ZodValidationException)` and handles its own.
-
-`GlobalExceptionFilter` **never executed once**, in any environment, ever.
-
-**Two chantiers were resting on that filter.** E1 removed the stack from a body
-this filter builds — a body no client had received. N1's envelope contract held
-on success paths and on nothing else: every error response broke it.
-
-**And my own account of E1 was wrong.** I recorded the leak as "the
-`NODE_ENV === 'development'` branch in the global exception filter". The HTML
-shape said otherwise and I did not read it. The `NODE_ENV` branch was real and
-worth removing; it was not what leaked.
-
-**Decision:** `PrismaExceptionFilter` delegates to `GlobalExceptionFilter`
-instead of rethrowing, so the chain always terminates in a JSON envelope
-regardless of which filter Nest picks. Also removes the not-found middleware
-attempted earlier in the A3 PR: it was registered after an explicit `app.init()`
-and could never run, because Nest mounts its own not-found **route** during
-`init()`. Deployed, and it did not fire once.
-
-**The mechanism: test the chain, not the filter.**
-`global-exception.filter.spec.ts` calls the filter directly. It was green
-throughout the period the filter never ran, and it stays green under the
-mutation that restores the defect — 57 of 57. A unit test of a filter proves the
-filter; it cannot prove the filter is reached. The new test boots a real HTTP
-server with `main.ts`'s exact `useGlobalFilters` wiring and reads what a client
-receives. Restoring `throw exception` fails 5 of its cases.
-
-**Proof:** mutation, taken. `EN COURS` until dev answers JSON on 401, 403, 404
-and an unmatched URL. **Cost: none.**
-
-### S2 — Every seeded identifier is rejected by the API's own validation — `EN COURS`
-
-Found by taking the B3 live proof: the quiz served 10 questions, and submitting
-answers to them returned
-
-```
-400  {"field":"answers.0.questionId","message":"Invalid UUID","code":"invalid_format"}
-```
-
-The seed writes `00000000-0000-0000-0000-<prefix><counter>` — **47 hardcoded ids
-and 480 generated ones, 47 of 47 rejected**. PostgreSQL stores them happily; as
-far as the `uuid` column is concerned they are valid. `z.uuid()` is not: RFC 4122
-puts the version in the first nibble of group 3 (1-8) and the variant in the
-first nibble of group 4 (8, 9, a or b), and the seed wrote `0` for both.
-
-**Twenty-three request-body fields across KBS, KAMNET and LANDS are declared
-`z.uuid()`.** A tester sending a seeded id to any of them gets a 400 that reads
-like their own mistake. Submitting a quiz answer, saving an exam answer,
-attaching a lead to a seeded parcel — all unreachable with the data seeded for
-exactly that purpose. This is delivery-checklist item 3, and B3 could not have
-met it.
-
-**Why nothing caught it.** The two systems disagreed silently. The write side
-(Prisma → Postgres) accepted the value and the read side returned it; only a
-request carrying an id in a **body** ever met the stricter rule, and no test
-did that.
-
-**Decision:** the seed emits RFC-valid ids — same prefix scheme, version nibble
-`4` and variant nibble `8`, so `…-a00000000001` becomes
-`00000000-0000-4000-8000-a00000000001` and the a/b/c/d/e/f convention is intact.
-A test runs every id the seed emits — literals and both generators, 600 of them —
-through the same validator the controllers use, and asserts the literal count is
-above 40 so an empty match cannot read as a pass.
-**Proof:** mutation, taken, on a literal and on a generator.
-**Cost: none.**
-
-**Blocked on a decision — see `D1` below.** New ids mean the rows already on dev
-are the old ones. A re-seed keyed on the new ids would not replace them: roles
-and questions would double, and `kbsCandidate.userId` would point at user ids
-that no longer exist. Dev needs a clean reset for this to land.
-
-### A3 — Every verification email carried a dead link — `EN COURS`
-
-Found by taking checklist item 1 for real: registering on dev, fetching the mail
-from the recipient's mailbox, and opening the link.
-
-```
-<a href="https://dev.kambriq.com/verify-email?token=[object Promise]">
-```
-
-`auth.service.ts:95` called `createVerificationToken` — an `async` method —
-**without `await`**, so the template literal interpolated the Promise itself.
-Lines 341 and 372 (resend, password reset) had the `await`. Registration, the one
-path every new user takes, did not.
-
-**Every layer reported success.** The queue accepted the job, the worker rendered
-the template, SES delivered, `Send` and `Delivery` both recorded 1.0, the mailbox
-received a well-formed email. The only party who could see the failure was the
-recipient, and there had never been one. **No user has ever been able to verify
-their address on dev.** That is delivery-checklist item 1, and B1 proving a send
-did not prove it — a send is not a signup.
-
-**Decision:** the `await`, plus a guard at the one place every template argument
-passes through. `EmailService.send` now throws when any argument stringifies to
-`[object …]`. That is never content; it is what a missing `await` looks like by
-the time it reaches a template. `${await f()}` and `${f()}` differ by five
-characters and the type system cannot separate them — both produce a `string`.
-The guard covers every template at once, including ones not written yet.
-
-**The existing test passed throughout.** It asserted `email.send` was called with
-the right `to`, `template` and `lang`, and never opened `args`. Asserting that an
-email was sent is not asserting that it is usable — the same shape as the quiz
-test in B3.
-
-**Proof:** mutation, taken. Removing the `await` fails _"puts the real
-verification token in the link, not an unresolved promise"_; removing the guard
-fails both `[object Promise]` and `[object Object]` cases. `EN COURS` until a
-real signup on dev completes verification and logs in.
-**Cost: none.**
-
-### E1 — Stack traces in HTTP response bodies — `EN COURS`
-
-Found while taking the S1 live proof: a failed login returned
-`AuthService.login (/app/dist/apps/api/main.js:2758)` to an **unauthenticated**
-caller. It was the `NODE_ENV === 'development'` branch of the global exception
-filter, so it was correct for dev — and it means the day prd runs with that value
-by accident, anyone who mistypes a password reads the internals.
-
-**Decision:** remove the stack from the response body entirely, regardless of
-`NODE_ENV`. The stack stays in the log (`global-exception.filter.ts:39`), which is
-where it is useful and where it is not addressable by a stranger. There is no
-environment in which shipping it to the client is the right default, so it does
-not need to be a setting.
-**Proof:** by mutation — putting the stack back under `NODE_ENV=development`
-fails _"omits the stack when NODE_ENV is development"_. Landed in webapp #47.
-
-**Half-done, and caught by probing rather than by reading.** The filter covers
-every exception Nest routes through it — and **not** an unmatched URL. Nest's
-not-found handler sits outside the global filter chain, so `GET /api/v1/nope`
-fell through to Express's default error page: an HTML body with the full stack,
-`/app/node_modules/.pnpm/...` paths, and the exact pinned version of every
-framework package (`@nestjs/core@11.1.17`, `router@2.2.0`, `class-validator`).
-A mistyped URL handed a stranger a dependency inventory. The A3 PR attempted a JSON 404
-handler registered after an explicit `app.init()`. **It was deployed and it never
-fired**, because Nest mounts its own not-found _route_ during `init()`, ahead of
-anything registered afterwards. The real cause was N2 below, and the attribution
-in this entry — "the `NODE_ENV === 'development'` branch in the global exception
-filter" — was **wrong**: that filter had never run. Closed by N2.
-**Cost: none.**
+### Q1 — `CERTIFIED` with no certificate — `A DECIDER`
+
+Observed while taking the B3 proof. Passing the exam sets the candidate to
+`CERTIFIED` and issues nothing. `GET /kbs/certificate/me` answered
+`{"success":true,"data":null}` to a candidate the system had just called
+certified. Issuance is a separate admin action,
+`POST /kbs/admin/certificates/:candidateId`, and the certificate only appeared
+when I called it.
+
+That may well be deliberate — a human check before a credential is issued is a
+defensible product decision, and it is what the five seeded certificates
+represent. But **the two facts disagree in the API today**: one endpoint says
+certified, another says there is nothing. Whoever builds the candidate screen
+will have to decide what to show, and guessing is how a "your certificate is
+being prepared" becomes a "you are not certified".
+
+**Not decided here.** Either issuance follows a pass automatically, or the status
+distinguishes "passed, awaiting issuance" from "certified". The first is a
+product call, the second is a schema change. **Cost: none either way.**
+
+**Also noticed:** `generateKcaNumber`'s comment says `KCA-YYYYMMDD-NNNN
+(sequential per day)`, and it produced `KCA-20260904-N4OY` — a random suffix, not
+a sequence. The seeded numbers follow the documented form (`KCA-20250101-0001`),
+so the two do not match. Harmless today; it will not be harmless the first time
+somebody sorts or parses them.
 
 ### T1 — Guards and roles untested — `DECIDE, A FAIRE`
 
@@ -590,16 +272,23 @@ before prd sends anything, independently of cost.
 
 ## Proven
 
-| ID  | Chantier                                                                                                                                               | Closed by                         | Proof                                                                                                                                                                                                                                                                                                                                                  | Cost                                                                |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
-| B1  | SES: the API had never sent an email. Static-credential gate, no `ses:` grant, and the MessageId was never logged                                      | infra #16 #17 #18; webapp #39 #41 | `messageId=010701a06a9fd24c-51cc2bd1-7d70-4715-a7a0-ee582c49ea1e-000000`; `AWS/SES Send` 1.0 and `Delivery` 1.0 at 03:43 and 04:14, `Bounce` none, from zero datapoints before                                                                                                                                                                         | Contact list free; two IAM policies free; one SSM parameter removed |
-| S1  | Storage: `S3Client` gated on `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`, never set on Fargate. Every upload and download dead on dev since February | webapp #44                        | Round-trip on dev, `8003ddb` / task def `:100`: presigned URL signed with `ASIAQYAF4F4JDB6N4PDM` — STS credentials from the **task role**, the thing the gate was blocking; PUT 200; `head-object kambriq-media-dev` size 35, etag `333c6389…`; download URL 200; content identical. Mutation: restoring the gate fails 7 of 47 tests in `libs/common` | None — the IAM grants already existed in `iam-media.tf`             |
-| C2  | Middleware decision untested. A redirect loop shipped May 2026, fixed by accident in August, unnoticed                                                 | webapp #38                        | 101 tests; removing `!isPublic(pathname)` fails 18. e2e public routes 5 → 20                                                                                                                                                                                                                                                                           | None                                                                |
-| C1  | Coverage measured only over files a test already imported; `apps/web` never ran in CI                                                                  | webapp #37                        | api 70.8% → **29.8%** (16 of 60 files were measured); four modules at 0.0%                                                                                                                                                                                                                                                                             | None                                                                |
-| D1  | Prisma baseline: four dev databases under Migrate, `db push --accept-data-loss` unreachable                                                            | webapp #34 #35 #36                | `migrate deploy` ×4, "No pending migrations" ×4, no `db push`                                                                                                                                                                                                                                                                                          | None                                                                |
-| A1  | e2e uploaded an empty report every run while reporting green                                                                                           | webapp #32                        | `playwright-report` 207 530 bytes, was absent                                                                                                                                                                                                                                                                                                          | None                                                                |
-| A2  | `scripts/smoke-test.sh` died on its first passing check under `set -e`                                                                                 | infra #15                         | 8 passed / 0 failed under the CI OIDC role                                                                                                                                                                                                                                                                                                             | None                                                                |
-| L1  | The SES MessageId was logged in a metadata object that `nestjs-pino` drops                                                                             | webapp #41                        | Mutation: restoring the object form fails 1 of 30 tests                                                                                                                                                                                                                                                                                                | None                                                                |
+| ID  | Chantier                                                                                                                                                                                                                                            | Closed by                         | Proof                                                                                                                                                                                                                                                                                                                                                  | Cost                                                                |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| B1  | SES: the API had never sent an email. Static-credential gate, no `ses:` grant, and the MessageId was never logged                                                                                                                                   | infra #16 #17 #18; webapp #39 #41 | `messageId=010701a06a9fd24c-51cc2bd1-7d70-4715-a7a0-ee582c49ea1e-000000`; `AWS/SES Send` 1.0 and `Delivery` 1.0 at 03:43 and 04:14, `Bounce` none, from zero datapoints before                                                                                                                                                                         | Contact list free; two IAM policies free; one SSM parameter removed |
+| B3  | KBS not demonstrable: `KbsQuestion` and `KbsExamQuestion` empty since the seed's single run on 2026-02-26, so the largest module (21 routes) could not be exercised                                                                                 | webapp #47 #49 #50 #51            | Live on dev, `kambriq-dev-api:105`: quiz serves **10**, scores 100/10 and passes; exam serves **20**, `totalQuestions` 20, scores 100, `PASSED`; candidate `CERTIFIED`; **certificates 5 → 6** (`KCA-20260904-N4OY`), earned rather than seeded; `/kbs/public/verify` returns `valid: true`. Idempotency: two local runs, identical counts. 235 tests  | None                                                                |
+| K2  | A candidate who passed every module was told to "finish all the modules". `checkAndTransitionToExamPending` returned silently on a null `activeCourseId` that the seed never set; `me/overview` answered `course: null` for the same reason         | webapp #51                        | `EXAM_PENDING` and `eligible: true` on dev after the fix; `me/overview` returns the course. Mutation: removing the log fails 1, reverting the seed's `update` branch fails 1. `kbsCandidate.updateMany` was absent from the shared mock — the defect was shielding the gap in its own coverage                                                         | None                                                                |
+| K1  | A perfect quiz scored **33%**. The grader divided by the module pool (30) instead of the quiz length (10), so nobody could pass a quiz or reach the exam                                                                                            | webapp #50                        | `{"score":100,"correctCount":10,"totalQuestions":10,"passed":true}` on dev, both modules. Mutation: restoring `questions.length` fails 2, removing the completeness check fails 1. Fixtures now hold pool 30 against quiz 10 — the old ones used 2 against 2                                                                                           | None                                                                |
+| S2  | Every seeded identifier — 47 literals, 480 generated — was rejected by the API's own `z.uuid()`: version and variant nibbles both `0`. 23 request-body fields across KBS, KAMNET and LANDS were unreachable with seeded data                        | webapp #49                        | Quiz and exam submission accepted on dev after a clean reset and re-seed of the four databases. A test runs all 600 emitted ids through the controllers' own validator, and asserts the literal count is above 40 so an empty match cannot read as a pass                                                                                              | None                                                                |
+| N2  | `GlobalExceptionFilter` never executed, in any environment. `PrismaExceptionFilter` is `@Catch()`, wins as last-registered, and rethrew — escaping Nest into Express's HTML error page. Every 401/403/404/500 leaked a stack and broke the envelope | webapp #49                        | On dev: `GET /users/me` 401, `GET /nope` 404, wrong password 400 — all `application/json`, enveloped, no stack, no `node_modules`. Mutation: restoring the rethrow fails 5 chain tests while the 57 filter unit tests stay green                                                                                                                       | None                                                                |
+| E1  | Stack traces in HTTP response bodies, gated on `NODE_ENV`                                                                                                                                                                                           | webapp #47, closed by #49         | Mutation: restoring the `NODE_ENV` branch fails 1. The larger half was N2 — my first attribution of this leak to the filter's dev branch was wrong, and the not-found middleware I added in #48 deployed and never fired                                                                                                                               | None                                                                |
+| A3  | Every verification email carried `?token=[object Promise]`. `createVerificationToken` called without `await` on the registration path only. No user had ever been able to verify an address                                                         | webapp #48                        | Live on dev: signup → mail received at maildrop → `token=d5163844cd9a11ec…` (64 hex) → verify 200 → login 200. Login before verifying correctly refused. `EmailService.send` now throws on any `[object …]` argument, covering every template including ones not written yet                                                                           | None                                                                |
+| S1  | Storage: `S3Client` gated on `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`, never set on Fargate. Every upload and download dead on dev since February                                                                                              | webapp #44                        | Round-trip on dev, `8003ddb` / task def `:100`: presigned URL signed with `ASIAQYAF4F4JDB6N4PDM` — STS credentials from the **task role**, the thing the gate was blocking; PUT 200; `head-object kambriq-media-dev` size 35, etag `333c6389…`; download URL 200; content identical. Mutation: restoring the gate fails 7 of 47 tests in `libs/common` | None — the IAM grants already existed in `iam-media.tf`             |
+| C2  | Middleware decision untested. A redirect loop shipped May 2026, fixed by accident in August, unnoticed                                                                                                                                              | webapp #38                        | 101 tests; removing `!isPublic(pathname)` fails 18. e2e public routes 5 → 20                                                                                                                                                                                                                                                                           | None                                                                |
+| C1  | Coverage measured only over files a test already imported; `apps/web` never ran in CI                                                                                                                                                               | webapp #37                        | api 70.8% → **29.8%** (16 of 60 files were measured); four modules at 0.0%                                                                                                                                                                                                                                                                             | None                                                                |
+| D1  | Prisma baseline: four dev databases under Migrate, `db push --accept-data-loss` unreachable                                                                                                                                                         | webapp #34 #35 #36                | `migrate deploy` ×4, "No pending migrations" ×4, no `db push`                                                                                                                                                                                                                                                                                          | None                                                                |
+| A1  | e2e uploaded an empty report every run while reporting green                                                                                                                                                                                        | webapp #32                        | `playwright-report` 207 530 bytes, was absent                                                                                                                                                                                                                                                                                                          | None                                                                |
+| A2  | `scripts/smoke-test.sh` died on its first passing check under `set -e`                                                                                                                                                                              | infra #15                         | 8 passed / 0 failed under the CI OIDC role                                                                                                                                                                                                                                                                                                             | None                                                                |
+| L1  | The SES MessageId was logged in a metadata object that `nestjs-pino` drops                                                                                                                                                                          | webapp #41                        | Mutation: restoring the object form fails 1 of 30 tests                                                                                                                                                                                                                                                                                                | None                                                                |
 
 ---
 
