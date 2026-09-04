@@ -20,18 +20,20 @@ import {
   UserResponse,
 } from './dto/users.dto';
 import {
-  buildPaginatedResponse,
-  comparePassword,
   DEFAULT_LANGUAGE,
   EMAIL_CHANGE_TOKEN_EXPIRY_HOURS,
   EmailService,
   GRACE_PERIOD_DAYS,
-  hashPassword,
   IdVerificationStatus,
   PaginationQuery,
   RESET_TOKEN_EXPIRY_HOURS,
   StorageService,
   VerificationTokenType,
+  buildPaginatedResponse,
+  changedKeys,
+  comparePassword,
+  hashPassword,
+  maskEmail,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 import crypto from 'crypto';
@@ -150,7 +152,7 @@ export class UsersService {
       args: { firstName: user.firstName },
     });
 
-    this.logger.log('User changed their password', { userId });
+    this.logger.log('User changed their password %o', { userId });
     return { message: this.t('user.password.changeSuccess', lang) };
   }
 
@@ -179,7 +181,7 @@ export class UsersService {
       },
     });
 
-    this.logger.log('User deleted their account', { userId });
+    this.logger.log('User deleted their account %o', { userId });
     return {
       message: this.t('user.deleteSuccess', lang, { days: GRACE_PERIOD_DAYS }),
     };
@@ -263,7 +265,9 @@ export class UsersService {
       });
     }
 
-    this.logger.log('Admin updated user', { userId, changes: dto, adminId });
+    // Log which fields changed, never their values: the DTO can carry an email,
+    // a phone number, a name or a role change.
+    this.logger.log('Admin updated user %o', { userId, changed: changedKeys(dto), adminId });
     return await this.toUserResponse(await this.findByIdOrThrow(userId));
   }
 
@@ -285,7 +289,7 @@ export class UsersService {
       data: { revokedAt: new Date() },
     });
 
-    this.logger.log('Admin blocked user', { userId, adminId });
+    this.logger.log('Admin blocked user %o', { userId, adminId });
 
     await this.emailService.send({
       to: user.email,
@@ -318,7 +322,7 @@ export class UsersService {
       },
     });
 
-    this.logger.log('Admin unblocked user', { userId, adminId });
+    this.logger.log('Admin unblocked user %o', { userId, adminId });
 
     await this.emailService.send({
       to: user.email,
@@ -494,7 +498,7 @@ export class UsersService {
       args: { firstName: user.firstName, newEmail, confirmUrl },
     });
 
-    this.logger.log('Email change requested', { userId, newEmail });
+    this.logger.log('Email change requested %o', { userId, newEmail: maskEmail(newEmail) });
     return { message: this.t('user.email.changeRequested', lang) };
   }
 
@@ -561,7 +565,11 @@ export class UsersService {
       args: { firstName: user.firstName, newEmail },
     });
 
-    this.logger.log('Email change confirmed', { userId, oldEmail, newEmail });
+    this.logger.log('Email change confirmed %o', {
+      userId,
+      oldEmail: maskEmail(oldEmail),
+      newEmail: maskEmail(newEmail),
+    });
     return { message: this.t('user.email.changeSuccess', lang) };
   }
 
@@ -597,7 +605,7 @@ export class UsersService {
       },
     });
 
-    this.logger.log('ID document submitted', { userId });
+    this.logger.log('ID document submitted %o', { userId });
     return this.getMe(userId);
   }
 
@@ -646,7 +654,7 @@ export class UsersService {
       },
     });
 
-    this.logger.log('ID document reviewed', { userId, status: dto.status, adminId });
+    this.logger.log('ID document reviewed %o', { userId, status: dto.status, adminId });
     return {
       message: this.t('user.idVerification.statusUpdated', DEFAULT_LANGUAGE, {
         status: dto.status,

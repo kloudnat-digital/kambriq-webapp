@@ -15,17 +15,18 @@ import {
   LandReservationFilterDto,
 } from '../dto/lands.dto';
 import {
-  buildPaginatedResponse,
   DOWN_PAYMENT_PERCENT,
   EmailService,
   KAMNET_JOBS,
-  LandStatus,
   LandClientDocumentType,
+  LandReservationStatus,
+  LandStatus,
   PaginationQuery,
   QUEUES,
-  LandReservationStatus,
   SaleCompletedJobPayload,
   StorageService,
+  buildPaginatedResponse,
+  maskEmail,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 
@@ -176,7 +177,7 @@ export class LandReservationsService {
       agentUser.profile,
     );
 
-    this.logger.log('Land reservation created', {
+    this.logger.log('Land reservation created %o', {
       reservationId: reservation.id,
       landId: dto.landId,
       agentUserId,
@@ -234,7 +235,7 @@ export class LandReservationsService {
       clientPrefs,
     );
 
-    this.logger.log('Reservation down payment confirmed', {
+    this.logger.log('Reservation down payment confirmed %o', {
       reservationId,
       adminUserId,
     });
@@ -274,7 +275,7 @@ export class LandReservationsService {
 
     await this.notifyClientStep(reservation, 'clientDocumentsValidated');
 
-    this.logger.log('Reservation documents received', { reservationId, adminUserId });
+    this.logger.log('Reservation documents received %o', { reservationId, adminUserId });
     return { message: this.t('lands.reservation.documentsReceived') };
   }
 
@@ -296,7 +297,7 @@ export class LandReservationsService {
 
     await this.notifyClientStep(reservation, 'paymentConfirmed');
 
-    this.logger.log('Reservation remaining payment confirmed', { reservationId, adminUserId });
+    this.logger.log('Reservation remaining payment confirmed %o', { reservationId, adminUserId });
     return { message: this.t('lands.reservation.remainingPaymentConfirmed') };
   }
 
@@ -318,7 +319,7 @@ export class LandReservationsService {
 
     await this.notifyClientStep(reservation, 'dossierStarted');
 
-    this.logger.log('Reservation dossier started', { reservationId, adminUserId });
+    this.logger.log('Reservation dossier started %o', { reservationId, adminUserId });
     return { message: this.t('lands.reservation.dossierStarted') };
   }
 
@@ -345,7 +346,7 @@ export class LandReservationsService {
       }),
     ]);
 
-    this.logger.log('Land sale completed', {
+    this.logger.log('Land sale completed %o', {
       reservationId,
       landId: reservation.landId,
       adminUserId,
@@ -415,7 +416,7 @@ export class LandReservationsService {
       cancelPrefs,
     );
 
-    this.logger.log('Reservation cancelled', {
+    this.logger.log('Reservation cancelled %o', {
       reservationId,
       landId: reservation.landId,
       reason: dto.reason,
@@ -662,7 +663,9 @@ export class LandReservationsService {
       phone,
     );
 
-    this.logger.log(`Client invite ${result.isNew ? 'sent' : 'resent'}`, { email });
+    this.logger.log(`Client invite ${result.isNew ? 'sent' : 'resent'} %o`, {
+      email: maskEmail(email),
+    });
 
     return {
       clientUserId: result.id,
@@ -747,7 +750,7 @@ export class LandReservationsService {
       data: { deletedAt: new Date(), deletedBy: clientUserId },
     });
 
-    this.logger.log('Client document deleted by client', {
+    this.logger.log('Client document deleted by client %o', {
       reservationId,
       documentId,
       clientUserId,
@@ -796,7 +799,7 @@ export class LandReservationsService {
 
     await this.notifyClientDocumentRejected(reservation, document.type, reason);
 
-    this.logger.log('Client document rejected by admin', {
+    this.logger.log('Client document rejected by admin %o', {
       reservationId,
       documentId,
       adminUserId,
@@ -903,7 +906,7 @@ export class LandReservationsService {
         agent.profile,
       );
     } catch (error) {
-      this.logger.warn('clientDocumentUploaded email failed', { error });
+      this.logger.warn('clientDocumentUploaded email failed %o', { error });
     }
   }
 
@@ -951,7 +954,7 @@ export class LandReservationsService {
         prefs,
       );
     } catch (error) {
-      this.logger.warn(`${template} email failed`, { error });
+      this.logger.warn(`${template} email failed %o`, { error });
     }
   }
 
@@ -988,7 +991,7 @@ export class LandReservationsService {
         prefs,
       );
     } catch (error) {
-      this.logger.warn('clientDocumentRejected email failed', { error });
+      this.logger.warn('clientDocumentRejected email failed %o', { error });
     }
   }
 

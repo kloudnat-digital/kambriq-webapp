@@ -94,7 +94,7 @@ export class KbsCandidatesService {
       },
     });
 
-    this.logger.log(`User ${userId} enrolled in KBS`, {
+    this.logger.log(`User ${userId} enrolled in KBS %o`, {
       sponsor: dto.sponsorCode,
     });
     return candidate;
@@ -425,7 +425,7 @@ export class KbsCandidatesService {
       await this.checkAndTransitionToExamPending(candidate.id);
     }
 
-    this.logger.log('Quiz submitted', {
+    this.logger.log('Quiz submitted %o', {
       userId,
       moduleId,
       score,
@@ -599,7 +599,7 @@ export class KbsCandidatesService {
       this.logger.log(`KCA role granted to user ${candidate.userId} by admin ${adminUserId}`);
     }
 
-    this.logger.log('Candidate status updated', {
+    this.logger.log('Candidate status updated %o', {
       candidateId,
       newStatus: dto.status,
       updatedBy: adminUserId,

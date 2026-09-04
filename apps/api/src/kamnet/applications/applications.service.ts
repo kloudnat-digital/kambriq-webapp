@@ -108,7 +108,7 @@ export class KamnetApplicationsService {
       user.profile,
     );
 
-    this.logger.log('New KAMNET application submitted', {
+    this.logger.log('New KAMNET application submitted %o', {
       userId,
       kcaNumber: dto.kcaNumber,
     });
@@ -193,7 +193,7 @@ export class KamnetApplicationsService {
         user.profile,
       );
 
-      this.logger.log('KAMNET application approved', {
+      this.logger.log('KAMNET application approved %o', {
         applicationId,
         agentId: agent.id,
         agentCode,

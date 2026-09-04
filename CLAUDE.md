@@ -10,9 +10,13 @@ disagreement, this file wins.
 
 ## Rules
 
-1. **The closing PR updates this register in the same commit**, moving the entry
-   to `PROUVE` with its proof quoted. Not a follow-up commit. A chantier closed
-   in code and open here teaches people to distrust the register.
+1. **The closing PR moves the entry to its TRUE state in the same commit.**
+   Where the proof requires a deployed environment, that state is `EN COURS`
+   with the pending proof named explicitly; a follow-up register commit then
+   moves it to `PROUVE` with the proof quoted. **A chantier is never marked
+   `PROUVE` by anticipation.** A chantier closed in code and open here teaches
+   people to distrust the register; one marked proven before the proof exists
+   destroys it outright.
 2. **Every chantier states its cost impact, and every added resource carries its
    own.** `None` is a valid answer and must be written down. A resource with no
    stated cost is not finished.
@@ -69,7 +73,7 @@ must throw.
 **Reasoning:** no amount of manual testing would ever reveal this, and it is money.
 **Proof:** by mutation, on both. **Cost: none.**
 
-### L2 — Logging drops metadata at 106 call sites — `DECIDE, A FAIRE`
+### L2 — Logging drops metadata at 106 call sites — `EN COURS`
 
 `nestjs-pino`'s `Logger.call` takes the **last** optional param as context and
 passes the rest as pino format arguments. Nest's `Logger` appends the class name
@@ -88,6 +92,37 @@ FAILED.
 
 **Decision:** fix the pattern, not the line. **Proof:** a log line carrying its
 metadata, and a re-probe. **Cost: none.**
+
+**Code landed in webapp #43.** 102 call sites in `apps/api` and `libs/common`
+now carry `%o`. `apps/web/src/lib/logger.ts` is deliberately untouched: it uses
+winston, which formats metadata itself, so those 3 were a false positive in the
+inventory. A repo-wide invariant test fails if any call passing an object loses
+its placeholder; mutation-verified by removing `%o` from the exception filter.
+
+**Privacy review, the one real risk in an otherwise mechanical change.** These
+payloads have been discarded for months; enabling them writes them to CloudWatch
+for the first time. 34 of 106 mentioned something sensitive-looking; 9 were
+genuinely dangerous and are redacted in the same PR: the refresh-token hash on
+logout is no longer logged at all; five email addresses are masked
+(`al***@kambriq.com`); and two full DTOs (`Admin updated user`, `Lead updated` —
+the latter carries clientName, clientEmail and clientPhone) are reduced to their
+changed key names. Helpers live in `libs/common/src/utils/log-redact.ts`.
+
+Two kept deliberately, with the reasoning recorded: the global exception filter's
+message and stack, which are the whole point of the chantier, and the Prisma
+filter's `request.url` and error message. Both can echo user input in rare cases;
+being blind to every stack trace is the larger harm.
+
+### L3 — Migrate logging to PinoLogger structured fields — `DECIDE, A FAIRE`
+
+`%o` makes payloads **readable** but not **queryable**: the object is serialised
+into the message string, so CloudWatch Insights cannot filter on `userId` or
+`examId` as fields. Migrating to `PinoLogger`'s `info(obj, msg)` puts them at the
+top level of the JSON, which is what the migration buys.
+
+**Decision:** do it later, as its own chantier. Roughly 102 call sites plus DI
+changes, and it should not ride along with a change whose value is that it is
+mechanical. **Cost: none.**
 
 ### B3 — Seed: KBS not demonstrable — `DECIDE, A FAIRE`
 

@@ -8,10 +8,11 @@ import {
 import { KamnetPrismaService } from '../prisma/kamnet-prisma.service';
 import { I18nService } from 'nestjs-i18n';
 import {
-  buildPaginatedResponse,
   KAMNET_VALID_LEAD_TRANSITIONS,
   KamnetLeadStatus,
   PaginationQuery,
+  buildPaginatedResponse,
+  changedKeys,
 } from '@kambriq/common';
 import { CreateLeadDto, LeadFilterDto, UpdateLeadDto } from '../dto/kamnet.dto';
 
@@ -38,7 +39,7 @@ export class KamnetLeadsService {
       },
     });
 
-    this.logger.log('Lead created', { agentId, leadId: lead.id });
+    this.logger.log('Lead created %o', { agentId, leadId: lead.id });
 
     return lead;
   }
@@ -77,7 +78,8 @@ export class KamnetLeadsService {
         },
       });
 
-      this.logger.log('Lead updated', { leadId, changes: dto });
+      // A lead DTO carries clientName, clientEmail and clientPhone.
+      this.logger.log('Lead updated %o', { leadId, changed: changedKeys(dto) });
       return updated;
     }
   }
@@ -94,15 +96,11 @@ export class KamnetLeadsService {
       },
     });
 
-    this.logger.log('Lead soft-deleted', { leadId, agentId });
+    this.logger.log('Lead soft-deleted %o', { leadId, agentId });
   }
 
   // ----- Get My Leads ----- //
-  async findMyLeads(
-    agentId: string,
-    query: PaginationQuery,
-    filters?: LeadFilterDto,
-  ) {
+  async findMyLeads(agentId: string, query: PaginationQuery, filters?: LeadFilterDto) {
     const { page, limit, sort, order } = query;
     const skip = (page - 1) * limit;
 

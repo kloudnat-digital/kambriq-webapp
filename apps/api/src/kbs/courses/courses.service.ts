@@ -65,7 +65,7 @@ export class KbsCoursesService {
 
   async createCourse(dto: CreateCourseDto) {
     const course = await this.prisma.kbsCourse.create({ data: dto });
-    this.logger.log(`Course created`, {
+    this.logger.log(`Course created %o`, {
       courseId: course.id,
       title: course.title,
     });
@@ -77,7 +77,7 @@ export class KbsCoursesService {
       where: { id: courseId },
       data: dto,
     });
-    this.logger.log(`Course updated`, {
+    this.logger.log(`Course updated %o`, {
       courseId: course.id,
       title: course.title,
     });
@@ -95,7 +95,7 @@ export class KbsCoursesService {
     }
 
     await this.prisma.kbsCourse.delete({ where: { id: courseId } });
-    this.logger.log(`Course deleted`, {
+    this.logger.log(`Course deleted %o`, {
       courseId: course.id,
       title: course.title,
       modulesCount: course._count.modules,
@@ -267,7 +267,7 @@ export class KbsCoursesService {
       throw new NotFoundException(this.t('kbs.course.notFound', 'en', { id: dto.courseId }));
 
     const mod = await this.prisma.kbsModule.create({ data: dto });
-    this.logger.log(`Module created`, {
+    this.logger.log(`Module created %o`, {
       moduleId: mod.id,
       title: mod.title,
       order: mod.order,
@@ -281,7 +281,7 @@ export class KbsCoursesService {
       where: { id: moduleId },
       data: dto,
     });
-    this.logger.log(`Module updated`, { moduleId: mod.id });
+    this.logger.log(`Module updated %o`, { moduleId: mod.id });
     return mod;
   }
 
@@ -304,7 +304,7 @@ export class KbsCoursesService {
       throw new NotFoundException(this.t('kbs.module.notFound', undefined, { id: moduleId }));
     }
     await this.prisma.kbsModule.delete({ where: { id: moduleId } });
-    this.logger.log(`Module deleted`, { moduleId, title: mod.title });
+    this.logger.log(`Module deleted %o`, { moduleId, title: mod.title });
   }
 
   // ----- Lessons ---------------------------
@@ -398,7 +398,7 @@ export class KbsCoursesService {
       throw new NotFoundException(this.t('kbs.module.notFound', undefined, { id: dto.moduleId }));
 
     const lesson = await this.prisma.kbsLesson.create({ data: dto });
-    this.logger.log(`Lesson created`, {
+    this.logger.log(`Lesson created %o`, {
       lessonId: lesson.id,
       title: lesson.title,
       order: lesson.order,
@@ -412,13 +412,13 @@ export class KbsCoursesService {
       where: { id },
       data: dto,
     });
-    this.logger.log(`Lesson updated`, { lessonId: lesson.id });
+    this.logger.log(`Lesson updated %o`, { lessonId: lesson.id });
     return lesson;
   }
 
   async deleteLesson(id: string) {
     await this.prisma.kbsLesson.delete({ where: { id } });
-    this.logger.log(`Lesson deleted`, { lessonId: id });
+    this.logger.log(`Lesson deleted %o`, { lessonId: id });
   }
 
   // ----- Questions + Answers ---------------------------
@@ -500,7 +500,7 @@ export class KbsCoursesService {
       include: { answers: true },
     });
 
-    this.logger.log(`Question created`, {
+    this.logger.log(`Question created %o`, {
       questionId: question.id,
       moduleId: question.moduleId,
     });
@@ -545,7 +545,7 @@ export class KbsCoursesService {
 
   async deleteQuestion(id: string) {
     await this.prisma.kbsQuestion.delete({ where: { id } });
-    this.logger.log(`Question deleted`, { questionId: id });
+    this.logger.log(`Question deleted %o`, { questionId: id });
   }
 
   // ----- Utils ---------------------------

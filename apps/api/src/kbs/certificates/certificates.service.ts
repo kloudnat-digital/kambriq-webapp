@@ -50,7 +50,7 @@ export class KbsCertificatesService {
 
     if (candidate.status !== CandidateStatus.CERTIFIED && !passedExam) {
       this.logger.warn(
-        'Attempt to issue certificate failed - candidate has not passed final exam',
+        'Attempt to issue certificate failed - candidate has not passed final exam %o',
         { candidateId, status: candidate.status },
       );
       throw new NotFoundException(this.t('kbs.certificate.notPassed', DEFAULT_LANGUAGE));
@@ -113,7 +113,7 @@ export class KbsCertificatesService {
       user.profile,
     );
 
-    this.logger.log('Certificate issued', { candidateId, kcaNumber });
+    this.logger.log('Certificate issued %o', { candidateId, kcaNumber });
     return certificate;
   }
 
@@ -243,7 +243,7 @@ export class KbsCertificatesService {
     // Remove KCA_CERTIFIED role from the user in Core
     await this.usersService.removeRole(candidate.userId, RoleCode.KCA_CERTIFIED);
 
-    this.logger.log('Certificate revoked', {
+    this.logger.log('Certificate revoked %o', {
       candidateId,
       kcaNumber: candidate.certificate.kcaNumber,
       revokedBy: adminUserId,

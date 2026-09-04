@@ -196,7 +196,7 @@ export class KbsExamService {
       },
     );
 
-    this.logger.log('Exam started', {
+    this.logger.log('Exam started %o', {
       examId: exam.id,
       candidateId: candidate.id,
     });
@@ -465,7 +465,7 @@ export class KbsExamService {
       },
     });
 
-    this.logger.log('Exam attempts reset', { candidateId });
+    this.logger.log('Exam attempts reset %o', { candidateId });
     return { message: this.t('kbs.exam.attemptsReset') };
   }
 
@@ -581,7 +581,7 @@ export class KbsExamService {
       },
     });
 
-    this.logger.log('Exam graded', {
+    this.logger.log('Exam graded %o', {
       examId,
       candidateId: exam.candidateId,
       score,

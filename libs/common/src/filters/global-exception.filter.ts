@@ -27,17 +27,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
-      } else if (
-        typeof exceptionResponse === 'object' &&
-        exceptionResponse !== null
-      ) {
+      } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
         const res = exceptionResponse as Record<string, unknown>;
         message = (res['message'] as string) || message;
         error = (res['error'] as string) || error;
       }
     } else if (exception instanceof Error) {
       message = exception.message;
-      this.logger.error('@Unhandled exception', {
+      this.logger.error('@Unhandled exception %o', {
         message: exception.message,
         stack: exception.stack,
       });
@@ -50,8 +47,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       error,
       timestamp: new Date().toISOString(),
       path: request.url,
-      ...(process.env['NODE_ENV'] === 'development' &&
-      exception instanceof Error
+      ...(process.env['NODE_ENV'] === 'development' && exception instanceof Error
         ? { stack: exception.stack }
         : {}),
     };
