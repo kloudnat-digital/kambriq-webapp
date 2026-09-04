@@ -325,12 +325,56 @@ aws iam list-access-keys --user-name kambriq-app-dev --query 'AccessKeyMetadata[
 aws iam update-access-key --user-name <user> --access-key-id <key> --status Active
 ```
 
-**The fourth key is deliberately not in that list.** `kambriq-app-dev`'s
-`AKIAQYAF4F4JH34UGKU5` **has** been used — `s3`, 2026-08-27, eight days ago and
-before S1 removed static credentials from the API. Nothing should be using it
-now, but "should" is not the standard applied to the other three, so it is listed
-separately for its own decision rather than folded in on a similar-looking
-argument.
+**The fourth key is deliberately not in that list, and now has a dated
+decision.** `kambriq-app-dev`'s `AKIAQYAF4F4JH34UGKU5` **has** been used — `s3`,
+2026-08-27, eight days ago and before S1 moved storage onto the task role.
+_"Nothing should be using it now"_ is exactly the standard this week retired, so
+it does not ride in on the argument built for the other three.
+
+> **Decision: leave it `Active` through Monday's delivery. Deactivate it on
+> Tuesday 8 September 2026, after re-checking `LastUsedDate` first.**
+
+Deactivating a key that was live eight days ago, on the weekend we deliver, buys
+nothing and risks the delivery. Dated rather than left open, so it gets done
+rather than forgotten:
+
+```bash
+# Tuesday 8 September 2026 — check FIRST, then act on what it says.
+aws iam get-access-key-last-used --access-key-id AKIAQYAF4F4JH34UGKU5 \
+  --query 'AccessKeyLastUsed.[LastUsedDate,ServiceName,Region]' --output text
+# Still 2026-08-27 or older -> deactivate. Anything more recent -> stop and find
+# out what used it before touching anything.
+aws iam update-access-key --user-name kambriq-app-dev \
+  --access-key-id AKIAQYAF4F4JH34UGKU5 --status Inactive
+```
+
+#### The six secrets are part of the same decision, and prepared the same way
+
+**A deactivated key whose value still sits in a secret store is a credential
+waiting for somebody to reactivate it.** The `kambriq-infra` repo holds six
+static-key secrets, referenced by no workflow in either repo — every workflow
+uses OIDC. Their values cannot be read back, so which keys they hold is unknown;
+that is itself the argument for removing them rather than auditing them.
+
+```bash
+# Prepared. Not run. Same terms as the deactivations above.
+for s in AWS_ACCESS_KEY_ID AWS_ACCESS_KEY_ID_DEV AWS_ACCESS_KEY_ID_PROD \
+         AWS_SECRET_ACCESS_KEY AWS_SECRET_ACCESS_KEY_DEV AWS_SECRET_ACCESS_KEY_PROD; do
+  gh secret delete "$s" -R kloudnat-digital/kambriq-infra
+done
+
+# Verify: only the non-credential secrets should remain
+gh secret list -R kloudnat-digital/kambriq-infra
+# expected afterwards: ARTIFACT_BUCKET_NAME_DEV, ARTIFACT_BUCKET_NAME_PROD,
+#                      AWS_REGION, AWS_REGION_DEV, AWS_REGION_PROD
+```
+
+**`gh secret delete` is not reversible** — unlike the key deactivations, there is
+no `--status Active` for a secret. That asymmetry is the reason they are listed
+here rather than done: restoring one means finding the original credential again,
+and if nobody knows which key is in there, nobody can. The reversible half
+(deactivate) and the irreversible half (delete the secret) should still be
+decided together, because doing only the first leaves the exposure intact.
 
 **`vmiaff`'s key is in active use and is not a candidate.**
 
