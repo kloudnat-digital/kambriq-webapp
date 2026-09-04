@@ -41,7 +41,7 @@ proof, since it is why proofs went unseen.
 
 ## Open
 
-### S1 — Storage: S3 dead behind a credential gate — `DECIDE, A FAIRE`
+### S1 — Storage: S3 dead behind a credential gate — `EN COURS`
 
 `storage.service.ts` gates `S3Client` on `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`,
 never set on Fargate. All uploads and downloads are dead on dev.
@@ -60,6 +60,14 @@ expensive of the three lies — the API says yes and the browser fails alone.
 **Proof:** a file genuinely uploaded through a presigned URL, present in the
 bucket; a download URL returning 200; plus the mutation check.
 **Cost: none.** The IAM grants already exist (`iam-media.tf`).
+
+**Code landed in webapp #44.** Mutation check done: restoring the credential
+gate fails 7 of 47 tests in `libs/common`; `storage.service.ts` at 97.2% line
+coverage. `EN COURS` rather than `PROUVE` because the remaining proof — a real
+file uploaded through a presigned URL and a download URL returning 200 — can
+only be taken against a deployed environment, so it follows the merge. Rule 1
+asks the closing PR to move the entry to `PROUVE`; here that is impossible in
+the same commit, and the gap is deliberate rather than an oversight.
 
 ### V1 — Commissions and job names — `DECIDE, A FAIRE`, promoted above every garde-fou
 

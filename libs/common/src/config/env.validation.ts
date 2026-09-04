@@ -31,8 +31,10 @@ export const envSchema = z.object({
   REDIS_PORT: z.coerce.number().default(6379),
 
   // ----- AWS -----
-  AWS_ACCESS_KEY_ID: z.string().optional(),
-  AWS_SECRET_ACCESS_KEY: z.string().optional(),
+  // AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are deliberately absent. Nothing
+  // reads them: SES and S3 both resolve the ECS task role through the default
+  // credential provider chain. Declaring them invited the gates that disabled
+  // both subsystems on Fargate for months.
   // eu-central-1 is where every Kambriq resource lives: RDS, ECS, SES, SSM.
   // eu-west-3 was a copy-paste default that never matched any deployment.
   AWS_REGION: z.string().default('eu-central-1'),
@@ -41,6 +43,12 @@ export const envSchema = z.object({
   // Must match the aws_sesv2_contact_list resource in kambriq-infra
   // (envs/dev/ses-newsletter.tf). Coupled by convention only.
   AWS_SES_CONTACT_LIST_NAME: z.string().default('kambriq-newsletter'),
+
+  // ----- Storage transport -----
+  // 's3' stores for real. 'disabled' turns storage off and makes every storage
+  // call throw. Same rule as EMAIL_TRANSPORT: a degraded mode is a choice, not
+  // an inference from missing configuration.
+  STORAGE_TRANSPORT: z.enum(['s3', 'disabled']).default('s3'),
 
   // ----- Email transport -----
   // 'ses' sends for real. 'console' logs instead, and must be asked for
