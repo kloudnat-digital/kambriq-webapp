@@ -313,7 +313,60 @@ Run against dev with `KAMBRIQ_API_URL`; enforce the gate with `EXPECTED_SHA`.
 
 # The chantier register
 
-The evidence for everything above. Rules that keep it honest, then the entries.
+Opened cold, this is the state of the platform. The delivery checklist first, then
+every chantier at its true state, then the dated decisions somebody must act on.
+
+**Last closed: Friday 4 September 2026.** Delivery was due Monday 7 September.
+
+---
+
+## Delivery checklist — all six items, with their proofs
+
+Proofs are taken against a deployed build identified by its commit, never by a
+revision counter. `GET /api/v1/health/version` returns `gitSha` and `imageTag`.
+
+| #   | Item                                                                              | Proof                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| --- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | A new user signs up, receives a verification email, verifies, and logs in         | Automated as journey 1. Registration returns 201; the login **before** verification is refused with _"vérifier votre adresse email"_; a real 64-hex token is read out of the mailbox; verify returns 200; login returns 200 with `roles: ['CLIENT']`. **This was broken for months** — every link carried `?token=[object Promise]` (`A3`)                                                                                 |
+| 2   | That user uploads a file and gets it back through a working URL                   | Automated as journey 2. The presigned URL carries `X-Amz-Signature` (STS credentials from the **task role**, `ASIA…`), PUT returns 200, the file is attached and read back. **Every upload was dead from February to September** (`S1`)                                                                                                                                                                                    |
+| 3   | Seeded data lets a tester exercise KBS end to end, plus lands and KAMNET          | Automated as journeys 3 and 4. Quiz serves **exactly 10** and scores **out of 10**; `isCorrect` never reaches the candidate; exam serves **20**; grading gives `EXAM_PASSED` and **no certificate**; an admin issues one and the count moves; public verify returns valid. Journey 4 reserves a parcel, the created client holds `CLIENT`, sets a password from the invite, logs in, and the portal returns their purchase |
+| 4   | Every controller rejects unauthenticated and wrong-role requests, proven by tests | Live sweep across every guarded controller: **401** with no token, **403** with a role `ROLE_HIERARCHY` does not imply, **200** with an allowed one. `route-guards.spec.ts` pins the public surface as a list and the class-level `@Roles` on the five role-gated controllers                                                                                                                                              |
+| 5   | CI green with a real e2e artifact                                                 | `playwright-report` 207 530 bytes, was absent (`A1`). The **Delivery journeys (dev)** job runs after every deploy to develop and passed on `d328544`                                                                                                                                                                                                                                                                       |
+| 6   | No known silent failure left open                                                 | Every entry in `Proven` below began as something reporting success while doing nothing. The ones still open are named, not forgotten                                                                                                                                                                                                                                                                                       |
+
+**Journeys:** `pnpm test:journeys`. `KAMBRIQ_API_URL` selects the target,
+`EXPECTED_SHA` enforces the gate. The gate is mutation-proved both ways: pointed
+at a build that is not deployed it **refuses**; unset it **announces** rather
+than passing quietly.
+
+---
+
+## Known limits of the suite, so a red run is read correctly
+
+- **It can throttle itself.** The API allows `THROTTLE_LIMIT` requests per
+  `THROTTLE_TTL`. The CI run on `ebc1b7e` went red on a **429 in `beforeAll`**,
+  caused by local runs against dev at the same moment. `call()` now names a 429
+  explicitly. **If the suite is red on rate limiting, nothing is wrong with the
+  product** — do not run it locally against dev while CI is deploying.
+- **It depends on maildrop.cc** for the mailbox steps. That is deliberate: `A3`
+  shipped a dead verification link for months precisely because nothing ever
+  opened the email. The helper says when the mailbox is the problem.
+- **It returns the parcel it consumes.** Each run reserves one; journey 4 cancels
+  it and asserts the parcel is `AVAILABLE` again. Without that the pool empties
+  in a fortnight of deploys.
+
+---
+
+## Dated decisions — somebody must act on these
+
+| When                                    | What                                                                                                                                                                                                                                                                                                                         | How                                                                                                                                                                                                                                                       |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tuesday 8 September 2026**            | Deactivate `AKIAQYAF4F4JH34UGKU5` (`kambriq-app-dev`). It is the only key left Active besides `vmiaff`'s, and unlike the three deactivated on 4 September it **has** been used — `s3`, 2026-08-27, before `S1` moved storage onto the task role                                                                              | **Check first, then act.** `aws iam get-access-key-last-used --access-key-id AKIAQYAF4F4JH34UGKU5`. Still 2026-08-27 or older → `update-access-key --status Inactive`. **Anything more recent → stop** and find out what used it before touching anything |
+| **When prd exists**                     | RDS `BackupRetentionPeriod` is **0 on dev, deliberately** — what a backup protects is reproducible from `migrate deploy` ×4 plus a restorative seed. **Every word of that argument dies with the first real user account.** Belongs on the `ADR-005` bootstrap checklist as an explicit decision, not a default carried over | Set a retention period before prd takes traffic                                                                                                                                                                                                           |
+| **Next time the RDS module is touched** | `/aws/rds/instance/kambriq-postgres-dev/postgresql` is capped at 7 days, set **outside Terraform** because RDS creates that group itself. It is undeclared state — nothing drifts today, and the next person reading the Terraform will believe every log group is described there                                           | Move it into `modules/rds-postgres`                                                                                                                                                                                                                       |
+| **Not scheduled**                       | `X2` — the NAT gateway, roughly **$39/month**, the largest line in the bill. Option 2 was decided and deliberately **not applied** before delivery: a shared-state network change days before a delivery trades $35/month against a broken dev                                                                               | Apply after delivery, with a plan reviewed first                                                                                                                                                                                                          |
+
+---
 
 ## Rules
 
@@ -355,6 +408,21 @@ decisions, run during deploy waits rather than queued behind builds.
 ---
 
 ## Open
+
+Four entries below are marked `PROUVE` and kept in place rather than moved to the
+table: `Z1`, `D2`, `X1` and `X4` carry commands, numbers or reversal steps that
+are longer than a table row and are still needed. Everything genuinely open is
+listed here first.
+
+| Entry          | State             | What it needs                                                                                                                      |
+| -------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `L2`           | `EN COURS`        | one deployed log line carrying its interpolated metadata, quoted                                                                   |
+| `L3`           | `DECIDE, A FAIRE` | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                   |
+| `F1`           | `A DECIDER`       | coverage ratchet: a floor, and what happens when a PR drops below it                                                               |
+| `P1`           | `A DECIDER`       | SES contact list, one per account per region — the prd constraint                                                                  |
+| `X2`           | `DECIDE, A FAIRE` | NAT option 2, decided, deliberately unapplied before delivery                                                                      |
+| `M1`           | `DECIDE, A FAIRE` | mutualisation of dev and future prd, with per-resource saving and blast radius                                                     |
+| `Q1` follow-up | `A DECIDER`       | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing |
 
 ### L2 — Logging drops metadata at 106 call sites — `EN COURS`
 
@@ -401,6 +469,19 @@ The Prisma error message is kept deliberately: it names **columns, not values**.
 The response body still returns the full URL, which is the caller's own request
 and part of the API contract. Landed in webapp #45.
 
+**Still `EN COURS`, and the pending proof named precisely.** The code landed and
+the invariant test guards it, but **a deployed log line carrying its interpolated
+metadata object has not been captured**. What _was_ observed on dev is
+`messageId=010701a06cd6faf4-…` appearing in the message text rather than in a
+dropped object — that is `L1`'s fix working, and it is evidence the `%o` pattern
+reaches production, but it is not the same claim. To close this: pull a line from
+`/ecs/kambriq-dev-api` whose `msg` contains an interpolated `{…}` and quote it.
+
+_An attempt to take it just now returned an empty stream, because the task had
+rotated under a new deploy and the stream name moved with it. That is worth
+knowing before the next attempt: the stream is `api/api/<task-id>` and the task
+id changes on every deploy._
+
 ### L3 — Migrate logging to PinoLogger structured fields — `DECIDE, A FAIRE`
 
 `%o` makes payloads **readable** but not **queryable**: the object is serialised
@@ -411,227 +492,6 @@ top level of the JSON, which is what the migration buys.
 **Decision:** do it later, as its own chantier. Roughly 102 call sites plus DI
 changes, and it should not ride along with a change whose value is that it is
 mechanical. **Cost: none.**
-
-### R1 — A role code written as a string, and a list of promises — `EN COURS`
-
-Three defects the role sweep found while looking for something else. Two of them
-break journeys the functional tests are about to certify, so they were fixed
-rather than filed.
-
-**1. A client created by a reservation had no roles.**
-`findOrCreateClientUser` read `where: { code: 'client' }` against a stored
-`'CLIENT'`. Case-sensitive comparison, `null`, and an `if (clientRole)` that
-swallowed it. `@Roles(RoleCode.CLIENT)` gates the whole client portal, so the
-reservation returned 201, the portal-access email sent, the job was green, and
-**the only symptom was a person who could not get into the thing they had just
-been invited to.** The week's pattern with somebody at the end of it.
-
-**The one-word change is not the deliverable.** A string literal where a constant
-exists is the defect; the casing is how it surfaced. `RoleCode.CLIENT` cannot be
-miscased — TypeScript rejects `RoleCode.Client`, and you do not need a database
-to find out. Registration was correct only by the accident of having spelled the
-constant, and accidents do not survive the next person in the file.
-
-**So the literal is banned.** `role-code-literals.spec.ts` scans
-`apps/api/src`, `libs/common/src` and `prisma/` and fails on any role code
-written as a bare string, in either case. The enum is the single exemption; the
-seed now uses `RoleCode.*` too, so the codes the database stores and the codes
-the application looks up come from one declaration. A missing role is now a
-throw rather than a silence: a client user without the client role is a row whose
-email promises access that is not there.
-
-**Enforced as a test, not a lint rule, on purpose.** CI runs `nx lint api` only,
-so a rule covering `libs/common` and `prisma/` would not actually run — and an
-enforcement that does not run is worse than none, because it reads as covered.
-
-**2. `GET /users` returned `[{},{},{}]` with `meta.total: 14`.**
-`toUserResponse` is async and the map was not awaited, so `data` was an array of
-pending Promises, and `JSON.stringify` renders a Promise as `{}`. **200, correct
-envelope, correct pagination, no data.** Every signal healthy except the one
-carrying the answer.
-
-**It is the same missing `await` as A3**, which shipped `?token=[object
-Promise]` — the second time the same mistake reached dev on a different surface.
-`Promise<T>[]` is a perfectly good array, so the type system separates the two no
-better here than it did there.
-
-**Its test asserted `toHaveLength(2)`.** An array of two Promises has length two.
-Shape, count, envelope and pagination are exactly what this class of defect
-preserves. **The envelope contract tests in the remaining scope must assert on
-content** — a contract test checking `{success, data}` would have passed this
-one, which is the whole reason to write them differently.
-
-**3. The dormant `GRANT_KCA_ROLE` handler is gone.** Confirmed empty first, not
-assumed: `waiting 0, active 0, delayed 0, paused 0, failed 0` on the `kbs`
-queue, with the name appearing only among historical completions. It now falls to
-the default branch and throws. The constant is removed too, so re-enabling it is
-a decision rather than an accident.
-
-**`CANDIDATE_KBS` needs no action, only this line.** It is granted self-service
-on enrolment and there is no `@Roles(RoleCode.CANDIDATE_KBS)` anywhere. **A label
-that looks like a permission is a trap for whoever gates on it next assuming a
-check exists.**
-
-**Proof: seven tails, seven mutations**, each observed failing alone:
-
-| #   | Mutation                                   | Test that fired                                                      |
-| --- | ------------------------------------------ | -------------------------------------------------------------------- |
-| 1   | `code: 'client'` restored                  | no file writes CLIENT as a string literal                            |
-| 2   | `code: 'CLIENT'` — right value, wrong form | the same test, so the ban is on the literal not the casing           |
-| 3   | missing role silent again                  | fails loudly when the client role is missing                         |
-| 4   | lookup kept, assignment dropped            | looks the role up by the constant, and actually assigns it           |
-| 5   | the retired KCA grant routed again         | no longer routes the retired KCA role grant                          |
-| 6   | the user list stops awaiting               | returns users, not promises — `Expected constructor: not Promise`    |
-| 7   | the convention scanner finds no files      | is looking at the source tree at all — `Expected: > 50, Received: 0` |
-
-**A defect in my own matcher, recorded rather than tidied away.** The first
-version used `['"`]…['"`]`and flagged the French question bank: in`"Il a changé d'agent"` the apostrophe opened a match the closing double quote
-finished. Back-referencing the quote fixed it. Found by the measurement, in the
-measurement.
-
-**Live on dev, `kambriq-dev-api:116` / `sha-f069f9d`:**
-
-```
-GET  /users?limit=3        200  rows: 3  total: 14   first row: {id, email, firstName, …}
-POST /lands/reservations   201  clientUserId ba2c538c-…
-GET  /users/ba2c538c-…          CLIENT USER ROLES: ['CLIENT']
-```
-
-**Taking the third part of that proof — the client reaching a portal route —
-found a fourth defect on the same journey**, recorded as R2 below.
-**Cost: none.**
-
-### P2 — The unawaited promise, closed as a class — `EN COURS`
-
-Twice in one day. `?token=[object Promise]` in every verification link (A3), and
-`[{},{},{}]` from a map over an async method (`GET /users`). **Same defect, two
-surfaces, both invisible because a Promise satisfies every shallow check written
-against it** — length two, truthy, serialises without throwing.
-
-**The sweep.** Every `map`/`filter`/`forEach`/`some`/`every`/`find`/`flatMap`/
-`reduce`/`sort` callback in `apps/api/src` and `libs/common/src` that calls an
-async function — 159 files, 242 known async names. **Twelve sites, all twelve
-correctly inside `Promise.all`**, in `lands.service.ts`,
-`reservations.service.ts`, `network.service.ts` and `users.service.ts`. Zero
-unawaited.
-
-**And the scanner's own limits, measured rather than assumed.** Planting the live
-defect back at `users.service.ts:225` — `map(u => this.toUserResponse(u))` — the
-scanner catches it. Planting an unwrapped `map(async …)` at
-`lands.service.ts:234` it **does not**, because a nested `Promise.all` on the
-following line sits inside its window. The heuristic is sound for the delegating
-form and unsound for the arrow form. Said plainly rather than reported as "zero
-findings".
-
-**So the mechanism is not the scanner. It is the type.**
-
-`buildPaginatedResponse<T>(data: T[])` accepted anything, so a list of unawaited
-Promises bound `T = Promise<UserResponse>` and compiled cleanly. **An
-unconstrained generic will happily be a Promise** — the type system had every
-opportunity and inferred its way past it. Constraining it:
-
-```ts
-type NotPromise<T> = T extends Promise<unknown> ? never : T;
-export const buildPaginatedResponse = <T>(data: NotPromise<T>[], …)
-```
-
-Planting the shipped code back now gives:
-
-```
-users.service.ts(226,35): error TS2345: Argument of type 'Promise<UserResponse>[]'
-  is not assignable to parameter of type 'never[]'.
-```
-
-**It covers 14 call sites across 10 services** — every paginated endpoint in the
-API, which is where lists live and where this defect surfaces — and it fails in
-`tsc`, so it is caught before the code runs at all. Same shape as banning bare
-role-code literals: **make the wrong thing unwriteable rather than correcting one
-instance of it.**
-
-**On a lint rule, and its coverage.** `@typescript-eslint/no-misused-promises`
-would catch the `forEach(async …)` form, and neither it nor
-`no-floating-promises` catches a `map` whose Promises are _used_ as data — which
-is both of the defects we actually had. It would also only run over `apps/api`,
-because CI runs `nx lint api` alone. A rule that misses the two real cases and
-half the tree is not worth the claim of coverage; the type constraint runs in the
-`typecheck` job and catches the real one.
-
-**Not covered, and named:** an async arrow inside a `map` whose result is not
-handed to `buildPaginatedResponse`. The twelve existing sites are all correct
-today, and nothing structural stops a thirteenth being wrong.
-
-### P3 — An identifier where a customer expects a name — `EN COURS`
-
-The client portal email read **"Votre agent KAMNET :
-00000000-0000-4000-8000-b00000000005"**. `reservations.service.ts` passed
-`agentName: agentUserId` with the comment _"will be enriched in the controller"_.
-It never was — and the lookup producing the real name was already running **four
-lines below**, for the agent's own notification.
-
-**Fixed both ways, as asked.** The agent is now resolved before the client email
-and the real name used; and the template renders the agent line **only when there
-is a name**, so if it cannot be reached the field is absent rather than filled
-with an id.
-
-**Plus a guard where every template argument already passes.** `EmailService.send`
-now rejects any `…Name` argument whose value is UUID-shaped. Deliberately
-narrow — only fields named `…Name`, only UUID-shaped values. No human is called
-`00000000-0000-4000-8000-b00000000005`. It sits beside the `[object …]` check
-from A3 and covers templates nobody has written yet.
-
-**Proof: three tails**, each observed failing alone — removing the guard; making
-the guard over-fire on a real name (caught by the "queues a name" test, so it
-cannot become over-broad silently); and restoring the unconditional agent line.
-
-**A defect in my own test stub, recorded.** The first i18n stub appended every
-argument to every key, so `agentName=` appeared in the body line and the "omits
-the agent line" assertion failed against a template behaving correctly. The stub
-now reads the real `fr/email.json` and substitutes `{placeholders}`. **A stub
-that does not resemble the thing it stands in for tests the stub.**
-
-`EN COURS` until dev sends a portal email carrying a name. **Cost: none.**
-
-### R2 — The invited client could set a password and still not log in — `EN COURS`
-
-The client used the set-password link from their invite email, got **204**, and
-then:
-
-```
-POST /auth/login  ->  401  "Veuillez vérifier votre adresse email avant de vous connecter"
-GET  /users/<id>  ->  emailVerified: false, roles: ['CLIENT']
-```
-
-They were invited by an agent, **proved control of the mailbox by returning a
-secret delivered to it**, and were told to prove it again with a verification
-link they were never sent. There is no way out of that state from the client's
-side. Every step before the login succeeded, which is why nothing surfaced it.
-
-**Decision:** consuming a password-reset token marks the address verified. It is
-the same evidence `verify-email` accepts — a secret sent to that address and
-returned. Requiring it twice is not extra safety, it is a dead end.
-
-**The existing test asserted `$transaction` had been called and never what it
-was called with**, so the entire content of that write was unexamined.
-
-**Proof: two tails, two mutations**, each observed failing alone — dropping
-`emailVerified` fails _"marks the email verified"_; dropping the password and
-lockout fields fails _"still sets the password and clears the lockout"_, so the
-new field cannot quietly displace the old ones.
-
-`EN COURS` until an invited client logs in and reaches `/lands/client/purchases`
-on dev. **Cost: none.**
-
-**A measurement defect of mine, on the way.** I read `inbox[0]` from the client's
-mailbox, found no link, and was about to record "the invite email carries no
-link". There were **two** messages: the newest was the portal-access notice, and
-the invite with a valid 64-hex token was the second. Reading the first element of
-a list is not reading the list. That is the fifth of these this week, and the
-second where I nearly filed a defect that did not exist.
-
-**One real thing did come out of that email, though.** The portal-access notice
-says _"Votre agent KAMNET : 00000000-0000-4000-8000-b00000000005"_ — it prints
-the agent's raw user UUID where a name belongs, to a client. Not fixed here;
-recorded.
 
 ### Z1 — Three never-used access keys, one of them full admin — `PROUVE`, applied 2026-09-04
 
@@ -836,225 +696,6 @@ the problem harder to find.
 
 **Cost: none.**
 
-### F4 — A green local run says nothing about the image — `EN COURS`
-
-The restorative seed ran clean locally and **died in the container**:
-
-```
-Error: Cannot find module '../libs/common/src/types/roles.enum'
-```
-
-The image copied `libs/common/src/prisma` and `libs/common/src/i18n` and nothing
-else — correct for the compiled API, whose `dist/apps/api/main.js` has the rest
-bundled. But **`prisma/seed.ts` runs from source under `tsx` inside that image**,
-so it resolves imports against a tree that only holds two of its directories. The
-moment the seed imported the `RoleCode` enum — a change made _to remove_ string
-literals — it stopped working where it matters.
-
-**Decision:** copy the directory, not a list of its children.
-`COPY --from=builder /app/libs/common/src ./libs/common/src`. The next import the
-seed needs is then already there, rather than failing once in production and
-being fixed once.
-
-**Proof: three tails**, each observed failing alone — the narrow copies
-reinstated; the seed importing outside `libs/common/src`; `prisma/` narrowed to a
-subdirectory.
-
-**The lesson belongs with the measurement family.** I ran the seed against a
-local database, watched it succeed, and took that as evidence about a container
-built from a different subset of the same repository. **Local success is not
-deployment success, and the two differ by a `COPY` line nobody reads.**
-
-### F2 — The seed restores what a journey consumes — `EN COURS`
-
-**Idempotent is not restorative, and the difference was a Monday problem.**
-`land.upsert` used `update: {}`, so a re-run changed nothing about an existing
-parcel. Reserving moves a parcel AVAILABLE → RESERVED → SOLD and no amount of
-re-seeding gave it back. Five parcels, five consumed by this week's proofs, and
-**the sixth run looks like a broken platform rather than an exhausted fixture** —
-while the seed printed _"5 parcels seeded"_ over a pool it had not restored. A
-success message about a state it never checked.
-
-**The property, not the instance.** A seeded fixture must be returned to its
-seeded state by a re-run. The update clause now sets the fields a journey mutates
-(`status`, `isPublished`, `price`, `labelId`), and reservations created against
-seeded parcels are deleted first — the unique `landId` otherwise keeps the parcel
-tied to somebody's test run. Only rows the seed owns are touched: seeded parcel
-ids, never the seeded reservation itself.
-
-**Margin, because a pool that survives one pass is the same zero-margin mistake
-as ten quiz questions against a threshold of ten.** 5 parcels → **20**, of which
-**18 AVAILABLE**. A journey consumes one; a suite run consumes a handful.
-
-**Proof, by exhaustion and recovery — with the exit code read every time:**
-
-```
-seed             Lands seeded (3 labels, 20 parcels, 18 available, 1 reservation)  exit=0
-                 AVAILABLE=18  reservations=1
-exhaust          AVAILABLE=0   reservations=19   <- the wall a tester hits
-re-seed          ... 18 available ...                                              exit=0
-                 AVAILABLE=18  reservations=1    <- restored
-exhaust again    AVAILABLE=0
-re-seed          ... 18 available ...                                              exit=0
-                 AVAILABLE=18  reservations=1
-```
-
-**The first version of this proof was wrong, and it is the sharpest measurement
-defect of the week.** `landReservation.upsert` keyed on `landId`, which carries
-no unique constraint — Postgres refuses the `ON CONFLICT`. It had passed
-silently while `update` was `{}`, because Prisma took a find-then-write path;
-giving the update real fields made it emit `INSERT … ON CONFLICT` and the latent
-mismatch surfaced. The seed **exited 1**.
-
-And I reported the proof as passing. The parcels are restored _before_ the
-reservation upsert, so `AVAILABLE` moved 0 → 18 exactly as predicted, and I read
-the numbers I expected to move. **I grepped for the success line, it never
-printed, and I did not notice its absence** — then piped the command so `$?` was
-`tail`'s status rather than the seed's.
-
-**So the seed now checks its own postcondition** rather than announcing one: it
-counts the AVAILABLE parcels back and throws if the number is not the one it
-claims, and the log prints the counted number rather than the intended one.
-
-```
-Lands seed postcondition failed: expected 18 AVAILABLE parcels, found 0.
-The fixtures were not restored.                                    exit=1
-```
-
-**Mutations, six tails**, each observed failing alone: `update: {}` restored; the
-reservation cleanup deleted; the pool cut back to five; the reservation keyed on
-`landId` again; the log reporting the intended count rather than the counted one;
-and the postcondition itself, watched failing against an unrestored pool.
-
-### F3 — The four journeys, automated — `EN COURS`
-
-Proven by hand on 2026-09-04 means **proven once, by one person, on one build**.
-`apps/api-e2e/src/journeys/` runs the same four against a deployed API, in CI,
-after every deploy to dev.
-
-| Journey         | What it holds                                                                                                                                                                                                                               |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 — signup      | registers, **refuses login until verified**, extracts a real 64-hex token from the mailbox, verifies, logs in                                                                                                                               |
-| 2 — upload      | presigned URL carries `X-Amz-Signature`, PUT 200, the file is attached and readable back                                                                                                                                                    |
-| 3 — KBS         | quiz serves **exactly 10** and scores **out of 10**; no `isCorrect` reaches the candidate; exam serves **20**; grading gives **`EXAM_PASSED`** and **no certificate**; an admin issues one and the count moves; public verify returns valid |
-| 4 — reservation | the created client holds **`CLIENT`**; the set-password token is found **anywhere in the mailbox**; the client logs in and the portal returns their purchase                                                                                |
-
-**Each assertion is a defect this week produced.** They are not a description of
-the product, they are the scar tissue.
-
-**The sha gate is in `beforeAll`.** `EXPECTED_SHA` is the commit under test and
-the suite refuses to certify a build whose `/health/version` does not match it.
-Unset locally, the gate **prints what it found** rather than passing quietly — an
-unset variable must not read as a passing gate.
-
-**Two defects in the spec itself, on first run.** The quiz payload is
-`{ moduleId, questions: [...] }` and I read `data` as the array; `start` answers
-200 and I asserted 201. Both were the spec being wrong about the API, and both
-failed loudly enough to say so.
-
-**And the ninth assertion is currently failing on purpose:** journey 4 reports
-`available.length` is 0, because dev's parcel pool is exhausted and the
-restorative seed is not deployed yet. **The automated journey reproduced the
-Monday problem before the fix reached the environment**, which is the strongest
-argument for it existing.
-
-**The suite returns the parcel it consumes.** Each run reserves one, and the pool
-went **18 → 15 in three runs** before anybody noticed. At one deploy per change
-that empties inside a fortnight, and the next tester finds an empty catalogue and
-reports a bug that is not there. **A restorative seed is not enough if nothing
-re-runs it**, and a test that relies on somebody else tidying up has a hidden
-prerequisite. Journey 4 now cancels its reservation and asserts the parcel is
-`AVAILABLE` again — which is the restorative property proved _through the API_
-rather than against the database. Stable at 14 across consecutive runs; removing
-the cancellation fails the assertion.
-
-**And the suite can throttle itself.** Run back to back it exhausts
-`THROTTLE_LIMIT`, and the failure surfaced as _"expected 200, received 429"_ on a
-**login** — which reads as a broken auth path and is not. `call()` now names a
-429 explicitly rather than letting it be asserted against. In CI the suite runs
-once per deploy and never meets it; a human re-running it three times in a minute
-will, and should be told what happened instead of debugging the product.
-
-**Deleted rather than annotated:** `api-e2e` previously held one spec asserting
-`GET /api` returns `{ message: 'Hello API' }` — a route that does not exist, in a
-project CI never ran. A test nobody runs, asserting something untrue, is worse
-than no test: it reads as coverage.
-
-`EN COURS` until the CI job runs green against a re-seeded dev. **Cost: none.**
-
-### T1 / N1 — Guards, roles and the envelope contract — `EN COURS`
-
-**The live sweep, `kambriq-dev-api:117` / `sha-d27d6e0`.** Every guarded
-controller, probed with no token, with a role the hierarchy does **not** imply,
-and with an allowed role:
-
-| Controller      | Route                        | no token   | wrong role           | right role |
-| --------------- | ---------------------------- | ---------- | -------------------- | ---------- |
-| `core/users`    | `/users`                     | 401        | 403 (`ADMIN_KBS`)    | 200        |
-| `kbs/admin`     | `/kbs/admin/candidates`      | 401        | 403 (`ADMIN_KAMNET`) | 200        |
-| `kbs/candidate` | `/kbs/courses`               | 401        | —                    | 200        |
-| `kamnet/admin`  | `/kamnet/admin/applications` | 401        | 403 (`ADMIN_KBS`)    | 200        |
-| `kamnet/agent`  | `/kamnet/agents/me`          | 401        | 403 (`CLIENT`)       | 200        |
-| `kamnet/agent`  | `/kamnet/applications/me`    | 401        | 403 (`CLIENT`)       | 200        |
-| `lands/admin`   | `/lands/admin/reservations`  | 401        | 403 (`ADMIN_KBS`)    | 200        |
-| `lands/agent`   | `/lands`                     | 401        | 403 (`CLIENT`)       | 200        |
-| `lands/client`  | `/lands/client/purchases`    | 401        | 403 (`ADMIN_KBS`)    | 200        |
-| `health`        | `/health`                    | 200 public | —                    | —          |
-| `kbs/public`    | `/kbs/public/verify/:kca`    | 200 public | —                    | —          |
-
-The wrong-role column is chosen against `ROLE_HIERARCHY`, not by convenience:
-`ADMIN_GLOBAL` implies everything, so it can never be a wrong role, and
-`ADMIN_KBS` is lateral to `ADMIN_LANDS` and `ADMIN_KAMNET`, which is what makes
-it a real refusal rather than an accident of ordering.
-
-**The regression mechanism is about the opt-out, because that is where the risk
-is.** `JwtAuthGuard` and `RolesGuard` are global, so every route is
-authenticated unless a decorator removes it. `route-guards.spec.ts` therefore
-pins the **public surface as a list** — 9 on `auth`, 3 on `health`, 1 on
-`kbs/public`, 1 on `newsletter`, 0 everywhere else — so adding a `@Public()`
-becomes an edit to that list and a reviewed decision, rather than a line nobody
-sees. It also pins the class-level `@Roles` on the five role-gated controllers:
-**a deleted `@Roles` downgrades an admin controller to "any authenticated user"
-without changing a single response shape.**
-
-**The envelope contract asserts on content, because shape is what the defect
-preserves.** `GET /users` served `{"success":true,"data":[{},{},{}],"meta":{"total":14}}`
-— 200, correct envelope, correct pagination, no data. A contract test checking
-`{success, data}` would have passed it; so would `Array.isArray(data)`,
-`data.length === 3`, or `meta.total`. **Every one of those is true of a list of
-Promises.** `envelope-contract.spec.ts` boots a real server, serves that exact
-defect from a probe route, shows every shape assertion passing on it, and then
-fails it on content — no empty objects, nothing serialising to `{}` or
-`[object …]`. `expectCarriesContent` is exported for each module's list
-endpoints to reuse.
-
-**Proof: seven tails, seven mutations**, each observed failing alone:
-
-| #   | Mutation                                        | Test that fired                                                                 |
-| --- | ----------------------------------------------- | ------------------------------------------------------------------------------- |
-| 1   | a `@Public()` slipped onto an admin controller  | exposes exactly the declared number of public routes — `Expected 0, Received 1` |
-| 2   | class-level `@Roles` deleted                    | still declares its class-level roles — `Received string: ""`                    |
-| 3   | a declared public route removed                 | the same test, the other way — `Expected 1, Received 0`                         |
-| 4   | the global `RolesGuard` unwired                 | the global guards are wired, so authentication is opt-out                       |
-| 5   | the controller scanner finds nothing            | found the controllers at all — `Expected >= 13, Received 0`                     |
-| 6   | the envelope stops wrapping                     | wraps a plain payload in `{ success, data }`                                    |
-| 7   | **the content check weakened to a shape check** | rejects a list of unawaited promises — _"Received function did not throw"_      |
-
-**Mutation 7 is the one that matters.** It does not break the code; it weakens
-the test. The contract test cannot be quietly downgraded to a shape check,
-because the defect-reproduction case stops failing and says so.
-
-**Two defects in my own probe, recorded.** I invented `/kamnet/me`, which does
-not exist, and read its 404 as a missing guard — a route that is not there cannot
-be unguarded. And I built the API root URL as `API + ''`, hit
-`https://dev.kambriq.com/api/v1` with no trailing slash, and got the **Next.js**
-404 page: without the slash the ALB does not match the API rule and falls through
-to the web service. `/api/v1/` answers 401 and `/api/v1/nope` answers a JSON 404,
-so N2 holds. Both were defects in the measurement, and both were briefly read as
-defects in the thing measured.
-
-`EN COURS` until the sweep runs from CI rather than by hand. **Cost: none.**
-
 ### F1 — Coverage ratchet — `A DECIDER`
 
 No threshold yet: one that fails on arrival teaches everyone to ignore it. Add
@@ -1204,26 +845,34 @@ before prd sends anything, independently of cost.
 
 ## Proven
 
-| ID  | Chantier                                                                                                                                                                                                                                                                                                                                                                       | Closed by                         | Proof                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Cost                                                                |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| B1  | SES: the API had never sent an email. Static-credential gate, no `ses:` grant, and the MessageId was never logged                                                                                                                                                                                                                                                              | infra #16 #17 #18; webapp #39 #41 | `messageId=010701a06a9fd24c-51cc2bd1-7d70-4715-a7a0-ee582c49ea1e-000000`; `AWS/SES Send` 1.0 and `Delivery` 1.0 at 03:43 and 04:14, `Bounce` none, from zero datapoints before                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Contact list free; two IAM policies free; one SSM parameter removed |
-| Q1  | `CERTIFIED` was set by grading, on the score alone: certified with no certificate, no `kcaNumber` and nobody's name against it. `certificate/me` answered `{"data":null}` to somebody the API called certified — and grading also granted `KCA_CERTIFIED`, which gates the KAMNET agent routes, so **passing an exam made somebody an agent before any human had approved it** | webapp #54                        | Live on dev, `:108` / `sha-4be405b`, same candidate either side of one admin call. **Before issuance:** `EXAM_PASSED`, `certifiedAt: null`, `nextAction: awaiting-certificate`, `certificate/me: null`, roles `[CLIENT, CANDIDATE_KBS]`. **After issuance:** `CERTIFIED`, `certifiedAt` set, `nextAction: certified`, `KCA-20260904-LNG8`, certificates 7 → 8, roles `[CLIENT, CANDIDATE_KBS, KCA_CERTIFIED]`. The role arriving with the credential and not before it is the half that mattered. Five mutations, all firing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | None — no migration, the column is a `String`                       |
-| V1  | A completed sale whose agent lookup failed logged an error and returned `null`, so BullMQ marked the job **completed**: sale recorded, job green, commission never created, and the only symptom available to anybody was an agent noticing they had not been paid. All four processors did the same on an unknown job name                                                    | webapp #58                        | Live on dev, `kambriq-dev-api:112` / `sha-fef4391`. Enqueued `kamnet.definitely-unknown-job` on the `kamnet` queue: `BEFORE failed=0 completed=0` → `AFTER failed=1 completed=0`, `reason=Unknown KAMNET job: kamnet.definitely-unknown-job`. It landed on the **failed** set with its reason, where before it would have completed silently. **Stated limit, not closed:** the probe queue used default job options, so `attemptsMade=1` — it proves the destination, not the three-attempt retry policy. Eight tails, eight mutations, each observed failing alone                                                                                                                                                                                                                                                                                                                                                                                                                                                          | None                                                                |
-| W1  | `/reactivate` was in `PUBLIC_PATHS` with no page. `lib/actions/auth.ts` redirects there on `REACTIVATION_REQUIRED`, so a user in the soft-delete grace period — undoing a deletion, on a clock — hit a 404                                                                                                                                                                     | webapp #57                        | Live on dev, `kambriq-dev-web:71` / `sha-68f6c7f`: `/reactivate` **200** (was 404), `id="email"` and `id="password"` present. `days=12` → _"Il vous reste 12 jours"_; `days=1` → _"1 jour"_; `days=999999` and `days=<script>` and no `days` → the neutral _"Votre compte est encore dans sa période de restauration"_. Four tails, four mutations, each observed failing alone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | None                                                                |
-| B3  | KBS not demonstrable: `KbsQuestion` and `KbsExamQuestion` empty since the seed's single run on 2026-02-26, so the largest module (21 routes) could not be exercised                                                                                                                                                                                                            | webapp #47 #49 #50 #51            | Live on dev, `kambriq-dev-api:105`: quiz serves **10**, scores 100/10 and passes; exam serves **20**, `totalQuestions` 20, scores 100, `PASSED`; candidate status changed; **certificates 5 → 6** (`KCA-20260904-N4OY`) — **issued by an explicit admin call during the proof, not by passing.** The exam produced no certificate: `certificate/me` answered `{"data":null}` and the count moved only after `POST /kbs/admin/certificates/:id`. So 5 → 6 proves **issuance works when somebody triggers it**; it is not proof of an end-to-end certification chain, and the chain is deliberately not automatic (Q1). `/kbs/public/verify` returns `valid: true`. Idempotency: two local runs, identical counts. Distribution guard **demonstrated, not asserted**: forcing `9/8/8/5` fails all four banks on `<= 8`; `9/9/9/3`, the per-bank shape of a `31/31/29/10` skew, fails the same way; and `8/8/8/6` — upper bound satisfied — fails all four on `>= 7`, so both tails are observed rather than inferred. 235 tests | None                                                                |
-| K2  | A candidate who passed every module was told to "finish all the modules". `checkAndTransitionToExamPending` returned silently on a null `activeCourseId` that the seed never set; `me/overview` answered `course: null` for the same reason                                                                                                                                    | webapp #51                        | `EXAM_PENDING` and `eligible: true` on dev after the fix; `me/overview` returns the course. Mutation: removing the log fails 1, reverting the seed's `update` branch fails 1. `kbsCandidate.updateMany` was absent from the shared mock — the defect was shielding the gap in its own coverage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | None                                                                |
-| K1  | A perfect quiz scored **33%**. The grader divided by the module pool (30) instead of the quiz length (10), so nobody could pass a quiz or reach the exam                                                                                                                                                                                                                       | webapp #50                        | `{"score":100,"correctCount":10,"totalQuestions":10,"passed":true}` on dev, both modules. Mutation: restoring `questions.length` fails 2, removing the completeness check fails 1. Fixtures now hold pool 30 against quiz 10 — the old ones used 2 against 2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | None                                                                |
-| S2  | Every seeded identifier — 47 literals, 480 generated — was rejected by the API's own `z.uuid()`: version and variant nibbles both `0`. 23 request-body fields across KBS, KAMNET and LANDS were unreachable with seeded data                                                                                                                                                   | webapp #49                        | Quiz and exam submission accepted on dev after a clean reset and re-seed of the four databases. A test runs all 600 emitted ids through the controllers' own validator, and asserts the literal count is above 40 so an empty match cannot read as a pass                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | None                                                                |
-| N2  | `GlobalExceptionFilter` never executed, in any environment. `PrismaExceptionFilter` is `@Catch()`, wins as last-registered, and rethrew — escaping Nest into Express's HTML error page. Every 401/403/404/500 leaked a stack and broke the envelope                                                                                                                            | webapp #49                        | On dev: `GET /users/me` 401, `GET /nope` 404, wrong password 400 — all `application/json`, enveloped, no stack, no `node_modules`. Mutation: restoring the rethrow fails 5 chain tests while the 57 filter unit tests stay green                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | None                                                                |
-| E1  | Stack traces in HTTP response bodies, gated on `NODE_ENV`                                                                                                                                                                                                                                                                                                                      | webapp #47, closed by #49         | Mutation: restoring the `NODE_ENV` branch fails 1. The larger half was N2 — my first attribution of this leak to the filter's dev branch was wrong, and the not-found middleware I added in #48 deployed and never fired                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | None                                                                |
-| A3  | Every verification email carried `?token=[object Promise]`. `createVerificationToken` called without `await` on the registration path only. No user had ever been able to verify an address                                                                                                                                                                                    | webapp #48                        | Live on dev: signup → mail received at maildrop → `token=d5163844cd9a11ec…` (64 hex) → verify 200 → login 200. Login before verifying correctly refused. `EmailService.send` now throws on any `[object …]` argument, covering every template including ones not written yet. **The cleanest example this project has of a proof that was true and still did not cover the thing it appeared to cover:** yesterday's item-1 proof held, because that path was a **resend, not a signup**. The resend worked. The registration never had                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | None                                                                |
-| S1  | Storage: `S3Client` gated on `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`, never set on Fargate. Every upload and download dead on dev since February                                                                                                                                                                                                                         | webapp #44                        | Round-trip on dev, `8003ddb` / task def `:100`: presigned URL signed with `ASIAQYAF4F4JDB6N4PDM` — STS credentials from the **task role**, the thing the gate was blocking; PUT 200; `head-object kambriq-media-dev` size 35, etag `333c6389…`; download URL 200; content identical. Mutation: restoring the gate fails 7 of 47 tests in `libs/common`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | None — the IAM grants already existed in `iam-media.tf`             |
-| C2  | Middleware decision untested. A redirect loop shipped May 2026, fixed by accident in August, unnoticed                                                                                                                                                                                                                                                                         | webapp #38                        | 101 tests; removing `!isPublic(pathname)` fails 18. e2e public routes 5 → 20                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | None                                                                |
-| C1  | Coverage measured only over files a test already imported; `apps/web` never ran in CI                                                                                                                                                                                                                                                                                          | webapp #37                        | api 70.8% → **29.8%** (16 of 60 files were measured); four modules at 0.0%                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | None                                                                |
-| D1  | Prisma baseline: four dev databases under Migrate, `db push --accept-data-loss` unreachable                                                                                                                                                                                                                                                                                    | webapp #34 #35 #36                | `migrate deploy` ×4, "No pending migrations" ×4, no `db push`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | None                                                                |
-| A1  | e2e uploaded an empty report every run while reporting green                                                                                                                                                                                                                                                                                                                   | webapp #32                        | `playwright-report` 207 530 bytes, was absent                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | None                                                                |
-| A2  | `scripts/smoke-test.sh` died on its first passing check under `set -e`                                                                                                                                                                                                                                                                                                         | infra #15                         | 8 passed / 0 failed under the CI OIDC role                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | None                                                                |
-| L1  | The SES MessageId was logged in a metadata object that `nestjs-pino` drops                                                                                                                                                                                                                                                                                                     | webapp #41                        | Mutation: restoring the object form fails 1 of 30 tests                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | None                                                                |
+| ID    | Chantier                                                                                                                                                                                                                                                                                                                                                                       | Closed by                         | Proof                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Cost                                                                |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| B1    | SES: the API had never sent an email. Static-credential gate, no `ses:` grant, and the MessageId was never logged                                                                                                                                                                                                                                                              | infra #16 #17 #18; webapp #39 #41 | `messageId=010701a06a9fd24c-51cc2bd1-7d70-4715-a7a0-ee582c49ea1e-000000`; `AWS/SES Send` 1.0 and `Delivery` 1.0 at 03:43 and 04:14, `Bounce` none, from zero datapoints before                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Contact list free; two IAM policies free; one SSM parameter removed |
+| F3    | The four journeys were proven by hand: once, by one person, on one build                                                                                                                                                                                                                                                                                                       | webapp #67 #71                    | Automated in `apps/api-e2e/src/journeys/`, **9 assertions green in CI** on `d328544` in the `Delivery journeys (dev)` job, and locally under the gate. Every assertion is a defect this week produced. The gate is mutation-proved both ways; the suite returns the parcel it consumes and names a 429 rather than letting it read as a broken login                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | None                                                                |
+| F2    | The seed was idempotent but **not restorative**: `update: {}` meant a re-run gave nothing back, so five parcels consumed by five journeys left a tester with an empty catalogue reporting a bug that was not there                                                                                                                                                             | webapp #67 #69                    | On dev, `exit=0`: `Lands seeded (3 labels, 20 parcels, 18 available, 1 reservation)`. Exhaust → re-seed → exhaust → re-seed, restored each time. The seed now **counts the parcels back and throws** rather than announcing. Six tails                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | None                                                                |
+| F4    | The seed ran clean locally and died in the container: `Cannot find module '../libs/common/src/types/roles.enum'`. `prisma/seed.ts` runs from **source** under `tsx`, and the image copied two subdirectories of `libs/common/src`                                                                                                                                              | webapp #68                        | Seed `exit=0` in the container on `kambriq-dev-api:123`. Three tails. **Local success is not deployment success, and the two differ by a `COPY` line nobody reads**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | None                                                                |
+| R1    | `where: { code: 'client' }` against a stored `'CLIENT'` — a client created by a land reservation got **no roles at all**, was emailed portal access, and was refused by every route in the portal. And `GET /users` served `[{},{},{}]` with `meta.total: 14`                                                                                                                  | webapp #62                        | On dev `sha-f069f9d`: `/users` returns rows with real keys; a reservation creates a client holding `CLIENT`. **The literal is banned across `apps/api/src`, `libs/common/src` and `prisma/`** — mutation 2 restores `'CLIENT'`, the right value in the wrong form, and the same test fires. Seven tails                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | None                                                                |
+| R2    | An invited client set their password (204) and **still could not log in** — `emailVerified` false, with no way out from their side                                                                                                                                                                                                                                             | webapp #63                        | Live: set-password 204 → login 200 → `GET /lands/client/purchases` 200 with their purchase. Two tails, the second so the new field cannot displace the password and lockout writes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | None                                                                |
+| P2    | A missing `await` produced `[object Promise]` in every verification link and `[{},{},{}]` from a map over an async method — same defect, two surfaces, both invisible because a Promise satisfies every shallow check                                                                                                                                                          | webapp #66                        | **Three parts, all recorded.** (1) The scanner is unsound: planting the delegating form it catches, planting an unwrapped `map(async …)` it misses, because a nested `Promise.all` sits in its window — measured, not assumed. (2) The mechanism is the **type**: `buildPaginatedResponse<T>(data: NotPromise<T>[])` makes `tsc` refuse the shipped code at **14 call sites in 10 services**, before it runs. (3) **Not covered, and named:** an async arrow in a `map` whose result never reaches that helper. A lint rule was rejected with its coverage stated                                                                                                                                                                                                                                                                                                                                                                                                                                                             | None                                                                |
+| P3    | The client portal email printed the agent's raw UUID: _"Votre agent KAMNET : 00000000-0000-4000-8000-b00000000005"_                                                                                                                                                                                                                                                            | webapp #66                        | Live on dev: **"Votre agent KAMNET : Eric Mbou"**. The agent is resolved before the email; the template omits the line entirely when there is no name; and `EmailService.send` rejects any `…Name` argument that is UUID-shaped. Three tails, including the guard over-firing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | None                                                                |
+| T1/N1 | Guards and roles untested; the response envelope held on success paths and nothing else                                                                                                                                                                                                                                                                                        | webapp #65                        | Live sweep, every guarded controller: **401 / 403 / 200**, wrong role chosen against `ROLE_HIERARCHY` rather than convenience. The public surface is pinned as a list and the class-level `@Roles` on five controllers. The envelope contract **asserts on content**: it serves the `[{},{},{}]` defect from a probe route, shows every shape assertion passing on it, and fails it on content. Seven tails — the seventh weakens the _test_ and the defect-reproduction case stops throwing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | None                                                                |
+| Q1    | `CERTIFIED` was set by grading, on the score alone: certified with no certificate, no `kcaNumber` and nobody's name against it. `certificate/me` answered `{"data":null}` to somebody the API called certified — and grading also granted `KCA_CERTIFIED`, which gates the KAMNET agent routes, so **passing an exam made somebody an agent before any human had approved it** | webapp #54                        | Live on dev, `:108` / `sha-4be405b`, same candidate either side of one admin call. **Before issuance:** `EXAM_PASSED`, `certifiedAt: null`, `nextAction: awaiting-certificate`, `certificate/me: null`, roles `[CLIENT, CANDIDATE_KBS]`. **After issuance:** `CERTIFIED`, `certifiedAt` set, `nextAction: certified`, `KCA-20260904-LNG8`, certificates 7 → 8, roles `[CLIENT, CANDIDATE_KBS, KCA_CERTIFIED]`. The role arriving with the credential and not before it is the half that mattered. Five mutations, all firing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | None — no migration, the column is a `String`                       |
+| V1    | A completed sale whose agent lookup failed logged an error and returned `null`, so BullMQ marked the job **completed**: sale recorded, job green, commission never created, and the only symptom available to anybody was an agent noticing they had not been paid. All four processors did the same on an unknown job name                                                    | webapp #58                        | Live on dev, `kambriq-dev-api:112` / `sha-fef4391`. Enqueued `kamnet.definitely-unknown-job` on the `kamnet` queue: `BEFORE failed=0 completed=0` → `AFTER failed=1 completed=0`, `reason=Unknown KAMNET job: kamnet.definitely-unknown-job`. It landed on the **failed** set with its reason, where before it would have completed silently. **Stated limit, not closed:** the probe queue used default job options, so `attemptsMade=1` — it proves the destination, not the three-attempt retry policy. Eight tails, eight mutations, each observed failing alone                                                                                                                                                                                                                                                                                                                                                                                                                                                          | None                                                                |
+| W1    | `/reactivate` was in `PUBLIC_PATHS` with no page. `lib/actions/auth.ts` redirects there on `REACTIVATION_REQUIRED`, so a user in the soft-delete grace period — undoing a deletion, on a clock — hit a 404                                                                                                                                                                     | webapp #57                        | Live on dev, `kambriq-dev-web:71` / `sha-68f6c7f`: `/reactivate` **200** (was 404), `id="email"` and `id="password"` present. `days=12` → _"Il vous reste 12 jours"_; `days=1` → _"1 jour"_; `days=999999` and `days=<script>` and no `days` → the neutral _"Votre compte est encore dans sa période de restauration"_. Four tails, four mutations, each observed failing alone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | None                                                                |
+| B3    | KBS not demonstrable: `KbsQuestion` and `KbsExamQuestion` empty since the seed's single run on 2026-02-26, so the largest module (21 routes) could not be exercised                                                                                                                                                                                                            | webapp #47 #49 #50 #51            | Live on dev, `kambriq-dev-api:105`: quiz serves **10**, scores 100/10 and passes; exam serves **20**, `totalQuestions` 20, scores 100, `PASSED`; candidate status changed; **certificates 5 → 6** (`KCA-20260904-N4OY`) — **issued by an explicit admin call during the proof, not by passing.** The exam produced no certificate: `certificate/me` answered `{"data":null}` and the count moved only after `POST /kbs/admin/certificates/:id`. So 5 → 6 proves **issuance works when somebody triggers it**; it is not proof of an end-to-end certification chain, and the chain is deliberately not automatic (Q1). `/kbs/public/verify` returns `valid: true`. Idempotency: two local runs, identical counts. Distribution guard **demonstrated, not asserted**: forcing `9/8/8/5` fails all four banks on `<= 8`; `9/9/9/3`, the per-bank shape of a `31/31/29/10` skew, fails the same way; and `8/8/8/6` — upper bound satisfied — fails all four on `>= 7`, so both tails are observed rather than inferred. 235 tests | None                                                                |
+| K2    | A candidate who passed every module was told to "finish all the modules". `checkAndTransitionToExamPending` returned silently on a null `activeCourseId` that the seed never set; `me/overview` answered `course: null` for the same reason                                                                                                                                    | webapp #51                        | `EXAM_PENDING` and `eligible: true` on dev after the fix; `me/overview` returns the course. Mutation: removing the log fails 1, reverting the seed's `update` branch fails 1. `kbsCandidate.updateMany` was absent from the shared mock — the defect was shielding the gap in its own coverage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | None                                                                |
+| K1    | A perfect quiz scored **33%**. The grader divided by the module pool (30) instead of the quiz length (10), so nobody could pass a quiz or reach the exam                                                                                                                                                                                                                       | webapp #50                        | `{"score":100,"correctCount":10,"totalQuestions":10,"passed":true}` on dev, both modules. Mutation: restoring `questions.length` fails 2, removing the completeness check fails 1. Fixtures now hold pool 30 against quiz 10 — the old ones used 2 against 2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | None                                                                |
+| S2    | Every seeded identifier — 47 literals, 480 generated — was rejected by the API's own `z.uuid()`: version and variant nibbles both `0`. 23 request-body fields across KBS, KAMNET and LANDS were unreachable with seeded data                                                                                                                                                   | webapp #49                        | Quiz and exam submission accepted on dev after a clean reset and re-seed of the four databases. A test runs all 600 emitted ids through the controllers' own validator, and asserts the literal count is above 40 so an empty match cannot read as a pass                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | None                                                                |
+| N2    | `GlobalExceptionFilter` never executed, in any environment. `PrismaExceptionFilter` is `@Catch()`, wins as last-registered, and rethrew — escaping Nest into Express's HTML error page. Every 401/403/404/500 leaked a stack and broke the envelope                                                                                                                            | webapp #49                        | On dev: `GET /users/me` 401, `GET /nope` 404, wrong password 400 — all `application/json`, enveloped, no stack, no `node_modules`. Mutation: restoring the rethrow fails 5 chain tests while the 57 filter unit tests stay green                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | None                                                                |
+| E1    | Stack traces in HTTP response bodies, gated on `NODE_ENV`                                                                                                                                                                                                                                                                                                                      | webapp #47, closed by #49         | Mutation: restoring the `NODE_ENV` branch fails 1. The larger half was N2 — my first attribution of this leak to the filter's dev branch was wrong, and the not-found middleware I added in #48 deployed and never fired                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | None                                                                |
+| A3    | Every verification email carried `?token=[object Promise]`. `createVerificationToken` called without `await` on the registration path only. No user had ever been able to verify an address                                                                                                                                                                                    | webapp #48                        | Live on dev: signup → mail received at maildrop → `token=d5163844cd9a11ec…` (64 hex) → verify 200 → login 200. Login before verifying correctly refused. `EmailService.send` now throws on any `[object …]` argument, covering every template including ones not written yet. **The cleanest example this project has of a proof that was true and still did not cover the thing it appeared to cover:** yesterday's item-1 proof held, because that path was a **resend, not a signup**. The resend worked. The registration never had                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | None                                                                |
+| S1    | Storage: `S3Client` gated on `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`, never set on Fargate. Every upload and download dead on dev since February                                                                                                                                                                                                                         | webapp #44                        | Round-trip on dev, `8003ddb` / task def `:100`: presigned URL signed with `ASIAQYAF4F4JDB6N4PDM` — STS credentials from the **task role**, the thing the gate was blocking; PUT 200; `head-object kambriq-media-dev` size 35, etag `333c6389…`; download URL 200; content identical. Mutation: restoring the gate fails 7 of 47 tests in `libs/common`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | None — the IAM grants already existed in `iam-media.tf`             |
+| C2    | Middleware decision untested. A redirect loop shipped May 2026, fixed by accident in August, unnoticed                                                                                                                                                                                                                                                                         | webapp #38                        | 101 tests; removing `!isPublic(pathname)` fails 18. e2e public routes 5 → 20                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | None                                                                |
+| C1    | Coverage measured only over files a test already imported; `apps/web` never ran in CI                                                                                                                                                                                                                                                                                          | webapp #37                        | api 70.8% → **29.8%** (16 of 60 files were measured); four modules at 0.0%                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | None                                                                |
+| D1    | Prisma baseline: four dev databases under Migrate, `db push --accept-data-loss` unreachable                                                                                                                                                                                                                                                                                    | webapp #34 #35 #36                | `migrate deploy` ×4, "No pending migrations" ×4, no `db push`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | None                                                                |
+| A1    | e2e uploaded an empty report every run while reporting green                                                                                                                                                                                                                                                                                                                   | webapp #32                        | `playwright-report` 207 530 bytes, was absent                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | None                                                                |
+| A2    | `scripts/smoke-test.sh` died on its first passing check under `set -e`                                                                                                                                                                                                                                                                                                         | infra #15                         | 8 passed / 0 failed under the CI OIDC role                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | None                                                                |
+| L1    | The SES MessageId was logged in a metadata object that `nestjs-pino` drops                                                                                                                                                                                                                                                                                                     | webapp #41                        | Mutation: restoring the object form fails 1 of 30 tests                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | None                                                                |
 
 ---
 
@@ -1400,6 +1049,12 @@ rather than assumed.
 ---
 
 ## The habits this register enforces
+
+> **The defect catalogue is section 3 of the brief at the top of this file.** It
+> is the part still worth reading in six months, because every entry cost a day
+> to find and none of them is specific to this week's code. What follows is the
+> reasoning behind the entries, kept here because the catalogue states the
+> pattern and this states why it keeps happening.
 
 **Prove it, do not infer it.** A green deploy concealed the SES failure from
 February to September. Verify against the external system — the SES `Send`
