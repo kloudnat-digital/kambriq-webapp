@@ -822,9 +822,28 @@ export class KbsExamService {
     return candidate;
   }
 
+  /**
+   * The pool must be able to fill an exam of the configured length, not merely
+   * be non-empty.
+   *
+   * The old check was `poolSize === 0`. With a pool of 5 the draw is
+   * `.slice(0, 20)` -> 5 questions, `totalQuestions` is set from
+   * `shuffled.length`, and the score divides by that. The arithmetic stays
+   * internally honest, which is exactly what makes it dangerous: there is no
+   * wrong number anywhere to notice. The certification exam simply shrinks, a
+   * 4/5 becomes 80% and the candidate is certified. Certification either runs at
+   * its stated length or it does not run.
+   */
   private async ensureQuestionPoolAvailable() {
+    const settings = await this.prisma.kbsSettings.findFirst();
+    const required = settings?.examQuestionCount ?? DEFAULT_EXAM_QUESTION_COUNT;
     const poolSize = await this.prisma.kbsExamQuestion.count();
-    if (poolSize === 0) throw new ServiceUnavailableException(this.t('kbs.exam.noQuestions'));
+
+    if (poolSize < required) {
+      throw new ServiceUnavailableException(
+        `${this.t('kbs.exam.noQuestions')} (pool ${poolSize}, requis ${required})`,
+      );
+    }
   }
 
   private shuffle<T>(array: T[]): T[] {
