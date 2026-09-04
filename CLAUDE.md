@@ -228,6 +228,35 @@ bastion, no EBS volume, Container Insights off. `EBS:VolumeUsage.gp3` is now
 bill excluding tax, and it exists to give two Fargate tasks outbound internet.**
 Nothing else is close.
 
+#### How much of this bill is even ours
+
+**The account is shared with other projects. About $12.89/month of August is not
+KAMBRIQ**, so our true run rate is roughly **$151.94** excluding tax.
+
+| Line            | Aug         | Ours?                                                                                                                                                                                                                                                             |
+| --------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Route 53        | 7.59        | **11 hosted zones, 1 is `kambriq.com`.** The rest: `kloudnat.com/.net`, `fotomena.net`, `gentlyevents.com`, `vehluxe.com`, `sotso.net`, `rexho.net`, `saatch.net`, `dorigine.net`, `skodaz.com`. **~$6.90 not ours**                                              |
+| KMS             | 5.99        | **None of it.** All three customer-managed keys are `production-fotomena-eks cluster encryption key`. No EKS cluster and no EC2 instance exists, so they are **orphaned keys from a deleted cluster**. None found in eu-west-1, eu-west-3, us-east-1 or us-west-2 |
+| Registrar       | 17.00 (Jul) | `kloudnat.com` and `kloudnat.net` expire 2027-07-07, so they renewed in July 2026. The four KAMBRIQ domains expire 2027-08-20. **The July charge was almost certainly kloudnat's**                                                                                |
+| S3              | 0.00        | `kloudnat-infra-shared-store` is not ours, but S3 costs nothing                                                                                                                                                                                                   |
+| Everything else |             | **KAMBRIQ**, verified by inventory: one ALB, one RDS, one ECS cluster, one non-default VPC, all `kambriq-*`; zero EC2 instances                                                                                                                                   |
+
+Deleting none of this is ours to decide. But ~$12.89/month is counted against a
+bill considered too high, and it is somebody else's.
+
+#### Container Insights: the fix worked, verified against the bill
+
+August CloudWatch was **$14.55**, almost all `MetricMonitorUsage`. Container
+Insights was disabled on 2026-09-02. September 1-5:
+
+```
+AmazonCloudWatch  0.00   (only EUC1-TimedStorage-ByteHrs and DataProcessing-Bytes, both 0.00)
+```
+
+`MetricMonitorUsage` is **gone entirely**. Container Insights was the source, and
+removing it saved the full **$14.55/month**, about 9% of the bill. Checked rather
+than assumed, because the rest of this week argued for checking.
+
 ### X2 — NAT gateway — `DECIDE, A FAIRE`, option 2
 
 Priced against the X1 baseline. One NAT gateway, two private subnets in
@@ -255,7 +284,16 @@ badly, not under option 2.
 addressable at the network layer. Today the security group admits only the ALB,
 so effective exposure is unchanged, but a future SG mistake goes from
 "unreachable" to "internet-reachable". That is the trade for $35/month.
-Implementation is Ulrich's, on his own PR.
+
+**This posture is dev-only. prd does not inherit it by default.** prd will hold
+real land records and identity documents. If dev and prd share a VPC they must
+**not** share the same subnet posture: prd's tasks belong on private subnets even
+while dev's sit on public ones. That is a **mutualisation constraint discovered
+now rather than after prd exists**, and it belongs to `M1` as much as here.
+
+**Prepare the PR, do not apply**, until the S1 and B3 blockers are proven: it
+touches shared state and two things should not move at once. Implementation is
+Ulrich's, on his own PR.
 
 ### M1 — Mutualisation of dev and future prd — `DECIDE, A FAIRE`
 
