@@ -23,8 +23,7 @@ export class KamnetProcessor extends WorkerHost {
       case KAMNET_JOBS.SALE_COMPLETED:
         return this.handleSaleCompleted(job.data);
       default:
-        this.logger.warn(`Unknown KAMNET job: ${job.name}`);
-        return null;
+        throw new Error(`Unknown KAMNET job: ${job.name}`);
     }
   }
 
@@ -40,9 +39,23 @@ export class KamnetProcessor extends WorkerHost {
     // 1. Look up the user in core
     const user = await this.usersService.findById(agentUserId).catch(() => null);
 
+    /**
+     * This is money, and a resolved promise marks the job completed.
+     *
+     * Logging an error and returning `null` left the sale recorded, the job
+     * green, and the agent's commission never created. Nothing anywhere held a
+     * count of sales that produced no commission, so the only way to find it
+     * would be an agent noticing they had not been paid. Throwing puts the job
+     * on the failed set with its payload intact, where it can be counted and
+     * replayed once the cause is fixed.
+     *
+     * A sale whose agent cannot be resolved is not a sale to skip. It is a sale
+     * somebody has to look at.
+     */
     if (!user) {
-      this.logger.error('Sale completed but user not found - skipping %o', { agentUserId });
-      return null;
+      throw new Error(
+        `Sale completed but the agent user does not exist in core (agentUserId=${agentUserId}, reservationId=${reservationId})`,
+      );
     }
 
     // 2. Look up the kamnet record
@@ -62,8 +75,12 @@ export class KamnetProcessor extends WorkerHost {
         return { skipped: true, reason: 'admin' };
       }
 
-      this.logger.error('Agent missing from KAMNET table %o', { agentUserId });
-      return null;
+      // Same reasoning: the user exists and is not an admin, so a KAMNET agent
+      // row should exist and does not. The commission cannot be attributed, and
+      // silence would be the only symptom.
+      throw new Error(
+        `Sale completed but no KAMNET agent row exists for the seller (agentUserId=${agentUserId}, reservationId=${reservationId})`,
+      );
     }
 
     // 3. Increment the agent's sales count

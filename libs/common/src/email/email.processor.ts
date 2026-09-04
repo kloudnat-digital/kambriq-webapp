@@ -50,8 +50,7 @@ export class EmailProcessor extends WorkerHost {
 
   async process(job: Job<EmailJobPayload>): Promise<unknown> {
     if (job.name !== NOTIFICATIONS_JOBS.SEND_EMAIL) {
-      this.logger.warn(`Unknown EMAIL job: ${job.name}`);
-      return null;
+      throw new Error(`Unknown EMAIL job: ${job.name}`);
     }
 
     const { to, lang, template, args } = job.data;

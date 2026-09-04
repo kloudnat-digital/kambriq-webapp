@@ -12,6 +12,16 @@ export class CoreCleanupProcessor extends WorkerHost {
     super();
   }
 
+  /**
+   * An unknown job name is a defect, not a no-op.
+   *
+   * A resolved promise marks a BullMQ job **completed**. Returning `null` for a
+   * name this processor does not recognise therefore reports success for work
+   * that was never done: rename a constant, deploy, and every job of that kind
+   * drains from the queue with a green tick and a `warn` nobody is reading.
+   * Throwing puts the job on the failed set, where it is countable and
+   * retryable.
+   */
   async process(job: Job): Promise<unknown> {
     switch (job.name) {
       case CORE_JOBS.CLEANUP_EXPIRED_TOKENS:
@@ -19,8 +29,7 @@ export class CoreCleanupProcessor extends WorkerHost {
       case CORE_JOBS.PURGE_DELETED_USERS:
         return this.handlePurgeDeletedUsers();
       default:
-        this.logger.warn(`Unknown CORE job: ${job.name}`);
-        return null;
+        throw new Error(`Unknown CORE job: ${job.name}`);
     }
   }
 

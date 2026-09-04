@@ -49,17 +49,61 @@ decisions, run during deploy waits rather than queued behind builds.
 
 ## Open
 
-### V1 — Commissions and job names — `DECIDE, A FAIRE`, promoted above every garde-fou
+### V1 — Commissions and job names — `EN COURS`
 
-`kamnet.processor.ts:44` — a completed sale whose user lookup fails logs an
-error, returns `null`, and BullMQ marks the job **completed**. A commission is
-silently not created. Both processors also return `null` on an unknown job name,
-so a renamed constant drops work while reporting success.
+`kamnet.processor.ts` — a completed sale whose user lookup fails logged an error,
+returned `null`, and BullMQ marked the job **completed**. The sale was recorded,
+the job was green, and the agent's commission was never created. Nothing held a
+count of sales that produced no commission, so the only symptom available to
+anybody was **an agent noticing they had not been paid**.
 
-**Decision:** an unrecoverable failure must fail the job; an unknown job name
-must throw.
-**Reasoning:** no amount of manual testing would ever reveal this, and it is money.
-**Proof:** by mutation, on both. **Cost: none.**
+All four processors returned `null` on an unknown job name, so a renamed constant
+would drain every job of that kind from the queue with a green tick and a `warn`
+nobody reads — silently stopping emails, cleanup, grading or commissions
+depending on which name moved.
+
+**Decision, implemented.** An unrecoverable failure fails the job; an unknown job
+name throws. A failed job keeps its payload on the failed set, where it is
+countable and replayable once the cause is fixed. **A sale whose agent cannot be
+resolved is not a sale to skip; it is a sale somebody has to look at.**
+
+The one legitimate skip is kept and made explicit: an admin closing a sale has no
+commission to track, and still resolves with `{ skipped: true, reason: 'admin' }`
+rather than a bare `null` — the difference between _"nothing to do"_ and
+_"something went wrong and I am not telling you"_.
+
+Both throws name `agentUserId` and `reservationId`, so a failed job can be traced
+back to the sale without opening the payload.
+
+**The commission path had no tests at all.** `handleSaleCompleted` is the only
+thing that turns a completed sale into an agent's commission, and nothing
+exercised it. `kamnet.processor.spec.ts` is new.
+
+**And one existing test pinned the defect.** `grading-processor.spec.ts` asserted
+`returns null for unknown job types`, and was green for exactly as long as the
+defect existed. A test can pin a defect as firmly as it pins a fix: that
+assertion was correct about the code and wrong about the requirement.
+
+**Proof: eight tails, eight mutations**, each observed failing on its own under
+the rule written today:
+
+| #   | Mutation                          | Test that fired                                    |
+| --- | --------------------------------- | -------------------------------------------------- |
+| 1   | KAMNET unknown job returns `null` | throws rather than completing the job              |
+| 2   | user-not-found returns `null`     | fails the job when the user does not exist in core |
+| 3   | the error stops naming the ids    | names the agent and the reservation                |
+| 4   | agent-row-missing returns `null`  | fails when the user has no KAMNET agent row        |
+| 5   | the admin skip throws too         | completes with an explicit skip reason             |
+| 6   | CORE unknown job returns `null`   | CoreCleanupProcessor throws                        |
+| 7   | KBS unknown job returns `null`    | KbsGradingProcessor throws                         |
+| 8   | EMAIL unknown job returns `null`  | EmailProcessor throws                              |
+
+Mutation 5 is there deliberately: a guard that starts failing the cases it was
+supposed to allow is a regression too, and only a mutation in that direction
+catches it.
+
+`EN COURS` until dev shows an unknown job on the **failed** set rather than the
+completed one. **Cost: none.**
 
 ### L2 — Logging drops metadata at 106 call sites — `EN COURS`
 
@@ -133,57 +177,6 @@ nobody waits for.
 The API answers `{success, data}`, the web answers flat. That gap broke the smoke
 test's health-body check and nobody saw it.
 **Decision:** one representative route per module. **Cost: none.**
-
-### W1 — `/reactivate` 404 — `EN COURS`
-
-Listed in `PUBLIC_PATHS`, no page behind it. `lib/actions/auth.ts:30` redirects
-there on `REACTIVATION_REQUIRED`, so a user in the soft-delete grace period —
-somebody trying to undo a deletion, on a clock — hit a 404.
-
-**Decision: keep both entries. The missing pages are the bug, not the entries.
-Build the missing `/reactivate` page.**
-
-**Instruction withdrawn, recorded so nobody re-issues it.** The original
-instruction was "fix or remove `/reactivate` and `/legal` from `PUBLIC_PATHS`".
-It was withdrawn once the investigation showed `isPublic` matches `p` or
-`p + '/'`, so the `/legal` entry is what makes `/legal/privacy`, `/terms`,
-`/mentions` and `/rgpd` public. Removing it would send four legal pages to the
-login screen. `/products` and `/verify-certificate` are prefixes in the same way.
-
-**Built.** `app/(auth)/reactivate/page.tsx`, on the same form pattern as the
-sibling auth pages, wired to the `reactivateAccountAction` that already existed.
-The `days` query parameter is display-only and attacker-controllable, so it is
-parsed defensively (integer, 1–365, otherwise a neutral message); the grace
-period is enforced by the API, which re-checks it on `POST /auth/reactivate`. A
-wrong number there misleads, it cannot extend anybody's window. `userId` arrives
-in the query string and is deliberately unused — the API reactivates on email and
-password, so the user proves who they are rather than the URL asserting it.
-
-**The guard is for the class, not the route.** `routes-have-pages.spec.ts`
-asserts every `PUBLIC_PATHS` entry either resolves to a `page.tsx` or is declared
-prefix-only **with at least one child page**, and that every `AUTH_ROUTES` target
-is public so a redirect cannot bounce to login. `isPublic` and `proxy` were
-already tested; both answer _"is this path public?"_ and both would have gone on
-answering "yes" for a path that renders nothing. This asserts the other half.
-
-**Proof: one mutation per tail**, under the rule written today, each observed
-failing on its own with its own `Expected/Received`:
-
-| Tail                         | Mutation                               | Observed                                |
-| ---------------------------- | -------------------------------------- | --------------------------------------- |
-| entry has a page             | delete `reactivate/page.tsx`           | `Expected value: "/reactivate"`         |
-| prefix has a child           | add `/legal-old` with nothing under it | `Expected length: not 0 / Received: []` |
-| redirect target is public    | drop `/reactivate` from `PUBLIC_PATHS` | `Expected value: "/reactivate"`         |
-| the collector found anything | force `ROUTES = []`                    | `Expected: > 20 / Received: 0`          |
-
-**A defect in my own measurement, recorded rather than tidied away.** The first
-collector treated `[param]` as a non-path segment along with `(group)`, `@slot`
-and `_private`, so `/verify-certificate/[certificateNumber]` collapsed to
-`/verify-certificate` and the test reported that route as "having no child page".
-A dynamic segment is a real path segment. The failure was in the measurement and
-was read, for a moment, as a defect in the routes.
-
-`EN COURS` until `/reactivate` answers 200 on dev. **Cost: none.**
 
 ### F1 — Coverage ratchet — `A DECIDER`
 
@@ -282,6 +275,7 @@ before prd sends anything, independently of cost.
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | B1  | SES: the API had never sent an email. Static-credential gate, no `ses:` grant, and the MessageId was never logged                                                                                                                                                                                                                                                              | infra #16 #17 #18; webapp #39 #41 | `messageId=010701a06a9fd24c-51cc2bd1-7d70-4715-a7a0-ee582c49ea1e-000000`; `AWS/SES Send` 1.0 and `Delivery` 1.0 at 03:43 and 04:14, `Bounce` none, from zero datapoints before                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Contact list free; two IAM policies free; one SSM parameter removed |
 | Q1  | `CERTIFIED` was set by grading, on the score alone: certified with no certificate, no `kcaNumber` and nobody's name against it. `certificate/me` answered `{"data":null}` to somebody the API called certified — and grading also granted `KCA_CERTIFIED`, which gates the KAMNET agent routes, so **passing an exam made somebody an agent before any human had approved it** | webapp #54                        | Live on dev, `:108` / `sha-4be405b`, same candidate either side of one admin call. **Before issuance:** `EXAM_PASSED`, `certifiedAt: null`, `nextAction: awaiting-certificate`, `certificate/me: null`, roles `[CLIENT, CANDIDATE_KBS]`. **After issuance:** `CERTIFIED`, `certifiedAt` set, `nextAction: certified`, `KCA-20260904-LNG8`, certificates 7 → 8, roles `[CLIENT, CANDIDATE_KBS, KCA_CERTIFIED]`. The role arriving with the credential and not before it is the half that mattered. Five mutations, all firing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | None — no migration, the column is a `String`                       |
+| W1  | `/reactivate` was in `PUBLIC_PATHS` with no page. `lib/actions/auth.ts` redirects there on `REACTIVATION_REQUIRED`, so a user in the soft-delete grace period — undoing a deletion, on a clock — hit a 404                                                                                                                                                                     | webapp #57                        | Live on dev, `kambriq-dev-web:71` / `sha-68f6c7f`: `/reactivate` **200** (was 404), `id="email"` and `id="password"` present. `days=12` → _"Il vous reste 12 jours"_; `days=1` → _"1 jour"_; `days=999999` and `days=<script>` and no `days` → the neutral _"Votre compte est encore dans sa période de restauration"_. Four tails, four mutations, each observed failing alone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | None                                                                |
 | B3  | KBS not demonstrable: `KbsQuestion` and `KbsExamQuestion` empty since the seed's single run on 2026-02-26, so the largest module (21 routes) could not be exercised                                                                                                                                                                                                            | webapp #47 #49 #50 #51            | Live on dev, `kambriq-dev-api:105`: quiz serves **10**, scores 100/10 and passes; exam serves **20**, `totalQuestions` 20, scores 100, `PASSED`; candidate status changed; **certificates 5 → 6** (`KCA-20260904-N4OY`) — **issued by an explicit admin call during the proof, not by passing.** The exam produced no certificate: `certificate/me` answered `{"data":null}` and the count moved only after `POST /kbs/admin/certificates/:id`. So 5 → 6 proves **issuance works when somebody triggers it**; it is not proof of an end-to-end certification chain, and the chain is deliberately not automatic (Q1). `/kbs/public/verify` returns `valid: true`. Idempotency: two local runs, identical counts. Distribution guard **demonstrated, not asserted**: forcing `9/8/8/5` fails all four banks on `<= 8`; `9/9/9/3`, the per-bank shape of a `31/31/29/10` skew, fails the same way; and `8/8/8/6` — upper bound satisfied — fails all four on `>= 7`, so both tails are observed rather than inferred. 235 tests | None                                                                |
 | K2  | A candidate who passed every module was told to "finish all the modules". `checkAndTransitionToExamPending` returned silently on a null `activeCourseId` that the seed never set; `me/overview` answered `course: null` for the same reason                                                                                                                                    | webapp #51                        | `EXAM_PENDING` and `eligible: true` on dev after the fix; `me/overview` returns the course. Mutation: removing the log fails 1, reverting the seed's `update` branch fails 1. `kbsCandidate.updateMany` was absent from the shared mock — the defect was shielding the gap in its own coverage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | None                                                                |
 | K1  | A perfect quiz scored **33%**. The grader divided by the module pool (30) instead of the quiz length (10), so nobody could pass a quiz or reach the exam                                                                                                                                                                                                                       | webapp #50                        | `{"score":100,"correctCount":10,"totalQuestions":10,"passed":true}` on dev, both modules. Mutation: restoring `questions.length` fails 2, removing the completeness check fails 1. Fixtures now hold pool 30 against quiz 10 — the old ones used 2 against 2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | None                                                                |

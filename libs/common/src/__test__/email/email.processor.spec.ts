@@ -198,3 +198,35 @@ describe('EmailProcessor: console transport', () => {
     expect(mockSend).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * An unknown job name must fail the job, not complete it.
+ *
+ * A resolved promise marks a BullMQ job completed. Returning `null` for a name
+ * this processor does not recognise reported success for an email that was never
+ * sent - so renaming the job constant would have drained every queued email with
+ * a green tick and a `warn` nobody reads.
+ */
+describe('EmailProcessor: unknown job names', () => {
+  it('throws instead of quietly completing', async () => {
+    const processor = makeProcessor({});
+
+    await expect(
+      processor.process({
+        ...sendJob,
+        name: 'notifications.send-sms',
+      } as unknown as Job<EmailJobPayload>),
+    ).rejects.toThrow(/Unknown EMAIL job: notifications\.send-sms/);
+  });
+
+  it('sends nothing when the name is unknown', async () => {
+    const processor = makeProcessor({});
+
+    await processor
+      .process({ ...sendJob, name: 'notifications.send-sms' } as unknown as Job<EmailJobPayload>)
+      .catch(() => undefined);
+
+    expect(SendEmailCommandMock).not.toHaveBeenCalled();
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+});
