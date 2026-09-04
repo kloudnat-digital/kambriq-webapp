@@ -1166,7 +1166,16 @@ badly, not under option 2.
 addressable at the network layer. Today the security group admits only the ALB,
 so effective exposure is unchanged, but a future SG mistake goes from
 "unreachable" to "internet-reachable". That is the trade for $35/month.
-Implementation is Ulrich's, on his own PR.
+
+**This posture is dev-only. prd does not inherit it by default.** prd will hold
+real land records and identity documents. If dev and prd share a VPC they must
+**not** share the same subnet posture: prd's tasks belong on private subnets even
+while dev's sit on public ones. That is a **mutualisation constraint discovered
+now rather than after prd exists**, and it belongs to `M1` as much as here.
+
+**Prepare the PR, do not apply**, until the S1 and B3 blockers are proven: it
+touches shared state and two things should not move at once. Implementation is
+Ulrich's, on his own PR.
 
 ### M1 — Mutualisation of dev and future prd — `DECIDE, A FAIRE`
 
