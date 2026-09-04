@@ -109,6 +109,20 @@ describe('EmailProcessor: sending', () => {
     expect(input['Destination']).toEqual({ ToAddresses: ['alice@example.com'] });
   });
 
+  // L1: nestjs-pino treats Logger.log's second argument as the context, so a
+  // metadata object is dropped. The MessageId must be in the message itself or
+  // there is no record of which send happened.
+  it('logs the MessageId in the message text, not a dropped metadata object', async () => {
+    const log = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    const processor = makeProcessor({});
+
+    await processor.process(sendJob);
+
+    const lines = log.mock.calls.map((c) => String(c[0]));
+    expect(lines.some((l) => l.includes('ses-message-id-123'))).toBe(true);
+    expect(lines.some((l) => l.includes('alice@example.com'))).toBe(true);
+  });
+
   it('reports the SES MessageId on success', async () => {
     const processor = makeProcessor({});
     const result = (await processor.process(sendJob)) as Record<string, unknown>;

@@ -18,8 +18,23 @@ resource carries its own.** "No cost impact" is an acceptable answer and must be
 written down rather than assumed. A resource with no stated cost is not
 finished.
 
-Identifiers `B3` and `V1` come from Visquis. The others are proposed here and
-should be renumbered if they clash with a scheme kept elsewhere.
+**The order rule: work the register in order.** B1, B2, B3, then G1 and G2, then
+G3 and G4, then V1 and V2. Do not reorder for convenience.
+
+### States
+
+| State             | Meaning                                                                       |
+| ----------------- | ----------------------------------------------------------------------------- |
+| `A DECIDER`       | Arbitration missing. **Stop and report.** Do not choose.                      |
+| `DECIDE, A FAIRE` | The arbitration is written in the entry. **Execute it without asking again.** |
+| `EN COURS`        | Started, not yet proven                                                       |
+| `PROUVE`          | Closed, with the proof quoted in the entry                                    |
+
+The master register lives in the KAMBRIQ project. This file is the copy read at
+the start of every session; when the two disagree, the master wins.
+
+Identifiers `B*`, `G*` and `V*` come from Visquis. Entries carrying other
+prefixes were proposed locally and must be renumbered against the master.
 
 ### Open
 
@@ -28,7 +43,6 @@ should be renumbered if they clash with a scheme kept elsewhere.
 | S1  | `storage.service.ts` gates S3 on static credentials that are never set. All uploads and downloads are dead on dev.                                                                                                  | None — the task role already holds the S3 grant from `iam-media.tf` | Blocked on a decision: the three `isConfigured` branches return success-shaped responses, so the fix is a behaviour change, not three lines |
 | B3  | Dev test data: the seed ran once on 2026-02-26 and has gaps. `KbsQuestion` and `KbsExam` are empty, so quizzes and exams cannot be exercised. `LandMedia` and `LandDocument` are empty, and S1 blocks creating them | None                                                                | A tester can log in and browse; they cannot complete a KBS module or see a land photo                                                       |
 | V1  | Silent degradation beyond AWS: `kamnet.processor.ts:44` skips commission creation when the user is missing and returns null, so the BullMQ job completes; both processors return null on an unknown job name        | None                                                                | Same shape as the SES bug: caller cannot tell                                                                                               |
-| L1  | `EmailProcessor` logs `Email sent` without the SES `MessageId`. `Logger.log(msg, obj)` passes the object as pino's _context_, which drops it                                                                        | None                                                                | Found while proving the SES fix; the send is only provable from CloudWatch metrics                                                          |
 | T1  | `lands` and `kamnet` have zero unit tests: 18 files, 1 026 uncovered lines                                                                                                                                          | None                                                                | Items 3 and 4 of the test plan                                                                                                              |
 | W1  | `/reactivate` is whitelisted in `PUBLIC_PATHS` and has no page. `lib/actions/auth.ts:30` redirects there on `REACTIVATION_REQUIRED`, so a user in the soft-delete grace period hits a 404                           | None                                                                | App work                                                                                                                                    |
 | F1  | Coverage ratchet: a threshold was deliberately deferred until the number was real. It is now real (api 29.8%, common 51.1%, web 0.9%)                                                                               | None                                                                | Add once the number is rising                                                                                                               |
@@ -36,14 +50,15 @@ should be renumbered if they clash with a scheme kept elsewhere.
 
 ### Closed
 
-| ID  | Chantier                                                                                                         | Closed by                       | Cost impact                                                               |
-| --- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------- |
-| E1  | SES: the API had never sent an email. Static-credential gate plus no `ses:` grant on the task role               | infra #16, #17, #18; webapp #39 | SES contact list: free. Two IAM policies: free. One SSM parameter removed |
-| D1  | Prisma baseline: all four dev databases under Prisma Migrate, `db push --accept-data-loss` no longer reachable   | webapp #34, #35, #36            | None                                                                      |
-| C1  | Coverage was measured only over files a test already imported; `apps/web` never ran in CI                        | webapp #37                      | None                                                                      |
-| C2  | Middleware decision untested. A redirect loop shipped in May 2026 and was fixed by accident in August, unnoticed | webapp #38                      | None                                                                      |
-| A1  | e2e uploaded an empty report on every run while reporting green                                                  | webapp #32                      | None                                                                      |
-| A2  | `scripts/smoke-test.sh` died on its first passing check under `set -e`                                           | infra #15                       | None                                                                      |
+| ID  | Chantier                                                                                                                                                                      | Closed by                       | Cost impact                                                               |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------- |
+| E1  | SES: the API had never sent an email. Static-credential gate plus no `ses:` grant on the task role                                                                            | infra #16, #17, #18; webapp #39 | SES contact list: free. Two IAM policies: free. One SSM parameter removed |
+| D1  | Prisma baseline: all four dev databases under Prisma Migrate, `db push --accept-data-loss` no longer reachable                                                                | webapp #34, #35, #36            | None                                                                      |
+| C1  | Coverage was measured only over files a test already imported; `apps/web` never ran in CI                                                                                     | webapp #37                      | None                                                                      |
+| C2  | Middleware decision untested. A redirect loop shipped in May 2026 and was fixed by accident in August, unnoticed                                                              | webapp #38                      | None                                                                      |
+| A1  | e2e uploaded an empty report on every run while reporting green                                                                                                               | webapp #32                      | None                                                                      |
+| A2  | `scripts/smoke-test.sh` died on its first passing check under `set -e`                                                                                                        | infra #15                       | None                                                                      |
+| L1  | `EmailProcessor` logged the SES `MessageId` in a metadata object, which `nestjs-pino` drops because `Logger.log`'s second argument is the _context_. No send was attributable | webapp #41                      | None                                                                      |
 
 ---
 
