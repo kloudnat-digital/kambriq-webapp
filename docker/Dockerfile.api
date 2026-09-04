@@ -51,11 +51,21 @@ RUN mkdir -p libs/common/src/prisma/core-client \
     pnpm install --frozen-lockfile --prod && \
     pnpm store prune
 
-# Copy pre-generated Prisma clients from builder - no prisma generate needed at runtime
-COPY --from=builder /app/libs/common/src/prisma ./libs/common/src/prisma
+# The whole of libs/common/src, not two chosen subdirectories.
+#
+# This used to copy only `prisma/` and `i18n/`, which is everything the compiled
+# API needs — `dist/apps/api/main.js` has the rest bundled. But `prisma/seed.ts`
+# runs from SOURCE under tsx, so it resolves imports against this tree, and the
+# moment it imported `libs/common/src/types/roles.enum` the seed died in the
+# container with `Cannot find module`. It had run clean locally minutes before:
+# **a green local run says nothing about a tree the image does not carry.**
+#
+# Copying the directory rather than a list of its children means the next import
+# the seed needs is already there, instead of failing once in production and
+# being fixed once.
+COPY --from=builder /app/libs/common/src ./libs/common/src
 
 COPY --from=builder /app/dist/apps/api ./dist/apps/api
-COPY --from=builder /app/libs/common/src/i18n ./libs/common/src/i18n
 
 # ----- Build metadata -----
 # Filled by ci.yml from the commit being built. Placed late so a metadata-only
