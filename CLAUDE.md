@@ -196,6 +196,41 @@ The seed ran clean locally and died in the container with
 from **source** under `tsx`, and the image copied two subdirectories of
 `libs/common/src`. **The two differ by a `COPY` line nobody reads.**
 
+### A listing is a reading of one moment — and a claim I retracted
+
+**Retracted, and kept as a retraction.** On 2026-09-04 I reported that the Google
+Drive sync mount was unstable: three observations of `04_CONTENU/Posts S3`, taken
+minutes apart, disagreed about which files were in it. I offered that as a
+finding, and as a partial excuse for somebody having described that folder's
+contents.
+
+**It does not survive checking.** `ls -l` showed `mkt_s03_plan_v02.md` with an
+mtime of `18:04:24` — the minute my second read ran. Visquis was writing into that
+folder throughout. Every disagreement has a simpler explanation that was sitting
+in the file times the whole time, and I did not look at them before concluding.
+
+Two further things the claim got wrong: **three _consecutive_ reads agreed** — the
+three that disagreed were separated by minutes, and the consecutive triple was my
+control. And **an empty listing was never observed at all**; the folder held one
+file at its emptiest.
+
+**What is actually defensible, and all that is:** a Drive-synced folder can be
+written by another process while you read it, so a listing is a reading of one
+moment rather than a description of the folder. **Check mtimes before concluding
+anything about the mount.** "Read twice" is sensible practice; it is **not** a
+finding, and nothing here demonstrates that this mount can lose or hide a file.
+
+**Why the retraction is kept rather than deleted.** The same claim left standing
+would have taught the next person something false about the filesystem, and they
+would have believed it, because it was written in a document whose whole purpose
+is being trusted. **A retracted claim recorded as a retraction is worth keeping; a
+retracted claim quietly removed teaches nothing.**
+
+It is also the catalogue recognising itself. I inferred a property of a system
+from three samples taken across a window I had not characterised, and presented
+it as a reading of the whole — which is the entry two headings above this one,
+committed while I was writing that entry.
+
 ### Two write paths to one destination is one path too many
 
 Reported by Visquis, 2026-09-04, and it cost a file.
