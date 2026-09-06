@@ -163,6 +163,33 @@ export type MockKbsPrisma = ReturnType<typeof mockKbsPrisma>;
 
 // ----- I18nService ------ //
 
+// ----- Lands Prisma (G1 payments) ----- //
+
+/**
+ * Deliberately narrow: only what `PaymentsService` touches.
+ *
+ * `payment` has no `totalReceived` field to mock, because the model has no such
+ * column. That absence is the point of G1's ledger, and a mock that invented
+ * one would let a test pass against a shape the database cannot hold.
+ */
+export const mockLandsPrisma = () => ({
+  payment: {
+    findUnique: fn(),
+    update: fn(),
+  },
+  paymentReceipt: {
+    create: fn(),
+    findMany: fn(),
+  },
+  paymentTransition: {
+    create: fn(),
+    findMany: fn(),
+  },
+  $transaction: jest.fn((args: Promise<unknown>[]) => Promise.all(args)),
+});
+
+export type MockLandsPrisma = ReturnType<typeof mockLandsPrisma>;
+
 export const mockI18n = () => ({
   translate: jest.fn((key: string) => key),
 });

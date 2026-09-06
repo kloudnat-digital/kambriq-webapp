@@ -3,6 +3,12 @@
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
     "module": "commonjs",
+    // Matches tsconfig.lib.json. Inherited from tsconfig.base.json this was
+    // es2015, so the specs compiled at a lower target than the code they test
+    // and rejected BigInt literals that `nx build common` accepts. A test
+    // configuration that disagrees with the build configuration reports a
+    // defect in itself as a defect in the code.
+    "target": "es2021",
     "moduleResolution": "node10",
     "types": ["jest", "node"]
   },
