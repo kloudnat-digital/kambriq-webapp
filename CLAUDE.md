@@ -142,6 +142,68 @@ certification exam.
 **A degraded path must be an explicit setting (`EMAIL_TRANSPORT=console`), never
 an inference from absent configuration.**
 
+### dev holds real people's accounts now
+
+**This is the entry that outlives the incident.** Until 6 September 2026 dev held
+nothing but seeded fixtures, and a journey could write freely because everything
+it could reach was disposable. `H2` put two real administrators in that database,
+and they exist in every environment by design.
+
+**dev is no longer an environment where a test may write freely**, and nothing
+about it announces the change. The seed still looks like the whole population.
+The API answers the same. The only difference is that some rows now belong to
+people, and a test cannot tell which by looking.
+
+**Any journey that mutates state must prove its target is its own, before it
+writes.** Not "matches a test-looking pattern" - a real address can match a
+pattern, and the address that cost us was a real one that a pattern was asked
+about. Prove **provenance**: the identity was minted by the run itself, and the
+row being written to reads back as that identity. `uniqueEmail` / `assertMinted`
+/ `assertOwnedByThisRun` in `apps/api-e2e/src/journeys/support.ts` are that, and
+they are the minimum for anything new.
+
+The next environment to cross this line is prd, and it will cross it with no
+announcement either.
+
+### A test's cleanup is a write like any other
+
+And it inherits none of the caution of the test body.
+
+Journey 5's `afterAll` revoked `ADMIN_GLOBAL` from a real administrator fifteen
+seconds after he set his own password. Every line of it read as tidiness: a
+`DELETE` on `userId`, a variable set earlier in the same run, guarded by
+`if (userId)`.
+
+**The variable was the whole defect.** `POST /lands/reservations` returns
+`clientUserId`, and for an address that already exists that is the **existing
+person's** id — `findOrCreateClientUser` returns rather than creates. So
+`userId` held a real account's id, the cleanup could not tell, and `if (userId)`
+was true.
+
+Cleanup gets read as housekeeping and reviewed as housekeeping. It is the part
+that runs **even when the test body failed**, which is exactly when the state it
+is reasoning about is least trustworthy. A cleanup must prove ownership against
+the database immediately before it writes, and it must refuse rather than skip:
+`assertOwnedByThisRun` throws, because a cleanup that quietly does nothing leaves
+the residue the next run trips over.
+
+### An investigation that stops at the first finding reports it as the whole
+
+Reported that afternoon: _"Nobody was locked out and no account changed state.
+One unexpected email is the whole damage."_
+
+That was wrong, and the method that produced it is the point. The run was traced
+forward as far as the email, the token was confirmed to have expired unconsumed,
+and the trace stopped there — at the first thing found, which happened also to be
+the first thing that happened. The `afterAll` was two minutes further on and
+revoked a role.
+
+**A run is not audited until every write it made has been enumerated**, from the
+log rather than from the code, and each one marked reverted or not. Not "what did
+it break", which stops when you find something: **"what did it touch"**, which
+stops when the list is exhausted. The same shape as the mailbox read where
+`inbox[0]` was taken for the mailbox.
+
 ### A guard that reports instead of preventing, and Jest's part in it
 
 Journey 5 must never run against a real administrator's address: it consumes a

@@ -119,6 +119,8 @@ listed here first.
 | `H2` follow-up 1 | `A DECIDER`       | `deploy-dev.yml` passes `--seed` to `run-migrations.js`, which never reads `process.argv`: the seed step has never seeded anything                  |
 | `H2` follow-up 2 | `A DECIDER`       | the bootstrap deploy step checks the exit code and never that the tally line appeared - the same gap the seed step has                              |
 | `H5`             | `PROUVE`          | journey 5's address guard was a detector, not a barrier: it reported and let the run continue into a real inbox. Moved to `beforeAll`               |
+| `H6`             | `PROUVE`          | the same run's `afterAll` revoked a real administrator's role. Every write audited, role restored 16:05:26, guard made structural                   |
+| `H7`             | `PROUVE`          | nothing tested the bootstrap's role assignment - journey 5 granted it to itself. Decision extracted and covered, 11 tests, 3 mutations              |
 
 ### H1 - `ADMIN_GLOBAL` **is** the super admin - `PROUVE`
 
@@ -549,6 +551,131 @@ unilaterally: it crosses into the other repository.
 
 The manual runbook does not have this gap - it fetches the log and requires the
 tally - so the one-off path already checks what the automated path does not.
+
+---
+
+### H6 - a test's cleanup revoked a real administrator's role - `PROUVE`
+
+**Cost impact: None.** No resource. The cost was an hour of a real person's
+account being wrong, and the trust in a green suite.
+
+**What happened, from the API's own log.** The mis-aimed journey-5 run of `H5`
+did not stop at the email.
+
+```
+15:42:16.937  Land reservation created   {reservationId 7d04903e…, landId …e00000000025}
+15:42:16.994  POST   /users/a1ddff8b…/roles                     200   grant - idempotent, no row written
+15:42:17.057  Password reset email sent  {"email":"vi***@kambriq.com"}
+15:44:06.080  POST   /auth/reset-password                       204   HIM, setting his password
+15:44:21.546  Role ADMIN_GLOBAL revoked from user a1ddff8b…           the afterAll
+15:44:21.575  DELETE /users/a1ddff8b…/roles/ADMIN_GLOBAL         200
+15:44:21     POST   /lands/admin/reservations/7d04903e…/cancel  200   the afterAll
+15:44:51.070  User logged in             {"userId":"a1ddff8b…"}       HIM, 30s after the revocation
+```
+
+He set his password at 15:44:06. The cleanup stripped his role at 15:44:21. He
+logged in at 15:44:51 and saw a roleless account.
+
+**Was the guard present?** Yes. `f91289f` was checked out, and its
+`journeys.spec.ts:477` carries `it('refuses to run against a real account')`. It
+fired, printing `Expected pattern: /@maildrop\.cc$/` against his address, **and
+the run continued** - Jest does not stop a `describe` at its first failing test.
+The guard was not missing. It was decorative, which is the worse of the two.
+
+**Every write the run made, enumerated from the log rather than inferred.**
+47 requests in the window, 23 of them mutating, across two runs.
+
+| #   | Write                                        | Row                                                         | Reverted?                                                                                                                                                                            |
+| --- | -------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | `POST /users/a1ddff8b…/roles`                | his `UserRole`                                              | **No row written** - `addRole` returns early when the role exists. Confirmed: zero `granted to user` log lines in the window                                                         |
+| 2   | `POST /lands/reservations` -> `7d04903e`     | real `LandReservation` on his account, land `…e00000000025` | **Neutralised, not removed.** Cancelled at 15:44:21; the land reads `AVAILABLE` and the catalogue is 13 of 13. **The row still exists**, `status CANCELLED`, attached to his account |
+| 3   | `POST /auth/forgot-password`                 | his `VerificationToken`s                                    | **Not reverted.** Prior unused tokens marked used, a new one issued. He consumed it - it is the link he used                                                                         |
+| 4   | `POST /auth/reset-password`                  | his `passwordHash`, `emailVerified`, `RefreshToken`s        | **His own action**, not the run's. The run supplied the link                                                                                                                         |
+| 5   | `DELETE /users/a1ddff8b…/roles/ADMIN_GLOBAL` | his `UserRole` **deleted**                                  | **Reverted 16:05:26**                                                                                                                                                                |
+| 6   | the same five, against `a0104353…`           | the run's own maildrop account                              | test rows, fully reverted by its own cleanup                                                                                                                                         |
+
+**Two things are still not as they were:** the `CANCELLED` reservation row on his
+account (item 2), and the consumed token (item 3, which is simply how activation
+works). Neither is harmful; both are stated rather than rounded to "restored".
+
+**Restoration.** `POST /users/a1ddff8b…/roles {roleCode: ADMIN_GLOBAL}` at
+**16:05:26.291**, through the ordinary admin route, not a direct write.
+`Role ADMIN_GLOBAL granted to user a1ddff8b…` in the log; both bootstrap accounts
+read back holding `ADMIN_GLOBAL`. **`grantedBy` records the acting admin's id**
+(`…b00000000001`, `admin@kambriq.com`) - the route stores the actor, and there is
+no free-text reason field to write "restoration" into. The provenance is this
+entry and that log line. Adding a reason to role grants would be a decision, not
+an invention to make here.
+
+**Why the web showed what it showed - all three layers checked, two innocent.**
+`getRoleLabelKey([])` falls through to `role.user` -> **"Utilisateur"**; with the
+role it returns **"Administrateur global"**. Of 16 nav items exactly one has
+`roles: []` - `items.kbsEnroll` in section `sections.kbs`, **"Formation KBS"** -
+which is the entire sidebar he saw. `ADMIN_GLOBAL` sees 10 items including
+`sections.admin` and `sections.kbsAdmin`. **The web derives the label from roles
+and an admin section exists**; the API returned `roles: []` faithfully; his JWT
+was minted 30 seconds _after_ the revocation, so it was accurate too. **Every
+layer was correct about a fact that a test had made true.**
+
+**The hypothesis that had to be excluded, and why it was not the cause.**
+`bootstrapAccount` assigns the role on **both** branches - `grantSuperAdmin` on
+create, and again on update when `hadRole` is false - so it is not the seed's
+`update: {}` shape. And the dev run logged `[admin1] created`, the create branch,
+with `postcondition verified for 2 account(s)` asserting the grant existed with
+`grantedBy: bootstrap`. **The bootstrap assigned the role and proved it had.**
+That said, nothing _tested_ either branch - see `H7`.
+
+**The fix: structural, not instructional.** `apps/api-e2e/src/journeys/support.ts`
+
+- `uniqueEmail()` records every address it mints; `assertMinted()` refuses
+  anything else, in `beforeAll`, before any test body runs. **Membership, not
+  shape** - a well-formed `j5.superadmin.0000@maildrop.cc` is refused too,
+  because provenance is the question and a pattern cannot answer it;
+- `assertOwnedByThisRun()` reads the row back and requires its email to equal the
+  minted address, immediately before each cleanup write. The id variable was the
+  defect: `POST /lands/reservations` returns the **existing** person's
+  `clientUserId` for an address that already exists, so checking the id against
+  itself proves nothing.
+
+**Mutations, both watched failing with no request leaving the process:**
+
+| Mutation                                               | Result                                                                                            |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| target hardcoded to the real address                   | refused in `beforeAll`; `refusing to act on …: it was not generated by uniqueEmail() in this run` |
+| target hardcoded to a **well-formed maildrop address** | refused identically - this is the one a pattern check would have passed                           |
+| baseline                                               | 5 passed, 9 skipped                                                                               |
+
+---
+
+### H7 - nothing tested the bootstrap's role assignment - `PROUVE`
+
+**Cost impact: None.**
+
+Journey 5 grants `ADMIN_GLOBAL` to its own account before activating it. So it
+proves that a passwordless account can be activated, and **never that the
+bootstrap assigns the role** - the mechanism proved was not the mechanism that
+ran, and every check was green throughout. **A test that grants the thing it
+means to verify verifies nothing.**
+
+The write needs a database and the deployed image; the **decision** - create or
+update, grant or leave alone - is pure, and it is the part that was hypothesised
+to be broken. It is extracted to `libs/common/src/bootstrap/bootstrap-plan.ts`
+and covered by `bootstrap-plan.spec.ts`, 11 tests, including the hypothesis
+written as an assertion: **an account that already existed comes out of a run
+holding the role, not merely with a refreshed name.**
+
+| Mutation                                                                               | Result                                                     |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| the create branch stops granting                                                       | 1 failed / 10 passed. `Expected: true, Received: false`    |
+| the update branch never grants (**the hypothesis, as a defect**)                       | 2 failed / 9 passed - both assertions of that one property |
+| the role stops counting as a change, so an otherwise-identical row reports `unchanged` | 2 failed / 9 passed                                        |
+
+**What is still not covered, stated rather than implied:** the live write. A
+bootstrap run against a generated address would need SSM parameters created per
+run and a database the journeys cannot reach - RDS is private and the journeys
+run from GitHub runners. The deployed path is covered by the bootstrap's own
+postcondition, which asserts the grant exists but cannot distinguish "granted
+now" from "already there". **That gap is real and named.**
 
 ---
 
