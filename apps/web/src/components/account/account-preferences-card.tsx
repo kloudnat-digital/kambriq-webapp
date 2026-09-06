@@ -28,7 +28,6 @@ export const AccountPreferencesCard = ({ me }: AccountPreferencesCardProps) => {
   const initialLang: Lang = me.language === 'en' ? 'en' : 'fr';
   const [lang, setLang] = useState<Lang>(initialLang);
   const [emailNotif, setEmailNotif] = useState(me.profile?.emailNotifications ?? false);
-  const [whatsappNotif, setWhatsappNotif] = useState(me.profile?.whatsappNotifications ?? false);
   const [langPending, startLangTransition] = useTransition();
   const [saving, setSaving] = useState(false);
 
@@ -52,7 +51,6 @@ export const AccountPreferencesCard = ({ me }: AccountPreferencesCardProps) => {
     const result = await updateMe(
       {
         emailNotifications: emailNotif,
-        whatsappNotifications: whatsappNotif,
       },
       pathname,
     );
@@ -64,9 +62,7 @@ export const AccountPreferencesCard = ({ me }: AccountPreferencesCardProps) => {
     createToast({ status: 'success', title: t('notificationsSaved') });
   };
 
-  const notificationsDirty =
-    emailNotif !== (me.profile?.emailNotifications ?? false) ||
-    whatsappNotif !== (me.profile?.whatsappNotifications ?? false);
+  const notificationsDirty = emailNotif !== (me.profile?.emailNotifications ?? false);
 
   return (
     <Card>
@@ -105,16 +101,6 @@ export const AccountPreferencesCard = ({ me }: AccountPreferencesCardProps) => {
               id="pref-email"
               checked={emailNotif}
               onCheckedChange={(v) => setEmailNotif(v === true)}
-            />
-          </Field>
-          <Field orientation="horizontal" className="flex items-center justify-between">
-            <FieldLabel htmlFor="pref-whatsapp" className="text-sm font-normal">
-              {t('whatsappNotifications')}
-            </FieldLabel>
-            <Checkbox
-              id="pref-whatsapp"
-              checked={whatsappNotif}
-              onCheckedChange={(v) => setWhatsappNotif(v === true)}
             />
           </Field>
         </div>

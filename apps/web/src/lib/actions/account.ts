@@ -19,7 +19,6 @@ type UpdateMePayload = {
   city?: string;
   country?: string;
   emailNotifications?: boolean;
-  whatsappNotifications?: boolean;
 };
 
 export const updateMe = createAction(async (data: UpdateMePayload, revalidate?: string) => {

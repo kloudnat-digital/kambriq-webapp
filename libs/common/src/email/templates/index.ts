@@ -507,6 +507,44 @@ const templates = defineTemplates({
 
 export type TemplateKey = keyof typeof templates;
 
+/**
+ * The only messages a recipient's `emailNotifications` preference may suppress.
+ *
+ * **An allow-list, not a deny-list, and that is the whole point.** A new
+ * template is transactional until somebody deliberately adds it here, so
+ * forgetting to classify one fails safe - it gets sent - rather than failing
+ * silent.
+ *
+ * The rule was already written above `sendUpdate` as prose: *"NEVER use this for
+ * auth, security, compliance or onboarding emails."* Twelve of the fifteen
+ * messages routed through it broke that rule, because prose does not refuse
+ * anything. `EmailService.sendUpdate` now throws on a template that is not in
+ * this set.
+ *
+ * What is here, and why each one:
+ *
+ * - `reservationCreated` - goes to the **agent**, not the client: "your client
+ *   reserved a parcel". A work notification, visible in their dashboard;
+ * - `clientDocumentUploaded` - to the **agent**: "your client uploaded a
+ *   document". Same shape;
+ * - `agentPromotion` - announces a tier the agent can see in their own
+ *   dashboard. Carries no reference, no deadline, no money movement and no
+ *   action to take.
+ *
+ * Everything else carries a reference, a deadline, money, an outcome the person
+ * is entitled to, or an action they must take. Those are transactional and go
+ * out regardless of the preference.
+ */
+export const SUPPRESSIBLE_TEMPLATES: ReadonlySet<TemplateKey> = new Set<TemplateKey>([
+  'reservationCreated',
+  'clientDocumentUploaded',
+  'agentPromotion',
+]);
+
+/** True when the preference may not suppress this message. */
+export const isTransactional = (template: TemplateKey): boolean =>
+  !SUPPRESSIBLE_TEMPLATES.has(template);
+
 export const buildEmail = (
   template: TemplateKey,
   lang: 'en' | 'fr',

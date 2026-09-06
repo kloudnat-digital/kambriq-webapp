@@ -4,7 +4,6 @@ export type MeProfile = {
   city: string | null;
   country: string | null;
   emailNotifications: boolean;
-  whatsappNotifications: boolean;
   idVerificationStatus: string;
   idVerifiedAt: string | null;
 };

@@ -107,19 +107,16 @@ export class KbsGradingProcessor extends WorkerHost {
       // any human had approved it. An authorisation must not precede the
       // credential it represents. `issueCertificate` grants it, in the same act
       // that creates the document and records who issued it.
-      await this.emailService.sendUpdate(
-        {
-          to: user.email,
-          template: 'examPassed',
-          lang,
-          args: {
-            firstName: user.firstName,
-            score: result.score,
-            passingScore: EXAM_PASSING_SCORE,
-          },
+      await this.emailService.send({
+        to: user.email,
+        template: 'examPassed',
+        lang,
+        args: {
+          firstName: user.firstName,
+          score: result.score,
+          passingScore: EXAM_PASSING_SCORE,
         },
-        user.profile,
-      );
+      });
     } else {
       const candidate = await this.kbsPrisma.kbsCandidate.findUnique({
         where: { id: candidateId },
@@ -141,21 +138,18 @@ export class KbsGradingProcessor extends WorkerHost {
       const cooldownDays = candidate.retakeCooldownDays ?? 7;
       const retakeDate = DateTime.now().plus({ days: cooldownDays });
 
-      await this.emailService.sendUpdate(
-        {
-          to: user.email,
-          template: 'examFailed',
-          lang,
-          args: {
-            firstName: user.firstName,
-            score: result.score,
-            passingScore: EXAM_PASSING_SCORE,
-            attemptsLeft: Math.max(0, maxAttempts - totalAttempts),
-            retakeDate: retakeDate.toLocaleString(DateTime.DATE_MED, { locale: lang }),
-          },
+      await this.emailService.send({
+        to: user.email,
+        template: 'examFailed',
+        lang,
+        args: {
+          firstName: user.firstName,
+          score: result.score,
+          passingScore: EXAM_PASSING_SCORE,
+          attemptsLeft: Math.max(0, maxAttempts - totalAttempts),
+          retakeDate: retakeDate.toLocaleString(DateTime.DATE_MED, { locale: lang }),
         },
-        user.profile,
-      );
+      });
     }
 
     this.logger.log('Exam graded %o', {
