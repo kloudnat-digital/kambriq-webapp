@@ -101,15 +101,58 @@ table: `Z1`, `D2`, `X1` and `X4` carry commands, numbers or reversal steps that
 are longer than a table row and are still needed. Everything genuinely open is
 listed here first.
 
-| Entry          | State             | What it needs                                                                                                                      |
-| -------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `L2`           | `EN COURS`        | one deployed log line carrying its interpolated metadata, quoted                                                                   |
-| `L3`           | `DECIDE, A FAIRE` | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                   |
-| `F1`           | `A DECIDER`       | coverage ratchet: a floor, and what happens when a PR drops below it                                                               |
-| `P1`           | `A DECIDER`       | SES contact list, one per account per region — the prd constraint                                                                  |
-| `X2`           | `DECIDE, A FAIRE` | NAT option 2, decided, deliberately unapplied before delivery                                                                      |
-| `M1`           | `DECIDE, A FAIRE` | mutualisation of dev and future prd, with per-resource saving and blast radius                                                     |
-| `Q1` follow-up | `A DECIDER`       | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing |
+| Entry          | State             | What it needs                                                                                                                                 |
+| -------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `L2`           | `EN COURS`        | one deployed log line carrying its interpolated metadata, quoted                                                                              |
+| `L3`           | `DECIDE, A FAIRE` | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                              |
+| `F1`           | `A DECIDER`       | coverage ratchet: a floor, and what happens when a PR drops below it                                                                          |
+| `P1`           | `A DECIDER`       | SES contact list, one per account per region — the prd constraint                                                                             |
+| `X2`           | `DECIDE, A FAIRE` | NAT option 2, decided, deliberately unapplied before delivery                                                                                 |
+| `M1`           | `DECIDE, A FAIRE` | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                |
+| `Q1` follow-up | `A DECIDER`       | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing            |
+| `D3`           | `EN COURS`        | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0 |
+
+### D3 - The four Prisma baselines were deleted by a docs commit - `EN COURS`
+
+`d099cd1`, subject **"docs: retract the mount-instability finding, and keep the
+retraction (#74)"**, added 35 lines to `CLAUDE.md` and deleted 783 lines of
+migration SQL: `0_init/migration.sql` for all four modules. It is HEAD of
+`develop` and matches `origin/develop`, so it is pushed. The files are not
+gitignored; they are simply gone from the tree and from disk.
+
+**This contradicts `D1`, which is marked `PROUVE` on the strength of those very
+files** ("`migrate deploy` x4, No pending migrations x4, no `db push`"). Nothing
+in the commit message mentions the deletion. Treated as accidental.
+
+The consequence, taken by running `run-migrations.js`'s own predicate rather
+than by reading it:
+
+```
+core:   hasMigrations=false  -> throws: No migrations found for core
+kamnet: hasMigrations=false  -> throws: No migrations found for kamnet
+kbs:    hasMigrations=false  -> throws: No migrations found for kbs
+lands:  hasMigrations=false  -> throws: No migrations found for lands
+ALLOW_DB_PUSH = (unset)
+```
+
+So the next deploy from `develop` **fails at the migration step**, loudly, which
+is exactly what that deliberately-kept `ALLOW_DB_PUSH` branch exists to do. Dev
+was still serving `sha-37f30f7`, which carries the files, so nothing was broken
+in the running environment.
+
+Restored here with `git checkout 37f30f7 -- prisma/*/migrations`. The same
+predicate now returns `hasMigrations=true` for all four, and each schema is
+byte-identical between `37f30f7` and HEAD, so no baseline is stale against its
+schema.
+
+**Pending proof, named:** one deploy from this branch whose "Run Prisma
+migrations" task exits 0 and reports "No pending migrations" x4. `migrate deploy`
+has not been executed against a database from this branch - the restore is
+proven at the predicate, not end to end. `migration_lock.toml` has never been
+tracked on any branch and is not gitignored; the deployed build ran without one,
+so its absence is pre-existing and not part of this regression.
+
+**Cost impact:** None.
 
 ### L2 — Logging drops metadata at 106 call sites — `EN COURS`
 
