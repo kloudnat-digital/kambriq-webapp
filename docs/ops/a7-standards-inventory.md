@@ -1,9 +1,16 @@
 # A7 - the gap between the codebase and the standards
 
-**Read-only. This is a list, not a set of fixes.** Nothing in it was changed by
-the pass that produced it, and nothing in it should be changed without its own
-chantier. The point is that the debt is visible and finite rather than discovered
-one incident at a time.
+**Read-only. This is a list, not a set of fixes.** Nothing here should be changed
+without its own chantier. The point is that the debt is visible and finite rather
+than discovered one incident at a time.
+
+**Two exceptions, and they are stated rather than quietly taken.** `W4` and `W5`
+are one-word cross-reference fixes in `docs/ops/registre-chantiers.md`, a file the
+PR carrying this inventory was already editing. The boy-scout rule in `CLAUDE.md`
+section 2 says a file you touch comes up to standard in that same PR, so they were
+closed on sight instead of becoming a follow-up nobody schedules. **They remain
+listed below, marked closed.** Everything else in this document was found and left
+exactly as found.
 
 **Swept on 2026-09-06**, across `kambriq-webapp` (`apps/api/src`,
 `libs/common/src`, `prisma/`, `apps/api-e2e/src`, `.github/workflows/`) and
@@ -84,25 +91,44 @@ Already open in the register as the `H2` follow-up, `A DECIDER`. Repeated here
 because it is the archetype: **the mechanism that reports success by saying
 nothing does not have to be in the application.**
 
-### W4 - two ADR-005s, and one reference that does not say which
+### W4 - two ADR-005s, and one reference that did not say which - **CLOSED ON SIGHT**
 
-`docs/ops/registre-chantiers.md:852` cites `docs/adr/ADR-005` unqualified, meaning
-the **infra** ADR-005, _Production automation prerequisites_. In this repository
-`docs/adr/ADR-005` is _E2E Testing with Playwright_. The reader who follows it
-lands on the wrong document and nothing tells them so.
+`docs/ops/registre-chantiers.md` cited `docs/adr/ADR-005` unqualified, meaning the
+**infra** ADR-005, _Production automation prerequisites_. In this repository
+`docs/adr/ADR-005` is _E2E Testing with Playwright_. The reader who followed it
+landed on the wrong document and nothing told them so.
 
-Two other references on lines 786 and 808 do qualify it (`infra ADR-005`,
-`` `kambriq-infra` ADR-005 ``), which is what the fix looks like.
+Two other references in the same file already qualified it (`infra ADR-005`,
+`` `kambriq-infra` ADR-005 ``), which is what the fix looked like.
 
-### W5 - `scripts/smoke-test.sh` is cited from the wrong repository
+**Closed in the PR that produced this inventory.** It now reads
+`kambriq-infra/docs/adr/ADR-005-production-automation-prerequisites.md`, with a
+line saying why it is named in full.
 
-`docs/ops/registre-chantiers.md:975`, the `A2` row. `scripts/smoke-test.sh` does
-not exist in this repository; it is `kambriq-infra/scripts/smoke-test.sh`. The
-webapp has `scripts/deploy-dev.sh` and nothing else.
+### W5 - `scripts/smoke-test.sh` was cited from the wrong repository - **CLOSED ON SIGHT**
 
-W4 and W5 are the **stale cross-reference** defect inside the register, which is
-the document whose credibility the rule about cross-references exists to protect.
-Both are one word each.
+The `A2` row of `docs/ops/registre-chantiers.md`. `scripts/smoke-test.sh` does not
+exist in this repository; it is `kambriq-infra/scripts/smoke-test.sh`. The webapp
+has `scripts/deploy-dev.sh` and nothing else.
+
+**Closed in the same PR.** It now carries its repository.
+
+### Why W4 and W5 are still listed
+
+Both are the **stale cross-reference** defect inside the register - the document
+whose credibility the rule about cross-references exists to protect. Both were
+one word each.
+
+They were fixed rather than scheduled because `docs/ops/registre-chantiers.md`
+was **already being edited by the PR that found them**. That is the boy-scout
+rule in `CLAUDE.md` section 2 meeting its first real opportunity on the day it
+was written: any file you touch in a PR comes up to standard in that same PR.
+**A rule whose first application is deferred is a rule nobody believes.**
+
+**They stay in the list, marked closed, rather than being deleted from it.** An
+inventory records the gap; it does not pretend the gap was never there. Deleting
+them would hide the defect and the evidence that the rule works, and would leave
+a reader wondering why a six-finding sweep produced four.
 
 ### W6 - eight assertions with six or more tails
 
