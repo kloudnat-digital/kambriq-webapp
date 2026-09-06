@@ -124,6 +124,10 @@ listed here first.
 | `H8`             | `EN COURS`        | the bootstrap sent no email; a stray test made it look as though it had. Fixed and proven locally; pending the re-send to `contact@` on dev         |
 | `H8` follow-up   | `A DECIDER`       | per-address SES delivery is not observable: no configuration set, no event destination. Needed to answer "did THIS address receive it"              |
 | `H9`             | `PROUVE`          | the bootstrap's provenance check failed a whole deploy and skipped every later step. Postcondition scoped; step moved after the web deploy          |
+| `B1`             | `PROUVE`          | payment code audited against the design: 0 payments ever processed, no payment table, G3/G4 partly built, six of eight not started                  |
+| `B2`             | `PROUVE`          | V1 inventory finished: WhatsApp preference reads nothing, `sendUpdate` skips indistinguishably and defaults off, `RedisService` unused              |
+| `B3`             | `PROUVE`          | 56 dev parameters against 0 on prd; only 7 injected as secrets, so 49 need an apply to take effect. One confirmed unread, the rest candidates       |
+| `B4`             | `PROUVE`          | 4 journeys: VERIFY does not exist; reactivation and block/unblock never run; 57 identity documents queued for a review that has never run           |
 
 ### H1 - `ADMIN_GLOBAL` **is** the super admin - `PROUVE`
 
@@ -560,6 +564,130 @@ unilaterally: it crosses into the other repository.
 
 The manual runbook does not have this gap - it fetches the log and requires the
 tally - so the one-off path already checks what the automated path does not.
+
+---
+
+### B1 - the state of the existing payment code - `PROUVE`
+
+**Cost impact: None.** Read-only. Output:
+[`docs/ops/b-audit-inventory.md`](b-audit-inventory.md), section B1.
+
+**No payment has ever been processed, anywhere.** On dev, `sha-1709ec6`: 33
+reservations (27 `CANCELLED`, 5 `PENDING`, 1 `CONFIRMED`), **1** row with
+`downPaymentConfirmed`, and **0** with `remainingPaymentConfirmedAt`,
+`documentsReceivedAt`, `dossierStartedAt` or `completedAt`. **The single confirmed
+row is a seed fixture** - `prisma/seed.ts:1376`, `confirmedAt 2025-02-01`. There is
+no payment table: no model in any of the four schemas matches
+`payment|paiement|invoice|transaction|encaiss|escrow|ledger`.
+
+**Three categories.** Reachable: four nullable columns on `LandReservation`, three
+admin routes, `DOWN_PAYMENT_PERCENT`, and a 4-value status enum. Unreachable:
+`LAND_JOBS` - two job names whose own file says `// TODO: No LandsProcessor exists
+yet` - plus `PAYPAL_ENVIRONMENT` and `NEXT_PUBLIC_PAYPAL_CLIENT_ID`. Absent:
+every mechanism the design names.
+
+**`PAYPAL_ENVIRONMENT`, traced end to end as asked.** Provisioned by
+`modules/ssm-app-parameters/main.tf:670`; on dev as `String` = `sandbox`,
+**version 1**, untouched since 2026-02-24; **read by nothing** (`grep -rn PAYPAL`
+over `apps/ libs/ prisma/ .github/ docker/`); **not declared** in `envSchema`;
+**not injected** into either task definition. **When it is unset, nothing happens** -
+there is no reader, no default and no branch. PayPal is explicitly out of v1 scope
+in the design.
+
+**Two contradictions, not gaps.** `downPaymentAmount` is a **`Float`** and a
+directly editable column, against _"un montant, en unite indivisible"_ and _"jamais
+un nombre qu'on edite"_. And `confirmDownPayment` writes the money flag and the
+status in one `update`, with no separate validation step - admin-triggered, so not
+a violation today, recorded as a shape to watch.
+
+**G1 to G8** (labels from `ops_kambriq_suivi-production_v01.xlsx`): **G3 and G4
+are partly built, and only their infrastructure** - the email queue and S3 upload,
+both already proven and both carrying nothing payment-specific. **G1, G2, G5, G6,
+G7, G8: not started.** G5 is contradicted by what exists. G8 cannot start: there
+is no guard to remove for its mutation proof. **G1 has no head start** - the
+existing columns are a shape to replace, not a foundation to extend, and counting
+them as progress is how an opening date becomes a guess.
+
+---
+
+### B2 - the V1 inventory finished - `PROUVE`
+
+**Cost impact: None.** Read-only. Section B2.
+
+Three cases found, each with what the closed branch does, what the caller
+receives, and whether the caller can tell.
+
+| Case                                                                                                | Caller can tell?                                                                                                                                                                                                                           |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **WhatsApp notifications** - a stored, editable preference with **no sender anywhere in the API**   | **No.** `PATCH /users/me` answers 200 and echoes `whatsappNotifications: true`. Truthful about storage, silent about a capability that does not exist. **Degraded mode indistinguishable from success**                                    |
+| **`EmailService.sendUpdate`** skips on `!prefs.emailNotifications`, logs at `debug`, returns `void` | **No** - same `Promise<void>` as a send. And `emailNotifications` **defaults to `false`**, so the skip is the normal path, not the exception. 10 call sites, including `paymentConfirmed`. The preference is right; the signature is wrong |
+| **`RedisService`** - injected once (`agents.service.ts:15,33`) and **never called**                 | not a degraded-mode defect: an unused dependency. BullMQ's Redis is separate and proven                                                                                                                                                    |
+
+**Checked and clean:** i18n fallback (`fallbackLanguage` set, missing key returns
+the key - visible, not silent), `EMAIL_TRANSPORT` and `STORAGE_TRANSPORT` (both
+explicit enums), `EmailService.send` validations, processors on unknown job names,
+and empty `catch` blocks (**0** across `apps/api/src`, `libs/common/src`,
+`prisma/`).
+
+---
+
+### B3 - SSM, dev against prd - `PROUVE`
+
+**Cost impact: None.** Read-only. Section B3.
+
+**56 parameters on dev; `0` under `/kambriq/prd` and `/kambriq/prod`.**
+
+**The fact that governs the four lists:** only **7 of 56** are injected as ECS
+`secrets`. The other 49 reach the container as plain `environment` values that
+**terraform rendered at apply time**, so `put-parameter --overwrite` does not
+change the running system for them until an apply. **This scopes a claim made in
+`H2`**: "a typo costs a parameter update, not a deployment" is true of the
+bootstrap prefix, which is read at runtime through the SDK, and false of the other 49. The distinction is the reader, not the store.
+
+**List 3 - must never exist in prd:** `PAYPAL_ENVIRONMENT = sandbox`;
+`EMAIL_TRANSPORT=console` or `STORAGE_TRANSPORT=disabled` if ever copied; dev's
+`DB_PASSWORD`; dev's 12 bootstrap values. **No dev-only feature flag or test
+switch was found** - the 56 names were searched for `DEBUG TEST MOCK FAKE STUB
+SANDBOX DRY_RUN SKIP DISABLE BYPASS` and the only hit is a _value_, not a name.
+
+**List 4, and a correction to my own first sweep.** The first pass matched the last
+path segment as a literal and produced 22 names, **at least three of them wrong**:
+`web/NEXTAUTH_SECRET` is injected under the env name `AUTH_SECRET`,
+`web/JWT_EXPIRES_IN` is injected as a secret, and `db/DB_PASSWORD` is read by
+**terraform** at `modules/ssm-app-parameters/main.tf:18-22`. A name-based sweep
+cannot see a rename or a non-application reader. The published list separates
+**one confirmed** unread parameter from a dozen candidates, and says plainly that
+nothing should be deleted on the strength of the table alone.
+
+**The worked example.** The bootstrap prefix: 12 on dev, prd needs its own 12 plus
+the task role's read on `/kambriq/prd/api/*` (`D6`). `modules/iam-roles-ecs/main.tf:75`
+is parameterised on `var.env` so it follows **if `envs/prd` instantiates that
+module** - not verified, flagged as a conditional. Two prd consequences: the deploy
+step fails loudly on a missing parameter, so the prefix must exist **before** the
+first prd deploy; and the bootstrap now enqueues a verification email, so **that
+mail reaches real people the moment prd first deploys.**
+
+---
+
+### B4 - the journeys never exercised - `PROUVE`
+
+**Cost impact: None.** Read-only. Section B4.
+
+Two questions per journey, kept apart. Evidence is rows, not routes.
+
+| Journey                  | Path exists?                                                                                                                                         | Ever run on dev?                                                                                                                                                                                                                                                   |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Identity document upload | **yes**, end to end                                                                                                                                  | **half.** 57 of 136 users hold a document at `pending`; **`verified`: 0, `rejected`: 0.** The submit half runs every deploy (journey 3); **the review half has never run once**, and the queue grows by one per deploy                                             |
+| KAMBRIQ VERIFY           | **no.** No module in `apps/api/src`, no schema in `prisma/`. `DATABASE_URL_VERIFY` and `VERIFICATION_COST` are declared placeholders reading nothing | not applicable. Distinct from `/kbs/public/verify-certificate`, which exists and is proven                                                                                                                                                                         |
+| Admin back-office        | **yes**                                                                                                                                              | **partly.** `block`/`unblock` never - 0 of 136 carry `deactivatedBy`. Of seven reservation admin routes, **five have never been exercised**, and they are the ones that carry the sale forward; only `cancel` has traffic, from tests cleaning up after themselves |
+| Account reactivation     | **yes**, end to end, `GRACE_PERIOD_DAYS = 30`                                                                                                        | **never.** 0 of 136 users have `deletedAt` set, so the grace-period branch has never been entered                                                                                                                                                                  |
+
+**This is not `A3`.** A3 is a person walking the product and reporting friction;
+B4 is whether the path is there at all. Neither substitutes for the other.
+
+**Seven things the audit cannot settle** are listed in the document rather than
+left as silence - including that zero payments in the database is a statement
+about the database and not about whether KAMBRIQ has been paid.
 
 ---
 

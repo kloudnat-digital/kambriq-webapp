@@ -225,6 +225,26 @@ state can supply the evidence for a claim about the product. Journey 5's stray
 run wrote a real reset email into a real inbox and, for twenty minutes, that
 email was the reason we believed the bootstrap sent mail.
 
+### A setting that is stored, echoed back, and read by nothing
+
+`UserProfile.whatsappNotifications` is accepted by `PATCH /users/me`, persisted,
+and returned by `GET /users/me`. **There is no WhatsApp sender anywhere in the
+API** - every other match for `whatsapp` in the repo is `apps/web` rendering a
+`wa.me` link.
+
+So a user turns the setting on, gets a `200`, sees `whatsappNotifications: true`,
+and will never receive a WhatsApp message. **Every statement the API makes is
+true** - it did store the preference - and the whole exchange is false, because a
+preference implies a capability.
+
+This is the "reports success by saying nothing" family arriving through
+configuration rather than through a job. The usual shape is a mechanism that
+succeeds while doing nothing. This one is a mechanism that **correctly** reports
+doing the only thing it does, where the thing worth doing does not exist.
+
+**Before adding a preference, name the code that reads it.** A column is not a
+feature, and a setting nobody consumes is a promise the product has not made.
+
 ### Per-address delivery is not a thing CloudWatch can tell you
 
 `AWS/SES` publishes `Send`, `Delivery`, `Bounce`, `Complaint` and `Reject` as
@@ -588,6 +608,25 @@ months every 401/403/404/500 leaked a stack and broke the contract.
 **Assert on content, never on shape.** A contract test checking `{success, data}`
 passes on `[{},{},{}]`. So would `Array.isArray`, `data.length`, `meta.total`.
 Use `expectCarriesContent`.
+
+### SSM is not a live configuration channel, except where it is
+
+Of 56 parameters under `/kambriq/dev`, **7** are injected into a task definition
+as `secrets` - the four `DATABASE_URL_*`, `JWT_SECRET`, and two on the web side.
+The other 49 reach the container as plain `environment` values **that terraform
+rendered at apply time**.
+
+So for those 49, `aws ssm put-parameter --overwrite` changes **nothing** in the
+running system. The value the container holds was copied at the last apply, and
+it stays until the next one. Change `FRONTEND_URL` in SSM and every link in every
+email keeps pointing where it did.
+
+**The exception is the bootstrap prefix**, `/kambriq/{env}/api/bootstrap/*`, which
+`prisma/bootstrap-admins.ts` reads at runtime through the SSM SDK. Those twelve
+are genuinely live, which is the property the design was chosen for.
+
+**The distinction is the reader, not the store.** Before saying "that is just a
+parameter update", find out which of the two kinds it is.
 
 ### Four Prisma schemas, four databases
 
