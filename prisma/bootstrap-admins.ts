@@ -70,6 +70,11 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient as CoreClient } from '../libs/common/src/prisma/core-client/client';
 import { SUPER_ADMIN_ROLE } from '../libs/common/src/types/role-hierarchy';
 import { planBootstrap } from '../libs/common/src/bootstrap/bootstrap-plan';
+import { issueVerificationToken } from '../libs/common/src/auth/verification-token';
+import { VerificationTokenType } from '../libs/common/src/constants/core';
+import { QUEUES } from '../libs/common/src/constants/queue';
+import { EmailService } from '../libs/common/src/email/email.service';
+import { Queue } from 'bullmq';
 
 /**
  * The two accounts, as opaque slot names.
@@ -241,11 +246,35 @@ async function bootstrapAccount(slot: string, identity: Identity): Promise<Outco
     });
 
     if (plan.grantRole) await grantSuperAdmin(created.id);
-    console.log(`  [${slot}] created  ${email}  role=${SUPER_ADMIN_ROLE} grantedBy=${GRANTED_BY}`);
+    await sendVerificationEmail(created.id, email, user.firstName);
+    console.log(
+      `  [${slot}] created  ${email}  role=${SUPER_ADMIN_ROLE} grantedBy=${GRANTED_BY} verification-email=queued`,
+    );
     return 'created';
   }
 
   if (!existing) throw new Error(`plan said ${plan.action} but no row was read for ${email}`);
+
+  /**
+   * The one thing a re-run still does, and the property it costs.
+   *
+   * H2 proved that a second run issues **no write at all**. That is no longer
+   * unconditionally true, and the change is deliberate: an account that was
+   * bootstrapped and never verified has nothing in its inbox, and a bootstrap
+   * that leaves an administrator with no way in has not finished its job. So a
+   * re-run re-sends - but only when the holder is unverified **and** has no live
+   * link outstanding.
+   *
+   * Once both accounts are verified this is permanently false and a re-run is a
+   * no-op again. It is self-limiting rather than every-deploy.
+   */
+  if (await needsVerificationEmail(existing.id, existing.emailVerified)) {
+    await sendVerificationEmail(existing.id, email, user.firstName);
+    // Says what it did, not what the plan called it. An "unchanged" line next to
+    // a queued email is two statements that contradict each other.
+    console.log(`  [${slot}] re-sent  ${email}  verification-email=queued`);
+    if (plan.action === 'unchanged') return 'updated';
+  }
 
   if (plan.action === 'unchanged') {
     console.log(`  [${slot}] unchanged ${email}  (no write issued)`);
@@ -264,6 +293,96 @@ async function bootstrapAccount(slot: string, identity: Identity): Promise<Outco
 
   console.log(`  [${slot}] updated  ${email}  fields=${plan.changedFields.join(',')}`);
   return 'updated';
+}
+
+/**
+ * The same `EmailService` the API uses, constructed by hand.
+ *
+ * Not a second sender. `EmailService` is a Nest `@Injectable()` whose
+ * constructor takes exactly **one** argument - a BullMQ `Queue` - so it can be
+ * instantiated directly outside the Nest container. From `send()` onward this is
+ * byte-for-byte the path a registration takes: the same validations
+ * (`assertNoUnresolvedArgs`, `assertNoIdentifiersInNames`), the same job name,
+ * the same queue, and the same processor rendering the same template.
+ *
+ * **A direct SES call here would have been the mistake.** Two ways of sending
+ * one mail is how the two drift, and the drift surfaces months later as a
+ * template fixed on one side only - which is a defect this repository already
+ * has an entry for, arriving from the other direction.
+ *
+ * The job is consumed by the API service, not by this task: this process
+ * enqueues and exits. **Enqueued is not sent**, which is why the proof for this
+ * reads the destination mailbox rather than this script's output.
+ */
+let emailQueue: Queue | null = null;
+
+function emailService(): EmailService {
+  if (!emailQueue) {
+    const host = process.env['REDIS_HOST'];
+    const port = Number(process.env['REDIS_PORT'] ?? 6379);
+    if (!host) {
+      throw new Error(
+        'REDIS_HOST is not set, so no email can be enqueued. Nothing further will be written.',
+      );
+    }
+    emailQueue = new Queue(QUEUES.NOTIFICATIONS, { connection: { host, port } });
+  }
+  return new EmailService(emailQueue);
+}
+
+/**
+ * Enqueues the verification email a registration would send.
+ *
+ * Same template (`verification`), same token type, same URL shape. The token is
+ * minted by `issueVerificationToken` in `libs/common` - the function
+ * `AuthService.createVerificationToken` now delegates to - so there is one
+ * implementation and two callers rather than two implementations.
+ */
+async function needsVerificationEmail(userId: string, emailVerified: boolean): Promise<boolean> {
+  // Already verified: the holder has been through the flow. Nothing to send, on
+  // this run or any future one.
+  if (emailVerified) return false;
+
+  // Unverified, but a live link is already in their inbox. Sending another would
+  // invalidate the one they may be about to click - `issueVerificationToken`
+  // marks previous unused tokens used - so the second email would break the
+  // first. Re-sending only once the outstanding link has expired keeps a deploy
+  // from quietly turning a working link into a dead one.
+  const live = await core.verificationToken.count({
+    where: {
+      userId,
+      type: VerificationTokenType.EMAIL_VERIFICATION,
+      usedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+  });
+  return live === 0;
+}
+
+async function sendVerificationEmail(
+  userId: string,
+  email: string,
+  firstName: string,
+): Promise<void> {
+  const frontendUrl = process.env['FRONTEND_URL']?.replace(/\/+$/, '');
+  if (!frontendUrl) {
+    throw new Error(
+      'FRONTEND_URL is not set, so any verification link would be dead. Refusing to send one.',
+    );
+  }
+
+  const token = await issueVerificationToken(
+    core,
+    userId,
+    VerificationTokenType.EMAIL_VERIFICATION,
+  );
+
+  await emailService().send({
+    to: email,
+    template: 'verification',
+    lang: 'fr',
+    args: { firstName, verificationUrl: `${frontendUrl}/verify-email?token=${token}` },
+  });
 }
 
 async function grantSuperAdmin(userId: string): Promise<void> {
@@ -384,5 +503,8 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
+    // The queue holds an open ioredis connection; without closing it the task
+    // never exits and the deploy step waits on a task that has finished its work.
+    if (emailQueue) await emailQueue.close();
     await core.$disconnect();
   });

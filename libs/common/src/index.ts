@@ -2,6 +2,11 @@
 export { RoleCode } from './types/roles.enum';
 export { ROLE_HIERARCHY, SUPER_ADMIN_ROLE, effectiveRoles } from './types/role-hierarchy';
 export {
+  issueVerificationToken,
+  verificationTokenExpiryHours,
+  type VerificationTokenStore,
+} from './auth/verification-token';
+export {
   planBootstrap,
   type BootstrapIdentity,
   type BootstrapPlan,

@@ -162,7 +162,7 @@ jobs:
           OVERRIDES="$(jq -nc --arg name "${CONTAINER_NAME}" --arg prefix "${BOOTSTRAP_SSM_PREFIX}" '{
             containerOverrides: [{
               name: $name,
-              command: ["npx", "tsx", "prisma/bootstrap-admins.ts"],
+              command: ["npx", "tsx", "--tsconfig", "tsconfig.base.json", "prisma/bootstrap-admins.ts"],
               environment: [{ name: "BOOTSTRAP_SSM_PREFIX", value: $prefix }]
             }]
           }')"

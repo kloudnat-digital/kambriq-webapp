@@ -142,6 +142,56 @@ certification exam.
 **A degraded path must be an explicit setting (`EMAIL_TRANSPORT=console`), never
 an inference from absent configuration.**
 
+### A false witness: a broken mechanism that looked like it worked
+
+**The sharpest entry here, and the one that nearly cost a day.**
+
+`H2` shipped a bootstrap that creates two administrators and **sends no email at
+all** - it has no email code in it. Nobody noticed, because one of the two
+accounts received a verification mail within twenty minutes of being created.
+
+That mail came from a mis-aimed journey-5 run hitting that address through
+`forgot-password`. The log even says so: `Password reset email sent`. **An
+unrelated defect produced exactly the signal we were waiting for**, on exactly
+one of the two accounts, and the second account's silence read as "not yet"
+rather than "never".
+
+**This is not the usual failure.** A mechanism that reports success by saying
+nothing is a silence you learn to distrust. This was the opposite: a **signal
+from the wrong source**, which is far harder, because the thing you were waiting
+for did arrive. The control group existed only by accident - `contact@` was the
+account the stray test happened not to touch, and its silence is what closed the
+diagnosis.
+
+**What to take from it.** When a signal arrives, attribute it before believing
+it: which component emitted it, at what timestamp, for which subject. Two
+accounts created in the same second behaved differently, and _that asymmetry was
+the evidence_, not the arrival. Had the journey aimed correctly, nobody would
+have received anything and the answer would have taken thirty seconds.
+
+**And the corollary about tests:** a test that produces side effects on shared
+state can supply the evidence for a claim about the product. Journey 5's stray
+run wrote a real reset email into a real inbox and, for twenty minutes, that
+email was the reason we believed the bootstrap sent mail.
+
+### Per-address delivery is not a thing CloudWatch can tell you
+
+`AWS/SES` publishes `Send`, `Delivery`, `Bounce`, `Complaint` and `Reject` as
+**account- and region-level** counters. There is no recipient dimension. Checking
+"did _this address_ receive it" against CloudWatch is not a stricter version of
+checking the total - it is not available at all.
+
+It becomes available only with an SES **configuration set** carrying an event
+destination, and the API sets no `ConfigurationSetName` on any send;
+`list-configuration-sets` returns nothing. Until that exists, the honest signals
+are: a `Bounce` delta around a single known send (usable only because volume is
+low enough to attribute by timing), and the recipient saying so.
+
+`kambriq.com` MX points at Google Workspace, so whether a given local part
+resolves to a mailbox, an alias, a group, or nothing is a Workspace question and
+not an AWS one. **A zero bounce count is evidence the address was accepted, not
+that a person can read it.**
+
 ### dev holds real people's accounts now
 
 **This is the entry that outlives the incident.** Until 6 September 2026 dev held
