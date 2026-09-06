@@ -69,6 +69,7 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient as CoreClient } from '../libs/common/src/prisma/core-client/client';
 import { SUPER_ADMIN_ROLE } from '../libs/common/src/types/role-hierarchy';
+import { planBootstrap } from '../libs/common/src/bootstrap/bootstrap-plan';
 
 /**
  * The two accounts, as opaque slot names.
@@ -204,7 +205,27 @@ async function bootstrapAccount(slot: string, identity: Identity): Promise<Outco
     include: { profile: true, userRoles: { include: { role: true } } },
   });
 
-  if (!existing) {
+  /**
+   * The decision is `planBootstrap`, in `libs/common`, where it is covered by
+   * `bootstrap-plan.spec.ts` on every branch - including the one that grants the
+   * role to an account that already existed. This function does the writing; it
+   * does not decide any more.
+   */
+  const plan = planBootstrap(
+    existing && {
+      firstName: existing.firstName,
+      lastName: existing.lastName,
+      phone: existing.phone,
+      profile: existing.profile && {
+        city: existing.profile.city,
+        country: existing.profile.country,
+      },
+      roleCodes: existing.userRoles.map((ur) => ur.role.code),
+    },
+    { ...user, ...profile },
+  );
+
+  if (plan.action === 'create') {
     const created = await core.user.create({
       data: {
         email,
@@ -219,38 +240,29 @@ async function bootstrapAccount(slot: string, identity: Identity): Promise<Outco
       },
     });
 
-    await grantSuperAdmin(created.id);
+    if (plan.grantRole) await grantSuperAdmin(created.id);
     console.log(`  [${slot}] created  ${email}  role=${SUPER_ADMIN_ROLE} grantedBy=${GRANTED_BY}`);
     return 'created';
   }
 
-  const changed: string[] = [];
-  for (const [key, value] of Object.entries(user)) {
-    if (existing[key as keyof typeof user] !== value) changed.push(key);
-  }
-  for (const [key, value] of Object.entries(profile)) {
-    if (existing.profile?.[key as keyof typeof profile] !== value) changed.push(key);
+  if (!existing) throw new Error(`plan said ${plan.action} but no row was read for ${email}`);
+
+  if (plan.action === 'unchanged') {
+    console.log(`  [${slot}] unchanged ${email}  (no write issued)`);
+    return 'unchanged';
   }
 
-  if (changed.length > 0) {
+  const identityChanged = plan.changedFields.filter((f) => !f.startsWith('role:'));
+  if (identityChanged.length > 0) {
     await core.user.update({
       where: { id: existing.id },
       data: { ...user, profile: { upsert: { create: profile, update: profile } } },
     });
   }
 
-  const hadRole = existing.userRoles.some((ur) => ur.role.code === SUPER_ADMIN_ROLE);
-  if (!hadRole) {
-    await grantSuperAdmin(existing.id);
-    changed.push(`role:${SUPER_ADMIN_ROLE}`);
-  }
+  if (plan.grantRole) await grantSuperAdmin(existing.id);
 
-  if (changed.length === 0) {
-    console.log(`  [${slot}] unchanged ${email}  (no write issued)`);
-    return 'unchanged';
-  }
-
-  console.log(`  [${slot}] updated  ${email}  fields=${changed.join(',')}`);
+  console.log(`  [${slot}] updated  ${email}  fields=${plan.changedFields.join(',')}`);
   return 'updated';
 }
 
