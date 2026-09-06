@@ -675,6 +675,58 @@ months every 401/403/404/500 leaked a stack and broke the contract.
 passes on `[{},{},{}]`. So would `Array.isArray`, `data.length`, `meta.total`.
 Use `expectCarriesContent`.
 
+### A message is read by a person, so read it as a person before shipping it
+
+From `G3`. The instruction email passed every test and then arrived saying
+**"750 000 FCFA XAF"** - the currency twice, one of them hardcoded - and gave the
+deadline as `2026-10-06`. Both were found by reading the message that landed in
+the mailbox, and neither was visible in the code: `formatXAF` appends "FCFA"
+itself, so composing it with the payment's own `currency` reads correctly at the
+call site and wrong in the inbox.
+
+**A template is not done when it renders. It is done when somebody has read
+what arrived.** The same standard as proof by execution, applied to prose.
+
+Two things follow, and both are now enforced by tests:
+
+- **an amount carries its currency once**, and the currency is the payment's,
+  not a helper's assumption;
+- **a date a person must act on is written the way they write dates.** `Intl` is
+  the tool for both. Note that its French group separator is U+202F, a narrow
+  no-break space - an assertion typed with an ordinary space fails while showing
+  two strings that look identical, so normalise before comparing and say that you
+  did.
+
+**Write for the reader, not the sender.** The payment instruction assumes it
+will be read on a phone by somebody in the diaspora, forwarded once, and read
+again by a relative who was not in the conversation. So: no links to click, no
+login, no reference to an earlier message, and the reference set in monospace on
+its own line because it will be copied by hand onto a transfer slip.
+
+### Channel details are configuration, and the reader decides whether a fix needs a deploy
+
+From `G3`. Bank details, mobile money numbers and a notary's contact are business
+data that changes without anybody deploying, and a wrong one sends a client's
+money to the wrong place.
+
+They are read **through the SSM SDK at runtime**, cached for a minute - not from
+the task definition. `B3` established that only 7 of 56 parameters reach the
+container as ECS `secrets`; the other 49 are values terraform rendered at apply
+time, and for those `put-parameter` changes nothing until the next apply. **A
+wrong account number has to be correctable in the time it takes to type one
+command**, so the reader is chosen to make that true.
+
+**Nothing is optional and nothing is blank.** Every parameter is required;
+`PaymentChannelsService` fails at **startup** when the prefix is set and
+incomplete, naming every missing or empty parameter rather than the first, and
+refuses to compose a message when it is absent. A blank where an account number
+belongs is not a degraded message - it tells somebody to transfer money into
+nothing.
+
+**On dev the values are deliberately unmistakable** (`DEV-COMPTE-FICTIF-NE-PAS-
+UTILISER`), because an invented IBAN that looks plausible is worse than an
+obviously fake one: somebody eventually reads a dev email.
+
 ### The payment reference, and why each part of it is what it is
 
 From `G2`. `KBQ-YYMM-XXXXX-C`. This string is dictated over the telephone,

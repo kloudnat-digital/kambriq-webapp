@@ -206,5 +206,41 @@
   "footer": {
     "copyright": "© {year} KAMBRIQ. Tous droits réservés.",
     "ignore": "Si vous n'avez pas demandé cet email, vous pouvez l'ignorer en toute sécurité."
+  },
+  "paymentInstructions": {
+    "subject": "Votre référence de paiement KAMBRIQ : {reference}",
+    "heading": "Instructions de paiement",
+    "intro": "Bonjour {clientName}, voici tout ce qu'il faut pour régler {subject}.",
+    "referenceLabel": "Référence de paiement",
+    "referenceRule": "Cette référence doit figurer en motif du virement, du transfert mobile money ou du reçu chez le notaire. Un paiement sans cette référence ne peut pas être rattaché à votre dossier.",
+    "amountLabel": "Montant à régler",
+    "deadlineLabel": "À régler avant le",
+    "channelsHeading": "Trois façons de payer",
+    "bankHeading": "1. Virement bancaire",
+    "bankNameLabel": "Banque",
+    "bankAccountNameLabel": "Titulaire du compte",
+    "bankIbanLabel": "IBAN",
+    "bankSwiftLabel": "Code SWIFT / BIC",
+    "mobileHeading": "2. Mobile money",
+    "mobileOperatorLabel": "Opérateur",
+    "mobileNumberLabel": "Numéro",
+    "mobileNameLabel": "Nom du compte",
+    "notaryHeading": "3. Espèces ou acte chez le notaire",
+    "notaryNameLabel": "Notaire",
+    "notaryPhoneLabel": "Téléphone",
+    "notaryAddressLabel": "Adresse",
+    "forwarding": "Vous pouvez transmettre ce message tel quel à la personne qui effectuera le paiement pour vous. Tout ce dont elle a besoin s'y trouve.",
+    "afterPaying": "Une fois le paiement effectué, conservez le reçu : il vous sera demandé. KAMBRIQ vérifie chaque encaissement avant de le valider, ce qui peut prendre quelques jours ouvrés.",
+    "supportLabel": "Une question",
+    "supportBody": "Écrivez à {supportEmail} ou appelez le {supportPhone}, en indiquant la référence ci-dessus."
+  },
+  "paymentReminder": {
+    "subject": "Rappel : paiement {reference} à régler avant le {deadline}",
+    "subjectOverdue": "Rappel : paiement {reference} — échéance dépassée",
+    "heading": "Rappel de paiement",
+    "introUpcoming": "Bonjour {clientName}, la date limite pour le règlement de {subject} approche : c'est le {deadline}.",
+    "introOverdue": "Bonjour {clientName}, la date limite du {deadline} pour le règlement de {subject} est passée et nous n'avons pas encore enregistré votre paiement.",
+    "crossed": "Si vous avez déjà payé, ce message a simplement croisé votre virement — il n'y a rien à faire, l'encaissement sera rattaché à votre dossier dès qu'il nous parviendra.",
+    "instructionsAgain": "Les instructions complètes sont rappelées ci-dessous pour que vous n'ayez pas à rechercher le message précédent."
   }
 }

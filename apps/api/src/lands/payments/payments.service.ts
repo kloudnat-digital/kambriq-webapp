@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { EmailService } from '@kambriq/common';
 import {
   buildReference,
   assertTransitionAllowed,
@@ -15,6 +16,7 @@ import {
   sumReceipts,
 } from '@kambriq/common';
 import { LandsPrismaService } from '../prisma/lands-prisma.service';
+import { PaymentChannelsService } from './payment-channels.service';
 
 /**
  * G1 - the payment state machine and the movement ledger.
@@ -38,6 +40,39 @@ export type RecordReceiptInput = {
   note?: string;
 };
 
+/** Shown when a payment carries no deadline. Never an empty string: a blank in a
+ * date position reads as a rendering fault rather than as "no deadline". */
+const PAYMENT_NO_DEADLINE = '-';
+
+/**
+ * The amount, as a person reads it, with its currency stated once.
+ *
+ * Not `formatXAF`: that helper appends "FCFA" itself, so composing it with the
+ * payment's own `currency` produced **"750 000 FCFA XAF"** in the first real
+ * instruction email - the currency twice, one of them hardcoded and wrong for
+ * any payment that is not in XAF. Found by reading the message that arrived,
+ * not by reading the code.
+ *
+ * `Intl` with the payment's actual currency code covers both: the grouping a
+ * French reader expects, and a currency that is whatever the payment says.
+ */
+const formatMoney = (amount: bigint, currency: string): string =>
+  `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Number(amount))} ${currency}`;
+
+/**
+ * The deadline, written out rather than as `2026-10-06`.
+ *
+ * This message is read on a phone by somebody who may forward it to a relative
+ * who did not see the conversation. An ISO date is a machine's format; a date
+ * that has to be acted on is written the way the reader writes dates.
+ */
+const formatDeadline = (at: Date | null): string =>
+  at
+    ? new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(
+        at,
+      )
+    : PAYMENT_NO_DEADLINE;
+
 /** True for the unique-index violation on `Payment.reference`. */
 const isReferenceCollision = (error: unknown): boolean =>
   typeof error === 'object' &&
@@ -49,7 +84,11 @@ const isReferenceCollision = (error: unknown): boolean =>
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
 
-  constructor(private readonly prisma: LandsPrismaService) {}
+  constructor(
+    private readonly prisma: LandsPrismaService,
+    private readonly channels: PaymentChannelsService,
+    private readonly emailService: EmailService,
+  ) {}
 
   /**
    * Creates a payment, with its reference. **There is no path that creates one
@@ -132,6 +171,130 @@ export class PaymentsService {
       { nextval: bigint }[]
     >`SELECT nextval('payment_reference_seq')`;
     return Number(rows[0].nextval);
+  }
+
+  /**
+   * Sends the payment instructions, then moves the payment to
+   * `INSTRUCTIONS_ENVOYEES`.
+   *
+   * ---------------------------------------------------------------------------
+   * The ordering, which is the whole point of this method
+   * ---------------------------------------------------------------------------
+   * **Send first. Transition only if the send succeeded.**
+   *
+   * The other order is the tempting one - mark it sent, then send - and it
+   * produces the state this system must never be in: a payment sitting in
+   * `INSTRUCTIONS_ENVOYEES` that nobody was ever told about. Nothing downstream
+   * can tell that apart from a client who is ignoring their instructions. The
+   * dunning queue would chase them, the back office would see a payment awaiting
+   * money, and the client would be waiting for an email that does not exist.
+   *
+   * This way round the worst case is a **duplicate** instruction: the enqueue
+   * succeeded, the transition failed, a retry sends a second copy of a message
+   * the client already has. Annoying, and honest - the state never claims
+   * something that did not happen.
+   *
+   * `EmailService.send` enqueues; delivery is the processor's job and its
+   * failures are visible on the failed set. What is guaranteed here is that
+   * **nothing is marked sent that was not at least handed to the queue.**
+   */
+  async sendInstructions(
+    paymentId: string,
+    to: { email: string; clientName: string; lang: string },
+    context: { subject: string; actorUserId: string },
+  ): Promise<{ state: PaymentState; reference: string }> {
+    const payment = await this.findOrThrow(paymentId);
+
+    if (!payment.reference) {
+      // G2 assigns one at creation. A payment without one predates the
+      // generator and must not be sent: the client would be told to quote
+      // nothing, and the money would arrive unmatchable.
+      throw new BadRequestException(
+        `Payment ${paymentId} has no reference, so no instruction can be sent. ` +
+          `It predates G2 and needs one before anybody is asked to pay it.`,
+      );
+    }
+
+    // Throws if any channel detail is missing. Before the send, before the
+    // transition, before anything is written.
+    const args = await this.instructionArgs(payment, to.clientName, context.subject);
+
+    await this.emailService.send({
+      to: to.email,
+      template: 'paymentInstructions',
+      lang: to.lang,
+      args,
+    });
+
+    const result = await this.transition(paymentId, PaymentState.INSTRUCTIONS_ENVOYEES, {
+      actorUserId: context.actorUserId,
+      reason: `Payment instructions sent to ${to.email}`,
+    });
+
+    return { state: result.state, reference: payment.reference };
+  }
+
+  /**
+   * Sends a reminder. **Changes no state**, deliberately.
+   *
+   * A reminder is a repetition, not an event: the payment is still where it was,
+   * and moving it would make "we reminded them" indistinguishable from "they did
+   * something".
+   *
+   * **When a reminder fires is `G6`**, with the dunning queue. This is the
+   * message and the path to send it; G6 calls this.
+   */
+  async sendReminder(
+    paymentId: string,
+    to: { email: string; clientName: string; lang: string },
+    context: { subject: string },
+  ): Promise<{ sent: true; overdue: boolean }> {
+    const payment = await this.findOrThrow(paymentId);
+
+    if (!payment.reference) {
+      throw new BadRequestException(`Payment ${paymentId} has no reference; refusing to remind.`);
+    }
+
+    const overdue = payment.expiresAt !== null && payment.expiresAt.getTime() < Date.now();
+    const args = await this.instructionArgs(payment, to.clientName, context.subject);
+
+    await this.emailService.send({
+      to: to.email,
+      template: 'paymentReminder',
+      lang: to.lang,
+      args: { ...args, overdue: String(overdue) },
+    });
+
+    this.logger.log('Payment reminder sent %o', { paymentId, overdue });
+    return { sent: true, overdue };
+  }
+
+  /**
+   * Everything both messages need, with the channel details.
+   *
+   * Throws if any channel detail is missing or blank - so a message with an
+   * empty account number cannot be composed, let alone sent.
+   */
+  private async instructionArgs(
+    payment: {
+      reference: string | null;
+      amountDue: bigint;
+      currency: string;
+      expiresAt: Date | null;
+    },
+    clientName: string,
+    subject: string,
+  ): Promise<Record<string, string>> {
+    const channels = await this.channels.get();
+
+    return {
+      clientName,
+      subject,
+      reference: payment.reference ?? '',
+      amount: formatMoney(payment.amountDue, payment.currency),
+      deadline: formatDeadline(payment.expiresAt),
+      ...channels,
+    };
   }
 
   /**
