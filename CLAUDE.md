@@ -611,6 +611,54 @@ the **routing table**, not of the class a controller test instantiates.
 
 An endpoint with a green test and no caller is a claim that it works.
 
+### A service method with no caller is not a feature
+
+`createPayment` and `sendInstructions` are written, tested, deployed to dev, and
+**called by nothing**. There is no route, no job, no button. Every payment that
+exists on dev was written by the `G1` migration backfill.
+
+`G1`'s own document says _"the service methods exist; there are no routes"_ - about
+`G4`, which has them now. Nobody wrote the same sentence about creation, so it
+was never anybody's chantier, and `G8` - _one payment carried end to end on dev_ -
+is scheduled behind dependencies that do not include the thing it starts with.
+
+The `A10` rule was _an API is not delivered until something renders it._ This is
+the step before: **a method is not delivered until something calls it.** When a
+chantier ends, ask what invokes the code, and if the answer is "a test", say so
+in the register.
+
+### Configuration written by hand is configuration that exists on one environment
+
+`G3` reads twelve SSM parameters at runtime, and the reasoning was good: a wrong
+bank account must be correctable in one command rather than a deploy. The twelve
+parameters were then created with `aws ssm put-parameter` while building it, and
+never added to terraform - and `PAYMENT_CHANNELS_SSM_PREFIX`, the variable that
+makes the API read them, was never added to the task definition either.
+
+So the parameters exist, the reader exists, and on dev the reader has never once
+been called. Nothing failed: the service takes its unconfigured branch, warns at
+startup, and throws if anything asks for a channel detail. Correct behaviour,
+and it hid the gap for three deploys.
+
+**A `put-parameter` typed into a terminal is a change to one environment that
+prd will not have.** If a chantier needs configuration, the configuration is part
+of the chantier - in terraform, in the task definition, in the same PR or a named
+follow-up.
+
+### Check the cause you were told to check, then keep going
+
+The brief said: if the channel service will not start, look for
+`AccessDeniedException` on `ssm:GetParameter` **first**. That was the right first
+guess and it was wrong - there was no denial, because the SDK was never called.
+
+Stopping at "not an IAM problem" would have left two further findings unmade: the
+missing task-definition variable, and the fact that nothing creates a payment at
+all. And a third that mattered in the other direction - SES has production access,
+so the sandbox was never going to block the send either.
+
+**Three gaps, reported together.** The habit this repository keeps relearning is
+that the first finding is where an investigation starts.
+
 ### A type that lies is worse than no type
 
 The web's API client already strips the `{ success, data }` envelope. The G4
