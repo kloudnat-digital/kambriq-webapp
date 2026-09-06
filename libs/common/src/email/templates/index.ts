@@ -62,6 +62,59 @@ type TemplateFn = (
   args: TemplateArgs,
 ) => { subject: string; html: string };
 
+/**
+ * The reference, set out to survive being copied by hand.
+ *
+ * Monospaced, large, on its own line, with the rule stated underneath. This is
+ * the single most important thing in the message: money that arrives without it
+ * cannot be matched to a payment, and the person making the transfer is the only
+ * one who can put it there.
+ */
+const referenceBlock = (i18n: I18nService, lang: string, args: TemplateArgs): string => `
+  <p class="muted" style="margin-bottom:4px;">${t(i18n, 'email.paymentInstructions.referenceLabel', lang)}</p>
+  <p style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:24px;font-weight:700;
+            letter-spacing:2px;margin:0 0 8px;word-break:break-all;">${args['reference']}</p>
+  <p class="muted" style="margin-top:0;">${t(i18n, 'email.paymentInstructions.referenceRule', lang)}</p>
+`;
+
+/**
+ * The three channels, with the details needed to actually pay through each.
+ *
+ * Every value comes from `PaymentChannelsService`, which refuses to produce a
+ * set with a blank in it, so this cannot render an empty account number.
+ */
+const channelBlock = (i18n: I18nService, lang: string, args: TemplateArgs): string => {
+  const row = (labelKey: string, value: string | number) =>
+    `<tr><td class="muted" style="padding-right:12px;">${t(i18n, labelKey, lang)}</td>
+         <td style="font-weight:600;">${value}</td></tr>`;
+
+  return `
+    <h2 style="font-size:16px;margin-top:24px;">${t(i18n, 'email.paymentInstructions.channelsHeading', lang)}</h2>
+
+    <h3 style="font-size:14px;margin-bottom:4px;">${t(i18n, 'email.paymentInstructions.bankHeading', lang)}</h3>
+    <table role="presentation">
+      ${row('email.paymentInstructions.bankNameLabel', args['bankName'])}
+      ${row('email.paymentInstructions.bankAccountNameLabel', args['bankAccountName'])}
+      ${row('email.paymentInstructions.bankIbanLabel', args['bankIban'])}
+      ${row('email.paymentInstructions.bankSwiftLabel', args['bankSwift'])}
+    </table>
+
+    <h3 style="font-size:14px;margin-bottom:4px;">${t(i18n, 'email.paymentInstructions.mobileHeading', lang)}</h3>
+    <table role="presentation">
+      ${row('email.paymentInstructions.mobileOperatorLabel', args['mobileMoneyOperator'])}
+      ${row('email.paymentInstructions.mobileNumberLabel', args['mobileMoneyNumber'])}
+      ${row('email.paymentInstructions.mobileNameLabel', args['mobileMoneyName'])}
+    </table>
+
+    <h3 style="font-size:14px;margin-bottom:4px;">${t(i18n, 'email.paymentInstructions.notaryHeading', lang)}</h3>
+    <table role="presentation">
+      ${row('email.paymentInstructions.notaryNameLabel', args['notaryName'])}
+      ${row('email.paymentInstructions.notaryPhoneLabel', args['notaryPhone'])}
+      ${row('email.paymentInstructions.notaryAddressLabel', args['notaryAddress'])}
+    </table>
+  `;
+};
+
 const defineTemplates = <T extends Record<string, TemplateFn>>(t: T) => t;
 const templates = defineTemplates({
   verification: (i18n, lang, args) => ({
@@ -73,6 +126,104 @@ const templates = defineTemplates({
       <a href="${args['verificationUrl']}" class="btn">${t(i18n, 'email.verification.button', lang)}</a>
       <p class="muted">${t(i18n, 'email.verification.expiry', lang)}</p>
       <p class="muted" style="word-break:break-all;">${args['verificationUrl']}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  /**
+   * G3 - the payment instruction.
+   *
+   * Written for the person who will read it, not for the person who wrote it.
+   * The client is in the diaspora, the money has to arrive in Cameroon, and
+   * they will forward this to whoever makes the transfer for them. So: no
+   * links to click, no login required, nothing that only makes sense to
+   * somebody who was in the conversation. Everything needed to pay is in the
+   * body.
+   *
+   * The reference is repeated in a monospaced block on its own line, large,
+   * because it will be copied by hand onto a transfer slip. The rule about the
+   * motif is stated as a rule, not as a hint: a payment without the reference
+   * cannot be matched, and the client is the only person who can prevent that.
+   */
+  paymentInstructions: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.paymentInstructions.subject', lang, args),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.paymentInstructions.heading', lang)}</h1>
+      <p>${t(i18n, 'email.paymentInstructions.intro', lang, args)}</p>
+
+      ${referenceBlock(i18n, lang, args)}
+
+      <table role="presentation" style="width:100%;margin:16px 0;">
+        <tr><td class="muted">${t(i18n, 'email.paymentInstructions.amountLabel', lang)}</td>
+            <td style="text-align:right;font-weight:700;font-size:18px;">${args['amount']}</td></tr>
+        <tr><td class="muted">${t(i18n, 'email.paymentInstructions.deadlineLabel', lang)}</td>
+            <td style="text-align:right;font-weight:700;">${args['deadline']}</td></tr>
+      </table>
+
+      ${channelBlock(i18n, lang, args)}
+
+      <p>${t(i18n, 'email.paymentInstructions.forwarding', lang)}</p>
+      <p class="muted">${t(i18n, 'email.paymentInstructions.afterPaying', lang)}</p>
+      <p class="muted"><strong>${t(i18n, 'email.paymentInstructions.supportLabel', lang)}</strong> —
+        ${t(i18n, 'email.paymentInstructions.supportBody', lang, args)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  /**
+   * G3 - the reminder. Same content, different framing.
+   *
+   * It names the deadline and **does not accuse**: the client may have paid
+   * yesterday and the transfer may still be in flight, which is normal for an
+   * international transfer to Cameroon and is not their fault. So the message
+   * says so, before it says anything else about what is owed.
+   *
+   * The full instructions are repeated rather than referred to. A person who
+   * needs a reminder is a person who cannot find the first message.
+   *
+   * **When it fires is G6.** This is the message and the send path only.
+   */
+  paymentReminder: (i18n, lang, args) => ({
+    subject: t(
+      i18n,
+      args['overdue'] === 'true'
+        ? 'email.paymentReminder.subjectOverdue'
+        : 'email.paymentReminder.subject',
+      lang,
+      args,
+    ),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.paymentReminder.heading', lang)}</h1>
+      <p>${t(
+        i18n,
+        args['overdue'] === 'true'
+          ? 'email.paymentReminder.introOverdue'
+          : 'email.paymentReminder.introUpcoming',
+        lang,
+        args,
+      )}</p>
+      <p>${t(i18n, 'email.paymentReminder.crossed', lang)}</p>
+
+      ${referenceBlock(i18n, lang, args)}
+
+      <table role="presentation" style="width:100%;margin:16px 0;">
+        <tr><td class="muted">${t(i18n, 'email.paymentInstructions.amountLabel', lang)}</td>
+            <td style="text-align:right;font-weight:700;font-size:18px;">${args['amount']}</td></tr>
+        <tr><td class="muted">${t(i18n, 'email.paymentInstructions.deadlineLabel', lang)}</td>
+            <td style="text-align:right;font-weight:700;">${args['deadline']}</td></tr>
+      </table>
+
+      <p class="muted">${t(i18n, 'email.paymentReminder.instructionsAgain', lang)}</p>
+      ${channelBlock(i18n, lang, args)}
+
+      <p class="muted"><strong>${t(i18n, 'email.paymentInstructions.supportLabel', lang)}</strong> —
+        ${t(i18n, 'email.paymentInstructions.supportBody', lang, args)}</p>
     `,
       lang,
       i18n,

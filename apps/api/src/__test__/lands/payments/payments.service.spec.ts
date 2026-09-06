@@ -7,10 +7,12 @@ import {
   IllegalPaymentTransitionError,
   PaymentChannel,
   PaymentState,
+  EmailService,
 } from '@kambriq/common';
 import { PaymentsService } from '../../../lands/payments/payments.service';
 import { LandsPrismaService } from '../../../lands/prisma/lands-prisma.service';
-import { mockLandsPrisma } from '../../utils';
+import { PaymentChannelsService } from '../../../lands/payments/payment-channels.service';
+import { mockEmailService, mockLandsPrisma, mockPaymentChannels } from '../../utils';
 
 const PAYMENT_ID = 'pay-1';
 const ADMIN = '00000000-0000-4000-8000-b00000000001';
@@ -42,7 +44,12 @@ describe('PaymentsService', () => {
     jest.clearAllMocks();
     prisma = mockLandsPrisma();
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PaymentsService, { provide: LandsPrismaService, useValue: prisma }],
+      providers: [
+        PaymentsService,
+        { provide: LandsPrismaService, useValue: prisma },
+        { provide: PaymentChannelsService, useValue: mockPaymentChannels() },
+        { provide: EmailService, useValue: mockEmailService() },
+      ],
     }).compile();
     service = module.get(PaymentsService);
   });

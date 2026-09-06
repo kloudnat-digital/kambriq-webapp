@@ -1,9 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException } from '@nestjs/common';
-import { validateReference } from '@kambriq/common';
+import { EmailService, validateReference } from '@kambriq/common';
 import { PaymentsService } from '../../../lands/payments/payments.service';
 import { LandsPrismaService } from '../../../lands/prisma/lands-prisma.service';
-import { mockLandsPrisma } from '../../utils';
+import { PaymentChannelsService } from '../../../lands/payments/payment-channels.service';
+import { mockEmailService, mockLandsPrisma, mockPaymentChannels } from '../../utils';
 
 /**
  * G2 - creation assigns the reference, and the counter cannot collide.
@@ -26,7 +27,12 @@ describe('createPayment', () => {
     );
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PaymentsService, { provide: LandsPrismaService, useValue: prisma }],
+      providers: [
+        PaymentsService,
+        { provide: LandsPrismaService, useValue: prisma },
+        { provide: PaymentChannelsService, useValue: mockPaymentChannels() },
+        { provide: EmailService, useValue: mockEmailService() },
+      ],
     }).compile();
     service = module.get(PaymentsService);
   });

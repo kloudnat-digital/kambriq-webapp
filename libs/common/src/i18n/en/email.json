@@ -206,5 +206,41 @@
   "footer": {
     "copyright": "© {year} KAMBRIQ. All rights reserved.",
     "ignore": "If you didn't request this email, you can safely ignore it."
+  },
+  "paymentInstructions": {
+    "subject": "Your KAMBRIQ payment reference: {reference}",
+    "heading": "Payment instructions",
+    "intro": "Hello {clientName}, here is everything needed to pay for {subject}.",
+    "referenceLabel": "Payment reference",
+    "referenceRule": "This reference must appear as the motif of the transfer, the mobile money payment or the notary's receipt. A payment without it cannot be matched to your file.",
+    "amountLabel": "Amount due",
+    "deadlineLabel": "Due by",
+    "channelsHeading": "Three ways to pay",
+    "bankHeading": "1. Bank transfer",
+    "bankNameLabel": "Bank",
+    "bankAccountNameLabel": "Account holder",
+    "bankIbanLabel": "IBAN",
+    "bankSwiftLabel": "SWIFT / BIC",
+    "mobileHeading": "2. Mobile money",
+    "mobileOperatorLabel": "Operator",
+    "mobileNumberLabel": "Number",
+    "mobileNameLabel": "Account name",
+    "notaryHeading": "3. Cash or deed at the notary",
+    "notaryNameLabel": "Notary",
+    "notaryPhoneLabel": "Telephone",
+    "notaryAddressLabel": "Address",
+    "forwarding": "You can forward this message as it is to whoever makes the payment for you. Everything they need is in it.",
+    "afterPaying": "Once you have paid, keep the receipt: you will be asked for it. KAMBRIQ checks every payment before validating it, which can take a few working days.",
+    "supportLabel": "Any question",
+    "supportBody": "Write to {supportEmail} or call {supportPhone}, quoting the reference above."
+  },
+  "paymentReminder": {
+    "subject": "Reminder: payment {reference} due by {deadline}",
+    "subjectOverdue": "Reminder: payment {reference} — past its due date",
+    "heading": "Payment reminder",
+    "introUpcoming": "Hello {clientName}, the deadline for paying {subject} is approaching: it is {deadline}.",
+    "introOverdue": "Hello {clientName}, the deadline of {deadline} for paying {subject} has passed and we have not yet recorded your payment.",
+    "crossed": "If you have already paid, this message simply crossed your transfer — there is nothing to do, the payment will be attached to your file as soon as it reaches us.",
+    "instructionsAgain": "The full instructions are repeated below so you do not have to look for the previous message."
   }
 }

@@ -134,6 +134,7 @@ listed here first.
 | `B4`             | `PROUVE`          | 4 journeys: VERIFY does not exist; reactivation and block/unblock never run; 57 identity documents queued for a review that has never run           |
 | `G1`             | `EN COURS`        | payment model in `lands`: BigInt money, 9-state machine, append-only ledger and audit. Pending proof is G8, one payment end to end on dev           |
 | `G2`             | `PROUVE`          | the reference generator: 29-char derived alphabet, mod-29 check character, sequence-backed so collision-free by construction                        |
+| `G3`             | `PROUVE`          | the instruction and reminder messages, channel details from SSM at runtime, send-before-transition. Real email read out of a mailbox                |
 
 ### H1 - `ADMIN_GLOBAL` **is** the super admin - `PROUVE`
 
@@ -570,6 +571,75 @@ unilaterally: it crosses into the other repository.
 
 The manual runbook does not have this gap - it fetches the log and requires the
 tally - so the one-off path already checks what the automated path does not.
+
+---
+
+### G3 - the payment instruction and the reminder - `PROUVE`
+
+**Cost impact: None.** Twelve SSM Standard parameters (free tier is 10 000), no
+new resource, no new dependency. The runtime SSM read is one `GetParametersByPath`
+per minute per task at most.
+
+G1 gave the model, G2 gave every payment a reference that cannot be miscopied
+silently. This puts that reference in front of the client.
+
+**Both templates are transactional and neither is in `SUPPRESSIBLE_TEMPLATES`.**
+`A11` made the allow-list fail safe - an unclassified template is transactional -
+so this needed no change to the barrier, and four tests hold it there: the
+allow-list membership, `isTransactional`, the real `sendUpdate` throwing on both
+templates, and the service source containing no `sendUpdate` at all.
+
+**Channel details: the SSM SDK at runtime, and that is a decision.** `B3` found
+that only 7 of 56 parameters reach the container as ECS `secrets`; the other 49
+are terraform-rendered and do not change until an apply. A wrong account number
+must be correctable with one command, so `PaymentChannelsService` reads
+`/kambriq/{env}/api/payment-channels` through the SDK and caches for 60 seconds.
+**A bank-detail correction takes effect within a minute and needs no deploy.**
+
+**Nothing is optional.** Twelve required parameters; a missing or empty one fails
+at **startup**, naming all of them rather than the first, and `get()` throws
+rather than returning a set with a blank. Dev's values are deliberately
+unmistakable - `DEV-COMPTE-FICTIF-NE-PAS-UTILISER` - because an invented IBAN
+that looks plausible is worse than an obviously fake one.
+
+**The ordering, which is the substance of this chantier.** Send first, transition
+only if the send succeeded. The other order produces the one state the system
+must never hold: a payment in `INSTRUCTIONS_ENVOYEES` that nobody was ever told
+about, indistinguishable downstream from a client ignoring their instructions -
+the dunning queue would chase them for a message that does not exist. This way
+the worst case is a duplicate instruction, which is honest.
+
+**Mutation:** transition-then-send. **2 failed / 404 passed** -
+`leaves the state untouched when the send throws` and
+`sends first, and only then transitions`. Restored: **406 passed**.
+
+**A real email, read out of the destination mailbox.**
+
+```
+reference : KBQ-2609-3ZPQC-F   (from the real generator, off the real sequence)
+messageId : 010701a078ad7052-21bd5cc8-55bd-41c4-870f-1f1e2d8ea784-000000
+subject   : Votre référence de paiement KAMBRIQ : KBQ-2609-3ZPQC-F
+```
+
+**And the first one was wrong, which is the finding.** The initial send -
+`KBQ-2609-PZTGM-K`, messageId `010701a078ac276f-24454f48-…` - arrived reading
+**"750 000 FCFA XAF"**, the currency twice, and gave the deadline as
+`2026-10-06`. Both passed every test and were invisible in the code: `formatXAF`
+appends "FCFA" itself. **Found by reading the message that landed, not by reading
+the template.** Kept in `CLAUDE.md`: a message is done when somebody has read
+what arrived.
+
+The corrected message reads `750 000 XAF` and `6 octobre 2026`.
+
+**What was deliberately not built.** The scheduler that decides _when_ a reminder
+fires is **`G6`**, with the dunning queue. `PaymentsService.sendReminder` is the
+path G6 calls; a test asserts this chantier contains no `@Cron`, no
+`setInterval` and no repeatable job. The back-office screen is `G4`.
+
+**Also fixed on the way, because it was in the way.** `PaymentsService` was never
+registered in `LandsModule` - G1 added the class and wired it nowhere, which
+nothing noticed because nothing called it. Registered here with
+`PaymentChannelsService`.
 
 ---
 

@@ -51,6 +51,18 @@ export const envSchema = z.object({
   // the defect env-vars-declared.spec.ts exists to catch.
   BOOTSTRAP_SSM_PREFIX: z.string().optional(),
 
+  // ----- Payment channel details (G3) -----
+  // The SSM path holding the bank, mobile money and notary details that payment
+  // instructions carry, e.g. '/kambriq/dev/api/payment-channels'. Read through
+  // the SDK at RUNTIME, deliberately: B3 established that a parameter rendered
+  // into the task definition does not change until terraform is applied, and a
+  // wrong account number must be correctable without a release.
+  //
+  // Optional here and required by PaymentChannelsService, which fails at
+  // startup when it is set and incomplete, and refuses to build a message when
+  // it is absent.
+  PAYMENT_CHANNELS_SSM_PREFIX: z.string().optional(),
+
   // ----- SES Contact Lists -----
   // Must match the aws_sesv2_contact_list resource in kambriq-infra
   // (envs/dev/ses-newsletter.tf). Coupled by convention only.

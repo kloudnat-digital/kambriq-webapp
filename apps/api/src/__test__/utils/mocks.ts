@@ -175,6 +175,32 @@ export type MockKbsPrisma = ReturnType<typeof mockKbsPrisma>;
  * column. That absence is the point of G1's ledger, and a mock that invented
  * one would let a test pass against a shape the database cannot hold.
  */
+/**
+ * Payment channel details, as the real service returns them.
+ *
+ * Complete on purpose: the real `PaymentChannelsService` throws rather than
+ * returning a set with a blank in it, so a mock that could return one would let
+ * a test pass against a state the service cannot produce.
+ */
+export const mockPaymentChannels = () => ({
+  get: jest.fn(() =>
+    Promise.resolve({
+      bankName: 'Test Bank',
+      bankAccountName: 'KAMBRIQ SA',
+      bankIban: 'CM21 0000 0000 0000 0000 0000 000',
+      bankSwift: 'TESTCMCX',
+      mobileMoneyOperator: 'Test Money',
+      mobileMoneyNumber: '+237600000000',
+      mobileMoneyName: 'KAMBRIQ SA',
+      notaryName: 'Maitre Test',
+      notaryPhone: '+237600000001',
+      notaryAddress: '1 rue de Test, Douala',
+      supportEmail: 'support@example.test',
+      supportPhone: '+237600000002',
+    }),
+  ),
+});
+
 export const mockLandsPrisma = () => ({
   payment: {
     findUnique: fn(),
@@ -201,13 +227,26 @@ export const mockI18n = () => ({
 
 // ----- EmailService ------ //
 
+/**
+ * The payload shape both send paths take. Declared so a test can read
+ * `send.mock.calls[0][0].args` - with `jest.fn(() => ...)` the mock is typed as
+ * taking no arguments, and asserting on what was sent becomes a type error
+ * rather than an assertion.
+ */
+type EmailCall = { to: string; template: string; lang: string; args: Record<string, string> };
+
 export const mockEmailService = () => ({
-  send: jest.fn(() => Promise.resolve(undefined)),
+  // Declared by signature rather than by an implementation with unused
+  // parameters: the repo lints at --max-warnings=0 and has no
+  // argsIgnorePattern, so `_payload` would block the commit.
+  send: jest.fn<(payload: EmailCall) => Promise<undefined>>(),
   sendBatch: jest.fn(() => Promise.resolve(undefined)),
   // Returns an outcome, like the real one. A mock that returns `undefined`
   // where the service returns a value lets a test pass against a signature the
   // code no longer has - which is the A11 defect, reproduced in the fixture.
-  sendUpdate: jest.fn(() => Promise.resolve({ status: 'queued' as const })),
+  sendUpdate: jest
+    .fn<(payload: EmailCall, prefs?: unknown) => Promise<{ status: 'queued' }>>()
+    .mockResolvedValue({ status: 'queued' as const }),
 });
 
 // ----- JwtService ------ //
