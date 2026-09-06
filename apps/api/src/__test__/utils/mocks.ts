@@ -178,6 +178,7 @@ export type MockKbsPrisma = ReturnType<typeof mockKbsPrisma>;
 export const mockLandsPrisma = () => ({
   payment: {
     findUnique: fn(),
+    create: fn(),
     update: fn(),
   },
   paymentReceipt: {
@@ -189,6 +190,7 @@ export const mockLandsPrisma = () => ({
     findMany: fn(),
   },
   $transaction: jest.fn((args: Promise<unknown>[]) => Promise.all(args)),
+  $queryRaw: fn(),
 });
 
 export type MockLandsPrisma = ReturnType<typeof mockLandsPrisma>;

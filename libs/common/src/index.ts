@@ -16,6 +16,22 @@ export {
   assertTransitionIsDeliberate,
   sumReceipts,
 } from './payments/payment-state';
+
+export {
+  REFERENCE_ALPHABET,
+  REFERENCE_BODY_LENGTH,
+  REFERENCE_BODY_SPACE,
+  REFERENCE_PREFIX,
+  buildReference,
+  checkCharacter,
+  encodeBody,
+  formatReference,
+  normalizeReference,
+  referencePeriod,
+  validateReference,
+  type ReferenceRejection,
+  type ReferenceValidation,
+} from './payments/payment-reference';
 export {
   issueVerificationToken,
   verificationTokenExpiryHours,

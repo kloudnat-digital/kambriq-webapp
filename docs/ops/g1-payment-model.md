@@ -159,7 +159,7 @@ a notary. **The check digit is what separates a reference from a source of
 dispute** - without it, a mis-copied reference lands on somebody else's payment
 and nobody notices until reconciliation.
 
-**The generator is G2.** Nullable because backfilled payments predate it, and
+**The generator is G2, and it now exists.**
 Postgres treats NULLs as distinct in a unique index so they do not collide.
 
 ## The old columns
@@ -173,7 +173,7 @@ exercised - a drop is irreversible.
 
 | Chantier      | What it adds                                                                                                                                                                                                                                   |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **G2**        | the reference generator and its check digit. The column and its format constraint exist; nothing fills them                                                                                                                                    |
+| ~~**G2**~~    | **Done.** The generator, its check character and its validator are in `libs/common/src/payments/payment-reference.ts`; `PaymentsService.createPayment` assigns one at creation and there is no path that does not                              |
 | **G3**        | the instructions email and the reminder. `Payment.expiresAt` exists and nothing reads it                                                                                                                                                       |
 | **G4**        | the back-office screens for recording an encaissement and its justificatif. The service methods exist; **there are no routes**                                                                                                                 |
 | **G6**        | the dunning queue: the query for stalled payments, the reminder, and the job that moves them to `EXPIRE`                                                                                                                                       |
