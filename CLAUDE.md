@@ -142,6 +142,38 @@ certification exam.
 **A degraded path must be an explicit setting (`EMAIL_TRANSPORT=console`), never
 an inference from absent configuration.**
 
+### A guard that reports instead of preventing, and Jest's part in it
+
+Journey 5 must never run against a real administrator's address: it consumes a
+single-use reset token, and spending a real holder's would lock them out of
+activating their own account. The rule was written as the journey's first test,
+asserting the target address — deliberately, so that it would be enforced rather
+than remembered.
+
+**Mutated, it failed exactly as designed and prevented nothing.**
+
+```
+Expected pattern: /@maildrop\.cc$/
+Received string:  "…@kambriq.com"
+```
+
+Then the other four tests ran, because **Jest does not stop a `describe` at its
+first failing test.** The run reached `forgot-password` and sent a real
+password-reset email to a real person's inbox. It went no further only by luck:
+the suite cannot read that mailbox, so the token timed out unconsumed instead of
+being spent.
+
+**A failing assertion records that something was wrong. It does not stop it.** A
+check whose job is to prevent an action belongs in `beforeAll` — a throw there
+means no test body executes at all — and the `it` proves the check's logic rather
+than standing in for it. Re-mutated against the barrier: five tests failed on the
+hook, **zero API requests, zero SES sends**, in seven seconds instead of two
+minutes.
+
+This is also the clearest case yet of the rule two headings up. Reading the guard
+said it was enforced. Running it said otherwise, and the difference was a real
+email to a real person.
+
 ### A record that overstates its own uncertainty
 
 The `H2` register entry flagged three values as inferred when only one was. The
