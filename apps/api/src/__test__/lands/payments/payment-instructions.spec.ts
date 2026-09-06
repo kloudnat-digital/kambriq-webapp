@@ -7,11 +7,17 @@ import {
   isTransactional,
   PaymentState,
   SUPPRESSIBLE_TEMPLATES,
+  StorageService,
 } from '@kambriq/common';
 import { PaymentsService } from '../../../lands/payments/payments.service';
 import { LandsPrismaService } from '../../../lands/prisma/lands-prisma.service';
 import { PaymentChannelsService } from '../../../lands/payments/payment-channels.service';
-import { mockEmailService, mockLandsPrisma, mockPaymentChannels } from '../../utils';
+import {
+  mockEmailService,
+  mockLandsPrisma,
+  mockPaymentChannels,
+  mockStorageService,
+} from '../../utils';
 
 const REFERENCE = 'KBQ-2609-J8ZD9-Y';
 const ADMIN = '00000000-0000-4000-8000-b00000000001';
@@ -51,6 +57,7 @@ describe('G3 - payment instructions and reminders', () => {
         { provide: LandsPrismaService, useValue: prisma },
         { provide: PaymentChannelsService, useValue: channels },
         { provide: EmailService, useValue: email },
+        { provide: StorageService, useValue: mockStorageService() },
       ],
     }).compile();
     service = module.get(PaymentsService);

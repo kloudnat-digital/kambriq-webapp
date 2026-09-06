@@ -1,15 +1,25 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { EmailService } from '@kambriq/common';
+import {
+  buildPaginatedResponse,
+  EmailService,
+  formatHumanDate,
+  formatMoney,
+  PaginationQuery,
+  RoleCode,
+  StorageService,
+} from '@kambriq/common';
 import {
   buildReference,
   assertTransitionAllowed,
   assertTransitionIsDeliberate,
+  COMMITTING_STATES,
   PaymentChannel,
   PaymentState,
   RECORDABLE_CHANNELS,
@@ -40,38 +50,17 @@ export type RecordReceiptInput = {
   note?: string;
 };
 
-/** Shown when a payment carries no deadline. Never an empty string: a blank in a
- * date position reads as a rendering fault rather than as "no deadline". */
-const PAYMENT_NO_DEADLINE = '-';
-
 /**
- * The amount, as a person reads it, with its currency stated once.
- *
- * Not `formatXAF`: that helper appends "FCFA" itself, so composing it with the
- * payment's own `currency` produced **"750 000 FCFA XAF"** in the first real
- * instruction email - the currency twice, one of them hardcoded and wrong for
- * any payment that is not in XAF. Found by reading the message that arrived,
- * not by reading the code.
- *
- * `Intl` with the payment's actual currency code covers both: the grouping a
- * French reader expects, and a currency that is whatever the payment says.
+ * What a proof may be. A money dispute is settled by a document, so the list is
+ * documents and photographs of documents - nothing executable, nothing that
+ * renders differently for different readers.
  */
-const formatMoney = (amount: bigint, currency: string): string =>
-  `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Number(amount))} ${currency}`;
-
-/**
- * The deadline, written out rather than as `2026-10-06`.
- *
- * This message is read on a phone by somebody who may forward it to a relative
- * who did not see the conversation. An ISO date is a machine's format; a date
- * that has to be acted on is written the way the reader writes dates.
- */
-const formatDeadline = (at: Date | null): string =>
-  at
-    ? new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(
-        at,
-      )
-    : PAYMENT_NO_DEADLINE;
+export const PROOF_CONTENT_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/heic',
+] as const;
 
 /** True for the unique-index violation on `Payment.reference`. */
 const isReferenceCollision = (error: unknown): boolean =>
@@ -88,6 +77,7 @@ export class PaymentsService {
     private readonly prisma: LandsPrismaService,
     private readonly channels: PaymentChannelsService,
     private readonly emailService: EmailService,
+    private readonly storage: StorageService,
   ) {}
 
   /**
@@ -292,7 +282,7 @@ export class PaymentsService {
       subject,
       reference: payment.reference ?? '',
       amount: formatMoney(payment.amountDue, payment.currency),
-      deadline: formatDeadline(payment.expiresAt),
+      deadline: formatHumanDate(payment.expiresAt),
       ...channels,
     };
   }
@@ -359,6 +349,219 @@ export class PaymentsService {
   }
 
   /**
+   * The back-office list: every payment with its state, reference and what is
+   * still owed.
+   *
+   * The outstanding balance is `amountDue - sum(receipts)`, computed here from
+   * the ledger. **There is no stored balance to read**, and adding one would be
+   * the defect G1 exists to prevent.
+   */
+  async listForBackOffice(query: PaginationQuery) {
+    const { page, limit } = query;
+    const [payments, total] = await this.prisma.$transaction([
+      this.prisma.payment.findMany({
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: { receipts: { select: { amount: true } } },
+      }),
+      this.prisma.payment.count(),
+    ]);
+
+    return buildPaginatedResponse(
+      payments.map((p) => {
+        const received = sumReceipts(p.receipts);
+        return {
+          id: p.id,
+          reference: p.reference,
+          reservationId: p.reservationId,
+          state: p.state,
+          currency: p.currency,
+          amountDue: p.amountDue.toString(),
+          amountReceived: received.toString(),
+          outstanding: (p.amountDue - received).toString(),
+          expiresAt: p.expiresAt,
+          createdAt: p.createdAt,
+        };
+      }),
+      total,
+      page,
+      limit,
+    );
+  }
+
+  /**
+   * One payment, with its ledger and its full history.
+   *
+   * `amountReceived` and `outstanding` are computed on every read. A caller
+   * cannot obtain them any other way, because the columns do not exist.
+   */
+  async findForBackOffice(paymentId: string) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: {
+        receipts: { orderBy: { receivedAt: 'asc' } },
+        transitions: { orderBy: { occurredAt: 'asc' } },
+      },
+    });
+    if (!payment) throw new NotFoundException(`Payment ${paymentId} not found`);
+
+    const received = sumReceipts(payment.receipts);
+    return {
+      id: payment.id,
+      reference: payment.reference,
+      reservationId: payment.reservationId,
+      state: payment.state,
+      currency: payment.currency,
+      amountDue: payment.amountDue.toString(),
+      amountReceived: received.toString(),
+      outstanding: (payment.amountDue - received).toString(),
+      expiresAt: payment.expiresAt,
+      createdAt: payment.createdAt,
+      receipts: payment.receipts.map((r) => ({
+        id: r.id,
+        amount: r.amount.toString(),
+        currency: r.currency,
+        channel: r.channel,
+        receivedAt: r.receivedAt,
+        recordedAt: r.recordedAt,
+        recordedBy: r.recordedBy,
+        evidenceUrl: r.evidenceUrl,
+        correctsId: r.correctsId,
+        note: r.note,
+      })),
+      transitions: payment.transitions.map((t) => ({
+        id: t.id,
+        fromState: t.fromState,
+        toState: t.toState,
+        actorUserId: t.actorUserId,
+        reason: t.reason,
+        evidenceReceiptId: t.evidenceReceiptId,
+        occurredAt: t.occurredAt,
+      })),
+    };
+  }
+
+  /**
+   * A presigned PUT for one proof.
+   *
+   * The object is written under `payments/<paymentId>/` in the private bucket -
+   * the one with all four public-access blocks on, proven on 4 September. **A
+   * proof is evidence in a money dispute and outlives the payment**, so it is
+   * never publicly readable and is fetched through a short-lived presigned GET.
+   */
+  async getProofUploadUrl(paymentId: string, input: { fileName: string; contentType: string }) {
+    await this.findOrThrow(paymentId);
+
+    if (!(PROOF_CONTENT_TYPES as readonly string[]).includes(input.contentType)) {
+      throw new BadRequestException(
+        `${input.contentType} is not accepted as a proof. Allowed: ${PROOF_CONTENT_TYPES.join(', ')}.`,
+      );
+    }
+
+    /**
+     * The key is built from the file name, so the file name is not trusted.
+     *
+     * Only the basename is kept - anything before the last separator is
+     * discarded rather than escaped - then every character outside
+     * `[A-Za-z0-9._-]` becomes `_`, then runs of dots collapse to one. The
+     * first version replaced separators and kept the dots, so
+     * `../../etc/passwd` became `.._.._etc_passwd`: harmless in S3, which has a
+     * flat key space, and not harmless the day something syncs these objects to
+     * a filesystem or a tool normalises the path. Caught by asserting the
+     * absence of `..` rather than the absence of `/`.
+     */
+    const base = input.fileName.split(/[\\/]/).pop() || 'proof';
+    const safe = base
+      .replace(/[^A-Za-z0-9._-]/g, '_')
+      .replace(/\.{2,}/g, '.')
+      .slice(-120);
+    const key = `payments/${paymentId}/${Date.now()}-${safe}`;
+
+    // `getUploadUrl` returns `{ uploadUrl, fileUrl }`, so the string has to be
+    // taken out of it. Assigning the whole object to `uploadUrl` typechecked,
+    // passed every unit test, and made the browser PUT the file at
+    // `/admin/payments/[object Object]` - a upload that failed against the web
+    // app instead of S3.
+    const { uploadUrl } = await this.storage.getUploadUrl(key, input.contentType);
+
+    return { uploadUrl, key };
+  }
+
+  /** A short-lived link to read one proof back. Never a public URL. */
+  async getProofDownloadUrl(paymentId: string, receiptId: string) {
+    const receipt = await this.prisma.paymentReceipt.findUnique({ where: { id: receiptId } });
+    if (!receipt || receipt.paymentId !== paymentId) {
+      throw new NotFoundException(`Receipt ${receiptId} not found on payment ${paymentId}`);
+    }
+    if (!receipt.evidenceUrl) {
+      // Only an INCONNU_HISTORIQUE row can be here, and it has no proof by
+      // definition: the pre-G1 model never recorded one.
+      throw new NotFoundException(`Receipt ${receiptId} carries no proof (pre-G1 row)`);
+    }
+    return { downloadUrl: await this.storage.getDownloadUrl(receipt.evidenceUrl) };
+  }
+
+  /**
+   * Validates a payment. **A separate act from recording, by a named person.**
+   *
+   * G1 built the separation; here it meets a real user for the first time.
+   * Recording a receipt never validates - the back office enters what arrived,
+   * and somebody with the authority to commit says that it settles the payment.
+   *
+   * The reason is required and is recorded on the transition, with the receipt
+   * it rests on where there is one.
+   */
+  async validate(
+    paymentId: string,
+    by: { actorUserId: string; reason: string; evidenceReceiptId?: string },
+  ): Promise<{ state: PaymentState; outstanding: string }> {
+    const payment = await this.findOrThrow(paymentId);
+
+    await this.assertFourEyesIfRequired(payment.id, by.actorUserId, payment.amountDue);
+
+    const result = await this.transition(paymentId, PaymentState.VALIDE, by);
+
+    const receipts = await this.prisma.paymentReceipt.findMany({
+      where: { paymentId },
+      select: { amount: true },
+    });
+    return {
+      state: result.state,
+      outstanding: (payment.amountDue - sumReceipts(receipts)).toString(),
+    };
+  }
+
+  /**
+   * Where the four-eyes rule goes when it is decided.
+   *
+   * The design leaves it open: *"au-dela d'un seuil de montant, exiger que le
+   * validateur soit une personne differente de celle qui a saisi
+   * l'encaissement"*. It is an operational constraint and it waits until
+   * somebody knows who does what daily.
+   *
+   * **The seam is here rather than the rule.** When it is decided this method
+   * reads the receipts' `recordedBy`, compares them with `actorUserId` above a
+   * threshold, and throws - so it becomes a guard rather than a rewrite, and it
+   * sits on the validate path where the money is committed rather than on the
+   * recording path where it is not.
+   *
+   * The parameters are unused **on purpose**: they are exactly the three values
+   * the rule will need, named now so that writing it is a body and not a change
+   * to every caller. Dropping them to silence the linter would move that work
+   * to the day the rule is decided, which is the day it is least welcome.
+   */
+  /* eslint-disable @typescript-eslint/no-unused-vars -- the seam's signature is the decision; see above. */
+  private async assertFourEyesIfRequired(
+    _paymentId: string,
+    _actorUserId: string,
+    _amountDue: bigint,
+  ): Promise<void> {
+    return;
+  }
+  /* eslint-enable @typescript-eslint/no-unused-vars */
+
+  /**
    * The total received, computed over the ledger. There is no stored total.
    *
    * `Payment` has no `totalReceived` column, so this is not "the preferred way"
@@ -385,6 +588,45 @@ export class PaymentsService {
    *   `KCA_CERTIFIED` lesson - a business event must never cross a committing
    *   boundary by itself - and here the boundary commits money.
    */
+  /**
+   * Moves a payment one legal step, as a named act with a reason.
+   *
+   * **Why this exists as its own call.** The path from
+   * INSTRUCTIONS_ENVOYEES to VALIDE is five states, and only the last one is
+   * `validate`. Without this the back office could record money against a
+   * payment and never move it: the screen offered "Valider le paiement" from
+   * INSTRUCTIONS_ENVOYEES, the state machine refused it - correctly - and the
+   * payment was stuck with 8 000 000 XAF in its ledger and nowhere to go. The
+   * transition table was right; nothing could drive it.
+   *
+   * It stays separate from `recordReceipt` for the reason G1 exists: recording
+   * money and agreeing what it means are two acts. This one moves state and
+   * touches no money.
+   *
+   * **Who may do it is derived, not listed.** A state in `COMMITTING_STATES` is
+   * one that commits money, and only ADMIN_GLOBAL may reach those. The rest is
+   * back-office bookkeeping and ADMIN_LANDS may do it. Deriving the rule from
+   * the same set the guard uses means a state added to `COMMITTING_STATES`
+   * tomorrow is protected here on the same day - a second hand-written list of
+   * "the dangerous ones" would not be.
+   */
+  async transitionAsAdmin(
+    paymentId: string,
+    to: PaymentState,
+    by: { actorUserId: string; reason: string; roles: readonly string[] },
+  ): Promise<{ state: PaymentState }> {
+    if (COMMITTING_STATES.has(to) && !by.roles.includes(RoleCode.ADMIN_GLOBAL)) {
+      throw new ForbiddenException(
+        `Moving a payment to ${to} commits money and is reserved to ` +
+          `${RoleCode.ADMIN_GLOBAL}. Recording an encaissement is not.`,
+      );
+    }
+    return this.transition(paymentId, to, {
+      actorUserId: by.actorUserId,
+      reason: by.reason,
+    });
+  }
+
   async transition(
     paymentId: string,
     to: PaymentState,

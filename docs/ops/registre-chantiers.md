@@ -128,6 +128,8 @@ listed here first.
 | `A10`            | `PROUVE`          | the identity-review queue did not exist - the route and the role did. Queue route + `idSubmittedAt`; the back-office screen stays open              |
 | `A11`            | `PROUVE`          | 13 sites, 15 messages, 12 transactional. `sendUpdate` returns an outcome and throws on a transactional template                                     |
 | `A12`            | `PROUVE`          | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                       |
+| `G4`             | `PROUVE`          | the back office and its screen. Five defects only a real request could see; `db:seed` unbroken; deployed-dev pass deferred to `G8`                  |
+| `G4` follow-up   | `A DECIDER`       | `GetUploadUrlDto` is declared twice with different schemas (lands + kbs); the API logs `Duplicate DTO detected` on every boot                       |
 | `V1` follow-up   | `PROUVE`          | the commission lookup throws now but has never run: 0 sales completed, all 5 commissions seeded. Closed by inspection only                          |
 | `B2`             | `PROUVE`          | V1 inventory finished: WhatsApp preference reads nothing, `sendUpdate` skips indistinguishably and defaults off, `RedisService` unused              |
 | `B3`             | `PROUVE`          | 56 dev parameters against 0 on prd; only 7 injected as secrets, so 49 need an apply to take effect. One confirmed unread, the rest candidates       |
@@ -571,6 +573,126 @@ unilaterally: it crosses into the other repository.
 
 The manual runbook does not have this gap - it fetches the log and requires the
 tally - so the one-off path already checks what the automated path does not.
+
+---
+
+### G4 - the back office: recording encaissements, their proofs, and validating - `PROUVE`
+
+**Cost impact: None.** No new resource. Proofs go to the existing
+`kambriq-media-dev` bucket through the existing `StorageService`; the objects are
+private and read back through short-lived signed URLs.
+
+G1 gave the model, G2 the reference, G3 the message to the client. This is the
+half a person uses: a payment list, a payment detail with its ledger, its proofs
+and its full history, a form that records an encaissement with its document, and
+a validate action that says what it commits before it commits it.
+
+**The screen was inside this chantier on purpose, and that is what found the
+defects.** `A10` shipped a queue the API could answer and nothing rendered, and
+that is recorded here as a defect. Building the screen in the same PR as the API
+turned up **five** faults that typechecking and 445 unit tests could not see,
+every one of them only visible on a real request:
+
+| #   | What was wrong                                                                                      | What it looked like                                                    |
+| --- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| 1   | `libs/common/package.json` declared `"type": "commonjs"`; Turbopack applied it to the shared source | `/admin/payments` returned 500; the error named neither app            |
+| 2   | `LandsAdminController` ('lands/admin', with `@Get(':id')`) was registered before the payments one   | `GET /lands/admin/payments` answered "Parcelle de terrain introuvable" |
+| 3   | the web actions were typed `<{ data: T }>` over a client that already unwraps the envelope          | "Cannot read properties of undefined (reading 'reference')"            |
+| 4   | `getProofUploadUrl` returned `StorageService`'s whole `{uploadUrl, fileUrl}` as `uploadUrl`         | the browser PUT the file at `/admin/payments/[object Object]`          |
+| 5   | the screen could not walk the state machine, and offered `validate` where it was illegal            | the barrier fired correctly and the page rendered a stack trace        |
+
+Numbers 3 and 4 are the same class: **a type that lies is worse than no type**,
+because the compiler then agrees with the defect. Number 2 is invisible to a unit
+test by construction - it tests the class, not the routing table.
+
+**Recording and validating are two calls, and moving is a third.** `recordReceipt`
+appends to the ledger and moves nothing. `validate` moves state and touches no
+money. `transitionAsAdmin` walks the steps in between - and had to be built,
+because the path is `INSTRUCTIONS_ENVOYEES -> ANNONCE_CLIENT -> EN_VERIFICATION ->
+PARTIELLEMENT_RECU -> VALIDE` and nothing could drive it. Without it the screen
+offered the one-hop jump, the transition table refused it, and a payment sat with
+8 000 000 XAF in its ledger and nowhere to go.
+
+**RBAC, and where the four-eyes guard goes.**
+
+| Act                                         | Role                          | Why                                                                                 |
+| ------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------- |
+| read the list and one payment               | `ADMIN_LANDS`, `ADMIN_GLOBAL` | seeing money is not moving it                                                       |
+| record an encaissement, upload/read a proof | `ADMIN_LANDS`, `ADMIN_GLOBAL` | the ledger is append-only; a wrong line is corrected by a signed line, never erased |
+| move to a state in `COMMITTING_STATES`      | `ADMIN_GLOBAL`                | those are the states that commit money                                              |
+| validate                                    | `ADMIN_GLOBAL`                | the act that commits, with its own control and its own reason                       |
+
+The committing-state rule is **derived from `COMMITTING_STATES`**, the same set
+`assertTransitionIsDeliberate` reads - not a second hand-written list of "the
+dangerous ones", which stops agreeing the first time either changes. A test
+asserts the guard contains no state name as a literal.
+
+**The four-eyes seam is `assertFourEyesIfRequired`** in `payments.service.ts`,
+called by `validate` before the transition, taking `(paymentId, actorUserId,
+amountDue)`. It is empty and does nothing today. It is placed there rather than
+in the controller because the rule it will hold - _the person who validates is
+not the person who recorded_ - needs the ledger, and the ledger is not in the
+request. Building it needs a decision this chantier was told not to take: what
+happens to a payment when only one administrator is available.
+
+**Proofs.**
+
+- **(a) end to end, locally, through the screen.** Payment `KBQ-2609-FZKX3-Z`,
+  8 000 000 XAF, reservation `45435cc6` on parcel _Parcelle Douala Akwa_.
+  Two partial receipts recorded by `pierre.lands@kambriq.com` (`ADMIN_LANDS`):
+  3 000 000 XAF by virement received **2 September**, 5 000 000 XAF by mobile
+  money received **5 September**, both entered on **6 September** - the real
+  receipt date is not the entry date, and the ledger stores both. Each carries an
+  uploaded PDF: `payments/f33ba6bb-.../1788733778147-proof-1.pdf` and
+  `.../1788733818505-proof-2.pdf`, 630 and 625 bytes in `kambriq-media-dev`,
+  **403 to an unsigned GET**. The state was still `INSTRUCTIONS_ENVOYEES` with the
+  balance fully covered - recording validated nothing. Then five named steps by
+  `admin@kambriq.com` (`ADMIN_GLOBAL`), each with its reason, ending `VALIDE`.
+- **(b) recording also validating goes red.** Mutation: after appending, sum the
+  ledger and transition to `VALIDE` when it covers `amountDue`.
+  **RED 6 failed / 439 passed -> GREEN 445 passed.** The six name the property:
+  `appends to the ledger and moves nothing`, `even when the receipt completes the
+amount due`, `records a receipt that has its proof`, `recording money changes no
+state`, `records three partial encaissements and computes the total`, `a
+correction appends a negative line and never edits one`.
+- **(c) the computed total is not writable**, extended to the new endpoints.
+- **(d)** a receipt without a proof is refused, and `INCONNU_HISTORIQUE` is not
+  offered to a new receipt - the channel select is built from
+  `RECORDABLE_CHANNELS`, so the excluded value cannot be picked on the screen
+  either.
+- **(e) the two display rules**, each forced red on its own:
+  a hard-coded `XAF` in a heading -> _no currency is written into the screen
+  beside an amount_; an `Intl.DateTimeFormat` in a component -> _the screen
+  formats displayed dates through formatHumanDate and nothing else_.
+
+**The money display test was not enough, and the mutation is what showed it.**
+It banned the alternative _formatters_ - `formatXAF`, `Intl.NumberFormat`,
+`toLocaleString`. A literal `XAF` typed beside a rendered amount produces
+`"750 000 FCFA XAF"` just as well and needs no formatter at all; the sweep passed
+straight over it. The currency itself is now banned on that surface. **An
+assertion whose failure has never been observed is a claim** - this one had been
+written, had passed, and did not do what its name said.
+
+**`pnpm db:seed` was broken by G1 and is fixed here.** The seed deletes
+reservations on seeded parcels; G1 made `Payment.reservationId` a foreign key and
+made the ledger and audit trail append-only in the database. A reservation with
+money against it therefore cannot be deleted **by anybody, including the seed** -
+the run died with a bare `ForeignKeyConstraintViolation` after Core, KBS and
+Kamnet had already been written. That is not a bug in the triggers: money that
+arrived is not test data, and a reset that could erase a receipt could erase
+evidence. The seed now skips those reservations **by name, out loud**, naming the
+payment references it kept and why, and completes. dev would have hit this at G8.
+
+**The deployed-dev pass is G8's, not this chantier's.** G8 must now also exercise:
+one payment carried through the back-office screen with two partial receipts and
+their uploaded proofs, and the proof read back through a signed URL.
+
+**Found, not fixed, not in scope.** The API logs `Duplicate DTO detected:
+"GetUploadUrlDto" is defined multiple times with different schemas` on every boot:
+`apps/api/src/lands/dto/lands.dto.ts:163` and
+`apps/api/src/kbs/courses/dto/course.dto.ts:122` are two different schemas under
+one name, so the rendered OpenAPI carries whichever wins. Neither file is touched
+by this chantier and fixing it means renaming a DTO across two modules.
 
 ---
 

@@ -1429,7 +1429,8 @@
         "adminKbsQuestions": "Banques de questions",
         "adminKbsExams": "Sessions d'examen",
         "adminKbsCertificates": "Certificats émis",
-        "adminKbsSettings": "Paramètres"
+        "adminKbsSettings": "Paramètres",
+        "adminPayments": "Paiements"
       },
       "role": {
         "root": "Super administrateur",

@@ -596,6 +596,107 @@ The seed ran clean locally and died in the container with
 from **source** under `tsx`, and the image copied two subdirectories of
 `libs/common/src`. **The two differ by a `COPY` line nobody reads.**
 
+### An API is not delivered until something renders it
+
+`A10` shipped a pending-documents queue the API could answer and no screen ever
+called. G4 was told to build the screen in the same chantier for that reason, and
+the screen is what found the defects: **five faults that `nx typecheck` and 445
+passing unit tests could not see**, each visible on the first real request.
+
+Two of them were the API's own — a presigned-URL route returning
+`{uploadUrl: {uploadUrl, fileUrl}}`, and a controller shadowed by a sibling's
+`:id` route. Neither is reachable from a unit test: the first typechecks because
+the object has the right shape one level down, and the second is a property of
+the **routing table**, not of the class a controller test instantiates.
+
+An endpoint with a green test and no caller is a claim that it works.
+
+### A type that lies is worse than no type
+
+The web's API client already strips the `{ success, data }` envelope. The G4
+server actions were nonetheless typed `serverApi.get<{ data: PaymentDetail }>`,
+so TypeScript believed in a `.data` the runtime had removed. `nx typecheck web`
+passed. The page threw
+`Cannot read properties of undefined (reading 'reference')` the moment it was
+opened.
+
+The same shape twice in one chantier: a service assigning
+`StorageService`'s whole `{ uploadUrl, fileUrl }` to a field named `uploadUrl`.
+Typechecked. Made the browser `PUT` a file at `/admin/payments/[object Object]`.
+
+**A wrong annotation does not merely fail to catch the defect — it recruits the
+compiler into agreeing with it.** When a declared shape and a runtime shape
+disagree, the runtime is right; check the response, do not assert it.
+
+### A route is answered by whoever registered first
+
+Nest registers routes in the order the module lists its controllers, and Express
+answers with the first pattern that matches. `LandsAdminController` at
+`lands/admin` carries `@Get(':id')`, so while it was listed first it answered
+`GET /lands/admin/payments` with **"Parcelle de terrain introuvable"** — a 404
+about a land, for a request about the payment queue.
+
+**A controller whose path extends another's must be registered before it**, most
+specific first. `controller-route-shadowing.spec.ts` holds this, and the general
+form of the rule immediately found a second, latent case: `lands/client` sitting
+below `lands`, safe today only because no agent route happens to have the right
+shape.
+
+### A shared library is compiled by every app that imports it
+
+`libs/common/package.json` declared `"type": "commonjs"`. Turbopack takes that as
+the module format for every file beneath it, so the first web import of shared
+source failed the build with _"Specified module format (CommonJs) is not matching
+the module format of the source code"_ — while the API, which compiles the same
+files through tsc, noticed nothing.
+
+The field governed nothing real: there is not one `.js` file under
+`libs/common/src`, and an absent `type` already means CommonJS to Node. It was a
+declaration about files that do not exist, and it broke a screen in another app
+with an error naming neither. Removing it was proven safe by **running** both
+source-run scripts under `tsx`, not by reasoning about them.
+
+Money is `BigInt` here, so `apps/web` also has to target ES2020 — the alternative
+was writing `BigInt(0)` into shared money code to please a browser target the API
+does not have.
+
+### A barrier that fires correctly still has to be reported correctly
+
+The payment state machine refused `INSTRUCTIONS_ENVOYEES -> VALIDE` exactly as
+designed. The screen answered with a full-page stack trace, because
+`createAction` converts a `ServerActionError` and **rethrows everything else** —
+and an `ApiError` is everything else.
+
+A refusal is a correct answer to a question the operator asked, and they should
+read it under the button they pressed. Only a genuine bug should reach the error
+overlay. Distinguish the two at the boundary, or a working guard is indistinguishable
+from a crash.
+
+### A test that bans the mechanism has not banned the outcome
+
+The rule was _money is rendered by one function_. The test banned the alternative
+formatters — `formatXAF`, `Intl.NumberFormat`, `toLocaleString`. It passed while a
+literal `XAF` typed beside a rendered amount produced exactly the defect it
+existed for: **"750 000 FCFA XAF"**, the currency twice, no formatter involved.
+
+Found by mutating the screen and watching every test still pass. Ban the outcome,
+then the mechanisms — and force the assertion red before believing it.
+
+### An immutable ledger makes a reset a design decision
+
+G1 made `Payment.reservationId` a foreign key and gave `PaymentReceipt` and
+`PaymentTransition` `BEFORE DELETE` triggers. A reservation carrying money is
+therefore undeletable **by anybody, including `prisma/seed.ts`**, which had been
+deleting reservations on seeded parcels since long before payments existed. The
+seed died on a bare `ForeignKeyConstraintViolation` after three modules had
+already been written.
+
+That is the triggers working. **Money that arrived is not test data, and a reset
+that could erase a receipt could erase evidence.** So the seed skips those rows,
+names them and their payment references, and completes. The general rule: adding
+immutability to a table changes what every existing cleanup path can do, and the
+cleanup paths do not announce themselves.
+
 ### A listing is a reading of one moment — and a claim I retracted
 
 **Retracted, and kept as a retraction.** On 2026-09-04 I reported that the Google

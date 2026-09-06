@@ -98,6 +98,14 @@ export const NAV_SECTIONS: NavSection[] = [
     labelKey: 'sections.admin',
     items: [
       {
+        labelKey: 'items.adminPayments',
+        href: '/admin/payments',
+        icon: BookmarkCheck,
+        // Recording is ADMIN_LANDS; validating inside the screen is
+        // ADMIN_GLOBAL, which the detail page enforces. Both may see the list.
+        roles: ['ADMIN_LANDS', 'ADMIN_GLOBAL'],
+      },
+      {
         labelKey: 'items.adminLands',
         href: '/admin/lands',
         icon: Map,
