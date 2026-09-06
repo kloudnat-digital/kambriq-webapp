@@ -28,6 +28,7 @@ import {
   PaginationQuery,
   RESET_TOKEN_EXPIRY_HOURS,
   RoleCode,
+  SUPER_ADMIN_ROLE,
   StorageService,
   VerificationTokenType,
   buildPaginatedResponse,
@@ -127,6 +128,12 @@ export class UsersService {
 
     const lang = user.preferredLanguage || 'fr';
 
+    // "Current password is incorrect" would be a lie to somebody who has never
+    // had one - and a dead end, because there is nothing they can type.
+    if (!user.passwordHash) {
+      throw new BadRequestException(this.t('user.password.notSet', lang));
+    }
+
     const isCurrentValid = await comparePassword(dto.currentPassword, user.passwordHash);
     if (!isCurrentValid) {
       throw new BadRequestException(this.t('user.password.incorrectCurrent', lang));
@@ -161,6 +168,8 @@ export class UsersService {
   async deleteMe(userId: string): Promise<{ message: string }> {
     const user = await this.findByIdOrThrow(userId);
     const lang = user.preferredLanguage || 'en';
+
+    await this.assertNotLastSuperAdmin(userId, 'deleting the account');
 
     await this.prisma.user.update({
       where: { id: userId },
@@ -247,12 +256,63 @@ export class UsersService {
   }
 
   // ----- Admin: Update user (active status, roles) -------
+  /**
+   * The system must never be left without a super admin.
+   *
+   * There are three doors out of the top role and they do not look alike, which
+   * is the whole problem. Deletion is the obvious one. Revoking the role is the
+   * one people think of second. **Replacing the role set is the one that gets
+   * forgotten**, because `PATCH /users/:id` with a `roleCodes` list that simply
+   * omits `ADMIN_GLOBAL` reads as an edit, not as a removal - and it is the same
+   * outcome, arriving through a door nobody was watching.
+   *
+   * Blocking counts too. A blocked super admin cannot log in, so an account that
+   * still holds the role administers nothing; leaving that door open would make
+   * the guard true about the database and false about the system.
+   *
+   * "Last" is counted over holders who can actually act: active, not
+   * soft-deleted. A demotion is refused only when it would take that count to
+   * zero, so an ordinary demotion of one admin among several is untouched.
+   */
+  private async assertNotLastSuperAdmin(userId: string, action: string): Promise<void> {
+    const holdsIt = await this.hasRole(userId, SUPER_ADMIN_ROLE);
+    if (!holdsIt) return;
+
+    const otherHolders = await this.prisma.user.count({
+      where: {
+        id: { not: userId },
+        isActive: true,
+        deletedAt: null,
+        userRoles: { some: { role: { code: SUPER_ADMIN_ROLE } } },
+      },
+    });
+
+    if (otherHolders > 0) return;
+
+    this.logger.warn('Refused %s: it would remove the last super admin %o', action, {
+      userId,
+      role: SUPER_ADMIN_ROLE,
+    });
+
+    throw new ConflictException(
+      `Refused: ${userId} is the last active ${SUPER_ADMIN_ROLE}, and ${action} would leave the ` +
+        `system with no super admin. Grant ${SUPER_ADMIN_ROLE} to another active account first.`,
+    );
+  }
+
   async adminUpdate(
     userId: string,
     dto: AdminUpdateUserDto,
     adminId: string,
   ): Promise<UserResponse> {
     if (dto.roleCodes) {
+      // The replace door. A `roleCodes` list that omits the top role removes it
+      // just as surely as the revoke endpoint does, and looks nothing like a
+      // removal at the call site.
+      if (!dto.roleCodes.includes(SUPER_ADMIN_ROLE)) {
+        await this.assertNotLastSuperAdmin(userId, 'replacing the role set');
+      }
+
       const roles = await this.prisma.role.findMany({
         where: { code: { in: dto.roleCodes } },
       });
@@ -293,6 +353,8 @@ export class UsersService {
     if (!user.isActive) {
       throw new BadRequestException(this.t('user.alreadyInactive', lang));
     }
+
+    await this.assertNotLastSuperAdmin(userId, 'blocking the account');
 
     await this.prisma.user.update({
       where: { id: userId },
@@ -390,6 +452,10 @@ export class UsersService {
     });
     if (!role) return;
 
+    if (roleCode === SUPER_ADMIN_ROLE) {
+      await this.assertNotLastSuperAdmin(userId, 'revoking the role');
+    }
+
     await this.prisma.userRole.deleteMany({
       where: { userId, roleId: role.id },
     });
@@ -418,7 +484,10 @@ export class UsersService {
         firstName,
         lastName,
         phone,
-        passwordHash: '', // User must reset password on first login
+        // Null, not `''`. The column is nullable precisely so that "no password
+        // has ever been set" is a value the schema can hold, instead of a
+        // sentinel every reader has to recognise.
+        passwordHash: null,
       },
     });
 
@@ -493,6 +562,10 @@ export class UsersService {
 
     if (newEmail === user.email) {
       throw new BadRequestException(this.t('user.email.sameAsCurrent', lang));
+    }
+
+    if (!user.passwordHash) {
+      throw new BadRequestException(this.t('user.password.notSet', lang));
     }
 
     const isPasswordValid = await comparePassword(dto.currentPassword, user.passwordHash);

@@ -172,6 +172,22 @@ export class AuthService {
       );
     }
 
+    /**
+     * A bootstrapped account exists before anybody has chosen a password.
+     *
+     * The message stays the generic one on purpose - "this account has no
+     * password" is an account-enumeration oracle, and the route is public. The
+     * log line is where the distinction lives, so the case is visible to us
+     * without being visible to a caller.
+     */
+    if (!user.passwordHash) {
+      this.logger.log('Login refused: no password has ever been set on this account %o', {
+        userId: user.id,
+        email: maskEmail(user.email),
+      });
+      throw new InvalidCredentialsException(this.t('auth.login.invalidCredentials', lang));
+    }
+
     const isPasswordValid = await comparePassword(dto.password, user.passwordHash);
     if (!isPasswordValid) {
       const attempts = user.loginAttempts + 1;

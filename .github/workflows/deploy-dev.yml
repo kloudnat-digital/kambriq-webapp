@@ -68,6 +68,11 @@ jobs:
       WEB_CONTAINER_NAME: ${{ vars.WEB_CONTAINER_NAME || 'web' }}
       ASSIGN_PUBLIC_IP: ${{ vars.ASSIGN_PUBLIC_IP || 'DISABLED' }}
       SMOKE_TEST_URL: ${{ vars.SMOKE_TEST_URL }}
+      # The SSM path the super-admin bootstrap reads the two real administrator
+      # identities from. Passed as a container override rather than baked into
+      # the task definition, so this workflow is self-contained and no terraform
+      # apply is needed to turn the step on.
+      BOOTSTRAP_SSM_PREFIX: ${{ vars.BOOTSTRAP_SSM_PREFIX || '/kambriq/dev/api/bootstrap' }}
       # Version gate. Both are optional: VERSION_CHECK_URL defaults to the
       # smoke-test URL with /ready swapped for /version, WEB_HEALTH_URL falls
       # back to the public app URL already used by the e2e job.
@@ -137,6 +142,52 @@ jobs:
 
           if [[ "${EXIT_CODE}" != "0" ]]; then
             echo "Migration task failed with exit code ${EXIT_CODE}" >&2; exit 1
+          fi
+
+      # -- Bootstrap the real super-admin accounts ------------------------------
+      # Runs on every deploy, not opt-in. It is idempotent: a run that finds both
+      # accounts already correct issues no write at all and exits 0. Making it
+      # opt-in would mean an environment could be deployed without an
+      # administrator and nothing would say so.
+      #
+      # Invoked directly rather than through a flag on run-migrations.js. The
+      # seed step below passes `--seed` to that script, which does not read
+      # process.argv at all - so it runs the migrations, exits 0, and seeds
+      # nothing. Recorded in the register; not fixed here.
+      #
+      # Cost: one Fargate task of a few seconds per deploy, under $0.001.
+      - name: Bootstrap super-admin accounts
+        run: |
+          set -euo pipefail
+          OVERRIDES="$(jq -nc --arg name "${CONTAINER_NAME}" --arg prefix "${BOOTSTRAP_SSM_PREFIX}" '{
+            containerOverrides: [{
+              name: $name,
+              command: ["npx", "tsx", "prisma/bootstrap-admins.ts"],
+              environment: [{ name: "BOOTSTRAP_SSM_PREFIX", value: $prefix }]
+            }]
+          }')"
+          TASK_ARN="$(aws ecs run-task \
+            --cluster "${ECS_CLUSTER}" \
+            --launch-type FARGATE \
+            --task-definition "${NEW_TASK_DEF_ARN}" \
+            --network-configuration "awsvpcConfiguration={subnets=[${ECS_SUBNETS}],securityGroups=[${ECS_SECURITY_GROUPS}],assignPublicIp=${ASSIGN_PUBLIC_IP}}" \
+            --overrides "${OVERRIDES}" \
+            --query "tasks[0].taskArn" --output text)"
+
+          if [[ -z "${TASK_ARN}" || "${TASK_ARN}" == "None" ]]; then
+            echo "Failed to start bootstrap task" >&2; exit 1
+          fi
+
+          echo "Waiting for bootstrap task ${TASK_ARN} to complete..."
+          aws ecs wait tasks-stopped --cluster "${ECS_CLUSTER}" --tasks "${TASK_ARN}"
+
+          EXIT_CODE="$(aws ecs describe-tasks \
+            --cluster "${ECS_CLUSTER}" --tasks "${TASK_ARN}" \
+            --query "tasks[0].containers[0].exitCode" --output text)"
+
+          # Read the exit code of the task, not of the pipeline that printed it.
+          if [[ "${EXIT_CODE}" != "0" ]]; then
+            echo "Bootstrap task failed with exit code ${EXIT_CODE}" >&2; exit 1
           fi
 
       # -- Seed: opt-in only (run_seed=true), first-deploy use-case ------------

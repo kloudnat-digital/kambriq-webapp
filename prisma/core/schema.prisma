@@ -13,7 +13,11 @@ datasource db {
 model User {
   id                String   @id @default(uuid())
   email             String   @unique
-  passwordHash      String
+  /// Nullable: a bootstrapped account exists before anybody has chosen a
+  /// password. It is set by the ordinary reset flow, which is also what marks
+  /// the address verified. A null here means "no password has ever been set",
+  /// and login refuses it - see auth.service.ts.
+  passwordHash      String?
   firstName         String
   lastName          String
   phone             String?

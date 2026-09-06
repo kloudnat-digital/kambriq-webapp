@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConflictException } from '@nestjs/common';
 import { RoleCode } from '@kambriq/common';
 import { UsersService } from '../../../core/users/users.service';
 import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
@@ -357,6 +358,180 @@ describe('UsersService', () => {
       await service.removeRole('u1', 'FAKE_ROLE');
 
       expect(prisma.userRole.deleteMany).not.toHaveBeenCalled();
+    });
+  });
+
+  // ----- THE LAST SUPER ADMIN ----- //
+
+  /**
+   * Four doors, four tests, and the negative case beside each of them.
+   *
+   * A guard that refuses everything passes every "it refuses" assertion, so each
+   * door is asserted twice: refused when the target is the last active holder,
+   * and allowed when a second one exists. The mutations for these are recorded
+   * in the register entry for H4 - each was watched failing on its own.
+   *
+   * `hasRole` and the holder count both go through `prisma`, so the mocks below
+   * are what "is the last one" and "is not the last one" mean here:
+   *   userRole.count > 0  -> the target holds the role
+   *   user.count          -> OTHER active, non-deleted holders
+   */
+  describe('the last super admin cannot be removed', () => {
+    const TARGET = 'super-1';
+
+    /** The target holds the top role, and `others` other accounts also do. */
+    const withHolders = (others: number) => {
+      prisma.userRole.count.mockResolvedValue(1);
+      prisma.user.count.mockResolvedValue(others);
+    };
+
+    describe('door 1 - revoking the role', () => {
+      beforeEach(() => {
+        prisma.role.findUnique.mockResolvedValue(buildRole(RoleCode.ADMIN_GLOBAL));
+        prisma.userRole.deleteMany.mockResolvedValue({ count: 1 });
+      });
+
+      it('refuses when the target is the last active holder', async () => {
+        withHolders(0);
+
+        await expect(service.removeRole(TARGET, RoleCode.ADMIN_GLOBAL)).rejects.toThrow(
+          ConflictException,
+        );
+        expect(prisma.userRole.deleteMany).not.toHaveBeenCalled();
+      });
+
+      it('allows it when another active holder exists', async () => {
+        withHolders(1);
+
+        await service.removeRole(TARGET, RoleCode.ADMIN_GLOBAL);
+
+        expect(prisma.userRole.deleteMany).toHaveBeenCalled();
+      });
+
+      it('does not count blocked or soft-deleted accounts as holders', async () => {
+        withHolders(0);
+
+        await expect(service.removeRole(TARGET, RoleCode.ADMIN_GLOBAL)).rejects.toThrow(
+          ConflictException,
+        );
+        // The count that decides this must exclude accounts that cannot log in.
+        // Without these two clauses a blocked admin keeps the door open and the
+        // system ends with a super admin nobody can sign in as.
+        expect(prisma.user.count).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({ isActive: true, deletedAt: null }),
+          }),
+        );
+      });
+    });
+
+    describe('door 2 - replacing the role set', () => {
+      /**
+       * The door that gets forgotten. `PATCH /users/:id` with a `roleCodes` list
+       * that simply omits the top role reads as an edit and is a removal.
+       */
+      /**
+       * The write happens inside `$transaction(cb)`, against the client the
+       * callback is handed - not against `prisma`. Asserting on
+       * `prisma.userRole.createMany` therefore proves nothing either way, so the
+       * transaction client is a spy of its own.
+       */
+      let tx: { userRole: { deleteMany: jest.Mock; createMany: jest.Mock } };
+
+      beforeEach(() => {
+        tx = { userRole: { deleteMany: jest.fn(), createMany: jest.fn() } };
+        prisma.$transaction.mockImplementation((cb: (client: unknown) => Promise<unknown>) =>
+          cb(tx),
+        );
+        prisma.role.findMany.mockResolvedValue([buildRole(RoleCode.CLIENT)]);
+        prisma.user.findUnique.mockResolvedValue(buildUserWithRoles([RoleCode.CLIENT]));
+      });
+
+      it('refuses a list that omits the top role when the target is the last holder', async () => {
+        withHolders(0);
+
+        await expect(
+          service.adminUpdate(TARGET, { roleCodes: [RoleCode.CLIENT] }, 'admin-1'),
+        ).rejects.toThrow(ConflictException);
+        expect(tx.userRole.deleteMany).not.toHaveBeenCalled();
+      });
+
+      it('allows a list that keeps the top role, even as the last holder', async () => {
+        withHolders(0);
+        prisma.role.findMany.mockResolvedValue([
+          buildRole(RoleCode.ADMIN_GLOBAL),
+          buildRole(RoleCode.CLIENT),
+        ]);
+
+        await service.adminUpdate(
+          TARGET,
+          { roleCodes: [RoleCode.ADMIN_GLOBAL, RoleCode.CLIENT] },
+          'admin-1',
+        );
+
+        expect(tx.userRole.createMany).toHaveBeenCalled();
+      });
+    });
+
+    describe('door 3 - blocking the account', () => {
+      beforeEach(() => {
+        prisma.user.findUnique.mockResolvedValue(buildUserWithRoles([RoleCode.ADMIN_GLOBAL]));
+        prisma.user.update.mockResolvedValue(buildUserWithRoles([RoleCode.ADMIN_GLOBAL]));
+        prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
+      });
+
+      it('refuses to block the last active holder', async () => {
+        withHolders(0);
+
+        await expect(service.blockUser(TARGET, 'admin-1')).rejects.toThrow(ConflictException);
+        expect(prisma.user.update).not.toHaveBeenCalled();
+      });
+
+      it('allows blocking when another active holder exists', async () => {
+        withHolders(1);
+
+        await service.blockUser(TARGET, 'admin-1');
+
+        expect(prisma.user.update).toHaveBeenCalled();
+      });
+    });
+
+    describe('door 4 - the holder deleting their own account', () => {
+      beforeEach(() => {
+        prisma.user.findUnique.mockResolvedValue(buildUserWithRoles([RoleCode.ADMIN_GLOBAL]));
+        prisma.user.update.mockResolvedValue(buildUserWithRoles([RoleCode.ADMIN_GLOBAL]));
+        prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
+      });
+
+      it('refuses when they are the last active holder', async () => {
+        withHolders(0);
+
+        await expect(service.deleteMe(TARGET)).rejects.toThrow(ConflictException);
+        expect(prisma.user.update).not.toHaveBeenCalled();
+      });
+
+      it('allows it when another active holder exists', async () => {
+        withHolders(1);
+
+        await service.deleteMe(TARGET);
+
+        expect(prisma.user.update).toHaveBeenCalled();
+      });
+    });
+
+    it('leaves an ordinary user alone: the guard is about the role, not the account', async () => {
+      // The target does not hold the top role at all, so the holder count is
+      // never consulted. Without this, a guard that simply refused every
+      // deletion would pass every assertion above.
+      prisma.userRole.count.mockResolvedValue(0);
+      prisma.user.findUnique.mockResolvedValue(buildUserWithRoles([RoleCode.CLIENT]));
+      prisma.user.update.mockResolvedValue(buildUserWithRoles([RoleCode.CLIENT]));
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
+
+      await service.deleteMe('ordinary-1');
+
+      expect(prisma.user.update).toHaveBeenCalled();
+      expect(prisma.user.count).not.toHaveBeenCalled();
     });
   });
 

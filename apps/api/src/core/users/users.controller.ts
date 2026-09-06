@@ -186,6 +186,11 @@ export class UserController {
     description: 'Account scheduled for deletion. All sessions revoked.',
   })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
+  @ApiResponse({
+    status: 409,
+    description:
+      'You are the last active ADMIN_GLOBAL. Grant the role to another active account first.',
+  })
   async deleteMe(@CurrentUser() user: RequestUser) {
     await this.usersService.deleteMe(user.id);
   }
@@ -259,6 +264,12 @@ export class UserController {
     description: 'Insufficient permissions. Requires ADMIN_GLOBAL.',
   })
   @ApiResponse({ status: 404, description: 'User not found.' })
+  @ApiResponse({
+    status: 409,
+    description:
+      'The list omits ADMIN_GLOBAL and the target is the last active holder of it. ' +
+      'Grant ADMIN_GLOBAL to another active account first.',
+  })
   async adminUpdate(
     @Param('id') userId: string,
     @Body() dto: AdminUpdateUserDto,
@@ -304,12 +315,18 @@ export class UserController {
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions.' })
   @ApiResponse({ status: 404, description: 'User not found.' })
+  @ApiResponse({
+    status: 409,
+    description:
+      'The role is ADMIN_GLOBAL and the target is the last active holder of it. ' +
+      'Grant ADMIN_GLOBAL to another active account first.',
+  })
   async revokeRole(
     @Param('id') userId: string,
     @Param('roleCode') roleCode: string,
     @CurrentUser() admin: RequestUser,
   ) {
-    void admin; // Logged for audit via service
+    void admin; // The service logs the revocation; the admin id is not needed there yet.
     await this.usersService.removeRole(userId, roleCode);
     return this.usersService.findById(userId);
   }
@@ -330,6 +347,12 @@ export class UserController {
     description: 'Insufficient permissions. Requires ADMIN_GLOBAL.',
   })
   @ApiResponse({ status: 404, description: 'User not found.' })
+  @ApiResponse({
+    status: 409,
+    description:
+      'The target is the last active ADMIN_GLOBAL. A blocked account cannot log in, ' +
+      'so blocking it would leave the system with no usable super admin.',
+  })
   async blockUser(@Param('id') userId: string, @CurrentUser() admin: RequestUser) {
     return this.usersService.blockUser(userId, admin.id);
   }

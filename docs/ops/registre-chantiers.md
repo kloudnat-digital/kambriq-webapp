@@ -111,6 +111,315 @@ listed here first.
 | `M1`           | `DECIDE, A FAIRE` | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                |
 | `Q1` follow-up | `A DECIDER`       | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing            |
 | `D3`           | `EN COURS`        | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0 |
+| `H1`           | `PROUVE`          | `ADMIN_GLOBAL` is the super admin; no second role created. ADR-008 + `super-admin.spec.ts`, five mutations quoted below                       |
+| `H2`           | `PROUVE`          | two passwordless super-admin accounts bootstrapped from SSM, idempotent, proven by three runs and a row diff                                  |
+| `H3`           | `EN COURS`        | both accounts reach a 200 login locally; pending proof is the same on dev with the reset link read out of the destination mailbox             |
+| `H4`           | `PROUVE`          | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                       |
+| `A7`           | `DECIDE, A FAIRE` | read-only inventory of the gap between the existing codebase and the standards, file by file. Output is a list, not a set of fixes            |
+| `H2` follow-up | `A DECIDER`       | `deploy-dev.yml` passes `--seed` to `run-migrations.js`, which never reads `process.argv`: the seed step has never seeded anything            |
+
+### H1 - `ADMIN_GLOBAL` **is** the super admin - `PROUVE`
+
+**Cost impact: None.** No resource, no dependency, no runtime change.
+
+The block opened with a request for a `SUPER_ADMIN` role. Reading the code first
+turned it into documentation and a guard, because both properties of a super
+admin were already true of `ADMIN_GLOBAL`:
+
+- `libs/common/src/types/role-hierarchy.ts` - `ROLE_HIERARCHY[ADMIN_GLOBAL]`
+  lists the other seven database-backed roles, which is a superset of every role
+  named in an `@Roles()` decorator in `apps/api/src`. **No route is out of its
+  reach.**
+- `apps/api/src/core/users/users.controller.ts` - `POST /users/:id/roles`,
+  `DELETE /users/:id/roles/:roleCode` and `PATCH /users/:id` each carry
+  `@Roles(RoleCode.ADMIN_GLOBAL)` and nothing else, and none of them excludes
+  `ADMIN_GLOBAL` from the roles that can be granted or revoked. **It already
+  administers administrators, including other holders of itself.**
+
+`STAFF_VERIFY`, `STAFF_VALUATION` and `PARTNER_GEO` are in the enum, have no row
+in the database, and appear in no decorator. They gate nothing, so they cannot
+create a route the super admin is refused. The guard fails the day one of them
+does.
+
+Decision and reasoning: `docs/adr/ADR-008-admin-global-is-the-super-admin.md`.
+`SUPER_ADMIN_ROLE` is exported as an alias so code that means "the top of the
+hierarchy" says so instead of re-deriving it.
+
+**The guard:** `apps/api/src/__test__/conventions/super-admin.spec.ts`, 14 tests.
+
+**Mutations, each watched failing alone** (`npx nx test api --testPathPatterns=super-admin.spec`):
+
+| #   | Mutation                                             | Result                                                                             |
+| --- | ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 1   | `ADMIN_GLOBAL` no longer implies `KCA_CERTIFIED`     | 1 failed / 13 passed. `Expected value: "KCA_CERTIFIED"` against the received array |
+| 2   | `ADMIN_LANDS` implies `ADMIN_GLOBAL`                 | 1 failed / 13 passed - "no other role implies the super admin"                     |
+| 3   | `ADMIN_KBS` reaches everything except `ADMIN_GLOBAL` | 1 failed / 13 passed. `Received: ["ADMIN_KBS"]` - "no second god role"             |
+| 4   | the grant route loses its `@Roles`                   | 1 failed / 13 passed. `Received: null`                                             |
+| 5   | the grant route also admits `ADMIN_KBS`              | 1 failed / 13 passed - the "and by nothing weaker" half                            |
+
+Two things the mutations found in the test rather than in the code, both kept in
+`CLAUDE.md`:
+
+- mutation 2 first made the suite **stop compiling** rather than fail:
+  `Object.entries(ROLE_HIERARCHY)` typed the value `unknown` and `tsc` had
+  accepted `.includes(...)` on it by accident of inference. A mutation that
+  breaks the build has not been run;
+- the "no second god role" test originally included `ADMIN_GLOBAL` in the
+  required set, which made it **impossible to fail on its own** - any rival trips
+  mutation 2's assertion first. Excluding the top role made it independently
+  failable and made it assert something the other does not.
+
+---
+
+### H2 - Two real super-admin accounts, bootstrapped from SSM - `PROUVE`
+
+**Cost impact: $0.00/month.** Twelve SSM Standard parameters (free tier is 10 000)
+and one extra Fargate task of a few seconds per deploy, under $0.001. No new
+resource, no new IAM: `/kambriq/{env}/api/bootstrap/*` sits under the prefix the
+API task role already holds `ssm:GetParameter` on
+(`modules/iam-roles-ecs/main.tf:75`).
+
+`prisma/bootstrap-admins.ts`, run by `pnpm run db:bootstrap` and by a new
+unconditional step in `deploy-dev.yml`.
+
+**Separate from `prisma/seed.ts` on purpose.** The seed is test data: wiped by
+`db:reset`, one shared password, there to make a journey runnable. These two
+accounts are real people who must survive every reset and exist in prd.
+
+**The identities are not in the repository - including in this file.** They are a home city and two mobile
+numbers, and "where does personal data live" is a question this project will be
+asked by name. The file holds the shape; SSM holds the values, one parameter per
+field, as `SecureString` under `alias/aws/ssm` (the same key the existing
+`JWT_SECRET` and `DATABASE_URL_*` parameters use). A typo is then
+`aws ssm put-parameter --overwrite` plus a re-run, not a commit, a build and a
+release.
+
+```
+/kambriq/dev/api/bootstrap/admin1/{EMAIL,FIRST_NAME,LAST_NAME,PHONE,CITY,COUNTRY}
+/kambriq/dev/api/bootstrap/admin2/{EMAIL,FIRST_NAME,LAST_NAME,PHONE,CITY,COUNTRY}
+```
+
+**Fails loudly, never skips.** Every parameter is required and the run aborts
+before writing anything, listing **all** missing or empty parameters rather than
+the first:
+
+```
+$ BOOTSTRAP_SSM_PREFIX= npx tsx prisma/bootstrap-admins.ts
+EXIT=1
+BOOTSTRAP_SSM_PREFIX is not set. Nothing was read and nothing was written.
+
+$ (one parameter deleted)
+EXIT=1
+Bootstrap aborted. 1 parameter(s) unusable under /kambriq/dev/api/bootstrap:
+  MISSING  /kambriq/dev/api/bootstrap/admin2/PHONE
+```
+
+**Idempotent, keyed on email, proved by three runs and a row diff.**
+
+```
+BEFORE  (User UserRole UserProfile) = 9 14 9
+
+RUN 1   [admin1] created  ...  role=ADMIN_GLOBAL grantedBy=bootstrap
+        [admin2] created  ...  role=ADMIN_GLOBAL grantedBy=bootstrap
+        postcondition verified for 2 account(s)
+        2 created, 0 updated, 0 unchanged                       EXIT=0
+AFTER   11 16 11        (+2 / +2 / +2)
+
+RUN 2   [admin1] unchanged  (no write issued)
+        [admin2] unchanged  (no write issued)
+        0 created, 0 updated, 2 unchanged                       EXIT=0
+AFTER   11 16 11
+        diff of the full rows, run 1 vs run 2: identical, updatedAt included
+
+RUN 3   after both holders had set their own password (see H3)
+        0 created, 0 updated, 2 unchanged                       EXIT=0
+        hash_prefix still $2b$12$ for both; login still 200
+```
+
+Re-running never touches `passwordHash`, `emailVerified` or `isActive`: by the
+second run the holder may have set a password, and reconciling that back to the
+parameter store would lock them out of their own account. Identity fields are
+reconciled, and only when they actually differ - `update: {}` would still move
+`updatedAt`, so "no-op" here means no write is issued at all.
+
+**Schema.** `User.passwordHash` is now nullable
+(`20260906120000_password_hash_nullable`). The alternative was a sentinel hash,
+which is a value that lies about what it is; NULL says it once, in the schema,
+and `tsc` makes every reader handle it. The same migration retires the
+`passwordHash: ''` sentinel in `findOrCreateClientUser`. `comparePassword` folds
+both null and empty to `false` explicitly rather than handing them to bcrypt.
+
+**One phone column, and the second number has nowhere to go.**
+`User.phone` is a single nullable column. Account 1 was given two numbers, one
+French and one Cameroonian. The French one is in `.../admin1/PHONE`; **the
+Cameroonian one is not stored anywhere** and was not concatenated into the same
+field - `+33 ... / +237 ...` is not a phone number, and everything downstream that
+treats it as one would be handed something undiallable that looks populated. The
+numbers themselves are in SSM and deliberately not repeated here.
+
+**And a finding on top of it, which the arbitration did not anticipate.**
+`CM_PHONE_REGEX` is `/^(?:\+?237)?6\d{8}$/`, and `UpdateProfileDto` applies it to
+`PATCH /users/me`. **The API only accepts Cameroonian mobile numbers.** So the
+French number the bootstrap writes is one the application's own DTO would reject:
+it survives until either holder tries to save their profile with a phone in it,
+at which point they get a 400 telling them to enter a Cameroonian number. Same
+regex on `auth.dto.ts` (registration), `lands.dto.ts` and `kamnet.dto.ts`.
+**Reported, not resolved** - the value is in SSM, so switching to the Cameroonian
+number is a parameter update; widening the regex is a decision about who the
+platform is for.
+
+**Two inferred values, and where to check them.** The brief wrote the domain as
+`@kambriq.comp` and it was read as `@kambriq.com`. Both local parts, and account
+2's surname, are inferences rather than things the brief stated. They live in
+`.../admin1/EMAIL`, `.../admin2/EMAIL` and `.../admin2/LAST_NAME` and are one
+`aws ssm put-parameter --overwrite` away from correct - which is the property the
+SSM design was chosen for. **Read them out of SSM, not out of this file:** the
+values are deliberately not repeated in the repository.
+
+---
+
+### H3 - Validation through the existing flow - `EN COURS`
+
+**Cost impact: None.**
+
+No parallel path for administrators. The accounts are created with
+`emailVerified: false` and no password; the holder uses
+`POST /auth/forgot-password` then `POST /auth/reset-password`, which is the flow
+proven on 4 September and which sets `emailVerified: true` on the same
+transaction that sets the password.
+
+**Proven locally, end to end, against the API on `localhost:3000`:**
+
+```
+account 1  (the address in .../admin1/EMAIL)
+  login before any password is set      HTTP 401
+  forgot-password                       HTTP 204
+  reset-password (token from the row)   HTTP 204
+  login                                 HTTP 200   roles ["ADMIN_GLOBAL"], JWT issued
+
+account 2  (the address in .../admin2/EMAIL)
+  forgot-password                       HTTP 204
+  reset-password                        HTTP 204
+  login                                 HTTP 200   roles ["ADMIN_GLOBAL"], JWT issued
+
+after both:  emailVerified = t,  passwordHash = $2b$12$...  for both rows
+```
+
+**Pending proof, and what makes it different from the above.** The same two logins
+on dev, with the reset link **read out of the destination mailbox** rather than
+out of the database. A3 is the reason: a send is not a signup, and a token read
+from the row it was written to proves the row, not the delivery. That needs this
+branch deployed, which is what the bootstrap step in `deploy-dev.yml` does on
+merge.
+
+One thing the local run showed that the dev run will not: **login refuses a
+bootstrapped account at the `emailVerified` check, before it ever reaches the
+password check.** The new "no password has ever been set" branch in
+`auth.service.ts` is therefore unreachable for these two accounts specifically. It
+is still correct for a verified account whose password is null, it is covered by
+`comparePassword` returning `false` explicitly, and the log line exists so the
+case is visible to us without being visible to a caller. **It has not been
+observed firing in a live request, and that is stated rather than assumed.**
+
+---
+
+### H4 - The last super admin cannot be removed - `PROUVE`
+
+**Cost impact: None.**
+
+`assertNotLastSuperAdmin` in `users.service.ts`. Four doors, because they do not
+look alike:
+
+| Door | Route                                  | Why it is a door                                                     |
+| ---- | -------------------------------------- | -------------------------------------------------------------------- |
+| 1    | `DELETE /users/:id/roles/ADMIN_GLOBAL` | the obvious one                                                      |
+| 2    | `PATCH /users/:id` with `roleCodes`    | **the one that gets forgotten** - omitting the role reads as an edit |
+| 3    | `POST /users/:id/block`                | a blocked admin cannot log in, so the role administers nothing       |
+| 4    | `DELETE /users/me`                     | the holder locking themselves out                                    |
+
+"Last" is counted over holders who can actually act: `isActive: true`,
+`deletedAt: null`, excluding the target. A demotion of one admin among several is
+untouched.
+
+**Live, against the running API, after reducing the holders to one through the
+real endpoints** (both of those revocations returned 200, so the guard is not
+simply refusing everything):
+
+```
+DOOR 1  DELETE /users/:id/roles/ADMIN_GLOBAL   HTTP 409
+  -> Refused: <id> is the last active ADMIN_GLOBAL, and revoking the role would
+     leave the system with no super admin. Grant ADMIN_GLOBAL to another active
+     account first.
+DOOR 2  PATCH /users/:id {"roleCodes":["CLIENT"]}  HTTP 409  ... replacing the role set ...
+DOOR 3  POST /users/:id/block                      HTTP 409  ... blocking the account ...
+DOOR 4  DELETE /users/me                           HTTP 409  ... deleting the account ...
+
+afterwards: account 2 | ADMIN_GLOBAL | isActive t | not deleted t
+
+then: grant ADMIN_GLOBAL to a second account   HTTP 200
+      the same DELETE that was refused a moment ago   HTTP 200
+```
+
+**Mutations** (`npx nx test api --testPathPatterns=users.service`, baseline 46 passed):
+
+| #   | Mutation                                                    | Result                                                                                                          |
+| --- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 6   | guard removed from `removeRole`                             | 2 failed / 44 passed - both door-1 assertions, which share the precondition                                     |
+| 7   | guard removed from `adminUpdate`                            | 1 failed / 45 passed                                                                                            |
+| 8   | guard removed from `blockUser`                              | 1 failed / 45 passed                                                                                            |
+| 9   | guard removed from `deleteMe`                               | 1 failed / 45 passed                                                                                            |
+| 10  | holder count stops excluding blocked and soft-deleted rows  | 1 failed / 45 passed - isolates the third door-1 assertion                                                      |
+| 11  | guard stops asking whether the target holds the role at all | 4 failed / 42 passed - the new "ordinary user" test **and three pre-existing tests** for the same three methods |
+
+Mutation 11 is recorded as it ran rather than as it was hoped: it does **not**
+isolate the new assertion. The three others that fall with it are the existing
+`deleteMe`, `blockUser` and `adminUpdate` tests, which is worth knowing - they
+were already load-bearing for that early return.
+
+---
+
+### A7 - Inventory the gap between the codebase and the standards - `DECIDE, A FAIRE`
+
+**Cost impact: None.** Read-only.
+
+A pass over both repositories, file by file, listing where existing code does not
+meet the standards in `CLAUDE.md`: mechanisms that report success by saying
+nothing, async calls in a `map` without `await`, role codes as bare strings,
+assertions with more tails than mutations, tests that pin a defect rather than a
+requirement, flags nobody reads.
+
+**Its output is a list, not a set of fixes.** The point is that the debt becomes
+visible and finite rather than discovered one incident at a time. Fixes are
+scheduled against the list afterwards, and the standing rule in the meantime is
+the bounded one: the file you touch comes up to standard with your change.
+
+**Not started.** The H PR is open and the instruction was to stop there.
+
+---
+
+### H2 follow-up - the seed step in `deploy-dev.yml` has never seeded anything - `A DECIDER`
+
+**Cost impact: None to fix.** Found while wiring the bootstrap into the same
+workflow.
+
+`deploy-dev.yml` runs the opt-in seed as
+`node prisma/run-migrations.js --seed`. **`prisma/run-migrations.js` never reads
+`process.argv`, and the string `seed` does not appear in it.** It runs
+`ensureDatabases()` and `runMigrations()` and exits 0. So the step runs the
+migrations a second time, reports success, and seeds nothing - under a step named
+"Run database seed".
+
+Nothing has been broken by it, because the seed has been run by other means. What
+is broken is the belief that this step does anything.
+
+The bootstrap is therefore invoked directly
+(`npx tsx prisma/bootstrap-admins.ts`) and not through a flag on that script.
+
+**Arbitration needed:** make `run-migrations.js` read the flag, or drop the
+`--seed` argument and call `tsx prisma/seed.ts` directly the way the bootstrap
+does. Not decided here.
+
+---
 
 ### D3 - The four Prisma baselines were deleted by a docs commit - `EN COURS`
 

@@ -4,7 +4,7 @@
 it is what a week of finding defects taught, written so you do not have to find
 them again. The chantier register — the evidence for every claim made here — is
 in [`docs/ops/registre-chantiers.md`](docs/ops/registre-chantiers.md); see
-section 7.
+section 8.
 
 **This file is the master.** The KAMBRIQ project copy is the archive. On
 disagreement, this file wins.
@@ -30,7 +30,47 @@ disagreement, this file wins.
 
 ---
 
-## 2. Method
+## 2. The standards describe the codebase, not the code written after today
+
+There is no double standard between new code and existing code. Everything in
+this file - proof by execution, one mutation per expectation, no role code as a
+bare string, no async call in a `map` without `await`, no mechanism that reports
+success by saying nothing - is a description of what this codebase is supposed to
+be, everywhere, not a rule that starts applying at the next commit.
+
+Deliberately bounded, so it does not become a refactor that blocks delivery:
+
+1. **Any file you touch in a PR comes up to standard in that same PR.** Not the
+   whole module, not the whole repo: the file you were already editing. That is
+   the only version of this rule that holds without anybody policing it, because
+   the person who has the file open is the person who can see what is wrong with
+   it.
+2. **If bringing a touched file up to standard would balloon the PR, stop and say
+   so** rather than shipping half of it silently. A partial cleanup nobody
+   mentions is worse than none: it leaves a file that looks reviewed and is not,
+   and the next person reads the tidy half as evidence about the whole.
+3. **The gap that remains is inventoried, not assumed.** `A7` in the register is
+   a read-only pass over the codebase, file by file, listing where it does not
+   meet these standards. Its output is a list, not a set of fixes. The point is
+   that the debt becomes visible and finite rather than discovered one incident
+   at a time.
+
+### CLAUDE.md is updated in the same PR as the work it describes
+
+Exactly like the register, and for the same reason.
+
+This file carries the method and the defect catalogue, and both grow with every
+chantier. A brief that lags behind the code it briefs is the stale
+cross-reference defect applied to the one document whose entire job is being
+trusted - and it is worse here than anywhere else, because this is the file every
+session loads before it knows enough to doubt it.
+
+So: a chantier that teaches something new adds it here, in the PR that closes the
+chantier. Not afterwards, not in a docs pass, not "once it settles down".
+
+---
+
+## 3. Method
 
 Each of these cost a day to learn. A rule without its reason gets dropped by the
 next person, so the reason is here.
@@ -85,7 +125,7 @@ restored, and an exit code taken from `tail` because the command was piped.
 
 ---
 
-## 3. Defect catalogue
+## 4. Defect catalogue
 
 The most valuable section here. Every entry cost a day.
 
@@ -101,6 +141,56 @@ certification exam.
 
 **A degraded path must be an explicit setting (`EMAIL_TRANSPORT=console`), never
 an inference from absent configuration.**
+
+### A flag nobody reads, on a step that reports success
+
+`deploy-dev.yml` has an opt-in seed step that runs
+`node prisma/run-migrations.js --seed`. **`run-migrations.js` never reads
+`process.argv`** and does not contain the string `seed`. So the step runs the
+migrations, exits 0, and seeds nothing - and the workflow goes green, with a step
+named "Run database seed" in it.
+
+Found in September 2026 while wiring the super-admin bootstrap into the same
+workflow, which is why the bootstrap is invoked directly
+(`npx tsx prisma/bootstrap-admins.ts`) rather than through a flag. **Not fixed** -
+recorded in the register.
+
+Same family as the entry above it, arriving through the CI layer: the mechanism
+that reports success by saying nothing does not have to be in the application.
+
+### A guard that breaks on the outcome it exists to protect
+
+The super-admin bootstrap verifies its own postcondition, and one of its checks
+was `passwordHash is null` - correct for an account it has just created, and
+wrong from the moment the holder uses their reset link. It passes run 1 and run 2
+and fails run 3, in an environment, on a day when nothing else changed.
+
+Caught by asking what the _third_ run does, not the second. **Scope a
+postcondition to the state the run actually produced**; asserting the initial
+condition forever turns a working system into a failing check.
+
+### A test that compiles by accident of inference
+
+`Object.entries(ROLE_HIERARCHY)` gave a value typed `unknown`, and `tsc` accepted
+`.includes(...)` on it - until a mutation added a role to one of the lists, at
+which point the suite **stopped compiling rather than failing**. The mutation did
+not find a bug in the code; it found that the test could not be mutated, which is
+the same thing as not knowing whether it guards anything.
+
+**If a mutation makes the suite fail to build, the mutation has not been run
+yet.** Type the fixture explicitly and mutate again.
+
+### A test that can only fail alongside another
+
+The first version of "no other role reaches every route-guarding role" included
+`ADMIN_GLOBAL` in the required set. Any rival would therefore have to imply
+`ADMIN_GLOBAL`, which trips the _previous_ assertion first - so this one could
+never be observed failing on its own, and two tests were really one.
+
+Excluding the top role from the required set made it independently failable and
+made it assert something the other does not: **a role that is a god role in
+everything but name.** A test you cannot mutate alone is a test you have not
+proved.
 
 ### Defects in the measurement, not the thing measured
 
@@ -260,7 +350,7 @@ every expectation — the object it targeted did go away.
 
 ---
 
-## 4. Invariants somebody will otherwise break
+## 5. Invariants somebody will otherwise break
 
 ### The response envelope
 
@@ -314,6 +404,31 @@ refusal, pick a role the hierarchy does not imply, or you are testing nothing.
 authenticated user" without changing a single response shape.** That is why it is
 pinned.
 
+**`ADMIN_GLOBAL` is the super admin, and there is no second one.** It implies
+every role that appears in an `@Roles()` decorator, and it is the only role on the
+three endpoints that grant, revoke and replace another user's roles - so it
+already administers administrators, including other holders of itself. Two
+all-powerful roles is a permission model with two answers to "who can do this",
+and the second one drifts. See `docs/adr/ADR-008-admin-global-is-the-super-admin.md`;
+`super-admin.spec.ts` fails the day either half stops being true, including the
+day a new `RoleCode` gates a route without being added to `ROLE_HIERARCHY`.
+
+**The last active `ADMIN_GLOBAL` cannot be removed, through any of four doors.**
+Revoking the role, replacing the role set without it, blocking the account, and
+the holder deleting their own account all answer 409. **Replace is the one that
+gets forgotten**: `PATCH /users/:id` with a `roleCodes` list that omits the top
+role reads as an edit and is a removal. Blocking counts because a blocked admin
+cannot log in, so "holders" is counted over `isActive: true, deletedAt: null`.
+
+**`User.passwordHash` is nullable.** A bootstrapped administrator, and a client
+created by a land reservation, exist before anybody has chosen a password. Null
+means "no password has ever been set"; login refuses it with the generic
+invalid-credentials message and a log line that says which case it was. The
+holder sets a password through `forgot-password` -> `reset-password`, which is
+also what flips `emailVerified`. The old sentinel was `passwordHash: ''`, which
+every reader had to recognise; `comparePassword` still folds the empty string in
+for rows written before the migration.
+
 `EXAM_PASSED` is what passing an exam earns; `CERTIFIED` is what issuing a
 certificate confers. Grading must never grant `KCA_CERTIFIED` — that role gates
 the KAMNET agent routes, and granting it on a score made somebody an agent with
@@ -331,7 +446,7 @@ to prove the engine and the journey; it is not fit to teach.
 
 ---
 
-## 5. FinOps is a criterion on every choice
+## 6. FinOps is a criterion on every choice
 
 Standing direction: **take the cheapest option**, the bill is already considered
 too high, we are dev-only, and dev and future prd should share resources wherever
@@ -360,7 +475,7 @@ ALB, RDS and ElastiCache — all load-bearing.
 
 ---
 
-## 6. Where things are
+## 7. Where things are
 
 | Thing                      | Path                                                              |
 | -------------------------- | ----------------------------------------------------------------- |
@@ -375,7 +490,7 @@ Run against dev with `KAMBRIQ_API_URL`; enforce the gate with `EXPECTED_SHA`.
 
 ---
 
-## 7. The chantier register
+## 8. The chantier register
 
 **It lives in [`docs/ops/registre-chantiers.md`](docs/ops/registre-chantiers.md),
 not here.**
