@@ -101,22 +101,24 @@ table: `Z1`, `D2`, `X1` and `X4` carry commands, numbers or reversal steps that
 are longer than a table row and are still needed. Everything genuinely open is
 listed here first.
 
-| Entry          | State             | What it needs                                                                                                                                       |
-| -------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `L2`           | `EN COURS`        | one deployed log line carrying its interpolated metadata, quoted                                                                                    |
-| `L3`           | `DECIDE, A FAIRE` | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                                    |
-| `F1`           | `A DECIDER`       | coverage ratchet: a floor, and what happens when a PR drops below it                                                                                |
-| `P1`           | `A DECIDER`       | SES contact list, one per account per region — the prd constraint                                                                                   |
-| `X2`           | `DECIDE, A FAIRE` | NAT option 2, decided, deliberately unapplied before delivery                                                                                       |
-| `M1`           | `DECIDE, A FAIRE` | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                      |
-| `Q1` follow-up | `A DECIDER`       | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing                  |
-| `D3`           | `EN COURS`        | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0       |
-| `H1`           | `PROUVE`          | `ADMIN_GLOBAL` is the super admin; no second role created. ADR-008 + `super-admin.spec.ts`, five mutations quoted below                             |
-| `H2`           | `PROUVE`          | two passwordless super-admin accounts bootstrapped from SSM, idempotent, proven by three runs and a row diff                                        |
-| `H3`           | `EN COURS`        | automated as journey 5 on a maildrop address; pending proof is that green on dev, plus both real holders activating by their own hand               |
-| `H4`           | `PROUVE`          | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                             |
-| `A7`           | `PROUVE`          | inventory swept 2026-09-06, output in `docs/ops/a7-standards-inventory.md`: 6 findings (2 closed on sight), 7 classes clean, 2 defects in the sweep |
-| `H2` follow-up | `A DECIDER`       | `deploy-dev.yml` passes `--seed` to `run-migrations.js`, which never reads `process.argv`: the seed step has never seeded anything                  |
+| Entry            | State             | What it needs                                                                                                                                       |
+| ---------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `L2`             | `EN COURS`        | one deployed log line carrying its interpolated metadata, quoted                                                                                    |
+| `L3`             | `DECIDE, A FAIRE` | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                                    |
+| `F1`             | `A DECIDER`       | coverage ratchet: a floor, and what happens when a PR drops below it                                                                                |
+| `P1`             | `A DECIDER`       | SES contact list, one per account per region — the prd constraint                                                                                   |
+| `X2`             | `DECIDE, A FAIRE` | NAT option 2, decided, deliberately unapplied before delivery                                                                                       |
+| `M1`             | `DECIDE, A FAIRE` | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                      |
+| `Q1` follow-up   | `A DECIDER`       | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing                  |
+| `D3`             | `EN COURS`        | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0       |
+| `H1`             | `PROUVE`          | `ADMIN_GLOBAL` is the super admin; no second role created. ADR-008 + `super-admin.spec.ts`, five mutations quoted below                             |
+| `H2`             | `PROUVE`          | proven on dev on `f91289f`: `2 created, 0 updated, 0 unchanged`, exit 0, tally read from the task's own log stream                                  |
+| `H3`             | `EN COURS`        | journey 5 green on dev under the sha gate; **pending proof is the two real holders activating their own accounts**                                  |
+| `H4`             | `PROUVE`          | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                             |
+| `A7`             | `PROUVE`          | inventory swept 2026-09-06, output in `docs/ops/a7-standards-inventory.md`: 6 findings (2 closed on sight), 7 classes clean, 2 defects in the sweep |
+| `H2` follow-up 1 | `A DECIDER`       | `deploy-dev.yml` passes `--seed` to `run-migrations.js`, which never reads `process.argv`: the seed step has never seeded anything                  |
+| `H2` follow-up 2 | `A DECIDER`       | the bootstrap deploy step checks the exit code and never that the tally line appeared - the same gap the seed step has                              |
+| `H5`             | `PROUVE`          | journey 5's address guard was a detector, not a barrier: it reported and let the run continue into a real inbox. Moved to `beforeAll`               |
 
 ### H1 - `ADMIN_GLOBAL` **is** the super admin - `PROUVE`
 
@@ -241,6 +243,36 @@ second run the holder may have set a password, and reconciling that back to the
 parameter store would lock them out of their own account. Identity fields are
 reconciled, and only when they actually differ - `update: {}` would still move
 `updatedAt`, so "no-op" here means no write is issued at all.
+
+**Proven on dev, 2026-09-06, on the deploy of the merge commit `f91289f`.**
+The bootstrap ran as an ECS one-off task from `deploy-dev.yml`, task
+`7b6dd94e0d96489d999030372be165ce`:
+
+```
+17:22:45.678  Kambriq super-admin bootstrap starting
+17:22:45.678    region eu-central-1, prefix /kambriq/dev/api/bootstrap, slots admin1, admin2
+17:22:46.780    [admin1] created  …  role=ADMIN_GLOBAL grantedBy=bootstrap
+17:22:46.796    [admin2] created  …  role=ADMIN_GLOBAL grantedBy=bootstrap
+17:22:46.824    postcondition verified for 2 account(s)
+17:22:46.873  Kambriq super-admin bootstrap complete: 2 created, 0 updated, 0 unchanged
+```
+
+ECS `exitCode: 0`, `stoppedReason: Essential container in task exited`.
+
+**The tally line was read out of the task's own CloudWatch stream, not out of the
+workflow.** The workflow step waits and checks the exit code; it never sees the
+task's stdout. That is the same shape as the seed step - a green step that proves
+the process ran, not that it did anything - and it is why the tally was checked
+separately. **Recorded as a gap in the step itself:** see `H2` follow-up 2 below.
+
+**State read back through the API afterwards:** three `ADMIN_GLOBAL` holders on
+dev - the two bootstrapped accounts, both `emailVerified: false` and awaiting
+their holders, and the seeded `admin@kambriq.com`.
+
+**No email left, and none should have.** `prisma/bootstrap-admins.ts` contains no
+email code at all: it writes the rows and stops. `AWS/SES` `Send` for the
+bootstrap's window is **zero**. The activation link is requested by each holder
+through `forgot-password`, which is what keeps their single-use token theirs.
 
 **Schema.** `User.passwordHash` is now nullable
 (`20260906120000_password_hash_nullable`). The alternative was a sentinel hash,
@@ -367,6 +399,56 @@ Two things the journey had to be built around, both from the catalogue:
 consume a parcel against a build that does not contain this branch. Its first run
 is the `Delivery journeys (dev)` job on the deploy after #77 merges.
 
+**Green on dev, 2026-09-06, under the sha gate.** The `Delivery journeys (dev)`
+job on the merge run, `EXPECTED_SHA=f91289fa…`, against the image tag
+`sha-f91289f` on the running service:
+
+```
+journey 5 - a passwordless super admin activates through the ordinary flow
+  ✓ refuses to run against a real account
+  ✓ is created with no password and cannot log in (516 ms)
+  ✓ is made a super admin before it has ever had a password (290 ms)
+  ✓ activates through the two public routes, with the link read out of the mailbox (8316 ms)
+  ✓ reaches a 200 login carrying ADMIN_GLOBAL, and an admin-only route answers (1622 ms)
+
+Tests: 14 passed, 14 total   (all five journeys)
+```
+
+**Mutations, run against the deployed `f91289f`.**
+
+| #      | Mutation                                                        | Result                                                                                                                        |
+| ------ | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `J5-1` | the journey is aimed at a real administrator's address          | see `H5` - it failed and did **not** prevent. Re-run against the barrier: 5 failed on the hook, 0 requests, 0 sends           |
+| `J5-2` | the passwordless account is expected to log in                  | 1 failed / 4 passed. `Expected: 200, Received: 401`                                                                           |
+| `J5-3` | the replayed reset token is expected to be accepted             | 1 failed / 4 passed. `Expected: 204, Received: 400` - the single-use property, which is the premise of the whole address rule |
+| `J5-4` | the activated admin is expected **not** to carry `ADMIN_GLOBAL` | 1 failed / 4 passed. `Expected value: not "ADMIN_GLOBAL"`, `Received array: ["CLIENT", "ADMIN_GLOBAL"]`                       |
+
+`J5-4` first came back **5 failed**, which is not a mutation result: every test had
+hit `429`. The suite named it - _"was rate limited (429) ... Not a product
+failure"_ - instead of letting it read as a broken login, which is exactly what
+that mechanism is for. Retried after the throttle window it failed alone, and the
+run above is the one recorded. **A red suite is not a result until you have read
+why it is red.**
+
+Baseline re-run after every mutation was reverted: **5 passed, 9 skipped**.
+
+**Tails not mutation-proved, stated rather than implied:** the token shape
+(`/^[0-9a-f]{64}$/`), the `204` on the first reset, the reservation `201`, and the
+admin-route content assertion. Each costs a full run against dev - a parcel, an
+account and three emails - and the four above were chosen as the ones carrying
+the claim. **They are candidates, not proofs.**
+
+**And it left nothing behind.** Read back through the API afterwards: the
+throwaway account holds `CLIENT` only - the `afterAll` revocation ran - and the
+`ADMIN_GLOBAL` holders on dev are the two bootstrapped accounts plus the seeded
+admin, three in total.
+
+**Emails proven at the transport, not in the application log.** `AWS/SES` for the
+journeys window: **13 `Send`, 13 `Delivery`, 0 `Bounce`, 0 `Complaint`**, all in
+the two minutes the job ran (15:30-15:32 UTC). The deploy window that contains
+the bootstrap shows **zero** sends, which is correct - the bootstrap sends
+nothing.
+
 **Still `EN COURS`, and what is left is deliberately manual.** Journey 5 proves
 the _mechanism_ forever, on a disposable identity. It does not prove that the two
 real holders have activated - that is a one-time act by each of them, using a
@@ -440,7 +522,100 @@ were already load-bearing for that early return.
 
 ---
 
-### A7 - Inventory the gap between the codebase and the standards - `DECIDE, A FAIRE`
+### H2 follow-up 2 - the bootstrap deploy step checks the exit code, never the tally - `A DECIDER`
+
+**Cost impact: None to fix, but it may not be free** - see the arbitration below.
+
+The `Bootstrap super-admin accounts` step in `deploy-dev.yml` starts the task,
+waits for it to stop, reads `containers[0].exitCode` and fails on non-zero. It
+**never sees the task's stdout**, which lives in the task's own CloudWatch stream.
+So the step is green on `exit 0` whether or not the run did anything.
+
+Today it did: the tally reads `2 created, 0 updated, 0 unchanged` and the
+postcondition line is there. **That was established by reading the stream by hand,
+which is precisely the point** - the pipeline cannot tell us, and next time nobody
+may check.
+
+**This is the same shape as follow-up 1** - a step named for work it does not
+verify - arriving in code written the same week the seed-step defect was
+recorded. Writing the rule down did not stop it being repeated one file away.
+
+**Arbitration needed, because the obvious fix is not free.** Reading the stream
+from the workflow needs `logs:GetLogEvents` on `/ecs/kambriq-dev-api` for the
+deploy role, which is an IAM change in `kambriq-infra`. The alternatives are
+having the script write a sentinel the workflow can see another way, or accepting
+the gap and checking by hand. **Not decided here**, and deliberately not patched
+unilaterally: it crosses into the other repository.
+
+The manual runbook does not have this gap - it fetches the log and requires the
+tally - so the one-off path already checks what the automated path does not.
+
+---
+
+### H5 - journey 5's address guard reported instead of preventing - `PROUVE`
+
+**Cost impact: None to fix.** One unintended email, described below.
+
+Found by mutating the guard rather than by reading it, which is the only way it
+could have been found.
+
+Journey 5 must never run against a real administrator's address: it consumes a
+single-use reset token, and spending a real holder's would lock them out of
+activating their own account. That rule was written as the journey's **first
+test**, asserting the target address - deliberately, so it would be enforced
+rather than remembered. The register and `CLAUDE.md` both said so.
+
+**Mutated - the address swapped for a real administrator's - it failed exactly as
+designed and prevented nothing:**
+
+```
+- journey 5 > refuses to run against a real account
+    Expected pattern: /@maildrop\.cc$/
+    Received string:  "...@kambriq.com"
+
+Tests: 3 failed, 9 skipped, 2 passed, 14 total
+```
+
+**Three failed, not one.** Jest does not stop a `describe` at its first failing
+test, so the remaining four ran. The run reached `forgot-password` and the API
+logged:
+
+```
+15:42:17.057  Password reset email sent {"userId":"a1ddff8b-...","email":"vi***@kambriq.com"}
+```
+
+**A real password-reset email, to a real person's inbox, sent by a test run.**
+
+**What it cost, stated exactly.** It went no further only by accident: the suite
+cannot read that mailbox, so `findTokenInMailbox` timed out and the token was
+**not consumed**. `createVerificationToken` invalidates prior unused tokens of the
+same type before issuing a new one, and `RESET_TOKEN_EXPIRY_HOURS` is 1, so the
+stray token was the only live one and expired an hour later. Nobody was locked
+out and no account changed state. **One unexpected email is the whole damage, and
+it was luck rather than design that it was not more.**
+
+**The fix, and the distinction that matters.** The check moved into `beforeAll`,
+where a throw means Jest executes no test body at all; the `it` now proves the
+check's logic rather than standing in for it. Re-mutated against the barrier:
+
+```
+5 failed, 9 skipped, 14 total   - every one on the hook, no test body ran
+API requests in the window : 0
+AWS/SES Send in the window : 0
+elapsed                    : 7s   (against ~2 min for the run that sent mail)
+```
+
+**A failing assertion records that something was wrong. It does not stop it.** A
+check whose job is to prevent an action belongs in a hook, not in a test. Kept in
+`CLAUDE.md` as its own catalogue entry.
+
+This is also the sharpest instance of the rule it sits under: **reading the guard
+said it was enforced; running it said otherwise, and the difference was a real
+email to a real person.**
+
+---
+
+### A7 - Inventory the gap between the codebase and the standards - `PROUVE`
 
 **Cost impact: None.** Read-only.
 

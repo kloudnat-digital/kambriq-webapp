@@ -469,16 +469,53 @@ describe('journey 5 - a passwordless super admin activates through the ordinary 
    * maildrop one.
    */
   const DISPOSABLE = /@maildrop\.cc$/;
+  const REAL = /@kambriq\.com$/i;
+
+  /**
+   * A barrier, not a detector. This distinction cost a real email.
+   *
+   * The first version of this guard was an `it()` that asserted the target
+   * address. Mutated - the address swapped for a real administrator's - it
+   * failed exactly as intended and reported exactly the right thing:
+   *
+   *     Expected pattern: /@maildrop\.cc$/
+   *     Received string:  "…@kambriq.com"
+   *
+   * **And then the other four tests ran anyway**, because Jest does not stop a
+   * `describe` at its first failing test. The run reached `forgot-password` and
+   * sent a real password-reset email to a real person's inbox. It went no
+   * further only by accident: the suite cannot read that mailbox, so the token
+   * timed out unconsumed rather than being spent.
+   *
+   * **A failing assertion records that something was wrong. It does not stop
+   * it.** The check therefore lives in `beforeAll`, where a throw means Jest
+   * never executes a single test body - and the `it` below proves the check's
+   * logic rather than standing in for it.
+   */
+  const assertDisposable = (address: string): void => {
+    if (!DISPOSABLE.test(address) || REAL.test(address)) {
+      throw new Error(
+        `journey 5 refuses to run against ${address}: it is not a disposable ` +
+          `maildrop address. This journey consumes a single-use reset token, and ` +
+          `spending a real administrator's would lock them out of activating ` +
+          `their own account. Nothing has been sent.`,
+      );
+    }
+  };
+
+  beforeAll(() => assertDisposable(email));
 
   let userId: string;
   let landId: string;
   let reservationId: string;
 
-  it('refuses to run against a real account', () => {
-    // Guard first, before anything sends mail. A test that checks its own
-    // blast radius after acting has checked nothing.
-    expect(email).toMatch(DISPOSABLE);
-    expect(email).not.toContain('@kambriq.com');
+  it('refuses an address that is not disposable', () => {
+    // The barrier is the `beforeAll` above; this proves the barrier's logic.
+    // Asserting the ambient address here instead is what the first version did,
+    // and it reported the problem while letting the run continue into it.
+    expect(() => assertDisposable('someone@kambriq.com')).toThrow(/refuses to run against/);
+    expect(() => assertDisposable('someone@example.org')).toThrow(/refuses to run against/);
+    expect(() => assertDisposable(email)).not.toThrow();
   });
 
   it('is created with no password and cannot log in', async () => {
