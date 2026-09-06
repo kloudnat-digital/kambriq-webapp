@@ -1796,7 +1796,6 @@
         "languageSaveError": "Échec du changement de langue.",
         "notifications": "Notifications",
         "emailNotifications": "Recevoir les notifications par e-mail",
-        "whatsappNotifications": "Recevoir les notifications par WhatsApp",
         "save": "Enregistrer",
         "saving": "Enregistrement…",
         "notificationsSaved": "Préférences enregistrées.",

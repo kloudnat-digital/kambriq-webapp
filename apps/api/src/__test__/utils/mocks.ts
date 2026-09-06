@@ -36,6 +36,9 @@ export const mockCorePrisma = () => ({
   },
   userProfile: {
     findUnique: fn(),
+    findFirst: fn(),
+    findMany: fn(),
+    count: fn(),
     upsert: fn(),
     update: fn(),
   },
@@ -172,7 +175,10 @@ export const mockI18n = () => ({
 export const mockEmailService = () => ({
   send: jest.fn(() => Promise.resolve(undefined)),
   sendBatch: jest.fn(() => Promise.resolve(undefined)),
-  sendUpdate: jest.fn(() => Promise.resolve(undefined)),
+  // Returns an outcome, like the real one. A mock that returns `undefined`
+  // where the service returns a value lets a test pass against a signature the
+  // code no longer has - which is the A11 defect, reproduced in the fixture.
+  sendUpdate: jest.fn(() => Promise.resolve({ status: 'queued' as const })),
 });
 
 // ----- JwtService ------ //

@@ -225,6 +225,72 @@ state can supply the evidence for a claim about the product. Journey 5's stray
 run wrote a real reset email into a real inbox and, for twenty minutes, that
 email was the reason we believed the bootstrap sent mail.
 
+### A preference may not suppress a transactional message
+
+From `A11`. `sendUpdate` honoured `emailNotifications` and returned the **same
+`Promise<void>`** whether it queued a message or dropped it, logging the drop at
+`debug`. The column **defaults to `false`**, so the skip was the normal path and
+no caller could tell. On dev, all 70 users with a profile row have it `false` and
+**not one has it `true`**; the deployed log carries real suppressions of
+`examPassed`, `certificateIssued`, `reservationCreated` and `reservationCancelled`.
+
+The preference was never the defect. **The signature was**: a mechanism that
+reports success by saying nothing, arriving through a return type.
+
+Two things close it, and both are needed:
+
+- `sendUpdate` returns an `EmailOutcome` - `{status:'queued'}` or
+  `{status:'suppressed'}` - so a drop is a value the caller receives;
+- it **throws** on a transactional template. `SUPPRESSIBLE_TEMPLATES` is an
+  **allow-list**, so a template nobody classified is transactional and cannot be
+  suppressed by accident. The old docstring already said _"NEVER use this for
+  auth, security, compliance or onboarding emails"_ and twelve of the fifteen
+  messages routed through it did exactly that - **because a comment refuses
+  nothing.**
+
+**Transactional is not a synonym for important.** It means the message carries a
+reference, a deadline, money, an outcome the person is entitled to, or an action
+they must take. Three messages are suppressible and all three are the same shape:
+two work notifications to an **agent** about their own client, and one status
+announcement the recipient can already see in their dashboard.
+
+### Do not offer a preference without the capability behind it
+
+From `A12`. `whatsappNotifications` was accepted, stored and echoed back, and
+**there was no WhatsApp sender in the API at all**. Every statement the API made
+was true and the exchange was false, because offering a preference implies the
+capability.
+
+Removed from the API surface and from the web; the column is kept so no stored
+value is lost. **Not** labelled "not yet available": a disabled control still
+asks a person to form an intention the system cannot honour and stores it, so on
+the day a sender exists the stored values are old intentions expressed against a
+dead control. And a label is honest only if it is read, where an absent control
+needs nobody to read anything - the same reason a guard belongs in a hook rather
+than in a test.
+
+`no-unbacked-preference.spec.ts` fails if the preference returns to either
+surface, **and also if somebody builds a WhatsApp sender** - which is the moment
+to bring it back properly.
+
+### A backlog must answer how many and how long
+
+From `A10`. The identity-review route existed, `ADMIN_GLOBAL` existed, and the
+route had **never been called once**: 59 documents sat at `pending`,
+`verified: 0`, `rejected: 0`, growing by one per deploy. Neither the route nor
+the role was missing. **The queue was** - the only way to find a pending document
+was to page through every user and look.
+
+And the data could not be aged: the profile recorded when a document was
+**verified** and never when it was **submitted**, so "how long has this been
+waiting" had no answer at all. `idSubmittedAt` was added for that reason.
+
+**A count answers "how many". It does not answer "how long has somebody been
+waiting", and that is the question a backlog exists to answer.** The queue is
+ordered oldest-first, carries `waitingDays` per row and `meta.oldestWaitingDays`
+on the envelope. Same principle as the payments en souffrance: nothing may sit
+indefinitely with nobody accountable.
+
 ### A setting that is stored, echoed back, and read by nothing
 
 `UserProfile.whatsappNotifications` is accepted by `PATCH /users/me`, persisted,

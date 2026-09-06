@@ -122,9 +122,9 @@ describe('KbsGradingProcessor', () => {
       );
 
       // Send pass email
-      expect(emailService.sendUpdate).toHaveBeenCalledWith(
+      // A11: an exam result is transactional. `send`, not `sendUpdate`.
+      expect(emailService.send).toHaveBeenCalledWith(
         expect.objectContaining({ template: 'examPassed' }),
-        null,
       );
     });
   });
@@ -149,14 +149,14 @@ describe('KbsGradingProcessor', () => {
       expect(queue.add).not.toHaveBeenCalledWith('kbs.grant-kca-role', expect.anything(), null);
 
       // Fail email with retake info
-      expect(emailService.sendUpdate).toHaveBeenCalledWith(
+      // A11: an exam result is transactional. `send`, not `sendUpdate`.
+      expect(emailService.send).toHaveBeenCalledWith(
         expect.objectContaining({
           template: 'examFailed',
           args: expect.objectContaining({
             attemptsLeft: 2, // 3 - 1
           }),
         }),
-        null,
       );
     });
   });

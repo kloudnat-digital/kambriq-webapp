@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { TemplateKey } from './templates';
+import { isTransactional, TemplateKey } from './templates';
 import { InjectQueue } from '@nestjs/bullmq';
 import { NOTIFICATIONS_JOBS, QUEUES } from '../constants/queue';
 import { Queue } from 'bullmq';
@@ -25,6 +25,14 @@ export interface EmailJobPayload {
  *    }
  *  })
  */
+/**
+ * What `sendUpdate` did. A caller that ignores this is choosing to, which is
+ * different from not being told.
+ */
+export type EmailOutcome =
+  | { status: 'queued' }
+  | { status: 'suppressed'; reason: 'user-preference' };
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -102,23 +110,51 @@ export class EmailService {
   }
 
   /**
-   * Send an informational update email, respecting the recipient's opt-out.
-   * Use this for state-change / progress / achievement notifications.
-   * NEVER use this for auth, security, compliance or onboarding emails —
-   * those must always reach the user regardless of preference.
+   * Sends an informational update, honouring the recipient's opt-out - and
+   * telling the caller which of the two things it did.
+   *
+   * **Two defects were here, and the second is the one that mattered.**
+   *
+   * The preference itself is legitimate. The signature was not: this returned
+   * the same `Promise<void>` whether it queued a message or dropped it, logged
+   * the drop at `debug`, and `UserProfile.emailNotifications` **defaults to
+   * `false`** - so the skip was the normal path and no caller could tell. On dev
+   * every one of the 70 users that has a profile row has it `false`, and the log
+   * carries real suppressions of `examPassed`, `certificateIssued`,
+   * `reservationCreated` and `reservationCancelled`.
+   *
+   * Now it returns an `EmailOutcome`, so a suppression is a value the caller
+   * receives rather than a silence it cannot distinguish from a send.
+   *
+   * And it **throws** on a transactional template. The old docstring said
+   * *"NEVER use this for auth, security, compliance or onboarding emails"* and
+   * twelve of the fifteen messages routed through it did exactly that, because
+   * a comment refuses nothing. `SUPPRESSIBLE_TEMPLATES` is an allow-list, so a
+   * template nobody classified is transactional and cannot be suppressed by
+   * accident.
    */
   async sendUpdate(
     payload: EmailJobPayload,
     prefs: { emailNotifications: boolean } | null,
-  ): Promise<void> {
+  ): Promise<EmailOutcome> {
+    if (isTransactional(payload.template)) {
+      throw new Error(
+        `Refusing to route the transactional template "${payload.template}" through sendUpdate. ` +
+          `It carries a reference, a deadline, money, an outcome or an action, so a preference ` +
+          `must not suppress it. Use send(). If it really is suppressible, add it to ` +
+          `SUPPRESSIBLE_TEMPLATES with the reason.`,
+      );
+    }
+
     if (prefs && !prefs.emailNotifications) {
-      this.logger.debug('Update email skipped by user preference %o', {
+      this.logger.log('Update email suppressed by user preference %o', {
         to: payload.to,
         template: payload.template,
       });
-      return;
+      return { status: 'suppressed', reason: 'user-preference' };
     }
-    return this.send(payload);
+    await this.send(payload);
+    return { status: 'queued' };
   }
 
   async sendBatch(payloads: EmailJobPayload[]): Promise<void> {

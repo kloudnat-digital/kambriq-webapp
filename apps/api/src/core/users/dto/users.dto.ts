@@ -26,7 +26,6 @@ export const updateProfileSchema = z.object({
   country: z.string().optional(),
 
   emailNotifications: z.boolean().optional(),
-  whatsappNotifications: z.boolean().optional(),
 });
 
 export class UpdateProfileDto extends createZodDto(updateProfileSchema) {}
@@ -131,7 +130,6 @@ export interface UserResponse {
     city: string | null;
     country: string | null;
     emailNotifications: boolean;
-    whatsappNotifications: boolean;
     idDocumentUrls: string[];
     idVerificationStatus: string;
     idVerifiedAt: string | null;

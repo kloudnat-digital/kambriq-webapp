@@ -74,8 +74,6 @@ export class UsersService {
     if (dto.country !== undefined) profileFields.country = dto.country;
     if (dto.emailNotifications !== undefined)
       profileFields.emailNotifications = dto.emailNotifications;
-    if (dto.whatsappNotifications !== undefined)
-      profileFields.whatsappNotifications = dto.whatsappNotifications;
 
     if (Object.keys(userFields).length > 0) {
       await this.prisma.user.update({
@@ -413,6 +411,68 @@ export class UsersService {
     return await this.toUserResponse(await this.findByIdOrThrow(userId));
   }
 
+  /**
+   * The identity-review queue: everything waiting, oldest first, with its age.
+   *
+   * A10. The reviewer route and the reviewer role both existed; **the queue did
+   * not.** `PATCH /users/:id/id-document/review` has never been called once, and
+   * the only way to find a pending document was to page through every user and
+   * look. 59 sat there, growing by one per deploy, and nothing counted them.
+   *
+   * Same principle as the payments en souffrance: nothing may sit indefinitely
+   * with nobody accountable. This is what makes the backlog answerable - a
+   * count, an age, and an oldest.
+   */
+  async listPendingIdDocuments(query: PaginationQuery) {
+    const { page, limit } = query;
+    const where = { idVerificationStatus: IdVerificationStatus.PENDING };
+
+    const [profiles, total, oldest] = await this.prisma.$transaction([
+      this.prisma.userProfile.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        // Oldest first, deliberately: a queue sorted newest-first hides the
+        // thing that has been waiting longest, which is the only row that
+        // matters.
+        orderBy: { idSubmittedAt: 'asc' },
+        include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
+      }),
+      this.prisma.userProfile.count({ where }),
+      this.prisma.userProfile.findFirst({
+        where,
+        orderBy: { idSubmittedAt: 'asc' },
+        select: { idSubmittedAt: true },
+      }),
+    ]);
+
+    const now = Date.now();
+    const ageDays = (d: Date | null) => (d ? Math.floor((now - d.getTime()) / 86_400_000) : null);
+
+    const response = buildPaginatedResponse(
+      profiles.map((p) => ({
+        userId: p.userId,
+        email: p.user.email,
+        firstName: p.user.firstName,
+        lastName: p.user.lastName,
+        documentCount: p.idDocumentUrls.length,
+        submittedAt: p.idSubmittedAt,
+        waitingDays: ageDays(p.idSubmittedAt),
+      })),
+      total,
+      page,
+      limit,
+    );
+
+    // The age of the oldest, on the envelope. A count alone answers "how many";
+    // it does not answer "how long has somebody been waiting", which is the
+    // question a backlog has to be able to answer.
+    return {
+      ...response,
+      meta: { ...response.meta, oldestWaitingDays: ageDays(oldest?.idSubmittedAt ?? null) },
+    };
+  }
+
   // ----- Check if a user has a specific role ------------
   async hasRole(userId: string, roleCode: string): Promise<boolean> {
     const count = await this.prisma.userRole.count({
@@ -701,10 +761,12 @@ export class UsersService {
         userId,
         idDocumentUrls: dto.idDocumentUrls,
         idVerificationStatus: IdVerificationStatus.PENDING,
+        idSubmittedAt: new Date(),
       },
       update: {
         idDocumentUrls: dto.idDocumentUrls,
         idVerificationStatus: IdVerificationStatus.PENDING,
+        idSubmittedAt: new Date(),
         idRejectionReason: null,
         idVerifiedAt: null,
         idVerifiedBy: null,
@@ -813,7 +875,6 @@ export class UsersService {
       city: string | null;
       country: string | null;
       emailNotifications: boolean;
-      whatsappNotifications: boolean;
       idDocumentUrls: string[];
       idVerificationStatus: string;
       idVerifiedAt: Date | null;
@@ -842,7 +903,6 @@ export class UsersService {
             address: user.profile.address || null,
             country: user.profile.country || null,
             emailNotifications: user.profile.emailNotifications,
-            whatsappNotifications: user.profile.whatsappNotifications,
             idDocumentUrls: user.profile.idDocumentUrls,
             idVerificationStatus: user.profile.idVerificationStatus,
             idVerifiedAt: user.profile.idVerifiedAt?.toISOString() || null,

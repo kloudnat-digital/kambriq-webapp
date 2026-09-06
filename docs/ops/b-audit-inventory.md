@@ -210,6 +210,12 @@ with defaults, **the skip is the normal path**, not the exception.
 `paymentConfirmed`, which is G3's ancestor - 1 in `certificates.service.ts`, 3 in
 `applications.service.ts`.
 
+**Corrected on 2026-09-06 by `A11`: the count above is wrong.** There are **13**
+call sites, not 10 - the sweep that produced this paragraph truncated its own
+output - and one of them, `notifyClientStep`, is parameterised over three
+templates, so **15 distinct messages** could be suppressed. The undercount did not
+change the finding, and it did understate it by half.
+
 **Verdict: a real degraded mode, correctly chosen** (a user preference must be
 honoured) **and indistinguishable at the call site.** The design intent is right
 and the signature is wrong: `sendUpdate` should say whether it sent. Not fixed

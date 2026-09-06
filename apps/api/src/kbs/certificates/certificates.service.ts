@@ -103,22 +103,18 @@ export class KbsCertificatesService {
     // Send certificate email
     const user = await this.usersService.findById(candidate.userId);
     const lang = user.language || 'fr';
-    await this.emailService.sendUpdate(
-      {
-        to: user.email,
-        template: 'certificateIssued',
-        lang,
-        args: {
-          firstName: user.firstName,
-          kcaNumber,
-          validUntil: DateTime.fromJSDate(certificate.validUntil).toLocaleString(
-            DateTime.DATE_MED,
-            { locale: lang },
-          ),
-        },
+    await this.emailService.send({
+      to: user.email,
+      template: 'certificateIssued',
+      lang,
+      args: {
+        firstName: user.firstName,
+        kcaNumber,
+        validUntil: DateTime.fromJSDate(certificate.validUntil).toLocaleString(DateTime.DATE_MED, {
+          locale: lang,
+        }),
       },
-      user.profile,
-    );
+    });
 
     this.logger.log('Certificate issued %o', { candidateId, kcaNumber });
     return certificate;

@@ -232,19 +232,15 @@ export class LandReservationsService {
     });
 
     // Notify client and agent
-    const clientPrefs = await this.resolveClientPrefs(reservation.clientUserId);
-    await this.emailService.sendUpdate(
-      {
-        to: reservation.clientEmail,
-        template: 'reservationConfirmed',
-        lang: 'fr',
-        args: {
-          firstName: reservation.clientName,
-          reservationId: reservationId.substring(0, 8),
-        },
+    await this.emailService.send({
+      to: reservation.clientEmail,
+      template: 'reservationConfirmed',
+      lang: 'fr',
+      args: {
+        firstName: reservation.clientName,
+        reservationId: reservationId.substring(0, 8),
       },
-      clientPrefs,
-    );
+    });
 
     this.logger.log('Reservation down payment confirmed %o', {
       reservationId,
@@ -412,20 +408,16 @@ export class LandReservationsService {
       where: { id: reservation.landId },
     });
 
-    const cancelPrefs = await this.resolveClientPrefs(reservation.clientUserId);
-    await this.emailService.sendUpdate(
-      {
-        to: reservation.clientEmail,
-        template: 'reservationCancelled',
-        lang: 'fr',
-        args: {
-          firstName: reservation.clientName,
-          landTitle: land?.title || 'N/A',
-          reason: dto.reason,
-        },
+    await this.emailService.send({
+      to: reservation.clientEmail,
+      template: 'reservationCancelled',
+      lang: 'fr',
+      args: {
+        firstName: reservation.clientName,
+        landTitle: land?.title || 'N/A',
+        reason: dto.reason,
       },
-      cancelPrefs,
-    );
+    });
 
     this.logger.log('Reservation cancelled %o', {
       reservationId,
@@ -921,18 +913,24 @@ export class LandReservationsService {
     }
   }
 
+  /**
+   * The client's language, defaulting to French.
+   *
+   * `A7/W2` recorded that a failed lookup and a client with no stated language
+   * come out of here identically. That is now true of the language only:
+   * `resolveClientPrefs`, which had the same shape and decided whether an email
+   * was sent at all, is gone with `A11` - no caller needs it, because a
+   * preference no longer suppresses a transactional message.
+   *
+   * The remaining conflation is deliberate and small: a wrong language is a
+   * legible email in the wrong language, not a missing one. The `catch` is kept
+   * so a core lookup failure cannot stop a lands notification, and the failure
+   * is visible in the core logs.
+   */
   private async resolveClientLang(clientUserId: string | null): Promise<string> {
     if (!clientUserId) return 'fr';
     const user = await this.usersService.findById(clientUserId).catch(() => null);
     return user?.language || 'fr';
-  }
-
-  private async resolveClientPrefs(
-    clientUserId: string | null,
-  ): Promise<{ emailNotifications: boolean } | null> {
-    if (!clientUserId) return null;
-    const user = await this.usersService.findById(clientUserId).catch(() => null);
-    return user?.profile ?? null;
   }
 
   private async notifyClientStep(
@@ -945,25 +943,26 @@ export class LandReservationsService {
     template: 'clientDocumentsValidated' | 'paymentConfirmed' | 'dossierStarted',
   ): Promise<void> {
     try {
-      const [land, lang, prefs] = await Promise.all([
+      const [land, lang] = await Promise.all([
         this.prisma.land.findUnique({ where: { id: reservation.landId } }),
         this.resolveClientLang(reservation.clientUserId),
-        this.resolveClientPrefs(reservation.clientUserId),
       ]);
       if (!land) return;
 
-      await this.emailService.sendUpdate(
-        {
-          to: reservation.clientEmail,
-          template,
-          lang,
-          args: {
-            clientName: reservation.clientName,
-            landTitle: land.title,
-          },
+      // `send`, not `sendUpdate`. All three templates this method carries -
+      // clientDocumentsValidated, paymentConfirmed, dossierStarted - tell a
+      // client that their purchase moved. `paymentConfirmed` is money. A
+      // notification preference does not get to suppress any of them, and
+      // `sendUpdate` now throws if asked to.
+      await this.emailService.send({
+        to: reservation.clientEmail,
+        template,
+        lang,
+        args: {
+          clientName: reservation.clientName,
+          landTitle: land.title,
         },
-        prefs,
-      );
+      });
     } catch (error) {
       this.logger.warn(`${template} email failed %o`, { error });
     }
@@ -980,27 +979,23 @@ export class LandReservationsService {
     reason: string,
   ): Promise<void> {
     try {
-      const [land, lang, prefs] = await Promise.all([
+      const [land, lang] = await Promise.all([
         this.prisma.land.findUnique({ where: { id: reservation.landId } }),
         this.resolveClientLang(reservation.clientUserId),
-        this.resolveClientPrefs(reservation.clientUserId),
       ]);
       if (!land) return;
 
-      await this.emailService.sendUpdate(
-        {
-          to: reservation.clientEmail,
-          template: 'clientDocumentRejected',
-          lang,
-          args: {
-            clientName: reservation.clientName,
-            landTitle: land.title,
-            docType: this.docTypeLabel(docType, lang),
-            reason,
-          },
+      await this.emailService.send({
+        to: reservation.clientEmail,
+        template: 'clientDocumentRejected',
+        lang,
+        args: {
+          clientName: reservation.clientName,
+          landTitle: land.title,
+          docType: this.docTypeLabel(docType, lang),
+          reason,
         },
-        prefs,
-      );
+      });
     } catch (error) {
       this.logger.warn('clientDocumentRejected email failed %o', { error });
     }

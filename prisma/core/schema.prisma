@@ -75,11 +75,29 @@ model UserProfile {
 
 // Notification preferences
   emailNotifications  Boolean @default(false)
+  /// DEPRECATED by A12, and kept so no stored value is lost.
+  ///
+  /// There is no WhatsApp sender in the API - not a disabled one, none at all -
+  /// so the preference was stored, echoed back, and read by nothing. Every
+  /// statement the API made about it was true and the exchange was false,
+  /// because offering a preference implies the capability behind it.
+  ///
+  /// Removed from the API surface and from the web rather than labelled "not yet
+  /// available": a disabled control still asks a person to form an intention the
+  /// system cannot honour, and stores it. When a sender exists, the preference
+  /// comes back and asks again, fresh.
   whatsappNotifications  Boolean @default(false)
 
   // Identity verification
   idDocumentUrls       String[]  @default([])
   idVerificationStatus String    @default("none") // none | pending | verified | rejected
+  /// When the holder submitted, which is not when the row was last touched.
+  ///
+  /// Added by A10. Without it "how long has this been waiting" was
+  /// unanswerable: 59 documents sat at `pending` and nothing in the data said
+  /// for how long. A queue you cannot age is a queue nobody can be accountable
+  /// for.
+  idSubmittedAt        DateTime?
   idVerifiedAt         DateTime?
   idVerifiedBy         String?
   idRejectionReason    String?

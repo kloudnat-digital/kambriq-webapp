@@ -71,9 +71,10 @@ describe('KbsCertificatesService', () => {
         'KCA_CERTIFIED',
         'admin-1',
       );
-      expect(emailService.sendUpdate).toHaveBeenCalledWith(
+      // A11: certificateIssued is transactional - it carries a certificate
+      // number - so it goes through `send`, which no preference can suppress.
+      expect(emailService.send).toHaveBeenCalledWith(
         expect.objectContaining({ template: 'certificateIssued' }),
-        null,
       );
     });
 

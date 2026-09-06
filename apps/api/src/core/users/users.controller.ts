@@ -228,6 +228,23 @@ export class UserController {
     return this.rolesService.findAll();
   }
 
+  @Get('id-documents/pending')
+  @Roles(RoleCode.ADMIN_GLOBAL)
+  @ApiOperation({
+    summary: '[Admin] The identity-review queue',
+    description:
+      'Identity documents awaiting review, oldest first, with how many days each has waited ' +
+      'and `meta.oldestWaitingDays` for the backlog as a whole. ' +
+      'A10: the reviewer route and the reviewer role both existed and this queue did not, so ' +
+      'nothing had ever been reviewed and nothing counted the backlog. Requires ADMIN_GLOBAL.',
+  })
+  @ApiResponse({ status: 200, description: 'Pending documents returned, oldest first.' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions. Requires ADMIN_GLOBAL.' })
+  async listPendingIdDocuments(@Query() query: PaginationQueryDto) {
+    return this.usersService.listPendingIdDocuments(query);
+  }
+
   @Get(':id')
   @Roles(RoleCode.ADMIN_GLOBAL)
   @ApiOperation({

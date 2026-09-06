@@ -125,6 +125,10 @@ listed here first.
 | `H8` follow-up   | `A DECIDER`       | per-address SES delivery is not observable: no configuration set, no event destination. Needed to answer "did THIS address receive it"              |
 | `H9`             | `PROUVE`          | the bootstrap's provenance check failed a whole deploy and skipped every later step. Postcondition scoped; step moved after the web deploy          |
 | `B1`             | `PROUVE`          | payment code audited against the design: 0 payments ever processed, no payment table, G3/G4 partly built, six of eight not started                  |
+| `A10`            | `PROUVE`          | the identity-review queue did not exist - the route and the role did. Queue route + `idSubmittedAt`; the back-office screen stays open              |
+| `A11`            | `PROUVE`          | 13 sites, 15 messages, 12 transactional. `sendUpdate` returns an outcome and throws on a transactional template                                     |
+| `A12`            | `PROUVE`          | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                       |
+| `V1` follow-up   | `PROUVE`          | the commission lookup throws now but has never run: 0 sales completed, all 5 commissions seeded. Closed by inspection only                          |
 | `B2`             | `PROUVE`          | V1 inventory finished: WhatsApp preference reads nothing, `sendUpdate` skips indistinguishably and defaults off, `RedisService` unused              |
 | `B3`             | `PROUVE`          | 56 dev parameters against 0 on prd; only 7 injected as secrets, so 49 need an apply to take effect. One confirmed unread, the rest candidates       |
 | `B4`             | `PROUVE`          | 4 journeys: VERIFY does not exist; reactivation and block/unblock never run; 57 identity documents queued for a review that has never run           |
@@ -564,6 +568,124 @@ unilaterally: it crosses into the other repository.
 
 The manual runbook does not have this gap - it fetches the log and requires the
 tally - so the one-off path already checks what the automated path does not.
+
+---
+
+### A11 - a preference silently suppressed transactional email - `PROUVE`
+
+**Cost impact: None.**
+
+`sendUpdate` returned the **same `Promise<void>`** whether it queued a message or
+dropped it, logged the drop at `debug`, and `emailNotifications` **defaults to
+`false`**. The skip was the normal path and no caller could tell.
+
+**Not 10 call sites - 13**, one of them parameterised over three templates, so
+**15 messages** could be suppressed. `B2`'s figure was wrong; the audit is
+corrected in place.
+
+**Dev's data, and one real person.** All **70** users with a profile row have
+`emailNotifications: false`; **not one has it `true`**. The deployed log carries
+real suppressions of `examPassed`, `certificateIssued`, `reservationCreated`, and
+at 15:44:21 `reservationCancelled` **to `visquis.miaffossa@kambriq.com`**.
+
+**Has a real user silently missed a transactional email? Yes - one, and it is
+Visquis.** He is the only non-test account with both a profile row (created by the
+H2 bootstrap, carrying the default `false`) and a transactional event. The message
+was `reservationCancelled`, for the reservation my own mis-aimed journey-5 run
+created and cancelled - so nothing of his was actually at stake. **The mechanism
+was real; the loss this time was not.**
+
+**The fix.** `sendUpdate` returns an `EmailOutcome` and **throws** on a
+transactional template; `SUPPRESSIBLE_TEMPLATES` is an allow-list, so an
+unclassified template is transactional and fails safe. Twelve sites moved to
+`send()`, and the dead `resolveClientPrefs` went with them - which closes half of
+`A7/W2`.
+
+**15 messages: 12 transactional, 3 suppressible.** All three suppressible ones are
+the same shape - two work notifications to an **agent** about their own client,
+one status announcement the recipient can already see.
+
+**Red then green.** Void signature restored: **6 failed / 20 passed**. Barrier
+removed: **12 failed / 14 passed**. Both restored: **26 passed**.
+
+---
+
+### A10 - the identity-review queue that did not exist - `PROUVE`
+
+**Cost impact: None.** One nullable column, one route.
+
+**Why it had never run, established before anything was built.** The reviewer
+route exists. The reviewer role exists (`ADMIN_GLOBAL`, three holders). **The
+queue does not, and the back-office screen does not** - the only way to find a
+pending document was to page 141 users and look.
+
+**And the data could not be aged**: the profile recorded `idVerifiedAt` and never
+a submission time.
+
+**The numbers, and a correction to the brief.** **59** pending, **59 distinct
+users**, and **all 59 are `@maildrop.cc` test addresses**; the oldest account is
+**2 days** old. The brief described them as _"real submissions from real people,
+some months old"_ - **they are journey-3 submissions and none is from a real
+person.** Nothing was deleted or bulk-resolved. The mechanism defect stands
+unchanged.
+
+**The fix.** `idSubmittedAt`, backfilled from `updatedAt`, and
+`GET /users/id-documents/pending` - oldest first, `waitingDays` per row,
+`meta.oldestWaitingDays` on the envelope. Registered before `@Get(':id')` or Nest
+matches `id-documents` as an id.
+
+**Red then green.** Queue method removed: **6 failed / 1 passed**. `idSubmittedAt`
+removed from submit: **1 failed / 6 passed**. Restored: **7 passed**.
+
+**One thing about the red worth keeping.** The first "it exists at all" test
+called the method through its type, so removing it made the suite **fail to
+compile** - `Tests: 0 total`. A suite that does not build has not been run.
+Rewritten as a dynamic lookup it fails as an assertion.
+
+**Still open:** the back-office screen. The queue is answerable through the API;
+nothing renders it.
+
+---
+
+### A12 - a preference promising a capability that does not exist - `PROUVE`
+
+**Cost impact: None.**
+
+**Chosen: remove it from the API surface and the web, keep the column.**
+
+The alternative was to label it unavailable. Rejected because **a disabled control
+still asks a person to form an intention the system cannot honour, and stores
+it** - so the day a sender exists, the stored values are old intentions expressed
+against a dead control. And a label is honest only if it is read; an absent
+control needs nobody to read anything.
+
+The column stays, marked deprecated. `no-unbacked-preference.spec.ts` fails if the
+preference returns to either surface **and if somebody builds a WhatsApp sender**.
+
+**Red then green.** Field restored to the DTO: **2 failed / 3 passed**. Restored:
+**5 passed**.
+
+---
+
+### V1 follow-up - the KAMNET commission lookup, verified - `PROUVE`, by inspection only
+
+**Cost impact: None.** Read-only.
+
+**The code path is closed.** `kamnet.processor.ts` throws on `!user` and on
+`!agent`, with one deliberate exception that returns a **reported** skip -
+`{ skipped: true, reason: 'admin' }`.
+
+**Is there a commission that should exist and does not? No** - and the reason is
+itself a finding. `SALE_COMPLETED` is enqueued only by `completeSale`, and **0 of
+35 reservations on dev have `completedAt` set.** No sale has ever completed, so
+the job has never run. The **5** `KamnetCommission` rows are all seed fixtures,
+ids `…d00000000201`-`…d00000000205`, created 2026-09-04 by `prisma/seed.ts:851`.
+
+**So: closed by inspection, not by execution.** The throw has never been observed
+firing. **What would settle it:** one completed sale on dev whose agent exists in
+core - a commission row appears - and one with the lookup deliberately broken -
+the job lands on the failed set with its payload intact. `B4` already records that
+`complete` has never been called; this is the same gap from the money side.
 
 ---
 
