@@ -128,6 +128,7 @@ listed here first.
 | `B2`             | `PROUVE`          | V1 inventory finished: WhatsApp preference reads nothing, `sendUpdate` skips indistinguishably and defaults off, `RedisService` unused              |
 | `B3`             | `PROUVE`          | 56 dev parameters against 0 on prd; only 7 injected as secrets, so 49 need an apply to take effect. One confirmed unread, the rest candidates       |
 | `B4`             | `PROUVE`          | 4 journeys: VERIFY does not exist; reactivation and block/unblock never run; 57 identity documents queued for a review that has never run           |
+| `G1`             | `EN COURS`        | payment model in `lands`: BigInt money, 9-state machine, append-only ledger and audit. Pending proof is G8, one payment end to end on dev           |
 
 ### H1 - `ADMIN_GLOBAL` **is** the super admin - `PROUVE`
 
@@ -564,6 +565,103 @@ unilaterally: it crosses into the other repository.
 
 The manual runbook does not have this gap - it fetches the log and requires the
 tally - so the one-off path already checks what the automated path does not.
+
+---
+
+### G1 - the payment data model and state machine - `EN COURS`
+
+**Cost impact: None.** Three tables in the existing `lands` database. No new
+resource, no new dependency.
+
+Specification: `ops_kambriq_paiement-hybride_v01.md`. Overview:
+[`docs/ops/g1-payment-model.md`](g1-payment-model.md). Scoped by `B1`, which
+established that no payment has ever been processed and that there was nothing
+to extend.
+
+**Schema ownership: `lands`, and it was a decision rather than the nearest file.**
+`core` was the alternative, on the argument that a reference is platform-wide.
+Rejected because **there are no cross-database foreign keys here** - ids are
+carried by convention between the four databases, and this project already has a
+defect from exactly that: a commission never created because an agent lookup
+across databases returned nothing, with no symptom until an agent noticed they
+had not been paid. **Putting money in a different database from the thing it pays
+for makes referential integrity a convention at the one place it must not be.**
+In `lands`, `reservationId` is a real FK, the backfill is one statement in the
+same migration, and `reference` is unique across every payment that exists.
+Revisit when a second module needs paying for - at which point G2's generator has
+to become a platform allocator anyway.
+
+**Three tables.** `Payment` (amount **due**, currency, state, reference),
+`PaymentReceipt` (the movement ledger), `PaymentTransition` (the audit trail).
+
+**Money is `BigInt` in the currency's indivisible unit, with the currency beside
+it.** XAF has no minor unit - one unit is one franc.
+
+**There is no `totalReceived` column.** The total is a sum over the ledger and
+there is no other way to get it. A correction appends a signed line pointing at
+the line it corrects.
+
+**Append-only is enforced by the database**, not by the service:
+
+```
+=# update "PaymentReceipt" set "amount" = 1;
+ERROR:  append-only table PaymentReceipt: UPDATE is refused.
+=# delete from "PaymentTransition";
+ERROR:  append-only table PaymentTransition: DELETE is refused.
+```
+
+**The deprecated columns.** `downPaymentAmount`, `downPaymentConfirmed`,
+`confirmedBy` and `confirmedAt` on `LandReservation` are **marked deprecated in
+the schema and kept**. A drop is irreversible and dev holds 33 reservations.
+Removal is a later PR once the new path has been exercised. `downPaymentAmount`
+is a `Float` and stays one for now, quarantined by name in
+`no-float-money.spec.ts` - converting it means converting `Land.price` with it,
+and that is **51 call sites** plus the response serialiser and the web types,
+because `BigInt` does not survive `JSON.stringify`. Shipping half of that
+silently is worse than shipping none.
+
+**Migration run forward, backward and forward again on a scratch database loaded
+with a copy of dev's 33 reservations.** What the backfill produced:
+
+| State                | Payments | Sum of `amountDue` |
+| -------------------- | -------- | ------------------ |
+| `INITIE`             | 5        | 1 470 000          |
+| `PARTIELLEMENT_RECU` | 1        | 750 000            |
+| `ANNULE`             | 27       | 5 130 000          |
+
+33 payments (one per reservation - nothing loses its history), **1** receipt
+totalling **750 000 XAF**, 33 transitions. The single receipt is the seeded
+fixture `B1` identified as the only confirmed down payment that has ever existed.
+Its channel is `INCONNU_HISTORIQUE`, because the pre-G1 model recorded no channel
+and **saying so is honest where inventing `VIREMENT` would not be**; a CHECK
+constraint ties that value to the only rows permitted to have no evidence.
+
+After `down.sql`, `LandReservation` came back with an identical `md5` checksum -
+`4141692e676fee25a391072de55adab1` before and after - and re-applying produced the
+same three state counts.
+
+**Mutation proof.** Removing the body of `assertTransitionIsDeliberate`:
+**16 failed / 181 passed** in `api`, **2 failed / 360 passed** in `common`.
+Restored: **197 and 362 passing.** The failures include the service tests, not
+only the unit ones - `PaymentsService › refuses a committing transition made on
+behalf of a system actor`. The diff is in the PR.
+
+**One deliberate omission, stated so a later tightening is a decision.** `EXPIRE`
+is not in `COMMITTING_STATES`: the design asks for exactly one automatic
+transition, _"passe en EXPIRE au terme"_, so the dunning job may make that one
+and nothing else.
+
+**A test-configuration defect found on the way.** `libs/common/tsconfig.spec.json`
+and `apps/api/tsconfig.spec.json` inherited `target: es2015` from the base while
+their lib and app configs use `es2021`, so **the specs compiled at a lower target
+than the code they test** and rejected BigInt literals the build accepts. Both
+aligned to `es2021`. A test configuration that disagrees with the build
+configuration reports a defect in itself as a defect in the code.
+
+**Still `EN COURS`, and what is left is named.** G1 is the model; nothing routes
+to it yet. `PaymentsService` has no controller - that is G4. The pending proof is
+G8: one payment carried from initiation to validation on dev. This entry moves to
+`PROUVE` when the model has been exercised by a real caller, not when it merges.
 
 ---
 

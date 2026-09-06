@@ -609,6 +609,41 @@ months every 401/403/404/500 leaked a stack and broke the contract.
 passes on `[{},{},{}]`. So would `Array.isArray`, `data.length`, `meta.total`.
 Use `expectCarriesContent`.
 
+### Money, and the three rules that hold it
+
+From `G1`. Enforced, not asked for.
+
+**Money is an integer in the currency's indivisible unit, with the currency
+stored beside it.** `BigInt`, never `Float`. **XAF has no minor unit** - one unit
+is one franc, not a centime, which is the thing people get wrong. An amount
+without its currency is a number, not money.
+`no-float-money.spec.ts` fails on any monetary field declared `Float`, `Decimal`,
+`Double` or `Real` across all four schemas; five pre-existing columns are
+quarantined there with the reason each is not yet converted, and the list is
+pinned in both directions so it cannot rot into a lie.
+
+**A computed total is never a stored column.** `Payment` has no `totalReceived`.
+The total is a sum over `PaymentReceipt`, and a correction appends a signed line
+pointing at the line it corrects - it never edits one. Same reasoning as the
+coverage denominator: a figure you can edit by hand is a figure that lies one
+day, and the day it lies nothing signals it. Both ledger tables carry a
+`BEFORE UPDATE OR DELETE` trigger that raises, so append-only is a property of
+the database rather than a promise made by a service - a service can be bypassed
+by a script, a console, or the next person in a hurry.
+
+**No transition that commits money is automatic.**
+`assertTransitionIsDeliberate` throws when a payment is moved to
+`PARTIELLEMENT_RECU`, `VALIDE`, `REJETE` or `ANNULE` without a named person and a
+reason. It is a barrier in the service path, not an assertion in a test: **an
+assertion in a test is a report about a run that already happened, and it cannot
+refuse a write.** This is `KCA_CERTIFIED` granted on an exam score, one boundary
+further along - there the business event made somebody an agent, here it would
+settle money.
+
+`EXPIRE` is the single sanctioned exception, because the design asks for exactly
+one automatic transition. Recording money and agreeing that it settles a payment
+are **two calls**; the pre-G1 `confirmDownPayment` did both in one `update`.
+
 ### SSM is not a live configuration channel, except where it is
 
 Of 56 parameters under `/kambriq/dev`, **7** are injected into a task definition

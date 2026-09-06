@@ -55,62 +55,62 @@ enum LandClientDocumentType {
 
 // ----- LANDS Module ----- //
 /**
-* Classification of land titles
-* TFL = Titre Foncier Loti
-* VEFL = Vente d'un Expace de terrain Fiable et Loti
-* VEFIL = Vente d'un Expace de terrain Fiable Immatriculé et Loti
-*/
+ * Classification of land titles
+ * TFL = Titre Foncier Loti
+ * VEFL = Vente d'un Expace de terrain Fiable et Loti
+ * VEFIL = Vente d'un Expace de terrain Fiable Immatriculé et Loti
+ */
 model LandLabel {
-  id          String          @id @default(uuid())
-  code        LandLabelCodes  @unique
+  id          String         @id @default(uuid())
+  code        LandLabelCodes @unique
   name        String
   description String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
-  lands       Land[]
+  lands Land[]
 }
 
 // ----- Land (Parcel) ----- //
 /**
-* The core product. Each land is a verified, titled parcel
-* available for sale through KAMNET agents.
-*/
+ * The core product. Each land is a verified, titled parcel
+ * available for sale through KAMNET agents.
+ */
 model Land {
-  id            String              @id @default(uuid())
-  title         String              // Display name (e.g. "Parcelle Douala 1")
-  slug          String              @unique // URL-friendly identifier (e.g. "parcelle-douala-1")
-  description   String              // Rich text description of the land
-  region        String              // Administrative region (e.g. "Littoral")
-  city          String?             // City or locality (e.g. "Douala")
-  neighborhood  String?             // Neighborhood or district (e.g. "Bonapriso")
-  latitude      Float?              // Geographical coordinates for map display
-  longitude     Float?              // Geographical coordinates for map display
-  sizeM2        Float               // Size of the land in square meters
-  price         Float               // Price in XAF
-  labelId       String              // Foreign key to LandLabel
-  status        LandStatus          @default(AVAILABLE)
-  isPublished   Boolean             @default(false) // Whether the land is visible to clients
+  id           String     @id @default(uuid())
+  title        String // Display name (e.g. "Parcelle Douala 1")
+  slug         String     @unique // URL-friendly identifier (e.g. "parcelle-douala-1")
+  description  String // Rich text description of the land
+  region       String // Administrative region (e.g. "Littoral")
+  city         String? // City or locality (e.g. "Douala")
+  neighborhood String? // Neighborhood or district (e.g. "Bonapriso")
+  latitude     Float? // Geographical coordinates for map display
+  longitude    Float? // Geographical coordinates for map display
+  sizeM2       Float // Size of the land in square meters
+  price        Float // Price in XAF
+  labelId      String // Foreign key to LandLabel
+  status       LandStatus @default(AVAILABLE)
+  isPublished  Boolean    @default(false) // Whether the land is visible to clients
 
-  pv            Float               @default(1.0) // Point Valeur (02-1.2)  Commission coefficient for agents
-  ownerType     LandOwnerType       @default(KAMBRIQ)
-  partnerId     String?             // External partner ID (if ownerType = PARTNER)
+  pv        Float         @default(1.0) // Point Valeur (02-1.2)  Commission coefficient for agents
+  ownerType LandOwnerType @default(KAMBRIQ)
+  partnerId String? // External partner ID (if ownerType = PARTNER)
 
-  isVerified    Boolean             @default(false)
-  verifiedAt    DateTime?
-  verificationRef String?           // Reference to VERIFY module's verification ID
+  isVerified      Boolean   @default(false)
+  verifiedAt      DateTime?
+  verificationRef String? // Reference to VERIFY module's verification ID
 
-  titleNumber  String?              @unique // Numéro de titre foncier
-  surfaceTitle Int?                 // Surface title as mention in the document
+  titleNumber  String? @unique // Numéro de titre foncier
+  surfaceTitle Int? // Surface title as mention in the document
 
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  label         LandLabel           @relation(fields: [labelId], references: [id])
-  media         LandMedia[]
-  documents     LandDocument[]
-  reservations  LandReservation[]   // Relation to KAMNET reservations
-  priceHistory  LandPriceHistory[]
+  label        LandLabel          @relation(fields: [labelId], references: [id])
+  media        LandMedia[]
+  documents    LandDocument[]
+  reservations LandReservation[] // Relation to KAMNET reservations
+  priceHistory LandPriceHistory[]
 
   @@index([status])
   @@index([region])
@@ -120,63 +120,61 @@ model Land {
 
 // ----- Land Media ----- //
 /**
-* Public images (photos, satellite views, maps) for a land.
-*/
+ * Public images (photos, satellite views, maps) for a land.
+ */
 model LandMedia {
-  id          String          @id @default(uuid())
-  landId      String
-  type        LandMediaType   // IMAGE | VIDEO | MAP
-  url         String          // S3 key
-  caption     String?         // Optional descriotion
-  order       Int             @default(0) // For ordering media items (0 = primary/cover)
-  createdAt   DateTime        @default(now())
+  id        String        @id @default(uuid())
+  landId    String
+  type      LandMediaType // IMAGE | VIDEO | MAP
+  url       String // S3 key
+  caption   String? // Optional descriotion
+  order     Int           @default(0) // For ordering media items (0 = primary/cover)
+  createdAt DateTime      @default(now())
 
-  land        Land            @relation(fields: [landId], references: [id])
+  land Land @relation(fields: [landId], references: [id])
 
   @@index([landId])
 }
-
 
 // ----- Land Documents ----- //
 /**
-* Private legal/administrative documents (deeds, surveys, title scans).
-* Only visible to admins, partners, and the purchasing client.
-*/
+ * Private legal/administrative documents (deeds, surveys, title scans).
+ * Only visible to admins, partners, and the purchasing client.
+ */
 model LandDocument {
-  id            String             @id @default(uuid())
-  landId        String
-  type          LandDocumentType   // TITLE_DEED | SURVEY | PERMIT | RECEIPT | OTHER
-  name          String             // Display name (e.g. "Certificat de propriété")
-  url           String             // S3 key
-  uploadedBy    String             // User ID of uploader (admin or agent)
-  isPrivate     Boolean            @default(true) // Whether the document is private (only visible to admin/partner/client)
-  createdAt     DateTime           @default(now())
+  id         String           @id @default(uuid())
+  landId     String
+  type       LandDocumentType // TITLE_DEED | SURVEY | PERMIT | RECEIPT | OTHER
+  name       String // Display name (e.g. "Certificat de propriété")
+  url        String // S3 key
+  uploadedBy String // User ID of uploader (admin or agent)
+  isPrivate  Boolean          @default(true) // Whether the document is private (only visible to admin/partner/client)
+  createdAt  DateTime         @default(now())
 
-  land          Land               @relation(fields: [landId], references: [id])
+  land Land @relation(fields: [landId], references: [id])
 
   @@index([landId])
 }
 
-
 // ----- Land Client Documents ----- //
 /**
-* Land Documents uploaded by clients during the purchase process
-*/
+ * Land Documents uploaded by clients during the purchase process
+ */
 model LandClientDocument {
-  id              String                 @id @default(uuid())
-  reservationId   String
-  type            LandClientDocumentType
-  name            String
-  url             String                 // S3 key
-  uploadedAt      DateTime               @default(now())
-  uploadedBy      String                 // Client user id
+  id            String                 @id @default(uuid())
+  reservationId String
+  type          LandClientDocumentType
+  name          String
+  url           String // S3 key
+  uploadedAt    DateTime               @default(now())
+  uploadedBy    String // Client user id
 
   // Soft delete. Set by client (self-delete before validation) or admin (reject with reason).
   deletedAt       DateTime?
-  deletedBy       String?                // userId (client or admin)
-  rejectionReason String?                // set only when admin rejects
+  deletedBy       String? // userId (client or admin)
+  rejectionReason String? // set only when admin rejects
 
-  reservation     LandReservation        @relation(fields: [reservationId], references: [id])
+  reservation LandReservation @relation(fields: [reservationId], references: [id])
 
   // Uniqueness on active rows is enforced in application code (no DB partial-unique here).
   // Multiple historical (soft-deleted) rows per (reservationId, type) are expected.
@@ -186,70 +184,226 @@ model LandClientDocument {
 
 // ----- Land Documents ----- //
 /**
-* Created when an agent reserves a land for a client.
-* Only one active reservation per land (enforced by unique constraint).
-*/
+ * Created when an agent reserves a land for a client.
+ * Only one active reservation per land (enforced by unique constraint).
+ */
 model LandReservation {
-  id                   String                  @id @default(uuid())
-  landId               String
-  agentUserId          String                  // Agent's Core.User ID
-  clientUserId         String?                 // Client's Core.User ID (created on reservation)
-  clientName           String
-  clientEmail          String
-  clientPhone          String?
-  status               LandReservationStatus   @default(PENDING)
+  id           String                @id @default(uuid())
+  landId       String
+  agentUserId  String // Agent's Core.User ID
+  clientUserId String? // Client's Core.User ID (created on reservation)
+  clientName   String
+  clientEmail  String
+  clientPhone  String?
+  status       LandReservationStatus @default(PENDING)
 
+  /// DEPRECATED by G1 (PR "feat(g1): the payment data model and state machine").
+  /// Superseded by the `Payment` / `PaymentReceipt` / `PaymentTransition` models
+  /// below. Kept, not dropped: a drop is irreversible and dev carries 33 rows.
+  /// Backfilled into `Payment` by `20260906190000_g1_payment_model`.
+  /// Removal is a separate PR, once the new path has been exercised.
+  ///
+  /// `downPaymentAmount` is a `Float`, which is what G1 exists to stop. It is
+  /// quarantined in `no-float-money.spec.ts` rather than converted, because
+  /// converting it means converting `Land.price` with it - 51 call sites.
   // Step 2 - Down payment (5% acompte)
-  downPaymentAmount    Float?                  // Down payment amount in XAF (5% of land price)
-  downPaymentConfirmed Boolean                 @default(false)
-  confirmedBy          String?                 // admin userId who confirmed
+  downPaymentAmount    Float? // Down payment amount in XAF (5% of land price)
+  downPaymentConfirmed Boolean   @default(false)
+  confirmedBy          String? // admin userId who confirmed
   confirmedAt          DateTime?
 
   // Step 3 - Client documents received (ID, proof of address, etc.)
-  documentsReceivedAt  DateTime?
-  documentsReceivedBy  String?                 // admin userId
+  documentsReceivedAt DateTime?
+  documentsReceivedBy String? // admin userId
 
   // Step 4 - Remaining payments confirmed by admin
   remainingPaymentConfirmedAt DateTime?
-  remainingPaymentConfirmedBy String?          // admin userId
+  remainingPaymentConfirmedBy String? // admin userId
 
   // Step 5 - Dossier / title transfer started
-  dossierStartedAt     DateTime?
-  dossierStartedBy     String?                 // admin userId
+  dossierStartedAt DateTime?
+  dossierStartedBy String? // admin userId
 
   // Step 6 - Sale completed
-  completedAt          DateTime?
-  completedBy          String?                 // admin userId
+  completedAt DateTime?
+  completedBy String? // admin userId
 
-  cancelReason         String?
-  cancelledAt          DateTime?
-  createdAt            DateTime                @default(now())
-  updatedAt            DateTime                @updatedAt
+  cancelReason String?
+  cancelledAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  land                 Land                    @relation(fields: [landId], references: [id])
+  land                Land                 @relation(fields: [landId], references: [id])
+  landClientDocuments LandClientDocument[]
+  payments            Payment[]
 
   // Only one active (non-cancelled) reservation per land.
   @@unique([landId], where: { status: { not: "CANCELLED" } })
   @@index([agentUserId])
   @@index([status])
-  landClientDocuments LandClientDocument[]
 }
 
 // ----- Price History ----- //
 /**
-* Tracks every price change for a land parcel. Created
-* automatically when admin updates the price.
-*/
+ * Tracks every price change for a land parcel. Created
+ * automatically when admin updates the price.
+ */
 model LandPriceHistory {
-  id               String   @id @default(uuid())
-  landId           String
-  previousPrice    Float
-  newPrice         Float
-  changedBy        String   // User ID of admin who made the change
-  reason           String   // Reason for price change
-  changedAt        DateTime @default(now())
+  id            String   @id @default(uuid())
+  landId        String
+  previousPrice Float
+  newPrice      Float
+  changedBy     String // User ID of admin who made the change
+  reason        String // Reason for price change
+  changedAt     DateTime @default(now())
 
-  land             Land     @relation(fields: [landId], references: [id])
+  land Land @relation(fields: [landId], references: [id])
 
   @@index([landId])
+}
+
+// ---------------------------------------------------------------------------
+// G1 - Payment model and state machine
+//
+// Specification: ops_kambriq_paiement-hybride_v01.md (09_OPERATIONS).
+// Overview and transition table: docs/ops/g1-payment-model.md.
+//
+// The platform does not collect money. It orchestrates and it attests: money
+// moves through real channels - bank transfer, mobile money, cash at the notary
+// - and these tables record what was received, on what evidence, decided by
+// whom.
+// ---------------------------------------------------------------------------
+
+/// The nine states of ops_kambriq_paiement-hybride_v01.md. The legal transitions
+/// live in `libs/common/src/payments/payment-state.ts`, not here: Prisma has no
+/// way to express them, and a state machine nothing enforces is a comment.
+enum PaymentState {
+  INITIE
+  INSTRUCTIONS_ENVOYEES
+  ANNONCE_CLIENT
+  EN_VERIFICATION
+  PARTIELLEMENT_RECU
+  VALIDE
+  REJETE
+  EXPIRE
+  ANNULE
+}
+
+/// How the money actually arrived.
+enum PaymentChannel {
+  VIREMENT
+  MOBILE_MONEY
+  ESPECES
+  ACTE_NOTARIE
+  /// Pre-G1 rows only. The old model recorded no channel, so backfilled
+  /// receipts genuinely do not have one - this says so instead of inventing a
+  /// value. A CHECK constraint ties it to the only rows allowed to omit
+  /// evidence, and `PaymentsService` refuses it as an input.
+  INCONNU_HISTORIQUE
+}
+
+model Payment {
+  id String @id @default(uuid())
+
+  /// KBQ-YYMM-XXXXX-C. Reserved here; the generator is G2.
+  ///
+  /// Nullable because backfilled payments predate the generator and Postgres
+  /// treats NULLs as distinct in a unique index, so they do not collide. The
+  /// format is enforced by a CHECK constraint in the migration, which applies
+  /// only when the value is present.
+  reference String? @unique
+
+  reservationId String
+
+  /// ISO 4217, stored beside every amount. An amount without its currency is a
+  /// number, not money.
+  currency String
+
+  /// Indivisible units of `currency`. **XAF has no minor unit** - one unit is
+  /// one franc, not a centime. `BigInt`, never `Float`: see G1 in
+  /// docs/ops/registre-chantiers.md.
+  amountDue BigInt
+
+  state PaymentState @default(INITIE)
+
+  /// After this instant the payment may be moved to EXPIRE. Nothing sleeps
+  /// silently - the design's rule, applied to money.
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reservation LandReservation     @relation(fields: [reservationId], references: [id])
+  receipts    PaymentReceipt[]
+  transitions PaymentTransition[]
+
+  @@index([reservationId])
+  @@index([state])
+}
+
+/// The movement ledger. Append-only, enforced by a database trigger.
+///
+/// There is deliberately **no `totalReceived` column on `Payment`**. The total
+/// is a sum over these rows and nothing else. A correction appends a signed
+/// line pointing at the line it corrects; it never edits one. Same reasoning as
+/// the coverage denominator: a figure you can edit by hand is a figure that
+/// lies one day, and the day it lies nothing signals it.
+model PaymentReceipt {
+  id        String @id @default(uuid())
+  paymentId String
+
+  /// Signed, in indivisible units of `currency`. A correction is a negative
+  /// line, which is why this is not constrained to be positive.
+  amount   BigInt
+  currency String
+
+  channel PaymentChannel
+
+  /// When the money actually arrived, which is not when somebody typed it in.
+  receivedAt DateTime
+  recordedAt DateTime @default(now())
+
+  /// Core `User.id`, by convention - core is a separate database.
+  recordedBy String
+
+  /// S3 key of the justificatif. Required for every new receipt; NULL is
+  /// permitted only for INCONNU_HISTORIQUE rows, and a CHECK constraint says so.
+  evidenceUrl String?
+
+  /// Set when this line corrects an earlier one.
+  correctsId String?
+  note       String?
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([paymentId])
+  @@index([correctsId])
+}
+
+/// The audit trail. One row per state transition: who, when, why, on what
+/// evidence. Append-only, enforced by a database trigger - "rien n'est
+/// reecrivable apres coup" is a property of the database here, not a promise
+/// made by the service layer.
+model PaymentTransition {
+  id        String @id @default(uuid())
+  paymentId String
+
+  /// NULL only for the row that records the payment coming into existence.
+  fromState PaymentState?
+  toState   PaymentState
+
+  /// Core `User.id`. Never a system marker for a transition that commits money
+  /// - see `assertTransitionIsDeliberate`.
+  actorUserId String
+  reason      String
+
+  /// The receipt this decision rests on, where there is one.
+  evidenceReceiptId String?
+
+  occurredAt DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([paymentId])
+  @@index([occurredAt])
 }

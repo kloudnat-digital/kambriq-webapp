@@ -1,6 +1,21 @@
 // ----- Types -----
 export { RoleCode } from './types/roles.enum';
 export { ROLE_HIERARCHY, SUPER_ADMIN_ROLE, effectiveRoles } from './types/role-hierarchy';
+
+// ----- Payments (G1) -----
+export {
+  PaymentState,
+  PaymentChannel,
+  PAYMENT_TRANSITIONS,
+  RECORDABLE_CHANNELS,
+  TERMINAL_STATES,
+  COMMITTING_STATES,
+  IllegalPaymentTransitionError,
+  AutomaticTransitionForbiddenError,
+  assertTransitionAllowed,
+  assertTransitionIsDeliberate,
+  sumReceipts,
+} from './payments/payment-state';
 export {
   issueVerificationToken,
   verificationTokenExpiryHours,
