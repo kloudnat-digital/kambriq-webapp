@@ -9,3 +9,4 @@
 | [ADR-005](./ADR-005-e2e-testing-playwright.md)            | E2E Testing with Playwright                                                                       | Accepted |
 | [ADR-006](./ADR-006-content-strategy-mdx-next-intl.md)    | Content Strategy - MDX for Long-form + next-intl JSON for UI Copy                                 | Accepted |
 | [ADR-007](./ADR-007-api-i18n-nestjs-i18n.md)              | API i18n Strategy - nestjs-i18n with Per-User Language Resolution                                 | Accepted |
+| [ADR-008](./ADR-008-admin-global-is-the-super-admin.md)   | `ADMIN_GLOBAL` is the Super Admin - No Second All-Powerful Role                                   | Accepted |

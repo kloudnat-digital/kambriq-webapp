@@ -1,5 +1,6 @@
 // ----- Types -----
 export { RoleCode } from './types/roles.enum';
+export { ROLE_HIERARCHY, SUPER_ADMIN_ROLE, effectiveRoles } from './types/role-hierarchy';
 export type { JwtPayload, RequestUser } from './types/user-payload.type';
 
 // ----- Exceptions -----

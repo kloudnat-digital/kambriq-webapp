@@ -1,7 +1,7 @@
 import { API, call, findTokenInMailbox, login, uniqueEmail } from './support';
 
 /**
- * The four journeys the delivery is defined by, run against a deployed API.
+ * The journeys the delivery is defined by, run against a deployed API.
  *
  * They were proven by hand on 2026-09-04. Proven by hand means proven once, by
  * one person, on one build — nothing stops them regressing on Tuesday. This is
@@ -413,5 +413,222 @@ describe('journey 4 - an agent reserves a parcel and the client reaches the port
       .json<{ data: Array<{ id: string; status: string }> }>()
       .data.find((l) => l.id === available[0].id);
     expect(parcel?.status).toBe('AVAILABLE');
+  });
+});
+
+// ---------------------------------------------------------------------------
+
+/**
+ * Journey 5 - an administrator activates through the ordinary flow.
+ *
+ * H3's claim is that there is **no parallel path for administrators**: a super
+ * admin created without a password activates through `forgot-password` ->
+ * `reset-password`, the same two public routes a client uses, and the same
+ * transaction that sets the password is what marks the address verified.
+ *
+ * ---------------------------------------------------------------------------
+ * Why this runs on a maildrop address and never on the two real accounts
+ * ---------------------------------------------------------------------------
+ * **The reset token is single-use.** `resetPassword` stamps `usedAt` and the
+ * next attempt is refused. A test pointed at a real administrator's address
+ * would request a link, consume it, and set a password only the test knows -
+ * so the real holder, following the link they were sent, would be told their
+ * token was already used, on an account they have never logged into. The suite
+ * would have locked a person out of activating their own account and reported
+ * a pass for doing it.
+ *
+ * That is not a hypothetical to be remembered; `refusesToRunAgainstARealAccount`
+ * below makes it an assertion, because a rule that lives in a comment is one
+ * copy-paste from being gone.
+ *
+ * ---------------------------------------------------------------------------
+ * Why the account is created by a reservation
+ * ---------------------------------------------------------------------------
+ * It is the only path in the public API that produces the state the bootstrap
+ * produces: `passwordHash` null, `emailVerified` false. Registering would give
+ * the account a password, and an activation test that starts from a password
+ * is not testing activation. The parcel is given back at the end, exactly as
+ * journey 4 gives its own back - two journeys each consuming one parcel per
+ * deploy is neutral only for as long as both of them cancel.
+ *
+ * The role is granted before activation and revoked after, and the revocation
+ * is asserted rather than assumed: a throwaway account left holding
+ * `ADMIN_GLOBAL` on dev is a stray privileged account, which is the thing this
+ * whole block exists to avoid creating.
+ */
+describe('journey 5 - a passwordless super admin activates through the ordinary flow', () => {
+  const email = uniqueEmail('j5.superadmin');
+  const mailbox = email.split('@')[0];
+
+  /**
+   * The two real bootstrap accounts, by domain rather than by address.
+   *
+   * Naming them would put the identities back in the repository, which is the
+   * point of keeping them in SSM. The domain is enough: nothing on
+   * `@kambriq.com` is disposable, and every address this suite may touch is a
+   * maildrop one.
+   */
+  const DISPOSABLE = /@maildrop\.cc$/;
+
+  let userId: string;
+  let landId: string;
+  let reservationId: string;
+
+  it('refuses to run against a real account', () => {
+    // Guard first, before anything sends mail. A test that checks its own
+    // blast radius after acting has checked nothing.
+    expect(email).toMatch(DISPOSABLE);
+    expect(email).not.toContain('@kambriq.com');
+  });
+
+  it('is created with no password and cannot log in', async () => {
+    const listed = await call('GET', '/lands?limit=50', { token: agent });
+    expect(listed.status).toBe(200);
+    const available = listed
+      .json<{ data: Array<{ id: string; status: string }> }>()
+      .data.filter((l) => l.status === 'AVAILABLE');
+    expect(available.length).toBeGreaterThan(0);
+    landId = available[0].id;
+
+    const reserved = await call('POST', '/lands/reservations', {
+      token: agent,
+      body: {
+        landId,
+        clientName: 'Journey Five',
+        clientEmail: email,
+        clientPhone: '+237699887701',
+      },
+    });
+    expect(reserved.status).toBe(201);
+    userId = reserved.json<{ data: { clientUserId: string } }>().data.clientUserId;
+    reservationId = reserved.json<{ data: { id: string } }>().data.id;
+
+    // No password exists, so no password can be right. Any string must be
+    // refused - a passwordless account that lets somebody in is the failure
+    // this assertion is here for.
+    const early = await call('POST', '/auth/login', {
+      body: { email, password: 'not-the-password-because-there-is-none' },
+    });
+    expect(early.status).toBe(401);
+  });
+
+  it('is made a super admin before it has ever had a password', async () => {
+    const granted = await call('POST', `/users/${userId}/roles`, {
+      token: admin,
+      body: { roleCode: 'ADMIN_GLOBAL' },
+    });
+    expect(granted.status).toBe(200);
+    expect(granted.json<{ data: { roles: string[] } }>().data.roles).toContain('ADMIN_GLOBAL');
+
+    // Holding the top role changes nothing about being unable to log in. If it
+    // did, there would be a parallel path, which is exactly what H3 denies.
+    const still = await call('POST', '/auth/login', { body: { email, password: PASSWORD } });
+    expect(still.status).toBe(401);
+  });
+
+  it('activates through the two public routes, with the link read out of the mailbox', async () => {
+    const requested = await call('POST', '/auth/forgot-password', { body: { email } });
+    expect(requested.status).toBe(204);
+
+    /**
+     * Out of the mailbox, not out of the database.
+     *
+     * A3 is the reason this distinction is worth the third-party dependency: a
+     * token read from the row it was written to proves the row. It proved the
+     * row for months while every delivered link carried
+     * `?token=[object Promise]`. **A send is not a signup.**
+     */
+    /**
+     * `/reset-password`, and deliberately NOT `/auth/set-password`.
+     *
+     * By this point the mailbox holds **two** valid PASSWORD_RESET tokens for
+     * this user: the reservation invite sent
+     * `${FRONTEND_URL}/auth/set-password?token=` when the account was created,
+     * and forgot-password has just sent `${FRONTEND_URL}/reset-password?token=`.
+     * Both work. A pattern matching either would activate the account and leave
+     * the journey unable to say which of the two paths it proved - two
+     * candidate explanations producing identical output, which is not a choice
+     * between them.
+     *
+     * H3 is about the forgot-password path, so only that link counts.
+     */
+    const token = await findTokenInMailbox(mailbox, /\/reset-password\?token=([0-9a-f]{64})/);
+    expect(token).toMatch(/^[0-9a-f]{64}$/);
+
+    const reset = await call('POST', '/auth/reset-password', {
+      body: { token, newPassword: PASSWORD },
+    });
+    expect(reset.status).toBe(204);
+
+    // Single-use, and this is where that is proved rather than asserted about.
+    // It is also why this journey may never point at a real administrator.
+    const replay = await call('POST', '/auth/reset-password', {
+      body: { token, newPassword: PASSWORD },
+    });
+    expect(replay.status).toBe(400);
+  });
+
+  it('reaches a 200 login carrying ADMIN_GLOBAL, and an admin-only route answers', async () => {
+    const res = await call('POST', '/auth/login', { body: { email, password: PASSWORD } });
+    expect(res.status).toBe(200);
+
+    const { data } = res.json<{
+      data: { user: { roles: string[] }; tokens: { accessToken: string } };
+    }>();
+    expect(data.user.roles).toContain('ADMIN_GLOBAL');
+    expect(data.tokens.accessToken).toBeTruthy();
+
+    /**
+     * The token is the proof, not the login.
+     *
+     * A 200 with a role in the response body says the API believes it. Spending
+     * the token on a route only `ADMIN_GLOBAL` may open says the guard believes
+     * it too, and those have been different things here before.
+     *
+     * `/users/roles` rather than `/users`: the admin user list is known to
+     * serialise every row to `{}` while answering 200 with a correct
+     * `meta.total`, so it would pass a status check and prove nothing about
+     * content. Recorded in the register; do not "fix" this by pointing the
+     * assertion at the endpoint with the defect.
+     */
+    const roles = await call('GET', '/users/roles', { token: data.tokens.accessToken });
+    expect(roles.status).toBe(200);
+    expect(roles.json<{ data: Array<{ code: string }> }>().data.map((r) => r.code)).toContain(
+      'ADMIN_GLOBAL',
+    );
+  });
+
+  /**
+   * Leave nothing behind: no privilege, no held parcel.
+   *
+   * `afterAll` runs even when a test above fails, which is when cleanup matters
+   * most. It does not run if the process is killed outright - if that happens,
+   * the account is findable by its `j5.superadmin.` prefix.
+   */
+  afterAll(async () => {
+    if (userId) {
+      const revoked = await call('DELETE', `/users/${userId}/roles/ADMIN_GLOBAL`, { token: admin });
+      // Asserted, not fired and forgotten. A 409 here would mean this throwaway
+      // account had become the last super admin on the environment, which is a
+      // finding rather than a cleanup failure.
+      expect(revoked.status).toBe(200);
+      expect(revoked.json<{ data: { roles: string[] } }>().data.roles).not.toContain(
+        'ADMIN_GLOBAL',
+      );
+    }
+
+    if (reservationId) {
+      const cancelled = await call('POST', `/lands/admin/reservations/${reservationId}/cancel`, {
+        token: admin,
+        body: { reason: 'automated journey cleanup - returning the fixture parcel' },
+      });
+      expect(cancelled.status).toBe(200);
+
+      const after = await call('GET', '/lands?limit=50', { token: agent });
+      const parcel = after
+        .json<{ data: Array<{ id: string; status: string }> }>()
+        .data.find((l) => l.id === landId);
+      expect(parcel?.status).toBe('AVAILABLE');
+    }
   });
 });

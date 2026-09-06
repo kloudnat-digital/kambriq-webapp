@@ -101,16 +101,431 @@ table: `Z1`, `D2`, `X1` and `X4` carry commands, numbers or reversal steps that
 are longer than a table row and are still needed. Everything genuinely open is
 listed here first.
 
-| Entry          | State             | What it needs                                                                                                                                 |
-| -------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `L2`           | `EN COURS`        | one deployed log line carrying its interpolated metadata, quoted                                                                              |
-| `L3`           | `DECIDE, A FAIRE` | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                              |
-| `F1`           | `A DECIDER`       | coverage ratchet: a floor, and what happens when a PR drops below it                                                                          |
-| `P1`           | `A DECIDER`       | SES contact list, one per account per region — the prd constraint                                                                             |
-| `X2`           | `DECIDE, A FAIRE` | NAT option 2, decided, deliberately unapplied before delivery                                                                                 |
-| `M1`           | `DECIDE, A FAIRE` | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                |
-| `Q1` follow-up | `A DECIDER`       | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing            |
-| `D3`           | `EN COURS`        | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0 |
+| Entry          | State             | What it needs                                                                                                                                       |
+| -------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `L2`           | `EN COURS`        | one deployed log line carrying its interpolated metadata, quoted                                                                                    |
+| `L3`           | `DECIDE, A FAIRE` | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                                    |
+| `F1`           | `A DECIDER`       | coverage ratchet: a floor, and what happens when a PR drops below it                                                                                |
+| `P1`           | `A DECIDER`       | SES contact list, one per account per region — the prd constraint                                                                                   |
+| `X2`           | `DECIDE, A FAIRE` | NAT option 2, decided, deliberately unapplied before delivery                                                                                       |
+| `M1`           | `DECIDE, A FAIRE` | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                      |
+| `Q1` follow-up | `A DECIDER`       | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing                  |
+| `D3`           | `EN COURS`        | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0       |
+| `H1`           | `PROUVE`          | `ADMIN_GLOBAL` is the super admin; no second role created. ADR-008 + `super-admin.spec.ts`, five mutations quoted below                             |
+| `H2`           | `PROUVE`          | two passwordless super-admin accounts bootstrapped from SSM, idempotent, proven by three runs and a row diff                                        |
+| `H3`           | `EN COURS`        | automated as journey 5 on a maildrop address; pending proof is that green on dev, plus both real holders activating by their own hand               |
+| `H4`           | `PROUVE`          | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                             |
+| `A7`           | `PROUVE`          | inventory swept 2026-09-06, output in `docs/ops/a7-standards-inventory.md`: 6 findings (2 closed on sight), 7 classes clean, 2 defects in the sweep |
+| `H2` follow-up | `A DECIDER`       | `deploy-dev.yml` passes `--seed` to `run-migrations.js`, which never reads `process.argv`: the seed step has never seeded anything                  |
+
+### H1 - `ADMIN_GLOBAL` **is** the super admin - `PROUVE`
+
+**Cost impact: None.** No resource, no dependency, no runtime change.
+
+The block opened with a request for a `SUPER_ADMIN` role. Reading the code first
+turned it into documentation and a guard, because both properties of a super
+admin were already true of `ADMIN_GLOBAL`:
+
+- `libs/common/src/types/role-hierarchy.ts` - `ROLE_HIERARCHY[ADMIN_GLOBAL]`
+  lists the other seven database-backed roles, which is a superset of every role
+  named in an `@Roles()` decorator in `apps/api/src`. **No route is out of its
+  reach.**
+- `apps/api/src/core/users/users.controller.ts` - `POST /users/:id/roles`,
+  `DELETE /users/:id/roles/:roleCode` and `PATCH /users/:id` each carry
+  `@Roles(RoleCode.ADMIN_GLOBAL)` and nothing else, and none of them excludes
+  `ADMIN_GLOBAL` from the roles that can be granted or revoked. **It already
+  administers administrators, including other holders of itself.**
+
+`STAFF_VERIFY`, `STAFF_VALUATION` and `PARTNER_GEO` are in the enum, have no row
+in the database, and appear in no decorator. They gate nothing, so they cannot
+create a route the super admin is refused. The guard fails the day one of them
+does.
+
+Decision and reasoning: `docs/adr/ADR-008-admin-global-is-the-super-admin.md`.
+`SUPER_ADMIN_ROLE` is exported as an alias so code that means "the top of the
+hierarchy" says so instead of re-deriving it.
+
+**The guard:** `apps/api/src/__test__/conventions/super-admin.spec.ts`, 14 tests.
+
+**Mutations, each watched failing alone** (`npx nx test api --testPathPatterns=super-admin.spec`):
+
+| #   | Mutation                                             | Result                                                                             |
+| --- | ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 1   | `ADMIN_GLOBAL` no longer implies `KCA_CERTIFIED`     | 1 failed / 13 passed. `Expected value: "KCA_CERTIFIED"` against the received array |
+| 2   | `ADMIN_LANDS` implies `ADMIN_GLOBAL`                 | 1 failed / 13 passed - "no other role implies the super admin"                     |
+| 3   | `ADMIN_KBS` reaches everything except `ADMIN_GLOBAL` | 1 failed / 13 passed. `Received: ["ADMIN_KBS"]` - "no second god role"             |
+| 4   | the grant route loses its `@Roles`                   | 1 failed / 13 passed. `Received: null`                                             |
+| 5   | the grant route also admits `ADMIN_KBS`              | 1 failed / 13 passed - the "and by nothing weaker" half                            |
+
+Two things the mutations found in the test rather than in the code, both kept in
+`CLAUDE.md`:
+
+- mutation 2 first made the suite **stop compiling** rather than fail:
+  `Object.entries(ROLE_HIERARCHY)` typed the value `unknown` and `tsc` had
+  accepted `.includes(...)` on it by accident of inference. A mutation that
+  breaks the build has not been run;
+- the "no second god role" test originally included `ADMIN_GLOBAL` in the
+  required set, which made it **impossible to fail on its own** - any rival trips
+  mutation 2's assertion first. Excluding the top role made it independently
+  failable and made it assert something the other does not.
+
+---
+
+### H2 - Two real super-admin accounts, bootstrapped from SSM - `PROUVE`
+
+**Cost impact: $0.00/month.** Twelve SSM Standard parameters (free tier is 10 000)
+and one extra Fargate task of a few seconds per deploy, under $0.001. No new
+resource, no new IAM: `/kambriq/{env}/api/bootstrap/*` sits under the prefix the
+API task role already holds `ssm:GetParameter` on
+(`modules/iam-roles-ecs/main.tf:75`).
+
+`prisma/bootstrap-admins.ts`, run by `pnpm run db:bootstrap` and by a new
+unconditional step in `deploy-dev.yml`.
+
+**Separate from `prisma/seed.ts` on purpose.** The seed is test data: wiped by
+`db:reset`, one shared password, there to make a journey runnable. These two
+accounts are real people who must survive every reset and exist in prd.
+
+**The identities are not in the repository - including in this file.** They are a home city and two mobile
+numbers, and "where does personal data live" is a question this project will be
+asked by name. The file holds the shape; SSM holds the values, one parameter per
+field, as `SecureString` under `alias/aws/ssm` (the same key the existing
+`JWT_SECRET` and `DATABASE_URL_*` parameters use). A typo is then
+`aws ssm put-parameter --overwrite` plus a re-run, not a commit, a build and a
+release.
+
+```
+/kambriq/dev/api/bootstrap/admin1/{EMAIL,FIRST_NAME,LAST_NAME,PHONE,CITY,COUNTRY}
+/kambriq/dev/api/bootstrap/admin2/{EMAIL,FIRST_NAME,LAST_NAME,PHONE,CITY,COUNTRY}
+```
+
+**Fails loudly, never skips.** Every parameter is required and the run aborts
+before writing anything, listing **all** missing or empty parameters rather than
+the first:
+
+```
+$ BOOTSTRAP_SSM_PREFIX= npx tsx prisma/bootstrap-admins.ts
+EXIT=1
+BOOTSTRAP_SSM_PREFIX is not set. Nothing was read and nothing was written.
+
+$ (one parameter deleted)
+EXIT=1
+Bootstrap aborted. 1 parameter(s) unusable under /kambriq/dev/api/bootstrap:
+  MISSING  /kambriq/dev/api/bootstrap/admin2/PHONE
+```
+
+**Idempotent, keyed on email, proved by three runs and a row diff.**
+
+```
+BEFORE  (User UserRole UserProfile) = 9 14 9
+
+RUN 1   [admin1] created  ...  role=ADMIN_GLOBAL grantedBy=bootstrap
+        [admin2] created  ...  role=ADMIN_GLOBAL grantedBy=bootstrap
+        postcondition verified for 2 account(s)
+        2 created, 0 updated, 0 unchanged                       EXIT=0
+AFTER   11 16 11        (+2 / +2 / +2)
+
+RUN 2   [admin1] unchanged  (no write issued)
+        [admin2] unchanged  (no write issued)
+        0 created, 0 updated, 2 unchanged                       EXIT=0
+AFTER   11 16 11
+        diff of the full rows, run 1 vs run 2: identical, updatedAt included
+
+RUN 3   after both holders had set their own password (see H3)
+        0 created, 0 updated, 2 unchanged                       EXIT=0
+        hash_prefix still $2b$12$ for both; login still 200
+```
+
+Re-running never touches `passwordHash`, `emailVerified` or `isActive`: by the
+second run the holder may have set a password, and reconciling that back to the
+parameter store would lock them out of their own account. Identity fields are
+reconciled, and only when they actually differ - `update: {}` would still move
+`updatedAt`, so "no-op" here means no write is issued at all.
+
+**Schema.** `User.passwordHash` is now nullable
+(`20260906120000_password_hash_nullable`). The alternative was a sentinel hash,
+which is a value that lies about what it is; NULL says it once, in the schema,
+and `tsc` makes every reader handle it. The same migration retires the
+`passwordHash: ''` sentinel in `findOrCreateClientUser`. `comparePassword` folds
+both null and empty to `false` explicitly rather than handing them to bcrypt.
+
+**One phone column, and the second number has nowhere to go.**
+`User.phone` is a single nullable column. Account 1 was given two numbers, one
+French and one Cameroonian. The French one is in `.../admin1/PHONE`; **the
+Cameroonian one is not stored anywhere** and was not concatenated into the same
+field - `+33 ... / +237 ...` is not a phone number, and everything downstream that
+treats it as one would be handed something undiallable that looks populated. The
+numbers themselves are in SSM and deliberately not repeated here.
+
+**And a finding on top of it, which the arbitration did not anticipate.**
+`CM_PHONE_REGEX` is `/^(?:\+?237)?6\d{8}$/`, and `UpdateProfileDto` applies it to
+`PATCH /users/me`. **The API only accepts Cameroonian mobile numbers.** So the
+French number the bootstrap writes is one the application's own DTO would reject:
+it survives until either holder tries to save their profile with a phone in it,
+at which point they get a 400 telling them to enter a Cameroonian number. Same
+regex on `auth.dto.ts` (registration), `lands.dto.ts` and `kamnet.dto.ts`.
+**Reported, not resolved** - the value is in SSM, so switching to the Cameroonian
+number is a parameter update; widening the regex is a decision about who the
+platform is for.
+
+**Zero inferred values.** Every one of the twelve parameters now holds a value
+Visquis stated. Read them out of SSM, not out of this file: the values are
+deliberately not repeated in the repository.
+
+**Corrected on 2026-09-06, and the correction is about this entry as much as
+about the data.** This paragraph previously listed _three_ uncertain values -
+`admin1/EMAIL`, `admin2/EMAIL` and `admin2/LAST_NAME` - on the grounds that the
+brief had given only the domain. It had given both local parts. **The only thing
+inferred was the TLD**, `comp` read as `com`, and it applied to both addresses
+identically; the local parts were quoted. Account 2's surname was the single
+genuine invention, and `PATCH`-ing three parameters at
+`admin2/{EMAIL,FIRST_NAME,LAST_NAME}` on 2026-09-06 settled it with values
+Visquis wrote out, lowercase as he wrote them.
+
+**Two of the three had been correct all along, and were made to look doubtful.**
+That is the defect worth keeping: a record that overstates its own uncertainty
+misleads in the same way as one that understates it, and it is harder to notice,
+because hedging reads as care. Somebody would have re-checked two values that
+never needed checking, and the cost of that is the credibility of the one flag
+that was real.
+
+**Where the timing mattered.** The bootstrap upserts on email, so `EMAIL` is the
+key. Changing a key does not update a row, it creates a second one - so a deploy
+run against a wrong address would have produced a super admin nobody asked for,
+a verification email sent to it, and a second account on the next correction.
+The correction was therefore applied **before** the merge. In the event
+`admin2/EMAIL` already held the corrected address and the key did not move, so
+nothing had to be reconciled; `FIRST_NAME` and `LAST_NAME` are non-key fields the
+bootstrap reconciles on its next run without creating anything.
+
+The register keeps the sequencing rule rather than the lucky outcome: **a
+parameter that is part of an upsert key is corrected before the mechanism that
+reads it runs, not after.**
+
+---
+
+### H3 - Validation through the existing flow - `EN COURS`
+
+**Cost impact: None.**
+
+No parallel path for administrators. The accounts are created with
+`emailVerified: false` and no password; the holder uses
+`POST /auth/forgot-password` then `POST /auth/reset-password`, which is the flow
+proven on 4 September and which sets `emailVerified: true` on the same
+transaction that sets the password.
+
+**Proven locally, end to end, against the API on `localhost:3000`:**
+
+```
+account 1  (the address in .../admin1/EMAIL)
+  login before any password is set      HTTP 401
+  forgot-password                       HTTP 204
+  reset-password (token from the row)   HTTP 204
+  login                                 HTTP 200   roles ["ADMIN_GLOBAL"], JWT issued
+
+account 2  (the address in .../admin2/EMAIL)
+  forgot-password                       HTTP 204
+  reset-password                        HTTP 204
+  login                                 HTTP 200   roles ["ADMIN_GLOBAL"], JWT issued
+
+after both:  emailVerified = t,  passwordHash = $2b$12$...  for both rows
+```
+
+**Automated as journey 5, on a maildrop address, and never on the two real
+accounts.** `apps/api-e2e/src/journeys/journeys.spec.ts` - a passwordless account
+is created through the reservation path (the only public route that produces
+`passwordHash` null and `emailVerified` false, which is the state the bootstrap
+produces), granted `ADMIN_GLOBAL` **before** it has ever had a password, and then
+activated through `forgot-password` -> `reset-password` with the link **read out
+of the maildrop mailbox**. It ends at a 200 login whose JWT carries
+`ADMIN_GLOBAL` and opens an `ADMIN_GLOBAL`-only route, then revokes the role and
+returns the parcel, both asserted rather than fired and forgotten.
+
+**Why it may never point at a real administrator, and why that is an assertion
+rather than a comment.** The reset token is single-use: `resetPassword` stamps
+`usedAt`. A journey aimed at a real holder's address would request a link,
+consume it, and set a password only the suite knows - so the holder, following
+the link they were sent, would be told the token was already used, on an account
+they have never logged into. **The suite would lock a person out of activating
+their own account and report a pass for doing it.** The first test in the journey
+is therefore a guard on its own target address, run before anything sends mail: a
+rule that lives in a comment is one copy-paste from being gone.
+
+Two things the journey had to be built around, both from the catalogue:
+
+- the mailbox holds **two** valid reset tokens by that point - the reservation
+  invite sent `/auth/set-password?token=` and forgot-password sent
+  `/reset-password?token=`. Both work, so a pattern matching either would
+  activate the account and leave the journey unable to say which path it proved.
+  The pattern matches only `/reset-password`, because H3 is about that one;
+- the admin-only assertion spends the token on `GET /users/roles` rather than
+  `GET /users`, which is known to serialise every row to `{}` while answering 200
+  with a correct `meta.total`. Pointed at that endpoint the assertion would pass
+  and prove nothing.
+
+**Written, not yet run.** Running it now would grant `ADMIN_GLOBAL` on dev and
+consume a parcel against a build that does not contain this branch. Its first run
+is the `Delivery journeys (dev)` job on the deploy after #77 merges.
+
+**Still `EN COURS`, and what is left is deliberately manual.** Journey 5 proves
+the _mechanism_ forever, on a disposable identity. It does not prove that the two
+real holders have activated - that is a one-time act by each of them, using a
+link only they receive, and it is the one part of H3 that must not be automated.
+This entry moves to `PROUVE` when journey 5 is green on dev **and** both real
+accounts have reached a 200 login by their own hand.
+
+One thing the local run showed that the dev run will not: **login refuses a
+bootstrapped account at the `emailVerified` check, before it ever reaches the
+password check.** The new "no password has ever been set" branch in
+`auth.service.ts` is therefore unreachable for these two accounts specifically. It
+is still correct for a verified account whose password is null, it is covered by
+`comparePassword` returning `false` explicitly, and the log line exists so the
+case is visible to us without being visible to a caller. **It has not been
+observed firing in a live request, and that is stated rather than assumed.**
+
+---
+
+### H4 - The last super admin cannot be removed - `PROUVE`
+
+**Cost impact: None.**
+
+`assertNotLastSuperAdmin` in `users.service.ts`. Four doors, because they do not
+look alike:
+
+| Door | Route                                  | Why it is a door                                                     |
+| ---- | -------------------------------------- | -------------------------------------------------------------------- |
+| 1    | `DELETE /users/:id/roles/ADMIN_GLOBAL` | the obvious one                                                      |
+| 2    | `PATCH /users/:id` with `roleCodes`    | **the one that gets forgotten** - omitting the role reads as an edit |
+| 3    | `POST /users/:id/block`                | a blocked admin cannot log in, so the role administers nothing       |
+| 4    | `DELETE /users/me`                     | the holder locking themselves out                                    |
+
+"Last" is counted over holders who can actually act: `isActive: true`,
+`deletedAt: null`, excluding the target. A demotion of one admin among several is
+untouched.
+
+**Live, against the running API, after reducing the holders to one through the
+real endpoints** (both of those revocations returned 200, so the guard is not
+simply refusing everything):
+
+```
+DOOR 1  DELETE /users/:id/roles/ADMIN_GLOBAL   HTTP 409
+  -> Refused: <id> is the last active ADMIN_GLOBAL, and revoking the role would
+     leave the system with no super admin. Grant ADMIN_GLOBAL to another active
+     account first.
+DOOR 2  PATCH /users/:id {"roleCodes":["CLIENT"]}  HTTP 409  ... replacing the role set ...
+DOOR 3  POST /users/:id/block                      HTTP 409  ... blocking the account ...
+DOOR 4  DELETE /users/me                           HTTP 409  ... deleting the account ...
+
+afterwards: account 2 | ADMIN_GLOBAL | isActive t | not deleted t
+
+then: grant ADMIN_GLOBAL to a second account   HTTP 200
+      the same DELETE that was refused a moment ago   HTTP 200
+```
+
+**Mutations** (`npx nx test api --testPathPatterns=users.service`, baseline 46 passed):
+
+| #   | Mutation                                                    | Result                                                                                                          |
+| --- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 6   | guard removed from `removeRole`                             | 2 failed / 44 passed - both door-1 assertions, which share the precondition                                     |
+| 7   | guard removed from `adminUpdate`                            | 1 failed / 45 passed                                                                                            |
+| 8   | guard removed from `blockUser`                              | 1 failed / 45 passed                                                                                            |
+| 9   | guard removed from `deleteMe`                               | 1 failed / 45 passed                                                                                            |
+| 10  | holder count stops excluding blocked and soft-deleted rows  | 1 failed / 45 passed - isolates the third door-1 assertion                                                      |
+| 11  | guard stops asking whether the target holds the role at all | 4 failed / 42 passed - the new "ordinary user" test **and three pre-existing tests** for the same three methods |
+
+Mutation 11 is recorded as it ran rather than as it was hoped: it does **not**
+isolate the new assertion. The three others that fall with it are the existing
+`deleteMe`, `blockUser` and `adminUpdate` tests, which is worth knowing - they
+were already load-bearing for that early return.
+
+---
+
+### A7 - Inventory the gap between the codebase and the standards - `DECIDE, A FAIRE`
+
+**Cost impact: None.** Read-only.
+
+A pass over both repositories, file by file, listing where existing code does not
+meet the standards in `CLAUDE.md`: mechanisms that report success by saying
+nothing, async calls in a `map` without `await`, role codes as bare strings,
+assertions with more tails than mutations, tests that pin a defect rather than a
+requirement, flags nobody reads.
+
+**Its output is a list, not a set of fixes.** The point is that the debt becomes
+visible and finite rather than discovered one incident at a time. Fixes are
+scheduled against the list afterwards, and the standing rule in the meantime is
+the bounded one: the file you touch comes up to standard with your change.
+
+**Swept on 2026-09-06. Output:
+[`docs/ops/a7-standards-inventory.md`](a7-standards-inventory.md).**
+
+Six findings, none of them fixed by the pass that found them:
+
+| #    | What                                                                                                                                       |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `W1` | `notifyAgentDocumentUploaded` skips the notification silently when the agent lookup fails - the commission defect's shape, at lower stakes |
+| `W2` | two client lookups whose failure is indistinguishable from "no preference stated"                                                          |
+| `W3` | `--seed` passed to a script with no `process.argv` - already open as the `H2` follow-up, repeated as the archetype                         |
+| `W4` | the register cited `docs/adr/ADR-005` unqualified; there are two ADR-005s and this one is the infra one - **closed on sight**              |
+| `W5` | the register cited `scripts/smoke-test.sh`, which lives in `kambriq-infra` - **closed on sight**                                           |
+| `W6` | eight test blocks with six or more tails - candidates for missing mutations, not proof of any                                              |
+
+**`W4` and `W5` were closed in this PR rather than scheduled.** Both are one-word
+cross-reference fixes in this file, and this file was already being edited by the
+PR that found them - which is the boy-scout rule in `CLAUDE.md` section 2 meeting
+its first real opportunity on the day it was written. **A rule whose first
+application is deferred is a rule nobody believes.** They stay listed in the
+inventory, marked closed: an inventory records the gap, it does not pretend the
+gap was never there.
+
+The other four are listed and untouched. `W1` and `W2` need a decision rather
+than a patch, `W3` is already open as the `H2` follow-up, and `W6` is a candidate
+list that only a mutation can resolve.
+
+**Seven classes checked and clean**, stated because a class nobody checked and a
+class with nothing in it look identical in a report that only lists findings.
+Notably: all 11 async `.map()` sites sit inside `Promise.all`, verified one at a
+time; 0 of 250 Terraform variables lack a description; 0 of 40 taggable resources
+lack tags.
+
+**And two defects in the sweep itself, kept rather than tidied away.** The
+assertion counter first reported 16 tails on a block that has four - its regex
+ran to the end of the enclosing `describe`, so blocks inherited assertions from
+their children, and the worst offender it named was a test written that morning.
+The Terraform tag sweep first reported four untagged resources, all four of them
+AWS types that take no tags. **A number produced by a broken measurement is not a
+smaller version of the right number.**
+
+**What the sweep cannot close, and says so in its own first section:** whether a
+mutation was ever run for a given assertion tail, and whether a test pins a
+defect rather than a requirement. Neither is in the tree. `grading-processor.spec.ts`
+was found by reading the requirement, and nothing about this pass would have
+found it.
+
+---
+
+### H2 follow-up - the seed step in `deploy-dev.yml` has never seeded anything - `A DECIDER`
+
+**Cost impact: None to fix.** Found while wiring the bootstrap into the same
+workflow.
+
+`deploy-dev.yml` runs the opt-in seed as
+`node prisma/run-migrations.js --seed`. **`prisma/run-migrations.js` never reads
+`process.argv`, and the string `seed` does not appear in it.** It runs
+`ensureDatabases()` and `runMigrations()` and exits 0. So the step runs the
+migrations a second time, reports success, and seeds nothing - under a step named
+"Run database seed".
+
+Nothing has been broken by it, because the seed has been run by other means. What
+is broken is the belief that this step does anything.
+
+The bootstrap is therefore invoked directly
+(`npx tsx prisma/bootstrap-admins.ts`) and not through a flag on that script.
+
+**Arbitration needed:** make `run-migrations.js` read the flag, or drop the
+`--seed` argument and call `tsx prisma/seed.ts` directly the way the bootstrap
+does. Not decided here.
+
+---
 
 ### D3 - The four Prisma baselines were deleted by a docs commit - `EN COURS`
 
@@ -478,9 +893,14 @@ buy, and dev holds no data anybody would mourn.
 
 **This must be revisited the moment prd exists.** Prd will hold data that is not
 reproducible from a seed script, and every argument above stops applying on the
-day the first real user account is created. `docs/adr/ADR-005` is the prd
+day the first real user account is created.
+`kambriq-infra/docs/adr/ADR-005-production-automation-prerequisites.md` is the prd
 bootstrap document; the retention period belongs on that checklist as an explicit
 decision rather than a default carried over from dev.
+
+**Named in full because there are two ADR-005s.** In this repository `ADR-005` is
+_E2E Testing with Playwright_, so the bare reference this line used to carry sent
+the reader to the wrong document and nothing told them so.
 
 **Cost: none — it is a saving**, roughly the snapshot storage of a 20 GB gp3
 volume, and it is deliberate rather than absent.
@@ -601,7 +1021,7 @@ before prd sends anything, independently of cost.
 | C1    | Coverage measured only over files a test already imported; `apps/web` never ran in CI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | webapp #37                             | api 70.8% → **29.8%** (16 of 60 files were measured); four modules at 0.0%                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | None                                                                |
 | D1    | Prisma baseline: four dev databases under Migrate, `db push --accept-data-loss` unreachable                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | webapp #34 #35 #36                     | `migrate deploy` ×4, "No pending migrations" ×4, no `db push`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | None                                                                |
 | A1    | e2e uploaded an empty report every run while reporting green                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | webapp #32                             | `playwright-report` 207 530 bytes, was absent                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | None                                                                |
-| A2    | `scripts/smoke-test.sh` died on its first passing check under `set -e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | infra #15                              | 8 passed / 0 failed under the CI OIDC role                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | None                                                                |
+| A2    | `kambriq-infra/scripts/smoke-test.sh` died on its first passing check under `set -e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | infra #15                              | 8 passed / 0 failed under the CI OIDC role                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | None                                                                |
 | L1    | The SES MessageId was logged in a metadata object that `nestjs-pino` drops                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | webapp #41                             | Mutation: restoring the object form fails 1 of 30 tests                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | None                                                                |
 | E2    | Five variables were read through `config.get(key, default)` and declared in no schema: `FRONTEND_URL`, `EMAIL_FROM`, `EMAIL_FROM_NAME`, `AWS_S3_BUCKET`, `AWS_S3_REGION`. `validateEnv` exits on a bad value, which reads as though the environment is checked - it only checks what the schema names, and a default is what stops you finding out. `FRONTEND_URL` builds every transactional email link and falls back to `http://localhost:3001`. **Journey 1 cannot catch it**: its regex is `/verify-email\?token=([0-9a-f]{64})/`, which matches the path and the token and never the host. `.env.example` separately still declared `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` (the `S1` gate), pinned `eu-west-3`, and omitted both transport switches, so a fresh clone defaulted to `EMAIL_TRANSPORT=ses` and sent real mail from localhost | webapp, branch `fix/env-contract-gaps` | `env-vars-declared.spec.ts` scans both trees for `config.get` and `process.env` reads and fails on any key absent from `envSchema`. Mutation-proved three ways, each watched failing on its own: (1) an added `config.get('KAMBRIQ_MUTATION_KEY')` fails only the last assertion, naming key and file; (2) line-anchoring the regex drops `AWS_SES_CONTACT_LIST_NAME`, failing the multi-line assertion - so the multi-line claim is demonstrated, not asserted; (3) deleting `FRONTEND_URL` from the schema fails two assertions and names both call sites. Suite 510 green, typecheck and lint clean. **Limit, stated:** this proves the variable is declared, never that its deployed value is right - that lives in the `kambriq-infra` task definition and nothing in this repo can read it                                                                                                                                                                                                                              | None                                                                |
 

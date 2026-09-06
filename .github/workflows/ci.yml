@@ -217,7 +217,7 @@ jobs:
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
 
-  # -- The four delivery journeys, against deployed dev -------------------------
+  # -- The delivery journeys, against deployed dev ------------------------------
   #
   # These are the journeys the delivery is defined by. They ran by hand on
   # 2026-09-04, which means once, by one person, on one build - nothing stopped
@@ -246,7 +246,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run the four journeys
+      - name: Run the delivery journeys
         run: pnpm test:journeys
         env:
           KAMBRIQ_API_URL: ${{ vars.KAMBRIQ_API_URL || 'https://dev.kambriq.com/api/v1' }}

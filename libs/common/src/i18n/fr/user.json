@@ -8,7 +8,8 @@
   "unblockSuccess": "Utilisateur débloqué avec succès",
   "password": {
     "incorrectCurrent": "Le mot de passe actuel est incorrect",
-    "changeSuccess": "Mot de passe modifié avec succès"
+    "changeSuccess": "Mot de passe modifié avec succès",
+    "notSet": "Aucun mot de passe n'a été défini sur ce compte. Utilisez le lien de réinitialisation envoyé à votre adresse email."
   },
   "email": {
     "sameAsCurrent": "La nouvelle adresse email doit être différente de l'adresse actuelle",

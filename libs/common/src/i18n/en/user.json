@@ -8,7 +8,8 @@
   "unblockSuccess": "User unblocked successfully",
   "password": {
     "incorrectCurrent": "Current password is incorrect",
-    "changeSuccess": "Password changed successfully"
+    "changeSuccess": "Password changed successfully",
+    "notSet": "No password has been set on this account. Use the password reset link sent to your email address."
   },
   "email": {
     "sameAsCurrent": "New email address must differ from the current one",

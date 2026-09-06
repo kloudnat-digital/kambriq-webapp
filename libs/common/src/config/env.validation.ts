@@ -39,6 +39,18 @@ export const envSchema = z.object({
   // eu-west-3 was a copy-paste default that never matched any deployment.
   AWS_REGION: z.string().default('eu-central-1'),
 
+  // ----- Bootstrap (prisma/bootstrap-admins.ts) -----
+  // The SSM path the super-admin bootstrap reads its two identities from, e.g.
+  // '/kambriq/dev/api/bootstrap'. Sits under the prefix the API task role
+  // already has ssm:GetParameter on (/kambriq/{env}/api/*), so no IAM change.
+  //
+  // Optional here and REQUIRED by the script, deliberately. The API never reads
+  // it, so making the API refuse to start without it would be a false coupling;
+  // the script refuses to run without it, and names it in the error. Declared
+  // all the same, because a variable read by this repo and declared nowhere is
+  // the defect env-vars-declared.spec.ts exists to catch.
+  BOOTSTRAP_SSM_PREFIX: z.string().optional(),
+
   // ----- SES Contact Lists -----
   // Must match the aws_sesv2_contact_list resource in kambriq-infra
   // (envs/dev/ses-newsletter.tf). Coupled by convention only.

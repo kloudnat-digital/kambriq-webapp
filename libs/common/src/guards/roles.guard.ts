@@ -2,40 +2,7 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators';
 import { RequestUser } from '../types/user-payload.type';
-import { RoleCode } from '../types/roles.enum';
-
-/**
- * Role hierarchy - each role implicitly includes all roles below it.
- *
- * ADMIN_GLOBAL > ADMIN_LANDS > AGENT > CLIENT
- *
- * Product-specific admin roles (ADMIN_KBS, ADMIN_KAMNET) are lateral -
- * they do not inherit from each other or from ADMIN_LANDS.
- */
-const ROLE_HIERARCHY: Partial<Record<RoleCode, RoleCode[]>> = {
-  [RoleCode.ADMIN_GLOBAL]: [
-    RoleCode.ADMIN_LANDS,
-    RoleCode.ADMIN_KBS,
-    RoleCode.ADMIN_KAMNET,
-    RoleCode.AGENT,
-    RoleCode.CLIENT,
-    RoleCode.KCA_CERTIFIED,
-    RoleCode.CANDIDATE_KBS,
-  ],
-  [RoleCode.ADMIN_LANDS]: [RoleCode.AGENT, RoleCode.CLIENT],
-  [RoleCode.ADMIN_KBS]: [RoleCode.CANDIDATE_KBS],
-  [RoleCode.AGENT]: [RoleCode.CLIENT],
-};
-
-/** Returns the full set of effective roles for the given assigned roles. */
-function effectiveRoles(assigned: string[]): Set<string> {
-  const result = new Set<string>(assigned);
-  for (const role of assigned) {
-    const implied = ROLE_HIERARCHY[role as RoleCode] ?? [];
-    for (const r of implied) result.add(r);
-  }
-  return result;
-}
+import { effectiveRoles } from '../types/role-hierarchy';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
