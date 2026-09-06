@@ -56,6 +56,37 @@ export const envSchema = z.object({
   // credentials happened to be absent, which on Fargate is always, so the
   // application silently sent nothing for months while reporting success.
   EMAIL_TRANSPORT: z.enum(['ses', 'console']).default('ses'),
+
+  // ----- S3 bucket -----
+  // Read by StorageService, which throws its own error when STORAGE_TRANSPORT
+  // is 's3' and either of these is empty. The empty default is deliberate: it
+  // keeps STORAGE_TRANSPORT=disabled a valid configuration with no bucket at
+  // all, and leaves the "which transport did you ask for" message where it is
+  // rather than splitting it across two files.
+  AWS_S3_BUCKET: z.string().default(''),
+  AWS_S3_REGION: z.string().default(''),
+
+  // ----- Email sender -----
+  // Read by EmailProcessor when it hands the message to SES.
+  EMAIL_FROM: z.email().default('noreply@kambriq.com'),
+  EMAIL_FROM_NAME: z.string().min(1).default('KAMBRIQ Team'),
+
+  // ----- Frontend origin -----
+  // Every link in every transactional email is built from this: verification,
+  // password reset, email change, client portal invite. A wrong value here is
+  // invisible from every side except the recipient's - the send succeeds, SES
+  // delivers, and the link points at nothing.
+  //
+  // Journey 1 cannot catch it. Its regex is
+  // `/verify-email\?token=([0-9a-f]{64})/`, which matches the path and the
+  // token and never the host, so `http://localhost:3001/verify-email?token=...`
+  // passes the journey and fails the user. This is the same shape as A3: the
+  // token was `[object Promise]` for months while every shallow check agreed.
+  //
+  // Validating the format is all this can honestly do. It is NOT a guarantee
+  // the value is right for the environment - only the deployed task definition
+  // in kambriq-infra knows that, and nothing in this repo can read it.
+  FRONTEND_URL: z.url().default('http://localhost:3001'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
