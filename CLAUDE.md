@@ -142,6 +142,57 @@ certification exam.
 **A degraded path must be an explicit setting (`EMAIL_TRANSPORT=console`), never
 an inference from absent configuration.**
 
+### Failing loudly and failing early are two different properties
+
+A step that must fail the pipeline when it fails should sit **as late as its
+dependencies allow**.
+
+The bootstrap step was placed immediately after the migrations, because it needs
+them. Loudness was the design and remains it: an environment deployed without an
+administrator is not a successful deployment, so the step exits non-zero and
+takes the run with it. But early placement bought nothing and cost everything -
+when its postcondition refused two accounts, it blocked **every other step**:
+both service deployments, the seed, the smoke test, both version checks.
+
+dev stayed on the previous build. **Including the branch that fixed the very
+defect that was blocking it** - the fix could not deploy, because the thing it
+fixed would not let anything deploy. A pipeline that cannot ship its own remedy
+is a pipeline with a single point of failure it put there itself.
+
+The step depends on the migrations and on nothing else. Nothing downstream reads
+what it writes; the smoke test does not, the version checks do not, the journeys
+create their own accounts. So it belongs after both services are deployed and
+before the smoke test - **same behaviour on failure, no hostage**.
+
+**The general rule.** When placing a step that can fail the run, ask two separate
+questions and do not let the answer to one decide the other:
+
+1. _must it fail the pipeline?_ - about consequence;
+2. _what actually depends on it?_ - about position.
+
+"It is important, so it goes first" conflates them. Importance argues for the
+first; only a real dependency argues for the second. The order is pinned in
+`image-carries-seed-deps.spec.ts`, because moving it back is a one-line edit that
+looks like tidying.
+
+### A postcondition that asserted the history of a fact rather than the fact
+
+The bootstrap verified that the super-admin grant had `grantedBy = 'bootstrap'`.
+A role that had been revoked by a mis-aimed test and restored through the
+ordinary admin route carries the acting administrator's id instead - **correctly;
+that is what the column is for**. The next deploy's bootstrap refused the whole
+environment, and would have refused every deploy from then on.
+
+The account was in exactly the state the bootstrap exists to produce. The
+postcondition read the provenance and called it a failure, which made the
+remediation path for a missing role into the thing that permanently broke the
+mechanism that maintains it.
+
+**Assert the state you require, not the route by which it arrived.** Provenance
+is worth checking only about work the run itself did - `grantedBy` is now
+asserted only for accounts that run created, where it says something about this
+run rather than about everything that has ever happened to the row.
+
 ### A false witness: a broken mechanism that looked like it worked
 
 **The sharpest entry here, and the one that nearly cost a day.**

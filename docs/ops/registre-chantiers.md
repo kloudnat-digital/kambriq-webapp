@@ -123,6 +123,7 @@ listed here first.
 | `H7`             | `PROUVE`          | nothing tested the bootstrap's role assignment - journey 5 granted it to itself. Decision extracted and covered, 11 tests, 3 mutations              |
 | `H8`             | `EN COURS`        | the bootstrap sent no email; a stray test made it look as though it had. Fixed and proven locally; pending the re-send to `contact@` on dev         |
 | `H8` follow-up   | `A DECIDER`       | per-address SES delivery is not observable: no configuration set, no event destination. Needed to answer "did THIS address receive it"              |
+| `H9`             | `PROUVE`          | the bootstrap's provenance check failed a whole deploy and skipped every later step. Postcondition scoped; step moved after the web deploy          |
 
 ### H1 - `ADMIN_GLOBAL` **is** the super admin - `PROUVE`
 
@@ -559,6 +560,76 @@ unilaterally: it crosses into the other repository.
 
 The manual runbook does not have this gap - it fetches the log and requires the
 tally - so the one-off path already checks what the automated path does not.
+
+---
+
+### H9 - the bootstrap blocked the whole deploy on a provenance check - `PROUVE`
+
+**Cost impact: None.** One condition and a step moved.
+
+Run `34045263431`, building `1a8aa64` (the squash merge of #79), failed at
+**Bootstrap super-admin accounts**, exit 1. **Every step after it was skipped** -
+the seed, both service deployments, the smoke test and both version checks - and
+dev stayed on the previous build.
+
+**The reason, from the task's own stream** (`d4b7cc77a5a24c60bec379b44e35250e`),
+not from the workflow, which prints only `Bootstrap task failed with exit code 1`:
+
+```
+  [admin1] unchanged visquis.miaffossa@kambriq.com  (no write issued)
+  [admin2] unchanged contact@kambriq.com  (no write issued)
+Bootstrap postcondition failed:
+  visquis.miaffossa@kambriq.com: grantedBy is 00000000-0000-4000-8000-b00000000001, expected bootstrap
+```
+
+**It is the restoration.** `H6` restored the revoked role through the ordinary
+admin route, which records the acting administrator's id - `…b00000000001`,
+`admin@kambriq.com` - and that is what `grantedBy` is for. The postcondition
+asserted the string `bootstrap` unconditionally, so it refused, and would have
+refused every deploy from then on. **The remediation for a missing role became
+the thing that permanently broke the mechanism that maintains it.**
+
+**Both candidates checked explicitly, and neither is the cause.**
+
+| Candidate                                         | Verdict                                                                                                                                                                                           |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| the `created`-scoped `passwordHash` postcondition | **Present** in the deployed commit - `git show 1a8aa64:prisma/bootstrap-admins.ts` line 323, `created.has(email) && user.passwordHash !== null`. It did not fire                                  |
+| the deploy running inside the no-role window      | **No.** Role revoked 15:44:21, restored 16:05:26, bootstrap task ran **16:33:08** - 27 minutes after. The row held the role, `hadRole` was true, and the update branch correctly planned no grant |
+
+The failing assertion is a third one in the same `verify()`, and it is the one
+that was never scoped.
+
+**The fix: assert the fact, not its history.** The postcondition is that the
+account **holds** the role. `grantedBy` is still checked, but only for a grant
+this run wrote - about this run's own behaviour rather than about everything that
+has happened to the row since.
+
+**The design correction, which is Visquis's and not a consequence of the log.**
+The step moves to **after `Deploy Web to ECS`, before the smoke test**. It still
+fails the deploy - that is the point and it stays - but it no longer holds the
+application hostage. It depends on the migrations and on nothing else; nothing
+downstream reads what it writes.
+
+**Failing loudly and failing early are two different properties**, and placing it
+first conflated them. Kept in `CLAUDE.md` as the general rule, which is worth more
+than the fix: _must it fail the pipeline_ is about consequence, _what depends on
+it_ is about position, and "it is important so it goes first" answers the second
+with the first.
+
+Order and loudness are both pinned in `image-carries-seed-deps.spec.ts`, each
+mutated and watched failing alone:
+
+| Mutation                                          | Result                                                   |
+| ------------------------------------------------- | -------------------------------------------------------- |
+| the step is moved back before the service deploys | 1 failed / 7 passed. `Expected: > 10689, Received: 7608` |
+| the step stops failing the deploy                 | 1 failed / 7 passed                                      |
+
+**The two suites were gated, not disabled** - checked because a skipped suite and
+a passing suite look alike in the sidebar. `Delivery journeys (dev)` and
+`E2E Tests (dev)` both carry `needs: [deploy-dev]`, and their
+`if: github.event_name == 'push' && github.ref == 'refs/heads/develop'` was
+satisfied on that run. They were skipped because the deploy failed, which is the
+gate working.
 
 ---
 

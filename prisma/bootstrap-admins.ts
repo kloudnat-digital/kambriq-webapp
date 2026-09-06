@@ -431,9 +431,34 @@ async function verify(created: Set<string>, emails: string[]): Promise<void> {
       continue;
     }
     const grant = user.userRoles.find((ur) => ur.role.code === SUPER_ADMIN_ROLE);
-    if (!grant) problems.push(`${email}: does not hold ${SUPER_ADMIN_ROLE}`);
-    else if (grant.grantedBy !== GRANTED_BY) {
-      problems.push(`${email}: grantedBy is ${String(grant.grantedBy)}, expected ${GRANTED_BY}`);
+
+    /**
+     * The postcondition is that the account **holds** the role. Not who last
+     * granted it.
+     *
+     * `grantedBy` used to be asserted unconditionally, and it failed a deploy.
+     * The role had been revoked by a mis-aimed test and restored through the
+     * ordinary admin route, which records the acting administrator's id -
+     * correctly; that is what the column is for. The next bootstrap run refused
+     * the whole environment because the provenance was not the string
+     * `bootstrap`, and would have refused every run for ever after.
+     *
+     * **A postcondition asserted the history of a fact rather than the fact.**
+     * The account was in exactly the state the bootstrap exists to produce, and
+     * the check called it a failure - so the remediation for a missing role was
+     * also the thing that permanently broke the mechanism that maintains it.
+     *
+     * `grantedBy` is still checked, but only for a grant **this run wrote**,
+     * where it is an assertion about this run's own behaviour rather than about
+     * everything that has happened to the row since.
+     */
+    if (!grant) {
+      problems.push(`${email}: does not hold ${SUPER_ADMIN_ROLE}`);
+    } else if (created.has(email) && grant.grantedBy !== GRANTED_BY) {
+      problems.push(
+        `${email}: this run created the account but grantedBy is ` +
+          `${String(grant.grantedBy)}, expected ${GRANTED_BY}`,
+      );
     }
     // Only for an account this run created. On any later run the holder may
     // have set their own password through the reset flow, and asserting the
