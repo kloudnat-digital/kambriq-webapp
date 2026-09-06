@@ -1,5 +1,5 @@
 /**
- * Shared helpers for the four delivery journeys.
+ * Shared helpers for the delivery journeys.
  *
  * These run against a **deployed** environment, not a local process. That is the
  * point: every defect this week that mattered was invisible to unit tests and

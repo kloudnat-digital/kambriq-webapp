@@ -142,6 +142,35 @@ certification exam.
 **A degraded path must be an explicit setting (`EMAIL_TRANSPORT=console`), never
 an inference from absent configuration.**
 
+### A record that overstates its own uncertainty
+
+The `H2` register entry flagged three values as inferred when only one was. The
+brief had quoted both email local parts; the only thing actually read into it was
+the TLD, `comp` for `com`. Two correct values were made to look doubtful, and the
+one genuine invention - a surname the schema required and the brief never gave -
+was buried among them.
+
+**Hedging is not free and it is not neutral.** It reads as care, which is why it
+survives review, and it costs exactly what a false claim costs: somebody
+re-checks what was already right, and the flag that was real gets the same weight
+as the two that were not. A record misleads in both directions.
+
+**Mark what you inferred, and only what you inferred.** If three things are
+uncertain, say three. If one is, say one, and say which.
+
+### A key you can still correct is not the same as a field you can still correct
+
+`bootstrap-admins.ts` upserts on email. Every other field is reconciled on the
+next run; **the key is not, because changing it creates a row rather than
+updating one.** A wrong address corrected after the first run leaves a super
+admin at the wrong address, a verification email already sent to it, and a second
+account created by the correction itself.
+
+Nothing here failed - the address was right when it mattered. The rule is kept
+because the cost is asymmetric and the window is short: **a parameter that forms
+an upsert key is corrected before the mechanism that reads it runs, not after.**
+Correcting first costs one command.
+
 ### A flag nobody reads, on a step that reports success
 
 `deploy-dev.yml` has an opt-in seed step that runs
@@ -420,6 +449,24 @@ gets forgotten**: `PATCH /users/:id` with a `roleCodes` list that omits the top
 role reads as an edit and is a removal. Blocking counts because a blocked admin
 cannot log in, so "holders" is counted over `isActive: true, deletedAt: null`.
 
+**A missing or blank bootstrap parameter turns the dev deploy red, and that is
+the design.** `deploy-dev.yml` runs `prisma/bootstrap-admins.ts` unconditionally
+after the migrations and fails the deploy on a non-zero exit. So an incomplete
+`/kambriq/{env}/api/bootstrap/*` stops the release.
+
+That looks like a fragility and is the opposite of one. The alternative is a
+bootstrap that skips an account it cannot configure, and what it skips is an
+**administrator**: the deploy goes green, the platform comes up, and the only
+symptom is somebody discovering months later that an account they were told
+exists never did. **A degraded path must be an explicit setting, never an
+inference from absent configuration** - and there is no setting here, because
+there is no environment that is allowed to have no super admin.
+
+The failure is loud, names every parameter that is missing or empty rather than
+the first, and writes nothing before it aborts. The fix is one
+`aws ssm put-parameter` and a re-run of the workflow. **Do not make this step
+conditional, and do not make it tolerate a partial prefix.**
+
 **`User.passwordHash` is nullable.** A bootstrapped administrator, and a client
 created by a land reservation, exist before anybody has chosen a password. Null
 means "no password has ever been set"; login refuses it with the generic
@@ -477,14 +524,14 @@ ALB, RDS and ElastiCache — all load-bearing.
 
 ## 7. Where things are
 
-| Thing                      | Path                                                              |
-| -------------------------- | ----------------------------------------------------------------- |
-| The four delivery journeys | `apps/api-e2e/src/journeys/` — `pnpm test:journeys`               |
-| Convention guards          | `apps/api/src/__test__/conventions/`                              |
-| Seed and its data          | `prisma/seed.ts`, `prisma/seed-data/`                             |
-| Envelope contract          | `libs/common/src/__test__/interceptors/envelope-contract.spec.ts` |
-| Deployed build identity    | `GET /api/v1/health/version`                                      |
-| The chantier register      | `docs/ops/registre-chantiers.md`                                  |
+| Thing                   | Path                                                              |
+| ----------------------- | ----------------------------------------------------------------- |
+| The delivery journeys   | `apps/api-e2e/src/journeys/` — `pnpm test:journeys`               |
+| Convention guards       | `apps/api/src/__test__/conventions/`                              |
+| Seed and its data       | `prisma/seed.ts`, `prisma/seed-data/`                             |
+| Envelope contract       | `libs/common/src/__test__/interceptors/envelope-contract.spec.ts` |
+| Deployed build identity | `GET /api/v1/health/version`                                      |
+| The chantier register   | `docs/ops/registre-chantiers.md`                                  |
 
 Run against dev with `KAMBRIQ_API_URL`; enforce the gate with `EXPECTED_SHA`.
 

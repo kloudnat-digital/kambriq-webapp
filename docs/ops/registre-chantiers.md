@@ -113,7 +113,7 @@ listed here first.
 | `D3`           | `EN COURS`        | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0 |
 | `H1`           | `PROUVE`          | `ADMIN_GLOBAL` is the super admin; no second role created. ADR-008 + `super-admin.spec.ts`, five mutations quoted below                       |
 | `H2`           | `PROUVE`          | two passwordless super-admin accounts bootstrapped from SSM, idempotent, proven by three runs and a row diff                                  |
-| `H3`           | `EN COURS`        | both accounts reach a 200 login locally; pending proof is the same on dev with the reset link read out of the destination mailbox             |
+| `H3`           | `EN COURS`        | automated as journey 5 on a maildrop address; pending proof is that green on dev, plus both real holders activating by their own hand         |
 | `H4`           | `PROUVE`          | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                       |
 | `A7`           | `DECIDE, A FAIRE` | read-only inventory of the gap between the existing codebase and the standards, file by file. Output is a list, not a set of fixes            |
 | `H2` follow-up | `A DECIDER`       | `deploy-dev.yml` passes `--seed` to `run-migrations.js`, which never reads `process.argv`: the seed step has never seeded anything            |
@@ -268,13 +268,39 @@ regex on `auth.dto.ts` (registration), `lands.dto.ts` and `kamnet.dto.ts`.
 number is a parameter update; widening the regex is a decision about who the
 platform is for.
 
-**Two inferred values, and where to check them.** The brief wrote the domain as
-`@kambriq.comp` and it was read as `@kambriq.com`. Both local parts, and account
-2's surname, are inferences rather than things the brief stated. They live in
-`.../admin1/EMAIL`, `.../admin2/EMAIL` and `.../admin2/LAST_NAME` and are one
-`aws ssm put-parameter --overwrite` away from correct - which is the property the
-SSM design was chosen for. **Read them out of SSM, not out of this file:** the
-values are deliberately not repeated in the repository.
+**Zero inferred values.** Every one of the twelve parameters now holds a value
+Visquis stated. Read them out of SSM, not out of this file: the values are
+deliberately not repeated in the repository.
+
+**Corrected on 2026-09-06, and the correction is about this entry as much as
+about the data.** This paragraph previously listed _three_ uncertain values -
+`admin1/EMAIL`, `admin2/EMAIL` and `admin2/LAST_NAME` - on the grounds that the
+brief had given only the domain. It had given both local parts. **The only thing
+inferred was the TLD**, `comp` read as `com`, and it applied to both addresses
+identically; the local parts were quoted. Account 2's surname was the single
+genuine invention, and `PATCH`-ing three parameters at
+`admin2/{EMAIL,FIRST_NAME,LAST_NAME}` on 2026-09-06 settled it with values
+Visquis wrote out, lowercase as he wrote them.
+
+**Two of the three had been correct all along, and were made to look doubtful.**
+That is the defect worth keeping: a record that overstates its own uncertainty
+misleads in the same way as one that understates it, and it is harder to notice,
+because hedging reads as care. Somebody would have re-checked two values that
+never needed checking, and the cost of that is the credibility of the one flag
+that was real.
+
+**Where the timing mattered.** The bootstrap upserts on email, so `EMAIL` is the
+key. Changing a key does not update a row, it creates a second one - so a deploy
+run against a wrong address would have produced a super admin nobody asked for,
+a verification email sent to it, and a second account on the next correction.
+The correction was therefore applied **before** the merge. In the event
+`admin2/EMAIL` already held the corrected address and the key did not move, so
+nothing had to be reconciled; `FIRST_NAME` and `LAST_NAME` are non-key fields the
+bootstrap reconciles on its next run without creating anything.
+
+The register keeps the sequencing rule rather than the lucky outcome: **a
+parameter that is part of an upsert key is corrected before the mechanism that
+reads it runs, not after.**
 
 ---
 
@@ -305,12 +331,48 @@ account 2  (the address in .../admin2/EMAIL)
 after both:  emailVerified = t,  passwordHash = $2b$12$...  for both rows
 ```
 
-**Pending proof, and what makes it different from the above.** The same two logins
-on dev, with the reset link **read out of the destination mailbox** rather than
-out of the database. A3 is the reason: a send is not a signup, and a token read
-from the row it was written to proves the row, not the delivery. That needs this
-branch deployed, which is what the bootstrap step in `deploy-dev.yml` does on
-merge.
+**Automated as journey 5, on a maildrop address, and never on the two real
+accounts.** `apps/api-e2e/src/journeys/journeys.spec.ts` - a passwordless account
+is created through the reservation path (the only public route that produces
+`passwordHash` null and `emailVerified` false, which is the state the bootstrap
+produces), granted `ADMIN_GLOBAL` **before** it has ever had a password, and then
+activated through `forgot-password` -> `reset-password` with the link **read out
+of the maildrop mailbox**. It ends at a 200 login whose JWT carries
+`ADMIN_GLOBAL` and opens an `ADMIN_GLOBAL`-only route, then revokes the role and
+returns the parcel, both asserted rather than fired and forgotten.
+
+**Why it may never point at a real administrator, and why that is an assertion
+rather than a comment.** The reset token is single-use: `resetPassword` stamps
+`usedAt`. A journey aimed at a real holder's address would request a link,
+consume it, and set a password only the suite knows - so the holder, following
+the link they were sent, would be told the token was already used, on an account
+they have never logged into. **The suite would lock a person out of activating
+their own account and report a pass for doing it.** The first test in the journey
+is therefore a guard on its own target address, run before anything sends mail: a
+rule that lives in a comment is one copy-paste from being gone.
+
+Two things the journey had to be built around, both from the catalogue:
+
+- the mailbox holds **two** valid reset tokens by that point - the reservation
+  invite sent `/auth/set-password?token=` and forgot-password sent
+  `/reset-password?token=`. Both work, so a pattern matching either would
+  activate the account and leave the journey unable to say which path it proved.
+  The pattern matches only `/reset-password`, because H3 is about that one;
+- the admin-only assertion spends the token on `GET /users/roles` rather than
+  `GET /users`, which is known to serialise every row to `{}` while answering 200
+  with a correct `meta.total`. Pointed at that endpoint the assertion would pass
+  and prove nothing.
+
+**Written, not yet run.** Running it now would grant `ADMIN_GLOBAL` on dev and
+consume a parcel against a build that does not contain this branch. Its first run
+is the `Delivery journeys (dev)` job on the deploy after #77 merges.
+
+**Still `EN COURS`, and what is left is deliberately manual.** Journey 5 proves
+the _mechanism_ forever, on a disposable identity. It does not prove that the two
+real holders have activated - that is a one-time act by each of them, using a
+link only they receive, and it is the one part of H3 that must not be automated.
+This entry moves to `PROUVE` when journey 5 is green on dev **and** both real
+accounts have reached a 200 login by their own hand.
 
 One thing the local run showed that the dev run will not: **login refuses a
 bootstrapped account at the `emailVerified` check, before it ever reaches the
