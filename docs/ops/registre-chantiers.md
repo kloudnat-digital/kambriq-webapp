@@ -133,6 +133,7 @@ listed here first.
 | `B3`             | `PROUVE`          | 56 dev parameters against 0 on prd; only 7 injected as secrets, so 49 need an apply to take effect. One confirmed unread, the rest candidates       |
 | `B4`             | `PROUVE`          | 4 journeys: VERIFY does not exist; reactivation and block/unblock never run; 57 identity documents queued for a review that has never run           |
 | `G1`             | `EN COURS`        | payment model in `lands`: BigInt money, 9-state machine, append-only ledger and audit. Pending proof is G8, one payment end to end on dev           |
+| `G2`             | `PROUVE`          | the reference generator: 29-char derived alphabet, mod-29 check character, sequence-backed so collision-free by construction                        |
 
 ### H1 - `ADMIN_GLOBAL` **is** the super admin - `PROUVE`
 
@@ -569,6 +570,87 @@ unilaterally: it crosses into the other repository.
 
 The manual runbook does not have this gap - it fetches the log and requires the
 tally - so the one-off path already checks what the automated path does not.
+
+---
+
+### G2 - the payment reference generator - `PROUVE`
+
+**Cost impact: None.** One sequence in an existing database, one module, no
+dependency.
+
+Specification: `ops_kambriq_paiement-hybride_v01.md`, "La reference de
+paiement". G1 defined the column, its unique index and its format `CHECK`;
+nothing filled it. This fills it.
+
+**The alphabet is derived once**, `A-Z0-9` minus `O 0 I L 1 S 5`, 29 characters.
+One duplicate could not be removed - G1's `CHECK` spells the class in SQL and
+cannot import TypeScript - so a test asserts the two are character-for-character
+identical. **Reported as the one thing in the specification's spirit that could
+not be implemented literally.**
+
+**The check character: a weighted sum modulo 29.** 29 is prime, and that is the
+whole argument. A single wrong character shifts the sum by `w·d`, never zero mod
+a prime larger than both factors. A transposition shifts it by
+`(w_i − w_{i+1})(v_i − v_{i+1})`, and consecutive weights differ by one, so it is
+zero only when the characters are identical - when there is no error to detect.
+Luhn mod N gets the first and misses specific adjacent pairs.
+
+**Detection, measured over 2 000 references:**
+
+| Class                                       | Tested | Caught | Rate       |
+| ------------------------------------------- | ------ | ------ | ---------- |
+| single wrong character                      | 20 000 | 20 000 | **100%**   |
+| transposition within `YYMM`                 | 15 000 | 15 000 | **100%**   |
+| transposition within the body               | 24 131 | 24 131 | **100%**   |
+| transposition across the `YYMM`/body hyphen | 4 816  | 4 654  | **96.64%** |
+
+**The boundary is not total, and the reason is exact.** A character is worth its
+digit value in `YYMM` and its alphabet index in the body - `'2'` is 2 on one side
+and 22 on the other - so a swap changes both values in a way the weighting cannot
+cancel reliably. Most such swaps are caught by the **format** instead, because 22
+of the 29 alphabet characters are letters and a letter in a digit slot is
+refused. The residue needs both characters to be digits, the shift to cancel mod
+29, and a person to transpose across a hyphen - the one place the eye anchors.
+**Recorded as a measured limitation rather than rounded up to 100%.**
+
+**Collision-free by construction.** The body encodes a Postgres sequence value
+through a bijection over the 29^5 space. `nextval` is serialised across
+concurrent transactions and never returns a value twice; a bijection cannot
+collide. **Randomness would have been _unlikely_ to collide, which is a different
+property and not the one asked for.** The bijection also stops consecutive
+references reading as a running count of the month's business.
+
+**When the unique index fires** - only possible if the counter wraps 20 511 149
+values inside one month - `createPayment` retries with a fresh counter, up to
+five times, logging each collision. `P2002` rolls the insert back so nothing
+half-exists. After five it throws `ConflictException` **having created nothing**:
+the payment is refused, not silently made without a reference. Proven by
+mocking `P2002` twice (payment created on the third attempt, three distinct
+references attempted) and permanently (five attempts, nothing created, and a
+different error code passed through untouched rather than swallowed as a
+collision).
+
+**Validation rejects, it never corrects.** `O` is not in the alphabet, so a `0`
+in the body is unambiguous evidence of a typo; mapping it would produce a
+**different valid** reference and attach one person's money to another's payment.
+Case, spaces and hyphens are normalised because they are presentation. The
+restriction is **positional** - a `0` in `YYMM` is January.
+
+**Mutation.** Removing the check-character comparison from `validateReference`:
+**3 failed / 254 passed**; restored, **257 passed**. The three are
+`a single wrong character is always caught`,
+`two adjacent characters transposed is always caught WITHIN a segment`, and
+`says why it refused, because the back office has to tell the caller`.
+
+**Proven against a real database**, not only in tests: the migration applies on a
+scratch database, `nextval` returns `1|2|3`, a generated reference inserts
+successfully against G1's `CHECK`, and `KBQ-2609-O8ZD9-Y` is refused by Postgres
+with `violates check constraint "Payment_reference_format"`.
+
+**Deliberately not built.** The instruction email (`G3`), the back-office screen
+(`G4`), and any extension beyond payments. If a second module ever needs paying
+for, this becomes a platform allocator - G1's entry says why, and it is a
+decision, not a pre-build.
 
 ---
 

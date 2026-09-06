@@ -675,6 +675,49 @@ months every 401/403/404/500 leaked a stack and broke the contract.
 passes on `[{},{},{}]`. So would `Array.isArray`, `data.length`, `meta.total`.
 Use `expectCarriesContent`.
 
+### The payment reference, and why each part of it is what it is
+
+From `G2`. `KBQ-YYMM-XXXXX-C`. This string is dictated over the telephone,
+copied onto a transfer slip by hand, read aloud by a notary and retyped by the
+back office - **it is the only thing tying money that moved outside the platform
+to a payment inside it.** Every decision follows from that.
+
+**The alphabet is derived, not spelled.** 29 characters: `A-Z0-9` minus
+`O 0 I L 1 S 5`, the ones that collide when written and when spoken. Defined once
+in `payment-reference.ts`. One duplicate could not be removed - G1's SQL `CHECK`
+spells the class and cannot import TypeScript - so a test asserts the two are
+character-for-character identical.
+
+**The check character is a weighted sum modulo 29, and 29 being prime is the
+whole argument.** A single wrong character shifts the sum by `w·d`, never zero
+mod a prime larger than both factors; a transposition shifts it by
+`(w_i − w_{i+1})(v_i − v_{i+1})`, and consecutive weights differ by one, so it is
+zero only when the two characters are identical - when there is no error. Luhn
+mod N gets the first property and misses specific adjacent pairs. **A checksum
+that catches neither class is decoration.**
+
+Measured, not asserted: **100% of single-character errors, 100% of transpositions
+within a segment, 96.6% across the `YYMM`/body hyphen.** The boundary is not
+total and the reason is exact - a character is worth its digit value in `YYMM`
+and its alphabet index in the body, so a swap changes both values in a way the
+weighting cannot cancel reliably. Recorded rather than rounded up.
+
+**Collision-free by construction, not by improbability.** The body encodes a
+Postgres sequence through a bijection over the 29^5 space. `nextval` is
+serialised across concurrent transactions; a bijection cannot collide. Random
+generation would have been _unlikely_ to collide, which is a different property.
+G1's unique index remains the **backstop** - it can only fire if the counter
+wraps 20 511 149 values inside one month - and creation retries on it rather than
+losing the payment.
+
+**Validation rejects; it never corrects.** `O` is not in the alphabet, so a `0`
+in the body is unambiguous evidence of a typo. Reading it as `O` would turn a
+mistyped reference into a **different valid** reference and attach one person's
+money to another's payment - the exact failure the check character exists to
+prevent, reintroduced by code trying to be helpful. Case, spaces and hyphens are
+presentation and are normalised; confusable characters are not. The restriction
+is **positional**: a `0` in `YYMM` is January, not a typo.
+
 ### Money, and the three rules that hold it
 
 From `G1`. Enforced, not asked for.

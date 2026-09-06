@@ -1,5 +1,12 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  buildReference,
   assertTransitionAllowed,
   assertTransitionIsDeliberate,
   PaymentChannel,
@@ -31,11 +38,101 @@ export type RecordReceiptInput = {
   note?: string;
 };
 
+/** True for the unique-index violation on `Payment.reference`. */
+const isReferenceCollision = (error: unknown): boolean =>
+  typeof error === 'object' &&
+  error !== null &&
+  (error as { code?: string }).code === 'P2002' &&
+  JSON.stringify((error as { meta?: unknown }).meta ?? '').includes('reference');
+
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
 
   constructor(private readonly prisma: LandsPrismaService) {}
+
+  /**
+   * Creates a payment, with its reference. **There is no path that creates one
+   * without.**
+   *
+   * The reference is assigned here, at creation, and never later - a payment
+   * that exists for even a moment without one is a payment somebody could be
+   * asked to pay against nothing.
+   *
+   * **Collision-free by construction.** The body encodes a Postgres sequence
+   * value, and `nextval` is serialised across concurrent transactions: it never
+   * returns the same number twice. Randomness would have been *unlikely* to
+   * collide, which is a different property and not the one asked for. A
+   * bijection over the 29^5 body space scrambles the appearance so consecutive
+   * payments do not read as a running count of the month's business; a bijection
+   * cannot collide, so it costs nothing.
+   *
+   * **When the unique index fires anyway.** It can only do so if the counter has
+   * wrapped 20 511 149 values inside one month. The insert is retried with a
+   * fresh sequence value, up to `REFERENCE_ATTEMPTS` times. The retry is the
+   * point: a `P2002` rolls the insert back, so nothing half-exists, and the
+   * caller either gets a payment or an error - never a payment without a
+   * reference, and never a silently dropped one.
+   */
+  async createPayment(input: {
+    reservationId: string;
+    amountDue: bigint;
+    currency: string;
+    expiresAt?: Date;
+  }): Promise<{ id: string; reference: string }> {
+    const REFERENCE_ATTEMPTS = 5;
+    const collisions: string[] = [];
+
+    for (let attempt = 1; attempt <= REFERENCE_ATTEMPTS; attempt++) {
+      const reference = buildReference(await this.nextReferenceCounter(), new Date());
+
+      try {
+        const created = await this.prisma.payment.create({
+          data: {
+            reference,
+            reservationId: input.reservationId,
+            amountDue: input.amountDue,
+            currency: input.currency,
+            expiresAt: input.expiresAt ?? null,
+          },
+        });
+
+        this.logger.log('Payment created %o', {
+          paymentId: created.id,
+          reference,
+          reservationId: input.reservationId,
+          attempt,
+        });
+
+        return { id: created.id, reference };
+      } catch (error) {
+        if (!isReferenceCollision(error)) throw error;
+
+        // Loud, and counted. A retry nobody can see is how "it hardly ever
+        // happens" becomes a belief rather than a measurement.
+        collisions.push(reference);
+        this.logger.warn('Payment reference collided, retrying %o', {
+          reference,
+          attempt,
+          reservationId: input.reservationId,
+        });
+      }
+    }
+
+    throw new ConflictException(
+      `Could not allocate a unique payment reference after ${REFERENCE_ATTEMPTS} attempts ` +
+        `(${collisions.join(', ')}). No payment was created. This means the reference counter ` +
+        `has wrapped the body space within one period, which needs a wider body, not a retry.`,
+    );
+  }
+
+  /** The next sequence value. Serialised by Postgres, so never twice the same. */
+  private async nextReferenceCounter(): Promise<number> {
+    const rows = await this.prisma.$queryRaw<
+      { nextval: bigint }[]
+    >`SELECT nextval('payment_reference_seq')`;
+    return Number(rows[0].nextval);
+  }
 
   /**
    * Appends one line to the ledger. Never changes the payment's state.
