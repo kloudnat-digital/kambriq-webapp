@@ -144,52 +144,6 @@ jobs:
             echo "Migration task failed with exit code ${EXIT_CODE}" >&2; exit 1
           fi
 
-      # -- Bootstrap the real super-admin accounts ------------------------------
-      # Runs on every deploy, not opt-in. It is idempotent: a run that finds both
-      # accounts already correct issues no write at all and exits 0. Making it
-      # opt-in would mean an environment could be deployed without an
-      # administrator and nothing would say so.
-      #
-      # Invoked directly rather than through a flag on run-migrations.js. The
-      # seed step below passes `--seed` to that script, which does not read
-      # process.argv at all - so it runs the migrations, exits 0, and seeds
-      # nothing. Recorded in the register; not fixed here.
-      #
-      # Cost: one Fargate task of a few seconds per deploy, under $0.001.
-      - name: Bootstrap super-admin accounts
-        run: |
-          set -euo pipefail
-          OVERRIDES="$(jq -nc --arg name "${CONTAINER_NAME}" --arg prefix "${BOOTSTRAP_SSM_PREFIX}" '{
-            containerOverrides: [{
-              name: $name,
-              command: ["npx", "tsx", "prisma/bootstrap-admins.ts"],
-              environment: [{ name: "BOOTSTRAP_SSM_PREFIX", value: $prefix }]
-            }]
-          }')"
-          TASK_ARN="$(aws ecs run-task \
-            --cluster "${ECS_CLUSTER}" \
-            --launch-type FARGATE \
-            --task-definition "${NEW_TASK_DEF_ARN}" \
-            --network-configuration "awsvpcConfiguration={subnets=[${ECS_SUBNETS}],securityGroups=[${ECS_SECURITY_GROUPS}],assignPublicIp=${ASSIGN_PUBLIC_IP}}" \
-            --overrides "${OVERRIDES}" \
-            --query "tasks[0].taskArn" --output text)"
-
-          if [[ -z "${TASK_ARN}" || "${TASK_ARN}" == "None" ]]; then
-            echo "Failed to start bootstrap task" >&2; exit 1
-          fi
-
-          echo "Waiting for bootstrap task ${TASK_ARN} to complete..."
-          aws ecs wait tasks-stopped --cluster "${ECS_CLUSTER}" --tasks "${TASK_ARN}"
-
-          EXIT_CODE="$(aws ecs describe-tasks \
-            --cluster "${ECS_CLUSTER}" --tasks "${TASK_ARN}" \
-            --query "tasks[0].containers[0].exitCode" --output text)"
-
-          # Read the exit code of the task, not of the pipeline that printed it.
-          if [[ "${EXIT_CODE}" != "0" ]]; then
-            echo "Bootstrap task failed with exit code ${EXIT_CODE}" >&2; exit 1
-          fi
-
       # -- Seed: opt-in only (run_seed=true), first-deploy use-case ------------
       - name: Run database seed
         if: inputs.run_seed == true
@@ -321,6 +275,65 @@ jobs:
                 --output json
             fi
             exit 1
+          fi
+
+      # -- Bootstrap the real super-admin accounts ------------------------------
+      # LAST, and deliberately. It still fails the deploy when it fails - that is
+      # the point and it stays - but it no longer holds the application hostage.
+      #
+      # It used to run immediately after the migrations, before either service
+      # was deployed. A postcondition that refused two accounts then blocked
+      # every other change in the pipeline, including the PR that fixed the very
+      # defect: dev sat on the previous build while the fix could not reach it.
+      #
+      # **Failing loudly and failing early are different properties**, and only
+      # the first was wanted. This step depends on the migrations and on nothing
+      # else, so it sits as late as that allows: after both services are
+      # deployed, before the smoke test. Same behaviour on failure, no hostage.
+      #
+      # Runs on every deploy, not opt-in. It is idempotent: a run that finds both
+      # accounts already correct issues no write at all and exits 0. Making it
+      # opt-in would mean an environment could be deployed without an
+      # administrator and nothing would say so.
+      #
+      # Invoked directly rather than through a flag on run-migrations.js. The
+      # seed step below passes `--seed` to that script, which does not read
+      # process.argv at all - so it runs the migrations, exits 0, and seeds
+      # nothing. Recorded in the register; not fixed here.
+      #
+      # Cost: one Fargate task of a few seconds per deploy, under $0.001.
+      - name: Bootstrap super-admin accounts
+        run: |
+          set -euo pipefail
+          OVERRIDES="$(jq -nc --arg name "${CONTAINER_NAME}" --arg prefix "${BOOTSTRAP_SSM_PREFIX}" '{
+            containerOverrides: [{
+              name: $name,
+              command: ["npx", "tsx", "--tsconfig", "tsconfig.base.json", "prisma/bootstrap-admins.ts"],
+              environment: [{ name: "BOOTSTRAP_SSM_PREFIX", value: $prefix }]
+            }]
+          }')"
+          TASK_ARN="$(aws ecs run-task \
+            --cluster "${ECS_CLUSTER}" \
+            --launch-type FARGATE \
+            --task-definition "${NEW_TASK_DEF_ARN}" \
+            --network-configuration "awsvpcConfiguration={subnets=[${ECS_SUBNETS}],securityGroups=[${ECS_SECURITY_GROUPS}],assignPublicIp=${ASSIGN_PUBLIC_IP}}" \
+            --overrides "${OVERRIDES}" \
+            --query "tasks[0].taskArn" --output text)"
+
+          if [[ -z "${TASK_ARN}" || "${TASK_ARN}" == "None" ]]; then
+            echo "Failed to start bootstrap task" >&2; exit 1
+          fi
+
+          echo "Waiting for bootstrap task ${TASK_ARN} to complete..."
+          aws ecs wait tasks-stopped --cluster "${ECS_CLUSTER}" --tasks "${TASK_ARN}"
+
+          EXIT_CODE="$(aws ecs describe-tasks \
+            --cluster "${ECS_CLUSTER}" --tasks "${TASK_ARN}" \
+            --query "tasks[0].containers[0].exitCode" --output text)"
+
+          # Read the exit code of the task, not of the pipeline that printed it.
+          if [[ "${EXIT_CODE}" != "0" ]]; then
+            echo "Bootstrap task failed with exit code ${EXIT_CODE}" >&2; exit 1
           fi
 
       # -- Smoke test -----------------------------------------------------------

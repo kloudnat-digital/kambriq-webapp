@@ -56,7 +56,7 @@
     "db:reset:lands": "npx prisma migrate reset --config prisma/lands/prisma.config.ts --schema prisma/lands/schema.prisma",
     "db:reset": "pnpm run db:reset:core && pnpm run db:reset:kbs && pnpm run db:reset:kamnet && pnpm run db:reset:lands",
     "db:seed": "tsx prisma/seed.ts",
-    "db:bootstrap": "tsx prisma/bootstrap-admins.ts",
+    "db:bootstrap": "tsx --tsconfig tsconfig.base.json prisma/bootstrap-admins.ts",
     "db:setup": "pnpm run db:migrate:dev && pnpm run db:seed",
     "----- NX -----": "",
     "nx:graph": "npx nx graph",

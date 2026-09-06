@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
@@ -63,6 +63,73 @@ describe('the api image carries what the source-run scripts need', () => {
       }
     },
   );
+
+  it('the image carries tsconfig.base.json, and the bootstrap is invoked with it', () => {
+    /**
+     * `tsx` resolves `tsconfig.json` from the working directory. This repo has
+     * none at the root - only `tsconfig.base.json` - so esbuild falls back to
+     * its defaults, in which `experimentalDecorators` is **false**.
+     *
+     * `prisma/bootstrap-admins.ts` imports `EmailService` to enqueue through the
+     * same path a registration takes, and that class carries
+     * `@InjectQueue(...)`, a parameter decorator. Without both halves of this -
+     * the file in the image and the flag on the command - the script dies with
+     * `Parameter decorators only work when experimental decorators are enabled`,
+     * **in the container, having run clean locally**.
+     *
+     * Both halves are pinned because either one alone is silent: the flag with
+     * no file, or the file with no flag, each fails only at runtime in prd.
+     */
+    expect(DOCKERFILE).toContain('COPY --from=builder /app/tsconfig.base.json ./');
+
+    const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+    expect(pkg.scripts['db:bootstrap']).toContain('--tsconfig tsconfig.base.json');
+
+    const workflow = readFileSync(join(ROOT, '.github', 'workflows', 'deploy-dev.yml'), 'utf8');
+    expect(workflow).toContain('"--tsconfig", "tsconfig.base.json"');
+
+    // And the reason the flag is needed at all: no root tsconfig.json to find.
+    expect(existsSync(join(ROOT, 'tsconfig.json'))).toBe(false);
+    expect(readFileSync(join(ROOT, 'tsconfig.base.json'), 'utf8')).toContain(
+      '"experimentalDecorators": true',
+    );
+  });
+
+  it('the bootstrap step runs after both services are deployed, not before', () => {
+    /**
+     * Loud, and late. Two different properties.
+     *
+     * The step must fail the deploy when it fails - an environment without an
+     * administrator is not a successful deployment. But it used to run
+     * immediately after the migrations, so a postcondition that refused two
+     * accounts blocked every other change in the pipeline, including the PR that
+     * fixed the defect. dev sat on the previous build while the fix could not
+     * reach it.
+     *
+     * It depends on the migrations and on nothing else, so it belongs as late as
+     * that allows. Pinned, because "move it earlier" is a one-line edit that
+     * looks like tidying.
+     */
+    const workflow = readFileSync(join(ROOT, '.github', 'workflows', 'deploy-dev.yml'), 'utf8');
+    const at = (name: string) => workflow.indexOf(`- name: ${name}`);
+
+    for (const name of [
+      'Run Prisma migrations',
+      'Deploy Web to ECS',
+      'Bootstrap super-admin accounts',
+      'Smoke test',
+    ]) {
+      expect(at(name)).toBeGreaterThan(-1);
+    }
+
+    expect(at('Bootstrap super-admin accounts')).toBeGreaterThan(at('Run Prisma migrations'));
+    expect(at('Bootstrap super-admin accounts')).toBeGreaterThan(at('Deploy API to ECS'));
+    expect(at('Bootstrap super-admin accounts')).toBeGreaterThan(at('Deploy Web to ECS'));
+    expect(at('Bootstrap super-admin accounts')).toBeLessThan(at('Smoke test'));
+
+    // And it still fails the deploy. Moving it late must not have made it quiet.
+    expect(workflow).toContain('Bootstrap task failed with exit code');
+  });
 
   it('the bootstrap dependency is a production dependency, so --prod install keeps it', () => {
     // The production stage runs `pnpm install --frozen-lockfile --prod`. A

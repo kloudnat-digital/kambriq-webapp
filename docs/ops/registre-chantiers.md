@@ -121,6 +121,9 @@ listed here first.
 | `H5`             | `PROUVE`          | journey 5's address guard was a detector, not a barrier: it reported and let the run continue into a real inbox. Moved to `beforeAll`               |
 | `H6`             | `PROUVE`          | the same run's `afterAll` revoked a real administrator's role. Every write audited, role restored 16:05:26, guard made structural                   |
 | `H7`             | `PROUVE`          | nothing tested the bootstrap's role assignment - journey 5 granted it to itself. Decision extracted and covered, 11 tests, 3 mutations              |
+| `H8`             | `EN COURS`        | the bootstrap sent no email; a stray test made it look as though it had. Fixed and proven locally; pending the re-send to `contact@` on dev         |
+| `H8` follow-up   | `A DECIDER`       | per-address SES delivery is not observable: no configuration set, no event destination. Needed to answer "did THIS address receive it"              |
+| `H9`             | `PROUVE`          | the bootstrap's provenance check failed a whole deploy and skipped every later step. Postcondition scoped; step moved after the web deploy          |
 
 ### H1 - `ADMIN_GLOBAL` **is** the super admin - `PROUVE`
 
@@ -245,6 +248,12 @@ second run the holder may have set a password, and reconciling that back to the
 parameter store would lock them out of their own account. Identity fields are
 reconciled, and only when they actually differ - `update: {}` would still move
 `updatedAt`, so "no-op" here means no write is issued at all.
+
+**Superseded in part by `H8`.** The unconditional no-op above no longer holds: a
+re-run now re-sends the verification email when the holder is unverified **and**
+has no live link outstanding, which writes a token. It is self-limiting and
+becomes a true no-op again once both accounts are verified. The three-run proof
+above stands for the rows; `H8` carries the proof for the new condition.
 
 **Proven on dev, 2026-09-06, on the deploy of the merge commit `f91289f`.**
 The bootstrap ran as an ECS one-off task from `deploy-dev.yml`, task
@@ -551,6 +560,184 @@ unilaterally: it crosses into the other repository.
 
 The manual runbook does not have this gap - it fetches the log and requires the
 tally - so the one-off path already checks what the automated path does not.
+
+---
+
+### H9 - the bootstrap blocked the whole deploy on a provenance check - `PROUVE`
+
+**Cost impact: None.** One condition and a step moved.
+
+Run `34045263431`, building `1a8aa64` (the squash merge of #79), failed at
+**Bootstrap super-admin accounts**, exit 1. **Every step after it was skipped** -
+the seed, both service deployments, the smoke test and both version checks - and
+dev stayed on the previous build.
+
+**The reason, from the task's own stream** (`d4b7cc77a5a24c60bec379b44e35250e`),
+not from the workflow, which prints only `Bootstrap task failed with exit code 1`:
+
+```
+  [admin1] unchanged visquis.miaffossa@kambriq.com  (no write issued)
+  [admin2] unchanged contact@kambriq.com  (no write issued)
+Bootstrap postcondition failed:
+  visquis.miaffossa@kambriq.com: grantedBy is 00000000-0000-4000-8000-b00000000001, expected bootstrap
+```
+
+**It is the restoration.** `H6` restored the revoked role through the ordinary
+admin route, which records the acting administrator's id - `…b00000000001`,
+`admin@kambriq.com` - and that is what `grantedBy` is for. The postcondition
+asserted the string `bootstrap` unconditionally, so it refused, and would have
+refused every deploy from then on. **The remediation for a missing role became
+the thing that permanently broke the mechanism that maintains it.**
+
+**Both candidates checked explicitly, and neither is the cause.**
+
+| Candidate                                         | Verdict                                                                                                                                                                                           |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| the `created`-scoped `passwordHash` postcondition | **Present** in the deployed commit - `git show 1a8aa64:prisma/bootstrap-admins.ts` line 323, `created.has(email) && user.passwordHash !== null`. It did not fire                                  |
+| the deploy running inside the no-role window      | **No.** Role revoked 15:44:21, restored 16:05:26, bootstrap task ran **16:33:08** - 27 minutes after. The row held the role, `hadRole` was true, and the update branch correctly planned no grant |
+
+The failing assertion is a third one in the same `verify()`, and it is the one
+that was never scoped.
+
+**The fix: assert the fact, not its history.** The postcondition is that the
+account **holds** the role. `grantedBy` is still checked, but only for a grant
+this run wrote - about this run's own behaviour rather than about everything that
+has happened to the row since.
+
+**The design correction, which is Visquis's and not a consequence of the log.**
+The step moves to **after `Deploy Web to ECS`, before the smoke test**. It still
+fails the deploy - that is the point and it stays - but it no longer holds the
+application hostage. It depends on the migrations and on nothing else; nothing
+downstream reads what it writes.
+
+**Failing loudly and failing early are two different properties**, and placing it
+first conflated them. Kept in `CLAUDE.md` as the general rule, which is worth more
+than the fix: _must it fail the pipeline_ is about consequence, _what depends on
+it_ is about position, and "it is important so it goes first" answers the second
+with the first.
+
+Order and loudness are both pinned in `image-carries-seed-deps.spec.ts`, each
+mutated and watched failing alone:
+
+| Mutation                                          | Result                                                   |
+| ------------------------------------------------- | -------------------------------------------------------- |
+| the step is moved back before the service deploys | 1 failed / 7 passed. `Expected: > 10689, Received: 7608` |
+| the step stops failing the deploy                 | 1 failed / 7 passed                                      |
+
+**The two suites were gated, not disabled** - checked because a skipped suite and
+a passing suite look alike in the sidebar. `Delivery journeys (dev)` and
+`E2E Tests (dev)` both carry `needs: [deploy-dev]`, and their
+`if: github.event_name == 'push' && github.ref == 'refs/heads/develop'` was
+satisfied on that run. They were skipped because the deploy failed, which is the
+gate working.
+
+---
+
+### H8 - the bootstrap sent no email, and a stray test made it look as though it had - `EN COURS`
+
+**Cost impact: None.** No resource. One `COPY` line in the image and a flag on
+three invocations.
+
+**The diagnosis, and why it took an afternoon instead of thirty seconds.**
+`prisma/bootstrap-admins.ts` as shipped in `H2` contains **no email code**. It
+creates the rows and stops. The reason nobody noticed is that one of the two
+accounts received a verification mail twenty minutes later - from the mis-aimed
+journey-5 run of `H6`, through `forgot-password`. The log says it plainly:
+`Password reset email sent`.
+
+**An unrelated defect produced exactly the signal we were waiting for.** Not a
+silence to be distrusted - a **false witness**. `contact@kambriq.com`, the
+account the stray run happened not to touch, received nothing, and that silence
+is what closed it. **The control group was accidental.** Kept in `CLAUDE.md` as
+its own entry, because it is a harder shape than the ones already there.
+
+**The fix: the same email the registration path sends, through the same code.**
+
+- the token comes from `issueVerificationToken` in
+  `libs/common/src/auth/verification-token.ts`. It was a private method on
+  `AuthService`, which the image does not carry as source; rather than a second
+  implementation in the script there is now **one implementation and two
+  callers**, and `AuthService.createVerificationToken` delegates to it;
+- the send goes through `EmailService`, constructed directly. Its constructor
+  takes exactly **one** argument - a BullMQ `Queue` - so no Nest container is
+  needed, and from `send()` onward this is byte-for-byte the registration path:
+  same validations, same job name, same queue, same processor, same `verification`
+  template. **A direct SES call here would have been the mistake.**
+
+**The structural obstacle, which was real and is worth recording.** `tsx`
+resolves `tsconfig.json` from the working directory; this repo has none at the
+root, only `tsconfig.base.json`. So esbuild fell back to defaults with
+`experimentalDecorators: false`, and importing `EmailService` - whose constructor
+carries the `@InjectQueue(...)` **parameter** decorator - died with
+`Parameter decorators only work when experimental decorators are enabled`.
+
+It is configuration, not architecture: `--tsconfig tsconfig.base.json` fixes it.
+But **the production image did not carry that file** - the production stage
+copies `prisma/`, `libs/common/src` and `dist/apps/api` and nothing else - so the
+flag alone would have produced a green local run and a dead container. Both
+halves are now pinned by `image-carries-seed-deps.spec.ts`, each mutated and
+watched failing alone:
+
+| Mutation                                      | Result              |
+| --------------------------------------------- | ------------------- |
+| the image stops carrying `tsconfig.base.json` | 1 failed / 6 passed |
+| the npm script drops the flag                 | 1 failed / 6 passed |
+| the workflow drops the flag                   | 1 failed / 6 passed |
+
+**This is the first time a decorated file has been pulled into a source-run
+script**, and it is a new constraint on that architecture. `emitDecoratorMetadata`
+is still unsupported by esbuild - it is not needed here because the service is
+constructed by hand rather than resolved through the container, and anything that
+tries to resolve real DI from a script will fail differently.
+
+**Proven by execution, locally, end to end.** Two generated addresses on the test
+domain that did not exist, a real SES send, and the mail **read out of the
+destination mailbox**:
+
+```
+[admin1] created  bootstrap.probe.a.…@maildrop.cc  role=ADMIN_GLOBAL grantedBy=bootstrap verification-email=queued
+[admin2] created  bootstrap.probe.b.…@maildrop.cc  role=ADMIN_GLOBAL grantedBy=bootstrap verification-email=queued
+2 created, 0 updated, 0 unchanged     EXIT=0
+
+mailbox bootstrap.probe.a.… -> 1 message   subject: Vérifiez votre email KAMBRIQ   token f9e667ac915b9e62…
+mailbox bootstrap.probe.b.… -> 1 message   subject: Vérifiez votre email KAMBRIQ   token 9df538d21420555a…
+
+POST /auth/verify-email with the token from the mailbox -> 200, emailVerified = t
+```
+
+**Re-runs are self-limiting, which is a change to a property `H2` proved.** `H2`
+recorded that a second run issues no write at all. That is now conditional: a
+re-run re-sends **only** when the holder is unverified **and** holds no live
+link. Proven in three runs:
+
+```
+RUN 2  a1 verified, a2 holds a live link   -> 0 created, 0 updated, 2 unchanged, no mail
+RUN 3  a2's link expired (contact@'s exact state)
+       [admin2] re-sent  …  verification-email=queued
+       same id, same role, same grantedBy, tokens_total 1 -> 2
+```
+
+**"The row stays and only the mail is new" - confirmed by running it, not by
+reading it.**
+
+**Pending, and why it cannot be done yet.** The deployed image is `sha-f91289f`,
+which contains neither this script nor `tsconfig.base.json`. **The re-run for
+`contact@kambriq.com` needs this merged and deployed**; it cannot be done from
+here, because dev's database is in private subnets and the only path to it is the
+one-off ECS task built from the image. The pending proof is: the deploy's
+bootstrap step re-sends to `contact@`, and the mail is confirmed received.
+
+**And the check that was asked for is not available.** `AWS/SES` publishes
+`Send`, `Delivery`, `Bounce`, `Complaint` at **account and region level only** -
+there is no recipient dimension, and `list-configuration-sets` returns nothing, so
+no per-message event publishing exists. **"Check Delivery for that address
+specifically" cannot be answered from CloudWatch as configured.** What is
+available: a `Bounce` delta around a single known send, attributable only because
+volume is low, and the recipient confirming. `kambriq.com` MX points at Google
+Workspace, so whether `contact@` resolves to a mailbox, an alias, a group or
+nothing is a Workspace question. **A zero bounce count is evidence the address was
+accepted, not that a person reads it.** An SES configuration set with an event
+destination would close this and is an infra decision - see the follow-up row.
 
 ---
 

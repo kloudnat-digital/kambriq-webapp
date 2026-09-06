@@ -142,6 +142,107 @@ certification exam.
 **A degraded path must be an explicit setting (`EMAIL_TRANSPORT=console`), never
 an inference from absent configuration.**
 
+### Failing loudly and failing early are two different properties
+
+A step that must fail the pipeline when it fails should sit **as late as its
+dependencies allow**.
+
+The bootstrap step was placed immediately after the migrations, because it needs
+them. Loudness was the design and remains it: an environment deployed without an
+administrator is not a successful deployment, so the step exits non-zero and
+takes the run with it. But early placement bought nothing and cost everything -
+when its postcondition refused two accounts, it blocked **every other step**:
+both service deployments, the seed, the smoke test, both version checks.
+
+dev stayed on the previous build. **Including the branch that fixed the very
+defect that was blocking it** - the fix could not deploy, because the thing it
+fixed would not let anything deploy. A pipeline that cannot ship its own remedy
+is a pipeline with a single point of failure it put there itself.
+
+The step depends on the migrations and on nothing else. Nothing downstream reads
+what it writes; the smoke test does not, the version checks do not, the journeys
+create their own accounts. So it belongs after both services are deployed and
+before the smoke test - **same behaviour on failure, no hostage**.
+
+**The general rule.** When placing a step that can fail the run, ask two separate
+questions and do not let the answer to one decide the other:
+
+1. _must it fail the pipeline?_ - about consequence;
+2. _what actually depends on it?_ - about position.
+
+"It is important, so it goes first" conflates them. Importance argues for the
+first; only a real dependency argues for the second. The order is pinned in
+`image-carries-seed-deps.spec.ts`, because moving it back is a one-line edit that
+looks like tidying.
+
+### A postcondition that asserted the history of a fact rather than the fact
+
+The bootstrap verified that the super-admin grant had `grantedBy = 'bootstrap'`.
+A role that had been revoked by a mis-aimed test and restored through the
+ordinary admin route carries the acting administrator's id instead - **correctly;
+that is what the column is for**. The next deploy's bootstrap refused the whole
+environment, and would have refused every deploy from then on.
+
+The account was in exactly the state the bootstrap exists to produce. The
+postcondition read the provenance and called it a failure, which made the
+remediation path for a missing role into the thing that permanently broke the
+mechanism that maintains it.
+
+**Assert the state you require, not the route by which it arrived.** Provenance
+is worth checking only about work the run itself did - `grantedBy` is now
+asserted only for accounts that run created, where it says something about this
+run rather than about everything that has ever happened to the row.
+
+### A false witness: a broken mechanism that looked like it worked
+
+**The sharpest entry here, and the one that nearly cost a day.**
+
+`H2` shipped a bootstrap that creates two administrators and **sends no email at
+all** - it has no email code in it. Nobody noticed, because one of the two
+accounts received a verification mail within twenty minutes of being created.
+
+That mail came from a mis-aimed journey-5 run hitting that address through
+`forgot-password`. The log even says so: `Password reset email sent`. **An
+unrelated defect produced exactly the signal we were waiting for**, on exactly
+one of the two accounts, and the second account's silence read as "not yet"
+rather than "never".
+
+**This is not the usual failure.** A mechanism that reports success by saying
+nothing is a silence you learn to distrust. This was the opposite: a **signal
+from the wrong source**, which is far harder, because the thing you were waiting
+for did arrive. The control group existed only by accident - `contact@` was the
+account the stray test happened not to touch, and its silence is what closed the
+diagnosis.
+
+**What to take from it.** When a signal arrives, attribute it before believing
+it: which component emitted it, at what timestamp, for which subject. Two
+accounts created in the same second behaved differently, and _that asymmetry was
+the evidence_, not the arrival. Had the journey aimed correctly, nobody would
+have received anything and the answer would have taken thirty seconds.
+
+**And the corollary about tests:** a test that produces side effects on shared
+state can supply the evidence for a claim about the product. Journey 5's stray
+run wrote a real reset email into a real inbox and, for twenty minutes, that
+email was the reason we believed the bootstrap sent mail.
+
+### Per-address delivery is not a thing CloudWatch can tell you
+
+`AWS/SES` publishes `Send`, `Delivery`, `Bounce`, `Complaint` and `Reject` as
+**account- and region-level** counters. There is no recipient dimension. Checking
+"did _this address_ receive it" against CloudWatch is not a stricter version of
+checking the total - it is not available at all.
+
+It becomes available only with an SES **configuration set** carrying an event
+destination, and the API sets no `ConfigurationSetName` on any send;
+`list-configuration-sets` returns nothing. Until that exists, the honest signals
+are: a `Bounce` delta around a single known send (usable only because volume is
+low enough to attribute by timing), and the recipient saying so.
+
+`kambriq.com` MX points at Google Workspace, so whether a given local part
+resolves to a mailbox, an alias, a group, or nothing is a Workspace question and
+not an AWS one. **A zero bounce count is evidence the address was accepted, not
+that a person can read it.**
+
 ### dev holds real people's accounts now
 
 **This is the entry that outlives the incident.** Until 6 September 2026 dev held

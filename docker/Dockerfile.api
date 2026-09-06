@@ -65,6 +65,18 @@ RUN mkdir -p libs/common/src/prisma/core-client \
 # being fixed once.
 COPY --from=builder /app/libs/common/src ./libs/common/src
 
+# tsconfig.base.json, because a source-run script needs it at RUNTIME.
+#
+# `tsx` resolves `tsconfig.json` from the working directory and this repo has
+# none at the root, so esbuild falls back to its defaults - in which
+# `experimentalDecorators` is FALSE. `prisma/bootstrap-admins.ts` imports
+# `EmailService`, whose constructor carries `@InjectQueue(...)`, a parameter
+# decorator. Without this file and the `--tsconfig` flag the script dies with
+# "Parameter decorators only work when experimental decorators are enabled" -
+# in the container, having run clean locally, which is the exact class of defect
+# the COPY above was added for.
+COPY --from=builder /app/tsconfig.base.json ./
+
 COPY --from=builder /app/dist/apps/api ./dist/apps/api
 
 # ----- Build metadata -----

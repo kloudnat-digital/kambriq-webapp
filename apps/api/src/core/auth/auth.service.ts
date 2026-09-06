@@ -23,7 +23,6 @@ import {
 } from './dto/auth.dto';
 import {
   DEFAULT_LANGUAGE,
-  EMAIL_TOKEN_EXPIRY_HOURS,
   EmailAlreadyExistsException,
   EmailService,
   GRACE_PERIOD_DAYS,
@@ -32,11 +31,11 @@ import {
   JwtPayload,
   LOCK_DURATION_MINUTES,
   MAX_LOGIN_ATTEMPTS,
-  RESET_TOKEN_EXPIRY_HOURS,
   RoleCode,
   VerificationTokenType,
   comparePassword,
   hashPassword,
+  issueVerificationToken,
   maskEmail,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
@@ -620,31 +619,21 @@ export class AuthService {
     }
   }
 
+  /**
+   * Delegates to `issueVerificationToken` in `libs/common`.
+   *
+   * The body used to live here. `prisma/bootstrap-admins.ts` needs to issue the
+   * same token and cannot import anything under `apps/api/src` - the production
+   * image carries `dist/apps/api` bundled, not this tree as source. Rather than
+   * a second implementation in the script, there is one implementation and two
+   * callers. **Two ways of minting one token is how the two drift**, and the
+   * drift would be invisible until a link stopped working.
+   */
   private async createVerificationToken(
     userId: string,
     type: VerificationTokenType,
   ): Promise<string> {
-    await this.prisma.verificationToken.updateMany({
-      where: { userId, type, usedAt: null },
-      data: { usedAt: new Date() },
-    });
-
-    const expiryHours =
-      type === VerificationTokenType.PASSWORD_RESET
-        ? RESET_TOKEN_EXPIRY_HOURS
-        : EMAIL_TOKEN_EXPIRY_HOURS;
-    const token = crypto.randomBytes(32).toString('hex');
-
-    await this.prisma.verificationToken.create({
-      data: {
-        userId,
-        token,
-        type,
-        expiresAt: new Date(Date.now() + expiryHours * 3_600_000),
-      },
-    });
-
-    return token;
+    return issueVerificationToken(this.prisma, userId, type);
   }
 
   private hashToken(token: string): string {
