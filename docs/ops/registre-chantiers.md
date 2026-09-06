@@ -101,22 +101,22 @@ table: `Z1`, `D2`, `X1` and `X4` carry commands, numbers or reversal steps that
 are longer than a table row and are still needed. Everything genuinely open is
 listed here first.
 
-| Entry          | State             | What it needs                                                                                                                                 |
-| -------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `L2`           | `EN COURS`        | one deployed log line carrying its interpolated metadata, quoted                                                                              |
-| `L3`           | `DECIDE, A FAIRE` | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                              |
-| `F1`           | `A DECIDER`       | coverage ratchet: a floor, and what happens when a PR drops below it                                                                          |
-| `P1`           | `A DECIDER`       | SES contact list, one per account per region — the prd constraint                                                                             |
-| `X2`           | `DECIDE, A FAIRE` | NAT option 2, decided, deliberately unapplied before delivery                                                                                 |
-| `M1`           | `DECIDE, A FAIRE` | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                |
-| `Q1` follow-up | `A DECIDER`       | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing            |
-| `D3`           | `EN COURS`        | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0 |
-| `H1`           | `PROUVE`          | `ADMIN_GLOBAL` is the super admin; no second role created. ADR-008 + `super-admin.spec.ts`, five mutations quoted below                       |
-| `H2`           | `PROUVE`          | two passwordless super-admin accounts bootstrapped from SSM, idempotent, proven by three runs and a row diff                                  |
-| `H3`           | `EN COURS`        | automated as journey 5 on a maildrop address; pending proof is that green on dev, plus both real holders activating by their own hand         |
-| `H4`           | `PROUVE`          | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                       |
-| `A7`           | `DECIDE, A FAIRE` | read-only inventory of the gap between the existing codebase and the standards, file by file. Output is a list, not a set of fixes            |
-| `H2` follow-up | `A DECIDER`       | `deploy-dev.yml` passes `--seed` to `run-migrations.js`, which never reads `process.argv`: the seed step has never seeded anything            |
+| Entry          | State             | What it needs                                                                                                                                  |
+| -------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `L2`           | `EN COURS`        | one deployed log line carrying its interpolated metadata, quoted                                                                               |
+| `L3`           | `DECIDE, A FAIRE` | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                               |
+| `F1`           | `A DECIDER`       | coverage ratchet: a floor, and what happens when a PR drops below it                                                                           |
+| `P1`           | `A DECIDER`       | SES contact list, one per account per region — the prd constraint                                                                              |
+| `X2`           | `DECIDE, A FAIRE` | NAT option 2, decided, deliberately unapplied before delivery                                                                                  |
+| `M1`           | `DECIDE, A FAIRE` | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                 |
+| `Q1` follow-up | `A DECIDER`       | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing             |
+| `D3`           | `EN COURS`        | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0  |
+| `H1`           | `PROUVE`          | `ADMIN_GLOBAL` is the super admin; no second role created. ADR-008 + `super-admin.spec.ts`, five mutations quoted below                        |
+| `H2`           | `PROUVE`          | two passwordless super-admin accounts bootstrapped from SSM, idempotent, proven by three runs and a row diff                                   |
+| `H3`           | `EN COURS`        | automated as journey 5 on a maildrop address; pending proof is that green on dev, plus both real holders activating by their own hand          |
+| `H4`           | `PROUVE`          | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                        |
+| `A7`           | `PROUVE`          | inventory swept 2026-09-06, output in `docs/ops/a7-standards-inventory.md`: 6 findings, 7 classes checked clean, 2 defects in the sweep itself |
+| `H2` follow-up | `A DECIDER`       | `deploy-dev.yml` passes `--seed` to `run-migrations.js`, which never reads `process.argv`: the seed step has never seeded anything             |
 
 ### H1 - `ADMIN_GLOBAL` **is** the super admin - `PROUVE`
 
@@ -455,7 +455,39 @@ visible and finite rather than discovered one incident at a time. Fixes are
 scheduled against the list afterwards, and the standing rule in the meantime is
 the bounded one: the file you touch comes up to standard with your change.
 
-**Not started.** The H PR is open and the instruction was to stop there.
+**Swept on 2026-09-06. Output:
+[`docs/ops/a7-standards-inventory.md`](a7-standards-inventory.md).**
+
+Six findings, none of them fixed by the pass that found them:
+
+| #    | What                                                                                                                                       |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `W1` | `notifyAgentDocumentUploaded` skips the notification silently when the agent lookup fails - the commission defect's shape, at lower stakes |
+| `W2` | two client lookups whose failure is indistinguishable from "no preference stated"                                                          |
+| `W3` | `--seed` passed to a script with no `process.argv` - already open as the `H2` follow-up, repeated as the archetype                         |
+| `W4` | the register cites `docs/adr/ADR-005` unqualified; there are two ADR-005s and this one is the infra one                                    |
+| `W5` | the register cites `scripts/smoke-test.sh`, which lives in `kambriq-infra`                                                                 |
+| `W6` | eight test blocks with six or more tails - candidates for missing mutations, not proof of any                                              |
+
+**Seven classes checked and clean**, stated because a class nobody checked and a
+class with nothing in it look identical in a report that only lists findings.
+Notably: all 11 async `.map()` sites sit inside `Promise.all`, verified one at a
+time; 0 of 250 Terraform variables lack a description; 0 of 40 taggable resources
+lack tags.
+
+**And two defects in the sweep itself, kept rather than tidied away.** The
+assertion counter first reported 16 tails on a block that has four - its regex
+ran to the end of the enclosing `describe`, so blocks inherited assertions from
+their children, and the worst offender it named was a test written that morning.
+The Terraform tag sweep first reported four untagged resources, all four of them
+AWS types that take no tags. **A number produced by a broken measurement is not a
+smaller version of the right number.**
+
+**What the sweep cannot close, and says so in its own first section:** whether a
+mutation was ever run for a given assertion tail, and whether a test pins a
+defect rather than a requirement. Neither is in the tree. `grading-processor.spec.ts`
+was found by reading the requirement, and nothing about this pass would have
+found it.
 
 ---
 
