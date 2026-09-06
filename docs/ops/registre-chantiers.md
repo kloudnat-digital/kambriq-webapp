@@ -735,6 +735,184 @@ rather than assumed.
 
 ---
 
+## Block H — initial RBAC
+
+### H1 — there is no second super admin to create, and there must not be
+
+**ADMIN_GLOBAL already is the super admin.** Read before writing anything, and
+the reading settled it. Three lines decide it:
+
+- `apps/api/src/core/users/users.controller.ts` — `@Post(':id/roles')`,
+  `@Delete(':id/roles/:roleCode')` and `@Patch(':id')` all carry
+  `@Roles(RoleCode.ADMIN_GLOBAL)`. Granting and revoking roles is already
+  restricted to ADMIN_GLOBAL and to nothing else.
+- `apps/api/src/core/users/users.dto.ts:110` — `roleCode: z.string().min(1)`,
+  unconstrained. ADMIN_GLOBAL is an accepted value, so an ADMIN_GLOBAL can
+  already grant ADMIN_GLOBAL.
+- `apps/api/src/core/users/users.service.ts` — `addRole` and `removeRole` apply
+  no restriction on _which_ role may be granted or revoked, so the revoke side
+  works the same way.
+
+So the gap that would justify a SUPER_ADMIN — a top role that cannot appoint its
+own successor — does not exist. **H1 is a documentation and guard task, not a
+role-creation task.** A second all-powerful role beside ADMIN_GLOBAL would be
+two god roles, which is not redundancy: it is a permission model nobody can
+reason about, and the second one drifts out of step with the first the moment a
+permission is added to one of them.
+
+**What did need fixing: ROLE_HIERARCHY was not closed.** `libs/common/src/guards/roles.guard.ts`
+had ADMIN_GLOBAL implying 7 of the 11 roles. STAFF_VERIFY, STAFF_VALUATION and
+PARTNER_GEO were absent. Nothing gates on those three today — verified by grep
+across `apps/api/src`, `libs/common/src` and `prisma` — so the omission is
+currently invisible, which is exactly what makes it a trap: the first endpoint
+to carry `@Roles(RoleCode.STAFF_VERIFY)` would lock out the global
+administrator, and the symptom would be a 403 for the one account that is
+supposed to be able to do everything. All three added, with a comment saying
+why.
+
+Proof: `libs/common/src/__test__/guards/roles.guard.spec.ts` now asserts
+ADMIN_GLOBAL passes a guard demanding each role in turn, driven by
+`it.each(allRoles)` off the enum rather than a written-out list, so a role added
+later is covered without anyone remembering to add it. Guarded against vacuity
+with `expect(allRoles.length).toBeGreaterThanOrEqual(10)` — an `it.each` over an
+empty array passes silently, which is the failure mode this whole register keeps
+finding.
+
+### H4 — the last global administrator, four doors not two
+
+The role can leave an account by four routes, and they do not look alike:
+
+| Door | Call                           | Why it is easy to miss                                                                                            |
+| ---- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| 1    | `deleteMe`                     | The holder removes themselves                                                                                     |
+| 2    | `blockUser`                    | Deactivation, not deletion — the row survives, the access does not                                                |
+| 3    | `removeRole`                   | The obvious one                                                                                                   |
+| 4    | `adminUpdate` with `roleCodes` | **The one that gets forgotten.** It is an update. It removes the role as a side effect of replacing the whole set |
+
+One guard, `assertNotLastSuperAdmin(userId, reason, lang)`, wired at all four.
+It counts _active_ holders (`isActive: true, deletedAt: null`): a blocked
+administrator is not cover, because an account that cannot log in cannot appoint
+a replacement. Removing the last one has no route back — no remaining account
+can grant ADMIN_GLOBAL, and recovery becomes a manual write to the database.
+
+Tests: 9 in `users.service.spec.ts`, including the positive cases — revoking any
+other role, and a replace that keeps ADMIN_GLOBAL, both still work. Assertions
+are on the i18n key rather than on a bare `.toThrow()`, which the rest of that
+file uses and which would pass on a mock misconfiguration as readily as on the
+guard. A further test reads `fr/user.json` and `en/user.json` and asserts both
+keys resolve to distinct, non-trivial text: an untranslated key reaches the
+operator as the raw string `user.lastSuperAdminDelete`, which explains nothing
+and reads as a bug.
+
+Mutations, one per tail, each observed alone — the guard commented out at one
+call site at a time:
+
+| Mutation                | Kills                                                                            |
+| ----------------------- | -------------------------------------------------------------------------------- |
+| line 165, `deleteMe`    | door 1 only                                                                      |
+| line 305, `blockUser`   | door 2 only                                                                      |
+| line 456, `removeRole`  | door 3, **and** the active-holder scoping test — both route through `removeRole` |
+| line 275, `adminUpdate` | door 4 only                                                                      |
+
+**One gap this exposed in the shared mocks.** `apps/api/src/__test__/utils/mocks.ts`
+did not expose `userRole.findFirst`, which the guard calls. Same shape as the
+`kbsCandidate.updateMany` gap: the mock's coverage stopped exactly where the new
+code needed it, so the first run of the new tests failed for a reason that had
+nothing to do with the guard. Added.
+
+### H2 — the bootstrap, and why the identities are not in this repository
+
+`prisma/bootstrap-admins.ts`, run by `npm run db:bootstrap:admins`. **Separate
+from `prisma/seed.ts` on purpose**: the seed is disposable test data with a
+published password (`Test1234!`) and is wiped by `db:reset`. These two accounts
+are real people and must exist in every environment, production included, where
+no seed ever runs.
+
+**The identities live in SSM, one parameter per field**, under the same prefix as
+the rest of the app's parameters — `/kambriq/<env>/api/BOOTSTRAP_ADMIN_<n>_<FIELD>`
+for EMAIL, FIRST_NAME, LAST_NAME, PHONE, ADDRESS, CITY, COUNTRY, plus
+`BOOTSTRAP_ADMIN_COUNT`. Home addresses and personal phone numbers do not belong
+in git: the history is permanent, the repository is shared, and a data inventory
+that has to answer _where does personal data live_ should not have to answer
+_in the source tree, since 2026_. The operational benefit is immediate too — the
+address written as `@kambriq.comp` is a parameter update, not a commit, a review
+and a deployment.
+
+It **fails loudly and never skips**: a missing or blank parameter aborts the run
+and names _every_ missing parameter at once, not the first. Reported one at a
+time, an operator fixes one, re-runs, discovers the next, and a fourteen-field
+bootstrap becomes fourteen round trips. `BOOTSTRAP_ADMIN_COUNT` exists so that an
+empty prefix — wrong region, wrong environment, a policy that denies the read —
+cannot present itself as a successful run that created nothing.
+
+Two constraints found in the schema that the brief should know about:
+
+- **`User.phone` is a single column.** The brief gives two numbers for the first
+  account, +33 and +237. One of them has nowhere to go. Concatenating both into
+  one field would produce a string that no dialler, no SMS gateway and no
+  validator can use, so the script writes one number and this register records
+  that the second has no home. Giving it one is a schema change, and a schema
+  change to the User table is not this block's to make.
+- **`User.passwordHash` is `String`, not `String?`.** "Created without a
+  password" therefore cannot mean a null column. The script writes
+  `!bootstrap-no-password-set`, which bcrypt cannot parse; `compare` resolves
+  `false` for it rather than throwing (verified against `'!'`, `''`,
+  `'$2a$10$invalid'` and the sentinel itself), so login refuses the account with
+  an ordinary 401 and not a 500. The leading `!` is the convention `/etc/shadow`
+  uses for a locked account. Making the column nullable would push a null into
+  every caller of `comparePassword` for the sake of two rows.
+
+Idempotency is keyed on email, and re-running is **deliberately not an update**:
+an existing row is left alone, so a second run cannot reset a password the holder
+has since chosen or undo their `emailVerified`. The only repair a re-run performs
+is granting ADMIN_GLOBAL to an account that exists without it.
+
+**What is proven, and what is not.** The parameter-to-identity logic is split
+into `prisma/bootstrap-admins.identities.ts` so it can be tested without an AWS
+account and without a database: 26 tests, and four mutations each observed alone
+— the missing-parameter report removed (kills every missing and blank case), the
+`.trim()` removed (kills the blank cases _only_, so blank and absent are
+genuinely distinguished), the count check removed, the duplicate-email check
+removed.
+
+**The two-runs-and-diff-row-counts proof has not been run, and this PR does not
+claim it.** No Docker daemon and no local `.env` on this machine, so there is no
+database to run it against; the dev database is reachable only through a
+deployed image, and this block stops at an open PR. The proof to run after merge,
+against dev, gated on the image tag equalling `sha-$(git rev-parse --short HEAD)`
+the way every live proof here is:
+
+```
+SELECT count(*) FROM "User"; SELECT count(*) FROM "UserRole"; SELECT count(*) FROM "UserProfile";
+npm run db:bootstrap:admins    # first run:  +2, +2, +2
+npm run db:bootstrap:admins    # second run:  no change, "already present - no change" twice
+```
+
+Populating the fourteen SSM parameters is an ops step and has not been done:
+writing real people's addresses into AWS is not something to do on inference.
+
+### H3 — nothing to build, and the reason is in the code
+
+Email validation goes through the existing flow. No parallel path for
+administrators, and none is needed:
+
+- `auth.service.ts:141` — login refuses an account whose `emailVerified` is
+  false.
+- `auth.service.ts:443` — `resetPassword` sets `emailVerified: true` in the same
+  transaction that sets the password hash, and the comment above it records why:
+  consuming the token proves control of the mailbox, which is the same evidence
+  `verify-email` accepts.
+
+So a bootstrap account with no password reaches a verified, logged-in state by
+the ordinary route: `POST /auth/forgot-password` → the reset link in the
+mailbox → `POST /auth/reset-password` → `POST /auth/login` answers 200.
+
+**Its proof is blocked on H2's, and on nothing else.** The accounts do not exist
+in any environment yet. The evidence that will count, when they do: the reset
+email read out of the destination mailbox — not inferred from a successful send,
+because A3 established that a send is not a signup — and a 200 from login for
+each of the two addresses afterwards.
+
 ## The habits this register enforces
 
 > **The defect catalogue is section 3 of the brief at the top of this file.** It

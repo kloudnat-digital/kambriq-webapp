@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
 import { RoleCode } from '@kambriq/common';
 import { UsersService } from '../../../core/users/users.service';
@@ -669,6 +671,150 @@ describe('UsersService', () => {
       // The old code carried on: user row created, no role, invite email sent.
       expect(prisma.userRole.create).not.toHaveBeenCalled();
       expect(email.send).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * H4 - the last global administrator cannot be removed, by any door.
+   *
+   * ADMIN_GLOBAL implies every other role and is the only role that can grant or
+   * revoke ADMIN_GLOBAL. Remove the last one and there is no route back: no
+   * remaining account can appoint a replacement, and recovery becomes a manual
+   * database write.
+   *
+   * Four doors, tested separately because they do not look alike. The fourth -
+   * `adminUpdate` with a `roleCodes` list that omits ADMIN_GLOBAL - is the one
+   * that gets forgotten: it is an update, not a deletion, and it removes the role
+   * as a side effect of replacing the set.
+   */
+  describe('the last super admin cannot be removed', () => {
+    const SUPER_ROLE = { id: 'role-sa', code: RoleCode.ADMIN_GLOBAL };
+
+    /** target holds ADMIN_GLOBAL; `holders` = how many ACTIVE accounts hold it. */
+    const arrange = (holders: number, targetHolds = true) => {
+      prisma.role.findUnique.mockResolvedValue(SUPER_ROLE);
+      prisma.userRole.findFirst.mockResolvedValue(
+        targetHolds ? { userId: 'u1', roleId: SUPER_ROLE.id } : null,
+      );
+      prisma.userRole.count.mockResolvedValue(holders);
+    };
+
+    describe('door 1 - the holder deletes their own account', () => {
+      it('refuses when they are the last active holder', async () => {
+        prisma.user.findUnique.mockResolvedValue(buildUser({ id: 'u1' }));
+        arrange(1);
+
+        await expect(service.deleteMe('u1')).rejects.toThrow('user.lastSuperAdminDelete');
+        expect(prisma.user.update).not.toHaveBeenCalled();
+      });
+
+      it('allows it when another active holder exists', async () => {
+        prisma.user.findUnique.mockResolvedValue(buildUser({ id: 'u1' }));
+        arrange(2);
+        prisma.user.update.mockResolvedValue({});
+        prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
+
+        await expect(service.deleteMe('u1')).resolves.toBeDefined();
+        expect(prisma.user.update).toHaveBeenCalled();
+      });
+    });
+
+    describe('door 2 - an administrator blocks the account', () => {
+      it('refuses when they are the last active holder', async () => {
+        prisma.user.findUnique.mockResolvedValue(buildUser({ id: 'u1', isActive: true }));
+        arrange(1);
+
+        await expect(service.blockUser('u1', 'admin-1')).rejects.toThrow(
+          'user.lastSuperAdminDelete',
+        );
+        expect(prisma.user.update).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('door 3 - the role is revoked directly', () => {
+      it('refuses when they are the last active holder', async () => {
+        arrange(1);
+
+        await expect(service.removeRole('u1', RoleCode.ADMIN_GLOBAL)).rejects.toThrow(
+          'user.lastSuperAdminDemote',
+        );
+        expect(prisma.userRole.deleteMany).not.toHaveBeenCalled();
+      });
+
+      it('does not interfere with revoking any other role', async () => {
+        prisma.role.findUnique.mockResolvedValue({ id: 'role-kbs', code: RoleCode.ADMIN_KBS });
+        prisma.userRole.deleteMany.mockResolvedValue({ count: 1 });
+
+        await expect(service.removeRole('u1', RoleCode.ADMIN_KBS)).resolves.toBeUndefined();
+        expect(prisma.userRole.deleteMany).toHaveBeenCalled();
+      });
+    });
+
+    describe('door 4 - the destructive replace that omits the role', () => {
+      it('refuses when the new list drops ADMIN_GLOBAL from the last holder', async () => {
+        prisma.user.findUnique.mockResolvedValue(buildUser({ id: 'u1' }));
+        prisma.role.findMany.mockResolvedValue([{ id: 'role-kbs', code: RoleCode.ADMIN_KBS }]);
+        arrange(1);
+
+        await expect(
+          service.adminUpdate('u1', { roleCodes: [RoleCode.ADMIN_KBS] }, 'admin-1'),
+        ).rejects.toThrow('user.lastSuperAdminDemote');
+        expect(prisma.$transaction).not.toHaveBeenCalled();
+      });
+
+      it('allows a replace that keeps ADMIN_GLOBAL', async () => {
+        prisma.user.findUnique.mockResolvedValue(buildUser({ id: 'u1' }));
+        prisma.role.findMany.mockResolvedValue([
+          { id: 'role-sa', code: RoleCode.ADMIN_GLOBAL },
+          { id: 'role-kbs', code: RoleCode.ADMIN_KBS },
+        ]);
+        arrange(1);
+        prisma.$transaction.mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) =>
+          cb({ userRole: { deleteMany: jest.fn(), createMany: jest.fn() } }),
+        );
+
+        await expect(
+          service.adminUpdate(
+            'u1',
+            { roleCodes: [RoleCode.ADMIN_GLOBAL, RoleCode.ADMIN_KBS] },
+            'admin-1',
+          ),
+        ).resolves.toBeDefined();
+        expect(prisma.$transaction).toHaveBeenCalled();
+      });
+    });
+
+    it('a blocked administrator does not count as cover for the last active one', async () => {
+      // count() is scoped to isActive: true, deletedAt: null. An account that
+      // cannot log in cannot appoint a replacement, so it is not cover.
+      arrange(1);
+      await expect(service.removeRole('u1', RoleCode.ADMIN_GLOBAL)).rejects.toThrow();
+      expect(prisma.userRole.count).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ user: { isActive: true, deletedAt: null } }),
+        }),
+      );
+    });
+
+    it('both refusal messages resolve to real text in both locales', () => {
+      // The guard is only as good as what it tells the operator. A key that is
+      // never translated reaches the caller as the raw string
+      // "user.lastSuperAdminDelete", which explains nothing and looks like a bug.
+      for (const locale of ['fr', 'en']) {
+        const messages = JSON.parse(
+          readFileSync(
+            join(__dirname, `../../../../../../libs/common/src/i18n/${locale}/user.json`),
+            'utf-8',
+          ),
+        );
+        for (const key of ['lastSuperAdminDelete', 'lastSuperAdminDemote']) {
+          expect(messages[key]).toEqual(expect.any(String));
+          expect(messages[key].length).toBeGreaterThan(20);
+        }
+        // Deletion and demotion are different acts; one message for both would
+        // send an operator looking for a deleted account that still exists.
+        expect(messages.lastSuperAdminDelete).not.toEqual(messages.lastSuperAdminDemote);
+      }
     });
   });
 });

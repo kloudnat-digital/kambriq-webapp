@@ -28,6 +28,9 @@ export const mockCorePrisma = () => ({
   },
   userRole: {
     findUnique: fn(),
+    // The last-super-admin guard reads the target's roles and counts the active
+    // holders. Absent from this mock, the guard cannot be exercised at all.
+    findFirst: fn(),
     findMany: fn(),
     create: fn(),
     createMany: fn(),

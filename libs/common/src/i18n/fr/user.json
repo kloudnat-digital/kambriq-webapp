@@ -24,5 +24,7 @@
     "noDocument": "Aucun document en attente de vérification",
     "notPending": "Le document est dans le statut « {status} », non éligible à une révision",
     "statusUpdated": "Statut de vérification d'identité mis à jour : {status}"
-  }
+  },
+  "lastSuperAdminDelete": "Impossible de supprimer ce compte : c'est le dernier administrateur global actif. Nommez un autre ADMIN_GLOBAL avant de retirer celui-ci.",
+  "lastSuperAdminDemote": "Impossible de retirer le rôle ADMIN_GLOBAL : c'est le dernier administrateur global actif. Nommez un autre ADMIN_GLOBAL avant de retirer celui-ci."
 }

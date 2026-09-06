@@ -162,6 +162,8 @@ export class UsersService {
     const user = await this.findByIdOrThrow(userId);
     const lang = user.preferredLanguage || 'en';
 
+    await this.assertNotLastSuperAdmin(userId, 'delete', lang);
+
     await this.prisma.user.update({
       where: { id: userId },
       data: { isActive: false, deletedAt: new Date(), deactivatedBy: null },
@@ -267,6 +269,12 @@ export class UsersService {
         );
       }
 
+      /* The replace is a demotion when the new list omits ADMIN_GLOBAL. It does
+         not look like one, which is exactly why it needs the same guard. */
+      if (!dto.roleCodes.includes(RoleCode.ADMIN_GLOBAL)) {
+        await this.assertNotLastSuperAdmin(userId, 'demote');
+      }
+
       // Delete existing roles and assign new ones
       await this.prisma.$transaction(async (tsx) => {
         await tsx.userRole.deleteMany({ where: { userId } });
@@ -293,6 +301,8 @@ export class UsersService {
     if (!user.isActive) {
       throw new BadRequestException(this.t('user.alreadyInactive', lang));
     }
+
+    await this.assertNotLastSuperAdmin(userId, 'delete', lang);
 
     await this.prisma.user.update({
       where: { id: userId },
@@ -363,6 +373,58 @@ export class UsersService {
   }
 
   // ----- Add a role to a user --------------------------------
+  /**
+   * The last global administrator cannot be removed, by any door.
+   *
+   * ADMIN_GLOBAL is the super admin: it implies every other role, and it is the
+   * only role that can grant or revoke ADMIN_GLOBAL. Remove the last one and the
+   * platform has no route back - no remaining account can appoint a replacement,
+   * and the fix becomes a manual database write.
+   *
+   * There are four doors, not one, and they do not look alike:
+   *   - `deleteMe`     the holder deletes their own account
+   *   - `blockUser`    an administrator blocks the account
+   *   - `removeRole`   the role is revoked directly
+   *   - `adminUpdate`  `roleCodes` REPLACES the whole set, dropping ADMIN_GLOBAL
+   *
+   * The fourth is the one that gets forgotten, because it does not look like a
+   * deletion: it is an update that happens to omit a role. All four call this.
+   *
+   * "Last" counts only ACTIVE holders. A blocked or soft-deleted administrator
+   * cannot log in, so it cannot appoint anyone, so it does not count as cover.
+   */
+  private async assertNotLastSuperAdmin(
+    userId: string,
+    reason: 'delete' | 'demote',
+    lang = DEFAULT_LANGUAGE,
+  ): Promise<void> {
+    const superAdminRole = await this.prisma.role.findUnique({
+      where: { code: RoleCode.ADMIN_GLOBAL },
+    });
+    if (!superAdminRole) return;
+
+    const targetHolds = await this.prisma.userRole.findFirst({
+      where: { userId, roleId: superAdminRole.id },
+    });
+    if (!targetHolds) return;
+
+    const activeHolders = await this.prisma.userRole.count({
+      where: {
+        roleId: superAdminRole.id,
+        user: { isActive: true, deletedAt: null },
+      },
+    });
+
+    if (activeHolders <= 1) {
+      throw new BadRequestException(
+        this.t(
+          reason === 'delete' ? 'user.lastSuperAdminDelete' : 'user.lastSuperAdminDemote',
+          lang,
+        ),
+      );
+    }
+  }
+
   async addRole(userId: string, roleCode: string, grantedBy?: string): Promise<void> {
     const role = await this.prisma.role.findUnique({
       where: { code: roleCode },
@@ -389,6 +451,10 @@ export class UsersService {
       where: { code: roleCode },
     });
     if (!role) return;
+
+    if (roleCode === RoleCode.ADMIN_GLOBAL) {
+      await this.assertNotLastSuperAdmin(userId, 'demote');
+    }
 
     await this.prisma.userRole.deleteMany({
       where: { userId, roleId: role.id },

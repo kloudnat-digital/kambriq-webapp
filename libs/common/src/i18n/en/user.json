@@ -24,5 +24,7 @@
     "noDocument": "No document pending verification",
     "notPending": "Document is in status \"{status}\", not eligible for review",
     "statusUpdated": "ID verification status updated to {status}"
-  }
+  },
+  "lastSuperAdminDelete": "Cannot remove this account: it is the last active global administrator. Appoint another ADMIN_GLOBAL before removing this one.",
+  "lastSuperAdminDemote": "Cannot revoke the ADMIN_GLOBAL role: it is the last active global administrator. Appoint another ADMIN_GLOBAL before removing this one."
 }

@@ -13,6 +13,17 @@ import { RoleCode } from '../types/roles.enum';
  * they do not inherit from each other or from ADMIN_LANDS.
  */
 const ROLE_HIERARCHY: Partial<Record<RoleCode, RoleCode[]>> = {
+  /**
+   * ADMIN_GLOBAL is the super admin, and this list is what makes that true.
+   *
+   * It must contain **every** other role in `RoleCode`. It did not:
+   * `STAFF_VERIFY`, `STAFF_VALUATION` and `PARTNER_GEO` were absent. Nothing
+   * gates on them today, so the gap was invisible - but the day somebody writes
+   * `@Roles(RoleCode.STAFF_VERIFY)`, the global administrator is refused by it
+   * and the refusal looks like a bug in the guard rather than a hole in this
+   * list. `roles.guard.spec.ts` now fails if a role is added to the enum and not
+   * to this list.
+   */
   [RoleCode.ADMIN_GLOBAL]: [
     RoleCode.ADMIN_LANDS,
     RoleCode.ADMIN_KBS,
@@ -21,6 +32,9 @@ const ROLE_HIERARCHY: Partial<Record<RoleCode, RoleCode[]>> = {
     RoleCode.CLIENT,
     RoleCode.KCA_CERTIFIED,
     RoleCode.CANDIDATE_KBS,
+    RoleCode.STAFF_VERIFY,
+    RoleCode.STAFF_VALUATION,
+    RoleCode.PARTNER_GEO,
   ],
   [RoleCode.ADMIN_LANDS]: [RoleCode.AGENT, RoleCode.CLIENT],
   [RoleCode.ADMIN_KBS]: [RoleCode.CANDIDATE_KBS],
