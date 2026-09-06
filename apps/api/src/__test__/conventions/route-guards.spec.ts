@@ -65,6 +65,7 @@ const CLASS_ROLES: Record<string, string[]> = {
   'lands/controllers/lands-admin.controller.ts': ['ADMIN_LANDS', 'ADMIN_GLOBAL'],
   'lands/controllers/lands-agent.controller.ts': ['AGENT'],
   'lands/controllers/lands-client.controller.ts': ['CLIENT'],
+  'lands/controllers/payments-admin.controller.ts': ['ADMIN_LANDS', 'ADMIN_GLOBAL'],
 };
 
 describe('route guards', () => {

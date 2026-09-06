@@ -204,6 +204,8 @@ export const mockPaymentChannels = () => ({
 export const mockLandsPrisma = () => ({
   payment: {
     findUnique: fn(),
+    findMany: fn(),
+    count: fn(),
     create: fn(),
     update: fn(),
   },

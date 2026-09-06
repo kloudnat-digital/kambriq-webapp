@@ -8,11 +8,17 @@ import {
   PaymentChannel,
   PaymentState,
   EmailService,
+  StorageService,
 } from '@kambriq/common';
 import { PaymentsService } from '../../../lands/payments/payments.service';
 import { LandsPrismaService } from '../../../lands/prisma/lands-prisma.service';
 import { PaymentChannelsService } from '../../../lands/payments/payment-channels.service';
-import { mockEmailService, mockLandsPrisma, mockPaymentChannels } from '../../utils';
+import {
+  mockEmailService,
+  mockLandsPrisma,
+  mockPaymentChannels,
+  mockStorageService,
+} from '../../utils';
 
 const PAYMENT_ID = 'pay-1';
 const ADMIN = '00000000-0000-4000-8000-b00000000001';
@@ -49,6 +55,7 @@ describe('PaymentsService', () => {
         { provide: LandsPrismaService, useValue: prisma },
         { provide: PaymentChannelsService, useValue: mockPaymentChannels() },
         { provide: EmailService, useValue: mockEmailService() },
+        { provide: StorageService, useValue: mockStorageService() },
       ],
     }).compile();
     service = module.get(PaymentsService);

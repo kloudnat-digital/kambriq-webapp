@@ -1330,11 +1330,54 @@ async function seedLands() {
    */
   const seededParcelIds = parcels.map((p) => p.id);
 
-  await lands.landReservation.deleteMany({
+  /**
+   * A reservation that carries a payment is left alone, and said so.
+   *
+   * G1 made `Payment.reservationId` a foreign key and made the ledger and the
+   * audit trail append-only in the database - `PaymentReceipt` and
+   * `PaymentTransition` have BEFORE DELETE triggers that refuse. So a
+   * reservation with money against it cannot be deleted, by anybody, including
+   * this seed. `deleteMany` on it fails with a bare
+   * `ForeignKeyConstraintViolation` and takes the whole seed down after Core,
+   * KBS and Kamnet have already been written.
+   *
+   * That is not a bug in the triggers. **Money that arrived is not test data**,
+   * and a reset that could erase a receipt would be a reset that can erase
+   * evidence. The seed's job is to restore fixtures, and this row has stopped
+   * being one.
+   *
+   * So it is skipped, by name, out loud. Silently leaving it would be the
+   * mechanism that reports success by saying nothing; failing on it would make
+   * one local payment block every future seed run.
+   */
+  const reservationsToClear = await lands.landReservation.findMany({
     where: {
       landId: { in: seededParcelIds },
       id: { not: IDS.LAND_RESERVATION_SEEDED },
     },
+    select: { id: true, landId: true, payments: { select: { reference: true } } },
+  });
+
+  const withMoney = reservationsToClear.filter((r) => r.payments.length > 0);
+  const clearable = reservationsToClear.filter((r) => r.payments.length === 0);
+
+  if (withMoney.length > 0) {
+    console.log(
+      `  ! ${withMoney.length} reservation(s) kept: they carry payments, and a payment's ` +
+        `ledger cannot be deleted (append-only, by design).`,
+    );
+    for (const r of withMoney) {
+      const refs = r.payments.map((p) => p.reference ?? '(no reference)').join(', ');
+      console.log(`    - reservation ${r.id} on parcel ${r.landId} - payments: ${refs}`);
+    }
+    console.log(
+      `    Those parcels keep their current status. To reset them, the payments have to be ` +
+        `dealt with deliberately first.`,
+    );
+  }
+
+  await lands.landReservation.deleteMany({
+    where: { id: { in: clearable.map((r) => r.id) } },
   });
 
   for (const parcel of parcels) {
