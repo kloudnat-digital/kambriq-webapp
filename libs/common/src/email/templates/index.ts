@@ -78,42 +78,19 @@ const referenceBlock = (i18n: I18nService, lang: string, args: TemplateArgs): st
 `;
 
 /**
- * The three channels, with the details needed to actually pay through each.
+ * There is no channel block, and that is the point.
  *
- * Every value comes from `PaymentChannelsService`, which refuses to produce a
- * set with a blank in it, so this cannot render an empty account number.
+ * v03 section 4d: *"Les coordonnees s'affichent sur l'espace du client, derriere
+ * son authentification ; l'email n'est qu'une notification qui dit qu'elles sont
+ * disponibles et ne les contient pas."*
+ *
+ * Until 7 September this file had a `channelBlock` that rendered the bank
+ * account, the mobile money number and the notary's address into every
+ * instruction **and** every reminder - to anyone who clicked. It is deleted
+ * rather than left unused, because an unused renderer of bank details is one
+ * import away from being used again. `no-coordinates-in-email.spec.ts` fails if
+ * any channel detail can reach an outbound body.
  */
-const channelBlock = (i18n: I18nService, lang: string, args: TemplateArgs): string => {
-  const row = (labelKey: string, value: string | number) =>
-    `<tr><td class="muted" style="padding-right:12px;">${t(i18n, labelKey, lang)}</td>
-         <td style="font-weight:600;">${value}</td></tr>`;
-
-  return `
-    <h2 style="font-size:16px;margin-top:24px;">${t(i18n, 'email.paymentInstructions.channelsHeading', lang)}</h2>
-
-    <h3 style="font-size:14px;margin-bottom:4px;">${t(i18n, 'email.paymentInstructions.bankHeading', lang)}</h3>
-    <table role="presentation">
-      ${row('email.paymentInstructions.bankNameLabel', args['bankName'])}
-      ${row('email.paymentInstructions.bankAccountNameLabel', args['bankAccountName'])}
-      ${row('email.paymentInstructions.bankIbanLabel', args['bankIban'])}
-      ${row('email.paymentInstructions.bankSwiftLabel', args['bankSwift'])}
-    </table>
-
-    <h3 style="font-size:14px;margin-bottom:4px;">${t(i18n, 'email.paymentInstructions.mobileHeading', lang)}</h3>
-    <table role="presentation">
-      ${row('email.paymentInstructions.mobileOperatorLabel', args['mobileMoneyOperator'])}
-      ${row('email.paymentInstructions.mobileNumberLabel', args['mobileMoneyNumber'])}
-      ${row('email.paymentInstructions.mobileNameLabel', args['mobileMoneyName'])}
-    </table>
-
-    <h3 style="font-size:14px;margin-bottom:4px;">${t(i18n, 'email.paymentInstructions.notaryHeading', lang)}</h3>
-    <table role="presentation">
-      ${row('email.paymentInstructions.notaryNameLabel', args['notaryName'])}
-      ${row('email.paymentInstructions.notaryPhoneLabel', args['notaryPhone'])}
-      ${row('email.paymentInstructions.notaryAddressLabel', args['notaryAddress'])}
-    </table>
-  `;
-};
 
 const defineTemplates = <T extends Record<string, TemplateFn>>(t: T) => t;
 const templates = defineTemplates({
@@ -147,26 +124,33 @@ const templates = defineTemplates({
    * motif is stated as a rule, not as a hint: a payment without the reference
    * cannot be matched, and the client is the only person who can prevent that.
    */
-  paymentInstructions: (i18n, lang, args) => ({
-    subject: t(i18n, 'email.paymentInstructions.subject', lang, args),
+  /**
+   * "Your payment details are ready" - and not what they are.
+   *
+   * Carries the reference (which is not a coordinate: it is the client's own
+   * identifier, useless to anybody else), the amount, the channel's **label**,
+   * and a link to the page where the coordinates actually live. Nothing that
+   * could be transferred out of a mailbox and used.
+   */
+  paymentInstructionsAvailable: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.paymentInstructionsAvailable.subject', lang, args),
     html: layout(
       `
-      <h1>${t(i18n, 'email.paymentInstructions.heading', lang)}</h1>
-      <p>${t(i18n, 'email.paymentInstructions.intro', lang, args)}</p>
+      <h1>${t(i18n, 'email.paymentInstructionsAvailable.heading', lang)}</h1>
+      <p>${t(i18n, 'email.paymentInstructionsAvailable.intro', lang, args)}</p>
 
       ${referenceBlock(i18n, lang, args)}
 
       <table role="presentation" style="width:100%;margin:16px 0;">
         <tr><td class="muted">${t(i18n, 'email.paymentInstructions.amountLabel', lang)}</td>
             <td style="text-align:right;font-weight:700;font-size:18px;">${args['amount']}</td></tr>
-        <tr><td class="muted">${t(i18n, 'email.paymentInstructions.deadlineLabel', lang)}</td>
-            <td style="text-align:right;font-weight:700;">${args['deadline']}</td></tr>
+        <tr><td class="muted">${t(i18n, 'email.paymentInstructionsAvailable.channelLabel', lang)}</td>
+            <td style="text-align:right;font-weight:700;">${args['channelLabel']}</td></tr>
       </table>
 
-      ${channelBlock(i18n, lang, args)}
-
-      <p>${t(i18n, 'email.paymentInstructions.forwarding', lang)}</p>
-      <p class="muted">${t(i18n, 'email.paymentInstructions.afterPaying', lang)}</p>
+      <a href="${args['url']}" class="btn">${t(i18n, 'email.paymentInstructionsAvailable.button', lang)}</a>
+      <p class="muted">${t(i18n, 'email.paymentInstructionsAvailable.why', lang)}</p>
+      <p class="muted" style="word-break:break-all;">${args['url']}</p>
       <p class="muted"><strong>${t(i18n, 'email.paymentInstructions.supportLabel', lang)}</strong> —
         ${t(i18n, 'email.paymentInstructions.supportBody', lang, args)}</p>
     `,
@@ -175,19 +159,6 @@ const templates = defineTemplates({
     ),
   }),
 
-  /**
-   * G3 - the reminder. Same content, different framing.
-   *
-   * It names the deadline and **does not accuse**: the client may have paid
-   * yesterday and the transfer may still be in flight, which is normal for an
-   * international transfer to Cameroon and is not their fault. So the message
-   * says so, before it says anything else about what is owed.
-   *
-   * The full instructions are repeated rather than referred to. A person who
-   * needs a reminder is a person who cannot find the first message.
-   *
-   * **When it fires is G6.** This is the message and the send path only.
-   */
   paymentReminder: (i18n, lang, args) => ({
     subject: t(
       i18n,
@@ -220,7 +191,7 @@ const templates = defineTemplates({
       </table>
 
       <p class="muted">${t(i18n, 'email.paymentReminder.instructionsAgain', lang)}</p>
-      ${channelBlock(i18n, lang, args)}
+      <a href="${args['url']}" class="btn">${t(i18n, 'email.paymentInstructionsAvailable.button', lang)}</a>
 
       <p class="muted"><strong>${t(i18n, 'email.paymentInstructions.supportLabel', lang)}</strong> —
         ${t(i18n, 'email.paymentInstructions.supportBody', lang, args)}</p>

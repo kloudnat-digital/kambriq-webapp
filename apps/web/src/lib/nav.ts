@@ -98,6 +98,23 @@ export const NAV_SECTIONS: NavSection[] = [
     labelKey: 'sections.admin',
     items: [
       {
+        labelKey: 'items.adminPaymentRequests',
+        href: '/admin/payment-requests',
+        icon: BookmarkCheck,
+        // The queue of clients waiting for an answer. First in the section
+        // because it is the one that has somebody on the other end of it.
+        roles: ['ADMIN_LANDS', 'ADMIN_GLOBAL'],
+      },
+      {
+        labelKey: 'items.adminIdentities',
+        href: '/admin/identities',
+        icon: BookmarkCheck,
+        // v03 section 8 puts identity verification on ADMIN_LANDS as well as
+        // ADMIN_GLOBAL: it is now on the path of the money, and a queue only a
+        // super admin can clear is a queue that does not get cleared.
+        roles: ['ADMIN_LANDS', 'ADMIN_GLOBAL'],
+      },
+      {
         labelKey: 'items.adminPayments',
         href: '/admin/payments',
         icon: BookmarkCheck,

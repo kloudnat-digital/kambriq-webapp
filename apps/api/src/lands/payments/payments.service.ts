@@ -11,6 +11,7 @@ import {
   EmailService,
   formatHumanDate,
   formatMoney,
+  IdVerificationStatus,
   PaginationQuery,
   RoleCode,
   StorageService,
@@ -24,9 +25,13 @@ import {
   PaymentChannel,
   PaymentState,
   RECORDABLE_CHANNELS,
+  SELECTABLE_CHANNELS,
+  channelLabel,
+  requiresPaidBy,
   sumReceipts,
 } from '@kambriq/common';
 import { ConfigService } from '@nestjs/config';
+import { CorePrismaService } from '../../core/prisma/core-prisma.service';
 import { LandsPrismaService } from '../prisma/lands-prisma.service';
 import { PaymentChannelsService } from './payment-channels.service';
 
@@ -48,6 +53,8 @@ export type RecordReceiptInput = {
   channel: PaymentChannel;
   receivedAt: Date;
   evidenceUrl: string;
+  /** Who actually paid, as declared. Required for `DEPO` - see `requiresPaidBy`. */
+  paidBy?: string;
   correctsId?: string;
   note?: string;
 };
@@ -94,6 +101,7 @@ export class PaymentsService {
     private readonly emailService: EmailService,
     private readonly storage: StorageService,
     private readonly config: ConfigService,
+    private readonly core: CorePrismaService,
   ) {}
 
   /**
@@ -350,52 +358,220 @@ export class PaymentsService {
   }
 
   /**
-   * G9 - the client asks for their instructions to be emailed.
+   * G13 - the client's declared preference, changed after the request.
    *
-   * **A separate act from creating the payment**, for the same reason recording
-   * an encaissement is separate from validating one: if the send fails, the
-   * payment must still exist, and if the payment exists the client must be able
-   * to ask again. `sendInstructions` already sends before it transitions, so a
-   * failed send leaves the state alone.
+   * v03 section 4c. **A wish, not a decision.** It binds nothing, it may be
+   * null, and it is written only to `preferredChannel` - never to `channel`,
+   * which is the record of what the back office actually chose.
    *
-   * The design gives `INSTRUCTIONS_ENVOYEES` a "Qui le declenche" of *"La
-   * plateforme"* - the platform composes and sends it. It does not do so by
-   * itself: the client asks, which is what keeps this off the wrong side of
-   * *"aucune transition automatique sur un evenement metier"*.
+   * ---------------------------------------------------------------------------
+   * What used to be here
+   * ---------------------------------------------------------------------------
+   * `requestInstructions`, by which the client's own click sent an email listing
+   * every channel. v03 removes it: *"on n'envoie pas les moyens de paiement a
+   * qui clique"*. `INSTRUCTIONS_ENVOYEES` is now the back office's transition,
+   * taken after the client is identified and a channel is agreed, and the client
+   * has no route that reaches it.
    */
-  async requestInstructions(
+  async setPreferredChannel(
     clientUserId: string,
     paymentId: string,
-    to: { email: string; lang: string },
-  ): Promise<{ state: PaymentState; reference: string }> {
+    preferred: PaymentChannel | null,
+  ): Promise<{ preferredChannel: PaymentChannel | null }> {
     const payment = await this.findOrThrow(paymentId);
     const reservation = await this.prisma.landReservation.findUnique({
       where: { id: payment.reservationId },
-      select: { clientUserId: true, clientName: true, land: { select: { title: true } } },
+      select: { clientUserId: true },
     });
-
     if (!reservation || reservation.clientUserId !== clientUserId) {
       throw new ForbiddenException('This payment belongs to somebody else.');
     }
 
-    /**
-     * The name and the subject come from the reservation, the address from the
-     * token.
-     *
-     * The reservation holds the name KAMBRIQ actually knows this client by and
-     * the parcel the money is for - neither is in a JWT, and neither should be
-     * taken from the request. The **address** is the token's, because that is
-     * the mailbox the person just authenticated with; `clientEmail` on the
-     * reservation is whatever an agent typed months ago and may be stale.
-     */
-    return this.sendInstructions(
-      paymentId,
-      { email: to.email, clientName: reservation.clientName, lang: to.lang },
-      {
-        subject: reservation.land.title,
-        actorUserId: clientUserId,
+    if (preferred !== null && !SELECTABLE_CHANNELS.includes(preferred)) {
+      throw new BadRequestException(
+        `${preferred} is not a way to pay. Choose one of ${SELECTABLE_CHANNELS.join(', ')}.`,
+      );
+    }
+
+    await this.prisma.payment.update({
+      where: { id: paymentId },
+      data: { preferredChannel: preferred },
+    });
+
+    // Kept on the profile so the next request proposes it by default. A
+    // default, not a decision: the back office is no more bound by it here than
+    // it was the first time.
+    await this.core.userProfile.updateMany({
+      where: { userId: clientUserId },
+      data: { preferredPaymentChannel: preferred },
+    });
+
+    return { preferredChannel: preferred };
+  }
+
+  /** The channel this client last said suited them, for proposing a default. */
+  async lastPreferredChannel(clientUserId: string): Promise<PaymentChannel | null> {
+    const profile = await this.core.userProfile.findUnique({
+      where: { userId: clientUserId },
+      select: { preferredPaymentChannel: true },
+    });
+    const code = profile?.preferredPaymentChannel;
+    return code && SELECTABLE_CHANNELS.includes(code as PaymentChannel)
+      ? (code as PaymentChannel)
+      : null;
+  }
+
+  /**
+   * G14 - the client's own payment, with the coordinates once they exist.
+   *
+   * v03 section 4d: *"Les coordonnees s'affichent sur l'espace du client,
+   * derriere son authentification."* This is that place. Before the back office
+   * has chosen, the payment comes back **with the reason it is still waiting**
+   * rather than as a blank - a client who asked to pay and sees nothing cannot
+   * tell whether the request arrived.
+   *
+   * The declared preference is returned throughout, decided or not, so the
+   * client can see their request was heard.
+   */
+  async findForClient(clientUserId: string, paymentId: string) {
+    const payment = await this.findOrThrow(paymentId);
+    const reservation = await this.prisma.landReservation.findUnique({
+      where: { id: payment.reservationId },
+      select: { clientUserId: true, land: { select: { title: true } } },
+    });
+    if (!reservation || reservation.clientUserId !== clientUserId) {
+      throw new ForbiddenException('This payment belongs to somebody else.');
+    }
+
+    const receipts = await this.prisma.paymentReceipt.findMany({
+      where: { paymentId },
+      select: { amount: true },
+    });
+    const received = sumReceipts(receipts);
+
+    // The coordinates as they were actually communicated, read back off the
+    // audit row rather than re-fetched: what the client sees is what was sent,
+    // even if a parameter has been corrected since.
+    const sent = await this.prisma.paymentTransition.findFirst({
+      where: { paymentId, toState: PaymentState.INSTRUCTIONS_ENVOYEES },
+      orderBy: { occurredAt: 'desc' },
+      select: { channel: true, communicatedDetails: true, occurredAt: true },
+    });
+
+    const profile = await this.core.userProfile.findUnique({
+      where: { userId: clientUserId },
+      select: { idVerificationStatus: true },
+    });
+    const identity = profile?.idVerificationStatus ?? IdVerificationStatus.NONE;
+
+    return {
+      id: payment.id,
+      reference: payment.reference,
+      subject: reservation.land.title,
+      state: payment.state,
+      currency: payment.currency,
+      amountDue: payment.amountDue.toString(),
+      amountReceived: received.toString(),
+      outstanding: (payment.amountDue - received).toString(),
+      expiresAt: payment.expiresAt,
+      /** The wish. Shown whether or not the back office has decided. */
+      preferredChannel: payment.preferredChannel,
+      /** The decision. Null until the coordinates have been sent. */
+      channel: sent?.channel ?? payment.channel ?? null,
+      coordinates: (sent?.communicatedDetails as Record<string, string> | null) ?? null,
+      sentAt: sent?.occurredAt ?? null,
+      identityStatus: identity,
+      /**
+       * Why nothing has arrived yet, in words, on the client's side too.
+       *
+       * A gate that blocks silently is indistinguishable from a system that
+       * forgot. The client is told which of the two conditions is outstanding.
+       */
+      waitingReason:
+        payment.state !== PaymentState.INITIE
+          ? null
+          : identity !== IdVerificationStatus.VERIFIED
+            ? 'identity'
+            : 'backoffice',
+    };
+  }
+
+  /**
+   * G12 - the request queue: every payment still in `INITIE`, oldest first.
+   *
+   * v03 section 4d: *"Une demande qui attend depuis trop longtemps remonte dans
+   * une file back-office, au meme titre qu'un paiement en souffrance. Un client
+   * qui a demande a payer et a qui personne n'a repondu est exactement le genre
+   * de silence que ce systeme existe pour rendre impossible."*
+   *
+   * Carries the age of each request and the identity status, because the two
+   * together are what decides what the reviewer does next: an old request whose
+   * client is unverified is waiting on the review queue, not on the back office.
+   */
+  async listRequests(pagination: PaginationQuery) {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 20;
+
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.payment.findMany({
+        where: { state: PaymentState.INITIE },
+        orderBy: { createdAt: 'asc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.payment.count({ where: { state: PaymentState.INITIE } }),
+    ]);
+
+    const reservations = await this.prisma.landReservation.findMany({
+      where: { id: { in: rows.map((r) => r.reservationId) } },
+      select: { id: true, clientUserId: true, clientName: true, land: { select: { title: true } } },
+    });
+    const byId = new Map(reservations.map((r) => [r.id, r]));
+
+    const clientIds = reservations.map((r) => r.clientUserId).filter((v): v is string => !!v);
+    const profiles = clientIds.length
+      ? await this.core.userProfile.findMany({
+          where: { userId: { in: clientIds } },
+          select: { userId: true, idVerificationStatus: true },
+        })
+      : [];
+    const statusByUser = new Map(profiles.map((p) => [p.userId, p.idVerificationStatus]));
+
+    const now = Date.now();
+    const ageDays = (at: Date) => Math.floor((now - at.getTime()) / 86_400_000);
+
+    const data = rows.map((p) => {
+      const reservation = byId.get(p.reservationId);
+      const identity = reservation?.clientUserId
+        ? (statusByUser.get(reservation.clientUserId) ?? IdVerificationStatus.NONE)
+        : IdVerificationStatus.NONE;
+      return {
+        id: p.id,
+        reference: p.reference,
+        clientName: reservation?.clientName ?? null,
+        clientUserId: reservation?.clientUserId ?? null,
+        subject: reservation?.land.title ?? null,
+        currency: p.currency,
+        amountDue: p.amountDue.toString(),
+        preferredChannel: p.preferredChannel,
+        identityStatus: identity,
+        /** Whether a send would be refused right now, and therefore what to do. */
+        blockedByIdentity: identity !== IdVerificationStatus.VERIFIED,
+        requestedAt: p.createdAt,
+        waitingDays: ageDays(p.createdAt),
+      };
+    });
+
+    const response = buildPaginatedResponse(data, total, page, limit);
+    return {
+      ...response,
+      meta: {
+        ...response.meta,
+        // The backlog as a whole, not only this page. A queue you cannot age is
+        // a queue nobody can be accountable for - A10's lesson, applied here.
+        oldestWaitingDays: rows.length ? ageDays(rows[0].createdAt) : 0,
       },
-    );
+    };
   }
 
   /** The next sequence value. Serialised by Postgres, so never twice the same. */
@@ -433,38 +609,126 @@ export class PaymentsService {
    */
   async sendInstructions(
     paymentId: string,
-    to: { email: string; clientName: string; lang: string },
-    context: { subject: string; actorUserId: string },
-  ): Promise<{ state: PaymentState; reference: string }> {
+    by: {
+      actorUserId: string;
+      /** Chosen by the back office. Never read from `preferredChannel`. */
+      channel: PaymentChannel;
+      reason: string;
+    },
+  ): Promise<{ state: PaymentState; reference: string; channel: PaymentChannel }> {
     const payment = await this.findOrThrow(paymentId);
 
     if (!payment.reference) {
-      // G2 assigns one at creation. A payment without one predates the
-      // generator and must not be sent: the client would be told to quote
-      // nothing, and the money would arrive unmatchable.
       throw new BadRequestException(
         `Payment ${paymentId} has no reference, so no instruction can be sent. ` +
           `It predates G2 and needs one before anybody is asked to pay it.`,
       );
     }
 
-    // Throws if any channel detail is missing. Before the send, before the
-    // transition, before anything is written.
-    const args = await this.instructionArgs(payment, to.clientName, context.subject);
+    if (!SELECTABLE_CHANNELS.includes(by.channel)) {
+      // `HIST` records a row taken over from the old model. It is not something
+      // a person may choose, and it has no coordinates to send.
+      throw new BadRequestException(
+        `${by.channel} cannot be chosen as a way to pay. Choose one of ` +
+          `${SELECTABLE_CHANNELS.join(', ')}.`,
+      );
+    }
 
-    await this.emailService.send({
-      to: to.email,
-      template: 'paymentInstructions',
-      lang: to.lang,
-      args,
+    const reservation = await this.prisma.landReservation.findUnique({
+      where: { id: payment.reservationId },
+      select: { clientUserId: true, clientName: true, land: { select: { title: true } } },
     });
+    if (!reservation?.clientUserId) {
+      throw new BadRequestException('This reservation has no client account to answer.');
+    }
+
+    /**
+     * The gate, **before the send and not only inside `transition`**.
+     *
+     * `transition` guards the corridor and is where the rule lives, but G3's
+     * ordering sends the message first and transitions afterwards - so a gate
+     * that only fired there let an unverified client receive the notification
+     * and merely stopped the state from moving. Caught by
+     * `payment-identification-gate.spec.ts`, which asserted that nothing was
+     * sent and found two emails.
+     *
+     * One rule, one method, called at both points: here so nothing leaves, and
+     * there so nothing gets round it.
+     */
+    await this.assertClientIsIdentified(
+      payment.reservationId,
+      payment.state as PaymentState,
+      PaymentState.INSTRUCTIONS_ENVOYEES,
+    );
+
+    /**
+     * The details are fetched **before** anything is written, and only for the
+     * chosen channel. A send that cannot say where the money goes fails here,
+     * with the missing parameter named, rather than producing a message with a
+     * blank in it.
+     */
+    const details = await this.channels.detailsFor(by.channel);
+
+    const client = await this.core.user.findUnique({
+      where: { id: reservation.clientUserId },
+      select: { email: true, preferredLanguage: true },
+    });
+    if (!client) throw new BadRequestException('The client account no longer exists.');
+
+    /**
+     * **The email is a notification. It carries no coordinates.**
+     *
+     * v03 section 4d: the coordinates render on the client's own page, behind
+     * their authentication, and the email only says they are available. Three
+     * reasons, in the design's order: the whole exchange then sits in the same
+     * place as the payment; bank details do not lie around in a forwardable
+     * mailbox; and on the day of a dispute what was communicated is established
+     * by the system rather than by a screenshot.
+     *
+     * `no-coordinates-in-email.spec.ts` fails if any channel detail can reach an
+     * outbound body.
+     */
+    await this.emailService.send({
+      to: client.email,
+      template: 'paymentInstructionsAvailable',
+      lang: client.preferredLanguage ?? 'fr',
+      args: {
+        clientName: reservation.clientName,
+        subject: reservation.land.title,
+        reference: payment.reference,
+        amount: formatMoney(payment.amountDue, payment.currency),
+        channelLabel: channelLabel(by.channel),
+        url: `${this.config.get<string>('FRONTEND_URL', '')}/mylands/payment/${payment.id}`,
+        // The support contact, and **only** that: a number to call for help is
+        // not a place to send money. Without it the footer rendered
+        // "Ecrivez a  ou appelez le ," - two blanks in a sentence, which is the
+        // G3 lesson exactly: found by reading what arrived, not by inspecting
+        // what was sent.
+        supportEmail: details['supportEmail'] ?? '',
+        supportPhone: details['supportPhone'] ?? '',
+      },
+    });
+
+    /**
+     * Sent, then recorded - the G3 ordering, unchanged. The worst case is a
+     * duplicate notification; the state never claims a message that did not go.
+     *
+     * The validity period runs from **here**, not from creation: v03 fixes it at
+     * "30 jours a compter de l'envoi des instructions", and a clock that starts
+     * before the client has been told anything counts down against them for
+     * nothing.
+     */
+    const validityDays = this.config.get<number>('PAYMENT_VALIDITY_DAYS', 30);
 
     const result = await this.transition(paymentId, PaymentState.INSTRUCTIONS_ENVOYEES, {
-      actorUserId: context.actorUserId,
-      reason: `Payment instructions sent to ${to.email}`,
+      actorUserId: by.actorUserId,
+      reason: by.reason,
+      channel: by.channel,
+      expiresAt: new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000),
+      details,
     });
 
-    return { state: result.state, reference: payment.reference };
+    return { state: result.state, reference: payment.reference, channel: by.channel };
   }
 
   /**
@@ -489,13 +753,32 @@ export class PaymentsService {
     }
 
     const overdue = payment.expiresAt !== null && payment.expiresAt.getTime() < Date.now();
-    const args = await this.instructionArgs(payment, to.clientName, context.subject);
 
+    /**
+     * The reminder repeats the *reference*, not the coordinates.
+     *
+     * It used to render the whole channel block again - the same leak as the
+     * instruction email, on a message sent to people who had not opened the
+     * first one. It now points at the client's page, where the coordinates for
+     * the channel actually chosen are already waiting.
+     */
     await this.emailService.send({
       to: to.email,
       template: 'paymentReminder',
       lang: to.lang,
-      args: { ...args, overdue: String(overdue) },
+      args: {
+        clientName: to.clientName,
+        subject: context.subject,
+        reference: payment.reference,
+        amount: formatMoney(payment.amountDue, payment.currency),
+        deadline: formatHumanDate(payment.expiresAt),
+        url: `${this.config.get<string>('FRONTEND_URL', '')}/mylands/payment/${payment.id}`,
+        overdue: String(overdue),
+        // Same footer, same reason. Read the reminder as a message too: the
+        // instruction email rendered "Ecrivez a  ou appelez le ," because these
+        // two were missing, and this template shares that footer.
+        ...(await this.supportContact()),
+      },
     });
 
     this.logger.log('Payment reminder sent %o', { paymentId, overdue });
@@ -503,32 +786,18 @@ export class PaymentsService {
   }
 
   /**
-   * Everything both messages need, with the channel details.
+   * `instructionArgs` is deleted, not left unused.
    *
-   * Throws if any channel detail is missing or blank - so a message with an
-   * empty account number cannot be composed, let alone sent.
+   * It built the v02 message by spreading **every** channel detail into the
+   * template args - `...channels` - which is precisely what v03 4d forbids. An
+   * unused function that assembles bank details into an email payload is one
+   * call away from being used again, and the next person to need "the args for
+   * an instruction email" would have found it and been right to.
+   *
+   * `sendInstructions` now calls `channels.detailsFor(channel)`, which returns
+   * one channel's fields and nothing else, and puts them on the audit row rather
+   * than in the message.
    */
-  private async instructionArgs(
-    payment: {
-      reference: string | null;
-      amountDue: bigint;
-      currency: string;
-      expiresAt: Date | null;
-    },
-    clientName: string,
-    subject: string,
-  ): Promise<Record<string, string>> {
-    const channels = await this.channels.get();
-
-    return {
-      clientName,
-      subject,
-      reference: payment.reference ?? '',
-      amount: formatMoney(payment.amountDue, payment.currency),
-      deadline: formatHumanDate(payment.expiresAt),
-      ...channels,
-    };
-  }
 
   /**
    * Appends one line to the ledger. Never changes the payment's state.
@@ -543,6 +812,30 @@ export class PaymentsService {
     recordedBy: string,
   ): Promise<{ id: string }> {
     const payment = await this.findOrThrow(paymentId);
+
+    /**
+     * A deposit names who handed the money over.
+     *
+     * Enforced here as well as in the DTO and in a CHECK constraint: the DTO
+     * guards one route, the service guards every caller, and the database
+     * guards the console.
+     *
+     * **The historic exception cannot be used to escape this.** `HIST` is
+     * refused as an input outright a few lines below, so there is no channel
+     * that skips both the payer and the proof.
+     *
+     * The first version of this check sat *inside* the `RECORDABLE_CHANNELS`
+     * rejection below, so it ran only for channels that were already refused -
+     * which is to say never. Caught by its own test resolving where it should
+     * have rejected.
+     */
+    if (requiresPaidBy(input.channel) && (input.paidBy ?? '').trim() === '') {
+      throw new BadRequestException(
+        `A ${input.channel} receipt must name who paid. A deposit is made at a ` +
+          `counter, often by somebody who is not the client, and a slip bearing an ` +
+          `unrecognised name cannot be matched to anything.`,
+      );
+    }
 
     if (!RECORDABLE_CHANNELS.includes(input.channel)) {
       // INCONNU_HISTORIQUE belongs to backfilled rows. Accepting it as an input
@@ -574,6 +867,7 @@ export class PaymentsService {
         receivedAt: input.receivedAt,
         recordedBy,
         evidenceUrl: input.evidenceUrl,
+        paidBy: input.paidBy?.trim() || null,
         correctsId: input.correctsId ?? null,
         note: input.note ?? null,
       },
@@ -650,6 +944,20 @@ export class PaymentsService {
     if (!payment) throw new NotFoundException(`Payment ${paymentId} not found`);
 
     const received = sumReceipts(payment.receipts);
+
+    // The identity status travels with the payment so the send control can say
+    // why it is refusing before anybody presses it.
+    const reservation = await this.prisma.landReservation.findUnique({
+      where: { id: payment.reservationId },
+      select: { clientUserId: true },
+    });
+    const profile = reservation?.clientUserId
+      ? await this.core.userProfile.findUnique({
+          where: { userId: reservation.clientUserId },
+          select: { idVerificationStatus: true },
+        })
+      : null;
+    const identity = profile?.idVerificationStatus ?? IdVerificationStatus.NONE;
     return {
       id: payment.id,
       reference: payment.reference,
@@ -661,6 +969,12 @@ export class PaymentsService {
       outstanding: (payment.amountDue - received).toString(),
       expiresAt: payment.expiresAt,
       createdAt: payment.createdAt,
+      // v03 4c: both, always, and separately. The screen shows the wish beside
+      // the decision so a divergence is visible rather than silent.
+      preferredChannel: payment.preferredChannel,
+      channel: payment.channel,
+      clientUserId: reservation?.clientUserId ?? null,
+      identityStatus: identity,
       receipts: payment.receipts.map((r) => ({
         id: r.id,
         amount: r.amount.toString(),
@@ -669,6 +983,7 @@ export class PaymentsService {
         receivedAt: r.receivedAt,
         recordedAt: r.recordedAt,
         recordedBy: r.recordedBy,
+        paidBy: r.paidBy,
         evidenceUrl: r.evidenceUrl,
         correctsId: r.correctsId,
         note: r.note,
@@ -873,16 +1188,36 @@ export class PaymentsService {
   async transition(
     paymentId: string,
     to: PaymentState,
-    by: { actorUserId: string; reason: string; evidenceReceiptId?: string },
+    by: {
+      actorUserId: string;
+      reason: string;
+      evidenceReceiptId?: string;
+      /** Set only by the send: what the back office chose and communicated. */
+      channel?: PaymentChannel;
+      /** Set only by the send: the validity period runs from the send. */
+      expiresAt?: Date;
+      /** The coordinates communicated, stored so a dispute reads them back. */
+      details?: Record<string, string>;
+    },
   ): Promise<{ state: PaymentState }> {
     const payment = await this.findOrThrow(paymentId);
     const from = payment.state as PaymentState;
 
     assertTransitionAllowed(from, to);
     assertTransitionIsDeliberate(to, by.actorUserId, by.reason);
+    await this.assertClientIsIdentified(payment.reservationId, from, to);
 
     await this.prisma.$transaction([
-      this.prisma.payment.update({ where: { id: paymentId }, data: { state: to } }),
+      this.prisma.payment.update({
+        where: { id: paymentId },
+        data: {
+          state: to,
+          // Written here and nowhere else. `preferredChannel` is never touched
+          // by a transition: a wish is not a record of what was used.
+          ...(by.channel ? { channel: by.channel } : {}),
+          ...(by.expiresAt ? { expiresAt: by.expiresAt } : {}),
+        },
+      }),
       this.prisma.paymentTransition.create({
         data: {
           paymentId,
@@ -891,6 +1226,10 @@ export class PaymentsService {
           actorUserId: by.actorUserId,
           reason: by.reason,
           evidenceReceiptId: by.evidenceReceiptId ?? null,
+          channel: by.channel ?? null,
+          // What was actually communicated, so a dispute is settled by the
+          // system and not by somebody's screenshot.
+          communicatedDetails: by.details ?? undefined,
         },
       }),
     ]);
@@ -903,6 +1242,77 @@ export class PaymentsService {
     });
 
     return { state: to };
+  }
+
+  /**
+   * G12 - the identification gate. **The only place bank details leave the
+   * system, so it is the place that checks who is asking.**
+   *
+   * v03 section 4d: *"Le client est identifie. Une piece d'identite verifiee,
+   * pas seulement deposee. Tant que la verification n'a pas eu lieu, la demande
+   * reste en attente et le paiement reste en INITIE."*
+   *
+   * **Verified, not submitted.** `pending` means a document is sitting in a
+   * queue; it says nothing about whether anybody looked at it. The file de revue
+   * des pieces stops being administrative hygiene and goes on the path of the
+   * money.
+   *
+   * ---------------------------------------------------------------------------
+   * Why here and not in the controller
+   * ---------------------------------------------------------------------------
+   * `transition` is the single choke point through which every state change
+   * passes - the send route, the back-office step control, and anything written
+   * later. A check in a controller guards one door; this guards the corridor.
+   *
+   * **Only `INITIE -> INSTRUCTIONS_ENVOYEES` is gated.** The exits are not: a
+   * request from somebody who never completed their identification must still be
+   * refusable, expirable and cancellable, or an unverified client's payment
+   * would be stuck forever and the dunning queue could never clear it.
+   */
+  private async assertClientIsIdentified(
+    reservationId: string,
+    from: PaymentState,
+    to: PaymentState,
+  ): Promise<void> {
+    if (from !== PaymentState.INITIE || to !== PaymentState.INSTRUCTIONS_ENVOYEES) return;
+
+    const reservation = await this.prisma.landReservation.findUnique({
+      where: { id: reservationId },
+      select: { clientUserId: true, clientName: true },
+    });
+
+    if (!reservation?.clientUserId) {
+      throw new BadRequestException(
+        `This reservation has no client account, so there is nobody whose identity ` +
+          `could have been verified. The coordinates are not released.`,
+      );
+    }
+
+    const profile = await this.core.userProfile.findUnique({
+      where: { userId: reservation.clientUserId },
+      select: { idVerificationStatus: true },
+    });
+
+    const status = profile?.idVerificationStatus ?? IdVerificationStatus.NONE;
+    if (status !== IdVerificationStatus.VERIFIED) {
+      throw new ForbiddenException(
+        `Payment coordinates are released only to a client whose identity has been ` +
+          `verified. ${reservation.clientName}'s identity is "${status}" - ` +
+          `${status === IdVerificationStatus.PENDING ? 'a document is waiting in the review queue' : status === IdVerificationStatus.REJECTED ? 'their document was rejected' : 'no document has been submitted'}. ` +
+          `Verify it from the identity review queue, then send.`,
+      );
+    }
+  }
+
+  /**
+   * The support contact, for the footer every payment message carries.
+   *
+   * Not a coordinate - a number to call for help is not a place to send money -
+   * so it rides on messages that deliberately carry no bank details.
+   */
+  private async supportContact(): Promise<{ supportEmail: string; supportPhone: string }> {
+    const all = await this.channels.get();
+    return { supportEmail: all.supportEmail, supportPhone: all.supportPhone };
   }
 
   private async findOrThrow(paymentId: string) {

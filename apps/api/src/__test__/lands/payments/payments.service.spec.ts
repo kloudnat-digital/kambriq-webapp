@@ -14,11 +14,13 @@ import {
 import { PaymentsService } from '../../../lands/payments/payments.service';
 import { LandsPrismaService } from '../../../lands/prisma/lands-prisma.service';
 import { PaymentChannelsService } from '../../../lands/payments/payment-channels.service';
+import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
 import {
   mockEmailService,
   mockLandsPrisma,
   mockPaymentChannels,
   mockConfigService,
+  mockCorePrisma,
   mockStorageService,
 } from '../../utils';
 
@@ -38,7 +40,7 @@ const payment = (over: Record<string, unknown> = {}) => ({
 const receipt = (over: Record<string, unknown> = {}) => ({
   amount: 500_000n,
   currency: 'XAF',
-  channel: PaymentChannel.VIREMENT,
+  channel: PaymentChannel.VIR,
   receivedAt: new Date('2026-09-01'),
   evidenceUrl: 's3://proofs/one.pdf',
   ...over,
@@ -47,10 +49,17 @@ const receipt = (over: Record<string, unknown> = {}) => ({
 describe('PaymentsService', () => {
   let service: PaymentsService;
   let prisma: ReturnType<typeof mockLandsPrisma>;
+  let core: ReturnType<typeof mockCorePrisma>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     prisma = mockLandsPrisma();
+    core = mockCorePrisma();
+    // Verified by default: these suites are about the payment machinery, not
+    // about the gate, and an unverified fixture would make every one of them
+    // fail for a reason none of them is testing. `payment-identification-gate.spec.ts`
+    // is where the gate itself is exercised.
+    core.userProfile.findUnique.mockResolvedValue({ idVerificationStatus: 'verified' });
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PaymentsService,
@@ -59,6 +68,7 @@ describe('PaymentsService', () => {
         { provide: EmailService, useValue: mockEmailService() },
         { provide: StorageService, useValue: mockStorageService() },
         { provide: ConfigService, useValue: mockConfigService() },
+        { provide: CorePrismaService, useValue: core },
       ],
     }).compile();
     service = module.get(PaymentsService);
@@ -77,12 +87,12 @@ describe('PaymentsService', () => {
       await service.recordReceipt(PAYMENT_ID, receipt({ amount: 500_000n }), ADMIN);
       await service.recordReceipt(
         PAYMENT_ID,
-        receipt({ amount: 2_250_000n, channel: PaymentChannel.MOBILE_MONEY }),
+        receipt({ amount: 2_250_000n, channel: PaymentChannel.OMO }),
         ADMIN,
       );
       await service.recordReceipt(
         PAYMENT_ID,
-        receipt({ amount: 1_000_000n, channel: PaymentChannel.ACTE_NOTARIE }),
+        receipt({ amount: 1_000_000n, channel: PaymentChannel.NOTA }),
         ADMIN,
       );
 
@@ -177,11 +187,7 @@ describe('PaymentsService', () => {
       prisma.payment.findUnique.mockResolvedValue(payment());
 
       await expect(
-        service.recordReceipt(
-          PAYMENT_ID,
-          receipt({ channel: PaymentChannel.INCONNU_HISTORIQUE }),
-          ADMIN,
-        ),
+        service.recordReceipt(PAYMENT_ID, receipt({ channel: PaymentChannel.HIST }), ADMIN),
       ).rejects.toThrow(BadRequestException);
       expect(prisma.paymentReceipt.create).not.toHaveBeenCalled();
     });
