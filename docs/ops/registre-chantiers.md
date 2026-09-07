@@ -583,6 +583,94 @@ tally - so the one-off path already checks what the automated path does not.
 
 ---
 
+### G10b (infra) - sixteen channel parameters, and importing the twelve that exist - `PLAN PRET`
+
+**Cost impact: None.** Four additional SSM Standard parameters (free tier is
+10 000). No new resource type, no new service.
+
+`kambriq-infra` PR, opened before the `G10` apply has run - which it has not:
+`kambriq-dev-api` is still on revision 141 and carries no `PAYMENT_*` variable.
+
+**v03 section 9 now says sixteen, not twelve.** Splitting mobile money into `OMO`
+and `MOMO` needs `ORANGE_MONEY_NUMBER`, `ORANGE_MONEY_NAME`, `MTN_MONEY_NUMBER`
+and `MTN_MONEY_NAME`: two operators, two numbers, two account names. `PR #23` was
+written when mobile money was one channel. Applying it as it stood would have
+left `OMO` and `MOMO` failing at send time - the correct failure, loud and not a
+boot failure, but found only on the first real send and costing a second apply.
+
+## The old mobile-money trio is kept, and it is now read by nothing
+
+`MOBILE_MONEY_OPERATOR`, `MOBILE_MONEY_NUMBER`, `MOBILE_MONEY_NAME` stay.
+Checked against **`feat/g11-g14-identification-and-channels`** (webapp PR #89),
+not against webapp develop, which does not carry the new names:
+
+- `CHANNEL_FIELDS` sends `OMO` the Orange pair and `MOMO` the MTN pair. **No
+  channel reads the three.**
+- `PaymentChannelsService.FIELDS` still lists all three as **required at
+  startup**, and an absent or empty one refuses the boot.
+
+So removing them from terraform would stop the API starting on dev the moment it
+deploys - trading a channel that cannot be sent for an environment that will not
+run. The order is: drop them from `FIELDS` in the webapp, merge and deploy that,
+_then_ remove them here. Registered as a follow-up.
+
+## Import blocks, because `ignore_changes` does not protect a first create
+
+The twelve were created by hand during `G3` and have never been in state.
+`lifecycle { ignore_changes = [value] }` protects a value on subsequent applies
+and does nothing on the first, where `overwrite = true` writes the declared value
+straight over the live one.
+
+Without importing, the plan calls them creates and **a correction made between
+the plan and the apply would be silently reverted** - and the plan would say
+nothing, because it has nothing to compare against. This is the same blind spot
+that nearly converted twelve SecureString bank details to plaintext in `G10`.
+
+With `import` blocks in `envs/dev/imports-payment-channels.tf` the same plan
+reads **12 to import**, and the twelve changes are `description`, `overwrite` and
+three tags. **`value` and `type` carry no diff marker at all** - verified across
+all sixteen blocks programmatically, not by eye.
+
+## Declared versus live, all sixteen, before planning
+
+`aws ssm get-parameters-by-path --with-decryption`: the twelve existing
+parameters match the declaration **in value and in type** (`SecureString`,
+`alias/aws/ssm`, `Standard`). Zero value mismatches, zero type mismatches. The
+four new ones are absent, as expected, and are genuine creates.
+
+## The plan, unapplied
+
+```
+Plan: 12 to import, 5 to add, 13 to change, 1 to destroy.
+```
+
+5 to add = the four parameters + one task-definition revision. 1 to destroy = the
+revision it replaces. 13 to change = the twelve imported (tags/description only)
+plus `web_nextauth_secret`, which is **pre-existing drift on a tag's sensitivity
+marking**, not from this branch.
+
+The task definition receives exactly `PAYMENT_CHANNELS_SSM_PREFIX`,
+`PAYMENT_CHANNELS_TRANSPORT` and `PAYMENT_VALIDITY_DAYS` - **no channel name and
+no channel value**, checked by parsing the task-definition block out of the plan.
+
+## Ordering that matters, and it is not obvious
+
+**The apply must come BEFORE webapp `#88` is merged and deployed.** `#88` turns
+an absent channel configuration into a startup failure - which was the requested
+fix, because a completely absent configuration was the only case that merely
+warned. Neither `PAYMENT_CHANNELS_SSM_PREFIX` nor `PAYMENT_CHANNELS_TRANSPORT`
+is in any task definition until this apply runs. **Merging `#88` first means the
+API does not boot on dev at all.**
+
+## Fictitious, and deliberately not diallable
+
+A Cameroonian mobile number is `+237 6XX XXX XXX`. A placeholder of that shape
+can be copied into a transfer form and the money leaves. The dev values are not
+numbers at all - `DEV-NUMERO-ORANGE-FICTIF-NE-PAS-UTILISER` - and say so in their
+own text.
+
+---
+
 ### G11-G14 - identification before coordinates, six channels, delivery in the platform - `PROUVE LOCALEMENT`
 
 **Cost impact: None** in this repository. Four SSM parameters are **owed by
