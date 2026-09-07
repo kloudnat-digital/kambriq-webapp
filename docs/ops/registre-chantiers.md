@@ -128,6 +128,8 @@ listed here first.
 | `A10`             | `PROUVE`            | the identity-review queue did not exist - the route and the role did. Queue route + `idSubmittedAt`; the back-office screen stays open              |
 | `A11`             | `PROUVE`            | 13 sites, 15 messages, 12 transactional. `sendUpdate` returns an outcome and throws on a transactional template                                     |
 | `A12`             | `PROUVE`            | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                       |
+| `G10b` (infra)    | `PLAN PRET`         | sixteen channel parameters; the twelve existing ones imported so `ignore_changes` bites on the first apply. **Apply before merging #88**            |
+| `G10b` follow-up  | `A DECIDER`         | `MOBILE_MONEY_OPERATOR/NUMBER/NAME` are required at startup and read by no channel. Drop from `FIELDS` in the webapp first, then from terraform     |
 | `G11-G14`         | `PROUVE LOCALEMENT` | six channels, the identification gate, A14's review screen, coordinates in the platform. Email carries none                                         |
 | `G11` follow-up   | `A DECIDER`         | infra owes `ORANGE_MONEY_*` and `MTN_MONEY_*`: v03 splits mobile money in two but keeps twelve parameters with one number                           |
 | `G11` follow-up 2 | `A DECIDER`         | v03 section 5's example uses a hyphen between reference and channel, which section 4b forbids. 4b implemented                                       |
