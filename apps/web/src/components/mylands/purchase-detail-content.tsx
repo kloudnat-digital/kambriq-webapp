@@ -25,6 +25,7 @@ import { BreadcrumbNav } from '../ui/breadcrumb-nav';
 import { Badge } from '../ui/badge';
 import type { ClientPurchaseDetail, LandClientDocumentType } from '@/types/lands';
 import { Label } from '../ui/label';
+import { RequestPaymentCard } from './request-payment-card';
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
 
@@ -184,6 +185,15 @@ export function PurchaseDetailContent({ id }: Props) {
         <h1 className="truncate text-xl font-bold text-slate-900">{r.land?.title}</h1>
         <p className="text-sm text-slate-500">{r.land?.city ?? r.land?.region}</p>
       </div>
+
+      {/*
+        G9: the acompte step showed an amount and offered nothing to press.
+        Hidden once the deposit is confirmed, and on a cancelled reservation -
+        there is nothing to pay in either case.
+      */}
+      {!isCancelled && !r.downPaymentConfirmed && (
+        <RequestPaymentCard reservationId={id} amountDue={r.downPaymentAmount} />
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_500px]">
         <div className="rounded-md border border-slate-200 bg-white p-6">

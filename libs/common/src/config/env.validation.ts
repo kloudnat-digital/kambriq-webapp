@@ -63,6 +63,28 @@ export const envSchema = z.object({
   // it is absent.
   PAYMENT_CHANNELS_SSM_PREFIX: z.string().optional(),
 
+  // G10: 'ssm' reads the channel details, and the prefix above is then REQUIRED
+  // - an absent one fails the boot, exactly as an empty parameter does.
+  // 'disabled' runs without them, and every attempt to send instructions throws.
+  //
+  // The default is 'ssm' on purpose: an environment that forgets to configure
+  // payments should not start, and that is the whole point of the pair. Local
+  // development and CI set 'disabled' explicitly.
+  PAYMENT_CHANNELS_TRANSPORT: z.enum(['ssm', 'disabled']).default('ssm'),
+
+  // How long a payment stays valid once created, in days. G9.
+  //
+  // It reaches the client as "A regler avant le ..." in the instruction email,
+  // and G6 will read it to decide what has gone stale.
+  //
+  // **30 is a choice, not a specification.** The design says a payment expires
+  // "au-dela du delai de validite" and never says what the delay is. 30 days is
+  // one month, which is the shape of an international transfer from the diaspora
+  // - the client base the design names. It is declared here so that changing it
+  // is one variable rather than a search, and it is written down as an open
+  // question rather than left to look like a decided fact.
+  PAYMENT_VALIDITY_DAYS: z.coerce.number().int().positive().default(30),
+
   // ----- SES Contact Lists -----
   // Must match the aws_sesv2_contact_list resource in kambriq-infra
   // (envs/dev/ses-newsletter.tf). Coupled by convention only.

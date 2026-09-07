@@ -17,6 +17,7 @@ import {
 } from '@kambriq/common';
 import {
   buildReference,
+  assertActorIsNamed,
   assertTransitionAllowed,
   assertTransitionIsDeliberate,
   COMMITTING_STATES,
@@ -25,6 +26,7 @@ import {
   RECORDABLE_CHANNELS,
   sumReceipts,
 } from '@kambriq/common';
+import { ConfigService } from '@nestjs/config';
 import { LandsPrismaService } from '../prisma/lands-prisma.service';
 import { PaymentChannelsService } from './payment-channels.service';
 
@@ -62,6 +64,19 @@ export const PROOF_CONTENT_TYPES = [
   'image/heic',
 ] as const;
 
+/**
+ * The states after which a reservation may have a *new* payment.
+ *
+ * The payment ended and the money never arrived, so asking again is the point of
+ * the exit. Deliberately not `TERMINAL_STATES`, which also contains `VALIDE` -
+ * see `requestPaymentForReservation`.
+ */
+const REPLACEABLE_STATES: ReadonlySet<PaymentState> = new Set([
+  PaymentState.REJETE,
+  PaymentState.EXPIRE,
+  PaymentState.ANNULE,
+]);
+
 /** True for the unique-index violation on `Payment.reference`. */
 const isReferenceCollision = (error: unknown): boolean =>
   typeof error === 'object' &&
@@ -78,6 +93,7 @@ export class PaymentsService {
     private readonly channels: PaymentChannelsService,
     private readonly emailService: EmailService,
     private readonly storage: StorageService,
+    private readonly config: ConfigService,
   ) {}
 
   /**
@@ -108,28 +124,81 @@ export class PaymentsService {
     amountDue: bigint;
     currency: string;
     expiresAt?: Date;
+    /** The person creating it. G9: creation is a named act, like every other. */
+    createdBy: string;
+    /** Written to the audit row. Why this payment exists. */
+    reason: string;
   }): Promise<{ id: string; reference: string }> {
     const REFERENCE_ATTEMPTS = 5;
     const collisions: string[] = [];
+
+    /**
+     * Before the sequence is touched, so a refused creation does not burn a
+     * reference counter value.
+     *
+     * `assertTransitionIsDeliberate` cannot cover this: it returns early for
+     * anything outside `COMMITTING_STATES`, and `INITIE` is not one. It also
+     * takes a `from` state, and creation has none. So the same rule is applied
+     * here explicitly rather than assumed to be inherited.
+     */
+    assertActorIsNamed(input.createdBy, 'create a payment');
+    if (input.reason.trim() === '') {
+      throw new BadRequestException(
+        'Creating a payment records why. A blank reason is refused - the audit ' +
+          'row would say a payment appeared and nothing else.',
+      );
+    }
 
     for (let attempt = 1; attempt <= REFERENCE_ATTEMPTS; attempt++) {
       const reference = buildReference(await this.nextReferenceCounter(), new Date());
 
       try {
-        const created = await this.prisma.payment.create({
-          data: {
-            reference,
-            reservationId: input.reservationId,
-            amountDue: input.amountDue,
-            currency: input.currency,
-            expiresAt: input.expiresAt ?? null,
-          },
+        /**
+         * The payment and its first audit row are one write.
+         *
+         * G7's assessment found that creation wrote no `PaymentTransition` at
+         * all: every trail on every environment began at the payment's *second*
+         * state, and the only rows with `fromState IS NULL` were the ones the
+         * G1 migration backfill wrote. A trail that does not record how a
+         * payment came to exist cannot answer the first question anybody asks
+         * of it.
+         *
+         * In the same transaction, because the alternative - create, then write
+         * the row - has a window in which a payment exists with no history, and
+         * that window is exactly where a crash leaves an orphan nobody can
+         * explain.
+         */
+        const created = await this.prisma.$transaction(async (tx) => {
+          const payment = await tx.payment.create({
+            data: {
+              reference,
+              reservationId: input.reservationId,
+              amountDue: input.amountDue,
+              currency: input.currency,
+              expiresAt: input.expiresAt ?? null,
+            },
+          });
+
+          await tx.paymentTransition.create({
+            data: {
+              paymentId: payment.id,
+              // NULL: this is the row that records the payment coming into
+              // existence, which is what the schema reserves it for.
+              fromState: null,
+              toState: PaymentState.INITIE,
+              actorUserId: input.createdBy,
+              reason: input.reason,
+            },
+          });
+
+          return payment;
         });
 
         this.logger.log('Payment created %o', {
           paymentId: created.id,
           reference,
           reservationId: input.reservationId,
+          createdBy: input.createdBy,
           attempt,
         });
 
@@ -152,6 +221,180 @@ export class PaymentsService {
       `Could not allocate a unique payment reference after ${REFERENCE_ATTEMPTS} attempts ` +
         `(${collisions.join(', ')}). No payment was created. This means the reference counter ` +
         `has wrapped the body space within one period, which needs a wider body, not a retry.`,
+    );
+  }
+
+  /**
+   * G9 - the entry point. **The client asks to pay their acompte.**
+   *
+   * ---------------------------------------------------------------------------
+   * Who creates a payment, and why it is the client
+   * ---------------------------------------------------------------------------
+   * The design decides this and says so twice. Its state table gives, for
+   * `INITIE`, a "Qui le declenche" of **"Le client, sur la plateforme"**, and its
+   * architecture section reads **"Le client declenche, la plateforme instruit"**.
+   *
+   * The two alternatives were considered and rejected:
+   *
+   * - **Automatic, when a reservation reaches a state.** Forbidden outright:
+   *   *"Aucune transition n'est automatique sur un evenement metier."* That is
+   *   the `KCA_CERTIFIED` lesson, and a payment appearing because a status
+   *   changed is an obligation with nobody's name on it.
+   * - **A back-office action.** Workable, and it makes the platform the
+   *   initiator of a commercial act - the opposite of *"la plateforme n'encaisse
+   *   pas, elle orchestre et elle atteste"*. It would also mean a client who
+   *   wants the reference has to telephone somebody to get it, which is a strange
+   *   thing to require of a reference whose whole purpose is to be *"dictee au
+   *   telephone"*. The client's own purchase page already shows the acompte as
+   *   pending, with its amount, and no way to act on it.
+   *
+   * ---------------------------------------------------------------------------
+   * The client asks. The client does not say how much.
+   * ---------------------------------------------------------------------------
+   * There is no amount on the wire. It is read from the reservation, because a
+   * caller who can name their own `amountDue` can decide what they owe.
+   */
+  async requestPaymentForReservation(
+    clientUserId: string,
+    reservationId: string,
+  ): Promise<{ id: string; reference: string; amountDue: string; currency: string }> {
+    const reservation = await this.prisma.landReservation.findUnique({
+      where: { id: reservationId },
+      include: { payments: { select: { id: true, reference: true, state: true } } },
+    });
+
+    if (!reservation) throw new NotFoundException(`Reservation ${reservationId} not found`);
+
+    // Read back from the row rather than trusted from the request - the same
+    // reason `assertOwnedByThisRun` exists in the journeys.
+    if (reservation.clientUserId !== clientUserId) {
+      throw new ForbiddenException('This reservation belongs to somebody else.');
+    }
+
+    if (reservation.status === 'CANCELLED') {
+      throw new BadRequestException(
+        'This reservation is cancelled, so there is nothing to pay against it.',
+      );
+    }
+
+    /**
+     * One payment at a time, and the existing one is returned rather than
+     * refused.
+     *
+     * A client who clicks twice, or reloads, must not end up owing two acomptes.
+     * Returning what already exists is also what makes the button safe to press
+     * again when the first attempt looked like it failed.
+     *
+     * **Not `TERMINAL_STATES`.** That set contains `VALIDE`, and the first
+     * version of this check used it - which would have let a client whose
+     * acompte was already settled create a second one and be asked to pay
+     * twice. "Terminal" and "may be replaced" are different questions that
+     * happen to have three answers in common. Only the three exits where the
+     * money did *not* arrive allow a fresh attempt, which is exactly what those
+     * exits are for.
+     */
+    const existing = reservation.payments.find(
+      (p) => !REPLACEABLE_STATES.has(p.state as PaymentState),
+    );
+    if (existing) {
+      const row = await this.findOrThrow(existing.id);
+      this.logger.log('Payment already exists for reservation %o', {
+        reservationId,
+        paymentId: row.id,
+        state: row.state,
+      });
+      return {
+        id: row.id,
+        reference: row.reference ?? '',
+        amountDue: row.amountDue.toString(),
+        currency: row.currency,
+      };
+    }
+
+    if (reservation.downPaymentAmount === null) {
+      throw new BadRequestException(
+        'This reservation carries no acompte amount, so no payment can be created ' +
+          'from it. That is a data problem on the reservation, not something the ' +
+          'client can fix by trying again.',
+      );
+    }
+
+    /**
+     * `Math.round`, and it is deliberate.
+     *
+     * `downPaymentAmount` is a `Float` - the defect G1 exists to end, quarantined
+     * rather than converted because converting it means converting `Land.price`
+     * with it. The G1 migration rounded it exactly this way when it backfilled,
+     * so a payment created here and a payment backfilled there agree.
+     * XAF has no minor unit: one indivisible unit is one franc.
+     */
+    const amountDue = BigInt(Math.round(reservation.downPaymentAmount));
+
+    const validityDays = this.config.get<number>('PAYMENT_VALIDITY_DAYS', 30);
+    const expiresAt = new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000);
+
+    const created = await this.createPayment({
+      reservationId,
+      amountDue,
+      currency: 'XAF',
+      expiresAt,
+      createdBy: clientUserId,
+      reason: `Acompte requested by the client for reservation ${reservationId}.`,
+    });
+
+    return {
+      ...created,
+      amountDue: amountDue.toString(),
+      currency: 'XAF',
+    };
+  }
+
+  /**
+   * G9 - the client asks for their instructions to be emailed.
+   *
+   * **A separate act from creating the payment**, for the same reason recording
+   * an encaissement is separate from validating one: if the send fails, the
+   * payment must still exist, and if the payment exists the client must be able
+   * to ask again. `sendInstructions` already sends before it transitions, so a
+   * failed send leaves the state alone.
+   *
+   * The design gives `INSTRUCTIONS_ENVOYEES` a "Qui le declenche" of *"La
+   * plateforme"* - the platform composes and sends it. It does not do so by
+   * itself: the client asks, which is what keeps this off the wrong side of
+   * *"aucune transition automatique sur un evenement metier"*.
+   */
+  async requestInstructions(
+    clientUserId: string,
+    paymentId: string,
+    to: { email: string; lang: string },
+  ): Promise<{ state: PaymentState; reference: string }> {
+    const payment = await this.findOrThrow(paymentId);
+    const reservation = await this.prisma.landReservation.findUnique({
+      where: { id: payment.reservationId },
+      select: { clientUserId: true, clientName: true, land: { select: { title: true } } },
+    });
+
+    if (!reservation || reservation.clientUserId !== clientUserId) {
+      throw new ForbiddenException('This payment belongs to somebody else.');
+    }
+
+    /**
+     * The name and the subject come from the reservation, the address from the
+     * token.
+     *
+     * The reservation holds the name KAMBRIQ actually knows this client by and
+     * the parcel the money is for - neither is in a JWT, and neither should be
+     * taken from the request. The **address** is the token's, because that is
+     * the mailbox the person just authenticated with; `clientEmail` on the
+     * reservation is whatever an agent typed months ago and may be stale.
+     */
+    return this.sendInstructions(
+      paymentId,
+      { email: to.email, clientName: reservation.clientName, lang: to.lang },
+      {
+        subject: reservation.land.title,
+        actorUserId: clientUserId,
+      },
     );
   }
 

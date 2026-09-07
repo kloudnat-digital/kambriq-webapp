@@ -16,6 +16,35 @@ export const getPurchaseDetail = createAction(async (id: string) => {
   return serverApi.get(`/lands/client/purchases/${id}`);
 });
 
+// ---- G9: the payment entry point ----
+
+/**
+ * The client asks to pay the acompte on their own reservation.
+ *
+ * **No amount is sent.** It is read from the reservation server-side, because a
+ * caller who can name their own amount can decide what they owe. Asking twice
+ * returns the payment that already exists rather than creating a second.
+ */
+export const requestPaymentAction = createAction(async (reservationId: string) => {
+  return serverApi.post<{
+    id: string;
+    reference: string;
+    amountDue: string;
+    currency: string;
+  }>(`/lands/client/purchases/${reservationId}/payment`);
+});
+
+/**
+ * A separate act from creating the payment, exactly as recording an encaissement
+ * is separate from validating one. If the email fails the payment still exists,
+ * and the reference is on screen either way.
+ */
+export const sendMyInstructionsAction = createAction(async (paymentId: string) => {
+  return serverApi.post<{ state: string; reference: string }>(
+    `/lands/client/payments/${paymentId}/instructions`,
+  );
+});
+
 export const getClientDocumentUploadUrlAction = createAction(
   async (
     reservationId: string,
