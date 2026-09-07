@@ -62,12 +62,23 @@ load_gh_vars() {
   ${GH_VARS_LOADED} && return 0
   GH_VARS_LOADED=true
   command -v gh >/dev/null 2>&1 || return 0
-  gh auth status >/dev/null 2>&1 || return 0
-  local name value
+
+  # Ask for the variables, rather than asking whether `gh` is happy.
+  #
+  # This used to probe `gh auth status` first. That command exits **1** when ANY
+  # configured account has a stale token - including an inactive one nobody is
+  # using - while the active account works and the call below succeeds. So the
+  # probe refused a working setup, the script fell through to "AWS_REGION is not
+  # set", and the message pointed at the wrong thing entirely.
+  #
+  # A readiness check that is not the operation is a guess about the operation.
+  local name value out
+  out="$(gh variable list --env dev 2>/dev/null || true)"
+  [[ -n "${out}" ]] || return 0
   while IFS=$'\t' read -r name value _; do
     [[ -z "${name}" ]] && continue
     if [[ -z "${!name:-}" ]]; then export "${name}=${value}"; fi
-  done < <(gh variable list --env dev 2>/dev/null || true)
+  done <<< "${out}"
 }
 
 require_var() {
