@@ -662,6 +662,52 @@ concrete mismatches, none of them safely guessable while Actions cannot run:
 **Its first real execution is the risk**, and that execution cannot happen before
 October. Registered as the follow-up rather than written blind.
 
+## What the first real run found - two defects, both in the script
+
+Running it is what found them. Neither was visible to any test.
+
+**1. A readiness probe that was not the operation.** The script asked
+`gh auth status` before reading the `dev` variables. That command exits **1**
+when ANY configured account has a stale token - including an inactive one nobody
+uses - while the active account works and `gh variable list` returns all sixteen
+variables. So the probe refused a working setup and the script died reporting
+`AWS_REGION is not set`, which pointed at the wrong thing entirely. The probe is
+gone; the operation is the check. **Same shape as the `merge-tree` grep in `R1`:
+a stand-in for the real question, answering a different one.**
+
+**2. An architecture gate that refused every correct image.** `assert_amd64`
+read `.architecture` from `docker manifest inspect`. A single-platform push
+returns a v2 image manifest, which has no `.manifests` array **and** no top-level
+`.architecture` - the platform lives in the config blob the manifest points at.
+The field was null for every correctly built image.
+
+It failed **closed**, which is the right direction, but a gate that refuses
+everything proves nothing about what it lets through. Fixed to read
+`--verbose`'s resolved descriptor, and then proved to discriminate rather than
+merely pass:
+
+```
+arm64v8/alpine:latest   -> arm64 -> REFUSED
+amd64/alpine:latest     -> amd64 -> accepted
+kambriq-api:sha-5c35aa2 -> amd64 -> accepted
+```
+
+## The deploy it then carried out
+
+`sha-5c35aa2`, api task definition **145**, web **102**.
+
+| step          | result                                                                                                                                                                                                                            |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| migrations    | exit 0 - `20260907090000_g11_channels_gate_and_payer` applied to `lands`; core, kbs, kamnet had none pending                                                                                                                      |
+| seed          | **not run.** `run_seed` defaults false and `ci.yml` never passes it, so the pipeline has never seeded - and `--seed` would be inert anyway, since `run-migrations.js` does not read `process.argv`. The `H2` follow-up, unchanged |
+| api service   | rollout COMPLETED after 180s                                                                                                                                                                                                      |
+| web service   | rollout COMPLETED after 60s                                                                                                                                                                                                       |
+| bootstrap     | exit 0                                                                                                                                                                                                                            |
+| version gates | api and web both serving `sha-5c35aa2`                                                                                                                                                                                            |
+
+**`G8`'s blocker is cleared**: `perOperator: 4` is in the deployed startup line,
+and the v02 client-triggered send route is gone from the deployed OpenAPI.
+
 ---
 
 ### R1 - a merge can succeed and have no effect - `EN COURS`
