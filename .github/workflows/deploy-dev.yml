@@ -64,6 +64,11 @@ jobs:
   deploy:
     name: Deploy to dev
     runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    # 575s measured. Generous because most of it is two ECS rollouts, which are
+    # AWS's clock, not ours - but far short of the 360-minute default, where a
+    # deploy wedged on a rollout that never completes would burn 18% of the
+    # month before anyone looked.
+    timeout-minutes: 20
     environment: dev
     permissions:
       id-token: write

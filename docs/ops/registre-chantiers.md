@@ -128,6 +128,7 @@ listed here first.
 | `A10`             | `PROUVE`            | the identity-review queue did not exist - the route and the role did. Queue route + `idSubmittedAt`; the back-office screen stays open                                                   |
 | `A11`             | `PROUVE`            | 13 sites, 15 messages, 12 transactional. `sendUpdate` returns an outcome and throws on a transactional template                                                                          |
 | `A12`             | `PROUVE`            | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                                                            |
+| `R4`              | `EN COURS`          | back to hosted runners under a spending cap. Baseline measured: 27 billed minutes, of which the quality matrix billed 5 to do 102s of checking                                           |
 | `R3`              | `EN COURS`          | CI moved to the self-hosted `kambriq-ci` runner. No `services:` anywhere, so macOS is viable. Exposed three image builds pinning no platform - amd64 held by accident of `ubuntu-latest` |
 | `R1`              | `EN COURS`          | **a merge can succeed and have no effect.** `#89` merged into a branch consumed 89 s earlier; `#88` was squash-merged, so nothing showed. Pending proof is the three commands in `R1`    |
 | `G8`              | `ARRETE`            | **G11-G14 is not on develop and not deployed**: #89 merged into the G9 branch 89s after that branch merged to develop. 51 files stranded at `230b827`                                    |
@@ -587,6 +588,121 @@ unilaterally: it crosses into the other repository.
 
 The manual runbook does not have this gap - it fetches the log and requires the
 tally - so the one-off path already checks what the automated path does not.
+
+---
+
+### R4 - back to hosted runners, and what a run costs - `EN COURS`
+
+Visquis is adding a payment method with a low cap, so the bill matters and the
+self-hosted Mac stops being the target. It stays **registered** - nothing was
+removed - because it serialises jobs: a hosted quality stage of 118s wall clock
+took 1371s on it, and one stall left two jobs queued for 19 minutes.
+
+## The baseline, measured before anything changed
+
+GitHub bills each job's wall clock **rounded up to the minute, per job**.
+
+| job                     |       hosted secs | billed | self-hosted secs | billed |
+| ----------------------- | ----------------: | -----: | ---------------: | -----: |
+| Commitlint              | (skipped on push) |      0 |              202 |      4 |
+| Quality / typecheck     |                47 |      1 |              246 |      5 |
+| Quality / lint          |                58 |      1 |              307 |      6 |
+| Quality / typecheck:web |                58 |      1 |              214 |      4 |
+| Quality / test          |               118 |      2 |              402 |      7 |
+| Build & push API image  |               151 |      3 |                - |      - |
+| Build & push Web image  |               159 |      3 |                - |      - |
+| Deploy to dev           |               575 |     10 |                - |      - |
+| E2E Tests (dev)         |               218 |      4 |                - |      - |
+| Delivery journeys (dev) |               114 |      2 |                - |      - |
+| **TOTAL**               |          **1498** | **27** |         **1371** | **26** |
+
+Hosted run `34109055661` (full pipeline, 18m01s wall clock); self-hosted run
+`34142916629` (quality only, 41m45s wall clock).
+
+**Where the waste was.** The four quality jobs billed 5 minutes to do 102
+seconds of checking. Step timings: ~40s of checkout + setup-node + install per
+job, paid four times, for 24 seconds of parallelism.
+
+## What changed, in descending order of saving
+
+**1. Concurrency.** `cancel-in-progress` is an **expression**, not `true`:
+
+```yaml
+cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+```
+
+It is false on a push to develop, so **the deploy is never cancelled mid-flight**
+
+- that run migrates the database, updates two ECS services and bootstraps the
+  admins, and killing it between the migration and the service update leaves dev
+  in a state no log explains. `deploy-dev.yml` keeps its own
+  `concurrency: deploy-dev, cancel-in-progress: false` as a second barrier.
+
+**2. Quality consolidated, four jobs into one.** 5 billed minutes -> 3. The
+trade is 24s of extra wall clock. The image builds were **kept parallel** by the
+same arithmetic run the other way: merging them saves 1 billed minute and adds
+~150s to every deploy.
+
+**3. `nx affected`, and an honest note on it.** On a PR, `--base=origin/<base>`.
+On a push to develop there is no base to diff against, so develop runs the
+**full set** - deliberately, because develop is what gets built and deployed.
+
+Measured, this saves less than it sounds: a workflow-only change gives
+`-t test` affected `[]`, but a change touching `libs/common` gives
+`["api","web","common"]` - everything - because both apps depend on it. **The
+saving is concentrated on documentation and config PRs, not on normal ones.**
+
+**4. Caching.** `setup-node` already caches the pnpm store; the nx computation
+cache is now cached on `.nx/cache`, keyed on the lockfile plus the sha with a
+`restore-keys` prefix fallback. The fallback is the part that pays - without it
+every run is a cold cache and the cache is decoration.
+
+**5. `timeout-minutes` on every job**, ~2x measured: 5 for the filter and
+commitlint, 10 for quality and the builds, 15 for e2e, 20 for the deploy.
+GitHub's default is **360**, so one hung job burns 18% of a monthly quota.
+
+**6. Path filters, on pull requests only.** A `changes` job reports `code=false`
+for a documentation-only PR and quality is skipped.
+
+On a push to develop it always reports `true`. That is deliberate: this project
+checks that **the sha served by dev equals develop's head**, and a docs-only
+merge that skipped the deploy would break that invariant for a reason nobody
+would remember a week later.
+
+## Required checks: there are none
+
+```
+GET /repos/kloudnat-digital/kambriq-webapp/branches/develop/protection
+->  403 "Upgrade to GitHub Pro or make this repository public"
+```
+
+Branch protection is unavailable on this plan, so **no check is required and a
+skipped job cannot block a merge**. If the plan changes, every gate above must
+be rewritten as a job that always runs and exits 0 when there is nothing to do.
+Written down because the cost of getting it wrong is a permanently unmergeable
+PR.
+
+## Does e2e run twice? No - but quality did
+
+`e2e` and `journeys` are gated `github.event_name == 'push' && github.ref ==
+'refs/heads/develop'`, so they never run on a PR. **`quality` had no gate**, so
+it ran on the PR and again on the squashed develop commit - about 5 billed
+minutes duplicated per merge.
+
+Kept, not removed: the develop run is the gate before the build and the deploy,
+and it is the run whose result licences a deployment. The nx cache is what makes
+the repeat cheap rather than deleting it.
+
+## The runner target
+
+One repository variable, `CI_RUNNER_LABELS`, read by all jobs:
+
+```yaml
+runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+```
+
+Now `["ubuntu-latest"]`. Back to the Mac is one edit to that variable; **deleting
+it also returns to hosted**, because that is the fallback.
 
 ---
 

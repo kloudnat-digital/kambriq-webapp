@@ -999,6 +999,45 @@ changes.
 
 ---
 
+### CI is billed per job, rounded up — so four fast jobs cost more than one slow one
+
+Measured 2026-09-07, moving back to hosted runners under a spending cap.
+
+The `quality` matrix ran lint, typecheck, typecheck:web and test in parallel:
+47s, 58s, 58s, 118s. Wall clock 118 seconds, which reads like an efficient
+pipeline. **Billed: 1+1+1+2 = five minutes**, because GitHub rounds each job up
+to the minute and charges per job.
+
+Of those 4m22s of machine time, **102 seconds was the actual checking**. The
+rest was four checkouts, four `setup-node`s and four `pnpm install`s — the same
+40 seconds of setup, paid four times, to save 24 seconds of waiting.
+
+**The rule: parallelism is bought, not free, and the price is one rounded-up
+minute of setup per job.** Split jobs when someone is genuinely waiting on the
+wall clock; merge them when they are only waiting on the bill.
+
+Both directions of that trade are in this repository, and the numbers decide
+each one:
+
+- the quality matrix **merged**: two billed minutes saved for 24 seconds of
+  extra waiting
+- the two image builds **kept parallel**: one billed minute would be saved for
+  two and a half minutes added to every deploy
+
+The same rounding makes `timeout-minutes` a cost control rather than a
+formality. The default is **360 minutes**; one job hung on a network read burns
+18% of a monthly quota before anyone opens the tab.
+
+And measure the levers rather than assuming them. `nx affected` sounds like it
+halves the bill; here it skips everything on a docs or workflow PR and skips
+**nothing** on a normal one, because `libs/common` is a dependency of both apps
+so any change to it affects every project. A saving that only applies to the
+cheap case is still worth having — but it is not the saving it looks like, and
+[an optimisation reported by intention rather than measurement is worth
+nothing](#the-runners-architecture-is-a-build-input-and-nothing-in-the-file-says-so).
+
+---
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope
