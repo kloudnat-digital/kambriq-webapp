@@ -88,6 +88,47 @@ describe('G10 - an unconfigured payment channel service refuses to start', () =>
     expect(disabledBranch).toContain('return;');
   });
 
+  it('reports sixteen fields when all sixteen are configured, and says so when not', async () => {
+    /**
+     * v03 section 9 requires sixteen. The startup line used to report the size
+     * of the *required* set - twelve - so a complete apply and a half-finished
+     * one logged the same thing, and the only way to tell them apart was to send
+     * an OMO payment and watch it fail.
+     *
+     * This is the line `G10b`'s post-apply checklist asks somebody to read, so
+     * it has to mean what the checklist says it means.
+     */
+    const service = new PaymentChannelsService(
+      config({ PAYMENT_CHANNELS_SSM_PREFIX: '/kambriq/test/api/payment-channels' }),
+    );
+
+    const logged: unknown[] = [];
+    const warned: string[] = [];
+    jest.spyOn(service['logger'], 'log').mockImplementation((...a: unknown[]) => {
+      logged.push(a[1]);
+    });
+    jest.spyOn(service['logger'], 'warn').mockImplementation((m: unknown) => {
+      warned.push(String(m));
+    });
+
+    // The twelve required load; the four per-operator ones are absent, which is
+    // the state dev is in until G10b is applied.
+    // `onModuleInit` calls `load`, not `get` - mocking the wrong one let the
+    // real SSM read run and the test failed with twelve MISSING parameters.
+    const internals = service as unknown as {
+      load: () => Promise<unknown>;
+      optional: () => Promise<Record<string, string>>;
+    };
+    jest.spyOn(internals, 'load').mockResolvedValue({});
+    jest.spyOn(internals, 'optional').mockResolvedValue({});
+
+    await service.onModuleInit();
+
+    expect(logged[0]).toMatchObject({ required: 12, perOperator: 0, fields: 12 });
+    expect(warned.join(' ')).toContain('OMO and MOMO cannot be sent');
+    expect(warned.join(' ')).toContain('ORANGE_MONEY_NUMBER');
+  });
+
   it('the transport variable is declared, so an environment cannot invent a third value', () => {
     const env = readFileSync(
       join(

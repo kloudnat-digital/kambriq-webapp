@@ -180,10 +180,42 @@ export class PaymentChannelsService implements OnModuleInit {
     }
 
     await this.load();
+
+    /**
+     * Both sets are counted, and the per-operator one is loaded here rather than
+     * left to the first send.
+     *
+     * v03 section 9 says **sixteen** parameters. This line used to report
+     * `fields: 12` - the size of the required set - so a correct apply that
+     * landed all sixteen and a half-finished one that landed twelve produced
+     * the same log, and the only way to tell them apart was to send an `OMO`
+     * payment and watch it fail.
+     *
+     * `perOperator: 0` now says, at boot, that `OMO` and `MOMO` cannot be sent.
+     * It is still not a startup failure: refusing to boot an environment because
+     * two of six channels are unconfigured is worse than refusing those two
+     * loudly, and the required twelve are what the service genuinely cannot work
+     * without.
+     */
+    const perOperator = Object.keys(await this.optional()).length;
+
     this.logger.log('Payment channel details loaded %o', {
       prefix: this.prefix(),
-      fields: Object.keys(FIELDS).length,
+      required: Object.keys(FIELDS).length,
+      perOperator,
+      fields: Object.keys(FIELDS).length + perOperator,
     });
+
+    if (perOperator < Object.keys(OPTIONAL_FIELDS).length) {
+      this.logger.warn(
+        `Only ${perOperator} of ${Object.keys(OPTIONAL_FIELDS).length} per-operator ` +
+          // The **parameter** names, not the internal field keys: somebody
+          // reading this log has to search SSM for them, and
+          // `orangeMoneyNumber` is not a thing they can look up.
+          `parameters are configured (${Object.values(OPTIONAL_FIELDS).join(', ')}). ` +
+          `OMO and MOMO cannot be sent until they are - every other channel works.`,
+      );
+    }
   }
 
   /**
