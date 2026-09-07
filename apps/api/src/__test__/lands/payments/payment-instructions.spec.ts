@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { BadRequestException } from '@nestjs/common';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -16,6 +17,7 @@ import {
   mockEmailService,
   mockLandsPrisma,
   mockPaymentChannels,
+  mockConfigService,
   mockStorageService,
 } from '../../utils';
 
@@ -58,6 +60,7 @@ describe('G3 - payment instructions and reminders', () => {
         { provide: PaymentChannelsService, useValue: channels },
         { provide: EmailService, useValue: email },
         { provide: StorageService, useValue: mockStorageService() },
+        { provide: ConfigService, useValue: mockConfigService() },
       ],
     }).compile();
     service = module.get(PaymentsService);

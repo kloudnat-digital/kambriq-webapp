@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { ConflictException } from '@nestjs/common';
 import { EmailService, validateReference, StorageService } from '@kambriq/common';
 import { PaymentsService } from '../../../lands/payments/payments.service';
@@ -8,6 +9,7 @@ import {
   mockEmailService,
   mockLandsPrisma,
   mockPaymentChannels,
+  mockConfigService,
   mockStorageService,
 } from '../../utils';
 
@@ -38,12 +40,20 @@ describe('createPayment', () => {
         { provide: PaymentChannelsService, useValue: mockPaymentChannels() },
         { provide: EmailService, useValue: mockEmailService() },
         { provide: StorageService, useValue: mockStorageService() },
+        { provide: ConfigService, useValue: mockConfigService() },
       ],
     }).compile();
     service = module.get(PaymentsService);
   });
 
-  const input = { reservationId: 'res-1', amountDue: 750_000n, currency: 'XAF' };
+  // G9: creation is a named act, so these two are not optional.
+  const input = {
+    reservationId: 'res-1',
+    amountDue: 750_000n,
+    currency: 'XAF',
+    createdBy: '00000000-0000-4000-8000-c00000000001',
+    reason: 'Acompte requested by the client.',
+  };
 
   it('assigns a valid reference at creation', async () => {
     const { reference } = await service.createPayment(input);

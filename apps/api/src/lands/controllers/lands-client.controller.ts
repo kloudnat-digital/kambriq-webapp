@@ -1,7 +1,25 @@
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { CurrentUser, PaginationQueryDto, RequestUser, RoleCode, Roles } from '@kambriq/common';
 import { LandReservationsService } from '../reservations/reservations.service';
+import { PaymentsService } from '../payments/payments.service';
 import { GetClientDocumentUploadUrlDto, RegisterClientDocumentDto } from '../dto/lands.dto';
 
 @ApiTags('LANDS - Client')
@@ -9,7 +27,10 @@ import { GetClientDocumentUploadUrlDto, RegisterClientDocumentDto } from '../dto
 @Controller('lands/client')
 @Roles(RoleCode.CLIENT)
 export class LandsClientController {
-  constructor(private readonly reservationsService: LandReservationsService) {}
+  constructor(
+    private readonly reservationsService: LandReservationsService,
+    private readonly payments: PaymentsService,
+  ) {}
 
   @Get('purchases')
   @ApiOperation({
@@ -78,5 +99,46 @@ export class LandsClientController {
     @Param('documentId') documentId: string,
   ) {
     return this.reservationsService.deleteClientDocument(user.id, id, documentId);
+  }
+
+  // ----- G9: the payment entry point ----- //
+
+  @Post('purchases/:id/payment')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Request a payment for this purchase',
+    description:
+      'Creates the payment for the acompte and returns it with its reference. **The client is ' +
+      'who creates a payment** - the design gives INITIE a "Qui le declenche" of "Le client, sur ' +
+      'la plateforme". There is no amount on the wire: it is read from the reservation, because ' +
+      'a caller who can name their own amount can decide what they owe. ' +
+      'Creation writes its own audit entry, and sending the instructions is a separate call.',
+  })
+  @ApiParam({ name: 'id', description: 'Reservation ID' })
+  @ApiResponse({ status: 201, description: 'Payment created, or the live one returned unchanged.' })
+  @ApiResponse({ status: 400, description: 'The reservation is cancelled, or carries no acompte.' })
+  @ApiResponse({ status: 403, description: 'The reservation belongs to somebody else.' })
+  async requestPayment(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.payments.requestPaymentForReservation(user.id, id);
+  }
+
+  @Post('payments/:id/instructions')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Send me my payment instructions',
+    description:
+      'Emails the instructions for this payment and moves it to INSTRUCTIONS_ENVOYEES. ' +
+      '**A separate act from creating the payment**: if the send fails the payment still ' +
+      'exists, and the client can ask again. The send happens before the transition, so the ' +
+      'state never claims an email that did not leave.',
+  })
+  @ApiParam({ name: 'id', description: 'Payment ID' })
+  @ApiResponse({ status: 200, description: 'Instructions sent.' })
+  @ApiResponse({ status: 403, description: 'The payment belongs to somebody else.' })
+  async sendMyInstructions(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.payments.requestInstructions(user.id, id, {
+      email: user.email,
+      lang: user.lang,
+    });
   }
 }

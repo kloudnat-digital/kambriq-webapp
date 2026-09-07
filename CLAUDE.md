@@ -596,6 +596,68 @@ The seed ran clean locally and died in the container with
 from **source** under `tsx`, and the image copied two subdirectories of
 `libs/common/src`. **The two differ by a `COPY` line nobody reads.**
 
+### The design document is the decision, and the format you read it in matters
+
+_Who creates a payment_ looked like a judgement call. It was not: the design's
+state table gives `INITIE` a "Qui le declenche" of **"Le client, sur la
+plateforme"**, and its architecture section reads "Le client declenche". Two
+independent statements, both explicit.
+
+They are only in the `.docx`. The `.md` export in the same Drive folder flattens
+the table and **drops the "Qui le declenche" column entirely** - so the file that
+is easiest to grep is the one with the answer removed. Four chantiers were built
+against the `.md`.
+
+When a design exists in several formats, read the richest one before deciding
+something it may already have decided.
+
+### Configuration that provisions a value can undo the design that reads it
+
+`G3` chose a runtime SSM reader so a wrong bank account number is corrected with
+one command instead of a deploy. Putting those twelve values into terraform is
+the obvious way to stop them existing only by hand - and done naively it destroys
+exactly the property they were designed for:
+
+- as ECS `secrets`, a correction needs a task restart;
+- as terraform-rendered `environment_variables`, it needs an apply;
+- as `aws_ssm_parameter` **without** `lifecycle { ignore_changes = [value] }`,
+  the next apply silently reverts the correction.
+
+The shape that keeps the choice: terraform declares the parameters and never
+touches their values again, the task definition carries **only the prefix**, and
+the app reads through the SDK. Proved rather than asserted - a `put-parameter` at
+23:56 changed the bank name in an email sent at 23:57 by the same process that had
+sent the old one at 23:55, with no restart and no deploy.
+
+**When provisioning something, check what property the thing being provisioned was
+chosen for.**
+
+### `terraform plan` cannot warn you about a resource it is adopting
+
+The plan showed twelve clean creations. The twelve parameters already existed -
+created by hand - and were `SecureString`; the new declaration said `String`.
+Terraform had nothing to compare against, because from its point of view those
+resources did not exist, so the plan was silent and applying would have converted
+twelve bank details to plaintext.
+
+**A plan is a diff against state, not against reality.** When terraform adopts
+resources that already exist, compare the declaration with the live resource
+yourself - type, tier, encryption - because that is exactly the comparison the
+plan cannot make.
+
+### A guard that is quiet when it knows nothing has it backwards
+
+`PaymentChannelsService` threw when a parameter was empty and **warned and
+returned** when the prefix was absent entirely. One wrong value was fatal; knowing
+nothing at all was a log line. It stayed that way for three deploys, on an
+environment where the prefix was never set.
+
+`StorageService` already had the rule: _disabling must be a choice, never an
+inference from absent configuration._ An explicit `..._TRANSPORT=disabled` is a
+sentence somebody wrote; an unset variable is a sentence nobody wrote.
+
+**When a service has a degraded mode, make the unconfigured case the loud one.**
+
 ### An API is not delivered until something renders it
 
 `A10` shipped a pending-documents queue the API could answer and no screen ever

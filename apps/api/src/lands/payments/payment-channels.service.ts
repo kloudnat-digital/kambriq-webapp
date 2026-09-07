@@ -33,6 +33,11 @@ import { ConfigService } from '@nestjs/config';
  * every parameter that is absent rather than the first, and the module refuses
  * to come up. A blank where an account number belongs is not a degraded
  * message - it is a message that tells somebody to transfer money into nothing.
+ *
+ * **And so is the prefix (G10).** An absent `PAYMENT_CHANNELS_SSM_PREFIX` fails
+ * the boot exactly as an empty parameter does. Running without channels is set
+ * with `PAYMENT_CHANNELS_TRANSPORT=disabled`, which is a sentence somebody wrote
+ * rather than a variable somebody forgot.
  */
 export type PaymentChannels = {
   bankName: string;
@@ -83,15 +88,44 @@ export class PaymentChannelsService implements OnModuleInit {
    * production, long after it could have been cheap.
    */
   async onModuleInit(): Promise<void> {
-    if (this.prefix() === null) {
-      // Not configured at all - the local and test case. Loud, and it does not
-      // pretend to have channels: `get()` throws if anything asks for them.
+    /**
+     * G10 - the asymmetry, corrected.
+     *
+     * This used to warn and **return** when the prefix was absent, and throw
+     * when the prefix was present but a parameter was empty. That is backwards.
+     * An empty parameter is one wrong value; an absent prefix is a service that
+     * knows nothing at all - and it was the quiet one.
+     *
+     * It cost three deploys. `PAYMENT_CHANNELS_SSM_PREFIX` was never added to
+     * the ECS task definition, so on dev this branch was taken every time, the
+     * SDK was never called, and G3 looked deployed while being configured on no
+     * environment. Nothing failed, so nothing was looked at.
+     *
+     * The rule is `StorageService`'s, applied here: **disabling must be a
+     * choice, never an inference from absent configuration.** Running without
+     * channel details is legitimate - locally, in tests, in any environment that
+     * never sends instructions - and it now has to be said out loud.
+     */
+    if (this.transport() === 'disabled') {
       this.logger.warn(
-        'PAYMENT_CHANNELS_SSM_PREFIX is not set. Payment instructions cannot be sent, ' +
-          'and any attempt to send one will throw rather than produce a message with blanks.',
+        'PAYMENT_CHANNELS_TRANSPORT=disabled - payment channel details are off. ' +
+          'Instructions cannot be sent, and any attempt to send one will throw ' +
+          'rather than produce a message with blanks.',
       );
       return;
     }
+
+    if (this.prefix() === null) {
+      throw new Error(
+        'PaymentChannelsService: PAYMENT_CHANNELS_SSM_PREFIX is required when ' +
+          "PAYMENT_CHANNELS_TRANSPORT is 'ssm'. Set it to the parameter prefix " +
+          '(for example /kambriq/dev/api/payment-channels), or set ' +
+          'PAYMENT_CHANNELS_TRANSPORT=disabled to run without payment channels. ' +
+          'Refusing to start: a service that silently knows no channel details is ' +
+          'how G3 reached dev configured on no environment at all.',
+      );
+    }
+
     await this.load();
     this.logger.log('Payment channel details loaded %o', {
       prefix: this.prefix(),
@@ -108,16 +142,29 @@ export class PaymentChannelsService implements OnModuleInit {
   }
 
   private prefix(): string | null {
-    return this.config.get<string>('PAYMENT_CHANNELS_SSM_PREFIX')?.replace(/\/+$/, '') || null;
+    // Trimmed before anything else: `PAYMENT_CHANNELS_SSM_PREFIX="   "` is a
+    // variable somebody set to nothing, and it used to read as configured -
+    // passing the startup check and failing later inside the SDK with a message
+    // about a malformed path. Whitespace is absence.
+    const raw = this.config.get<string>('PAYMENT_CHANNELS_SSM_PREFIX')?.trim();
+    return raw ? raw.replace(/\/+$/, '') || null : null;
+  }
+
+  /** `'ssm'` by default. Turning it off is a decision somebody typed. */
+  private transport(): 'ssm' | 'disabled' {
+    return this.config.get<string>('PAYMENT_CHANNELS_TRANSPORT', 'ssm') === 'disabled'
+      ? 'disabled'
+      : 'ssm';
   }
 
   private async load(): Promise<PaymentChannels> {
     const prefix = this.prefix();
     if (!prefix) {
       throw new Error(
-        'PAYMENT_CHANNELS_SSM_PREFIX is not set, so there are no payment channel details. ' +
-          'Refusing to build payment instructions: a message with a blank where an account ' +
-          'number belongs tells somebody to transfer money into nothing.',
+        'There are no payment channel details: PAYMENT_CHANNELS_SSM_PREFIX is not set ' +
+          '(or PAYMENT_CHANNELS_TRANSPORT=disabled). Refusing to build payment ' +
+          'instructions: a message with a blank where an account number belongs tells ' +
+          'somebody to transfer money into nothing.',
       );
     }
 

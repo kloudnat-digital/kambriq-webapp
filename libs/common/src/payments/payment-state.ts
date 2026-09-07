@@ -115,6 +115,40 @@ const SYSTEM_ACTORS: ReadonlySet<string> = new Set([
   'auto',
 ]);
 
+/**
+ * Thrown when an act that must carry a person's name does not.
+ *
+ * G9: creation needs this as much as a transition does. A payment is an
+ * obligation, and an obligation that appears with nobody's name on it is the
+ * `KCA_CERTIFIED` shape one step earlier than the transition table can see -
+ * the guard there only looks at states, and creation has no `from` state to
+ * check.
+ */
+export class UnnamedActorError extends Error {
+  constructor(act: string, actor: string) {
+    super(
+      `Refusing to ${act} on behalf of "${actor}". This act is performed by a ` +
+        `named person, and "${actor}" is not one. A business event must never ` +
+        `cross this boundary by itself.`,
+    );
+    this.name = 'UnnamedActorError';
+  }
+}
+
+/**
+ * Throws unless `actorUserId` is a person rather than a marker.
+ *
+ * One definition of "a named actor", used by creation and by the transition
+ * guard. Two copies of this list would agree until somebody added `daemon` to
+ * one of them.
+ */
+export function assertActorIsNamed(actorUserId: string | null | undefined, act: string): void {
+  const actor = (actorUserId ?? '').trim();
+  if (actor === '' || SYSTEM_ACTORS.has(actor.toLowerCase())) {
+    throw new UnnamedActorError(act, actor || '(none)');
+  }
+}
+
 export class IllegalPaymentTransitionError extends Error {
   constructor(from: PaymentState, to: PaymentState) {
     super(
@@ -163,6 +197,8 @@ export function assertTransitionIsDeliberate(
 
   const actor = (actorUserId ?? '').trim();
   if (actor === '' || SYSTEM_ACTORS.has(actor.toLowerCase())) {
+    // Same list as `assertActorIsNamed`, different error: this one names the
+    // state being entered, which is the fact a reader of the audit trail needs.
     throw new AutomaticTransitionForbiddenError(to, actor || '(none)');
   }
   if ((reason ?? '').trim() === '') {

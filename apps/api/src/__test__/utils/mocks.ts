@@ -201,25 +201,49 @@ export const mockPaymentChannels = () => ({
   ),
 });
 
-export const mockLandsPrisma = () => ({
-  payment: {
-    findUnique: fn(),
-    findMany: fn(),
-    count: fn(),
-    create: fn(),
-    update: fn(),
-  },
-  paymentReceipt: {
-    create: fn(),
-    findMany: fn(),
-  },
-  paymentTransition: {
-    create: fn(),
-    findMany: fn(),
-  },
-  $transaction: jest.fn((args: Promise<unknown>[]) => Promise.all(args)),
-  $queryRaw: fn(),
-});
+export const mockLandsPrisma = () => {
+  const client = {
+    payment: {
+      findUnique: fn(),
+      findMany: fn(),
+      count: fn(),
+      create: fn(),
+      update: fn(),
+    },
+    paymentReceipt: {
+      create: fn(),
+      findMany: fn(),
+    },
+    paymentTransition: {
+      create: fn(),
+      findMany: fn(),
+    },
+    landReservation: {
+      findUnique: fn(),
+      findMany: fn(),
+    },
+    /**
+     * Both call shapes, because the service uses both.
+     *
+     * The array form batches independent writes; the **callback** form is what
+     * G9's creation needs, because the audit row's `paymentId` is only known
+     * once the payment row exists. A mock that understood only the array form
+     * made every spec in four files fail at once with a shape error, which says
+     * nothing about the code under test.
+     *
+     * The callback is handed `client` itself, so a write inside the transaction
+     * lands on the same spy a test asserts against.
+     */
+    $transaction: jest.fn(
+      (arg: unknown): Promise<unknown> =>
+        typeof arg === 'function'
+          ? Promise.resolve((arg as (tx: unknown) => unknown)(client))
+          : Promise.all(arg as Promise<unknown>[]),
+    ),
+    $queryRaw: fn(),
+  };
+  return client;
+};
 
 export type MockLandsPrisma = ReturnType<typeof mockLandsPrisma>;
 

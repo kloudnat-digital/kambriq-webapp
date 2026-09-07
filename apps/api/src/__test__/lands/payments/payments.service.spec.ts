@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { BadRequestException } from '@nestjs/common';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -17,6 +18,7 @@ import {
   mockEmailService,
   mockLandsPrisma,
   mockPaymentChannels,
+  mockConfigService,
   mockStorageService,
 } from '../../utils';
 
@@ -56,6 +58,7 @@ describe('PaymentsService', () => {
         { provide: PaymentChannelsService, useValue: mockPaymentChannels() },
         { provide: EmailService, useValue: mockEmailService() },
         { provide: StorageService, useValue: mockStorageService() },
+        { provide: ConfigService, useValue: mockConfigService() },
       ],
     }).compile();
     service = module.get(PaymentsService);

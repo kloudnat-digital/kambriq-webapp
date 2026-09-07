@@ -12,6 +12,8 @@ export {
   COMMITTING_STATES,
   IllegalPaymentTransitionError,
   AutomaticTransitionForbiddenError,
+  UnnamedActorError,
+  assertActorIsNamed,
   assertTransitionAllowed,
   assertTransitionIsDeliberate,
   sumReceipts,
