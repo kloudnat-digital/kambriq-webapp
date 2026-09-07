@@ -673,6 +673,42 @@ the **routing table**, not of the class a controller test instantiates.
 
 An endpoint with a green test and no caller is a claim that it works.
 
+### A stacked PR must be re-based when its base merges, or it merges into nothing
+
+`#89` was stacked on `#88` because develop did not carry `#88`'s work yet. That
+was right when it was opened. `#88` then merged to develop, and **eighty-nine
+seconds later** `#89` merged into `feat/g9-payment-entry-point` - a branch that
+had already been consumed. GitHub reported it merged, the PR went green, and
+fifty-one files went nowhere.
+
+Nothing warns about this. The PR says "Merged"; the branch it merged into is just
+a branch. The next chantier began on the premise that the work was deployed, and
+the first thing it did was read a version endpoint that agreed - because the sha
+it served _was_ develop's head.
+
+**When a stacked PR's base merges, retarget the child to develop before merging
+it.** And when a chantier's premise is "X is deployed", check that the code is on
+develop, not only that the served sha matches develop:
+
+```
+git merge-base --is-ancestor <the merge commit> origin/develop
+```
+
+A served sha matching develop proves the deploy worked. It proves nothing about
+what develop contains.
+
+### A stale generated client makes your own tree look like a broken branch
+
+Develop's suite showed five failing suites on checkout. The cause was in my
+working directory: the local database carried a migration from another branch, so
+the generated Prisma client had that branch's enum while develop's source had the
+old one. `prisma generate` against develop's schema: 472 passing.
+
+Generated code is not in git and does not change when you change branches.
+**Before reporting a branch as red, regenerate what is generated.** "Develop is
+broken" is a claim that costs somebody an afternoon, and it is the kind that gets
+believed because it is delivered with conviction.
+
 ### A service method with no caller is not a feature
 
 `createPayment` and `sendInstructions` are written, tested, deployed to dev, and
