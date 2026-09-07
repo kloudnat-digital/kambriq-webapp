@@ -206,9 +206,18 @@ ecr_login() {
 # that arrived carries it.
 assert_amd64() {
   local uri="$1" arch
-  arch="$(docker manifest inspect "${uri}" 2>/dev/null \
-    | jq -r 'if .manifests then (.manifests[] | select(.platform.os=="linux") | .platform.architecture) else .architecture end' \
-    | sort -u | tr '\n' ' ' | sed 's/ $//')"
+  # `--verbose`, because the plain output cannot answer this.
+  #
+  # A single-platform push returns a v2 image manifest: no `.manifests` array,
+  # and no top-level `.architecture` either - the platform lives in the config
+  # blob the manifest points at, not in the manifest. Reading `.architecture`
+  # there yields null for every correctly built image. `--verbose` returns the
+  # descriptor with its resolved `platform`, for one entry or for a list.
+  arch="$(docker manifest inspect --verbose "${uri}" 2>/dev/null \
+    | jq -r '[ (if type == "array" then .[] else . end)
+               | .Descriptor.platform
+               | select(.os == "linux")
+               | .architecture ] | unique | join(" ")')"
   info "${uri##*/} -> architecture: ${arch:-<unreadable>}"
   [[ "${arch}" == *"amd64"* ]] || die "${uri} is not linux/amd64 (got '${arch:-unreadable}'). Fargate cannot start it."
 }
