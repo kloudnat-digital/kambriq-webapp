@@ -596,6 +596,63 @@ The seed ran clean locally and died in the container with
 from **source** under `tsx`, and the image copied two subdirectories of
 `libs/common/src`. **The two differ by a `COPY` line nobody reads.**
 
+### A test that asserts a behaviour is a test that requires it
+
+G3's suite contained _"every channel detail reaches the message"_ and _"repeats
+the instructions rather than referring to them"_. Both passed. Both were the
+defect written down: the platform emailed the bank account, the mobile money
+number and the notary's address to anyone who clicked, and then emailed them
+again in the reminder.
+
+The reasoning behind each was sound — a message should be complete; a person who
+needs a reminder cannot find the first message. The conclusion was wrong, and
+having it as a green test made it **harder** to see, because the suite was
+agreeing with it.
+
+When a design changes, the tests that encoded the old design do not merely need
+updating — they are the clearest statement of what was wrong, and inverting them
+is the fix. **Ask of a passing assertion: if this behaviour were wrong, would
+this test tell me, or defend it?**
+
+### Two fields that mean different things must not be allowed to merge
+
+A client's _wish_ and the _record of what was used_ look interchangeable right up
+to the day they differ — and on that day, one field cannot say which one you are
+reading. So `preferredChannel` and `channel` are separate columns, and the rule
+is checked from three directions: the write path must not touch the preference,
+no read may fall back to it, and both columns must exist.
+
+`channel ?? preferredChannel` is the merge written defensively, and it is the
+form it will actually take — nobody deletes a column on purpose; they add a
+fallback to fix a null.
+
+### A guard placed at the end of a sequence guards nothing that happened first
+
+The identification gate lived in `transition`, which is the choke point every
+state change passes through — the right place, and it looked complete. But the
+send _emails first and transitions afterwards_, deliberately, so that the state
+never claims a message that did not go. The gate therefore let an unverified
+client receive the notification and merely stopped the state from moving.
+
+Found because the test asserted `email.send` was not called and counted two.
+**When ordering is itself a designed property, check the guard against the
+order** — not just against the state machine.
+
+### An enum you rename is a migration; an enum you narrow is a rewrite
+
+Postgres will rename an enum value in place but will not drop one. Splitting
+`MOBILE_MONEY` into `OMO` and `MOMO` therefore meant recreating the type — and
+deciding what the old rows become, when the old model never recorded which
+operator it was. They become `HIST`, "channel not recorded", because that is a
+true statement and a guess is not.
+
+The migration then tried to write the old value into each row's `note`, and the
+append-only trigger refused it. **The trigger was right and the migration was
+wrong.** A schema migration is not an exemption from immutability, and disabling
+a trigger to annotate a row swaps a guarantee held by the database for one held
+by whoever remembers to switch it back on. The nuance was recorded in the
+migration and the register instead, where writing nothing costs nothing.
+
 ### The design document is the decision, and the format you read it in matters
 
 _Who creates a payment_ looked like a judgement call. It was not: the design's

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { ApiError, serverApi } from '@/lib/api/server';
 import { createAction, ServerActionError } from './create-action';
-import type { PaymentDetail, PaymentRow } from '@/types/payments';
+import type { PaymentDetail, PaymentRequestRow, PaymentRow } from '@/types/payments';
 
 /**
  * Turns an API refusal into a result the screen can render.
@@ -93,6 +93,8 @@ export const recordReceipt = createAction(
     channel: string;
     receivedAt: string;
     evidenceUrl: string;
+    /** Who actually paid, as declared. Required for DEPO. */
+    paidBy?: string;
     note?: string;
     correctsId?: string;
   }) => {
@@ -132,6 +134,77 @@ export const transitionPayment = createAction(
     );
     revalidatePath(`/admin/payments/${paymentId}`);
     revalidatePath('/admin/payments');
+    return result;
+  },
+);
+
+// ---- G11-G14 ----
+
+/** The queue of requests waiting for an answer, oldest first. */
+export const listPaymentRequests = async (page = 1) =>
+  serverApi.get<Paginated<PaymentRequestRow> & { meta: { oldestWaitingDays: number } }>(
+    `/lands/admin/payments/requests?page=${page}&limit=20`,
+  );
+
+/**
+ * Choose the channel and release the coordinates.
+ *
+ * `channel` is required and there is no default: the preference is shown beside
+ * the choice, never preselected into it.
+ */
+export const sendInstructions = createAction(
+  async (input: { paymentId: string; channel: string; reason: string }) => {
+    const { paymentId, ...body } = input;
+    const result = await refusable(() =>
+      serverApi.post(`/lands/admin/payments/${paymentId}/send-instructions`, body),
+    );
+    revalidatePath(`/admin/payments/${paymentId}`);
+    revalidatePath('/admin/payment-requests');
+    return result;
+  },
+);
+
+// ---- A14: the identity review queue ----
+
+/** Identity documents awaiting review, oldest first. */
+export const listPendingIdentities = async (page = 1) =>
+  serverApi.get<
+    Paginated<{
+      userId: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      documentCount: number;
+      submittedAt: string;
+      waitingDays: number;
+    }> & { meta: { oldestWaitingDays: number } }
+  >(`/users/id-documents/pending?page=${page}&limit=20`);
+
+/** One person, with their signed document links, for the reviewer to look at. */
+export const getUserForReview = async (userId: string) =>
+  serverApi.get<{
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone: string | null;
+    profile: {
+      idDocumentUrls: string[];
+      idVerificationStatus: string;
+      city: string | null;
+      country: string | null;
+    } | null;
+  }>(`/users/id-documents/${userId}`);
+
+/** Approve or reject. A rejection says why, and the client is told. */
+export const reviewIdentity = createAction(
+  async (input: { userId: string; status: 'verified' | 'rejected'; rejectionReason?: string }) => {
+    const { userId, ...body } = input;
+    const result = await refusable(() =>
+      serverApi.patch(`/users/${userId}/id-document/review`, body),
+    );
+    revalidatePath('/admin/identities');
+    revalidatePath('/admin/payment-requests');
     return result;
   },
 );

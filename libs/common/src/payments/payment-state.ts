@@ -20,22 +20,15 @@ export enum PaymentState {
   ANNULE = 'ANNULE',
 }
 
-/** Mirrors `PaymentChannel`. `INCONNU_HISTORIQUE` is not offered as an input. */
-export enum PaymentChannel {
-  VIREMENT = 'VIREMENT',
-  MOBILE_MONEY = 'MOBILE_MONEY',
-  ESPECES = 'ESPECES',
-  ACTE_NOTARIE = 'ACTE_NOTARIE',
-  INCONNU_HISTORIQUE = 'INCONNU_HISTORIQUE',
-}
-
-/** Channels a caller may record. Excludes the backfill marker, deliberately. */
-export const RECORDABLE_CHANNELS: readonly PaymentChannel[] = [
-  PaymentChannel.VIREMENT,
-  PaymentChannel.MOBILE_MONEY,
-  PaymentChannel.ESPECES,
-  PaymentChannel.ACTE_NOTARIE,
-];
+/**
+ * The channels, their codes and their labels live in `payment-channels.ts`.
+ *
+ * Re-exported here so the many call sites that import `PaymentChannel` from the
+ * state machine keep working, and so there is one import path for "everything
+ * about a payment's shape". `RECORDABLE_CHANNELS` is derived from the registry's
+ * `selectable` flag rather than listed a second time.
+ */
+export { PaymentChannel, RECORDABLE_CHANNELS } from './payment-channels';
 
 /**
  * States from which nothing further is legal.

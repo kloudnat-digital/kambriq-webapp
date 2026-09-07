@@ -41,6 +41,7 @@ export const mockCorePrisma = () => ({
     count: fn(),
     upsert: fn(),
     update: fn(),
+    updateMany: fn(),
   },
   refreshToken: {
     findFirst: fn(),
@@ -198,6 +199,36 @@ export const mockPaymentChannels = () => ({
       supportEmail: 'support@example.test',
       supportPhone: '+237600000002',
     }),
+  ),
+  detailsFor: jest.fn((channel: string) =>
+    Promise.resolve(
+      // Only the chosen channel's fields, which is the whole point of the real
+      // method. A mock that returned everything would let a template leak
+      // coordinates and still pass.
+      (
+        {
+          VIR: {
+            bankName: 'Test Bank',
+            bankAccountName: 'KAMBRIQ SA',
+            bankIban: 'CM21 0000 0000 0000 0000 0000 000',
+            bankSwift: 'TESTCMCX',
+          },
+          DEPO: {
+            bankName: 'Test Bank',
+            bankAccountName: 'KAMBRIQ SA',
+            bankIban: 'CM21 0000 0000 0000 0000 0000 000',
+          },
+          OMO: { orangeMoneyNumber: '+237690000000', orangeMoneyName: 'KAMBRIQ OM' },
+          MOMO: { mtnMoneyNumber: '+237670000000', mtnMoneyName: 'KAMBRIQ MTN' },
+          ESP: { supportPhone: '+237600000001', supportEmail: 'contact@kambriq.com' },
+          NOTA: {
+            notaryName: 'Maitre Test',
+            notaryPhone: '+237600000002',
+            notaryAddress: 'Douala',
+          },
+        } as Record<string, Record<string, string>>
+      )[channel] ?? {},
+    ),
   ),
 });
 

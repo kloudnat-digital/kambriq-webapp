@@ -1430,7 +1430,9 @@
         "adminKbsExams": "Exam sessions",
         "adminKbsCertificates": "Certificates",
         "adminKbsSettings": "Settings",
-        "adminPayments": "Payments"
+        "adminPayments": "Payments",
+        "adminPaymentRequests": "Payment requests",
+        "adminIdentities": "Identity documents"
       },
       "role": {
         "root": "Super admin",

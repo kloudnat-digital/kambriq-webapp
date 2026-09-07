@@ -2,19 +2,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { HumanDate, HumanDateTime, Money } from './payment-money';
 import { PaymentStateBadge } from './payment-state-badge';
 import { AdvancePaymentAction } from './advance-payment-action';
+import { SendInstructionsAction } from './send-instructions-action';
+import { ChannelLabel } from './channel-label';
 import { ProofLink } from './proof-link';
 import { RecordReceiptForm } from './record-receipt-form';
 import { ValidatePaymentAction } from './validate-payment-action';
 import type { PaymentDetail } from '@/types/payments';
 
-const CHANNEL_LABELS: Record<string, string> = {
-  VIREMENT: 'Virement bancaire',
-  MOBILE_MONEY: 'Mobile money',
-  ESPECES: 'Espèces',
-  ACTE_NOTARIE: 'Acte notarié',
-  INCONNU_HISTORIQUE: 'Inconnu (antérieur à G1)',
-};
-
+// Channel labels come from the registry the API reads, not from a second map
+// here. Two lists that must say the same thing end up not saying it.
 /**
  * One payment: its ledger, its proofs and its full history.
  *
@@ -68,6 +64,34 @@ export const PaymentDetailContent = ({
       </CardContent>
     </Card>
 
+    {/* v03 4c: the wish is shown wherever the payment is shown, decided or not. */}
+    <Card>
+      <CardContent className="grid gap-4 p-4 sm:grid-cols-2">
+        <div>
+          <p className="text-xs text-gray-500 uppercase">Canal souhaité par le client</p>
+          <p className="text-lg font-semibold">
+            <ChannelLabel channel={payment.preferredChannel} withCode />
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500 uppercase">Canal retenu et communiqué</p>
+          <p className="text-lg font-semibold">
+            <ChannelLabel channel={payment.channel} withCode />
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+
+    {payment.state === 'INITIE' && (
+      <SendInstructionsAction
+        paymentId={payment.id}
+        preferredChannel={payment.preferredChannel}
+        identityVerified={payment.identityStatus === 'verified'}
+        identityStatus={payment.identityStatus}
+        clientUserId={payment.clientUserId}
+      />
+    )}
+
     <Card>
       <CardContent className="p-0">
         <h2 className="px-4 pt-4 font-semibold text-gray-900">Journal des mouvements</h2>
@@ -86,6 +110,7 @@ export const PaymentDetailContent = ({
                   <th className="px-4 py-2">Canal</th>
                   <th className="px-4 py-2 text-right">Montant</th>
                   <th className="px-4 py-2">Justificatif</th>
+                  <th className="px-4 py-2">Versé par</th>
                   <th className="px-4 py-2">Saisi par</th>
                 </tr>
               </thead>
@@ -95,7 +120,9 @@ export const PaymentDetailContent = ({
                     <td className="px-4 py-2">
                       <HumanDate at={r.receivedAt} />
                     </td>
-                    <td className="px-4 py-2">{CHANNEL_LABELS[r.channel] ?? r.channel}</td>
+                    <td className="px-4 py-2">
+                      <ChannelLabel channel={r.channel} withCode />
+                    </td>
                     <td className="px-4 py-2 text-right font-semibold">
                       <Money amount={r.amount} currency={r.currency} />
                       {r.correctsId && (
@@ -108,6 +135,11 @@ export const PaymentDetailContent = ({
                       ) : (
                         <span className="text-gray-400">aucun (ligne historique)</span>
                       )}
+                    </td>
+                    <td className="px-4 py-2 text-xs">
+                      {/* Named only where it is not the client - a deposit is
+                          made at a counter, often by somebody else. */}
+                      {r.paidBy ?? <span className="text-gray-400">le client</span>}
                     </td>
                     <td className="px-4 py-2 font-mono text-xs text-gray-500">{r.recordedBy}</td>
                   </tr>
