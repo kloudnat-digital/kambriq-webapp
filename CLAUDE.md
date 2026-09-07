@@ -964,6 +964,41 @@ every expectation — the object it targeted did go away.
 
 ---
 
+### The runner's architecture is a build input, and nothing in the file says so
+
+Found 2026-09-07, moving CI onto a self-hosted Apple Silicon runner.
+
+`docker/build-push-action` with no `platforms:` builds for **whatever the runner
+is**. On `ubuntu-latest` that is amd64, which is what Fargate needs — so three
+workflows were correct for two years by accident, and the thing making them
+correct was written down nowhere.
+
+Point the same file at an ARM64 Mac and every image becomes arm64. Nothing in
+the build fails. Nothing in the push fails. ECS accepts the task definition. The
+task then stops with an exec-format error minutes later, in a place that reads
+like a defect in the application rather than in the pipeline.
+
+**The rule: pin `platforms: linux/amd64` explicitly, then assert the pushed
+manifest against the registry.** Both halves. The flag says what was asked for;
+only the registry says what arrived, and they are different claims.
+
+Reading the architecture back is its own trap: a single-platform push returns a
+v2 image manifest with **no `.manifests` array and no top-level
+`.architecture`** — the platform lives in the config blob the manifest points
+at. `docker manifest inspect | jq .architecture` therefore yields null for every
+correctly built image, and an assertion built on it refuses everything. That
+fails closed, which is the right direction, but a gate that refuses everything
+proves nothing about what it lets through. `--verbose` returns the resolved
+descriptor. Prove such a gate discriminates before trusting it: feed it a known
+arm64 image and watch it refuse.
+
+The general shape, which is [the same as the merge-tree grep](#a-fallback-pipeline-is-a-second-implementation-and-it-rots-quietly):
+**a property that held because of the environment, not because anything asserted
+it, is a property you do not have.** It survives exactly until the environment
+changes.
+
+---
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope

@@ -8,10 +8,25 @@ permissions:
   contents: write
   pull-requests: write
 
+# ------------------------------------------------------------------------------
+# WHERE THIS RUNS
+#
+# `runs-on` reads ONE repository variable, `CI_RUNNER_LABELS`, holding a JSON
+# array of runner labels. Every job in every workflow uses the same expression,
+# so the target lives in a single place outside the code.
+#
+#   set    ["self-hosted","macOS","ARM64","kambriq-ci"]   -> Visquis's Mac
+#   unset  (or delete the variable)                       -> ubuntu-latest
+#
+# The `|| '["ubuntu-latest"]'` fallback is the point: an unset variable returns
+# to GitHub-hosted runners rather than producing an empty `runs-on`, which is a
+# job that fails for a reason nobody can read. October's reversal is deleting
+# one variable in the repository settings - no PR, no code change, no rebuild.
+# ------------------------------------------------------------------------------
 jobs:
   release-please:
     name: Open / update Release PR
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: release

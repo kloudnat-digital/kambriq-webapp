@@ -34,10 +34,25 @@ concurrency:
   group: deploy-dev
   cancel-in-progress: false
 
+# ------------------------------------------------------------------------------
+# WHERE THIS RUNS
+#
+# `runs-on` reads ONE repository variable, `CI_RUNNER_LABELS`, holding a JSON
+# array of runner labels. Every job in every workflow uses the same expression,
+# so the target lives in a single place outside the code.
+#
+#   set    ["self-hosted","macOS","ARM64","kambriq-ci"]   -> Visquis's Mac
+#   unset  (or delete the variable)                       -> ubuntu-latest
+#
+# The `|| '["ubuntu-latest"]'` fallback is the point: an unset variable returns
+# to GitHub-hosted runners rather than producing an empty `runs-on`, which is a
+# job that fails for a reason nobody can read. October's reversal is deleting
+# one variable in the repository settings - no PR, no code change, no rebuild.
+# ------------------------------------------------------------------------------
 jobs:
   quality:
     name: Quality / ${{ matrix.check }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
     strategy:
       fail-fast: false
       matrix:
@@ -65,7 +80,7 @@ jobs:
 
   build-web:
     name: Build & push Web image
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
     needs: [quality]
     permissions:
       id-token: write
@@ -106,6 +121,16 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
+          # Fargate is amd64. The runner may not be.
+          #
+          # Without this line the build inherits the RUNNER's native
+          # architecture: correct by accident on ubuntu-latest, and arm64 on
+          # the self-hosted Mac - an image ECS cannot start. The failure does
+          # not appear here; it appears minutes later as a task that stops with
+          # an exec-format error, looking like a defect in the application.
+          # Asserted against the registry in the step after this one, because
+          # the flag being present is not proof the manifest carries it.
+          platforms: linux/amd64
           context: .
           file: docker/Dockerfile.web
           push: true
@@ -117,9 +142,40 @@ jobs:
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
 
+      # -- The pushed manifest must be amd64 ----------------------------------
+      #
+      # NOT a duplicate of a check that already exists somewhere - a check that
+      # exists NOWHERE on this branch. `scripts/deploy-dev.sh` on develop is
+      # still the stale 145-line orphan; PR #93 replaces it with the pipeline
+      # that carries `assert_amd64`, and #93 is not merged.
+      #
+      # **When #93 lands this step must become a call to that function**, and
+      # #93's own anti-drift test is what will say so - it fails on any workflow
+      # step the script does not implement. Left inline here rather than left
+      # out, because an unasserted image is how Fargate gets one it cannot start.
+      #
+      # `--verbose`: a single-platform push returns a v2 image manifest with no
+      # `.manifests` array AND no top-level `.architecture` - the platform lives
+      # in the config blob. Reading `.architecture` yields null for every
+      # correctly built image, which is a gate that refuses everything.
+      - name: Assert the pushed image is linux/amd64
+        run: |
+          set -euo pipefail
+          URI="${{ env.ECR_WEB_REPO }}:${{ env.IMAGE_TAG }}"
+          ARCH="$(docker manifest inspect --verbose "${URI}" \
+            | jq -r '[ (if type == "array" then .[] else . end)
+                       | .Descriptor.platform
+                       | select(.os == "linux")
+                       | .architecture ] | unique | join(" ")')"
+          echo "${URI} -> architecture: ${ARCH:-<unreadable>}"
+          if [ "${ARCH}" != "amd64" ]; then
+            echo "::error::${URI} is ${ARCH:-unreadable}, not amd64. Fargate cannot start it." >&2
+            exit 1
+          fi
+
   resolve-api-tag:
     name: Resolve current API image tag
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
     permissions:
       id-token: write
       contents: read
