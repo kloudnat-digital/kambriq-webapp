@@ -101,51 +101,55 @@ table: `Z1`, `D2`, `X1` and `X4` carry commands, numbers or reversal steps that
 are longer than a table row and are still needed. Everything genuinely open is
 listed here first.
 
-| Entry             | State               | What it needs                                                                                                                                       |
-| ----------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
-| `L2`              | `EN COURS`          | one deployed log line carrying its interpolated metadata, quoted                                                                                    |
-| `L3`              | `DECIDE, A FAIRE`   | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                                    |
-| `F1`              | `A DECIDER`         | coverage ratchet: a floor, and what happens when a PR drops below it                                                                                |
-| `P1`              | `A DECIDER`         | SES contact list, one per account per region — the prd constraint                                                                                   |
-| `X2`              | `DECIDE, A FAIRE`   | NAT option 2, decided, deliberately unapplied before delivery                                                                                       |
-| `M1`              | `DECIDE, A FAIRE`   | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                      |
-| `Q1` follow-up    | `A DECIDER`         | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing                  |
-| `D3`              | `EN COURS`          | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0       |
-| `H1`              | `PROUVE`            | `ADMIN_GLOBAL` is the super admin; no second role created. ADR-008 + `super-admin.spec.ts`, five mutations quoted below                             |
-| `H2`              | `PROUVE`            | proven on dev on `f91289f`: `2 created, 0 updated, 0 unchanged`, exit 0, tally read from the task's own log stream                                  |
-| `H3`              | `EN COURS`          | journey 5 green on dev under the sha gate; **pending proof is the two real holders activating their own accounts**                                  |
-| `H4`              | `PROUVE`            | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                             |
-| `A7`              | `PROUVE`            | inventory swept 2026-09-06, output in `docs/ops/a7-standards-inventory.md`: 6 findings (2 closed on sight), 7 classes clean, 2 defects in the sweep |
-| `H2` follow-up 1  | `A DECIDER`         | `deploy-dev.yml` passes `--seed` to `run-migrations.js`, which never reads `process.argv`: the seed step has never seeded anything                  |
-| `H2` follow-up 2  | `A DECIDER`         | the bootstrap deploy step checks the exit code and never that the tally line appeared - the same gap the seed step has                              |
-| `H5`              | `PROUVE`            | journey 5's address guard was a detector, not a barrier: it reported and let the run continue into a real inbox. Moved to `beforeAll`               |
-| `H6`              | `PROUVE`            | the same run's `afterAll` revoked a real administrator's role. Every write audited, role restored 16:05:26, guard made structural                   |
-| `H7`              | `PROUVE`            | nothing tested the bootstrap's role assignment - journey 5 granted it to itself. Decision extracted and covered, 11 tests, 3 mutations              |
-| `H8`              | `EN COURS`          | the bootstrap sent no email; a stray test made it look as though it had. Fixed and proven locally; pending the re-send to `contact@` on dev         |
-| `H8` follow-up    | `A DECIDER`         | per-address SES delivery is not observable: no configuration set, no event destination. Needed to answer "did THIS address receive it"              |
-| `H9`              | `PROUVE`            | the bootstrap's provenance check failed a whole deploy and skipped every later step. Postcondition scoped; step moved after the web deploy          |
-| `B1`              | `PROUVE`            | payment code audited against the design: 0 payments ever processed, no payment table, G3/G4 partly built, six of eight not started                  |
-| `A10`             | `PROUVE`            | the identity-review queue did not exist - the route and the role did. Queue route + `idSubmittedAt`; the back-office screen stays open              |
-| `A11`             | `PROUVE`            | 13 sites, 15 messages, 12 transactional. `sendUpdate` returns an outcome and throws on a transactional template                                     |
-| `A12`             | `PROUVE`            | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                       |
-| `G10b` (infra)    | `PLAN PRET`         | sixteen channel parameters; the twelve existing ones imported so `ignore_changes` bites on the first apply. **Apply before merging #88**            |
-| `G10b` follow-up  | `A DECIDER`         | `MOBILE_MONEY_OPERATOR/NUMBER/NAME` are required at startup and read by no channel. Drop from `FIELDS` in the webapp first, then from terraform     |
-| `G11-G14`         | `PROUVE LOCALEMENT` | six channels, the identification gate, A14's review screen, coordinates in the platform. Email carries none                                         |
-| `G11` follow-up   | `A DECIDER`         | infra owes `ORANGE_MONEY_*` and `MTN_MONEY_*`: v03 splits mobile money in two but keeps twelve parameters with one number                           |
-| `G11` follow-up 2 | `A DECIDER`         | v03 section 5's example uses a hyphen between reference and channel, which section 4b forbids. 4b implemented                                       |
-| `G9`              | `PROUVE LOCALEMENT` | the client creates the payment, from their own purchase page. Creation writes its audit row; sending the instructions is a second act               |
-| `G9` follow-up    | `A DECIDER`         | `PAYMENT_VALIDITY_DAYS` is 30 because a month is the shape of a diaspora transfer. The design gives no number - this one needs deciding             |
-| `G10` (webapp)    | `PROUVE`            | an absent channel prefix now fails the boot exactly as an empty parameter does; disabling is `PAYMENT_CHANNELS_TRANSPORT=disabled`                  |
-| `G10` (infra)     | `PLAN PRET`         | twelve parameters + the prefix into terraform. Plan run and shown, **nothing applied**. Correction-without-deploy proved on a running process       |     |
-| `G4`              | `PROUVE`            | the back office and its screen. Five defects only a real request could see; `db:seed` unbroken; deployed-dev pass deferred to `G8`                  |
-| `G4` follow-up    | `A DECIDER`         | `GetUploadUrlDto` is declared twice with different schemas (lands + kbs); the API logs `Duplicate DTO detected` on every boot                       |
-| `V1` follow-up    | `PROUVE`            | the commission lookup throws now but has never run: 0 sales completed, all 5 commissions seeded. Closed by inspection only                          |
-| `B2`              | `PROUVE`            | V1 inventory finished: WhatsApp preference reads nothing, `sendUpdate` skips indistinguishably and defaults off, `RedisService` unused              |
-| `B3`              | `PROUVE`            | 56 dev parameters against 0 on prd; only 7 injected as secrets, so 49 need an apply to take effect. One confirmed unread, the rest candidates       |
-| `B4`              | `PROUVE`            | 4 journeys: VERIFY does not exist; reactivation and block/unblock never run; 57 identity documents queued for a review that has never run           |
-| `G1`              | `EN COURS`          | payment model in `lands`: BigInt money, 9-state machine, append-only ledger and audit. Pending proof is G8, one payment end to end on dev           |
-| `G2`              | `PROUVE`            | the reference generator: 29-char derived alphabet, mod-29 check character, sequence-backed so collision-free by construction                        |
-| `G3`              | `PROUVE`            | the instruction and reminder messages, channel details from SSM at runtime, send-before-transition. Real email read out of a mailbox                |
+| Entry             | State               | What it needs                                                                                                                                                                         |
+| ----------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| `L2`              | `EN COURS`          | one deployed log line carrying its interpolated metadata, quoted                                                                                                                      |
+| `L3`              | `DECIDE, A FAIRE`   | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                                                                      |
+| `F1`              | `A DECIDER`         | coverage ratchet: a floor, and what happens when a PR drops below it                                                                                                                  |
+| `P1`              | `A DECIDER`         | SES contact list, one per account per region — the prd constraint                                                                                                                     |
+| `X2`              | `DECIDE, A FAIRE`   | NAT option 2, decided, deliberately unapplied before delivery                                                                                                                         |
+| `M1`              | `DECIDE, A FAIRE`   | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                                                        |
+| `Q1` follow-up    | `A DECIDER`         | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing                                                    |
+| `D3`              | `EN COURS`          | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0                                         |
+| `H1`              | `PROUVE`            | `ADMIN_GLOBAL` is the super admin; no second role created. ADR-008 + `super-admin.spec.ts`, five mutations quoted below                                                               |
+| `H2`              | `PROUVE`            | proven on dev on `f91289f`: `2 created, 0 updated, 0 unchanged`, exit 0, tally read from the task's own log stream                                                                    |
+| `H3`              | `EN COURS`          | journey 5 green on dev under the sha gate; **pending proof is the two real holders activating their own accounts**                                                                    |
+| `H4`              | `PROUVE`            | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                                                               |
+| `A7`              | `PROUVE`            | inventory swept 2026-09-06, output in `docs/ops/a7-standards-inventory.md`: 6 findings (2 closed on sight), 7 classes clean, 2 defects in the sweep                                   |
+| `H2` follow-up 1  | `A DECIDER`         | `deploy-dev.yml` passes `--seed` to `run-migrations.js`, which never reads `process.argv`: the seed step has never seeded anything                                                    |
+| `H2` follow-up 2  | `A DECIDER`         | the bootstrap deploy step checks the exit code and never that the tally line appeared - the same gap the seed step has                                                                |
+| `H5`              | `PROUVE`            | journey 5's address guard was a detector, not a barrier: it reported and let the run continue into a real inbox. Moved to `beforeAll`                                                 |
+| `H6`              | `PROUVE`            | the same run's `afterAll` revoked a real administrator's role. Every write audited, role restored 16:05:26, guard made structural                                                     |
+| `H7`              | `PROUVE`            | nothing tested the bootstrap's role assignment - journey 5 granted it to itself. Decision extracted and covered, 11 tests, 3 mutations                                                |
+| `H8`              | `EN COURS`          | the bootstrap sent no email; a stray test made it look as though it had. Fixed and proven locally; pending the re-send to `contact@` on dev                                           |
+| `H8` follow-up    | `A DECIDER`         | per-address SES delivery is not observable: no configuration set, no event destination. Needed to answer "did THIS address receive it"                                                |
+| `H9`              | `PROUVE`            | the bootstrap's provenance check failed a whole deploy and skipped every later step. Postcondition scoped; step moved after the web deploy                                            |
+| `B1`              | `PROUVE`            | payment code audited against the design: 0 payments ever processed, no payment table, G3/G4 partly built, six of eight not started                                                    |
+| `A10`             | `PROUVE`            | the identity-review queue did not exist - the route and the role did. Queue route + `idSubmittedAt`; the back-office screen stays open                                                |
+| `A11`             | `PROUVE`            | 13 sites, 15 messages, 12 transactional. `sendUpdate` returns an outcome and throws on a transactional template                                                                       |
+| `A12`             | `PROUVE`            | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                                                         |
+| `R1`              | `EN COURS`          | **a merge can succeed and have no effect.** `#89` merged into a branch consumed 89 s earlier; `#88` was squash-merged, so nothing showed. Pending proof is the three commands in `R1` |
+| `G8`              | `ARRETE`            | **G11-G14 is not on develop and not deployed**: #89 merged into the G9 branch 89s after that branch merged to develop. 51 files stranded at `230b827`                                 |
+| `G8` blocker      | `A FAIRE`           | re-land `230b827` on develop (**not** conflict-free - see `R1`), deploy, then re-run G8. Until then dev emails every channel's coordinates to whoever clicks                          |
+| `G10`             | `PROUVE`            | applied and observed: 16 SecureString parameters none empty, task definition 143 with the three variables and no channel value, 0 AccessDenied                                        |
+| `G9`              | `PROUVE LOCALEMENT` | the client creates the payment, from their own purchase page. Creation writes its audit row; sending the instructions is a second act                                                 |
+| `G9` follow-up    | `A DECIDER`         | `PAYMENT_VALIDITY_DAYS` is 30 because a month is the shape of a diaspora transfer. The design gives no number - this one needs deciding                                               |
+| `G10` (webapp)    | `PROUVE`            | an absent channel prefix now fails the boot exactly as an empty parameter does; disabling is `PAYMENT_CHANNELS_TRANSPORT=disabled`                                                    |
+| `G10` (infra)     | `PLAN PRET`         | twelve parameters + the prefix into terraform. Plan run and shown, **nothing applied**. Correction-without-deploy proved on a running process                                         |     |
+| `G4`              | `PROUVE`            | the back office and its screen. Five defects only a real request could see; `db:seed` unbroken; deployed-dev pass deferred to `G8`                                                    |
+| `G4` follow-up    | `A DECIDER`         | `GetUploadUrlDto` is declared twice with different schemas (lands + kbs); the API logs `Duplicate DTO detected` on every boot                                                         |
+| `V1` follow-up    | `PROUVE`            | the commission lookup throws now but has never run: 0 sales completed, all 5 commissions seeded. Closed by inspection only                                                            |
+| `B2`              | `PROUVE`            | V1 inventory finished: WhatsApp preference reads nothing, `sendUpdate` skips indistinguishably and defaults off, `RedisService` unused                                                |
+| `B3`              | `PROUVE`            | 56 dev parameters against 0 on prd; only 7 injected as secrets, so 49 need an apply to take effect. One confirmed unread, the rest candidates                                         |
+| `B4`              | `PROUVE`            | 4 journeys: VERIFY does not exist; reactivation and block/unblock never run; 57 identity documents queued for a review that has never run                                             |
+| `G1`              | `EN COURS`          | payment model in `lands`: BigInt money, 9-state machine, append-only ledger and audit. Pending proof is G8, one payment end to end on dev                                             |
+| `G2`              | `PROUVE`            | the reference generator: 29-char derived alphabet, mod-29 check character, sequence-backed so collision-free by construction                                                          |
+| `G3`              | `PROUVE`            | the instruction and reminder messages, channel details from SSM at runtime, send-before-transition. Real email read out of a mailbox                                                  |
+| `G10b` (infra)    | `PLAN PRET`         | sixteen channel parameters; the twelve existing ones imported so `ignore_changes` bites on the first apply. **Apply before merging #88**                                              |
+| `G10b` follow-up  | `A DECIDER`         | `MOBILE_MONEY_OPERATOR/NUMBER/NAME` are required at startup and read by no channel. Drop from `FIELDS` in the webapp first, then from terraform                                       |
+| `G11-G14`         | `PROUVE LOCALEMENT` | six channels, the identification gate, A14's review screen, coordinates in the platform. Email carries none                                                                           |
+| `G11` follow-up   | `A DECIDER`         | infra owes `ORANGE_MONEY_*` and `MTN_MONEY_*`: v03 splits mobile money in two but keeps twelve parameters with one number                                                             |
+| `G11` follow-up 2 | `A DECIDER`         | v03 section 5's example uses a hyphen between reference and channel, which section 4b forbids. 4b implemented                                                                         |
 
 ### H1 - `ADMIN_GLOBAL` **is** the super admin - `PROUVE`
 
@@ -584,6 +588,214 @@ The manual runbook does not have this gap - it fetches the log and requires the
 tally - so the one-off path already checks what the automated path does not.
 
 ---
+
+### R1 - a merge can succeed and have no effect - `EN COURS`
+
+**This is the entry that says so.**
+
+`#89` was merged. GitHub said "Merged", closed the PR, and drew the purple icon.
+Fifty-one files, 3 753 insertions, were not on develop and were not deployed, and
+stayed that way for the rest of the day. The notification was true about what it
+described - a merge into `feat/g9-payment-entry-point` - and said nothing at all
+about the branch anybody cared about.
+
+Two mechanisms, and both had to hold:
+
+|                                    |                                                                                                                                                                                                                                                          |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| the base was consumed 89 s earlier | `#88` merged the G9 branch to develop at `09:59:41`; `#89` merged **into** that branch at `10:01:10`. Its merge commit sits on a branch nothing points at any more                                                                                       |
+| `#88` was **squash-merged**        | `git log -1 --format=%P f40974b` has **one** parent, `be1d509`. develop carries G9's _content_ with none of its _history_, so `211d5fc` is not an ancestor of develop, the G9 branch never registered as merged, and `#89` could still be merged into it |
+
+Squash is why the second half is silent. A merge commit would have made the G9
+branch an ancestor of develop and GitHub would have shown it merged; the squash
+left a branch that looks live and is not.
+
+## The check that was wrong, twice
+
+`#90` and this register both recorded **"`git merge-tree` reports zero conflicts"**.
+That claim was produced by
+
+```
+git merge-tree $(git merge-base A B) A B | grep -E '^CONFLICT|^<<<<<<<'
+```
+
+which found nothing because the **legacy** `merge-tree` output does not emit those
+markers in that form. An empty grep was read as an empty conflict set. The real
+merge:
+
+```
+git checkout -b probe origin/develop && git merge --no-commit --no-ff 230b827
+->  exit 1, 11 conflicted files
+```
+
+A command that cannot fail is not a check. The correction: run the merge on a
+scratch branch and read its exit code.
+
+## What the eleven conflicts actually were
+
+Not two edits of the same line - the squash. Nine code files conflicted because
+develop holds G9's content with no shared history, so every line G11-G14 changed
+looked like a concurrent edit. Verified before taking a side:
+
+```
+git diff --stat f40974b fab3f1d   ->  CLAUDE.md, docs/ops/registre-chantiers.md only
+```
+
+develop added **nothing** to any of the nine since the squash, so the branch
+version is a superset and was taken whole. `CLAUDE.md` and this file are the two
+develop did touch, and both were merged by hand keeping both sides.
+
+## What closes this
+
+Not a merge notification. Three commands, after merge and deploy:
+
+```
+git merge-base --is-ancestor 230b827 origin/develop     ->  exit 0
+GET /health/version imageTag                            ->  equals develop's head
+"Payment channel details loaded"                        ->  perOperator: 4, not fields: 12
+```
+
+---
+
+### G8 - the end-to-end proof on deployed dev - `ARRETE`
+
+**Cost impact: None.** Nothing built, nothing applied. Read-only verification
+plus one mutation run locally.
+
+**The chantier stopped at Part 2, before the first step.** Its premise -
+_"everything from G1 to G14 is merged and deployed"_ - is not true, and the
+reason is a merge that went to the wrong place by ninety seconds.
+
+## What actually happened to G11-G14
+
+|                                                             |                                     |
+| ----------------------------------------------------------- | ----------------------------------- |
+| `#88` (G9) merged **to develop**                            | `2026-09-07T09:59:41Z` -> `f40974b` |
+| `#89` (G11-G14) merged **to `feat/g9-payment-entry-point`** | `2026-09-07T10:01:10Z` -> `230b827` |
+
+`#89`'s base was the G9 branch, because G11-G14 was stacked on G9 and develop did
+not carry it at the time. That was correct when the PR was opened. But the G9
+branch was merged into develop **eighty-nine seconds before** `#89` landed on it -
+so `#89` merged into a branch that had already been consumed, and its merge commit
+sits on nothing.
+
+```
+git merge-base --is-ancestor 230b827 origin/develop  ->  NO
+git show origin/develop:libs/common/src/payments/payment-channels.ts  ->  absent
+```
+
+**51 files, 3 753 insertions, are not on develop and not deployed.**
+
+## What is live on dev right now
+
+The deployed API is `sha-f40974b`, which is G9. Its payment routes include:
+
+```
+POST /api/v1/lands/client/payments/{id}/instructions
+```
+
+That is the **v02 behaviour v03 exists to correct**: the client's own click sends
+an email listing every channel's coordinates - bank account, mobile money number,
+notary address - to whoever clicks. `G11-G14` deleted that route and that
+template. Neither deletion is deployed.
+
+Absent from the deployed API: the request queue, the back-office send with a
+chosen channel, the client's coordinates page, the preferred-channel route, and
+the reviewer route A14 needs. The deployed receipt DTO accepts
+`VIREMENT, MOBILE_MONEY, ESPECES, ACTE_NOTARIE, INCONNU_HISTORIQUE` - **`OMO` and
+`MOMO` do not exist in deployed code at all**, so Part 2 step 5 could not be run
+even in principle.
+
+~~**Recovery is clean.** `git merge-tree` between develop and `230b827` reports
+**zero conflicts**.~~ **That was wrong** - the grep behind it could not fail. The
+real merge conflicts in eleven files, all of them an artefact of `#88` being
+squash-merged. Corrected in `R1`, which is what actually re-lands it.
+
+---
+
+## Part 1 - the deployed state, as facts
+
+Each with what it was read from. **This part passed, and it closes `G10`.**
+
+| Fact                                                                              | Evidence                                                                                                                                                                                                                                                             |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Served sha matches develop's head                                                 | `GET /health/version` -> `imageTag: sha-f40974b`, `gitSha f40974ba…`, and `git log origin/develop -1` is `f40974b`. **They match - and that is the problem**: develop's head is G9, not G14                                                                          |
+| Sixteen channel parameters, all SecureString, none empty                          | `aws ssm get-parameters-by-path --with-decryption`: count **16**, types `{SecureString: 16}`, and the empty-value query returns nothing                                                                                                                              |
+| The four per-operator parameters exist                                            | `ORANGE_MONEY_NUMBER`, `ORANGE_MONEY_NAME`, `MTN_MONEY_NUMBER`, `MTN_MONEY_NAME` are present - infra `#24` was applied                                                                                                                                               |
+| Task definition revision **143** carries the three variables and no channel value | `PAYMENT_CHANNELS_SSM_PREFIX`, `PAYMENT_CHANNELS_TRANSPORT=ssm`, `PAYMENT_VALIDITY_DAYS=30`. Searching the whole container definition for every channel name and placeholder value returns **NONE**; `secrets:` holds only the four database URLs and the JWT secret |
+| No `AccessDeniedException` on `ssm:GetParameter`                                  | CloudWatch filter over the startup window: **0 events**                                                                                                                                                                                                              |
+| The channel service loaded                                                        | `Payment channel details loaded {"prefix":"…","fields":12}`                                                                                                                                                                                                          |
+
+**On that last line: it says `fields: 12`, and it cannot say otherwise.** The
+`required`/`perOperator`/`total` line is commit `d93c427`, which is on the
+orphaned branch. So **`perOperator` is not reportable from this deployment** - not
+because the parameters are missing (all sixteen are there) but because the code
+that would count them is not deployed. The parameter listing above is the
+reliable evidence, and it says the four are present.
+
+## Part 2 - not run
+
+Stopped at step 1. Every step depends on code that is not deployed. Running it
+would have meant deploying the missing work first, which is the definition of
+stepping around the defect to obtain the proof.
+
+## Part 3 - not run, and for a different reason
+
+Not a defect: an access limit and a judgement.
+
+- **Half 2 is not observable from here.** "What the failed set holds" is a read of
+  BullMQ's failed set in ElastiCache - `kambriq-dev-redis.sbdmsp.ng.0001.euc1.cache.amazonaws.com`,
+  a private VPC endpoint. Nothing exposes queue counts: `/health` reports
+  `database-core`, `memory_heap`, `memory_rss`, `disk`,
+  `database-kbs-exam-questions` and no queue. It needs ECS Exec into the task with
+  a redis client, or a queue-health endpoint that does not exist.
+- **Half 2 also needs a deliberately broken agent lookup on a shared dev
+  environment** - deleting or corrupting a seeded agent. That is the shape of act
+  that produced `H5`/`H6`, and it is not one to take unilaterally while the
+  chantier is already stopped.
+- Half 1 alone (a sale whose agent exists, producing a commission row) **is**
+  runnable and would mark a parcel `SOLD` on dev. Half an answer to "does it fire,
+  and does it fail loudly" does not settle a question asked as a pair, so it was
+  not run either.
+
+## Part 4 - the mutation, run locally on develop
+
+Removing the guard that forbids an automatic transition on a business event:
+
+```diff
+ ): void {
++  // MUTATION: the guard is removed.
++  return;
++
+   if (!COMMITTING_STATES.has(to)) return;
+```
+
+**RED: `api` 3 failed / 469 passed, `common` 16 failed / 261 passed - 19 failures
+across 3 suites. GREEN: 472 and 277.**
+
+The nineteen name the property: _refuses a committing transition made on behalf of
+a system actor_, _refuses a committing transition with no reason_, _refuses
+"auto"/"worker"/"cron" as the actor_, _PARTIELLEMENT_RECU refuses an empty actor_,
+_ANNULE refuses a blank reason_, and `G4`'s _refuses to validate without a reason,
+through G1 guard_.
+
+## One thing that was my working tree, not develop
+
+The first run of develop's suite showed **5 suites failing**. That was a stale
+generated Prisma client in my checkout - the local database carries the `G11`
+migration, so the generated lands client had the new channel enum while develop's
+source has the old one. After `prisma generate` against develop's schema:
+**472 passed**. Develop's suite is green. Worth recording because "develop is red"
+would have been a false alarm reported with conviction.
+
+## What has to happen before G8 can run
+
+1. Branch from `230b827`, PR to develop, merge. Zero conflicts.
+2. Deploy. The `G11` migration runs on dev's real rows - it rebuilds the
+   `PaymentChannel` enum and maps `MOBILE_MONEY` to `HIST`; dev holds **1**
+   receipt, already `INCONNU_HISTORIQUE`.
+3. Confirm the startup line then reads `perOperator: 4`, `fields: 16`.
+4. Re-run this chantier.
 
 ### G10b (infra) - sixteen channel parameters, and importing the twelve that exist - `PLAN PRET`
 
