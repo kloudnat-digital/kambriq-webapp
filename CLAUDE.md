@@ -964,6 +964,45 @@ every expectation — the object it targeted did go away.
 
 ---
 
+### A fallback pipeline is a second implementation, and it rots quietly
+
+Found 2026-09-07, in this repository, six months after it was written.
+
+`scripts/deploy-dev.sh` already existed when the organisation ran out of free
+Actions minutes and dev needed deploying by hand. It looked like exactly the
+tool for the moment. It was not: it built `docker/Dockerfile`, a path that no
+longer exists; it ran `npm ci` in a pnpm workspace; it tagged images
+`v$(package.json version)`, which is `v0.0.0`, while the pipeline had long since
+moved to `sha-<short>`; and it had no notion of the web service, the bootstrap,
+the seed, the rollout poll, or the version gate. **It would have failed on its
+first command.** Nothing referenced it, so nothing ever said so.
+
+That is what a duplicated pipeline decays into. The two copies do not diverge
+loudly at the moment of the edit — they diverge one commit at a time, in the
+copy nobody runs, and the divergence is discovered on the day the fallback is
+finally needed. Which is always a bad day, because that is the definition of
+needing a fallback.
+
+**The rule: do not write a second implementation of a pipeline. Invert it.** The
+script holds the pipeline; the workflow checks out, authenticates, and calls it.
+One implementation, exercised by the path that runs every day.
+
+An inversion nobody enforces is a comment, so
+`apps/api/src/__test__/conventions/deploy-script-covers-workflow.spec.ts` makes
+it a property: every step the workflows declare must carry a
+`# workflow-step:` marker in the script, and every marker must name a real step.
+It fails on an unimplemented step, on a deleted implementation, and — the case
+that matters most, because each half alone still looks consistent — on a step
+renamed on one side only.
+
+**A step that genuinely has no local equivalent still carries its marker, with
+the reason written underneath.** Naming it is the requirement; silence is the
+defect. This is the same shape as [two role lists that must agree](#roles) and
+as the two write paths above: one fact, kept in two places, with nothing
+checking that they still say the same thing.
+
+---
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope

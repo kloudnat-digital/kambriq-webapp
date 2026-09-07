@@ -128,6 +128,7 @@ listed here first.
 | `A10`             | `PROUVE`            | the identity-review queue did not exist - the route and the role did. Queue route + `idSubmittedAt`; the back-office screen stays open                                                |
 | `A11`             | `PROUVE`            | 13 sites, 15 messages, 12 transactional. `sendUpdate` returns an outcome and throws on a transactional template                                                                       |
 | `A12`             | `PROUVE`            | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                                                         |
+| `R2`              | `EN COURS`          | Actions stopped at 2 000/2 000 free minutes - jobs did not start. `scripts/deploy-dev.sh` **is** the pipeline now; the workflow reduction is deferred, with reasons                   |
 | `R1`              | `EN COURS`          | **a merge can succeed and have no effect.** `#89` merged into a branch consumed 89 s earlier; `#88` was squash-merged, so nothing showed. Pending proof is the three commands in `R1` |
 | `G8`              | `ARRETE`            | **G11-G14 is not on develop and not deployed**: #89 merged into the G9 branch 89s after that branch merged to develop. 51 files stranded at `230b827`                                 |
 | `G8` blocker      | `A FAIRE`           | re-land `230b827` on develop (**not** conflict-free - see `R1`), deploy, then re-run G8. Until then dev emails every channel's coordinates to whoever clicks                          |
@@ -586,6 +587,80 @@ unilaterally: it crosses into the other repository.
 
 The manual runbook does not have this gap - it fetches the log and requires the
 tally - so the one-off path already checks what the automated path does not.
+
+---
+
+### R2 - the script is the pipeline, because Actions stopped - `EN COURS`
+
+The `kloudnat-digital` organisation is on GitHub Free and used all 2 000 included
+minutes. Jobs did not fail - **they did not start**, with one annotation on each:
+
+```
+The job was not started because recent account payments have failed or your
+spending limit needs to be increased.
+```
+
+So `#92` merged, the four quality jobs ran two seconds with zero steps, and
+build, deploy and both e2e jobs were skipped. develop held the G11-G14 recovery
+and dev kept serving `fab3f1d`, the v02 build, with the client-triggered send
+route still live. The quota resets around 1 October.
+
+## Not a second script - the inversion
+
+The obvious response is a script that does what the workflow does. This
+repository already had one, and it is the argument against writing another.
+
+`scripts/deploy-dev.sh` was written 2026-02-26 and never run since:
+
+| what it does                    | what is true                                                        |
+| ------------------------------- | ------------------------------------------------------------------- |
+| builds `docker/Dockerfile`      | that path does not exist; it is `Dockerfile.api` / `Dockerfile.web` |
+| `npm ci`, `npm run test`        | the repository is a pnpm workspace                                  |
+| tags `v$(package.json version)` | that is `v0.0.0`; the pipeline uses `sha-<short>`                   |
+| deploys one service             | there are two, api and web                                          |
+| nothing else                    | no bootstrap, no seed, no rollout poll, no version gate             |
+
+**It would have failed on its first command**, and nothing referenced it, so
+nothing said so. That is what a duplicated pipeline decays into: not a loud
+divergence at the moment of the edit, but one commit at a time, in the copy
+nobody runs, discovered on the day the fallback is finally needed.
+
+So the direction is reversed. **`scripts/deploy-dev.sh` is the pipeline**;
+`deploy-dev.yml` becomes a trigger that checks out, authenticates, and calls it.
+Four subcommands - `check`, `build`, `deploy`, `verify` - and no argument runs
+all four in order.
+
+## The anti-drift test, which is the point
+
+`apps/api/src/__test__/conventions/deploy-script-covers-workflow.spec.ts` parses
+the step names out of `deploy-dev.yml` and `ci.yml` and asserts coverage in both
+directions. Proved sharp by breaking it three ways:
+
+| what was changed                                                                  | what the test said                                                              |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| added `- name: Invalidate the CDN cache` to the workflow                          | `missing: ["Invalidate the CDN cache"]`                                         |
+| renamed `Run Prisma migrations` to `Apply Prisma migrations` in the workflow only | 3 of 6 tests failed - the marker became an orphan and the step became uncovered |
+| deleted the `# workflow-step: Bootstrap super-admin accounts` marker              | `missing: ["Bootstrap super-admin accounts"]`                                   |
+
+The rename is the case that matters. Each half alone still looks consistent;
+only checking both directions catches it.
+
+## The workflow was NOT reduced in this PR
+
+Deferred deliberately, and the reason is that it cannot be proved. Three
+concrete mismatches, none of them safely guessable while Actions cannot run:
+
+1. `deploy-dev.yml` takes `api_image_tag` and `web_image_tag` as **separate**
+   inputs and supports floating tags like `dev-latest`. The script derives **one**
+   tag from a commit. Mapping the two is a design decision, not a transcription.
+2. It is a `workflow_call` / `workflow_dispatch` deploy-only workflow; the build
+   lives in `ci.yml`. Which half calls the script, and with what, changes both.
+3. `actions/checkout` leaves a detached HEAD. That one **is** fixed here -
+   `current_branch()` prefers `GITHUB_REF_NAME` - because it was verifiable
+   locally. The other two are not.
+
+**Its first real execution is the risk**, and that execution cannot happen before
+October. Registered as the follow-up rather than written blind.
 
 ---
 
