@@ -1,6 +1,13 @@
-import { Public } from '@kambriq/common';
-import { Controller, Get } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Public, RoleCode, Roles } from '@kambriq/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import {
   DiskHealthIndicator,
   HealthCheck,
@@ -11,6 +18,7 @@ import {
 import { CorePrismaService } from '../core/prisma/core-prisma.service';
 import { KbsPrismaService } from '../kbs/prisma/kbs-prisma.service';
 import { BuildInfo, getBuildInfo } from './build-info';
+import { QueueHealthService } from './queue-health.service';
 
 @ApiTags('Health')
 @Controller('health')
@@ -21,6 +29,7 @@ export class HealthController {
     private readonly disk: DiskHealthIndicator,
     private readonly corePrisma: CorePrismaService,
     private readonly kbsPrisma: KbsPrismaService,
+    private readonly queueHealth: QueueHealthService,
   ) {}
 
   @Public()
@@ -117,5 +126,47 @@ export class HealthController {
   })
   version(): BuildInfo {
     return getBuildInfo();
+  }
+
+  // ----- A18: queue observability ----- //
+
+  @Get('queues')
+  @Roles(RoleCode.ADMIN_GLOBAL)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: '[Admin] Per-queue job counts',
+    description:
+      'waiting, active, completed, failed, delayed and paused, for every queue. ' +
+      '**Authenticated**, unlike the three health routes above, which are public: this exposes ' +
+      'operational ' +
+      'internals, and the companion route exposes failed payloads which carry personal data. ' +
+      'A18: `S9` proved an unknown job lands on the failed set rather than vanishing, but that ' +
+      'proof was taken locally - on dev the sets live in ElastiCache inside the VPC and nothing ' +
+      'could see them. A failure nobody can observe is a silent failure whatever the code ' +
+      'guarantees.',
+  })
+  @ApiResponse({ status: 200, description: 'Counts returned, one entry per queue.' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions. Requires ADMIN_GLOBAL.' })
+  async queues() {
+    return this.queueHealth.counts();
+  }
+
+  @Get('queues/:name/failed')
+  @Roles(RoleCode.ADMIN_GLOBAL)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: '[Admin] Failed jobs of one queue, with their payloads',
+    description:
+      'Newest first, with `data` intact, `failedReason` and `attemptsMade`. A count says ' +
+      'something failed; the payload says what, for whom, and whether it can be replayed. ' +
+      '`removeOnFailed: 200` already retains them - this reads them back.',
+  })
+  @ApiParam({ name: 'name', description: 'Queue name: kbs, core, kamnet or notifications' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiResponse({ status: 200, description: 'Failed jobs returned.' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions. Requires ADMIN_GLOBAL.' })
+  @ApiResponse({ status: 404, description: 'No queue by that name.' })
+  async failedJobs(@Param('name') name: string, @Query('limit') limit?: string) {
+    return this.queueHealth.failed(name, limit ? Number(limit) : 20);
   }
 }

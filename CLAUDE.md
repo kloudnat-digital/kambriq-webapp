@@ -673,6 +673,40 @@ the **routing table**, not of the class a controller test instantiates.
 
 An endpoint with a green test and no caller is a claim that it works.
 
+### Verify the premise, not the report of the premise
+
+A chantier began "PR #89 has been re-landed on develop - VERIFY that, do not take
+it on report." It had not been. What _had_ been merged was the document
+describing the problem. **The record landed and the work did not**, and every
+downstream step would have been built on a fact that was one command away from
+being checked:
+
+```
+git merge-base --is-ancestor <the merge commit> origin/develop
+```
+
+Two chantiers in a row started on a false premise about what was deployed, and
+both times the check took under a minute. A premise stated in a brief is a claim
+like any other; the brief itself said so.
+
+### A sweep that counts a token counts it in prose too
+
+`route-guards.spec.ts` counted `@Public()` by splitting on the token. A new route
+carried a description explaining that the route was deliberately **not** public -
+and that sentence, inside a string, was counted as a fourth public route. The
+sweep reported the words "this is not public" as a public route.
+
+Comments can be stripped. Strings cannot, because a decorator and a mention of
+one are the same characters. What separates them is **position**: a decorator
+opens its own line. `/^[ \t]*@Public\(\)/gm` counts positions and cannot match a
+mention.
+
+The same shape has now appeared three times - `payment-money.tsx`'s doc comment
+naming the APIs it bans, `lands-client.controller.ts` explaining that it does not
+send instructions, and this. **When a sweep bans a token, the code that explains
+the ban is the first thing it will flag.** Match the shape, not the substring, and
+prove the sweep still fires afterwards.
+
 ### A stacked PR must be re-based when its base merges, or it merges into nothing
 
 `#89` was stacked on `#88` because develop did not carry `#88`'s work yet. That

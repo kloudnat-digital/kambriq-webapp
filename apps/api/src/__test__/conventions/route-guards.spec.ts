@@ -37,10 +37,25 @@ const basePath = (src: string) => /@Controller\(\s*'([^']*)'\s*\)/.exec(src)?.[1
 
 /** Counts `@Public()` occurrences, ignoring commented-out ones. */
 const publicCount = (src: string) =>
-  src
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1')
-    .split('@Public()').length - 1;
+  (
+    src
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1')
+      /**
+       * A decorator **position**, not a mention.
+       *
+       * This used to be `.split('@Public()')`, which counted the token wherever
+       * it appeared - including inside a string. A route description explaining
+       * that a route is deliberately *not* `@Public()` therefore read as a
+       * fourth public route on the health controller, and the sweep reported
+       * the sentence saying "this is not public" as a public route.
+       *
+       * Comments were already stripped; strings cannot be, because a decorator
+       * and a mention are the same characters. What separates them is position:
+       * a decorator opens its own line. That is what is counted.
+       */
+      .match(/^[ \t]*@Public\(\)/gm) ?? []
+  ).length;
 
 /**
  * The complete public surface, by controller and count.
