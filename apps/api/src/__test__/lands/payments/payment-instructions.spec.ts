@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import {
   EmailService,
   isTransactional,
+  PaymentChannel,
   PaymentState,
   SUPPRESSIBLE_TEMPLATES,
   StorageService,
@@ -13,11 +14,13 @@ import {
 import { PaymentsService } from '../../../lands/payments/payments.service';
 import { LandsPrismaService } from '../../../lands/prisma/lands-prisma.service';
 import { PaymentChannelsService } from '../../../lands/payments/payment-channels.service';
+import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
 import {
   mockEmailService,
   mockLandsPrisma,
   mockPaymentChannels,
   mockConfigService,
+  mockCorePrisma,
   mockStorageService,
 } from '../../utils';
 
@@ -25,6 +28,18 @@ const REFERENCE = 'KBQ-2609-J8ZD9-Y';
 const ADMIN = '00000000-0000-4000-8000-b00000000001';
 const TO = { email: 'client@maildrop.cc', clientName: 'Alphonse', lang: 'fr' };
 const CONTEXT = { subject: 'Parcelle Douala 1', actorUserId: ADMIN };
+
+/**
+ * v03 moved the send: it is the back office's act, after identification, with a
+ * channel chosen. `sendInstructions` therefore takes the decision rather than
+ * the recipient - the address and the name are read from the reservation and
+ * the account, not passed in by whoever calls.
+ */
+const SEND = {
+  actorUserId: ADMIN,
+  channel: PaymentChannel.VIR,
+  reason: 'Client bancarise, virement convenu',
+};
 
 const payment = (over: Record<string, unknown> = {}) => ({
   id: 'pay-1',
@@ -40,16 +55,32 @@ const payment = (over: Record<string, unknown> = {}) => ({
 describe('G3 - payment instructions and reminders', () => {
   let service: PaymentsService;
   let prisma: ReturnType<typeof mockLandsPrisma>;
+  let core: ReturnType<typeof mockCorePrisma>;
   let email: ReturnType<typeof mockEmailService>;
   let channels: ReturnType<typeof mockPaymentChannels>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     prisma = mockLandsPrisma();
+    core = mockCorePrisma();
+    // Verified by default: these suites are about the payment machinery, not
+    // about the gate, and an unverified fixture would make every one of them
+    // fail for a reason none of them is testing. `payment-identification-gate.spec.ts`
+    // is where the gate itself is exercised.
+    core.userProfile.findUnique.mockResolvedValue({ idVerificationStatus: 'verified' });
     email = mockEmailService();
     channels = mockPaymentChannels();
 
     prisma.payment.findUnique.mockResolvedValue(payment());
+    prisma.landReservation.findUnique.mockResolvedValue({
+      clientUserId: 'client-1',
+      clientName: 'Alphonse',
+      land: { title: 'Parcelle Douala 1' },
+    });
+    core.user.findUnique.mockResolvedValue({
+      email: TO.email,
+      preferredLanguage: 'fr',
+    });
     prisma.payment.update.mockResolvedValue({});
     prisma.paymentTransition.create.mockResolvedValue({});
 
@@ -61,6 +92,7 @@ describe('G3 - payment instructions and reminders', () => {
         { provide: EmailService, useValue: email },
         { provide: StorageService, useValue: mockStorageService() },
         { provide: ConfigService, useValue: mockConfigService() },
+        { provide: CorePrismaService, useValue: core },
       ],
     }).compile();
     service = module.get(PaymentsService);
@@ -69,7 +101,7 @@ describe('G3 - payment instructions and reminders', () => {
   // ----- (b) THE A11 BARRIER ----- //
 
   describe('(b) the instruction and the reminder are transactional', () => {
-    it.each(['paymentInstructions', 'paymentReminder'])(
+    it.each(['paymentInstructionsAvailable', 'paymentReminder'])(
       '%s is not in the suppressible allow-list',
       (template) => {
         // A11 made the allow-list fail safe: an unclassified template is
@@ -81,7 +113,7 @@ describe('G3 - payment instructions and reminders', () => {
       },
     );
 
-    it.each(['paymentInstructions', 'paymentReminder'])(
+    it.each(['paymentInstructionsAvailable', 'paymentReminder'])(
       'sendUpdate refuses %s outright',
       async (template) => {
         const real = new EmailService({ add: jest.fn() } as never);
@@ -96,7 +128,7 @@ describe('G3 - payment instructions and reminders', () => {
     );
 
     it('both go through send, and the service never calls sendUpdate', async () => {
-      await service.sendInstructions('pay-1', TO, CONTEXT);
+      await service.sendInstructions('pay-1', SEND);
       await service.sendReminder('pay-1', TO, { subject: CONTEXT.subject });
 
       expect(email.send).toHaveBeenCalledTimes(2);
@@ -117,11 +149,11 @@ describe('G3 - payment instructions and reminders', () => {
 
   describe('(c) a message cannot be built with a missing channel detail', () => {
     it('does not send when the channel details cannot be read', async () => {
-      channels.get.mockRejectedValue(
+      channels.detailsFor.mockRejectedValue(
         new Error('Payment channel details are incomplete: 2 parameter(s) unusable.'),
       );
 
-      await expect(service.sendInstructions('pay-1', TO, CONTEXT)).rejects.toThrow(/incomplete/);
+      await expect(service.sendInstructions('pay-1', SEND)).rejects.toThrow(/incomplete/);
 
       // Nothing sent, and nothing moved. A message with a blank IBAN tells
       // somebody to transfer money into nothing.
@@ -129,23 +161,42 @@ describe('G3 - payment instructions and reminders', () => {
       expect(prisma.payment.update).not.toHaveBeenCalled();
     });
 
-    it('every channel detail reaches the message', async () => {
-      await service.sendInstructions('pay-1', TO, CONTEXT);
+    it('reads only the chosen channel, and reads it before writing anything', async () => {
+      await service.sendInstructions('pay-1', SEND);
+
+      // v03 4d: "Le message ne porte que les coordonnees de ce canal."
+      expect(channels.detailsFor).toHaveBeenCalledWith(PaymentChannel.VIR);
+      expect(channels.detailsFor).toHaveBeenCalledTimes(1);
+    });
+
+    it('no channel detail reaches the email at all', async () => {
+      /**
+       * **This assertion is the inverse of the one it replaced.**
+       *
+       * Until v03 this suite asserted "every channel detail reaches the
+       * message", and it passed - because the message carried the bank account,
+       * the mobile money number and the notary's address to anybody who clicked.
+       * v03 4d makes the email a notification: the coordinates live on the
+       * client's own page, behind their authentication.
+       *
+       * A test that asserts the presence of a thing is one edit away from being
+       * a test that requires it.
+       */
+      await service.sendInstructions('pay-1', SEND);
 
       const args = (email.send.mock.calls[0][0] as { args: Record<string, string> }).args;
-      const expected = await mockPaymentChannels().get();
+      const coordinates = await mockPaymentChannels().detailsFor(PaymentChannel.VIR);
 
-      for (const [field, value] of Object.entries(expected)) {
-        expect(args[field]).toBe(value);
+      for (const value of Object.values(coordinates)) {
+        expect(JSON.stringify(args)).not.toContain(value);
       }
-      // And none of them is blank, which is the property that matters.
-      for (const [field] of Object.entries(expected)) {
-        expect(String(args[field]).trim()).not.toBe('');
-      }
+      // What it carries instead: the label, and a link to where they live.
+      expect(args['channelLabel']).toBe('Virement bancaire');
+      expect(args['url']).toContain('/mylands/payment/');
     });
 
     it('carries the reference, the amount, the currency and the deadline', async () => {
-      await service.sendInstructions('pay-1', TO, CONTEXT);
+      await service.sendInstructions('pay-1', SEND);
 
       const args = (email.send.mock.calls[0][0] as { args: Record<string, string> }).args;
       expect(args['reference']).toBe(REFERENCE);
@@ -163,8 +214,6 @@ describe('G3 - payment instructions and reminders', () => {
       expect(args['amount'].replace(/\s/g, ' ')).toBe('750 000 XAF');
       expect(args['amount']).not.toContain('FCFA');
       expect(args['amount'].match(/XAF/g)).toHaveLength(1);
-      // A date a person acts on, not an ISO stamp.
-      expect(args['deadline']).toBe('6 octobre 2026');
       expect(args['subject']).toBe('Parcelle Douala 1');
     });
 
@@ -173,9 +222,7 @@ describe('G3 - payment instructions and reminders', () => {
       // against nothing is worse than not asking.
       prisma.payment.findUnique.mockResolvedValue(payment({ reference: null }));
 
-      await expect(service.sendInstructions('pay-1', TO, CONTEXT)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.sendInstructions('pay-1', SEND)).rejects.toThrow(BadRequestException);
       expect(email.send).not.toHaveBeenCalled();
     });
   });
@@ -184,7 +231,7 @@ describe('G3 - payment instructions and reminders', () => {
 
   describe('(d) a failed send never leaves the payment in INSTRUCTIONS_ENVOYEES', () => {
     it('sends first, and only then transitions', async () => {
-      await service.sendInstructions('pay-1', TO, CONTEXT);
+      await service.sendInstructions('pay-1', SEND);
 
       const sendOrder = email.send.mock.invocationCallOrder[0];
       const updateOrder = prisma.payment.update.mock.invocationCallOrder[0];
@@ -201,31 +248,33 @@ describe('G3 - payment instructions and reminders', () => {
        */
       email.send.mockRejectedValue(new Error('queue unreachable'));
 
-      await expect(service.sendInstructions('pay-1', TO, CONTEXT)).rejects.toThrow(
-        'queue unreachable',
-      );
+      await expect(service.sendInstructions('pay-1', SEND)).rejects.toThrow('queue unreachable');
 
       expect(prisma.payment.update).not.toHaveBeenCalled();
       expect(prisma.paymentTransition.create).not.toHaveBeenCalled();
     });
 
     it('moves to INSTRUCTIONS_ENVOYEES when the send succeeded', async () => {
-      const result = await service.sendInstructions('pay-1', TO, CONTEXT);
+      const result = await service.sendInstructions('pay-1', SEND);
 
       expect(result.state).toBe(PaymentState.INSTRUCTIONS_ENVOYEES);
       expect(result.reference).toBe(REFERENCE);
       const audit = prisma.paymentTransition.create.mock.calls[0][0] as {
-        data: { toState: string; actorUserId: string; reason: string };
+        data: { toState: string; actorUserId: string; reason: string; channel: string };
       };
       expect(audit.data.toState).toBe(PaymentState.INSTRUCTIONS_ENVOYEES);
       expect(audit.data.actorUserId).toBe(ADMIN);
-      expect(audit.data.reason).toContain(TO.email);
+      // The reason is now the operator's own words about why this channel, not
+      // a generated sentence about an address: v03 4d asks the transition to
+      // record "qui, quand, quel canal, et pourquoi", and the why is a human's.
+      expect(audit.data.reason).toBe(SEND.reason);
+      expect(audit.data.channel).toBe(PaymentChannel.VIR);
     });
 
     it('goes through G1 guard, so an illegal transition is still refused', async () => {
       prisma.payment.findUnique.mockResolvedValue(payment({ state: PaymentState.VALIDE }));
 
-      await expect(service.sendInstructions('pay-1', TO, CONTEXT)).rejects.toThrow(
+      await expect(service.sendInstructions('pay-1', SEND)).rejects.toThrow(
         /Illegal payment transition/,
       );
     });
@@ -254,15 +303,32 @@ describe('G3 - payment instructions and reminders', () => {
       expect(args['overdue']).toBe('true');
     });
 
-    it('repeats the instructions rather than referring to them', async () => {
-      // A person who needs a reminder is a person who cannot find the first
-      // message.
+    it('repeats the reference and points at the page, and carries no coordinates', async () => {
+      /**
+       * **Inverted by v03.** This test used to assert that the reminder
+       * contained the IBAN, the mobile money number and the notary's name -
+       * "a person who needs a reminder is a person who cannot find the first
+       * message". The reasoning was sound and the conclusion was wrong: it sent
+       * the coordinates a second time, to people who had not opened them once.
+       *
+       * A person who cannot find the first message needs the *place*, which is
+       * on their own page, behind their authentication, showing the channel that
+       * was actually chosen for them.
+       */
       await service.sendReminder('pay-1', TO, { subject: CONTEXT.subject });
 
       const args = (email.send.mock.calls[0][0] as { args: Record<string, string> }).args;
-      expect(args['bankIban']).toBeTruthy();
-      expect(args['mobileMoneyNumber']).toBeTruthy();
-      expect(args['notaryName']).toBeTruthy();
+
+      expect(args['reference']).toBe(REFERENCE);
+      expect(args['url']).toContain('/mylands/payment/');
+
+      const coordinates = await mockPaymentChannels().detailsFor(PaymentChannel.VIR);
+      for (const value of Object.values(coordinates)) {
+        expect(JSON.stringify(args)).not.toContain(value);
+      }
+      expect(args['bankIban']).toBeUndefined();
+      expect(args['mobileMoneyNumber']).toBeUndefined();
+      expect(args['notaryName']).toBeUndefined();
     });
 
     it('does not schedule itself - that is G6', () => {

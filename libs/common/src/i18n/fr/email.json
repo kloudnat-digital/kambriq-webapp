@@ -242,5 +242,13 @@
     "introOverdue": "Bonjour {clientName}, la date limite du {deadline} pour le règlement de {subject} est passée et nous n'avons pas encore enregistré votre paiement.",
     "crossed": "Si vous avez déjà payé, ce message a simplement croisé votre virement — il n'y a rien à faire, l'encaissement sera rattaché à votre dossier dès qu'il nous parviendra.",
     "instructionsAgain": "Les instructions complètes sont rappelées ci-dessous pour que vous n'ayez pas à rechercher le message précédent."
+  },
+  "paymentInstructionsAvailable": {
+    "subject": "Vos coordonnées de paiement sont disponibles : {reference}",
+    "heading": "Vos coordonnées de paiement sont prêtes",
+    "intro": "Bonjour {clientName}, nous avons préparé les coordonnées pour le règlement de {subject}. Elles vous attendent sur votre espace, après connexion.",
+    "channelLabel": "Moyen de paiement retenu",
+    "button": "Voir mes coordonnées de paiement",
+    "why": "Elles ne figurent pas dans cet email : des coordonnées bancaires ne doivent pas circuler dans une boîte mail que l'on peut transférer. Sur votre espace, elles sont au même endroit que votre paiement et vous pouvez y revenir à tout moment."
   }
 }

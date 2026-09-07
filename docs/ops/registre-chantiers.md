@@ -101,46 +101,49 @@ table: `Z1`, `D2`, `X1` and `X4` carry commands, numbers or reversal steps that
 are longer than a table row and are still needed. Everything genuinely open is
 listed here first.
 
-| Entry            | State               | What it needs                                                                                                                                       |
-| ---------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
-| `L2`             | `EN COURS`          | one deployed log line carrying its interpolated metadata, quoted                                                                                    |
-| `L3`             | `DECIDE, A FAIRE`   | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                                    |
-| `F1`             | `A DECIDER`         | coverage ratchet: a floor, and what happens when a PR drops below it                                                                                |
-| `P1`             | `A DECIDER`         | SES contact list, one per account per region — the prd constraint                                                                                   |
-| `X2`             | `DECIDE, A FAIRE`   | NAT option 2, decided, deliberately unapplied before delivery                                                                                       |
-| `M1`             | `DECIDE, A FAIRE`   | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                      |
-| `Q1` follow-up   | `A DECIDER`         | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing                  |
-| `D3`             | `EN COURS`          | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0       |
-| `H1`             | `PROUVE`            | `ADMIN_GLOBAL` is the super admin; no second role created. ADR-008 + `super-admin.spec.ts`, five mutations quoted below                             |
-| `H2`             | `PROUVE`            | proven on dev on `f91289f`: `2 created, 0 updated, 0 unchanged`, exit 0, tally read from the task's own log stream                                  |
-| `H3`             | `EN COURS`          | journey 5 green on dev under the sha gate; **pending proof is the two real holders activating their own accounts**                                  |
-| `H4`             | `PROUVE`            | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                             |
-| `A7`             | `PROUVE`            | inventory swept 2026-09-06, output in `docs/ops/a7-standards-inventory.md`: 6 findings (2 closed on sight), 7 classes clean, 2 defects in the sweep |
-| `H2` follow-up 1 | `A DECIDER`         | `deploy-dev.yml` passes `--seed` to `run-migrations.js`, which never reads `process.argv`: the seed step has never seeded anything                  |
-| `H2` follow-up 2 | `A DECIDER`         | the bootstrap deploy step checks the exit code and never that the tally line appeared - the same gap the seed step has                              |
-| `H5`             | `PROUVE`            | journey 5's address guard was a detector, not a barrier: it reported and let the run continue into a real inbox. Moved to `beforeAll`               |
-| `H6`             | `PROUVE`            | the same run's `afterAll` revoked a real administrator's role. Every write audited, role restored 16:05:26, guard made structural                   |
-| `H7`             | `PROUVE`            | nothing tested the bootstrap's role assignment - journey 5 granted it to itself. Decision extracted and covered, 11 tests, 3 mutations              |
-| `H8`             | `EN COURS`          | the bootstrap sent no email; a stray test made it look as though it had. Fixed and proven locally; pending the re-send to `contact@` on dev         |
-| `H8` follow-up   | `A DECIDER`         | per-address SES delivery is not observable: no configuration set, no event destination. Needed to answer "did THIS address receive it"              |
-| `H9`             | `PROUVE`            | the bootstrap's provenance check failed a whole deploy and skipped every later step. Postcondition scoped; step moved after the web deploy          |
-| `B1`             | `PROUVE`            | payment code audited against the design: 0 payments ever processed, no payment table, G3/G4 partly built, six of eight not started                  |
-| `A10`            | `PROUVE`            | the identity-review queue did not exist - the route and the role did. Queue route + `idSubmittedAt`; the back-office screen stays open              |
-| `A11`            | `PROUVE`            | 13 sites, 15 messages, 12 transactional. `sendUpdate` returns an outcome and throws on a transactional template                                     |
-| `A12`            | `PROUVE`            | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                       |
-| `G9`             | `PROUVE LOCALEMENT` | the client creates the payment, from their own purchase page. Creation writes its audit row; sending the instructions is a second act               |
-| `G9` follow-up   | `A DECIDER`         | `PAYMENT_VALIDITY_DAYS` is 30 because a month is the shape of a diaspora transfer. The design gives no number - this one needs deciding             |
-| `G10` (webapp)   | `PROUVE`            | an absent channel prefix now fails the boot exactly as an empty parameter does; disabling is `PAYMENT_CHANNELS_TRANSPORT=disabled`                  |
-| `G10` (infra)    | `PLAN PRET`         | twelve parameters + the prefix into terraform. Plan run and shown, **nothing applied**. Correction-without-deploy proved on a running process       |     |
-| `G4`             | `PROUVE`            | the back office and its screen. Five defects only a real request could see; `db:seed` unbroken; deployed-dev pass deferred to `G8`                  |
-| `G4` follow-up   | `A DECIDER`         | `GetUploadUrlDto` is declared twice with different schemas (lands + kbs); the API logs `Duplicate DTO detected` on every boot                       |
-| `V1` follow-up   | `PROUVE`            | the commission lookup throws now but has never run: 0 sales completed, all 5 commissions seeded. Closed by inspection only                          |
-| `B2`             | `PROUVE`            | V1 inventory finished: WhatsApp preference reads nothing, `sendUpdate` skips indistinguishably and defaults off, `RedisService` unused              |
-| `B3`             | `PROUVE`            | 56 dev parameters against 0 on prd; only 7 injected as secrets, so 49 need an apply to take effect. One confirmed unread, the rest candidates       |
-| `B4`             | `PROUVE`            | 4 journeys: VERIFY does not exist; reactivation and block/unblock never run; 57 identity documents queued for a review that has never run           |
-| `G1`             | `EN COURS`          | payment model in `lands`: BigInt money, 9-state machine, append-only ledger and audit. Pending proof is G8, one payment end to end on dev           |
-| `G2`             | `PROUVE`            | the reference generator: 29-char derived alphabet, mod-29 check character, sequence-backed so collision-free by construction                        |
-| `G3`             | `PROUVE`            | the instruction and reminder messages, channel details from SSM at runtime, send-before-transition. Real email read out of a mailbox                |
+| Entry             | State               | What it needs                                                                                                                                       |
+| ----------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| `L2`              | `EN COURS`          | one deployed log line carrying its interpolated metadata, quoted                                                                                    |
+| `L3`              | `DECIDE, A FAIRE`   | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                                    |
+| `F1`              | `A DECIDER`         | coverage ratchet: a floor, and what happens when a PR drops below it                                                                                |
+| `P1`              | `A DECIDER`         | SES contact list, one per account per region — the prd constraint                                                                                   |
+| `X2`              | `DECIDE, A FAIRE`   | NAT option 2, decided, deliberately unapplied before delivery                                                                                       |
+| `M1`              | `DECIDE, A FAIRE`   | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                      |
+| `Q1` follow-up    | `A DECIDER`         | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing                  |
+| `D3`              | `EN COURS`          | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0       |
+| `H1`              | `PROUVE`            | `ADMIN_GLOBAL` is the super admin; no second role created. ADR-008 + `super-admin.spec.ts`, five mutations quoted below                             |
+| `H2`              | `PROUVE`            | proven on dev on `f91289f`: `2 created, 0 updated, 0 unchanged`, exit 0, tally read from the task's own log stream                                  |
+| `H3`              | `EN COURS`          | journey 5 green on dev under the sha gate; **pending proof is the two real holders activating their own accounts**                                  |
+| `H4`              | `PROUVE`            | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                             |
+| `A7`              | `PROUVE`            | inventory swept 2026-09-06, output in `docs/ops/a7-standards-inventory.md`: 6 findings (2 closed on sight), 7 classes clean, 2 defects in the sweep |
+| `H2` follow-up 1  | `A DECIDER`         | `deploy-dev.yml` passes `--seed` to `run-migrations.js`, which never reads `process.argv`: the seed step has never seeded anything                  |
+| `H2` follow-up 2  | `A DECIDER`         | the bootstrap deploy step checks the exit code and never that the tally line appeared - the same gap the seed step has                              |
+| `H5`              | `PROUVE`            | journey 5's address guard was a detector, not a barrier: it reported and let the run continue into a real inbox. Moved to `beforeAll`               |
+| `H6`              | `PROUVE`            | the same run's `afterAll` revoked a real administrator's role. Every write audited, role restored 16:05:26, guard made structural                   |
+| `H7`              | `PROUVE`            | nothing tested the bootstrap's role assignment - journey 5 granted it to itself. Decision extracted and covered, 11 tests, 3 mutations              |
+| `H8`              | `EN COURS`          | the bootstrap sent no email; a stray test made it look as though it had. Fixed and proven locally; pending the re-send to `contact@` on dev         |
+| `H8` follow-up    | `A DECIDER`         | per-address SES delivery is not observable: no configuration set, no event destination. Needed to answer "did THIS address receive it"              |
+| `H9`              | `PROUVE`            | the bootstrap's provenance check failed a whole deploy and skipped every later step. Postcondition scoped; step moved after the web deploy          |
+| `B1`              | `PROUVE`            | payment code audited against the design: 0 payments ever processed, no payment table, G3/G4 partly built, six of eight not started                  |
+| `A10`             | `PROUVE`            | the identity-review queue did not exist - the route and the role did. Queue route + `idSubmittedAt`; the back-office screen stays open              |
+| `A11`             | `PROUVE`            | 13 sites, 15 messages, 12 transactional. `sendUpdate` returns an outcome and throws on a transactional template                                     |
+| `A12`             | `PROUVE`            | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                       |
+| `G11-G14`         | `PROUVE LOCALEMENT` | six channels, the identification gate, A14's review screen, coordinates in the platform. Email carries none                                         |
+| `G11` follow-up   | `A DECIDER`         | infra owes `ORANGE_MONEY_*` and `MTN_MONEY_*`: v03 splits mobile money in two but keeps twelve parameters with one number                           |
+| `G11` follow-up 2 | `A DECIDER`         | v03 section 5's example uses a hyphen between reference and channel, which section 4b forbids. 4b implemented                                       |
+| `G9`              | `PROUVE LOCALEMENT` | the client creates the payment, from their own purchase page. Creation writes its audit row; sending the instructions is a second act               |
+| `G9` follow-up    | `A DECIDER`         | `PAYMENT_VALIDITY_DAYS` is 30 because a month is the shape of a diaspora transfer. The design gives no number - this one needs deciding             |
+| `G10` (webapp)    | `PROUVE`            | an absent channel prefix now fails the boot exactly as an empty parameter does; disabling is `PAYMENT_CHANNELS_TRANSPORT=disabled`                  |
+| `G10` (infra)     | `PLAN PRET`         | twelve parameters + the prefix into terraform. Plan run and shown, **nothing applied**. Correction-without-deploy proved on a running process       |     |
+| `G4`              | `PROUVE`            | the back office and its screen. Five defects only a real request could see; `db:seed` unbroken; deployed-dev pass deferred to `G8`                  |
+| `G4` follow-up    | `A DECIDER`         | `GetUploadUrlDto` is declared twice with different schemas (lands + kbs); the API logs `Duplicate DTO detected` on every boot                       |
+| `V1` follow-up    | `PROUVE`            | the commission lookup throws now but has never run: 0 sales completed, all 5 commissions seeded. Closed by inspection only                          |
+| `B2`              | `PROUVE`            | V1 inventory finished: WhatsApp preference reads nothing, `sendUpdate` skips indistinguishably and defaults off, `RedisService` unused              |
+| `B3`              | `PROUVE`            | 56 dev parameters against 0 on prd; only 7 injected as secrets, so 49 need an apply to take effect. One confirmed unread, the rest candidates       |
+| `B4`              | `PROUVE`            | 4 journeys: VERIFY does not exist; reactivation and block/unblock never run; 57 identity documents queued for a review that has never run           |
+| `G1`              | `EN COURS`          | payment model in `lands`: BigInt money, 9-state machine, append-only ledger and audit. Pending proof is G8, one payment end to end on dev           |
+| `G2`              | `PROUVE`            | the reference generator: 29-char derived alphabet, mod-29 check character, sequence-backed so collision-free by construction                        |
+| `G3`              | `PROUVE`            | the instruction and reminder messages, channel details from SSM at runtime, send-before-transition. Real email read out of a mailbox                |
 
 ### H1 - `ADMIN_GLOBAL` **is** the super admin - `PROUVE`
 
@@ -577,6 +580,199 @@ unilaterally: it crosses into the other repository.
 
 The manual runbook does not have this gap - it fetches the log and requires the
 tally - so the one-off path already checks what the automated path does not.
+
+---
+
+### G11-G14 - identification before coordinates, six channels, delivery in the platform - `PROUVE LOCALEMENT`
+
+**Cost impact: None** in this repository. Four SSM parameters are **owed by
+infra** - see "what infra must add" below - without which `OMO` and `MOMO`
+cannot be sent.
+
+Specification: `ops_kambriq_paiement-hybride_v03`, sections 4b, 4c, 4d, 5, 6.
+**This corrects a design error, not a bug.** v02 sent an automatic email listing
+every channel to anyone who clicked. KAMBRIQ identifies the client first, then
+answers with the one channel that suits him.
+
+## Six channels, and the code is not the label
+
+`libs/common/src/payments/payment-channels.ts` is the single registry: code,
+label, what the proof is, and whether the payer is routinely somebody else.
+**Neither the code nor the label is derived from the other** - `'OMO'.toLowerCase()`
+is not "Orange Money", and any code that tried would be one rename from lying.
+
+| Code   | Canal                            | Preuve                                    |
+| ------ | -------------------------------- | ----------------------------------------- |
+| `VIR`  | Virement bancaire                | Avis de virement, au nom du client        |
+| `DEPO` | Depot d'especes sur notre compte | Bordereau de versement, au nom du verseur |
+| `OMO`  | Orange Money                     | Confirmation de l'operateur               |
+| `MOMO` | MTN Mobile Money                 | Confirmation de l'operateur               |
+| `ESP`  | Especes en main propre           | Recu KAMBRIQ                              |
+| `NOTA` | Paiement chez le notaire         | Acte notarie                              |
+| `HIST` | Historique, canal inconnu        | Aucune - lignes reprises                  |
+
+`SELECTABLE_CHANNELS` is **derived** from the registry's `selectable` flag, so
+`HIST` is offered in no list a person can choose from and a seventh channel
+cannot be added to one list and forgotten in the other.
+
+**The migration could not annotate the rows it changed, and that is the trigger
+working.** `MOBILE_MONEY` maps to `HIST`, because the pre-v03 model never
+recorded which operator it was and guessing puts a name on a row nobody can
+stand behind. The first draft also wrote the old value into the row's `note` -
+and `PaymentReceipt_append_only` refused it: _"append-only table PaymentReceipt:
+UPDATE is refused. A correction is a new row, never an edit."_ A schema
+migration is not an exemption from immutability, and disabling the trigger to
+annotate a row would have replaced a guarantee held by the database with one
+held by whoever remembers to switch it back on. **This is also the first time
+that trigger has ever been observed firing** - the `G5`/`G7` assessment recorded
+it as "true because nothing has broken it yet".
+
+Forward, backward, forward on the local database: `PaymentReceipt` checksum
+`536f97af2f9f6f6531460c7eaa7000ad` before and after.
+
+## Two fields, never one
+
+`preferredChannel` is the client's declared wish - may be null, binds nothing.
+`channel` is what the back office chose and communicated. `preference-is-not-the-channel.spec.ts`
+checks the pair from three directions: the send never writes the preference, the
+channel never falls back to it, and both columns exist separately. Forced red
+both ways - a send that also wrote `preferredChannel`, and a read with
+`?? preferredChannel` - each failing on its own.
+
+The wish is shown wherever the payment is shown, including before anything is
+decided, and the send control shows it **beside** the choice with nothing
+preselected: a control that arrives with the preference already chosen makes
+accepting it the path of least resistance.
+
+## The gate: verified, not submitted
+
+`assertClientIsIdentified` refuses `INITIE -> INSTRUCTIONS_ENVOYEES` unless the
+client's `idVerificationStatus` is `verified`. `pending` means a document is
+sitting in a queue and says nothing about whether anybody looked at it.
+
+**It is called twice, and that is not duplication.** In `transition`, which is
+the corridor every state change passes through; and in `sendInstructions`
+_before the send_, because G3's ordering sends first and transitions afterwards -
+so a gate only in `transition` let an unverified client receive the notification
+and merely stopped the state from moving. Found by the gate's own test asserting
+nothing was sent and counting two emails.
+
+**The exits are deliberately ungated.** A request from somebody who never
+completed their identification must still be refusable, expirable and
+cancellable, or an unverified client's payment would be stuck for ever.
+
+## A14 - the review screen, because the gate needs it
+
+The queue and the review route have existed since PR #83 with nothing rendering
+them. `G12` turns that from an untidiness into a blockage: no verification, no
+payment. Three screens now exist, and two defects were found building them:
+
+1. **Identity documents came back as raw S3 keys**, unopenable. A review screen
+   that cannot show the document turns "verified" into a click, which is worse
+   than no review because it produces a record saying somebody checked. Signed
+   now, in parallel, like the avatar beside them.
+2. **The reviewer could not read the person.** v03 section 8 puts verification on
+   `ADMIN_LANDS`; `GET /users/:id` is `ADMIN_GLOBAL`. Rather than widen the whole
+   user record - which would hand every lands admin the user table to get at two
+   photographs - `GET /users/id-documents/:id` returns the person, their contact
+   and their signed documents, and nothing else.
+
+## Delivery inside the platform
+
+The coordinates render on the client's own page, behind their authentication.
+The email says they are available and **contains none of them**.
+`no-coordinates-in-email.spec.ts` fails on the G3 behaviour: reinstating
+`channelBlock` turned it **5 failed / 12 passed**, and it passes 17/17 on v03.
+
+`channelBlock` is deleted rather than left unused - an unused renderer of bank
+details is one import away from being used again - and so is `instructionArgs`,
+which built the message by spreading **every** channel detail.
+
+**The reminder leaked too**, and G3's suite asserted that it did, under the name
+_"repeats the instructions rather than referring to them"_. The reasoning was
+sound and the conclusion was wrong: it sent the coordinates a second time, to
+people who had not opened them once. Inverted.
+
+## The channel is never in the reference
+
+`formatReferenceWithChannel` puts the code after `·`, and
+`no-channel-in-reference.spec.ts` fails on a hyphen specifically. Forced red
+twice: `${reference}-${code}` and `${reference} ${code}`, one failure each.
+
+## Proof, run locally end to end through the screens
+
+|                                       |                                                                                                                                 |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Reference                             | **`KBQ-2609-CY44P-2`**, 340 000 XAF, _Parcelle Douala Logbessou_                                                                |
+| Client's declared preference          | **`OMO`** (Orange Money)                                                                                                        |
+| Send attempted before verification    | **403** — _"Ekani Marcelle's identity is \"pending\" - a document is waiting in the review queue"_. Nothing sent, nothing moved |
+| Identity verified from the A14 screen | by `pierre.lands@kambriq.com` (**`ADMIN_LANDS`**, the widened role)                                                             |
+| Channel chosen and sent               | **`VIR`**, deliberately different from the preference                                                                           |
+| MessageId                             | `010701a07b145337-193a7916-9434-43df-b204-3b15ca3397f4-000000`                                                                  |
+
+Audit trail:
+
+```
+(null) -> INITIE                 —    client   "Acompte requested by the client for reservation 73ed3f7a-…"
+INITIE -> INSTRUCTIONS_ENVOYEES  VIR  admin    "Cliente en France, compte bancaire a son nom : virement plus
+                                                sur que mobile money pour 340 000 XAF. Convenu par telephone…"
+```
+
+The client's page returns `preferredChannel: OMO`, `channel: VIR`, and
+coordinates containing **only** `bankName`, `bankAccountName`, `bankIban`,
+`bankSwift` plus the support contact - no mobile money number, no notary address.
+
+**Reading the email found one defect.** The footer rendered _"Ecrivez a ou
+appelez le ,"_ - two blanks - because the new notification args did not carry
+the support contact. The G3 lesson exactly: found by reading what arrived. Fixed
+on both the notification and the reminder. The new French strings had also lost
+their accents; restored.
+
+## What the gate does to the 35 payments already on dev
+
+Stated as a fact before anybody discovers it. On dev today: **29 `ANNULE`, 5
+`INITIE`, 1 `PARTIELLEMENT_RECU`**, and **71 identity documents pending review,
+the oldest waiting 3 days**. Not one of those payments belongs to a verified
+client.
+
+- The **29 `ANNULE`** and the **1 `PARTIELLEMENT_RECU`** are untouched: the gate
+  only guards `INITIE -> INSTRUCTIONS_ENVOYEES`.
+- The **5 `INITIE`** are the ones it would refuse - and **all five already could
+  not be sent**, because they are `G1` backfill rows with `reference: null` and
+  `sendInstructions` has refused those since G3.
+
+**So the gate changes nothing for the existing rows.** It bites on the first
+payment a real client creates, which is the point.
+
+## What infra must add before OMO or MOMO can be sent
+
+v03 splits mobile money in two _because the numbers differ_, and its section 9
+still describes **twelve** required parameters carrying one operator-agnostic
+number. The two cannot both hold. Four parameters are owed:
+
+`ORANGE_MONEY_NUMBER`, `ORANGE_MONEY_NAME`, `MTN_MONEY_NUMBER`, `MTN_MONEY_NAME`
+
+They are **not** part of the startup requirement - refusing to boot every
+environment until infra catches up is a worse answer than refusing one channel
+loudly - so a send on `OMO` or `MOMO` fails naming the missing parameters, and
+`VIR`, `DEPO`, `ESP` and `NOTA` work today.
+
+## Not implementable as written
+
+**v03 section 5 contradicts section 4b on the separator.** 4b is explicit:
+`KBQ-2609-7F3K2-B · OMO`, _"jamais KBQ-2609-7F3K2-B-OMO"_. Section 5's own
+example then reads « KBQ-2609-7F3K2-B - Mobile money (Orange Money) » - a hyphen,
+which is the character 4b forbids and which the brief asks a test to fail on.
+**4b is implemented**; section 5's example is treated as prose that predates the
+rule. Worth settling in v04.
+
+## What the next chantier needs from this
+
+The downloadable payment sheet and `ANNONCE_CLIENT` are deliberately not built.
+They will need: `communicatedDetails` on the audit row (the coordinates as sent,
+already written), `formatReferenceWithChannel` for the sheet's header, the
+`FIELD_LABELS` map in `my-payment-content.tsx`, and a client transition route -
+the client currently has no route that moves a payment at all, by design.
 
 ---
 

@@ -5,13 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getProofUploadUrl, recordReceipt } from '@/lib/actions/payments';
-
-const CHANNELS = [
-  { value: 'VIREMENT', label: 'Virement bancaire' },
-  { value: 'MOBILE_MONEY', label: 'Mobile money' },
-  { value: 'ESPECES', label: 'Espèces' },
-  { value: 'ACTE_NOTARIE', label: 'Acte notarié' },
-] as const;
+import { selectableChannels } from './channel-label';
+import { PAYMENT_CHANNELS } from '@kambriq/common/payments/payment-channels';
 
 /**
  * Records one encaissement, with its proof.
@@ -35,9 +30,10 @@ export const RecordReceiptForm = ({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [amount, setAmount] = useState('');
-  const [channel, setChannel] = useState<string>('VIREMENT');
+  const [channel, setChannel] = useState<string>('VIR');
   const [receivedAt, setReceivedAt] = useState('');
   const [note, setNote] = useState('');
+  const [paidBy, setPaidBy] = useState('');
   const [proofKey, setProofKey] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +72,7 @@ export const RecordReceiptForm = ({
         receivedAt: new Date(receivedAt).toISOString(),
         evidenceUrl: proofKey,
         note: note || undefined,
+        paidBy: paidBy.trim() || undefined,
       });
       if (!res.success) {
         setError(res.error ?? "L'encaissement a été refusé.");
@@ -111,13 +108,15 @@ export const RecordReceiptForm = ({
           <label className="text-sm">
             <span className="mb-1 block text-gray-600">Canal</span>
             <select
+              className="w-full rounded border px-3 py-2"
               value={channel}
               onChange={(e) => setChannel(e.target.value)}
-              className="w-full rounded border px-2 py-1"
             >
-              {CHANNELS.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
+              {/* From the registry, so the six here and the six the API accepts
+                  cannot drift. `HIST` is not selectable and so is not offered. */}
+              {selectableChannels.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code} — {c.label}
                 </option>
               ))}
             </select>
@@ -152,6 +151,25 @@ export const RecordReceiptForm = ({
             {proofKey && <span className="text-xs text-green-700">Justificatif téléversé.</span>}
           </label>
         </div>
+
+        {/* Shown only where the payer is routinely somebody else. Asking for
+            it on every channel would have people retype the client's own name
+            until they stopped reading the field. */}
+        {PAYMENT_CHANNELS[channel as keyof typeof PAYMENT_CHANNELS]?.payerMayDiffer && (
+          <label className="block text-sm">
+            <span className="mb-1 block text-gray-600">Versé par (obligatoire)</span>
+            <input
+              className="w-full rounded border px-3 py-2"
+              value={paidBy}
+              onChange={(e) => setPaidBy(e.target.value)}
+              placeholder="Nom figurant sur le bordereau de versement"
+            />
+            <span className="mt-1 block text-xs text-gray-500">
+              Un dépôt au guichet est souvent fait par un proche. Sans ce nom, le bordereau ne peut
+              pas être rattaché au paiement.
+            </span>
+          </label>
+        )}
 
         <label className="block text-sm">
           <span className="mb-1 block text-gray-600">Note (facultatif)</span>

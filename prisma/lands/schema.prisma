@@ -290,16 +290,28 @@ enum PaymentState {
 }
 
 /// How the money actually arrived.
+/// The six channels money arrives by, plus the marker for rows taken over.
+///
+/// v03 section 4b. These are **codes**: said on the telephone, written on a
+/// paying-in slip. The label a screen shows lives beside the code in
+/// `libs/common/src/payments/payment-channels.ts` and is never derived from it.
+///
+/// `VIR` and `DEPO` are deliberately far apart when spoken - "virement" and
+/// "versement" are confusable, and they share neither their proof nor their
+/// payer. `OMO` and `MOMO` are two channels because Orange and MTN differ in
+/// number, in confirmation format, and in dispute procedure.
 enum PaymentChannel {
-  VIREMENT
-  MOBILE_MONEY
-  ESPECES
-  ACTE_NOTARIE
-  /// Pre-G1 rows only. The old model recorded no channel, so backfilled
-  /// receipts genuinely do not have one - this says so instead of inventing a
+  VIR
+  DEPO
+  OMO
+  MOMO
+  ESP
+  NOTA
+  /// Pre-v03 rows only. The old model recorded no channel, so rows taken over
+  /// from it genuinely do not have one - this says so instead of inventing a
   /// value. A CHECK constraint ties it to the only rows allowed to omit
   /// evidence, and `PaymentsService` refuses it as an input.
-  INCONNU_HISTORIQUE
+  HIST
 }
 
 model Payment {
@@ -325,6 +337,22 @@ model Payment {
   amountDue BigInt
 
   state PaymentState @default(INITIE)
+
+  /// What the client said would suit them, at request time. **Binds nothing.**
+  ///
+  /// v03 section 4c. A wish, not a decision: the back office sees it, takes it
+  /// into account, and may answer with something else - an amount, a country of
+  /// origin or an incomplete identification can make a channel unsuitable, and
+  /// that is known during the conversation, not before it.
+  preferredChannel PaymentChannel?
+
+  /// What the back office actually chose and communicated. **Authoritative.**
+  ///
+  /// Null until the instructions are sent. Deliberately a second column rather
+  /// than a reuse of `preferredChannel`: merging them would let a wish
+  /// silently become the record of what was used, and on the day the two differ
+  /// nothing would say which one is being read.
+  channel PaymentChannel?
 
   /// After this instant the payment may be moved to EXPIRE. Nothing sleeps
   /// silently - the design's rule, applied to money.
@@ -370,6 +398,15 @@ model PaymentReceipt {
   /// permitted only for INCONNU_HISTORIQUE rows, and a CHECK constraint says so.
   evidenceUrl String?
 
+  /// Who actually handed the money over, as declared, when that is not the client.
+  ///
+  /// v03 section 6. A deposit is made at a counter in cash, often by a relative
+  /// in Douala or a friend passing through. The back office then holds a slip
+  /// bearing a name it does not recognise and cannot match it to anything.
+  /// Required for `DEPO` by a CHECK constraint; recorded as declared, never
+  /// verified - it is what the person at the counter said their name was.
+  paidBy String?
+
   /// Set when this line corrects an earlier one.
   correctsId String?
   note       String?
@@ -399,6 +436,20 @@ model PaymentTransition {
 
   /// The receipt this decision rests on, where there is one.
   evidenceReceiptId String?
+
+  /// The channel this transition concerns, where it concerns one.
+  ///
+  /// Set by the send. v03 section 4d: the transition records "qui, quand, quel
+  /// canal, et pourquoi" - the channel is a fact about the decision, not only
+  /// about the payment, because a later transition may concern a different one.
+  channel PaymentChannel?
+
+  /// The coordinates actually communicated, as sent.
+  ///
+  /// So that on the day of a dispute what was told to the client is established
+  /// by the system rather than by a screenshot. Append-only like the rest of
+  /// this table, which is what makes it evidence.
+  communicatedDetails Json?
 
   occurredAt DateTime @default(now())
 

@@ -5,6 +5,7 @@ import { createAction, ServerActionError } from './create-action';
 import { getUserRoles, isAdminRole, buildQuery } from './utils/lands';
 import type { CreateLandFormSchema } from '@/validations/schema/lands';
 import type { LandClientDocumentType, LandLabel } from '@/types/lands';
+import type { MyPayment } from '@/types/payments';
 
 // ---- Purchases ----
 
@@ -324,3 +325,15 @@ export const deleteDocumentAction = createAction(async (id: string) => {
     );
   }
 });
+
+/** The client's own payment, with the coordinates once the back office has sent them. */
+export const getMyPayment = async (paymentId: string) =>
+  serverApi.get<MyPayment>(`/lands/client/payments/${paymentId}`);
+
+/** Records the client's declared preference. A wish; it binds nothing. */
+export const setPreferredChannelAction = createAction(
+  async (paymentId: string, preferredChannel: string | null) =>
+    serverApi.patch(`/lands/client/payments/${paymentId}/preferred-channel`, {
+      preferredChannel,
+    }),
+);

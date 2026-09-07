@@ -153,7 +153,12 @@ export class UserController {
   }
 
   @Patch(':id/id-document/review')
-  @Roles(RoleCode.ADMIN_GLOBAL)
+  // v03 section 8: "Verifier l'identite du client - Administrateur terrains ou
+  // global". A10 built this for ADMIN_GLOBAL alone, which put the only two
+  // people who can verify an identity at the far end of the escalation path -
+  // and G12 puts that verification on the path of the money. A queue only a
+  // super admin can clear is a queue that does not get cleared.
+  @Roles(RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '[Admin] Approve or reject an identity document',
@@ -229,7 +234,8 @@ export class UserController {
   }
 
   @Get('id-documents/pending')
-  @Roles(RoleCode.ADMIN_GLOBAL)
+  // Same widening, same reason: whoever may verify must be able to see the queue.
+  @Roles(RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL)
   @ApiOperation({
     summary: '[Admin] The identity-review queue',
     description:
@@ -243,6 +249,29 @@ export class UserController {
   @ApiResponse({ status: 403, description: 'Insufficient permissions. Requires ADMIN_GLOBAL.' })
   async listPendingIdDocuments(@Query() query: PaginationQueryDto) {
     return this.usersService.listPendingIdDocuments(query);
+  }
+
+  @Get('id-documents/:id')
+  // v03 section 8 puts identity verification on ADMIN_LANDS as well as global.
+  // Verifying means looking at the document, so the reviewer needs to read it -
+  // but **not** the whole user record. `GET :id` returns roles and the full
+  // account; this returns the person, their contact, and their signed document
+  // links, and nothing else. Least privilege, because widening the general read
+  // would have handed every lands admin the user table to get at two photographs.
+  @Roles(RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL)
+  @ApiOperation({
+    summary: '[Admin] One identity under review, with its documents',
+    description:
+      'The person, their contact details, and short-lived signed links to the documents they ' +
+      'submitted. A review screen that cannot show the document turns "verified" into a click, ' +
+      'which is worse than no review because it produces a record saying somebody checked.',
+  })
+  @ApiParam({ name: 'id', description: 'User ID (UUID)' })
+  @ApiResponse({ status: 200, description: 'Identity under review returned.' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions.' })
+  @ApiResponse({ status: 404, description: 'No such user.' })
+  async getIdentityForReview(@Param('id') userId: string) {
+    return this.usersService.getIdentityForReview(userId);
   }
 
   @Get(':id')

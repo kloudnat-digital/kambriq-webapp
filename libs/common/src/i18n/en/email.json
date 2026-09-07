@@ -242,5 +242,13 @@
     "introOverdue": "Hello {clientName}, the deadline of {deadline} for paying {subject} has passed and we have not yet recorded your payment.",
     "crossed": "If you have already paid, this message simply crossed your transfer — there is nothing to do, the payment will be attached to your file as soon as it reaches us.",
     "instructionsAgain": "The full instructions are repeated below so you do not have to look for the previous message."
+  },
+  "paymentInstructionsAvailable": {
+    "subject": "Your payment details are ready: {reference}",
+    "heading": "Your payment details are ready",
+    "intro": "Hello {clientName}, we have prepared the details for paying {subject}. They are waiting on your account, once you sign in.",
+    "channelLabel": "Chosen payment method",
+    "button": "View my payment details",
+    "why": "They are not in this email: bank details should not travel in a mailbox that can be forwarded. On your account they sit next to your payment, and you can come back to them at any time."
   }
 }

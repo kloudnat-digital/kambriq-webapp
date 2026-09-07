@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { requestPaymentAction, sendMyInstructionsAction } from '@/lib/actions/lands';
+import { requestPaymentAction, setPreferredChannelAction } from '@/lib/actions/lands';
 import { Money } from '@/components/payments-admin/payment-money';
+import { selectableChannels } from '@/components/payments-admin/channel-label';
 
 type Created = { id: string; reference: string; amountDue: string; currency: string };
 
@@ -39,7 +40,7 @@ export const RequestPaymentCard = ({
   currency?: string;
 }) => {
   const [payment, setPayment] = useState<Created | null>(null);
-  const [sent, setSent] = useState(false);
+  const [preferred, setPreferred] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const create = useMutation({
@@ -55,14 +56,13 @@ export const RequestPaymentCard = ({
     onError: (e: Error) => setError(e.message),
   });
 
-  const send = useMutation({
-    mutationFn: async (paymentId: string) => {
+  const savePreference = useMutation({
+    mutationFn: async ({ paymentId, channel }: { paymentId: string; channel: string }) => {
       setError(null);
-      const res = await sendMyInstructionsAction(paymentId);
-      if (!res.success) throw new Error(res.error ?? "L'envoi a échoué.");
+      const res = await setPreferredChannelAction(paymentId, channel || null);
+      if (!res.success) throw new Error(res.error ?? "La preference n'a pas ete enregistree.");
       return res.data;
     },
-    onSuccess: () => setSent(true),
     onError: (e: Error) => setError(e.message),
   });
 
@@ -96,7 +96,8 @@ export const RequestPaymentCard = ({
       ) : (
         <>
           <p className="mt-1 text-sm text-gray-600">
-            Indiquez cette référence comme motif de votre paiement, quel que soit le canal.
+            Votre demande est enregistrée sous la référence ci-dessous. Nous vérifions votre
+            identité puis nous vous répondons avec le moyen de paiement qui vous convient.
           </p>
           <p className="mt-3 font-mono text-2xl font-bold tracking-wider text-gray-900">
             {payment.reference}
@@ -105,24 +106,41 @@ export const RequestPaymentCard = ({
             Montant : <Money amount={payment.amountDue} currency={payment.currency} />
           </p>
 
-          <button
-            type="button"
-            disabled={send.isPending || sent}
-            onClick={() => send.mutate(payment.id)}
-            className="mt-3 rounded bg-emerald-700 px-4 py-2 text-sm font-medium text-white disabled:bg-gray-300"
-          >
-            {sent
-              ? 'Instructions envoyées par email'
-              : send.isPending
-                ? 'Envoi…'
-                : 'Recevoir les instructions par email'}
-          </button>
+          {/* v03 4c: the client states what suits them. It binds nothing, and
+              the card says so - a control that implied otherwise would be a
+              decision taken before the identification, which is the wrong
+              place. */}
+          <label className="mt-3 block text-sm">
+            <span className="mb-1 block font-medium">
+              Quel moyen de paiement vous arrange ? (facultatif)
+            </span>
+            <select
+              className="w-full rounded border px-3 py-2"
+              value={preferred}
+              onChange={(e) => {
+                setPreferred(e.target.value);
+                savePreference.mutate({ paymentId: payment.id, channel: e.target.value });
+              }}
+            >
+              <option value="">— sans préférence —</option>
+              {selectableChannels.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-xs text-gray-500">
+              Nous en tenons compte. Selon le montant ou l&apos;origine des fonds, nous pouvons vous
+              proposer autre chose — nous vous le dirons.
+            </span>
+          </label>
 
-          {/* The reference is on screen already, so an email that never arrives
-              is an inconvenience rather than a dead end. */}
-          <p className="mt-2 text-xs text-gray-500">
-            Votre référence est valable même si vous ne recevez pas l&apos;email.
-          </p>
+          <a
+            href={`/mylands/payment/${payment.id}`}
+            className="mt-3 inline-block rounded bg-emerald-700 px-4 py-2 text-sm font-medium text-white"
+          >
+            Suivre ma demande
+          </a>
         </>
       )}
 

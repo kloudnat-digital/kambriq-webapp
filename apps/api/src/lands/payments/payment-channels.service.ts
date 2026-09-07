@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { GetParameterCommand, GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { ConfigService } from '@nestjs/config';
 
 /**
@@ -70,12 +70,65 @@ const FIELDS: Record<keyof PaymentChannels, string> = {
   supportPhone: 'SUPPORT_PHONE',
 };
 
+/**
+ * Parameters that exist only for one channel, read on demand rather than at
+ * startup.
+ *
+ * v03 splits mobile money into `OMO` (Orange) and `MOMO` (MTN) *"parce qu'ils
+ * n'ont ni le meme numero, ni le meme format de confirmation, ni la meme
+ * procedure en cas de litige"* - and its section 9 still describes **twelve**
+ * required parameters, which carry a single, operator-agnostic mobile money
+ * number. The two statements cannot both be satisfied: one number cannot be
+ * two numbers.
+ *
+ * Rather than send the same number for both channels - which would make the
+ * split decorative - each operator gets its own pair. They are **not** part of
+ * the startup requirement, because making them so would refuse to start every
+ * environment until infrastructure catches up, and an API that will not boot is
+ * a worse answer than one that refuses one channel loudly.
+ *
+ * A send on a channel whose parameters are absent fails with their names. See
+ * the register: an infra change is owed.
+ */
+const OPTIONAL_FIELDS: Record<string, string> = {
+  orangeMoneyNumber: 'ORANGE_MONEY_NUMBER',
+  orangeMoneyName: 'ORANGE_MONEY_NAME',
+  mtnMoneyNumber: 'MTN_MONEY_NUMBER',
+  mtnMoneyName: 'MTN_MONEY_NAME',
+};
+
+/**
+ * Which details each channel's message carries. **Only these, never the rest.**
+ *
+ * v03 section 4d: *"Le message ne porte que les coordonnees de ce canal. Un
+ * client qui paie par mobile money n'a pas besoin de l'IBAN, et ce qu'on ne
+ * transmet pas ne peut etre ni recopie de travers ni transfere par erreur."*
+ *
+ * The support contact is on every message: a client who cannot make the channel
+ * work needs somebody to call, whatever the channel.
+ */
+export const CHANNEL_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  VIR: ['bankName', 'bankAccountName', 'bankIban', 'bankSwift'],
+  // A deposit is made at the counter of the same bank: the account it credits
+  // is the same one, minus the SWIFT code, which is for international routing
+  // and means nothing to somebody standing at a till in Douala.
+  DEPO: ['bankName', 'bankAccountName', 'bankIban'],
+  OMO: ['orangeMoneyNumber', 'orangeMoneyName'],
+  MOMO: ['mtnMoneyNumber', 'mtnMoneyName'],
+  // Cash in hand is arranged, not addressed: the client calls and a meeting is
+  // fixed. Publishing an address here would invite somebody to arrive with cash
+  // and find nobody expecting them.
+  ESP: ['supportPhone', 'supportEmail'],
+  NOTA: ['notaryName', 'notaryPhone', 'notaryAddress'],
+};
+
 const CACHE_TTL_MS = 60_000;
 
 @Injectable()
 export class PaymentChannelsService implements OnModuleInit {
   private readonly logger = new Logger(PaymentChannelsService.name);
   private cached: { at: number; channels: PaymentChannels } | null = null;
+  private optionalCache: { at: number; values: Record<string, string> } | null = null;
   private ssm: SSMClient | null = null;
 
   constructor(private readonly config: ConfigService) {}
@@ -131,6 +184,88 @@ export class PaymentChannelsService implements OnModuleInit {
       prefix: this.prefix(),
       fields: Object.keys(FIELDS).length,
     });
+  }
+
+  /**
+   * The details for **one** channel, and nothing else.
+   *
+   * v03 section 4d: *"Le message ne porte que les coordonnees de ce canal."*
+   * A client paying by mobile money has no use for the IBAN, and what is not
+   * transmitted can be neither miscopied nor forwarded by mistake.
+   *
+   * Returns a map keyed by field name, so a caller cannot accidentally spread
+   * the whole set into a message: there is no object here that contains the
+   * bank details *and* the notary's address.
+   *
+   * Throws, naming the parameters, when the chosen channel's details are not
+   * configured. `OMO` and `MOMO` need their own operator parameters, which the
+   * twelve required ones do not include - see `OPTIONAL_FIELDS`.
+   */
+  async detailsFor(channel: string): Promise<Record<string, string>> {
+    const fields = CHANNEL_FIELDS[channel];
+    if (!fields) {
+      throw new Error(
+        `No channel details are defined for ${channel}. A channel that cannot say ` +
+          `where the money goes must not be offered as a way to pay.`,
+      );
+    }
+
+    const all = await this.get();
+    const optional = await this.optional();
+
+    const details: Record<string, string> = {};
+    const missing: string[] = [];
+
+    for (const field of fields) {
+      const value =
+        (all as unknown as Record<string, string>)[field] ?? optional[field] ?? undefined;
+      if (!value || value.trim() === '') {
+        missing.push(OPTIONAL_FIELDS[field] ?? FIELDS[field as keyof PaymentChannels] ?? field);
+      } else {
+        details[field] = value.trim();
+      }
+    }
+
+    if (missing.length > 0) {
+      throw new Error(
+        `Refusing to send ${channel} instructions: ${missing.join(', ')} ` +
+          `${missing.length === 1 ? 'is' : 'are'} not configured under ${this.prefix()}. ` +
+          `A message with a blank where an account number belongs tells somebody to ` +
+          `transfer money into nothing.`,
+      );
+    }
+
+    // The support contact rides on every message: a client who cannot make the
+    // channel work needs somebody to call, whichever channel it is.
+    details['supportEmail'] = all.supportEmail;
+    details['supportPhone'] = all.supportPhone;
+
+    return details;
+  }
+
+  /** The per-operator parameters, absent by default. Cached with the rest. */
+  private async optional(): Promise<Record<string, string>> {
+    const prefix = this.prefix();
+    if (!prefix) return {};
+    if (this.optionalCache && Date.now() - this.optionalCache.at < CACHE_TTL_MS) {
+      return this.optionalCache.values;
+    }
+
+    this.ssm ??= new SSMClient({ region: this.config.get<string>('AWS_REGION', 'eu-central-1') });
+    const values: Record<string, string> = {};
+    for (const [field, name] of Object.entries(OPTIONAL_FIELDS)) {
+      try {
+        const res = await this.ssm.send(
+          new GetParameterCommand({ Name: `${prefix}/${name}`, WithDecryption: true }),
+        );
+        if (res.Parameter?.Value) values[field] = res.Parameter.Value;
+      } catch {
+        // Absent is the expected case until infrastructure adds them. It is not
+        // an error here: it becomes one, by name, when a send needs the field.
+      }
+    }
+    this.optionalCache = { at: Date.now(), values };
+    return values;
   }
 
   /** The channels, from cache when fresh. Throws rather than returning blanks. */

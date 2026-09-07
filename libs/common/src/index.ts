@@ -4,10 +4,20 @@ export { ROLE_HIERARCHY, SUPER_ADMIN_ROLE, effectiveRoles } from './types/role-h
 
 // ----- Payments (G1) -----
 export {
-  PaymentState,
   PaymentChannel,
-  PAYMENT_TRANSITIONS,
+  PAYMENT_CHANNELS,
+  SELECTABLE_CHANNELS,
   RECORDABLE_CHANNELS,
+  PAYER_MAY_DIFFER_CHANNELS,
+  REFERENCE_CHANNEL_SEPARATOR,
+  requiresPaidBy,
+  channelLabel,
+  formatReferenceWithChannel,
+} from './payments/payment-channels';
+export type { ChannelDefinition } from './payments/payment-channels';
+export {
+  PaymentState,
+  PAYMENT_TRANSITIONS,
   TERMINAL_STATES,
   COMMITTING_STATES,
   IllegalPaymentTransitionError,
