@@ -5,6 +5,7 @@ import { PaymentsService } from '../payments/payments.service';
 import {
   ProofUploadUrlDto,
   RecordReceiptDto,
+  SendInstructionsDto,
   TransitionPaymentDto,
   ValidatePaymentDto,
 } from '../payments/dto/payments.dto';
@@ -52,6 +53,28 @@ export class PaymentsAdminController {
   @ApiResponse({ status: 200, description: 'Paginated payments.' })
   async list(@Query() query: PaginationQueryDto) {
     return this.payments.listForBackOffice(query);
+  }
+
+  // Declared **above** `@Get(':id')` deliberately: Express answers with the
+  // first pattern that matches, so a literal segment placed after a `:id` route
+  // in the same controller is answered by that route with id='requests'. This is
+  // `controller-route-shadowing.spec.ts`'s rule one level down - between routes
+  // of one class rather than between classes - and it is the same defect that
+  // made `GET /lands/admin/payments` return "Parcelle de terrain introuvable".
+  @Get('requests')
+  @ApiOperation({
+    summary: '[Admin] The queue of payment requests waiting for an answer',
+    description:
+      'Every payment still in INITIE, **oldest first**, with how long it has waited, the ' +
+      "client's declared preference, and whether their identity has been verified. " +
+      'v03 section 4d: a client who asked to pay and got no answer is exactly the silence this ' +
+      'system exists to make impossible. `meta.oldestWaitingDays` ages the backlog as a whole. ' +
+      '`blockedByIdentity` says whether a send would be refused right now, so the reviewer can ' +
+      'tell a request waiting on the identity queue from one waiting on them.',
+  })
+  @ApiResponse({ status: 200, description: 'Requests returned, oldest first.' })
+  async listRequests(@Query() pagination: PaginationQueryDto) {
+    return this.payments.listRequests(pagination);
   }
 
   @Get(':id')
@@ -126,6 +149,34 @@ export class PaymentsAdminController {
       },
       admin.id,
     );
+  }
+
+  @Post(':id/send-instructions')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[Admin] Choose the channel and release the coordinates',
+    description:
+      'The one place bank details leave the system, and it carries all three of v03 section 4d: ' +
+      "the client's identity must be **verified** (not merely submitted), a channel must be " +
+      "chosen, and a named person decides. The message carries only the chosen channel's " +
+      "details. The coordinates render on the client's own page; the email is a notification " +
+      'that contains none of them. The transition records who, when, which channel and why. ' +
+      'Refused with the identity status when the client has not been verified.',
+  })
+  @ApiParam({ name: 'id', description: 'Payment ID' })
+  @ApiResponse({ status: 200, description: 'Coordinates released and notification sent.' })
+  @ApiResponse({ status: 400, description: 'No reference, or a channel nobody may choose.' })
+  @ApiResponse({ status: 403, description: 'The client identity is not verified.' })
+  async sendInstructions(
+    @Param('id') id: string,
+    @Body() dto: SendInstructionsDto,
+    @CurrentUser() admin: RequestUser,
+  ) {
+    return this.payments.sendInstructions(id, {
+      actorUserId: admin.id,
+      channel: dto.channel,
+      reason: dto.reason,
+    });
   }
 
   @Post(':id/transition')

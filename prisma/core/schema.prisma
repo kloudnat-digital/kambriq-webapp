@@ -88,6 +88,18 @@ model UserProfile {
   /// comes back and asks again, fresh.
   whatsappNotifications  Boolean @default(false)
 
+  /// The payment channel this client last said suited them.
+  ///
+  /// v03 section 4c: "un client qui a paye en OMO une fois le proposera par
+  /// defaut la fois suivante". A default for the next request, nothing more -
+  /// it binds no payment and the back office is never bound by it either.
+  ///
+  /// Stored as the channel **code** (`VIR`, `DEPO`, `OMO`, `MOMO`, `ESP`,
+  /// `NOTA`), a plain string because the enum lives in the lands database and
+  /// there are no cross-database types. `payment-channels.ts` is the authority;
+  /// `channel-code-consistency.spec.ts` fails if the two drift apart.
+  preferredPaymentChannel String?
+
   // Identity verification
   idDocumentUrls       String[]  @default([])
   idVerificationStatus String    @default("none") // none | pending | verified | rejected

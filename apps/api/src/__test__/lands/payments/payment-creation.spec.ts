@@ -5,11 +5,13 @@ import { EmailService, validateReference, StorageService } from '@kambriq/common
 import { PaymentsService } from '../../../lands/payments/payments.service';
 import { LandsPrismaService } from '../../../lands/prisma/lands-prisma.service';
 import { PaymentChannelsService } from '../../../lands/payments/payment-channels.service';
+import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
 import {
   mockEmailService,
   mockLandsPrisma,
   mockPaymentChannels,
   mockConfigService,
+  mockCorePrisma,
   mockStorageService,
 } from '../../utils';
 
@@ -19,12 +21,19 @@ import {
 describe('createPayment', () => {
   let service: PaymentsService;
   let prisma: ReturnType<typeof mockLandsPrisma>;
+  let core: ReturnType<typeof mockCorePrisma>;
   let counter: number;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     counter = 0;
     prisma = mockLandsPrisma();
+    core = mockCorePrisma();
+    // Verified by default: these suites are about the payment machinery, not
+    // about the gate, and an unverified fixture would make every one of them
+    // fail for a reason none of them is testing. `payment-identification-gate.spec.ts`
+    // is where the gate itself is exercised.
+    core.userProfile.findUnique.mockResolvedValue({ idVerificationStatus: 'verified' });
 
     // Stands in for `nextval`: hands out each value exactly once, whatever the
     // interleaving. That is the property the real sequence provides.
@@ -41,6 +50,7 @@ describe('createPayment', () => {
         { provide: EmailService, useValue: mockEmailService() },
         { provide: StorageService, useValue: mockStorageService() },
         { provide: ConfigService, useValue: mockConfigService() },
+        { provide: CorePrismaService, useValue: core },
       ],
     }).compile();
     service = module.get(PaymentsService);

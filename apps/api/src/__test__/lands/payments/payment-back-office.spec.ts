@@ -7,11 +7,13 @@ import { EmailService, PaymentChannel, PaymentState, StorageService } from '@kam
 import { PaymentsService } from '../../../lands/payments/payments.service';
 import { LandsPrismaService } from '../../../lands/prisma/lands-prisma.service';
 import { PaymentChannelsService } from '../../../lands/payments/payment-channels.service';
+import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
 import {
   mockEmailService,
   mockLandsPrisma,
   mockPaymentChannels,
   mockConfigService,
+  mockCorePrisma,
   mockStorageService,
 } from '../../utils';
 
@@ -33,7 +35,7 @@ const payment = (over: Record<string, unknown> = {}) => ({
 const receipt = (over: Record<string, unknown> = {}) => ({
   amount: 500_000n,
   currency: 'XAF',
-  channel: PaymentChannel.VIREMENT,
+  channel: PaymentChannel.VIR,
   receivedAt: new Date('2026-09-02T00:00:00Z'),
   evidenceUrl: 'payments/pay-1/1-proof.pdf',
   ...over,
@@ -42,10 +44,17 @@ const receipt = (over: Record<string, unknown> = {}) => ({
 describe('G4 - the back office', () => {
   let service: PaymentsService;
   let prisma: ReturnType<typeof mockLandsPrisma>;
+  let core: ReturnType<typeof mockCorePrisma>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     prisma = mockLandsPrisma();
+    core = mockCorePrisma();
+    // Verified by default: these suites are about the payment machinery, not
+    // about the gate, and an unverified fixture would make every one of them
+    // fail for a reason none of them is testing. `payment-identification-gate.spec.ts`
+    // is where the gate itself is exercised.
+    core.userProfile.findUnique.mockResolvedValue({ idVerificationStatus: 'verified' });
     prisma.payment.findUnique.mockResolvedValue(payment());
     prisma.payment.update.mockResolvedValue({});
     prisma.paymentTransition.create.mockResolvedValue({});
@@ -59,6 +68,7 @@ describe('G4 - the back office', () => {
         { provide: EmailService, useValue: mockEmailService() },
         { provide: StorageService, useValue: mockStorageService() },
         { provide: ConfigService, useValue: mockConfigService() },
+        { provide: CorePrismaService, useValue: core },
       ],
     }).compile();
     service = module.get(PaymentsService);
@@ -199,11 +209,7 @@ describe('G4 - the back office', () => {
       // have no channel and no proof. A new receipt claiming it would be
       // inventing an exemption from the evidence rule.
       await expect(
-        service.recordReceipt(
-          'pay-1',
-          receipt({ channel: PaymentChannel.INCONNU_HISTORIQUE }),
-          RECORDER,
-        ),
+        service.recordReceipt('pay-1', receipt({ channel: PaymentChannel.HIST }), RECORDER),
       ).rejects.toThrow(BadRequestException);
       expect(prisma.paymentReceipt.create).not.toHaveBeenCalled();
     });
@@ -257,6 +263,115 @@ describe('G4 - the back office', () => {
   });
 
   // ----- PROOF UPLOAD ----- //
+
+  // ----- (e) A DEPOSIT NAMES WHO PAID ----- //
+
+  describe('(e) a deposit names the person who actually paid', () => {
+    /**
+     * v03 section 6: *"Un virement part du compte du client et porte son nom ;
+     * un depot se fait au guichet, en especes, souvent par un tiers - un parent
+     * a Douala, un ami de passage. La preuve est un bordereau de versement et
+     * non un avis de virement, et le nom sur le bordereau n'est pas forcement
+     * celui du client."*
+     *
+     * Without it the back office holds a slip bearing a name it does not
+     * recognise and cannot attach it to anything.
+     */
+    it('refuses a DEPO receipt with no payer', async () => {
+      await expect(
+        service.recordReceipt(
+          'pay-1',
+          receipt({ channel: PaymentChannel.DEPO, paidBy: undefined }),
+          RECORDER,
+        ),
+      ).rejects.toThrow(/must name who paid/);
+
+      expect(prisma.paymentReceipt.create).not.toHaveBeenCalled();
+    });
+
+    it('refuses a DEPO receipt whose payer is only whitespace', async () => {
+      // A field somebody pressed space in is a field nobody filled.
+      await expect(
+        service.recordReceipt(
+          'pay-1',
+          receipt({ channel: PaymentChannel.DEPO, paidBy: '   ' }),
+          RECORDER,
+        ),
+      ).rejects.toThrow(/must name who paid/);
+    });
+
+    it('records a DEPO receipt that names the depositor', async () => {
+      const res = await service.recordReceipt(
+        'pay-1',
+        receipt({ channel: PaymentChannel.DEPO, paidBy: 'Awono Bernadette' }),
+        RECORDER,
+      );
+
+      expect(res.id).toBe('r1');
+      const data = (
+        prisma.paymentReceipt.create.mock.calls[0][0] as { data: Record<string, unknown> }
+      ).data;
+      expect(data['paidBy']).toBe('Awono Bernadette');
+      expect(data['channel']).toBe(PaymentChannel.DEPO);
+    });
+
+    it('does not demand a payer on channels where the client is the payer', async () => {
+      // A transfer leaves the client's own account and carries their name.
+      // Demanding the field everywhere would have people retype the client's
+      // own name until they stopped reading it.
+      const res = await service.recordReceipt(
+        'pay-1',
+        receipt({ channel: PaymentChannel.VIR }),
+        RECORDER,
+      );
+      expect(res.id).toBe('r1');
+    });
+
+    it('the historic exception cannot be used to bypass it', async () => {
+      /**
+       * `HIST` is the one channel that may omit its proof, so it is the obvious
+       * thing to reach for to skip a rule. It is refused as an input outright -
+       * so there is no channel that skips both the payer and the proof, and no
+       * way to record a deposit as "historic" to avoid naming who paid.
+       */
+      await expect(
+        service.recordReceipt(
+          'pay-1',
+          receipt({ channel: PaymentChannel.HIST, evidenceUrl: undefined, paidBy: undefined }),
+          RECORDER,
+        ),
+      ).rejects.toThrow(/INCONNU_HISTORIQUE|HIST/);
+
+      expect(prisma.paymentReceipt.create).not.toHaveBeenCalled();
+    });
+
+    it('the database is the backstop for both rules', () => {
+      const migration = readFileSync(
+        join(
+          __dirname,
+          '..',
+          '..',
+          '..',
+          '..',
+          '..',
+          '..',
+          'prisma',
+          'lands',
+          'migrations',
+          '20260907090000_g11_channels_gate_and_payer',
+          'migration.sql',
+        ),
+        'utf8',
+      );
+      // A service guards its callers; a constraint guards the console too.
+      expect(migration).toContain('PaymentReceipt_depo_requires_payer');
+      expect(migration).toContain(
+        `CHECK ("channel" <> 'DEPO' OR ("paidBy" IS NOT NULL AND btrim("paidBy") <> ''))`,
+      );
+      // And the proof rule still confines its exception to the same one channel.
+      expect(migration).toContain(`CHECK ("evidenceUrl" IS NOT NULL OR "channel" = 'HIST')`);
+    });
+  });
 
   describe('proofs are private objects with constrained types', () => {
     it('refuses a content type that is not a document or a photograph of one', async () => {

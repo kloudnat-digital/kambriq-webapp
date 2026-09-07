@@ -14,12 +14,14 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
 import { CurrentUser, PaginationQueryDto, RequestUser, RoleCode, Roles } from '@kambriq/common';
 import { LandReservationsService } from '../reservations/reservations.service';
 import { PaymentsService } from '../payments/payments.service';
+import { PreferredChannelDto } from '../payments/dto/payments.dto';
 import { GetClientDocumentUploadUrlDto, RegisterClientDocumentDto } from '../dto/lands.dto';
 
 @ApiTags('LANDS - Client')
@@ -112,7 +114,9 @@ export class LandsClientController {
       'who creates a payment** - the design gives INITIE a "Qui le declenche" of "Le client, sur ' +
       'la plateforme". There is no amount on the wire: it is read from the reservation, because ' +
       'a caller who can name their own amount can decide what they owe. ' +
-      'Creation writes its own audit entry, and sending the instructions is a separate call.',
+      'Creation writes its own audit entry. The coordinates are NOT sent from here: v03 makes ' +
+      "that the back office's act, taken after the identity is verified and a channel agreed. " +
+      'The client states a preference and waits to be answered.',
   })
   @ApiParam({ name: 'id', description: 'Reservation ID' })
   @ApiResponse({ status: 201, description: 'Payment created, or the live one returned unchanged.' })
@@ -122,23 +126,43 @@ export class LandsClientController {
     return this.payments.requestPaymentForReservation(user.id, id);
   }
 
-  @Post('payments/:id/instructions')
+  @Patch('payments/:id/preferred-channel')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Send me my payment instructions',
+    summary: 'State which way of paying suits me',
     description:
-      'Emails the instructions for this payment and moves it to INSTRUCTIONS_ENVOYEES. ' +
-      '**A separate act from creating the payment**: if the send fails the payment still ' +
-      'exists, and the client can ask again. The send happens before the transition, so the ' +
-      'state never claims an email that did not leave.',
+      "Records the client's **declared preference** on the payment, and keeps it on their " +
+      'profile so the next request proposes it by default. v03 section 4c: it binds nothing. ' +
+      'The back office sees it, takes it into account, and may answer with a different channel - ' +
+      'an amount, a country of origin or an incomplete identification can make one unsuitable, ' +
+      'and that is known during the conversation. Written only to `preferredChannel`; the ' +
+      'authoritative `channel` is set by the back office when it sends.',
   })
   @ApiParam({ name: 'id', description: 'Payment ID' })
-  @ApiResponse({ status: 200, description: 'Instructions sent.' })
+  @ApiResponse({ status: 200, description: 'Preference recorded.' })
+  @ApiResponse({ status: 400, description: 'Not one of the six ways to pay.' })
   @ApiResponse({ status: 403, description: 'The payment belongs to somebody else.' })
-  async sendMyInstructions(@CurrentUser() user: RequestUser, @Param('id') id: string) {
-    return this.payments.requestInstructions(user.id, id, {
-      email: user.email,
-      lang: user.lang,
-    });
+  async setPreferredChannel(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Body() dto: PreferredChannelDto,
+  ) {
+    return this.payments.setPreferredChannel(user.id, id, dto.preferredChannel ?? null);
+  }
+
+  @Get('payments/:id')
+  @ApiOperation({
+    summary: 'My payment, with its coordinates once they have been sent',
+    description:
+      'The coordinates for the chosen channel, behind this authentication - v03 section 4d: ' +
+      '**this is where they live, not in an email**. Before the back office has chosen, the ' +
+      "payment is returned without them and with the reason it is still waiting. The client's " +
+      'own declared preference is shown throughout, so they can see their request was heard.',
+  })
+  @ApiParam({ name: 'id', description: 'Payment ID' })
+  @ApiResponse({ status: 200, description: 'Payment returned.' })
+  @ApiResponse({ status: 403, description: 'The payment belongs to somebody else.' })
+  async getMyPayment(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.payments.findForClient(user.id, id);
   }
 }

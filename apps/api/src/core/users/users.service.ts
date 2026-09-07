@@ -473,6 +473,63 @@ export class UsersService {
     };
   }
 
+  /**
+   * One person under identity review, with their documents readable.
+   *
+   * Deliberately narrower than `findOne`: name, contact, city, status and
+   * signed document links. No roles, no account flags, nothing a reviewer does
+   * not need in order to decide whether a photograph of an identity card
+   * belongs to the person named on the reservation.
+   */
+  async getIdentityForReview(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        profile: {
+          select: {
+            idDocumentUrls: true,
+            idVerificationStatus: true,
+            idSubmittedAt: true,
+            idRejectionReason: true,
+            city: true,
+            country: true,
+          },
+        },
+      },
+    });
+
+    if (!user) throw new NotFoundException(this.t('user.notFound', 'en'));
+
+    // Signed here, in parallel: raw S3 keys cannot be opened, and a reviewer
+    // handed `id-docs/abc/passport.jpg` cannot look at the passport.
+    const idDocumentUrls = await Promise.all(
+      (user.profile?.idDocumentUrls ?? []).map((key) => this.storage.getDownloadUrl(key)),
+    );
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
+      profile: user.profile
+        ? {
+            idDocumentUrls,
+            idVerificationStatus: user.profile.idVerificationStatus,
+            idSubmittedAt: user.profile.idSubmittedAt,
+            idRejectionReason: user.profile.idRejectionReason,
+            city: user.profile.city,
+            country: user.profile.country,
+          }
+        : null,
+    };
+  }
+
   // ----- Check if a user has a specific role ------------
   async hasRole(userId: string, roleCode: string): Promise<boolean> {
     const count = await this.prisma.userRole.count({
@@ -884,6 +941,27 @@ export class UsersService {
       ? await this.storage.getDownloadUrl(user.profile.avatarUrl)
       : null;
 
+    /**
+     * Identity documents are signed, like the avatar beside them.
+     *
+     * They were returned as raw S3 keys - unopenable by anything that received
+     * them. A reviewer handed `id-docs/abc/passport.jpg` cannot look at the
+     * passport, and A14 asks somebody to decide whether a document is genuine.
+     * A review screen that cannot show the document turns "verified" into a
+     * click, which is worse than no review at all because it produces a record
+     * saying somebody checked.
+     *
+     * Signed in parallel: a client may submit several, and awaiting them one at
+     * a time is the `map` without `await` defect's mirror image - correct, and
+     * needlessly serial.
+     */
+    const idDocumentUrls = await Promise.all(
+      // `?? []` and not `user.profile ? ... : []`: a profile row can exist with
+      // the column absent from the selection, and the shorter form read that as
+      // "no profile" while it was really "not asked for".
+      (user.profile?.idDocumentUrls ?? []).map((key) => this.storage.getDownloadUrl(key)),
+    );
+
     return {
       id: user.id,
       email: user.email,
@@ -903,7 +981,7 @@ export class UsersService {
             address: user.profile.address || null,
             country: user.profile.country || null,
             emailNotifications: user.profile.emailNotifications,
-            idDocumentUrls: user.profile.idDocumentUrls,
+            idDocumentUrls,
             idVerificationStatus: user.profile.idVerificationStatus,
             idVerifiedAt: user.profile.idVerifiedAt?.toISOString() || null,
           }

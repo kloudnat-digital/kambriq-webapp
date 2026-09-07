@@ -3,12 +3,20 @@ import { ConfigService } from '@nestjs/config';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { EmailService, PaymentState, StorageService, UnnamedActorError } from '@kambriq/common';
+import {
+  EmailService,
+  PaymentChannel,
+  PaymentState,
+  StorageService,
+  UnnamedActorError,
+} from '@kambriq/common';
 import { PaymentsService } from '../../../lands/payments/payments.service';
 import { PaymentChannelsService } from '../../../lands/payments/payment-channels.service';
+import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
 import { LandsPrismaService } from '../../../lands/prisma/lands-prisma.service';
 import {
   mockConfigService,
+  mockCorePrisma,
   mockEmailService,
   mockLandsPrisma,
   mockPaymentChannels,
@@ -33,10 +41,17 @@ const reservation = (over: Record<string, unknown> = {}) => ({
 describe('G9 - the payment entry point', () => {
   let service: PaymentsService;
   let prisma: ReturnType<typeof mockLandsPrisma>;
+  let core: ReturnType<typeof mockCorePrisma>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     prisma = mockLandsPrisma();
+    core = mockCorePrisma();
+    // Verified by default: these suites are about the payment machinery, not
+    // about the gate, and an unverified fixture would make every one of them
+    // fail for a reason none of them is testing. `payment-identification-gate.spec.ts`
+    // is where the gate itself is exercised.
+    core.userProfile.findUnique.mockResolvedValue({ idVerificationStatus: 'verified' });
     prisma.$queryRaw.mockResolvedValue([{ nextval: 1n }]);
     prisma.payment.create.mockImplementation(({ data }: { data: Record<string, unknown> }) =>
       Promise.resolve({ id: 'pay-1', ...data }),
@@ -52,6 +67,7 @@ describe('G9 - the payment entry point', () => {
         { provide: EmailService, useValue: mockEmailService() },
         { provide: StorageService, useValue: mockStorageService() },
         { provide: ConfigService, useValue: mockConfigService() },
+        { provide: CorePrismaService, useValue: core },
       ],
     }).compile();
     service = module.get(PaymentsService);
@@ -286,6 +302,7 @@ describe('G9 - the payment entry point', () => {
           { provide: EmailService, useValue: email },
           { provide: StorageService, useValue: mockStorageService() },
           { provide: ConfigService, useValue: mockConfigService() },
+          { provide: CorePrismaService, useValue: core },
         ],
       }).compile();
 
@@ -297,7 +314,7 @@ describe('G9 - the payment entry point', () => {
       expect(prisma.paymentTransition.create).toHaveBeenCalledTimes(1);
     });
 
-    it("refuses to send somebody else's instructions", async () => {
+    it("refuses to set somebody else's preference", async () => {
       prisma.payment.findUnique.mockResolvedValue({
         id: 'pay-1',
         reservationId: RESERVATION,
@@ -307,48 +324,34 @@ describe('G9 - the payment entry point', () => {
       prisma.landReservation.findUnique.mockResolvedValue(reservation());
 
       await expect(
-        service.requestInstructions(SOMEBODY_ELSE, 'pay-1', { email: 'x@maildrop.cc', lang: 'fr' }),
+        service.setPreferredChannel(SOMEBODY_ELSE, 'pay-1', PaymentChannel.OMO),
       ).rejects.toBeInstanceOf(ForbiddenException);
     });
 
-    it('takes the name and the parcel from the reservation, and the address from the token', async () => {
+    it('the client has no way to reach INSTRUCTIONS_ENVOYEES at all', () => {
       /**
-       * The reservation holds the name KAMBRIQ knows this client by and the
-       * parcel the money is for; neither is in a JWT. The address is the
-       * token's, because `clientEmail` on the reservation is whatever an agent
-       * typed months ago.
+       * v03: *"on n'envoie pas les moyens de paiement a qui clique"*. The
+       * client's own click used to send an email listing every channel; that
+       * method is gone, and the client controller has no route that transitions
+       * anything.
        */
-      prisma.payment.findUnique.mockResolvedValue({
-        id: 'pay-1',
-        reservationId: RESERVATION,
-        reference: 'KBQ-2609-ABCDE-F',
-        amountDue: 400_000n,
-        currency: 'XAF',
-        expiresAt: new Date('2026-10-07T00:00:00Z'),
-        state: PaymentState.INITIE,
-      });
-      prisma.payment.update.mockResolvedValue({});
-
-      const email = mockEmailService();
-      const module = await Test.createTestingModule({
-        providers: [
-          PaymentsService,
-          { provide: LandsPrismaService, useValue: prisma },
-          { provide: PaymentChannelsService, useValue: mockPaymentChannels() },
-          { provide: EmailService, useValue: email },
-          { provide: StorageService, useValue: mockStorageService() },
-          { provide: ConfigService, useValue: mockConfigService() },
-        ],
-      }).compile();
-
-      await module
-        .get(PaymentsService)
-        .requestInstructions(CLIENT, 'pay-1', { email: 'token@maildrop.cc', lang: 'fr' });
-
-      const sent = email.send.mock.calls[0][0];
-      expect(sent.to).toBe('token@maildrop.cc');
-      expect(sent.args['clientName']).toBe('Awono Test Client');
-      expect(sent.args['subject']).toBe('Parcelle Douala Akwa');
+      const controller = readFileSync(
+        join(__dirname, '..', '..', '..', 'lands', 'controllers', 'lands-client.controller.ts'),
+        'utf8',
+      );
+      // Routes and calls, not prose: the word "instructions" legitimately
+      // appears in the description explaining that this is *not* where they are
+      // sent, and a sweep that cannot tell the two apart reports the
+      // explanation as the defect.
+      const routes = [...controller.matchAll(/@(Get|Post|Patch|Delete)\('([^']*)'\)/g)].map(
+        (m) => m[2],
+      );
+      expect(routes).not.toContain('payments/:id/instructions');
+      expect(controller).not.toContain('this.payments.sendInstructions');
+      expect(controller).not.toContain('requestInstructions');
+      expect(Object.getOwnPropertyNames(Object.getPrototypeOf(service))).not.toContain(
+        'requestInstructions',
+      );
     });
   });
 });
