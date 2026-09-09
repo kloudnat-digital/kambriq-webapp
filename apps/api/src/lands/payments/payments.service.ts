@@ -29,6 +29,8 @@ import {
   channelLabel,
   requiresPaidBy,
   sumReceipts,
+  ageInDays,
+  withOldestWaiting,
 } from '@kambriq/common';
 import { ConfigService } from '@nestjs/config';
 import { CorePrismaService } from '../../core/prisma/core-prisma.service';
@@ -538,7 +540,6 @@ export class PaymentsService {
     const statusByUser = new Map(profiles.map((p) => [p.userId, p.idVerificationStatus]));
 
     const now = Date.now();
-    const ageDays = (at: Date) => Math.floor((now - at.getTime()) / 86_400_000);
 
     const data = rows.map((p) => {
       const reservation = byId.get(p.reservationId);
@@ -558,20 +559,15 @@ export class PaymentsService {
         /** Whether a send would be refused right now, and therefore what to do. */
         blockedByIdentity: identity !== IdVerificationStatus.VERIFIED,
         requestedAt: p.createdAt,
-        waitingDays: ageDays(p.createdAt),
+        waitingDays: ageInDays(p.createdAt, now),
       };
     });
 
     const response = buildPaginatedResponse(data, total, page, limit);
-    return {
-      ...response,
-      meta: {
-        ...response.meta,
-        // The backlog as a whole, not only this page. A queue you cannot age is
-        // a queue nobody can be accountable for - A10's lesson, applied here.
-        oldestWaitingDays: rows.length ? ageDays(rows[0].createdAt) : 0,
-      },
-    };
+    // The backlog as a whole, not only this page. A queue you cannot age is a
+    // queue nobody can be accountable for - A10's lesson, applied here, and
+    // shared with the identity and dunning queues since G6.
+    return withOldestWaiting(response, rows.length ? rows[0].createdAt : null, now);
   }
 
   /** The next sequence value. Serialised by Postgres, so never twice the same. */

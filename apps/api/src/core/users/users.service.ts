@@ -36,6 +36,8 @@ import {
   comparePassword,
   hashPassword,
   maskEmail,
+  ageInDays,
+  withOldestWaiting,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 import crypto from 'crypto';
@@ -447,7 +449,6 @@ export class UsersService {
     ]);
 
     const now = Date.now();
-    const ageDays = (d: Date | null) => (d ? Math.floor((now - d.getTime()) / 86_400_000) : null);
 
     const response = buildPaginatedResponse(
       profiles.map((p) => ({
@@ -457,7 +458,7 @@ export class UsersService {
         lastName: p.user.lastName,
         documentCount: p.idDocumentUrls.length,
         submittedAt: p.idSubmittedAt,
-        waitingDays: ageDays(p.idSubmittedAt),
+        waitingDays: ageInDays(p.idSubmittedAt, now),
       })),
       total,
       page,
@@ -466,11 +467,9 @@ export class UsersService {
 
     // The age of the oldest, on the envelope. A count alone answers "how many";
     // it does not answer "how long has somebody been waiting", which is the
-    // question a backlog has to be able to answer.
-    return {
-      ...response,
-      meta: { ...response.meta, oldestWaitingDays: ageDays(oldest?.idSubmittedAt ?? null) },
-    };
+    // question a backlog has to be able to answer. Shared with the payment
+    // request and dunning queues since G6 - see `withOldestWaiting`.
+    return withOldestWaiting(response, oldest?.idSubmittedAt ?? null, now);
   }
 
   /**

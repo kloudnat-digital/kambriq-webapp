@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, PaginationQueryDto, RequestUser, RoleCode, Roles } from '@kambriq/common';
+import { DunningService } from '../payments/dunning.service';
 import { PaymentsService } from '../payments/payments.service';
 import {
   ProofUploadUrlDto,
@@ -41,7 +42,10 @@ import {
 @Controller('lands/admin/payments')
 @Roles(RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL)
 export class PaymentsAdminController {
-  constructor(private readonly payments: PaymentsService) {}
+  constructor(
+    private readonly payments: PaymentsService,
+    private readonly dunning: DunningService,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -75,6 +79,26 @@ export class PaymentsAdminController {
   @ApiResponse({ status: 200, description: 'Requests returned, oldest first.' })
   async listRequests(@Query() pagination: PaginationQueryDto) {
     return this.payments.listRequests(pagination);
+  }
+
+  // Also above `@Get(':id')`, and for the same reason as `requests` - a literal
+  // segment declared after a `:id` route is swallowed by it.
+  @Get('overdue')
+  @ApiOperation({
+    summary: '[Admin] The queue of payments in souffrance, oldest deadline first',
+    description:
+      'Every payment still in INSTRUCTIONS_ENVOYEES whose validity period has elapsed - the ' +
+      'client was told what to pay and how, and has not answered. **Oldest deadline first**, ' +
+      'each row with `waitingDays` (age of the payment) and `overdueDays` (how far past its ' +
+      'deadline), plus how many reminders have gone out and when the last one did. ' +
+      'v03 *"Rien ne peut dormir en silence"*: a forgotten payment must not be able to keep ' +
+      'quiet. `meta.oldestWaitingDays` ages the whole backlog, not this page. ' +
+      'Payments that are VALIDE, REJETE, EXPIRE or ANNULE never appear here - the queue does ' +
+      'not chase money that has arrived.',
+  })
+  @ApiResponse({ status: 200, description: 'Overdue payments returned, oldest deadline first.' })
+  async listOverdue(@Query() pagination: PaginationQueryDto) {
+    return this.dunning.listOverdueQueue(pagination);
   }
 
   @Get(':id')

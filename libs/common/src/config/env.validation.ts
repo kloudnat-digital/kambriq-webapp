@@ -85,6 +85,25 @@ export const envSchema = z.object({
   // question rather than left to look like a decided fact.
   PAYMENT_VALIDITY_DAYS: z.coerce.number().int().positive().default(30),
 
+  /**
+   * G6 - when reminders fire, in days before the deadline. Largest first is not
+   * required; the service sorts.
+   *
+   * `7,1` because `PAYMENT_VALIDITY_DAYS` is 30 and an international transfer
+   * takes days to clear: J-7 is the last moment a diaspora transfer can still
+   * be started and land, J-1 the last moment anything can be said at all. Two
+   * rather than one because a single reminder lost to a spam folder is the
+   * seven-months-of-silent-SES failure with better manners; two rather than
+   * five because the next step after two is a person, not a third email.
+   *
+   * A string rather than a number so the schedule can be changed without a
+   * deploy, and so a local end-to-end run can compress it.
+   */
+  PAYMENT_REMINDER_OFFSETS_DAYS: z.string().default('7,1'),
+
+  /** G6 - the dunning sweep's cron pattern. Daily at 06:00 UTC by default. */
+  DUNNING_SWEEP_CRON: z.string().default('0 6 * * *'),
+
   // ----- SES Contact Lists -----
   // Must match the aws_sesv2_contact_list resource in kambriq-infra
   // (envs/dev/ses-newsletter.tf). Coupled by convention only.

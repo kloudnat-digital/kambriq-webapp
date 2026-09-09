@@ -72,14 +72,49 @@ describe('no payment coordinates can reach an outbound email', () => {
     expect(all).toContain("args['reference']");
   });
 
-  it.each(COORDINATE_FIELDS)('no template renders %s', (field) => {
+  /**
+   * Both access forms, because `args['bankIban']` and `args.bankIban` render
+   * exactly the same IBAN into exactly the same email.
+   *
+   * **G6 found this by trying it.** The scan matched only the bracket form, so
+   * a coordinate added to the reminder template with a dot passed the whole
+   * suite - 36 tests green with an IBAN in the message. A guard that catches
+   * one spelling of the thing it forbids is a guard against that spelling, and
+   * the mutation that was supposed to prove it red proved it blind instead.
+   *
+   * Same shape as A18's `@Public()` sweep: what a scan does not match, it
+   * silently reports as clean.
+   */
+  it.each(COORDINATE_FIELDS)('no template renders %s, by either access form', (field) => {
+    const pattern = new RegExp(`args\\s*(?:\\[\\s*['"\`]${field}['"\`]\\s*\\]|\\.${field}\\b)`);
     const offenders = files
-      .filter((f) =>
-        new RegExp(`args\\[['"\`]${field}['"\`]\\]`).test(stripComments(readFileSync(f, 'utf8'))),
-      )
+      .filter((f) => pattern.test(stripComments(readFileSync(f, 'utf8'))))
       .map((f) => relative(ROOT, f));
 
     expect(offenders).toEqual([]);
+  });
+
+  /**
+   * And the reminder specifically, by name.
+   *
+   * G6 schedules this template, and the field list above is a list somebody has
+   * to remember to extend. This asserts the reminder's own body renders only
+   * the things it is supposed to: the reference, the amount, the deadline and a
+   * link to the client's page - where the coordinates actually live, behind
+   * their authentication.
+   */
+  it('the reminder template renders a link to the platform, not coordinates', () => {
+    const src = stripComments(readFileSync(join(EMAIL_SRC, 'templates', 'index.ts'), 'utf8'));
+    const start = src.indexOf('paymentReminder:');
+    expect(start).toBeGreaterThan(-1);
+    // Up to the next top-level template key.
+    const body = src.slice(start, src.indexOf('\n  ', src.indexOf('}),', start)));
+
+    for (const field of COORDINATE_FIELDS) {
+      expect(body).not.toMatch(new RegExp(`args\\s*(?:\\[\\s*['"\`]${field}|\\.${field}\\b)`));
+    }
+    // And it does still point at the page that holds them.
+    expect(body).toMatch(/args\s*(?:\[\s*['"`]url|\.url\b)/);
   });
 
   it('there is no renderer of channel details left to import by accident', () => {

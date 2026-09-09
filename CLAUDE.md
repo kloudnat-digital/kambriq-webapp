@@ -1038,6 +1038,47 @@ nothing](#the-runners-architecture-is-a-build-input-and-nothing-in-the-file-says
 
 ---
 
+### One `@Processor` per queue, or one of them eats the other's work
+
+Found 2026-09-09, in `G6`, **by running it and counting the messages that
+arrived**.
+
+`DunningProcessor` was declared `@Processor(QUEUES.NOTIFICATIONS)` beside the
+`EmailProcessor` that already owned that queue. BullMQ hands a job to one
+worker; whichever won a given job kept it. The dunning processor returned
+`undefined` for job names it did not recognise — so when it won a
+`notifications.send-email`, it **consumed the reminder and threw it away**.
+
+What that looked like from outside:
+
+```
+one email sent instead of two
+bull:notifications:wait    -> 0
+bull:notifications:failed  -> 0
+```
+
+No error, no retry, no log line. **A chantier whose entire subject is "nothing
+may fail silently" had introduced exactly that**, and every unit test passed
+because each mocks its own queue.
+
+**The rule: one `@Processor` per queue name. A scheduled job that needs a worker
+gets its own queue, not a second handler on somebody else's.**
+`one-processor-per-queue.spec.ts` enforces it and names both files when it
+fires. And a processor that receives a job it does not own must **throw**, never
+return quietly — the early return is what made the loss invisible.
+
+Two things this cost that are worth keeping:
+
+- It was invisible to the unit suite and visible on the first real run. Proof by
+  execution again — [the same lesson as the `?token=[object Promise]` link](#a-message-is-read-by-a-person-so-read-it-as-a-person-before-shipping-it).
+- The same run, read as a message rather than as a payload, found the reminder
+  still saying _"Les instructions complètes sont rappelées ci-dessous"_ with
+  nothing below it — copy left over from the v02 template that did carry the
+  channel block. **v03 removed the coordinates and left the promise.** Read the
+  message that arrives, not the template that produced it.
+
+---
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope
