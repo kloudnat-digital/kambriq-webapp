@@ -32,6 +32,7 @@ import { QUEUES } from '../constants/queue';
       { name: QUEUES.CORE },
       { name: QUEUES.KAMNET },
       { name: QUEUES.NOTIFICATIONS },
+      { name: QUEUES.DUNNING },
     ),
   ],
   // Export BullModule so queues are visible to importing modules (and globally)

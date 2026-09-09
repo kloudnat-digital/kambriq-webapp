@@ -241,7 +241,7 @@
     "introUpcoming": "Hello {clientName}, the deadline for paying {subject} is approaching: it is {deadline}.",
     "introOverdue": "Hello {clientName}, the deadline of {deadline} for paying {subject} has passed and we have not yet recorded your payment.",
     "crossed": "If you have already paid, this message simply crossed your transfer — there is nothing to do, the payment will be attached to your file as soon as it reaches us.",
-    "instructionsAgain": "The full instructions are repeated below so you do not have to look for the previous message."
+    "instructionsAgain": "Your payment details remain available in your account, behind your sign-in."
   },
   "paymentInstructionsAvailable": {
     "subject": "Your payment details are ready: {reference}",

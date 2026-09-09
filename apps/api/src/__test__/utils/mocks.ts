@@ -236,6 +236,7 @@ export const mockLandsPrisma = () => {
   const client = {
     payment: {
       findUnique: fn(),
+      findFirst: fn(),
       findMany: fn(),
       count: fn(),
       create: fn(),
@@ -248,6 +249,12 @@ export const mockLandsPrisma = () => {
     paymentTransition: {
       create: fn(),
       findMany: fn(),
+    },
+    /** G6 - the append-only record that a reminder was sent. */
+    paymentReminder: {
+      create: fn(),
+      findMany: fn(),
+      count: fn(),
     },
     landReservation: {
       findUnique: fn(),

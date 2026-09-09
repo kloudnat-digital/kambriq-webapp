@@ -128,6 +128,7 @@ listed here first.
 | `A10`             | `PROUVE`            | the identity-review queue did not exist - the route and the role did. Queue route + `idSubmittedAt`; the back-office screen stays open                                                   |
 | `A11`             | `PROUVE`            | 13 sites, 15 messages, 12 transactional. `sendUpdate` returns an outcome and throws on a transactional template                                                                          |
 | `A12`             | `PROUVE`            | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                                                            |
+| `G6`              | `PROUVE LOCALEMENT` | the dunning queue, reminders at J-7 and J-1, EXPIRE at the term. Found and fixed a processor collision that silently ate a reminder email                                                |
 | `R4`              | `EN COURS`          | back to hosted runners under a spending cap. Baseline measured: 27 billed minutes, of which the quality matrix billed 5 to do 102s of checking                                           |
 | `R3`              | `EN COURS`          | CI moved to the self-hosted `kambriq-ci` runner. No `services:` anywhere, so macOS is viable. Exposed three image builds pinning no platform - amd64 held by accident of `ubuntu-latest` |
 | `R1`              | `EN COURS`          | **a merge can succeed and have no effect.** `#89` merged into a branch consumed 89 s earlier; `#88` was squash-merged, so nothing showed. Pending proof is the three commands in `R1`    |
@@ -588,6 +589,193 @@ unilaterally: it crosses into the other repository.
 
 The manual runbook does not have this gap - it fetches the log and requires the
 tally - so the one-off path already checks what the automated path does not.
+
+---
+
+### G6 - the dunning queue and the reminder scheduler - `PROUVE LOCALEMENT`
+
+**Cost impact: None.** One new BullMQ queue on the existing Redis, one daily
+repeatable job, one table. No new dependency - `@nestjs/schedule` is absent from
+this repository and stays absent.
+
+v03 _"Rien ne peut dormir en silence"_: a payment left in `INSTRUCTIONS_ENVOYEES`
+past its validity surfaces in a back-office queue, triggers an automatic
+reminder, and moves to `EXPIRE` at the term with its reason. The design's own
+framing is why it exists - _"Un client SES nul pendant sept mois n'a rien dit. Un
+paiement oublie ne doit pas pouvoir se taire."_
+
+## The three queues were factored, because this was the third
+
+`ageDays` existed **twice**, defined privately and identically in
+`UsersService.listPendingIdDocuments` (`A10`) and
+`PaymentsService.listRequestQueue` (`G11`). Both sorted oldest-first, both aged
+each row, both put the backlog's oldest on the envelope. Two copies is a
+coincidence; three would be a pattern nobody shared, and the copy nobody updates
+is the one that goes wrong.
+
+`libs/common/src/dto/queue-aging.ts` now holds `ageInDays` and
+`withOldestWaiting`, and all three queues use them.
+
+**Extracting it exposed that the two existing queues disagreed.** On an empty
+backlog the identity queue returned `null` and had a test pinning it; the
+request queue returned `0` and had none. They are different claims - `0` says
+the oldest item waited under a day, `null` says there is no oldest item. The
+tested one is also the honest one, so `null` won and the request queue's silent
+`0` was corrected. Found only because the third copy forced the comparison.
+
+## The reminder schedule: two, at J-7 and J-1
+
+The design says _"declenche une relance automatique"_ - one verb, no number - so
+the number is this chantier's to choose and to defend.
+
+**Two, not one.** A single reminder lost to a spam folder is the
+seven-months-of-silent-SES failure with better manners: one attempt, no
+evidence, nobody the wiser.
+
+**Two, not five.** Every reminder is a transactional email against a reputation
+this platform has only just acquired production SES access for, and a client who
+has not paid after two is a phone call. The back-office queue exists so a person
+picks that up.
+
+**J-7 and J-1**, because `PAYMENT_VALIDITY_DAYS` is 30 _"parce qu'un mois est la
+forme d'un virement de la diaspora"_: an international transfer takes days to
+clear, so J-7 is the last moment one can still be started and land, and J-1 the
+last moment anything can be said at all.
+
+`PAYMENT_REMINDER_OFFSETS_DAYS`, default `7,1`. A schedule it cannot parse
+**throws** rather than falling back to the default - a misconfigured setting that
+quietly becomes `7,1` is a setting that looks applied and is not.
+
+## `EXPIRE` without a person, and the mutation that proves it deliberate
+
+`G1` left `EXPIRE` out of `COMMITTING_STATES` so the sweep can make that one
+transition unnamed. Adding it back:
+
+```
++  PaymentState.EXPIRE,
+   PaymentState.PARTIELLEMENT_RECU,
+```
+
+**3 failed / 542 passed**, including
+`PaymentsService › transitions › allows the dunning job to expire a stalled payment`.
+Restored: **545 passed**. The omission is a decision, not an oversight.
+
+## The defect this chantier introduced, and how it was found
+
+`DunningProcessor` was declared `@Processor(QUEUES.NOTIFICATIONS)`, beside the
+`EmailProcessor` that already owned that queue. BullMQ gives a job to one
+worker; the dunning processor returned `undefined` for names it did not
+recognise, so when it won a `send-email` it **consumed the reminder and
+discarded it**:
+
+```
+one email sent instead of two
+bull:notifications:wait    -> 0
+bull:notifications:failed  -> 0
+```
+
+No error, no retry, no log line - **the exact silence this chantier exists to
+abolish, introduced by this chantier**. Invisible to 549 unit tests because each
+mocks its own queue, and obvious on the first real run.
+
+Fixed with a queue of its own, `QUEUES.DUNNING`; the processor now **throws** on
+a job it does not own rather than returning quietly.
+`one-processor-per-queue.spec.ts` is the barrier and names both files when it
+fires - proved by reintroducing the collision:
+`NOTIFICATIONS: dunning.processor.ts + email.processor.ts`, 2 failed / 1 passed.
+
+## The coordinate guard was blind to half of what it forbade
+
+Proof (c) was meant to be a formality: put a coordinate in the reminder, watch
+the guard fire. **It did not fire.** 36 tests green with an IBAN in the message.
+
+`no-coordinates-in-email.spec.ts` matched only `args['bankIban']` - the bracket
+form. `args.bankIban` renders exactly the same IBAN and passed. A guard that
+catches one spelling of what it forbids is a guard against that spelling; the
+mutation meant to prove it red proved it blind. Same shape as `A18`'s `@Public()`
+sweep: what a scan does not match, it reports as clean.
+
+Now matches both forms, plus a check on the reminder body by name. Re-run with
+`args.bankIban`: **2 failed / 16 passed**. Restored: 18 passed.
+
+## Proof, run locally end to end, against the real database and real SES
+
+`PAYMENT_VALIDITY_DAYS=1`, `PAYMENT_REMINDER_OFFSETS_DAYS=1`, both **read by the
+code under test** - `sendInstructions` computed `expiresAt` itself. Where the run
+needed to be past the term the **clock** was handed to the code
+(`sweep(now)`, `listOverdueQueue(query, asOf)`); **no row's dates were edited.**
+
+```
+reference : KBQ-2609-ZYFQR-Z
+expiresAt : 2026-09-10T14:33:24Z      <- computed by sendInstructions from config
+sweep 1   : {"remindersSent":1,"expired":0,"failures":[]}
+recorded  : [{"offsetDays":1,"sentAt":"2026-09-09T14:33:24.6Z"}]
+```
+
+The queue entry, past the term:
+
+```json
+{
+  "reference": "KBQ-2609-ZYFQR-Z",
+  "clientName": "Ekani Marcelle",
+  "state": "INSTRUCTIONS_ENVOYEES",
+  "outstanding": "750000",
+  "channel": "MOMO",
+  "waitingDays": 1,
+  "overdueDays": 0,
+  "remindersSent": 1
+}
+```
+
+The audit trail at `EXPIRE`:
+
+```
+(creation) -> INITIE                          actor fee0d9f9…  the client requests to pay
+INITIE -> INSTRUCTIONS_ENVOYEES               actor fee0d9f9…  the back office sends the instructions
+INSTRUCTIONS_ENVOYEES -> EXPIRE               actor system
+   reason: Validity period elapsed on 2026-09-10 without the announced payment.
+           Expired automatically by the dunning sweep.
+```
+
+After the sweep the queue holds **0 rows** and no terminal payment appears in it.
+
+**The reminder, read in a real mailbox as a message.** messageId
+`010701a086967e3f-c1250f4c-3489-47fa-b02f-63091a6af120-000000`, subject
+_"Rappel : paiement KBQ-2609-ZYFQR-Z a regler avant le 10 septembre 2026"_. No
+`IBAN`, no `SWIFT`, no `237`, no `DEV-COMPTE` anywhere in the raw HTML.
+
+**And reading it found a defect nothing else would have.** The reminder said
+_"Les instructions completes sont rappelees ci-dessous pour que vous n'ayez pas a
+rechercher le message precedent."_ - with nothing below it. Copy left over from
+the v02 template that did carry the channel block: **v03 removed the coordinates
+and left the promise.** Corrected in both locales to say the details remain on
+the client's space, behind their sign-in. The G3 lesson again: a message is done
+when somebody has read what arrived.
+
+## The dependency on `A18`, which is not merged
+
+The sweep runs as a **BullMQ repeatable job**, not a `@Cron`. A `@Cron` that
+throws writes a line nobody is watching; a repeatable job that throws lands on
+the queue's `failed` set with its payload and stays (`removeOnFail: 200`).
+
+So this was built to **compose** with `#91` rather than to depend on it: the
+failure is durable and readable through Redis today, and `A18`'s
+`/health/queues/failed` will read the same set from outside the VPC the moment
+it merges. Nothing here imports anything from that branch, and nothing here is
+blocked by it.
+
+`sweep()` throws `DunningSweepError` carrying the tally and every failure, rather
+than returning a count that looks like a result while three payments went
+unchased.
+
+## Gate - LOCAL ONLY
+
+`nx test api` **41 suites / 549 tests**, `nx test common` **16 / 277**, api and
+web typecheck clean, `nx lint api`/`web` clean (the pre-existing web
+`exhaustive-deps` warning only). **No CI run has confirmed any of it** - the
+organisation's Actions quota is exhausted and jobs do not start. `nx lint common`
+still fails with the two pre-existing `@nx/dependency-checks` errors it fails
+with on develop.
 
 ---
 
