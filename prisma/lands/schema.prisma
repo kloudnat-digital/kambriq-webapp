@@ -364,6 +364,7 @@ model Payment {
   reservation LandReservation     @relation(fields: [reservationId], references: [id])
   receipts    PaymentReceipt[]
   transitions PaymentTransition[]
+  reminders   PaymentReminder[]
 
   @@index([reservationId])
   @@index([state])
@@ -457,4 +458,39 @@ model PaymentTransition {
 
   @@index([paymentId])
   @@index([occurredAt])
+}
+
+/// G6 - the record that a reminder was sent, and when.
+///
+/// A reminder changes no state (G3's decision), so there is nothing on the
+/// payment to read afterwards. Without this table a daily sweep has no memory
+/// and re-sends the same reminder every day until the payment expires.
+///
+/// Append-only, enforced by BEFORE UPDATE/DELETE triggers in the migration, like
+/// `PaymentReceipt` and `PaymentTransition`. What was communicated to a client
+/// is evidence; evidence that can be edited is not evidence.
+model PaymentReminder {
+  id        String @id @default(uuid())
+  paymentId String
+
+  /// Which scheduled reminder this was, in days before the deadline.
+  ///
+  /// Stored rather than derived. The schedule is configuration
+  /// (`PAYMENT_REMINDER_OFFSETS_DAYS`); a row that means "the 7-day reminder"
+  /// must go on meaning that after somebody changes the schedule.
+  ///
+  /// `UNIQUE(paymentId, offsetDays)` is what makes the sweep idempotent: the
+  /// same reminder cannot be sent twice however often the job runs.
+  offsetDays Int
+
+  /// The deadline this was computed against, as it stood when it was sent.
+  deadlineAt DateTime
+
+  sentAt DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@unique([paymentId, offsetDays])
+  @@index([paymentId])
+  @@index([sentAt])
 }

@@ -7,6 +7,9 @@ import { LandsLabelsService } from './labels/labels.service';
 import { LandReservationsService } from './reservations/reservations.service';
 import { PaymentsService } from './payments/payments.service';
 import { PaymentChannelsService } from './payments/payment-channels.service';
+import { DunningService } from './payments/dunning.service';
+import { DunningScheduler } from './payments/dunning.scheduler';
+import { DunningProcessor } from './payments/dunning.processor';
 import { LandsAgentController } from './controllers/lands-agent.controller';
 import { LandsAdminController } from './controllers/lands-admin.controller';
 import { LandsClientController } from './controllers/lands-client.controller';
@@ -74,7 +77,19 @@ import { PaymentsAdminController } from './controllers/payments-admin.controller
     LandReservationsService,
     PaymentsService,
     PaymentChannelsService,
+    // G6 - the dunning queue, its schedule and its worker. The scheduler
+    // registers a repeatable job on OnModuleInit; the processor runs it and
+    // lets failures reach the queue's `failed` set.
+    DunningService,
+    DunningScheduler,
+    DunningProcessor,
   ],
-  exports: [LandsService, LandReservationsService, LandsPrismaService, PaymentsService],
+  exports: [
+    LandsService,
+    LandReservationsService,
+    LandsPrismaService,
+    PaymentsService,
+    DunningService,
+  ],
 })
 export class LandsModule {}

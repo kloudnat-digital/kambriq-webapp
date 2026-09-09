@@ -241,7 +241,7 @@
     "introUpcoming": "Bonjour {clientName}, la date limite pour le règlement de {subject} approche : c'est le {deadline}.",
     "introOverdue": "Bonjour {clientName}, la date limite du {deadline} pour le règlement de {subject} est passée et nous n'avons pas encore enregistré votre paiement.",
     "crossed": "Si vous avez déjà payé, ce message a simplement croisé votre virement — il n'y a rien à faire, l'encaissement sera rattaché à votre dossier dès qu'il nous parviendra.",
-    "instructionsAgain": "Les instructions complètes sont rappelées ci-dessous pour que vous n'ayez pas à rechercher le message précédent."
+    "instructionsAgain": "Vos coordonnées de paiement restent disponibles sur votre espace, derrière votre connexion."
   },
   "paymentInstructionsAvailable": {
     "subject": "Vos coordonnées de paiement sont disponibles : {reference}",

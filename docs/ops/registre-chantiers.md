@@ -151,6 +151,58 @@ listed here first.
 | `G11` follow-up   | `A DECIDER`         | infra owes `ORANGE_MONEY_*` and `MTN_MONEY_*`: v03 splits mobile money in two but keeps twelve parameters with one number                                                             |
 | `G11` follow-up 2 | `A DECIDER`         | v03 section 5's example uses a hyphen between reference and channel, which section 4b forbids. 4b implemented                                                                         |
 | `A18`             | `PROUVE LOCALEMENT` | queue counts and failed payloads on `/health/queues`, ADMIN_GLOBAL. `failed` 0->1 observed through the endpoint against a real Redis                                                  |
+| Entry             | State               | What it needs                                                                                                                                                                            |
+| ----------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| `L2`              | `EN COURS`          | one deployed log line carrying its interpolated metadata, quoted                                                                                                                         |
+| `L3`              | `DECIDE, A FAIRE`   | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                                                                         |
+| `F1`              | `A DECIDER`         | coverage ratchet: a floor, and what happens when a PR drops below it                                                                                                                     |
+| `P1`              | `A DECIDER`         | SES contact list, one per account per region — the prd constraint                                                                                                                        |
+| `X2`              | `DECIDE, A FAIRE`   | NAT option 2, decided, deliberately unapplied before delivery                                                                                                                            |
+| `M1`              | `DECIDE, A FAIRE`   | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                                                           |
+| `Q1` follow-up    | `A DECIDER`         | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing                                                       |
+| `D3`              | `EN COURS`          | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0                                            |
+| `H1`              | `PROUVE`            | `ADMIN_GLOBAL` is the super admin; no second role created. ADR-008 + `super-admin.spec.ts`, five mutations quoted below                                                                  |
+| `H2`              | `PROUVE`            | proven on dev on `f91289f`: `2 created, 0 updated, 0 unchanged`, exit 0, tally read from the task's own log stream                                                                       |
+| `H3`              | `EN COURS`          | journey 5 green on dev under the sha gate; **pending proof is the two real holders activating their own accounts**                                                                       |
+| `H4`              | `PROUVE`            | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                                                                  |
+| `A7`              | `PROUVE`            | inventory swept 2026-09-06, output in `docs/ops/a7-standards-inventory.md`: 6 findings (2 closed on sight), 7 classes clean, 2 defects in the sweep                                      |
+| `H2` follow-up 1  | `A DECIDER`         | `deploy-dev.yml` passes `--seed` to `run-migrations.js`, which never reads `process.argv`: the seed step has never seeded anything                                                       |
+| `H2` follow-up 2  | `A DECIDER`         | the bootstrap deploy step checks the exit code and never that the tally line appeared - the same gap the seed step has                                                                   |
+| `H5`              | `PROUVE`            | journey 5's address guard was a detector, not a barrier: it reported and let the run continue into a real inbox. Moved to `beforeAll`                                                    |
+| `H6`              | `PROUVE`            | the same run's `afterAll` revoked a real administrator's role. Every write audited, role restored 16:05:26, guard made structural                                                        |
+| `H7`              | `PROUVE`            | nothing tested the bootstrap's role assignment - journey 5 granted it to itself. Decision extracted and covered, 11 tests, 3 mutations                                                   |
+| `H8`              | `EN COURS`          | the bootstrap sent no email; a stray test made it look as though it had. Fixed and proven locally; pending the re-send to `contact@` on dev                                              |
+| `H8` follow-up    | `A DECIDER`         | per-address SES delivery is not observable: no configuration set, no event destination. Needed to answer "did THIS address receive it"                                                   |
+| `H9`              | `PROUVE`            | the bootstrap's provenance check failed a whole deploy and skipped every later step. Postcondition scoped; step moved after the web deploy                                               |
+| `B1`              | `PROUVE`            | payment code audited against the design: 0 payments ever processed, no payment table, G3/G4 partly built, six of eight not started                                                       |
+| `A10`             | `PROUVE`            | the identity-review queue did not exist - the route and the role did. Queue route + `idSubmittedAt`; the back-office screen stays open                                                   |
+| `A11`             | `PROUVE`            | 13 sites, 15 messages, 12 transactional. `sendUpdate` returns an outcome and throws on a transactional template                                                                          |
+| `A12`             | `PROUVE`            | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                                                            |
+| `G6`              | `PROUVE LOCALEMENT` | the dunning queue, reminders at J-7 and J-1, EXPIRE at the term. Found and fixed a processor collision that silently ate a reminder email                                                |
+| `R4`              | `EN COURS`          | back to hosted runners under a spending cap. Baseline measured: 27 billed minutes, of which the quality matrix billed 5 to do 102s of checking                                           |
+| `R3`              | `EN COURS`          | CI moved to the self-hosted `kambriq-ci` runner. No `services:` anywhere, so macOS is viable. Exposed three image builds pinning no platform - amd64 held by accident of `ubuntu-latest` |
+| `R1`              | `EN COURS`          | **a merge can succeed and have no effect.** `#89` merged into a branch consumed 89 s earlier; `#88` was squash-merged, so nothing showed. Pending proof is the three commands in `R1`    |
+| `G8`              | `ARRETE`            | **G11-G14 is not on develop and not deployed**: #89 merged into the G9 branch 89s after that branch merged to develop. 51 files stranded at `230b827`                                    |
+| `G8` blocker      | `A FAIRE`           | re-land `230b827` on develop (**not** conflict-free - see `R1`), deploy, then re-run G8. Until then dev emails every channel's coordinates to whoever clicks                             |
+| `G10`             | `PROUVE`            | applied and observed: 16 SecureString parameters none empty, task definition 143 with the three variables and no channel value, 0 AccessDenied                                           |
+| `G9`              | `PROUVE LOCALEMENT` | the client creates the payment, from their own purchase page. Creation writes its audit row; sending the instructions is a second act                                                    |
+| `G9` follow-up    | `A DECIDER`         | `PAYMENT_VALIDITY_DAYS` is 30 because a month is the shape of a diaspora transfer. The design gives no number - this one needs deciding                                                  |
+| `G10` (webapp)    | `PROUVE`            | an absent channel prefix now fails the boot exactly as an empty parameter does; disabling is `PAYMENT_CHANNELS_TRANSPORT=disabled`                                                       |
+| `G10` (infra)     | `PLAN PRET`         | twelve parameters + the prefix into terraform. Plan run and shown, **nothing applied**. Correction-without-deploy proved on a running process                                            |     |
+| `G4`              | `PROUVE`            | the back office and its screen. Five defects only a real request could see; `db:seed` unbroken; deployed-dev pass deferred to `G8`                                                       |
+| `G4` follow-up    | `A DECIDER`         | `GetUploadUrlDto` is declared twice with different schemas (lands + kbs); the API logs `Duplicate DTO detected` on every boot                                                            |
+| `V1` follow-up    | `PROUVE`            | the commission lookup throws now but has never run: 0 sales completed, all 5 commissions seeded. Closed by inspection only                                                               |
+| `B2`              | `PROUVE`            | V1 inventory finished: WhatsApp preference reads nothing, `sendUpdate` skips indistinguishably and defaults off, `RedisService` unused                                                   |
+| `B3`              | `PROUVE`            | 56 dev parameters against 0 on prd; only 7 injected as secrets, so 49 need an apply to take effect. One confirmed unread, the rest candidates                                            |
+| `B4`              | `PROUVE`            | 4 journeys: VERIFY does not exist; reactivation and block/unblock never run; 57 identity documents queued for a review that has never run                                                |
+| `G1`              | `EN COURS`          | payment model in `lands`: BigInt money, 9-state machine, append-only ledger and audit. Pending proof is G8, one payment end to end on dev                                                |
+| `G2`              | `PROUVE`            | the reference generator: 29-char derived alphabet, mod-29 check character, sequence-backed so collision-free by construction                                                             |
+| `G3`              | `PROUVE`            | the instruction and reminder messages, channel details from SSM at runtime, send-before-transition. Real email read out of a mailbox                                                     |
+| `G10b` (infra)    | `PLAN PRET`         | sixteen channel parameters; the twelve existing ones imported so `ignore_changes` bites on the first apply. **Apply before merging #88**                                                 |
+| `G10b` follow-up  | `A DECIDER`         | `MOBILE_MONEY_OPERATOR/NUMBER/NAME` are required at startup and read by no channel. Drop from `FIELDS` in the webapp first, then from terraform                                          |
+| `G11-G14`         | `PROUVE LOCALEMENT` | six channels, the identification gate, A14's review screen, coordinates in the platform. Email carries none                                                                              |
+| `G11` follow-up   | `A DECIDER`         | infra owes `ORANGE_MONEY_*` and `MTN_MONEY_*`: v03 splits mobile money in two but keeps twelve parameters with one number                                                                |
+| `G11` follow-up 2 | `A DECIDER`         | v03 section 5's example uses a hyphen between reference and channel, which section 4b forbids. 4b implemented                                                                            |
 
 ### H1 - `ADMIN_GLOBAL` **is** the super admin - `PROUVE`
 
@@ -587,6 +639,425 @@ unilaterally: it crosses into the other repository.
 
 The manual runbook does not have this gap - it fetches the log and requires the
 tally - so the one-off path already checks what the automated path does not.
+
+---
+
+### G6 - the dunning queue and the reminder scheduler - `PROUVE LOCALEMENT`
+
+**Cost impact: None.** One new BullMQ queue on the existing Redis, one daily
+repeatable job, one table. No new dependency - `@nestjs/schedule` is absent from
+this repository and stays absent.
+
+v03 _"Rien ne peut dormir en silence"_: a payment left in `INSTRUCTIONS_ENVOYEES`
+past its validity surfaces in a back-office queue, triggers an automatic
+reminder, and moves to `EXPIRE` at the term with its reason. The design's own
+framing is why it exists - _"Un client SES nul pendant sept mois n'a rien dit. Un
+paiement oublie ne doit pas pouvoir se taire."_
+
+## The three queues were factored, because this was the third
+
+`ageDays` existed **twice**, defined privately and identically in
+`UsersService.listPendingIdDocuments` (`A10`) and
+`PaymentsService.listRequestQueue` (`G11`). Both sorted oldest-first, both aged
+each row, both put the backlog's oldest on the envelope. Two copies is a
+coincidence; three would be a pattern nobody shared, and the copy nobody updates
+is the one that goes wrong.
+
+`libs/common/src/dto/queue-aging.ts` now holds `ageInDays` and
+`withOldestWaiting`, and all three queues use them.
+
+**Extracting it exposed that the two existing queues disagreed.** On an empty
+backlog the identity queue returned `null` and had a test pinning it; the
+request queue returned `0` and had none. They are different claims - `0` says
+the oldest item waited under a day, `null` says there is no oldest item. The
+tested one is also the honest one, so `null` won and the request queue's silent
+`0` was corrected. Found only because the third copy forced the comparison.
+
+## The reminder schedule: two, at J-7 and J-1
+
+The design says _"declenche une relance automatique"_ - one verb, no number - so
+the number is this chantier's to choose and to defend.
+
+**Two, not one.** A single reminder lost to a spam folder is the
+seven-months-of-silent-SES failure with better manners: one attempt, no
+evidence, nobody the wiser.
+
+**Two, not five.** Every reminder is a transactional email against a reputation
+this platform has only just acquired production SES access for, and a client who
+has not paid after two is a phone call. The back-office queue exists so a person
+picks that up.
+
+**J-7 and J-1**, because `PAYMENT_VALIDITY_DAYS` is 30 _"parce qu'un mois est la
+forme d'un virement de la diaspora"_: an international transfer takes days to
+clear, so J-7 is the last moment one can still be started and land, and J-1 the
+last moment anything can be said at all.
+
+`PAYMENT_REMINDER_OFFSETS_DAYS`, default `7,1`. A schedule it cannot parse
+**throws** rather than falling back to the default - a misconfigured setting that
+quietly becomes `7,1` is a setting that looks applied and is not.
+
+## `EXPIRE` without a person, and the mutation that proves it deliberate
+
+`G1` left `EXPIRE` out of `COMMITTING_STATES` so the sweep can make that one
+transition unnamed. Adding it back:
+
+```
++  PaymentState.EXPIRE,
+   PaymentState.PARTIELLEMENT_RECU,
+```
+
+**3 failed / 542 passed**, including
+`PaymentsService › transitions › allows the dunning job to expire a stalled payment`.
+Restored: **545 passed**. The omission is a decision, not an oversight.
+
+## The defect this chantier introduced, and how it was found
+
+`DunningProcessor` was declared `@Processor(QUEUES.NOTIFICATIONS)`, beside the
+`EmailProcessor` that already owned that queue. BullMQ gives a job to one
+worker; the dunning processor returned `undefined` for names it did not
+recognise, so when it won a `send-email` it **consumed the reminder and
+discarded it**:
+
+```
+one email sent instead of two
+bull:notifications:wait    -> 0
+bull:notifications:failed  -> 0
+```
+
+No error, no retry, no log line - **the exact silence this chantier exists to
+abolish, introduced by this chantier**. Invisible to 549 unit tests because each
+mocks its own queue, and obvious on the first real run.
+
+Fixed with a queue of its own, `QUEUES.DUNNING`; the processor now **throws** on
+a job it does not own rather than returning quietly.
+`one-processor-per-queue.spec.ts` is the barrier and names both files when it
+fires - proved by reintroducing the collision:
+`NOTIFICATIONS: dunning.processor.ts + email.processor.ts`, 2 failed / 1 passed.
+
+## The coordinate guard was blind to half of what it forbade
+
+Proof (c) was meant to be a formality: put a coordinate in the reminder, watch
+the guard fire. **It did not fire.** 36 tests green with an IBAN in the message.
+
+`no-coordinates-in-email.spec.ts` matched only `args['bankIban']` - the bracket
+form. `args.bankIban` renders exactly the same IBAN and passed. A guard that
+catches one spelling of what it forbids is a guard against that spelling; the
+mutation meant to prove it red proved it blind. Same shape as `A18`'s `@Public()`
+sweep: what a scan does not match, it reports as clean.
+
+Now matches both forms, plus a check on the reminder body by name. Re-run with
+`args.bankIban`: **2 failed / 16 passed**. Restored: 18 passed.
+
+## Proof, run locally end to end, against the real database and real SES
+
+`PAYMENT_VALIDITY_DAYS=1`, `PAYMENT_REMINDER_OFFSETS_DAYS=1`, both **read by the
+code under test** - `sendInstructions` computed `expiresAt` itself. Where the run
+needed to be past the term the **clock** was handed to the code
+(`sweep(now)`, `listOverdueQueue(query, asOf)`); **no row's dates were edited.**
+
+```
+reference : KBQ-2609-ZYFQR-Z
+expiresAt : 2026-09-10T14:33:24Z      <- computed by sendInstructions from config
+sweep 1   : {"remindersSent":1,"expired":0,"failures":[]}
+recorded  : [{"offsetDays":1,"sentAt":"2026-09-09T14:33:24.6Z"}]
+```
+
+The queue entry, past the term:
+
+```json
+{
+  "reference": "KBQ-2609-ZYFQR-Z",
+  "clientName": "Ekani Marcelle",
+  "state": "INSTRUCTIONS_ENVOYEES",
+  "outstanding": "750000",
+  "channel": "MOMO",
+  "waitingDays": 1,
+  "overdueDays": 0,
+  "remindersSent": 1
+}
+```
+
+The audit trail at `EXPIRE`:
+
+```
+(creation) -> INITIE                          actor fee0d9f9…  the client requests to pay
+INITIE -> INSTRUCTIONS_ENVOYEES               actor fee0d9f9…  the back office sends the instructions
+INSTRUCTIONS_ENVOYEES -> EXPIRE               actor system
+   reason: Validity period elapsed on 2026-09-10 without the announced payment.
+           Expired automatically by the dunning sweep.
+```
+
+After the sweep the queue holds **0 rows** and no terminal payment appears in it.
+
+**The reminder, read in a real mailbox as a message.** messageId
+`010701a086967e3f-c1250f4c-3489-47fa-b02f-63091a6af120-000000`, subject
+_"Rappel : paiement KBQ-2609-ZYFQR-Z a regler avant le 10 septembre 2026"_. No
+`IBAN`, no `SWIFT`, no `237`, no `DEV-COMPTE` anywhere in the raw HTML.
+
+**And reading it found a defect nothing else would have.** The reminder said
+_"Les instructions completes sont rappelees ci-dessous pour que vous n'ayez pas a
+rechercher le message precedent."_ - with nothing below it. Copy left over from
+the v02 template that did carry the channel block: **v03 removed the coordinates
+and left the promise.** Corrected in both locales to say the details remain on
+the client's space, behind their sign-in. The G3 lesson again: a message is done
+when somebody has read what arrived.
+
+## The dependency on `A18`, which is not merged
+
+The sweep runs as a **BullMQ repeatable job**, not a `@Cron`. A `@Cron` that
+throws writes a line nobody is watching; a repeatable job that throws lands on
+the queue's `failed` set with its payload and stays (`removeOnFail: 200`).
+
+So this was built to **compose** with `#91` rather than to depend on it: the
+failure is durable and readable through Redis today, and `A18`'s
+`/health/queues/failed` will read the same set from outside the VPC the moment
+it merges. Nothing here imports anything from that branch, and nothing here is
+blocked by it.
+
+`sweep()` throws `DunningSweepError` carrying the tally and every failure, rather
+than returning a count that looks like a result while three payments went
+unchased.
+
+## Gate - LOCAL ONLY
+
+`nx test api` **41 suites / 549 tests**, `nx test common` **16 / 277**, api and
+web typecheck clean, `nx lint api`/`web` clean (the pre-existing web
+`exhaustive-deps` warning only). **No CI run has confirmed any of it** - the
+organisation's Actions quota is exhausted and jobs do not start. `nx lint common`
+still fails with the two pre-existing `@nx/dependency-checks` errors it fails
+with on develop.
+
+---
+
+### R4 - back to hosted runners, and what a run costs - `EN COURS`
+
+Visquis is adding a payment method with a low cap, so the bill matters and the
+self-hosted Mac stops being the target. It stays **registered** - nothing was
+removed - because it serialises jobs: a hosted quality stage of 118s wall clock
+took 1371s on it, and one stall left two jobs queued for 19 minutes.
+
+## The baseline, measured before anything changed
+
+GitHub bills each job's wall clock **rounded up to the minute, per job**.
+
+| job                     |       hosted secs | billed | self-hosted secs | billed |
+| ----------------------- | ----------------: | -----: | ---------------: | -----: |
+| Commitlint              | (skipped on push) |      0 |              202 |      4 |
+| Quality / typecheck     |                47 |      1 |              246 |      5 |
+| Quality / lint          |                58 |      1 |              307 |      6 |
+| Quality / typecheck:web |                58 |      1 |              214 |      4 |
+| Quality / test          |               118 |      2 |              402 |      7 |
+| Build & push API image  |               151 |      3 |                - |      - |
+| Build & push Web image  |               159 |      3 |                - |      - |
+| Deploy to dev           |               575 |     10 |                - |      - |
+| E2E Tests (dev)         |               218 |      4 |                - |      - |
+| Delivery journeys (dev) |               114 |      2 |                - |      - |
+| **TOTAL**               |          **1498** | **27** |         **1371** | **26** |
+
+Hosted run `34109055661` (full pipeline, 18m01s wall clock); self-hosted run
+`34142916629` (quality only, 41m45s wall clock).
+
+**Where the waste was.** The four quality jobs billed 5 minutes to do 102
+seconds of checking. Step timings: ~40s of checkout + setup-node + install per
+job, paid four times, for 24 seconds of parallelism.
+
+## What changed, in descending order of saving
+
+**1. Concurrency.** `cancel-in-progress` is an **expression**, not `true`:
+
+```yaml
+cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+```
+
+It is false on a push to develop, so **the deploy is never cancelled mid-flight**
+
+- that run migrates the database, updates two ECS services and bootstraps the
+  admins, and killing it between the migration and the service update leaves dev
+  in a state no log explains. `deploy-dev.yml` keeps its own
+  `concurrency: deploy-dev, cancel-in-progress: false` as a second barrier.
+
+**2. Quality consolidated, four jobs into one.** 5 billed minutes -> 3. The
+trade is 24s of extra wall clock. The image builds were **kept parallel** by the
+same arithmetic run the other way: merging them saves 1 billed minute and adds
+~150s to every deploy.
+
+**3. `nx affected`, and an honest note on it.** On a PR, `--base=origin/<base>`.
+On a push to develop there is no base to diff against, so develop runs the
+**full set** - deliberately, because develop is what gets built and deployed.
+
+Measured, this saves less than it sounds: a workflow-only change gives
+`-t test` affected `[]`, but a change touching `libs/common` gives
+`["api","web","common"]` - everything - because both apps depend on it. **The
+saving is concentrated on documentation and config PRs, not on normal ones.**
+
+**4. Caching.** `setup-node` already caches the pnpm store; the nx computation
+cache is now cached on `.nx/cache`, keyed on the lockfile plus the sha with a
+`restore-keys` prefix fallback. The fallback is the part that pays - without it
+every run is a cold cache and the cache is decoration.
+
+**5. `timeout-minutes` on every job**, ~2x measured: 5 for the filter and
+commitlint, 10 for quality and the builds, 15 for e2e, 20 for the deploy.
+GitHub's default is **360**, so one hung job burns 18% of a monthly quota.
+
+**6. Path filters, on pull requests only.** A `changes` job reports `code=false`
+for a documentation-only PR and quality is skipped.
+
+On a push to develop it always reports `true`. That is deliberate: this project
+checks that **the sha served by dev equals develop's head**, and a docs-only
+merge that skipped the deploy would break that invariant for a reason nobody
+would remember a week later.
+
+## Required checks: there are none
+
+```
+GET /repos/kloudnat-digital/kambriq-webapp/branches/develop/protection
+->  403 "Upgrade to GitHub Pro or make this repository public"
+```
+
+Branch protection is unavailable on this plan, so **no check is required and a
+skipped job cannot block a merge**. If the plan changes, every gate above must
+be rewritten as a job that always runs and exits 0 when there is nothing to do.
+Written down because the cost of getting it wrong is a permanently unmergeable
+PR.
+
+## Does e2e run twice? No - but quality did
+
+`e2e` and `journeys` are gated `github.event_name == 'push' && github.ref ==
+'refs/heads/develop'`, so they never run on a PR. **`quality` had no gate**, so
+it ran on the PR and again on the squashed develop commit - about 5 billed
+minutes duplicated per merge.
+
+Kept, not removed: the develop run is the gate before the build and the deploy,
+and it is the run whose result licences a deployment. The nx cache is what makes
+the repeat cheap rather than deleting it.
+
+## The runner target
+
+One repository variable, `CI_RUNNER_LABELS`, read by all jobs:
+
+```yaml
+runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+```
+
+Now `["ubuntu-latest"]`. Back to the Mac is one edit to that variable; **deleting
+it also returns to hosted**, because that is the fallback.
+
+---
+
+### R3 - CI on the self-hosted runner - `EN COURS`
+
+Actions has been dead since the organisation exhausted its 2 000 free minutes.
+`#93` made the deploy runnable from a laptop; this points the pipeline itself at
+`kambriq-ci`, a self-hosted runner on Visquis's Mac, because a script is a black
+box while it runs and Actions gives him live logs, history and re-run.
+
+`#93`'s script is not discarded. It becomes what the workflow calls - **once
+`#93` is merged**, which it is not yet. See the honest gap below.
+
+## What the runner actually is, read from its own registration
+
+Not from the brief. `/Users/vmi/workspace/actions-runner/.runner`:
+
+```
+agentName : kambriq-ci
+poolName  : Default            <- organisation-level Default group
+gitHubUrl : https://github.com/kloudnat-digital
+```
+
+Runner 2.337.0 on macOS 26.6.2, arm64; listener process running. The machine
+carries node 24.1.0, pnpm 10.22.0, docker 24.0.7 with buildx v0.29.1, jq 1.7.1,
+aws-cli 2.15.8, git 2.45.2. Docker is running, server 28.5.1, and its buildx
+`default` builder advertises `linux/amd64` - so amd64 is reachable by emulation,
+which is not a guess: both dev images were built and pushed as amd64 from this
+machine earlier today.
+
+**`/bin/bash` on macOS is 3.2.57.** Every `run:` block and
+`scripts/deploy-dev.sh` must stay inside it - no `declare -A`, no `mapfile`.
+
+## The blocking question, answered first: service containers
+
+**No workflow declares one.**
+
+```
+grep -rn "^\s*services:" .github/workflows/   ->  no matches
+```
+
+The API and common suites are unit tests against mocks; they need neither
+Postgres nor Redis. Had a `services:` block existed the approach would have
+stopped here, because service containers do not run on macOS runners and the
+alternative - pointing the tests at something weaker - is the false witness this
+register exists to catch.
+
+## Credentials still work, and here is why
+
+Every AWS step is `aws-actions/configure-aws-credentials@v4` with
+`role-to-assume: ${{ secrets.AWS_ROLE_ARN }}`. **No static key appears in any
+workflow.** OIDC survives the move because the token is minted by GitHub for the
+job, not held by the machine - the runner only needs `id-token: write`, which
+every credential-using job already declares.
+
+## What was Linux-only, and what replaced it
+
+Exactly **one** command, across four workflows:
+
+| was                                  | now                                               | why                                                                                                                  |
+| ------------------------------------ | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `npx playwright install --with-deps` | branch on `uname -s`; `--with-deps` on Linux only | `--with-deps` is `apt-get`. It does not degrade to a no-op off Debian - Playwright errors on an unsupported platform |
+
+Nothing else needed replacing: no `apt-get`, no `sudo`, no `sed -i`, no
+`date -d`, no `readlink -f`, no absolute `/usr/bin` paths. Established by sweep.
+
+## The defect the move exposed, which is not a portability issue
+
+**No `docker/build-push-action` step pinned a platform** - three of them, in
+`ci.yml` and `manual-deploy-dev.yml`, building for whatever the runner happens
+to be. amd64 on `ubuntu-latest` by accident; arm64 on the Mac.
+
+An arm64 image builds, pushes and registers as a task definition without
+complaint. It fails when ECS tries to start it, minutes later, in a place that
+reads like an application defect. `platforms: linux/amd64` is now pinned on all
+three, each followed by an assertion against the **registry** - the flag says
+what was requested, only the registry says what arrived.
+
+## Where the runner target lives
+
+One repository variable, `CI_RUNNER_LABELS`, read by all 13 jobs:
+
+```yaml
+runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+```
+
+Set to `["self-hosted","macOS","ARM64","kambriq-ci"]`. **October's reversal is
+deleting that variable** - no PR, no code change, no rebuild. The
+`|| '["ubuntu-latest"]'` fallback is deliberate: an unset variable returns to
+hosted runners rather than producing an empty `runs-on`, which is a job that
+fails for a reason nobody can read.
+
+## The honest gap: the deploy job does NOT call the script yet
+
+`#93` is not merged, so `scripts/deploy-dev.sh` on develop is still the stale
+145-line orphan. The deploy job keeps its own steps for now, and the
+architecture assertion is written **inline in the workflow**.
+
+That inline block duplicates `assert_amd64`, and it is labelled as a duplicate
+in the file itself. When `#93` lands it must become a call to the script - and
+`#93`'s anti-drift test is what will force it, since that test fails on any
+workflow step the script does not implement. The alternative was stacking this
+branch on `#93`, which is the shape that stranded `#89`.
+
+## Two things for Visquis, not fixed here
+
+**The runner is in the `Default` group at organisation level.** Every repository
+in `kloudnat-digital`, and everyone with write access to any of them, can run
+code on his personal Mac. Only `kambriq-webapp` needs it today. Restricting it
+is a runner group with that one repository added - Settings -> Actions ->
+Runner groups - and moving `kambriq-ci` into it. No workflow change.
+
+**The runner is not ephemeral.** `.runner` carries no `ephemeral` key, so the
+process persists and `_work` survives between jobs: one job can leave state that
+poisons the next, and a compromised job can leave something behind for the job
+after it. Making it ephemeral is re-registering with `--ephemeral`, which costs
+a fresh checkout and a cold pnpm store per job.
 
 ---
 

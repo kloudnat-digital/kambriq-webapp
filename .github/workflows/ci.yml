@@ -17,11 +17,92 @@ on:
   pull_request:
     branches: [main, develop]
 
+# ------------------------------------------------------------------------------
+# CONCURRENCY - and the one job that must never be cancelled
+#
+# Three pushes to a PR used to run three full pipelines to completion and bill
+# all three. Superseded PR runs are now cancelled.
+#
+# `cancel-in-progress` is an EXPRESSION, not `true`. On `push` to develop it
+# evaluates false, so a develop run is never cancelled - that is the run which
+# migrates the database, updates two ECS services and bootstraps the admins, and
+# killing it between the migration and the service update leaves dev in a state
+# no log explains. A PR run deploys nothing, so cancelling one costs only time.
+#
+# deploy-dev.yml carries its own `concurrency: deploy-dev, cancel-in-progress:
+# false` as a second barrier, so two deploys cannot overlap even across runs.
+# ------------------------------------------------------------------------------
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# ------------------------------------------------------------------------------
+# WHERE THIS RUNS
+#
+# `runs-on` reads ONE repository variable, `CI_RUNNER_LABELS`, holding a JSON
+# array of runner labels. Every job in every workflow uses the same expression,
+# so the target lives in a single place outside the code.
+#
+#   set    ["self-hosted","macOS","ARM64","kambriq-ci"]   -> Visquis's Mac
+#   unset  (or delete the variable)                       -> ubuntu-latest
+#
+# The `|| '["ubuntu-latest"]'` fallback is the point: an unset variable returns
+# to GitHub-hosted runners rather than producing an empty `runs-on`, which is a
+# job that fails for a reason nobody can read. October's reversal is deleting
+# one variable in the repository settings - no PR, no code change, no rebuild.
+# ------------------------------------------------------------------------------
 jobs:
+  # -- What changed, computed once ----------------------------------------------
+  #
+  # A documentation-only PR should not build an image or drive a browser.
+  #
+  # This gates PULL REQUESTS ONLY. On a push to develop it always reports
+  # `code=true`, and that is deliberate: this project checks that the sha served
+  # by dev equals develop's head, and a docs-only merge that skipped the deploy
+  # would break that invariant for a reason nobody would remember a week later.
+  # Docs are cheap to deploy; a broken invariant is not.
+  #
+  # Safe to skip jobs here because this repository has NO required status checks
+  # - branch protection is not available on its plan, confirmed against the API
+  # (`/branches/develop/protection` -> 403 "Upgrade to GitHub Pro"). If the plan
+  # changes, a skipped job becomes a merge blocker and these gates must be
+  # rewritten as jobs that always run and exit 0 when there is nothing to do.
+  changes:
+    name: What changed
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: filter
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "push to ${{ github.ref_name }} - everything runs, so the deployed sha keeps matching develop"
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          FILES="$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")"
+          echo "changed files:"; echo "${FILES}" | sed 's/^/  /'
+          # Anything that is not documentation counts as code. Listed as an
+          # exclusion rather than an inclusion: a new top-level directory is
+          # then treated as code by default, which is the safe way to be wrong.
+          if echo "${FILES}" | grep -qvE '^(docs/|CLAUDE\.md|README\.md|.*\.md$)'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "documentation only - skipping quality, build, deploy and e2e"
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   # -- Commit message validation (PR only) -------------------------------------
   commitlint:
     name: Commitlint
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    timeout-minutes: 5
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
@@ -37,16 +118,35 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
 
-  # -- Parallel quality checks --------------------------------------------------
+  # -- Quality: ONE job, not four -----------------------------------------------
+  #
+  # The matrix billed 5 minutes to do 102 seconds of work.
+  #
+  # GitHub bills each job's wall clock ROUNDED UP TO THE MINUTE, per job. The
+  # four jobs measured 47s, 58s, 58s and 118s - so 1+1+1+2 = 5 minutes billed
+  # for 4m22s of machine time, of which 102s was actual checking and 160s was
+  # four separate checkouts, four setup-nodes and four `pnpm install`s.
+  #
+  # Merged, the same work is one setup (~40s) plus 102s = ~142s, billed as 3.
+  # The trade is wall clock: 118s parallel becomes ~142s serial. Visquis waits
+  # 24 seconds longer per run and stops paying for three redundant installs.
+  #
+  # What was NOT merged: the image builds. Those stay parallel - see the note
+  # on `build-web`.
   quality:
-    name: Quality / ${{ matrix.check }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        check: [lint, typecheck, typecheck:web, test]
+    name: Quality
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true'
+    # ~142s measured; twice that, rounded. GitHub's default is 360 minutes, so
+    # one hung job would burn 18% of the monthly quota before anyone noticed.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          # `nx affected` diffs against the base branch, which must be present.
+          fetch-depth: 0
+
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -56,26 +156,49 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        if: matrix.check == 'lint'
-        run: pnpm run lint
+      # The nx computation cache, keyed on the lockfile and the commit.
+      #
+      # `restore-keys` is what makes this pay: an exact miss still restores the
+      # most recent cache for the same lockfile, so a PR reuses develop's work
+      # and the develop run after the merge reuses the PR's. Without the prefix
+      # fallback every run is a cold cache and the cache is decoration.
+      - name: Cache nx computation
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            nx-${{ runner.os }}-
 
-      - name: Typecheck
-        if: matrix.check == 'typecheck'
-        run: pnpm run typecheck
-
-      - name: Typecheck web
-        if: matrix.check == 'typecheck:web'
-        run: pnpm run typecheck:web
-
-      - name: Test with coverage
-        if: matrix.check == 'test'
-        run: pnpm run test:cov
+      # `nx affected` on a PR; everything on develop.
+      #
+      # On a PR the base is `origin/<base branch>` and only projects the branch
+      # actually touches are checked. On a push to develop there IS no base to
+      # compare against - the merge is already history - so develop runs the
+      # full set. That is deliberate rather than a gap: develop is the ref that
+      # gets built and deployed, and it is the last place to trust a diff.
+      # The nx cache above makes that full run mostly cache hits anyway.
+      - name: Lint, typecheck and test
         env:
-          NX_SKIP_NX_CACHE: "true"
+          NX_SKIP_NX_CACHE: "false"
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="origin/${{ github.base_ref }}"
+            echo "affected against ${BASE}"
+            npx nx affected -t lint --base="${BASE}"
+            npx nx affected -t test --base="${BASE}" --coverage
+          else
+            echo "push to ${{ github.ref_name }} - running the full set, no base to diff against"
+            pnpm run lint
+            pnpm run test:cov
+          fi
+          # tsc is not an nx target here; both projects typecheck in seconds.
+          pnpm run typecheck
+          pnpm run typecheck:web
 
       - name: Upload coverage to Codecov
-        if: matrix.check == 'test'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -85,7 +208,8 @@ jobs:
   # -- Build and push API image (develop push only) -----------------------------
   build-api:
     name: Build & push API image
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    timeout-minutes: 10
     needs: [quality]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     permissions:
@@ -126,6 +250,16 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
+          # Fargate is amd64. The runner may not be.
+          #
+          # Without this line the build inherits the RUNNER's native
+          # architecture: correct by accident on ubuntu-latest, and arm64 on
+          # the self-hosted Mac - an image ECS cannot start. The failure does
+          # not appear here; it appears minutes later as a task that stops with
+          # an exec-format error, looking like a defect in the application.
+          # Asserted against the registry in the step after this one, because
+          # the flag being present is not proof the manifest carries it.
+          platforms: linux/amd64
           context: .
           file: docker/Dockerfile.api
           push: true
@@ -141,10 +275,54 @@ jobs:
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
+      # -- The pushed manifest must be amd64 ----------------------------------
+      #
+      # NOT a duplicate of a check that already exists somewhere - a check that
+      # exists NOWHERE on this branch. `scripts/deploy-dev.sh` on develop is
+      # still the stale 145-line orphan; PR #93 replaces it with the pipeline
+      # that carries `assert_amd64`, and #93 is not merged.
+      #
+      # **When #93 lands this step must become a call to that function**, and
+      # #93's own anti-drift test is what will say so - it fails on any workflow
+      # step the script does not implement. Left inline here rather than left
+      # out, because an unasserted image is how Fargate gets one it cannot start.
+      #
+      # `--verbose`: a single-platform push returns a v2 image manifest with no
+      # `.manifests` array AND no top-level `.architecture` - the platform lives
+      # in the config blob. Reading `.architecture` yields null for every
+      # correctly built image, which is a gate that refuses everything.
+      - name: Assert the pushed image is linux/amd64
+        run: |
+          set -euo pipefail
+          URI="${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}"
+          ARCH="$(docker manifest inspect --verbose "${URI}" \
+            | jq -r '[ (if type == "array" then .[] else . end)
+                       | .Descriptor.platform
+                       | select(.os == "linux")
+                       | .architecture ] | unique | join(" ")')"
+          echo "${URI} -> architecture: ${ARCH:-<unreadable>}"
+          if [ "${ARCH}" != "amd64" ]; then
+            echo "::error::${URI} is ${ARCH:-unreadable}, not amd64. Fargate cannot start it." >&2
+            exit 1
+          fi
+
   # -- Build and push Web image (develop push only) -----------------------------
+  #
+  # KEPT PARALLEL, deliberately, unlike the quality matrix.
+  #
+  # Merging the two builds would save one billed minute: 3 + 3 becomes ~5 (40s
+  # setup + 151s + 159s = 350s). But they run on develop, which is the path to
+  # a deploy, and serialising them adds ~150s to every deploy's wall clock.
+  #
+  # That is the rate Visquis is trading at: **one billed minute for two and a
+  # half minutes of waiting on every deploy**. The quality matrix went the other
+  # way - two minutes saved for 24 seconds of waiting - which is why one was
+  # merged and this was not. The numbers, not a preference for parallelism.
+
   build-web:
     name: Build & push Web image
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    timeout-minutes: 10
     needs: [quality]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     permissions:
@@ -185,6 +363,16 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
+          # Fargate is amd64. The runner may not be.
+          #
+          # Without this line the build inherits the RUNNER's native
+          # architecture: correct by accident on ubuntu-latest, and arm64 on
+          # the self-hosted Mac - an image ECS cannot start. The failure does
+          # not appear here; it appears minutes later as a task that stops with
+          # an exec-format error, looking like a defect in the application.
+          # Asserted against the registry in the step after this one, because
+          # the flag being present is not proof the manifest carries it.
+          platforms: linux/amd64
           context: .
           file: docker/Dockerfile.web
           push: true
@@ -201,6 +389,37 @@ jobs:
             APP_VERSION=${{ env.APP_VERSION }}
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
+
+      # -- The pushed manifest must be amd64 ----------------------------------
+      #
+      # NOT a duplicate of a check that already exists somewhere - a check that
+      # exists NOWHERE on this branch. `scripts/deploy-dev.sh` on develop is
+      # still the stale 145-line orphan; PR #93 replaces it with the pipeline
+      # that carries `assert_amd64`, and #93 is not merged.
+      #
+      # **When #93 lands this step must become a call to that function**, and
+      # #93's own anti-drift test is what will say so - it fails on any workflow
+      # step the script does not implement. Left inline here rather than left
+      # out, because an unasserted image is how Fargate gets one it cannot start.
+      #
+      # `--verbose`: a single-platform push returns a v2 image manifest with no
+      # `.manifests` array AND no top-level `.architecture` - the platform lives
+      # in the config blob. Reading `.architecture` yields null for every
+      # correctly built image, which is a gate that refuses everything.
+      - name: Assert the pushed image is linux/amd64
+        run: |
+          set -euo pipefail
+          URI="${{ env.ECR_WEB_REPO }}:${{ env.IMAGE_TAG }}"
+          ARCH="$(docker manifest inspect --verbose "${URI}" \
+            | jq -r '[ (if type == "array" then .[] else . end)
+                       | .Descriptor.platform
+                       | select(.os == "linux")
+                       | .architecture ] | unique | join(" ")')"
+          echo "${URI} -> architecture: ${ARCH:-<unreadable>}"
+          if [ "${ARCH}" != "amd64" ]; then
+            echo "::error::${URI} is ${ARCH:-unreadable}, not amd64. Fargate cannot start it." >&2
+            exit 1
+          fi
 
   # -- Auto-deploy to dev after successful builds -------------------------------
   deploy-dev:
@@ -230,7 +449,8 @@ jobs:
   # contain it. A monotonic counter says something changed, not what is running.
   journeys:
     name: Delivery journeys (dev)
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    timeout-minutes: 10
     needs: [deploy-dev]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     environment: dev
@@ -256,7 +476,8 @@ jobs:
   # -- E2E tests against deployed dev (post-deploy) -----------------------------
   e2e:
     name: E2E Tests (dev)
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    timeout-minutes: 15
     needs: [deploy-dev]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     environment: dev
@@ -272,8 +493,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # `--with-deps` is apt-get. It installs the shared libraries the browsers
+      # need on Debian/Ubuntu, and there is no such step on macOS - the runner
+      # image already carries what WebKit and Chromium link against. Passing it
+      # here does not degrade to a no-op; Playwright errors on an unsupported
+      # platform, so the flag is chosen by the OS rather than assumed.
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium firefox webkit
+        run: |
+          set -euo pipefail
+          if [ "$(uname -s)" = "Linux" ]; then
+            npx playwright install --with-deps chromium firefox webkit
+          else
+            npx playwright install chromium firefox webkit
+          fi
 
       - name: Run E2E tests
         run: pnpm test:e2e
