@@ -152,7 +152,11 @@ export const PaymentDetailContent = ({
     </Card>
 
     {payment.state !== 'VALIDE' && (
-      <RecordReceiptForm paymentId={payment.id} currency={payment.currency} />
+      <RecordReceiptForm
+        paymentId={payment.id}
+        currency={payment.currency}
+        receipts={payment.receipts}
+      />
     )}
 
     {payment.state !== 'VALIDE' && (
@@ -160,6 +164,7 @@ export const PaymentDetailContent = ({
         paymentId={payment.id}
         state={payment.state}
         isGlobalAdmin={canValidate}
+        receipts={payment.receipts}
       />
     )}
 
@@ -170,6 +175,7 @@ export const PaymentDetailContent = ({
         amountReceived={payment.amountReceived}
         outstanding={payment.outstanding}
         canValidate={canValidate}
+        receipts={payment.receipts}
       />
     )}
 
@@ -192,6 +198,41 @@ export const PaymentDetailContent = ({
               </p>
               <p className="text-gray-700">{tr.reason}</p>
               <p className="font-mono text-xs text-gray-500">par {tr.actorUserId}</p>
+              {/* G7 - "sur quelle preuve". The receipt is named by what a person
+                  can recognise on the ledger above, and its proof opens from
+                  here. A step that rests on no receipt says so rather than
+                  leaving a blank a reader has to interpret. */}
+              <p className="text-xs text-gray-500" data-testid="audit-evidence">
+                {tr.evidenceReceiptId ? (
+                  (() => {
+                    const receipt = payment.receipts.find((r) => r.id === tr.evidenceReceiptId);
+                    return (
+                      <>
+                        sur preuve :{' '}
+                        {receipt ? (
+                          <>
+                            encaissement du <HumanDate at={receipt.receivedAt} /> de{' '}
+                            <Money amount={receipt.amount} currency={receipt.currency} />{' '}
+                            <span className="font-mono">({receipt.id.slice(0, 8)})</span>
+                            {receipt.evidenceUrl && (
+                              <>
+                                {' — '}
+                                <ProofLink paymentId={payment.id} receiptId={receipt.id} />
+                              </>
+                            )}
+                          </>
+                        ) : (
+                          <span className="font-mono">{tr.evidenceReceiptId}</span>
+                        )}
+                      </>
+                    );
+                  })()
+                ) : (
+                  <span className="text-gray-400">
+                    sans preuve rattachée — cette étape ne repose sur aucun encaissement
+                  </span>
+                )}
+              </p>
             </li>
           ))}
         </ol>

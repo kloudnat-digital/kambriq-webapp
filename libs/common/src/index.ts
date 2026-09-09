@@ -26,6 +26,9 @@ export {
   assertActorIsNamed,
   assertTransitionAllowed,
   assertTransitionIsDeliberate,
+  EVIDENCED_STATES,
+  EvidenceRequiredError,
+  assertTransitionIsEvidenced,
   sumReceipts,
 } from './payments/payment-state';
 

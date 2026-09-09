@@ -82,6 +82,13 @@ export const recordReceiptSchema = z
     // it cannot match to anything.
     message: "Un depot d'especes doit nommer la personne qui a verse.",
     path: ['paidBy'],
+  })
+  .refine((d) => d.correctsId === undefined || (d.note !== undefined && d.note.trim() !== ''), {
+    // G5, v03 §7: a correction carries its own reason. The service refuses it
+    // too; this refuses it a boundary earlier, with a message a person can act on.
+    message:
+      'Une correction porte son propre motif. Dites ce qui etait faux sur la ligne corrigee.',
+    path: ['note'],
   });
 export class RecordReceiptDto extends createZodDto(recordReceiptSchema) {}
 
@@ -98,7 +105,13 @@ export const validatePaymentSchema = z.object({
    * a message a person can act on.
    */
   reason: z.string().min(1, 'Validating a payment records why. A blank reason is refused.'),
-  evidenceReceiptId: z.string().uuid().optional(),
+  /**
+   * G7 - "sur quelle preuve". Required here, not optional: VALIDE says the
+   * whole amount was "constatee et prouvee", and `assertTransitionIsEvidenced`
+   * refuses it without a receipt. Optional at this boundary would mean the
+   * refusal arrives from the service with less context than it could have.
+   */
+  evidenceReceiptId: z.string().uuid('Validating names the encaissement the decision rests on.'),
 });
 export class ValidatePaymentDto extends createZodDto(validatePaymentSchema) {}
 
@@ -111,6 +124,13 @@ export const transitionPaymentSchema = z.object({
    */
   to: z.nativeEnum(PaymentState),
   reason: z.string().min(1, 'A state change records why. A blank reason is refused.'),
+  /**
+   * The receipt the step rests on. Optional on the wire because most steps
+   * have none behind them (see `EVIDENCED_STATES`); the service refuses
+   * `PARTIELLEMENT_RECU` without one, which depends on `to` and is the
+   * transition guard's decision rather than validation's.
+   */
+  evidenceReceiptId: z.string().uuid().optional(),
 });
 export class TransitionPaymentDto extends createZodDto(transitionPaymentSchema) {}
 

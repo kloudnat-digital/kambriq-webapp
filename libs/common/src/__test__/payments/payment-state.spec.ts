@@ -1,8 +1,11 @@
 import {
   assertTransitionAllowed,
   assertTransitionIsDeliberate,
+  assertTransitionIsEvidenced,
   AutomaticTransitionForbiddenError,
   COMMITTING_STATES,
+  EVIDENCED_STATES,
+  EvidenceRequiredError,
   IllegalPaymentTransitionError,
   PAYMENT_TRANSITIONS,
   PaymentState,
@@ -150,4 +153,42 @@ describe('the total received is a sum, and only a sum', () => {
     expect(sumReceipts([{ amount: big }, { amount: 1n }])).toBe(9_007_199_254_740_994n);
     expect(Number(big) + 1).not.toBe(9_007_199_254_740_994);
   });
+});
+
+describe('G7 - the states that rest on a receipt', () => {
+  it('are the two that say money was seen and proved, and no other', () => {
+    // v03 §4: PARTIELLEMENT_RECU "constatee et prouvee", VALIDE "la totalite
+    // est constatee et prouvee". Pinned in both directions: a state added here
+    // fails, and a state removed fails.
+    expect([...EVIDENCED_STATES].sort()).toEqual(
+      [PaymentState.PARTIELLEMENT_RECU, PaymentState.VALIDE].sort(),
+    );
+  });
+
+  it('every evidenced state commits money - the reverse is not true', () => {
+    // A state cannot say "proved" without also being one a named person
+    // commits. REJETE and ANNULE commit by decision and rest on a reason, not
+    // on a receipt, which is why the two sets differ.
+    for (const state of EVIDENCED_STATES) expect(COMMITTING_STATES.has(state)).toBe(true);
+    expect(COMMITTING_STATES.size).toBeGreaterThan(EVIDENCED_STATES.size);
+  });
+
+  it.each([...EVIDENCED_STATES])('refuses %s with no receipt', (to) => {
+    expect(() => assertTransitionIsEvidenced(to, undefined)).toThrow(EvidenceRequiredError);
+    expect(() => assertTransitionIsEvidenced(to, null)).toThrow(EvidenceRequiredError);
+    expect(() => assertTransitionIsEvidenced(to, '   ')).toThrow(EvidenceRequiredError);
+  });
+
+  it.each([...EVIDENCED_STATES])('accepts %s with one', (to) => {
+    expect(() => assertTransitionIsEvidenced(to, 'r1')).not.toThrow();
+  });
+
+  it.each(ALL.filter((s) => !EVIDENCED_STATES.has(s)))(
+    '%s carries NULL deliberately and demands nothing',
+    (to) => {
+      expect(() => assertTransitionIsEvidenced(to, undefined)).not.toThrow();
+      // And may still be offered one.
+      expect(() => assertTransitionIsEvidenced(to, 'r1')).not.toThrow();
+    },
+  );
 });

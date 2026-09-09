@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Money } from './payment-money';
+import { ReceiptPicker } from './receipt-picker';
 import { validatePayment } from '@/lib/actions/payments';
+import type { PaymentReceipt } from '@/types/payments';
 
 /**
  * Validating a payment, and saying what it commits before it is pressed.
@@ -16,6 +18,12 @@ import { validatePayment } from '@/lib/actions/payments';
  * the person pressing it. A reason is required, and the button stays disabled
  * without one.
  *
+ * **And the receipt it rests on is required** - G7's "sur quelle preuve". The
+ * operator picks the encaissement that completes the amount from the ledger
+ * above; the API refuses a validation that names none, or one that names a
+ * line from another payment. Until this control sent it, every `VALIDE` row on
+ * every environment had `evidenceReceiptId` NULL.
+ *
  * This is a **different action** from recording. It calls `validatePayment` and
  * nothing else.
  */
@@ -25,16 +33,19 @@ export const ValidatePaymentAction = ({
   amountReceived,
   outstanding,
   canValidate,
+  receipts,
 }: {
   paymentId: string;
   currency: string;
   amountReceived: string;
   outstanding: string;
   canValidate: boolean;
+  receipts: PaymentReceipt[];
 }) => {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [reason, setReason] = useState('');
+  const [evidenceReceiptId, setEvidenceReceiptId] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   // `BigInt(0)` rather than the `0n` literal: the web inherits target es2015
@@ -48,7 +59,7 @@ export const ValidatePaymentAction = ({
   const submit = () => {
     setError(null);
     startTransition(async () => {
-      const res = await validatePayment({ paymentId, reason });
+      const res = await validatePayment({ paymentId, reason, evidenceReceiptId });
       if (!res.success) {
         setError(res.error ?? 'La validation a été refusée.');
         return;
@@ -93,9 +104,29 @@ export const ValidatePaymentAction = ({
                 <>le solde est à zéro.</>
               )}
             </li>
-            <li>votre nom et votre motif sont inscrits dans la piste d&apos;audit.</li>
+            <li>
+              votre nom, votre motif et la preuve retenue sont inscrits dans la piste d&apos;audit.
+            </li>
           </ul>
         </div>
+
+        {receipts.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            Aucun encaissement au journal : une validation repose sur une preuve, et il n&apos;y en
+            a pas encore.
+          </p>
+        ) : (
+          <ReceiptPicker
+            receipts={receipts}
+            value={evidenceReceiptId}
+            onChange={setEvidenceReceiptId}
+            label="Preuve sur laquelle repose la validation"
+            emptyLabel="— choisir l'encaissement —"
+            hint="L'encaissement qui établit que la totalité est constatée et prouvée."
+            required
+            testId="validate-evidence"
+          />
+        )}
 
         <label className="block text-sm">
           <span className="mb-1 block text-gray-600">Motif (obligatoire)</span>
@@ -113,7 +144,7 @@ export const ValidatePaymentAction = ({
         <Button
           type="button"
           onClick={submit}
-          disabled={pending || !reason.trim()}
+          disabled={pending || !reason.trim() || !evidenceReceiptId}
           data-testid="validate-submit"
         >
           {pending ? 'Validation…' : 'Valider le paiement'}
