@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './health.controller';
+import { QueueHealthService } from './queue-health.service';
 import { CoreModule } from '../core/core.module';
 import { KbsModule } from '../kbs/kbs.module';
 
@@ -8,5 +9,8 @@ import { KbsModule } from '../kbs/kbs.module';
   // Import modules that provide the Prisma services used by the controller
   imports: [TerminusModule, CoreModule, KbsModule],
   controllers: [HealthController],
+  // The queues themselves come from the global QueueModule, which registers all
+  // four and exports BullModule.
+  providers: [QueueHealthService],
 })
 export class HealthModule {}

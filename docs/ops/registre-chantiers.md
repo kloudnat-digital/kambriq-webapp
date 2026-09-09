@@ -101,6 +101,56 @@ table: `Z1`, `D2`, `X1` and `X4` carry commands, numbers or reversal steps that
 are longer than a table row and are still needed. Everything genuinely open is
 listed here first.
 
+| Entry             | State               | What it needs                                                                                                                                                                         |
+| ----------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| `L2`              | `EN COURS`          | one deployed log line carrying its interpolated metadata, quoted                                                                                                                      |
+| `L3`              | `DECIDE, A FAIRE`   | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                                                                      |
+| `F1`              | `A DECIDER`         | coverage ratchet: a floor, and what happens when a PR drops below it                                                                                                                  |
+| `P1`              | `A DECIDER`         | SES contact list, one per account per region — the prd constraint                                                                                                                     |
+| `X2`              | `DECIDE, A FAIRE`   | NAT option 2, decided, deliberately unapplied before delivery                                                                                                                         |
+| `M1`              | `DECIDE, A FAIRE`   | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                                                        |
+| `Q1` follow-up    | `A DECIDER`         | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing                                                    |
+| `D3`              | `EN COURS`          | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0                                         |
+| `H1`              | `PROUVE`            | `ADMIN_GLOBAL` is the super admin; no second role created. ADR-008 + `super-admin.spec.ts`, five mutations quoted below                                                               |
+| `H2`              | `PROUVE`            | proven on dev on `f91289f`: `2 created, 0 updated, 0 unchanged`, exit 0, tally read from the task's own log stream                                                                    |
+| `H3`              | `EN COURS`          | journey 5 green on dev under the sha gate; **pending proof is the two real holders activating their own accounts**                                                                    |
+| `H4`              | `PROUVE`            | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                                                               |
+| `A7`              | `PROUVE`            | inventory swept 2026-09-06, output in `docs/ops/a7-standards-inventory.md`: 6 findings (2 closed on sight), 7 classes clean, 2 defects in the sweep                                   |
+| `H2` follow-up 1  | `A DECIDER`         | `deploy-dev.yml` passes `--seed` to `run-migrations.js`, which never reads `process.argv`: the seed step has never seeded anything                                                    |
+| `H2` follow-up 2  | `A DECIDER`         | the bootstrap deploy step checks the exit code and never that the tally line appeared - the same gap the seed step has                                                                |
+| `H5`              | `PROUVE`            | journey 5's address guard was a detector, not a barrier: it reported and let the run continue into a real inbox. Moved to `beforeAll`                                                 |
+| `H6`              | `PROUVE`            | the same run's `afterAll` revoked a real administrator's role. Every write audited, role restored 16:05:26, guard made structural                                                     |
+| `H7`              | `PROUVE`            | nothing tested the bootstrap's role assignment - journey 5 granted it to itself. Decision extracted and covered, 11 tests, 3 mutations                                                |
+| `H8`              | `EN COURS`          | the bootstrap sent no email; a stray test made it look as though it had. Fixed and proven locally; pending the re-send to `contact@` on dev                                           |
+| `H8` follow-up    | `A DECIDER`         | per-address SES delivery is not observable: no configuration set, no event destination. Needed to answer "did THIS address receive it"                                                |
+| `H9`              | `PROUVE`            | the bootstrap's provenance check failed a whole deploy and skipped every later step. Postcondition scoped; step moved after the web deploy                                            |
+| `B1`              | `PROUVE`            | payment code audited against the design: 0 payments ever processed, no payment table, G3/G4 partly built, six of eight not started                                                    |
+| `A10`             | `PROUVE`            | the identity-review queue did not exist - the route and the role did. Queue route + `idSubmittedAt`; the back-office screen stays open                                                |
+| `A11`             | `PROUVE`            | 13 sites, 15 messages, 12 transactional. `sendUpdate` returns an outcome and throws on a transactional template                                                                       |
+| `A12`             | `PROUVE`            | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                                                         |
+| `R1`              | `EN COURS`          | **a merge can succeed and have no effect.** `#89` merged into a branch consumed 89 s earlier; `#88` was squash-merged, so nothing showed. Pending proof is the three commands in `R1` |
+| `G8`              | `ARRETE`            | **G11-G14 is not on develop and not deployed**: #89 merged into the G9 branch 89s after that branch merged to develop. 51 files stranded at `230b827`                                 |
+| `G8` blocker      | `A FAIRE`           | re-land `230b827` on develop (**not** conflict-free - see `R1`), deploy, then re-run G8. Until then dev emails every channel's coordinates to whoever clicks                          |
+| `G10`             | `PROUVE`            | applied and observed: 16 SecureString parameters none empty, task definition 143 with the three variables and no channel value, 0 AccessDenied                                        |
+| `G9`              | `PROUVE LOCALEMENT` | the client creates the payment, from their own purchase page. Creation writes its audit row; sending the instructions is a second act                                                 |
+| `G9` follow-up    | `A DECIDER`         | `PAYMENT_VALIDITY_DAYS` is 30 because a month is the shape of a diaspora transfer. The design gives no number - this one needs deciding                                               |
+| `G10` (webapp)    | `PROUVE`            | an absent channel prefix now fails the boot exactly as an empty parameter does; disabling is `PAYMENT_CHANNELS_TRANSPORT=disabled`                                                    |
+| `G10` (infra)     | `PLAN PRET`         | twelve parameters + the prefix into terraform. Plan run and shown, **nothing applied**. Correction-without-deploy proved on a running process                                         |     |
+| `G4`              | `PROUVE`            | the back office and its screen. Five defects only a real request could see; `db:seed` unbroken; deployed-dev pass deferred to `G8`                                                    |
+| `G4` follow-up    | `A DECIDER`         | `GetUploadUrlDto` is declared twice with different schemas (lands + kbs); the API logs `Duplicate DTO detected` on every boot                                                         |
+| `V1` follow-up    | `PROUVE`            | the commission lookup throws now but has never run: 0 sales completed, all 5 commissions seeded. Closed by inspection only                                                            |
+| `B2`              | `PROUVE`            | V1 inventory finished: WhatsApp preference reads nothing, `sendUpdate` skips indistinguishably and defaults off, `RedisService` unused                                                |
+| `B3`              | `PROUVE`            | 56 dev parameters against 0 on prd; only 7 injected as secrets, so 49 need an apply to take effect. One confirmed unread, the rest candidates                                         |
+| `B4`              | `PROUVE`            | 4 journeys: VERIFY does not exist; reactivation and block/unblock never run; 57 identity documents queued for a review that has never run                                             |
+| `G1`              | `EN COURS`          | payment model in `lands`: BigInt money, 9-state machine, append-only ledger and audit. Pending proof is G8, one payment end to end on dev                                             |
+| `G2`              | `PROUVE`            | the reference generator: 29-char derived alphabet, mod-29 check character, sequence-backed so collision-free by construction                                                          |
+| `G3`              | `PROUVE`            | the instruction and reminder messages, channel details from SSM at runtime, send-before-transition. Real email read out of a mailbox                                                  |
+| `G10b` (infra)    | `PLAN PRET`         | sixteen channel parameters; the twelve existing ones imported so `ignore_changes` bites on the first apply. **Apply before merging #88**                                              |
+| `G10b` follow-up  | `A DECIDER`         | `MOBILE_MONEY_OPERATOR/NUMBER/NAME` are required at startup and read by no channel. Drop from `FIELDS` in the webapp first, then from terraform                                       |
+| `G11-G14`         | `PROUVE LOCALEMENT` | six channels, the identification gate, A14's review screen, coordinates in the platform. Email carries none                                                                           |
+| `G11` follow-up   | `A DECIDER`         | infra owes `ORANGE_MONEY_*` and `MTN_MONEY_*`: v03 splits mobile money in two but keeps twelve parameters with one number                                                             |
+| `G11` follow-up 2 | `A DECIDER`         | v03 section 5's example uses a hyphen between reference and channel, which section 4b forbids. 4b implemented                                                                         |
+| `A18`             | `PROUVE LOCALEMENT` | queue counts and failed payloads on `/health/queues`, ADMIN_GLOBAL. `failed` 0->1 observed through the endpoint against a real Redis                                                  |
 | Entry             | State               | What it needs                                                                                                                                                                            |
 | ----------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
 | `L2`              | `EN COURS`          | one deployed log line carrying its interpolated metadata, quoted                                                                                                                         |
@@ -1076,6 +1126,130 @@ git merge-base --is-ancestor 230b827 origin/develop     ->  exit 0
 GET /health/version imageTag                            ->  equals develop's head
 "Payment channel details loaded"                        ->  perOperator: 4, not fields: 12
 ```
+
+### A18 - queue state observable from outside the VPC - `PROUVE LOCALEMENT`
+
+**Cost impact: None.** No new resource. Two routes on an existing controller and
+one service, reading queues that were already registered.
+
+`S9` proved that an unknown job lands on the failed set rather than vanishing -
+`failed=1, completed=0`. **That proof was taken locally.** On dev the same
+failure is invisible: BullMQ keeps its sets in ElastiCache on a private VPC
+endpoint, and `/health` reported `database-core`, `memory_heap`, `memory_rss`,
+`disk` and `database-kbs-exam-questions` - nothing about queues. A failure nobody
+can observe is a silent failure whatever the code guarantees.
+
+`GET /health/queues` returns `waiting`, `active`, `completed`, `failed`,
+`delayed` and `paused` per queue, plus `totalFailed`.
+`GET /health/queues/:name/failed` returns the failed jobs **with their payloads**.
+
+**Both are `@Roles(ADMIN_GLOBAL)`, unlike the three health routes beside them,
+which are `@Public()`.** Counts expose operational internals and the failed route
+exposes payloads that carry personal data - a notification job holds a
+recipient's address. `removeOnFailed: 200` already retained them; this reads them
+back.
+
+**One unreachable queue must not hide the others.** The four are read in
+parallel and a queue whose Redis call throws comes back named, with its error,
+rather than collapsing the response - which would turn "one queue is unreachable"
+into "queues are unobservable", the exact condition this ends. Such a queue
+contributes nothing to `totalFailed` rather than a reassuring zero, and the
+reader can see why.
+
+## The proof
+
+Against a real Redis, the real processor and the real endpoint - not a mock, and
+not a unit test.
+
+```
+BEFORE  {"queue":"kamnet","waiting":0,"active":0,"completed":0,"failed":0,…}  totalFailed: 0
+        enqueue kamnet.this-job-does-not-exist  ->  job id 1
+AFTER   {"queue":"kamnet","waiting":0,"active":0,"completed":0,"failed":1,…}  totalFailed: 1
+```
+
+and the failed set, read through the endpoint:
+
+```json
+{
+  "id": "1",
+  "name": "kamnet.this-job-does-not-exist",
+  "data": { "probe": "A18", "at": "2026-09-07T11:27:55.671Z" },
+  "failedReason": "Unknown KAMNET job: kamnet.this-job-does-not-exist",
+  "attemptsMade": 1,
+  "enqueuedAt": "2026-09-07T11:27:55.689Z",
+  "failedAt": "2026-09-07T11:27:55.766Z"
+}
+```
+
+**Local, not dev.** The brief asks for this on deployed dev; that needs this
+branch merged and deployed, and nothing is merged. The observation above is the
+same act through the same code path.
+
+## A false positive this created, and the sweep it tightened
+
+`route-guards.spec.ts` counted `@Public()` by splitting on the token anywhere in
+the file, after stripping comments. The new route's description **explains that
+the route is deliberately not public** - and that sentence, inside a string, was
+counted as a fourth public route on the health controller. The sweep reported the
+words "this is not public" as a public route.
+
+Comments could be stripped; strings cannot, because a decorator and a mention are
+the same characters. What separates them is **position**: a decorator opens its
+own line. `publicCount` now matches `/^[ \t]*@Public\(\)/gm`. Proved still
+sharp by adding a real `@Public()` to the new route - expected 3, received 4 -
+and removing it again.
+
+---
+
+### G8 - second attempt, stopped again at Part 0 - `ARRETE`
+
+**The re-land did not happen.** The brief said PR `#89` had been re-landed on
+develop and asked me to verify rather than take it on report. Verifying is what
+found it.
+
+| Check                                                         | Result                                                                      |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `git merge-base --is-ancestor 230b827 origin/develop`         | **NO**                                                                      |
+| `origin/develop:libs/common/src/payments/payment-channels.ts` | **absent**                                                                  |
+| `send-instructions` routes on develop                         | **0**                                                                       |
+| A new PR carrying the work                                    | **none** - open PRs: none; merged since `#89`: only `#90`, my own G8 report |
+| develop head                                                  | `fab3f1d` = `#90`, on top of `f40974b` = `#88`                              |
+
+`#90` - the document _describing_ this problem - was merged at 11:17:50Z. **The
+record landed; the work did not.** The only `#89` merge is still the original one
+into the dead branch at 10:01:10Z.
+
+## Part 0, every check, as facts
+
+Each one fails, and they all fail the same way.
+
+| Check                                                | Evidence                                                                                                                                                     |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Served sha matches develop's head                    | `imageTag: sha-f40974b` vs develop `fab3f1d` - **they no longer match either**, because `#90` merged after the last deploy. The deployed code is still `#88` |
+| `POST /lands/client/payments/{id}/instructions` gone | **Still present.** The v02 send is live: a client's click emails every channel's coordinates                                                                 |
+| Deployed receipt DTO accepts `OMO`/`MOMO`            | enum is `["VIREMENT","MOBILE_MONEY","ESPECES","ACTE_NOTARIE","INCONNU_HISTORIQUE"]` - **`OMO` no, `MOMO` no**                                                |
+| Channel service reports `perOperator`                | `Payment channel details loaded {"prefix":"…","fields":12}` - **the old line**; the deploy did not carry it                                                  |
+| `send-instructions` / request-queue routes           | **absent from the deployed API**                                                                                                                             |
+
+The running task is unchanged from the previous attempt - same `startedAt`
+`10:07:30.982Z`.
+
+## Parts 2 and 3 - not run
+
+Part 2 for the same reason as before: every step depends on undeployed code, and
+running it would mean deploying the missing work first, which is stepping around
+the defect to obtain the proof.
+
+Part 3 is now unblocked _in principle_ - `A18` makes the failed set readable - but
+still needs `A18` itself deployed, and half 1 marks a parcel `SOLD` while half 2
+needs a deliberately broken agent lookup on shared dev. Half an answer to a
+question asked as a pair settles nothing, so neither half was run.
+
+## What unblocks G8, unchanged
+
+Branch from `230b827`, PR to develop, merge - `git merge-tree` still reports
+**zero conflicts**. Deploy. Then re-run. Until then dev sends full bank
+coordinates to any client who clicks.
 
 ---
 
