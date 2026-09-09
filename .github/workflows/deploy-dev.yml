@@ -45,10 +45,30 @@ concurrency:
   group: deploy-dev
   cancel-in-progress: false
 
+# ------------------------------------------------------------------------------
+# WHERE THIS RUNS
+#
+# `runs-on` reads ONE repository variable, `CI_RUNNER_LABELS`, holding a JSON
+# array of runner labels. Every job in every workflow uses the same expression,
+# so the target lives in a single place outside the code.
+#
+#   set    ["self-hosted","macOS","ARM64","kambriq-ci"]   -> Visquis's Mac
+#   unset  (or delete the variable)                       -> ubuntu-latest
+#
+# The `|| '["ubuntu-latest"]'` fallback is the point: an unset variable returns
+# to GitHub-hosted runners rather than producing an empty `runs-on`, which is a
+# job that fails for a reason nobody can read. October's reversal is deleting
+# one variable in the repository settings - no PR, no code change, no rebuild.
+# ------------------------------------------------------------------------------
 jobs:
   deploy:
     name: Deploy to dev
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    # 575s measured. Generous because most of it is two ECS rollouts, which are
+    # AWS's clock, not ours - but far short of the 360-minute default, where a
+    # deploy wedged on a rollout that never completes would burn 18% of the
+    # month before anyone looked.
+    timeout-minutes: 20
     environment: dev
     permissions:
       id-token: write

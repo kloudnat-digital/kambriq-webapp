@@ -964,6 +964,80 @@ every expectation — the object it targeted did go away.
 
 ---
 
+### The runner's architecture is a build input, and nothing in the file says so
+
+Found 2026-09-07, moving CI onto a self-hosted Apple Silicon runner.
+
+`docker/build-push-action` with no `platforms:` builds for **whatever the runner
+is**. On `ubuntu-latest` that is amd64, which is what Fargate needs — so three
+workflows were correct for two years by accident, and the thing making them
+correct was written down nowhere.
+
+Point the same file at an ARM64 Mac and every image becomes arm64. Nothing in
+the build fails. Nothing in the push fails. ECS accepts the task definition. The
+task then stops with an exec-format error minutes later, in a place that reads
+like a defect in the application rather than in the pipeline.
+
+**The rule: pin `platforms: linux/amd64` explicitly, then assert the pushed
+manifest against the registry.** Both halves. The flag says what was asked for;
+only the registry says what arrived, and they are different claims.
+
+Reading the architecture back is its own trap: a single-platform push returns a
+v2 image manifest with **no `.manifests` array and no top-level
+`.architecture`** — the platform lives in the config blob the manifest points
+at. `docker manifest inspect | jq .architecture` therefore yields null for every
+correctly built image, and an assertion built on it refuses everything. That
+fails closed, which is the right direction, but a gate that refuses everything
+proves nothing about what it lets through. `--verbose` returns the resolved
+descriptor. Prove such a gate discriminates before trusting it: feed it a known
+arm64 image and watch it refuse.
+
+The general shape, which is [the same as the merge-tree grep](#a-fallback-pipeline-is-a-second-implementation-and-it-rots-quietly):
+**a property that held because of the environment, not because anything asserted
+it, is a property you do not have.** It survives exactly until the environment
+changes.
+
+---
+
+### CI is billed per job, rounded up — so four fast jobs cost more than one slow one
+
+Measured 2026-09-07, moving back to hosted runners under a spending cap.
+
+The `quality` matrix ran lint, typecheck, typecheck:web and test in parallel:
+47s, 58s, 58s, 118s. Wall clock 118 seconds, which reads like an efficient
+pipeline. **Billed: 1+1+1+2 = five minutes**, because GitHub rounds each job up
+to the minute and charges per job.
+
+Of those 4m22s of machine time, **102 seconds was the actual checking**. The
+rest was four checkouts, four `setup-node`s and four `pnpm install`s — the same
+40 seconds of setup, paid four times, to save 24 seconds of waiting.
+
+**The rule: parallelism is bought, not free, and the price is one rounded-up
+minute of setup per job.** Split jobs when someone is genuinely waiting on the
+wall clock; merge them when they are only waiting on the bill.
+
+Both directions of that trade are in this repository, and the numbers decide
+each one:
+
+- the quality matrix **merged**: two billed minutes saved for 24 seconds of
+  extra waiting
+- the two image builds **kept parallel**: one billed minute would be saved for
+  two and a half minutes added to every deploy
+
+The same rounding makes `timeout-minutes` a cost control rather than a
+formality. The default is **360 minutes**; one job hung on a network read burns
+18% of a monthly quota before anyone opens the tab.
+
+And measure the levers rather than assuming them. `nx affected` sounds like it
+halves the bill; here it skips everything on a docs or workflow PR and skips
+**nothing** on a normal one, because `libs/common` is a dependency of both apps
+so any change to it affects every project. A saving that only applies to the
+cheap case is still worth having — but it is not the saving it looks like, and
+[an optimisation reported by intention rather than measurement is worth
+nothing](#the-runners-architecture-is-a-build-input-and-nothing-in-the-file-says-so).
+
+---
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope
