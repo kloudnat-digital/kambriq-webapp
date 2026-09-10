@@ -70,28 +70,52 @@ const ROUTES = [
  * The shipped matcher lists both forms anyway; this models Next's behaviour
  * rather than relying on it.
  */
-const compile = (pattern: string): RegExp => {
+const compile = (pattern: string): RegExp | null => {
   if (/:[A-Za-z]+\*$/.test(pattern)) {
     const base = pattern.replace(/\/:[A-Za-z]+\*$/, '');
     return new RegExp(`^${base}(?:/.*)?$`);
   }
-  if (pattern.includes(':') || pattern.includes('(')) {
-    throw new Error(
-      `middleware-matcher.spec cannot model the pattern "${pattern}". Teach it the shape ` +
-        `rather than letting it guess: a compiler that mis-reads a pattern reports a ` +
-        `protected route as covered.`,
-    );
-  }
+  if (pattern.includes(':') || pattern.includes('(')) return null;
   return new RegExp(`^${pattern}$`);
 };
 
-const MATCHERS = (config.matcher as string[]).map(compile);
+const PATTERNS = config.matcher as string[];
+
+/**
+ * Patterns this file cannot model, named rather than guessed at.
+ *
+ * `compile` returns `null` instead of throwing, and the throw used to be at
+ * module scope. Restoring the old catch-all matcher as a mutation therefore
+ * **crashed the suite before a single test ran** - `Tests: 0 total` - which is
+ * the repository's own rule that if a mutation makes the suite fail to build,
+ * the mutation has not been run yet. A crash is not a failing assertion: it
+ * reports that this file is broken, not that the matcher is wrong.
+ *
+ * Now an unmodellable pattern fails one named test with a readable message,
+ * and every other assertion still executes and reports on its own.
+ */
+const UNMODELLABLE = PATTERNS.filter((p) => compile(p) === null);
+
+const MATCHERS = PATTERNS.map(compile).filter((re): re is RegExp => re !== null);
 const isMatched = (pathname: string) => MATCHERS.some((re) => re.test(pathname));
 
 /** A concrete URL for a dynamic route, so the matcher sees a real path. */
 const concrete = (route: string) => route.replace(/\[\.\.\.[^\]]+\]|\[[^\]]+\]/g, 'x');
 
 describe('P3 - the middleware matcher covers every protected route', () => {
+  it('every matcher pattern is one this file can model', () => {
+    /**
+     * The guard on the guard. A pattern this file cannot model is excluded from
+     * `MATCHERS`, which would make every "is it matched" assertion below answer
+     * from an incomplete picture - a protected route could read as covered by
+     * a pattern that was silently dropped.
+     *
+     * This is also the test that catches the old catch-all coming back: a
+     * negative lookahead is not a shape this models, on purpose.
+     */
+    expect(UNMODELLABLE).toEqual([]);
+  });
+
   it('is reading the routes it thinks it is', () => {
     // A walk that found nothing would make every assertion below vacuous.
     expect(ROUTES.length).toBeGreaterThan(50);

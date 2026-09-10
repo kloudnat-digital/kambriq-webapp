@@ -212,6 +212,11 @@ listed here first.
 | `G7`              | `PROUVE LOCALEMENT` | `evidenceReceiptId` filled end to end; NULL deliberate and documented for the other states; the single write path to `Payment.state` pinned, mutation red                                |
 | `G5`              | `PROUVE LOCALEMENT` | a correction entered from the back-office screen: three movements, total 500 000 over four lines, original line unchanged. Correction carries its own reason and author                  |
 | `G11` follow-up 3 | `PROUVE`            | the controller never forwarded `paidBy`: a DEPO keyed on the screen was refused by the service. Fixed and pinned here                                                                    |
+| `P3`              | `PROUVE LOCALEMENT` | the auth middleware was a global net: every unknown URL redirected to /login and nothing could 404. Positive matcher, real 404 page, route table proved unchanged                        |
+| `P4`              | `PROUVE LOCALEMENT` | X-Robots-Tag noindex outside production, on the existing headers() block. Reads APP_ENV: NODE_ENV is 'production' on every environment and cannot tell them apart                        |
+| `P5`              | `A FAIRE`           | public product pages link at /kamnet/apply and /kbs/enroll, both behind the login wall. Kept protected by P3 deliberately: widening is a product change                                  |
+| rename            | `A DECIDER`         | `L1-contact`/`L2-contact` -> `P1`/`P2` was asked for in P3's brief; those ids exist only on PR #98's branch, which the same brief puts out of scope. Not done - see PR                   |
+| `A19`             | `PROUVE`            | develop linted 1 project of 6 for seven months: the workflow promised "the full set", `pnpm run lint` was `nx lint api`. Widened to `nx run-many -t lint --all`; manifest corrected; proved in both directions                                  |
 
 **Cost impact: None.** No resource, no dependency, no runtime change.
 
@@ -1146,6 +1151,190 @@ than by inspecting the code. Both messages now format their dates.
 ## Gate - LOCAL ONLY
 
 As `L1-contact`'s.
+
+### P3 - the auth middleware was a global net, and nothing could 404 - `PROUVE LOCALEMENT`
+
+**Cost impact: None.** No resource, no dependency. One matcher, one page, one
+header on a `headers()` block that already existed.
+
+## The premise, measured before anything was built
+
+Every claim in the 9 September audit holds. Probed against the running app on
+`develop`:
+
+```
+/zzz-does-not-exist  307 -> /login?callbackUrl=%2Fzzz-does-not-exist
+/pricing             307 -> /login?callbackUrl=%2Fpricing
+/tarifs              307 -> /login?callbackUrl=%2Ftarifs
+/robots.txt          307 -> /login?callbackUrl=%2Frobots.txt
+/sitemap.xml         307 -> /login?callbackUrl=%2Fsitemap.xml
+/contact             200
+/api/does-not-exist  404      <- the only path on the site that could 404
+```
+
+The matcher was a single **negative** pattern - everything except `api`,
+`health`, `_next` and a handful of static files. So the middleware ran on every
+URL the site does not serve, found it was not in `PUBLIC_PATHS`, and sent it to
+the login page.
+
+**Two things the audit's wording got slightly wrong, and one is a real
+distinction.**
+
+1. **There is no 404 page in this repository, and never has been.** The audit
+   says one "already exists and is reachable only under `/api/*`". What answers
+   there is Next's **built-in default** - the bare "404: This page could not be
+   found." - which is reachable on the paths the matcher happened to exclude.
+   There is no `not-found.tsx` in the history of the app. The distinction
+   matters because "make the existing page reachable" and "write one" are
+   different jobs.
+2. **`callbackUrl` is never consumed.** `logInAction` calls
+   `signIn(..., { redirectTo: '/' })`, a hard-coded literal. Four places write
+   the parameter - the middleware twice, `account/page.tsx`,
+   `lib/api/server.ts` - and **none reads it**. So there is no open redirect on
+   this site today; the parameter is decorative. See P3's note below on why it
+   is constrained anyway.
+
+## A positive matcher, derived from the routes rather than remembered
+
+The matcher is now a list of protected prefixes plus the three public paths
+that send a signed-in user onward (`/`, `/login`, `/register` -
+`REDIRECT_WHEN_AUTHED`; dropping those would have left signed-in users looking
+at the marketing page, which is the kind of thing a narrowing quietly breaks).
+
+**A negative matcher answers "what is not excluded"**, which is unbounded and
+grows with every public page added. A positive one is a list somebody can read.
+
+**Narrowing a gate is the dangerous direction**, so the list is not trusted.
+`middleware-matcher.spec.ts` walks `src/app`, computes the URL of all 70 routes
+on disk, and fails if any route `isPublic()` refuses is not matched. The full
+table is printed by the suite and pasted in the PR: **50 routes protected before
+and 50 after, and no route changed side.**
+
+`/kamnet/apply` and `/kbs/enroll` stay behind the login wall deliberately, even
+though public product pages link straight at them. That is a real defect and it
+is **P5's**. Widening the gate here would have been that product change, made by
+accident, with no test describing it.
+
+## The 404
+
+A real page: HTTP 404 (Next gives it for `not-found.tsx`), a message, and named
+links back into the site rather than "go back" - somebody who arrived on a dead
+link has nowhere useful to go back to.
+
+**The tests assert the status code, not the copy.** A page saying "not found"
+over a 200 is a soft 404: a crawler indexes it, a monitor calls the site
+healthy, and every broken URL stops being countable. That is a worse defect than
+the redirect, so it is the thing pinned.
+
+## P4 - `NODE_ENV` could not have answered this, and that was the trap
+
+`docker/Dockerfile.web` sets `ENV NODE_ENV=production` on the runtime image
+**unconditionally, for every environment**, because that is what a Next.js
+production build runs as. dev.kambriq.com therefore reports
+`NODE_ENV === 'production'` exactly as prd would.
+
+A `NODE_ENV !== 'production'` check would have put the header on nothing that is
+actually deployed. The dev site would have stayed indexable, the suite would
+have been green, and the chantier would have reported success having changed
+nothing. It is this repository's recurring shape: **a check reading a value that
+cannot distinguish the two cases it is asked about.**
+
+There was no environment discriminator in the web app at all. `APP_ENV` is
+introduced for this one decision, and read by nothing else.
+
+**Absent means noindex.** The two failure modes are not symmetrical: if prd
+forgets to declare itself it carries `noindex`, which is visible the first time
+anybody opens Search Console and is fixed by setting one variable; if the
+default ran the other way and dev forgot, dev is indexed under the brand name -
+the defect being fixed - invisible until somebody searches, and weeks to unpick.
+
+**This has a cost and it is named: prd must set `APP_ENV=production` when it is
+first built.** prd has never been deployed. The follow-up below is for
+`docs/adr/ADR-005-production-automation-prerequisites.md`.
+
+The header joins `next.config.ts`'s existing `headers()` block rather than
+becoming a second mechanism. That block already matches every path and -
+measured - already applies to 404 responses, which is where a noindex header
+most needs to reach. A middleware header could not have done it after P3: the
+matcher now runs on protected prefixes only, so it never sees the public pages.
+
+## `callbackUrl`, constrained although nothing reads it
+
+`safeCallbackUrl` reduces a value to an internal path or gives up. It refuses
+absolute URLs, protocol-relative `//host`, backslash variants that browsers
+normalise, `javascript:`/`data:`, anything without a leading slash, and control
+characters that browsers strip before parsing.
+
+It exists **now** rather than after somebody wires the read, because the obvious
+way to make the parameter work is `redirectTo: searchParams.callbackUrl`, and
+written that way it is a textbook open redirect immediately after somebody types
+a password. The guard sits at all four write sites and is exported so whoever
+wires the read finds it already there.
+
+## Proof
+
+Over real HTTP, against the running app after the change:
+
+```
+PATH                      STATUS  LOCATION                        X-Robots-Tag
+/zzz-does-not-exist       404                                     noindex, nofollow
+/pricing                  404                                     noindex, nofollow
+/tarifs                   404                                     noindex, nofollow
+/robots.txt               404                                     noindex, nofollow
+/sitemap.xml              404                                     noindex, nofollow
+/contact                  200                                     noindex, nofollow
+/mylands                  307     /login?callbackUrl=%2Fmylands   noindex, nofollow
+/kamnet/apply             307     /login?callbackUrl=%2Fkamnet%2F noindex, nofollow
+/admin/payments           307     /login?callbackUrl=%2Fadmin%2F  noindex, nofollow
+```
+
+And with `APP_ENV=production`, the same server:
+
+```
+/                    status=200  x-robots-tag=<ABSENT>
+/contact             status=200  x-robots-tag=<ABSENT>
+/zzz-does-not-exist  status=404  x-robots-tag=<ABSENT>
+/mylands             status=307  x-robots-tag=<ABSENT>
+```
+
+The four pre-existing security headers are still present in both cases.
+
+Mutations, each run and reverted:
+
+| Mutation                                | Went red                     | Result                   |
+| --------------------------------------- | ---------------------------- | ------------------------ |
+| the catch-all negative matcher restored | `middleware-matcher.spec.ts` | **8 failed**, 2 passed   |
+| the noindex header forced on always     | `lib/seo/robots.spec.ts`     | **4 failed**, 13 passed  |
+| the `callbackUrl` constraint removed    | `callback-url.spec.ts`       | **14 failed**, 10 passed |
+
+**The first mutation found a defect in its own test.** It initially made the
+suite **fail to run** - `Tests: 0 total` - because the matcher compiler threw at
+module scope on a pattern it could not model. That is the repository's own rule
+that a mutation which breaks the build has not been run: a crash reports that
+the test file is broken, not that the matcher is wrong, and none of the eight
+assertions that matter ever executed. The compiler now returns `null`, one named
+test asserts the list of unmodellable patterns is empty, and the mutation fails
+eight tests with readable messages.
+
+## Follow-ups
+
+- **prd must set `APP_ENV=production`** at build time, on the ADR-005 bootstrap
+  checklist. Until it does, a prd deployment would carry `noindex`.
+- **`/kamnet/apply` and `/kbs/enroll` are public calls to action behind a login
+  wall.** P5.
+- **The register's `L1-contact` / `L2-contact` rename to `P1` / `P2` was asked
+  for and not done here.** Those identifiers exist only on
+  `feat/l1-contact-lead-pipeline` (PR #98, 8 occurrences in this file), and the
+  same brief puts that branch out of scope. Doing it would mean editing another
+  open PR's branch. Named rather than resolved; see the PR body for the command.
+
+## Gate - LOCAL ONLY
+
+`nx test api`, `nx test common`, `nx test web`, both typechecks, both lints, and
+the Playwright spec run against a local server (16 passed). **No CI run has
+confirmed any of it** - the Actions quota is exhausted and jobs do not start.
+CI still has to run the three unit suites and the e2e suite on a clean runner,
+and build the web image with the new page.
 
 ---
 

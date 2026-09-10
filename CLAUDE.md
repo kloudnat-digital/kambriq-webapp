@@ -1204,6 +1204,98 @@ own**, so the boundary between them was covered from neither side.
 code.** And when a test mocks a module, ask what proves that module - the answer
 is a file, and if it does not exist the mock is a hole rather than a boundary.
 
+### A negative matcher is a list of what somebody remembered to exclude
+
+From `P3`. The auth middleware matched
+`/((?!api|health|_next/static|...).*)` - everything except a hand-written list.
+So it ran on every URL the site does not serve, decided each was not public, and
+redirected it to `/login?callbackUrl=...`. `/pricing`, `/tarifs`, `/robots.txt`
+and every typo answered `307`, and **the only path on the whole site that could
+return a 404 was under `/api/*`**, because that happened to be excluded.
+
+A negative matcher answers "what is not excluded". That set is unbounded, grows
+silently with every public page anybody adds, and cannot be checked by reading
+it. A positive one - the prefixes that are actually protected - is a list a
+person can audit, and it makes the dangerous direction the visible one.
+
+**Narrowing a gate is where this goes wrong**, so the list is not trusted: a
+test walks the route files, computes every URL, and fails if anything
+`isPublic()` refuses is no longer matched. The failure names the route.
+
+### A page that says "not found" over a 200 is worse than the redirect
+
+Also `P3`. The obvious way to check a 404 is to look at the page, and it is the
+one check that cannot see the defect: a soft 404 renders the right words, and a
+crawler indexes it, a monitor reports the site healthy, and broken URLs stop
+being countable.
+
+**Assert the status code.** `page.goto` follows redirects, so an HTTP-level
+assertion needs the raw request client - otherwise a 307 to a 200 login page
+reads as success.
+
+### `NODE_ENV` cannot tell dev from prd in this repository
+
+From `P4`, and it is the trap that chantier existed to walk into.
+`docker/Dockerfile.web` sets `ENV NODE_ENV=production` on the runtime image
+**unconditionally, for every environment**, because that is what a Next.js
+production build runs as. dev.kambriq.com reports `NODE_ENV === 'production'`
+exactly as prd would.
+
+A `NODE_ENV !== 'production'` check therefore puts nothing on anything that is
+actually deployed, while every local test agrees it works. `APP_ENV` exists for
+this one decision and is read by nothing else. Deriving it from the hostname or
+from `NEXT_PUBLIC_APP_URL` would be the same mistake wearing a different value.
+
+**And the default is a decision with a direction.** Absent means noindex,
+because the two failures are not symmetrical: a prd that forgot to declare
+itself is visible in Search Console within a day and fixed by one variable, and
+a dev that forgot is indexed under the brand name, invisible until somebody
+searches, and weeks to unpick.
+
+### A guard written before anything can use it
+
+`callbackUrl` is written in four places in this app and **read in none**:
+`logInAction` passes a hard-coded `redirectTo: '/'`. There is no open redirect
+today, and the parameter is decorative.
+
+It is one line from not being. The natural way to make it work is
+`redirectTo: searchParams.callbackUrl`, and written that way it sends somebody
+to another origin immediately after they type a password. So the constraint
+exists now, at every write site, exported so whoever wires the read finds it
+sitting next to what they are about to use.
+
+**A guard is cheapest to write while nothing depends on the hole it closes.**
+
+### A check that never runs looks exactly like a check that passes
+
+From `A19`, and it had been true for seven months.
+
+`ci.yml` says, in as many words, that a push to develop runs *"the full set, no
+base to diff against"*. The command it called was `pnpm run lint`, and that
+script was `nx lint api` - **one project of six**. So develop linted the API and
+nothing else, and `libs/common` carried two real dependency errors the whole
+time: `ioredis` and `@jest/globals` imported and undeclared.
+
+Nothing was failing. Nothing was running. The two are indistinguishable from
+outside, and the green tick is the same shape either way - which is why this
+survived every glance at the pipeline.
+
+It surfaced only because `#98` was the first pull request in months to touch
+`libs/common`, and a **pull request** lints what it affects rather than what the
+root script names. The defect was found by a branch that had nothing to do with
+it, which is the usual way.
+
+**The rule: when a check is widened, reintroduce the defect and watch the new
+command fail where the old one passed.** Both directions, because "it is green
+now" is compatible with "it still checks nothing". Proved here:
+`nx lint api` succeeds against the reintroduced defect and
+`nx run-many -t lint --all` fails naming both errors.
+
+And the corollary, which is the cheaper habit: **a comment that describes what a
+command covers is a claim, and it rots silently.** This one was wrong for seven
+months and read as documentation the entire time. If a comment says "the full
+set", something has to make that true.
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope
@@ -1571,15 +1663,16 @@ ALB, RDS and ElastiCache — all load-bearing.
 
 ## 7. Where things are
 
-| Thing                     | Path                                                              |
-| ------------------------- | ----------------------------------------------------------------- |
-| The delivery journeys     | `apps/api-e2e/src/journeys/` — `pnpm test:journeys`               |
-| Convention guards         | `apps/api/src/__test__/conventions/`                              |
-| The database-backed suite | `apps/api/src/__test__/database/` — `pnpm test:db`                |
-| Seed and its data         | `prisma/seed.ts`, `prisma/seed-data/`                             |
-| Envelope contract         | `libs/common/src/__test__/interceptors/envelope-contract.spec.ts` |
-| Deployed build identity   | `GET /api/v1/health/version`                                      |
-| The chantier register     | `docs/ops/registre-chantiers.md`                                  |
+| Thing                     | Path                                                               |
+| ------------------------- | ------------------------------------------------------------------ |
+| The delivery journeys     | `apps/api-e2e/src/journeys/` — `pnpm test:journeys`                |
+| Convention guards         | `apps/api/src/__test__/conventions/`                               |
+| The database-backed suite | `apps/api/src/__test__/database/` — `pnpm test:db`                 |
+| The route table           | `apps/web/src/middleware-matcher.spec.ts` — prints it on every run |
+| Seed and its data         | `prisma/seed.ts`, `prisma/seed-data/`                              |
+| Envelope contract         | `libs/common/src/__test__/interceptors/envelope-contract.spec.ts`  |
+| Deployed build identity   | `GET /api/v1/health/version`                                       |
+| The chantier register     | `docs/ops/registre-chantiers.md`                                   |
 
 Run against dev with `KAMBRIQ_API_URL`; enforce the gate with `EXPECTED_SHA`.
 
