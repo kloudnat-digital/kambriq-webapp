@@ -68,6 +68,15 @@
         "jestConfig": "apps/api/jest.config.cts",
         "passWithNoTests": true
       }
+    },
+    "test-db": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/apps/api-db"],
+      "options": {
+        "jestConfig": "apps/api/jest.database.config.cts",
+        "passWithNoTests": false,
+        "runInBand": true
+      }
     }
   }
 }

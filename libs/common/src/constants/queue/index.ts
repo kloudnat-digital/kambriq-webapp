@@ -31,6 +31,19 @@ export const KBS_JOBS = {
 export const CORE_JOBS = {
   CLEANUP_EXPIRED_TOKENS: 'core.cleanup-expired-tokens',
   PURGE_DELETED_USERS: 'core.purge-deleted-users',
+  /**
+   * L2 - the daily contact-request digest.
+   *
+   * **On `QUEUES.CORE`, deliberately, and handled by the processor that is
+   * already there.** A new `@Processor(QUEUES.CORE)` class would be a second
+   * worker on one queue, and BullMQ gives a job to exactly one of them - which
+   * is how G6's dunning processor silently ate a payment reminder. So this is a
+   * new job *name* in `CoreCleanupProcessor`'s switch, not a new processor, and
+   * `one-processor-per-queue.spec.ts` is what keeps it that way.
+   *
+   * No new infrastructure: the queue, the Redis and the scheduler all exist.
+   */
+  CONTACT_DIGEST: 'core.contact-digest',
 } as const;
 
 export const NOTIFICATIONS_JOBS = {

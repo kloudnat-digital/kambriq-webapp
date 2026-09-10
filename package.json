@@ -30,6 +30,8 @@
     "test:cov": "npx nx run-many -t test --projects=api,common,web --coverage",
     "test:cov:api": "npx nx test api --coverage",
     "test:cov:common": "npx nx test common --coverage",
+    "test:db": "docker compose -f docker/docker-compose.yml up -d --wait db && npx nx run api:test-db",
+    "test:db:reset": "docker compose -f docker/docker-compose.yml up -d --wait db && KAMBRIQ_DB_TEST_RESET=1 npx nx run api:test-db",
     "----- DATABASE -----": "",
     "db:generate:core": "npx prisma generate --schema prisma/core/schema.prisma",
     "db:generate:kbs": "npx prisma generate --schema prisma/kbs/schema.prisma",

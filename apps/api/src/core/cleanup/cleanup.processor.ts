@@ -3,12 +3,16 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { CORE_JOBS, QUEUES } from '@kambriq/common';
 import { CorePrismaService } from '../prisma/core-prisma.service';
+import { ContactService } from '../contact/contact.service';
 
 @Processor(QUEUES.CORE)
 export class CoreCleanupProcessor extends WorkerHost {
   private readonly logger = new Logger(CoreCleanupProcessor.name);
 
-  constructor(private readonly prisma: CorePrismaService) {
+  constructor(
+    private readonly prisma: CorePrismaService,
+    private readonly contact: ContactService,
+  ) {
     super();
   }
 
@@ -28,6 +32,20 @@ export class CoreCleanupProcessor extends WorkerHost {
         return this.handleCleanupExpiredTokens();
       case CORE_JOBS.PURGE_DELETED_USERS:
         return this.handlePurgeDeletedUsers();
+      /**
+       * L2 - a case in this switch rather than a processor of its own.
+       *
+       * A second `@Processor(QUEUES.CORE)` would be a second worker on one
+       * queue, and BullMQ hands a job to exactly one of them - so whichever won
+       * a token-cleanup job would run its own switch, not find the name, and
+       * (before this file threw) discard it. That is precisely the defect G6
+       * introduced and `one-processor-per-queue.spec.ts` now forbids.
+       *
+       * It deliberately does not catch: `sendDailyDigest` throws when it has
+       * nowhere to send, and that belongs on the failed set.
+       */
+      case CORE_JOBS.CONTACT_DIGEST:
+        return this.contact.sendDailyDigest();
       default:
         throw new Error(`Unknown CORE job: ${job.name}`);
     }

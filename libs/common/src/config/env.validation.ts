@@ -104,6 +104,39 @@ export const envSchema = z.object({
   /** G6 - the dunning sweep's cron pattern. Daily at 06:00 UTC by default. */
   DUNNING_SWEEP_CRON: z.string().default('0 6 * * *'),
 
+  // ----- L1: where an inbound contact request is announced -----
+  //
+  // The back-office mailbox that receives the "a request arrived" notification
+  // and the daily digest. **No default, and deliberately not a real address in
+  // this repository**: it is supplied per environment from SSM through the task
+  // definition, like every other identity (see BOOTSTRAP_SSM_PREFIX).
+  //
+  // Optional here rather than required, and that is a decision with a cost.
+  // Required would refuse to boot an API that cannot announce a lead - the
+  // loudest option - and would also take the deployed API down on the next
+  // release, before kambriq-infra has added the parameter, for a form that is
+  // strictly better than the one it replaces. So: optional, and
+  // `ContactService` logs at `error` and names this variable when it is absent,
+  // rather than skipping quietly. The request is still persisted, and the daily
+  // digest FAILS LOUDLY onto the queue's failed set rather than resolving.
+  //
+  // Registre: L1 follow-up, for infra to add /kambriq/{env}/api/CONTACT_INBOX_EMAIL.
+  CONTACT_INBOX_EMAIL: z.email().optional(),
+
+  /**
+   * L2 - when the daily contact digest runs. 07:00 UTC, before the working day
+   * in Douala (08:00 WAT), so an overnight request is on somebody's screen when
+   * they sit down.
+   */
+  CONTACT_DIGEST_CRON: z.string().default('0 7 * * *'),
+
+  /**
+   * The language the back office is written to in. Its own setting rather than
+   * the prospect's locale: the notification and the digest are read by the
+   * team, and the acknowledgement is read by the prospect.
+   */
+  CONTACT_BACKOFFICE_LOCALE: z.enum(['en', 'fr']).default('fr'),
+
   // ----- SES Contact Lists -----
   // Must match the aws_sesv2_contact_list resource in kambriq-infra
   // (envs/dev/ses-newsletter.tf). Coupled by convention only.

@@ -55,6 +55,15 @@ export const mockCorePrisma = () => ({
     update: fn(),
     updateMany: fn(),
   },
+  /** L1 - the inbound contact request. */
+  contactRequest: {
+    create: fn(),
+    findUnique: fn(),
+    findFirst: fn(),
+    findMany: fn(),
+    count: fn(),
+    update: fn(),
+  },
   $transaction: jest.fn((args: Promise<unknown>[] | ((client: unknown) => Promise<unknown>)) =>
     Array.isArray(args) ? Promise.all(args) : args(mockCorePrisma()),
   ),

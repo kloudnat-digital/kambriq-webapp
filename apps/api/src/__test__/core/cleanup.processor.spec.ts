@@ -16,6 +16,7 @@ const makeJob = (name: string) => ({ name, data: {} }) as unknown as Job;
 
 describe('CoreCleanupProcessor: unknown job names', () => {
   let processor: CoreCleanupProcessor;
+  let contact: { sendDailyDigest: jest.Mock };
   let prisma: {
     refreshToken: { deleteMany: jest.Mock };
     verificationToken: { deleteMany: jest.Mock };
@@ -28,7 +29,11 @@ describe('CoreCleanupProcessor: unknown job names', () => {
       verificationToken: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       user: { findMany: jest.fn().mockResolvedValue([]), deleteMany: jest.fn() },
     };
-    processor = new CoreCleanupProcessor(prisma as never);
+    // L2 put the contact digest on this processor's switch rather than on a
+    // second `@Processor(QUEUES.CORE)`. Its own behaviour is covered in
+    // `contact.service.spec.ts`; here it only has to be injectable.
+    contact = { sendDailyDigest: jest.fn().mockResolvedValue({ count: 0, pending: 0 }) };
+    processor = new CoreCleanupProcessor(prisma as never, contact as never);
     jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
   });

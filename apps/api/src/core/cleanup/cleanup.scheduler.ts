@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
+import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 import { CORE_JOBS, QUEUES } from '@kambriq/common';
 
@@ -9,11 +10,13 @@ export class CleanupScheduler implements OnModuleInit {
 
   constructor(
     @InjectQueue(QUEUES.CORE) private readonly coreQueue: Queue,
+    private readonly config: ConfigService,
   ) {}
 
   async onModuleInit() {
     await this.scheduleTokenCleanup();
     await this.scheduleUserPurge();
+    await this.scheduleContactDigest();
   }
 
   private async scheduleTokenCleanup() {
@@ -42,5 +45,38 @@ export class CleanupScheduler implements OnModuleInit {
       },
     );
     this.logger.log('User purge cron scheduled (daily 04:00 UTC)');
+  }
+
+  /**
+   * L2 - the daily contact digest.
+   *
+   * On the queue that already exists, handled by the processor that already
+   * owns it. **No second `@Processor(QUEUES.CORE)`**: BullMQ gives a job to one
+   * worker, and a second one on the same queue is how G6 silently ate a payment
+   * reminder. No new queue either - nothing here provisions infrastructure.
+   */
+  private async scheduleContactDigest() {
+    const pattern = this.config.get<string>('CONTACT_DIGEST_CRON', '0 7 * * *');
+
+    await this.coreQueue.add(
+      CORE_JOBS.CONTACT_DIGEST,
+      {},
+      {
+        // A fixed id, so a restart re-registers the same schedule rather than
+        // accumulating one more digest per deploy.
+        jobId: 'contact-digest-cron',
+        repeat: { pattern },
+        removeOnComplete: 10,
+        /**
+         * Larger than `removeOnComplete`, like the dunning sweep's. A digest
+         * that succeeded is a heartbeat and one is as good as another; a digest
+         * that failed is the record that nobody was told what came in, and it
+         * is what `/health/queues/failed` exists to surface.
+         */
+        removeOnFail: 200,
+      },
+    );
+
+    this.logger.log('Contact digest cron scheduled %o', { pattern });
   }
 }
