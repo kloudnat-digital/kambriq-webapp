@@ -5,6 +5,8 @@ import {
   ContactSubject,
   EmailService,
   SupportedLanguage,
+  formatHumanDate,
+  formatHumanDateTime,
   maskEmail,
 } from '@kambriq/common';
 import { CorePrismaService } from '../prisma/core-prisma.service';
@@ -140,6 +142,7 @@ export class ContactService {
     consentGivenAt: Date;
   }): Promise<void> {
     const backOfficeLang = this.backOfficeLocale();
+    const locale = ContactService.localeTag(backOfficeLang);
     const inbox = this.config.get<string>('CONTACT_INBOX_EMAIL');
 
     if (!inbox) {
@@ -171,8 +174,11 @@ export class ContactService {
             subjectLabel: request.subject,
             locale: request.locale,
             message: request.message,
-            receivedAt: request.consentGivenAt.toISOString(),
-            consentGivenAt: request.consentGivenAt.toISOString(),
+            // Human dates, not ISO strings. G3 shipped a payment deadline as
+            // "2026-10-06" and it was read by a person before it was found;
+            // this is the same message surface and the same rule.
+            receivedAt: formatHumanDateTime(request.consentGivenAt, locale),
+            consentGivenAt: formatHumanDateTime(request.consentGivenAt, locale),
           },
         }),
       );
@@ -214,6 +220,7 @@ export class ContactService {
 
     const since = new Date(now.getTime() - DIGEST_WINDOW_HOURS * 3_600_000);
     const lang = this.backOfficeLocale();
+    const locale = ContactService.localeTag(lang);
 
     const [recent, pending, oldest] = await Promise.all([
       this.prisma.contactRequest.findMany({
@@ -237,11 +244,14 @@ export class ContactService {
       lang,
       args: {
         count: recent.length,
-        since: since.toISOString(),
-        until: now.toISOString(),
+        // Read by a person over their first coffee, so: dates a person reads.
+        since: formatHumanDate(since, locale),
+        until: formatHumanDate(now, locale),
         pending,
         oldest: oldest
-          ? `${Math.floor((now.getTime() - oldest.createdAt.getTime()) / 86_400_000)}`
+          ? `${Math.floor((now.getTime() - oldest.createdAt.getTime()) / 86_400_000)} ${
+              lang === 'en' ? 'day(s)' : 'jour(s)'
+            }`
           : this.noneLabel(lang),
         breakdown:
           [...bySubject.entries()].map(([subject, n]) => `${subject}: ${n}`).join('\n') ||
@@ -273,6 +283,11 @@ export class ContactService {
 
   private backOfficeLocale(): SupportedLanguage {
     return this.config.get<string>('CONTACT_BACKOFFICE_LOCALE', 'fr') === 'en' ? 'en' : 'fr';
+  }
+
+  /** The BCP-47 tag the date formatters take, from a language code. */
+  private static localeTag(lang: SupportedLanguage): string {
+    return lang === 'en' ? 'en-GB' : 'fr-FR';
   }
 
   private noneLabel(lang: SupportedLanguage): string {

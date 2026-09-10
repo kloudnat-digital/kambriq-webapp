@@ -384,6 +384,9 @@ importers:
       babel-jest:
         specifier: ^30.0.2
         version: 30.3.0(@babel/core@7.29.0)
+      dom-accessibility-api:
+        specifier: ^0.6.3
+        version: 0.6.3
       eslint:
         specifier: ^9.8.0
         version: 9.39.4(jiti@2.6.1)
