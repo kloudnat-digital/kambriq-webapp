@@ -43,6 +43,123 @@ export const PUBLIC_PATHS = [
 
 export const REDIRECT_WHEN_AUTHED = ['/', '/login', '/register'];
 
+/**
+ * P3 - the prefixes the auth middleware actually guards.
+ *
+ * ---------------------------------------------------------------------------
+ * Why this list exists, and what it replaced
+ * ---------------------------------------------------------------------------
+ * The middleware matcher used to be a **negative** pattern - everything except
+ * `api`, `_next` and a handful of static files. So it ran on every URL the site
+ * does not serve, decided they were not public, and redirected them to
+ * `/login?callbackUrl=...`. `/pricing`, `/tarifs`, `/robots.txt` and
+ * `/zzz-does-not-exist` all answered `307` to a login page. **No public URL on
+ * the site could return a 404**, which is the audit's finding, and it makes
+ * every typo look like a members' area.
+ *
+ * A negative matcher answers "what is not excluded", which is unbounded and
+ * grows every time somebody adds a public page. A positive one answers "what is
+ * protected", which is a list somebody can read and check.
+ *
+ * ---------------------------------------------------------------------------
+ * Narrowing a gate is the dangerous direction
+ * ---------------------------------------------------------------------------
+ * Every prefix here was derived from the route files rather than remembered:
+ * `middleware-matcher.spec.ts` walks `src/app`, computes each route's URL, and
+ * fails if any route that `isPublic()` refuses is not covered by this list. So
+ * a new protected page that nobody adds here fails at the commit rather than by
+ * being served to anonymous visitors.
+ *
+ * `/kamnet` and `/kbs` stay protected deliberately. Public product pages link
+ * straight at `/kamnet/apply` and `/kbs/enroll`, so an anonymous visitor
+ * following a call to action meets a login wall - which is a real defect and is
+ * **P5's**, not this chantier's. Making them work without an account is a
+ * product change; silently widening the gate here would be that change, made
+ * by accident and with no test to describe it.
+ *
+ * `/land` has no route today. It is in `ROLE_GATES` and is kept here so that a
+ * future `/land/...` page is guarded on the day it is added rather than the day
+ * somebody notices.
+ */
+export const PROTECTED_PREFIXES = [
+  '/account',
+  '/admin',
+  '/agent',
+  '/client',
+  '/invite',
+  '/kamnet',
+  '/kbs',
+  '/land',
+  '/lands',
+  '/mylands',
+  '/profile',
+  '/reservations',
+  '/settings',
+  '/welcome',
+];
+
+/**
+ * Paths the middleware must still see even though they are public.
+ *
+ * `REDIRECT_WHEN_AUTHED` sends a signed-in user from `/`, `/login` and
+ * `/register` to their role's home. That is not authentication, it is a
+ * convenience - but it happens in the middleware, so narrowing the matcher to
+ * protected prefixes alone would silently drop it and leave signed-in users
+ * looking at the marketing page. Named separately from the protected list
+ * because they are protecting nothing.
+ */
+export const AUTHED_REDIRECT_PATHS = REDIRECT_WHEN_AUTHED;
+
+/**
+ * P3 - reduces a `callbackUrl` to an internal path, or gives up and returns
+ * `fallback`.
+ *
+ * ---------------------------------------------------------------------------
+ * Nothing reads `callbackUrl` today, and that is exactly why this exists
+ * ---------------------------------------------------------------------------
+ * Four places **write** it - this middleware twice, `account/page.tsx`, and
+ * `lib/api/server.ts` - and **no place reads it**: `logInAction` calls
+ * `signIn(..., { redirectTo: '/' })`, a hard-coded literal. So there is no open
+ * redirect on this site today, and the parameter is decorative.
+ *
+ * It is one line away from not being decorative. The obvious way to make the
+ * parameter work is `redirectTo: searchParams.callbackUrl`, and written that
+ * way it is a textbook open redirect: `/login?callbackUrl=https://evil.example`
+ * sends somebody to another origin immediately after they typed a password.
+ *
+ * So the value is constrained where it is **written**, and this function is
+ * exported so that whoever wires the read has the guard already sitting next to
+ * the thing they are about to use.
+ *
+ * What is refused, and why each one:
+ *
+ * - `https://evil.example` - another origin;
+ * - `//evil.example` - protocol-relative, which browsers resolve as an origin;
+ * - `/\evil.example` and `\\evil.example` - backslashes, which several
+ *   browsers normalise to `/` before resolving, so a lone leading `/` is not
+ *   enough on its own;
+ * - `javascript:...`, `data:...` - not navigations to a page at all;
+ * - anything not starting with `/` - relative, so it resolves against whatever
+ *   page happens to be current.
+ */
+export const safeCallbackUrl = (value: string | null | undefined, fallback = '/'): string => {
+  if (typeof value !== 'string' || value.length === 0) return fallback;
+
+  // A single leading slash, and the next character must not turn it into an
+  // origin. This is deliberately a whitelist of shape rather than a blacklist
+  // of schemes: a blacklist is a list of the tricks somebody has thought of.
+  if (!value.startsWith('/')) return fallback;
+  if (value.startsWith('//')) return fallback;
+  if (value.startsWith('/\\')) return fallback;
+
+  // Control characters, including the tab/newline that browsers strip before
+  // parsing a URL - `/\tevil.example` is not the string it looks like.
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f\u007f]/.test(value)) return fallback;
+
+  return value;
+};
+
 export const ROLE_GATES: Array<{ prefix: string; roles: string[] }> = [
   { prefix: '/admin/kbs', roles: ['ADMIN_KBS', 'ADMIN_GLOBAL'] },
   { prefix: '/admin/kamnet', roles: ['ADMIN_KAMNET', 'ADMIN_GLOBAL'] },

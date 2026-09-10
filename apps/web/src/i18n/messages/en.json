@@ -2174,5 +2174,18 @@
     "previousSlide": "Previous slide",
     "nextSlide": "Next slide",
     "loading": "Loading"
+  },
+  "notFound": {
+    "code": "Error 404",
+    "title": "This page does not exist",
+    "description": "The link may be wrong, or the page may have moved. Here are a few useful places to pick up from.",
+    "suggestions": "You may have been looking for:",
+    "suggestionsLabel": "Suggested pages",
+    "links": {
+      "home": "Back to home",
+      "lands": "Our land",
+      "contact": "Contact us",
+      "faq": "Frequently asked questions"
+    }
   }
 }
