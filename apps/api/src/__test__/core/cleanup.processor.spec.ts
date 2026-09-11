@@ -17,6 +17,7 @@ const makeJob = (name: string) => ({ name, data: {} }) as unknown as Job;
 describe('CoreCleanupProcessor: unknown job names', () => {
   let processor: CoreCleanupProcessor;
   let contact: { sendDailyDigest: jest.Mock };
+  let storage: { deletePrefix: jest.Mock; listKeys: jest.Mock };
   let prisma: {
     refreshToken: { deleteMany: jest.Mock };
     verificationToken: { deleteMany: jest.Mock };
@@ -27,13 +28,18 @@ describe('CoreCleanupProcessor: unknown job names', () => {
     prisma = {
       refreshToken: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       verificationToken: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
-      user: { findMany: jest.fn().mockResolvedValue([]), deleteMany: jest.fn() },
+      user: { findMany: jest.fn().mockResolvedValue([]), delete: jest.fn(), deleteMany: jest.fn() },
     };
     // L2 put the contact digest on this processor's switch rather than on a
     // second `@Processor(QUEUES.CORE)`. Its own behaviour is covered in
     // `contact.service.spec.ts`; here it only has to be injectable.
     contact = { sendDailyDigest: jest.fn().mockResolvedValue({ count: 0, pending: 0 }) };
-    processor = new CoreCleanupProcessor(prisma as never, contact as never);
+    // C4c: the purge now clears the user's S3 prefix before deleting the row.
+    storage = {
+      deletePrefix: jest.fn().mockResolvedValue(0),
+      listKeys: jest.fn().mockResolvedValue([]),
+    };
+    processor = new CoreCleanupProcessor(prisma as never, contact as never, storage as never);
     jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
   });
