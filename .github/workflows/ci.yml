@@ -179,6 +179,13 @@ jobs:
       # full set. That is deliberate rather than a gap: develop is the ref that
       # gets built and deployed, and it is the last place to trust a diff.
       # The nx cache above makes that full run mostly cache hits anyway.
+      #
+      # A19: that sentence was false for seven months. `pnpm run lint` was
+      # `nx lint api` - one project of six - so develop linted the API and
+      # nothing else, and `libs/common` carried two real errors that only a
+      # pull request touching it could ever surface. The script is now
+      # `nx run-many -t lint --all`; if it is ever narrowed again, this comment
+      # becomes a lie a second time, so narrow the comment with it.
       - name: Lint, typecheck and test
         env:
           NX_SKIP_NX_CACHE: "false"

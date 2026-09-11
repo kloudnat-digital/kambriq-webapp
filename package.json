@@ -17,7 +17,7 @@
     "test:e2e:ci": "BASE_URL=$BASE_URL npx nx e2e web-e2e",
     "test:e2e:report": "npx playwright show-report apps/web-e2e/playwright-report",
     "----- CODE QUALITY -----": "",
-    "lint": "npx nx lint api",
+    "lint": "npx nx run-many -t lint --all",
     "lint:web": "npx nx lint web",
     "typecheck": "tsc --noEmit -p apps/api/tsconfig.app.json",
     "typecheck:web": "tsc --noEmit -p apps/web/tsconfig.json",
