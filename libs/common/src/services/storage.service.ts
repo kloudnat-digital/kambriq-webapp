@@ -6,6 +6,8 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
+  DeleteObjectsCommand,
+  ListObjectsV2Command,
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -133,6 +135,76 @@ export class StorageService {
     );
 
     this.logger.log(`Deleted S3 object key=${key}`);
+  }
+
+  /**
+   * Every key under one prefix, following pagination to the end.
+   *
+   * C4c. Paging matters more than it looks: `ListObjectsV2` returns at most
+   * 1000 keys per call, and a caller that reads the first page and stops
+   * deletes some of somebody's documents and leaves the rest - which is a
+   * worse state than not having tried, because the count it reports looks
+   * like success.
+   */
+  async listKeys(prefix: string): Promise<string[]> {
+    const s3 = this.assertEnabled('list objects');
+    const keys: string[] = [];
+    let token: string | undefined;
+
+    do {
+      const page = await s3.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: prefix,
+          ContinuationToken: token,
+        }),
+      );
+      for (const o of page.Contents ?? []) if (o.Key) keys.push(o.Key);
+      token = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (token);
+
+    return keys;
+  }
+
+  /**
+   * Deletes every object under a prefix and returns how many went.
+   *
+   * **Throws if any key could not be deleted.** The caller - the purge - uses
+   * that to decide whether to delete the database row, and a silent partial
+   * success there is exactly how an orphan is made: the row goes, some objects
+   * stay, and nothing anywhere records which.
+   *
+   * An empty prefix returns 0 rather than throwing, so the purge of a user who
+   * never uploaded anything is not a special case.
+   */
+  async deletePrefix(prefix: string): Promise<number> {
+    const s3 = this.assertEnabled('delete a prefix');
+    const keys = await this.listKeys(prefix);
+    if (keys.length === 0) return 0;
+
+    let deleted = 0;
+    // S3 takes at most 1000 keys per DeleteObjects call.
+    for (let i = 0; i < keys.length; i += 1000) {
+      const batch = keys.slice(i, i + 1000);
+      const res = await s3.send(
+        new DeleteObjectsCommand({
+          Bucket: this.bucket,
+          Delete: { Objects: batch.map((Key) => ({ Key })), Quiet: false },
+        }),
+      );
+      const errors = res.Errors ?? [];
+      if (errors.length > 0) {
+        throw new Error(
+          `Refusing to report success: ${errors.length} of ${batch.length} objects under ` +
+            `"${prefix}" could not be deleted (${errors[0]?.Code}: ${errors[0]?.Message}). ` +
+            `Nothing downstream may treat this prefix as cleared.`,
+        );
+      }
+      deleted += res.Deleted?.length ?? 0;
+    }
+
+    this.logger.log(`Deleted ${deleted} object(s) under prefix=${prefix}`);
+    return deleted;
   }
 
   /**
