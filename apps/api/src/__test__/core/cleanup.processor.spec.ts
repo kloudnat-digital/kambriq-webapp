@@ -21,7 +21,9 @@ describe('CoreCleanupProcessor: unknown job names', () => {
   let prisma: {
     refreshToken: { deleteMany: jest.Mock };
     verificationToken: { deleteMany: jest.Mock };
-    user: { findMany: jest.Mock; deleteMany: jest.Mock };
+    // C4c: the purge selects ids then deletes one row at a time, so the mock
+    // needs `delete` as well as the `deleteMany` the old set-based purge used.
+    user: { findMany: jest.Mock; delete: jest.Mock; deleteMany: jest.Mock };
   };
 
   beforeEach(() => {
