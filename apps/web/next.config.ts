@@ -2,6 +2,7 @@ import { composePlugins, withNx } from '@nx/next';
 import type { WithNxOptions } from '@nx/next/plugins/with-nx';
 import createNextIntlPlugin from 'next-intl/plugin';
 import createMDX from '@next/mdx';
+import { robotsHeaders } from './src/lib/seo/robots';
 
 // next-intl plugin - path is relative.
 // - When NX's project-graph plugin analyses this file (CWD = workspace root),
@@ -36,6 +37,13 @@ const nextConfig: WithNxOptions = {
   reactCompiler: false,
 
   // Security headers applied to every response
+  //
+  // P4 joins this block rather than adding a second mechanism beside it. This
+  // is already the only place the app sets response headers, it already matches
+  // every path, and - measured - it already applies to 404 responses, which is
+  // exactly where a noindex header has to reach. A middleware header could not
+  // have done the same job after P3: the matcher now runs on protected prefixes
+  // only, so it never sees the public pages that most need the header.
   async headers() {
     return [
       {
@@ -45,6 +53,10 @@ const nextConfig: WithNxOptions = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          // Empty in production, `noindex, nofollow` everywhere else. Reads
+          // APP_ENV, never NODE_ENV - the runtime image sets NODE_ENV=production
+          // on dev too, so NODE_ENV cannot tell the two apart. See src/lib/seo/robots.ts.
+          ...robotsHeaders(),
         ],
       },
     ];

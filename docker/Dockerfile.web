@@ -51,6 +51,19 @@ EXPOSE 3001
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 ENV NODE_ENV=production
+
+# P4 - which deployment this image is, for the noindex header and nothing else.
+#
+# NODE_ENV above is `production` on EVERY environment, because that is what a
+# Next.js production build runs as. It therefore cannot distinguish dev from
+# prd, and a noindex check reading it would have protected nothing that is
+# actually deployed.
+#
+# Absent means "not the public site", so this image is safe to deploy anywhere
+# by default and **prd must set APP_ENV=production explicitly** when it is first
+# built. See docs/adr/ADR-005-production-automation-prerequisites.md.
+ARG APP_ENV=""
+ENV APP_ENV=${APP_ENV}
 # Required by NextAuth v5 when running behind a reverse proxy or ALB.
 # Without this every session read logs "UntrustedHost" and may fail in
 # strict next-auth configurations.

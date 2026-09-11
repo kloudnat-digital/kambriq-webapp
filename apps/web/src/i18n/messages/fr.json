@@ -2174,5 +2174,18 @@
     "previousSlide": "Diapositive précédente",
     "nextSlide": "Diapositive suivante",
     "loading": "Chargement"
+  },
+  "notFound": {
+    "code": "Erreur 404",
+    "title": "Cette page n'existe pas",
+    "description": "Le lien est peut-être erroné, ou la page a été déplacée. Voici quelques endroits utiles pour reprendre.",
+    "suggestions": "Vous cherchiez peut-être :",
+    "suggestionsLabel": "Pages suggérées",
+    "links": {
+      "home": "Retour à l'accueil",
+      "lands": "Nos terrains",
+      "contact": "Nous contacter",
+      "faq": "Questions fréquentes"
+    }
   }
 }
