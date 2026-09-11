@@ -168,6 +168,7 @@ export class PaymentsAdminController {
         channel: dto.channel,
         receivedAt: new Date(dto.receivedAt),
         evidenceUrl: dto.evidenceUrl,
+        paidBy: dto.paidBy,
         correctsId: dto.correctsId,
         note: dto.note,
       },
@@ -212,7 +213,10 @@ export class PaymentsAdminController {
       'reason is required and is written to the audit trail. **Moves state and touches no money** ' +
       '- recording an encaissement is a different call, and always was. ' +
       'A target that commits money (PARTIELLEMENT_RECU, VALIDE, REJETE, ANNULE) requires ' +
-      'ADMIN_GLOBAL; the bookkeeping steps in between are open to ADMIN_LANDS.',
+      'ADMIN_GLOBAL; the bookkeeping steps in between are open to ADMIN_LANDS. ' +
+      '`evidenceReceiptId` names the encaissement the step rests on: required for ' +
+      'PARTIELLEMENT_RECU, refused if it belongs to another payment, NULL for the steps that ' +
+      'rest on no receipt.',
   })
   @ApiResponse({ status: 200, description: 'Payment moved.' })
   @ApiResponse({ status: 400, description: 'A blank reason, or a step the table does not allow.' })
@@ -226,6 +230,7 @@ export class PaymentsAdminController {
       actorUserId: admin.id,
       reason: dto.reason,
       roles: admin.roles ?? [],
+      evidenceReceiptId: dto.evidenceReceiptId,
     });
   }
 
@@ -237,7 +242,8 @@ export class PaymentsAdminController {
     description:
       'Moves the payment to VALIDE. **Requires ADMIN_GLOBAL**, one role above recording, because ' +
       'this is the act that commits money. The reason is required and is written to the audit ' +
-      'trail with the receipt it rests on. Recording a receipt never does this.',
+      'trail with the receipt it rests on - `evidenceReceiptId` is required and must be one of ' +
+      "this payment's own. Recording a receipt never does this.",
   })
   @ApiResponse({ status: 200, description: 'Payment validated.' })
   @ApiResponse({ status: 400, description: 'A blank reason, or an illegal transition.' })

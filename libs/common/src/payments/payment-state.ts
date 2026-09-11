@@ -95,6 +95,59 @@ export const COMMITTING_STATES: ReadonlySet<PaymentState> = new Set([
   PaymentState.ANNULE,
 ]);
 
+/**
+ * G7 - the states that assert money was seen, and therefore rest on a receipt.
+ *
+ * v03 section 4: `PARTIELLEMENT_RECU` is "une partie du montant est constatee
+ * et prouvee", `VALIDE` is "la totalite est constatee et prouvee". *Prouvee* is
+ * a justificatif, and the justificatif hangs off a ledger line. So a transition
+ * into either names the `PaymentReceipt` it rests on, and the audit row's
+ * `evidenceReceiptId` is the answer to "sur quelle preuve".
+ *
+ * **Every other state carries NULL, deliberately**, and each for a reason:
+ *
+ * - `INITIE` - creation; nothing has been paid.
+ * - `INSTRUCTIONS_ENVOYEES` - the evidence is what was communicated, and the
+ *   row records that in `communicatedDetails` and `channel` instead.
+ * - `ANNONCE_CLIENT` - the client's word, which is a claim and not a proof.
+ * - `EN_VERIFICATION` - the back office is looking; nothing is established yet.
+ * - `REJETE`, `ANNULE` - a decision that money did *not* settle this; its
+ *   basis is the reason, written by a named person.
+ * - `EXPIRE` - the calendar, with nobody's name on it by design.
+ *
+ * A receipt may still be *offered* on those steps (`evidenceReceiptId` is
+ * optional there), but it is never demanded. Demanding one would make people
+ * attach the nearest receipt to satisfy a field, which is how a trail fills up
+ * with evidence of nothing.
+ */
+export const EVIDENCED_STATES: ReadonlySet<PaymentState> = new Set([
+  PaymentState.PARTIELLEMENT_RECU,
+  PaymentState.VALIDE,
+]);
+
+export class EvidenceRequiredError extends Error {
+  constructor(to: PaymentState) {
+    super(
+      `Refusing to move a payment to ${to} without the encaissement it rests on. ${to} ` +
+        `says money was seen and proved; the audit row must name the receipt that proves it.`,
+    );
+    this.name = 'EvidenceRequiredError';
+  }
+}
+
+/**
+ * Throws when a state that asserts money was seen is entered with no receipt
+ * behind it. Knows nothing about whether the receipt is real or this
+ * payment's - that needs the database, and `PaymentsService` checks it.
+ */
+export function assertTransitionIsEvidenced(
+  to: PaymentState,
+  evidenceReceiptId: string | null | undefined,
+): void {
+  if (!EVIDENCED_STATES.has(to)) return;
+  if ((evidenceReceiptId ?? '').trim() === '') throw new EvidenceRequiredError(to);
+}
+
 /** Actor values that are not a person. Compared case-insensitively, trimmed. */
 const SYSTEM_ACTORS: ReadonlySet<string> = new Set([
   'system',

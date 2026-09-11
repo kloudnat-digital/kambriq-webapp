@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   AutomaticTransitionForbiddenError,
+  EvidenceRequiredError,
   IllegalPaymentTransitionError,
   PaymentChannel,
   PaymentState,
@@ -26,6 +27,8 @@ import {
 
 const PAYMENT_ID = 'pay-1';
 const ADMIN = '00000000-0000-4000-8000-b00000000001';
+/** A different person from `ADMIN`: a correction carries its own author. */
+const CORRECTOR = '00000000-0000-4000-8000-b00000000007';
 
 const payment = (over: Record<string, unknown> = {}) => ({
   id: PAYMENT_ID,
@@ -121,19 +124,25 @@ describe('PaymentsService', () => {
 
     it('a correction appends a negative line and never edits one', async () => {
       prisma.payment.findUnique.mockResolvedValue(payment());
+      prisma.paymentReceipt.findUnique.mockResolvedValue({ id: 'r2', paymentId: PAYMENT_ID });
       prisma.paymentReceipt.create.mockResolvedValue({ id: 'r4' });
 
       await service.recordReceipt(
         PAYMENT_ID,
         receipt({ amount: -250_000n, correctsId: 'r2', note: 'keyed twice' }),
-        ADMIN,
+        CORRECTOR,
       );
 
       const arg = prisma.paymentReceipt.create.mock.calls[0][0] as {
-        data: { amount: bigint; correctsId: string };
+        data: { amount: bigint; correctsId: string; recordedBy: string; note: string };
       };
       expect(arg.data.amount).toBe(-250_000n);
       expect(arg.data.correctsId).toBe('r2');
+      // Its own author and its own reason (v03 §7), not the original's.
+      expect(arg.data.recordedBy).toBe(CORRECTOR);
+      expect(arg.data.note).toBe('keyed twice');
+      // It appends. No update, on either table.
+      expect(prisma.payment.update).not.toHaveBeenCalled();
 
       prisma.paymentReceipt.findMany.mockResolvedValue([
         { amount: 500_000n },
@@ -141,6 +150,48 @@ describe('PaymentsService', () => {
         { amount: -250_000n },
       ]);
       await expect(service.totalReceived(PAYMENT_ID)).resolves.toBe(2_500_000n);
+    });
+
+    it('a correction without its reason is refused', async () => {
+      prisma.payment.findUnique.mockResolvedValue(payment());
+      prisma.paymentReceipt.findUnique.mockResolvedValue({ id: 'r2', paymentId: PAYMENT_ID });
+
+      await expect(
+        service.recordReceipt(
+          PAYMENT_ID,
+          receipt({ amount: -250_000n, correctsId: 'r2', note: '   ' }),
+          CORRECTOR,
+        ),
+      ).rejects.toThrow(/correction carries its own reason/);
+      expect(prisma.paymentReceipt.create).not.toHaveBeenCalled();
+    });
+
+    it("a correction of a line on another payment's ledger is refused", async () => {
+      prisma.payment.findUnique.mockResolvedValue(payment());
+      prisma.paymentReceipt.findUnique.mockResolvedValue({ id: 'r9', paymentId: 'pay-other' });
+
+      await expect(
+        service.recordReceipt(
+          PAYMENT_ID,
+          receipt({ amount: -250_000n, correctsId: 'r9', note: 'wrong dossier' }),
+          CORRECTOR,
+        ),
+      ).rejects.toThrow(/not on the ledger of payment/);
+      expect(prisma.paymentReceipt.create).not.toHaveBeenCalled();
+    });
+
+    it('a correction of a line that does not exist is refused', async () => {
+      prisma.payment.findUnique.mockResolvedValue(payment());
+      prisma.paymentReceipt.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.recordReceipt(
+          PAYMENT_ID,
+          receipt({ amount: -250_000n, correctsId: 'r-missing', note: 'typo' }),
+          CORRECTOR,
+        ),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.paymentReceipt.create).not.toHaveBeenCalled();
     });
 
     it('writing the total directly is impossible by construction', () => {
@@ -169,6 +220,30 @@ describe('PaymentsService', () => {
       expect(Object.getOwnPropertyNames(Object.getPrototypeOf(service))).not.toContain(
         'setTotalReceived',
       );
+
+      // Including through the correction path: `recordReceipt` is the only
+      // write the ledger has, it creates and never updates, and no line of the
+      // service assigns a total anywhere.
+      const source = readFileSync(
+        join(__dirname, '..', '..', '..', 'lands', 'payments', 'payments.service.ts'),
+        'utf8',
+      );
+      const recordReceipt = source.slice(
+        source.indexOf('async recordReceipt('),
+        source.indexOf('\n  }\n', source.indexOf('async recordReceipt(')),
+      );
+      expect(recordReceipt).toContain('paymentReceipt.create(');
+      expect(recordReceipt).not.toContain('.update(');
+      expect(recordReceipt).not.toContain('.updateMany(');
+
+      // And no write anywhere in the service carries a total in its `data`.
+      // The reads return `amountReceived` and `outstanding` - computed, on the
+      // way out - so the sweep is over what is written, not over the file.
+      const dataBlocks = [...source.matchAll(/data:\s*\{[\s\S]{0,800}?\n\s*\}/g)].map((m) => m[0]);
+      expect(dataBlocks.length).toBeGreaterThan(3);
+      for (const block of dataBlocks) {
+        expect(block).not.toMatch(/\b(totalReceived|amountReceived|balance|outstanding)\b/);
+      }
     });
 
     it('refuses a receipt with no evidence, and a zero receipt', async () => {
@@ -206,6 +281,7 @@ describe('PaymentsService', () => {
   describe('transitions', () => {
     it('moves the payment and writes the audit row in one transaction', async () => {
       prisma.payment.findUnique.mockResolvedValue(payment({ state: PaymentState.EN_VERIFICATION }));
+      prisma.paymentReceipt.findUnique.mockResolvedValue({ id: 'r1', paymentId: PAYMENT_ID });
       prisma.payment.update.mockResolvedValue({});
       prisma.paymentTransition.create.mockResolvedValue({});
 
@@ -266,6 +342,71 @@ describe('PaymentsService', () => {
         service.transition(PAYMENT_ID, PaymentState.VALIDE, { actorUserId: ADMIN, reason: '  ' }),
       ).rejects.toThrow(AutomaticTransitionForbiddenError);
       expect(prisma.payment.update).not.toHaveBeenCalled();
+    });
+
+    it('refuses PARTIELLEMENT_RECU with no receipt behind it', async () => {
+      // "Une partie du montant est constatee et prouvee". Prouvee is a
+      // justificatif, and the justificatif is on a ledger line.
+      prisma.payment.findUnique.mockResolvedValue(payment({ state: PaymentState.EN_VERIFICATION }));
+
+      await expect(
+        service.transition(PAYMENT_ID, PaymentState.PARTIELLEMENT_RECU, {
+          actorUserId: ADMIN,
+          reason: 'looks paid',
+        }),
+      ).rejects.toThrow(EvidenceRequiredError);
+      expect(prisma.payment.update).not.toHaveBeenCalled();
+      expect(prisma.paymentTransition.create).not.toHaveBeenCalled();
+    });
+
+    it('refuses VALIDE with no receipt behind it', async () => {
+      prisma.payment.findUnique.mockResolvedValue(
+        payment({ state: PaymentState.PARTIELLEMENT_RECU }),
+      );
+
+      await expect(
+        service.transition(PAYMENT_ID, PaymentState.VALIDE, {
+          actorUserId: ADMIN,
+          reason: 'balance reached',
+        }),
+      ).rejects.toThrow(EvidenceRequiredError);
+      expect(prisma.payment.update).not.toHaveBeenCalled();
+    });
+
+    it("refuses a receipt that is another payment's, before writing anything", async () => {
+      prisma.payment.findUnique.mockResolvedValue(payment({ state: PaymentState.EN_VERIFICATION }));
+      prisma.paymentReceipt.findUnique.mockResolvedValue({ id: 'r9', paymentId: 'pay-other' });
+
+      await expect(
+        service.transition(PAYMENT_ID, PaymentState.PARTIELLEMENT_RECU, {
+          actorUserId: ADMIN,
+          reason: 'attached the wrong dossier',
+          evidenceReceiptId: 'r9',
+        }),
+      ).rejects.toThrow(/not on the ledger of payment/);
+      expect(prisma.payment.update).not.toHaveBeenCalled();
+      expect(prisma.paymentTransition.create).not.toHaveBeenCalled();
+    });
+
+    it('a step that rests on no receipt writes NULL, and demands none', async () => {
+      // The client's word is a claim, not a proof. Nothing is asked for, and
+      // the row says so rather than pointing at the nearest receipt.
+      prisma.payment.findUnique.mockResolvedValue(
+        payment({ state: PaymentState.INSTRUCTIONS_ENVOYEES }),
+      );
+      prisma.payment.update.mockResolvedValue({});
+      prisma.paymentTransition.create.mockResolvedValue({});
+
+      await service.transition(PAYMENT_ID, PaymentState.ANNONCE_CLIENT, {
+        actorUserId: ADMIN,
+        reason: 'the client telephoned',
+      });
+
+      const audit = prisma.paymentTransition.create.mock.calls[0][0] as {
+        data: { evidenceReceiptId: string | null };
+      };
+      expect(audit.data.evidenceReceiptId).toBeNull();
+      expect(prisma.paymentReceipt.findUnique).not.toHaveBeenCalled();
     });
 
     it('allows the dunning job to expire a stalled payment', async () => {

@@ -2,6 +2,13 @@
 
 **Read-only assessment. Nothing was built for this document.**
 
+> **Superseded on 2026-09-09.** The gaps below were closed by `A17`, `G7` and
+> `G5` in the register, in that order. In particular the closing sentence of
+> this document - no test opens a database - is no longer true: `pnpm test:db`
+> exercises every trigger and CHECK named here, and each was proved sharp by
+> removal. Two claims here were also found stale by then: G9 had closed the
+> creation row, and G11 had re-created the evidence CHECK against `HIST`.
+
 Source of the clauses: `ops_kambriq_paiement-hybride_v01.md` (09_OPERATIONS,
 Drive id `1-6aB1XmVWlFuD2MWD9Qq8RBVGHn4xmqZ`, 5 488 bytes, created
 2026-09-06 11:54). Clauses are quoted from it verbatim, accents as written.
