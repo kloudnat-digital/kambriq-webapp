@@ -218,6 +218,7 @@
     "@types/react-dom": "^19.0.0",
     "@types/winston": "^2.4.4",
     "babel-jest": "^30.0.2",
+    "dom-accessibility-api": "^0.6.3",
     "eslint": "^9.8.0",
     "eslint-config-next": "16.2.3",
     "eslint-config-prettier": "^10.1.8",

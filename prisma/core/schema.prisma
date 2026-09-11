@@ -148,3 +148,82 @@ model VerificationToken {
   @@index([userId, type])
   @@index([token])
 }
+
+// ---------------------------------------------------------------------------
+// L1 - the inbound contact request
+//
+// Every commercial CTA on the public site leads to /contact, so this table is
+// the first thing a prospect ever leaves behind. It lives in `core` rather than
+// in a domain schema because the request is module-agnostic: its subject can be
+// lands, VERIFY, KAMNET, KBS or a partnership, and it arrives from somebody who
+// has no account and belongs to no module yet.
+//
+// **Not `KamnetLead`.** That model is an agent's own prospect: `agentId` is
+// required and foreign-keyed to `KamnetAgent`. A public request has no agent,
+// and giving it a fabricated one to reuse the table would put a lead in an
+// agent's pipeline that the agent never spoke to.
+// ---------------------------------------------------------------------------
+
+/// What the prospect said their request is about. Mirrors the six options the
+/// contact form offers; the labels live in the web i18n catalogues.
+enum ContactSubject {
+  LANDS
+  VERIFY
+  KAMNET
+  KBS
+  PARTNERSHIP
+  OTHER
+}
+
+/// Where the request has got to in the back office.
+enum ContactRequestStatus {
+  NEW
+  IN_PROGRESS
+  CLOSED
+}
+
+model ContactRequest {
+  id String @id @default(uuid())
+
+  name  String
+  email String
+  /// Optional: the form asks for it and does not require it.
+  phone String?
+
+  subject ContactSubject
+  message String
+
+  /// The language the page was in when the request was made.
+  ///
+  /// Stored rather than derived from the address or the browser: the
+  /// acknowledgement goes out in it, and so does any human reply. A prospect
+  /// who wrote to us in French is answered in French, months later, without
+  /// anybody having to guess.
+  locale String @default("fr")
+
+  /// **When consent was given, which is the record that it was.**
+  ///
+  /// Non-nullable on purpose: a row cannot exist without it. The checkbox, the
+  /// DTO and the service each refuse a request without consent, and this column
+  /// is the one that cannot be talked round - a script or a console writing
+  /// straight to the table still has to supply a timestamp.
+  ///
+  /// The timestamp is the server's, not the browser's: a client-supplied
+  /// consent time is a claim, not a record.
+  consentGivenAt DateTime
+
+  /// The privacy policy path the consent text pointed at when it was ticked.
+  ///
+  /// Consent is to a document, and that document changes. Without this the row
+  /// says somebody agreed to something and cannot say to what.
+  consentPolicyPath String
+
+  status ContactRequestStatus @default(NEW)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Read by the daily digest, which counts a 48-hour window.
+  @@index([createdAt])
+  @@index([status])
+}

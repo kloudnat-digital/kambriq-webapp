@@ -250,5 +250,40 @@
     "channelLabel": "Chosen payment method",
     "button": "View my payment details",
     "why": "They are not in this email: bank details should not travel in a mailbox that can be forwarded. On your account they sit next to your payment, and you can come back to them at any time."
+  },
+  "contactRequestReceived": {
+    "subject": "We have your message - KAMBRIQ",
+    "heading": "Your message arrived",
+    "intro": "Hello {name}, we have your enquiry and somebody from the team will reply within 24 working hours.",
+    "recapLabel": "What you wrote to us",
+    "subjectLabel": "Subject",
+    "referenceLabel": "Your request reference",
+    "referenceRule": "Keep it: it lets us find your message if you call us back.",
+    "closing": "If your request is urgent, you can reply directly to this email."
+  },
+  "contactRequestNotification": {
+    "subject": "New contact request - {subject}",
+    "heading": "A new contact request has arrived",
+    "intro": "Received {receivedAt}. Reply to {email}.",
+    "nameLabel": "Name",
+    "emailLabel": "Email",
+    "phoneLabel": "Phone",
+    "subjectLabel": "Subject",
+    "localeLabel": "Page language",
+    "messageLabel": "Message",
+    "consentLabel": "Consent given at",
+    "referenceLabel": "Reference",
+    "none": "Not given"
+  },
+  "contactDigest": {
+    "subject": "Contact requests: {count} over 48 h",
+    "heading": "Daily contact request digest",
+    "intro": "Over the last 48 hours ({since} - {until}), {count} contact request(s) came in.",
+    "zeroNote": "No requests in the period. This digest goes out every day, zero included: if it stops arriving, that is the signal.",
+    "pendingLabel": "Awaiting a reply (all ages)",
+    "oldestLabel": "Oldest one waiting",
+    "days": "{days} day(s)",
+    "none": "None",
+    "breakdownLabel": "By subject, over the period"
   }
 }

@@ -151,6 +151,60 @@ listed here first.
 | `G11` follow-up   | `A DECIDER`         | infra owes `ORANGE_MONEY_*` and `MTN_MONEY_*`: v03 splits mobile money in two but keeps twelve parameters with one number                                                                |
 | `G11` follow-up 2 | `A DECIDER`         | v03 section 5's example uses a hyphen between reference and channel, which section 4b forbids. 4b implemented                                                                            |
 | `A18`             | `PROUVE LOCALEMENT` | queue counts and failed payloads on `/health/queues`, ADMIN_GLOBAL. `failed` 0->1 observed through the endpoint against a real Redis                                                     |
+| `L1-contact`      | `PROUVE LOCALEMENT` | the public contact form sent nothing behind a success toast. Now persisted, announced, acknowledged in the page's locale; consent stored with its timestamp                              |
+| `L2-contact`      | `PROUVE LOCALEMENT` | a daily digest on the existing core queue, sent even at zero, so its absence is the alarm. Exercised once end to end with a forced zero count                                            |
+| `L1-contact` f-up | `A DECIDER`         | infra owes `/kambriq/{env}/api/CONTACT_INBOX_EMAIL`. Until it exists dev stores every request and announces none, loudly                                                                 |
+| naming            | `A DECIDER`         | the brief's `L1`/`L2` collide with this register's logging `L2`/`L3`. Entries above are `L1-contact`/`L2-contact`; somebody should decide which series keeps the bare letter             |
+| Entry             | State               | What it needs                                                                                                                                                                            |
+| ----------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| `L2`              | `EN COURS`          | one deployed log line carrying its interpolated metadata, quoted                                                                                                                         |
+| `L3`              | `DECIDE, A FAIRE`   | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                                                                         |
+| `F1`              | `A DECIDER`         | coverage ratchet: a floor, and what happens when a PR drops below it                                                                                                                     |
+| `P1`              | `A DECIDER`         | SES contact list, one per account per region — the prd constraint                                                                                                                        |
+| `X2`              | `DECIDE, A FAIRE`   | NAT option 2, decided, deliberately unapplied before delivery                                                                                                                            |
+| `M1`              | `DECIDE, A FAIRE`   | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                                                           |
+| `Q1` follow-up    | `A DECIDER`         | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing                                                       |
+| `D3`              | `EN COURS`          | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0                                            |
+| `H1`              | `PROUVE`            | `ADMIN_GLOBAL` is the super admin; no second role created. ADR-008 + `super-admin.spec.ts`, five mutations quoted below                                                                  |
+| `H2`              | `PROUVE`            | proven on dev on `f91289f`: `2 created, 0 updated, 0 unchanged`, exit 0, tally read from the task's own log stream                                                                       |
+| `H3`              | `EN COURS`          | journey 5 green on dev under the sha gate; **pending proof is the two real holders activating their own accounts**                                                                       |
+| `H4`              | `PROUVE`            | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                                                                  |
+| `A7`              | `PROUVE`            | inventory swept 2026-09-06, output in `docs/ops/a7-standards-inventory.md`: 6 findings (2 closed on sight), 7 classes clean, 2 defects in the sweep                                      |
+| `H2` follow-up 1  | `A DECIDER`         | `deploy-dev.yml` passes `--seed` to `run-migrations.js`, which never reads `process.argv`: the seed step has never seeded anything                                                       |
+| `H2` follow-up 2  | `A DECIDER`         | the bootstrap deploy step checks the exit code and never that the tally line appeared - the same gap the seed step has                                                                   |
+| `H5`              | `PROUVE`            | journey 5's address guard was a detector, not a barrier: it reported and let the run continue into a real inbox. Moved to `beforeAll`                                                    |
+| `H6`              | `PROUVE`            | the same run's `afterAll` revoked a real administrator's role. Every write audited, role restored 16:05:26, guard made structural                                                        |
+| `H7`              | `PROUVE`            | nothing tested the bootstrap's role assignment - journey 5 granted it to itself. Decision extracted and covered, 11 tests, 3 mutations                                                   |
+| `H8`              | `EN COURS`          | the bootstrap sent no email; a stray test made it look as though it had. Fixed and proven locally; pending the re-send to `contact@` on dev                                              |
+| `H8` follow-up    | `A DECIDER`         | per-address SES delivery is not observable: no configuration set, no event destination. Needed to answer "did THIS address receive it"                                                   |
+| `H9`              | `PROUVE`            | the bootstrap's provenance check failed a whole deploy and skipped every later step. Postcondition scoped; step moved after the web deploy                                               |
+| `B1`              | `PROUVE`            | payment code audited against the design: 0 payments ever processed, no payment table, G3/G4 partly built, six of eight not started                                                       |
+| `A10`             | `PROUVE`            | the identity-review queue did not exist - the route and the role did. Queue route + `idSubmittedAt`; the back-office screen stays open                                                   |
+| `A11`             | `PROUVE`            | 13 sites, 15 messages, 12 transactional. `sendUpdate` returns an outcome and throws on a transactional template                                                                          |
+| `A12`             | `PROUVE`            | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                                                            |
+| `R1`              | `EN COURS`          | **a merge can succeed and have no effect.** `#89` merged into a branch consumed 89 s earlier; `#88` was squash-merged, so nothing showed. Pending proof is the three commands in `R1`    |
+| `G8`              | `ARRETE`            | **G11-G14 is not on develop and not deployed**: #89 merged into the G9 branch 89s after that branch merged to develop. 51 files stranded at `230b827`                                    |
+| `G8` blocker      | `A FAIRE`           | re-land `230b827` on develop (**not** conflict-free - see `R1`), deploy, then re-run G8. Until then dev emails every channel's coordinates to whoever clicks                             |
+| `G10`             | `PROUVE`            | applied and observed: 16 SecureString parameters none empty, task definition 143 with the three variables and no channel value, 0 AccessDenied                                           |
+| `G9`              | `PROUVE LOCALEMENT` | the client creates the payment, from their own purchase page. Creation writes its audit row; sending the instructions is a second act                                                    |
+| `G9` follow-up    | `A DECIDER`         | `PAYMENT_VALIDITY_DAYS` is 30 because a month is the shape of a diaspora transfer. The design gives no number - this one needs deciding                                                  |
+| `G10` (webapp)    | `PROUVE`            | an absent channel prefix now fails the boot exactly as an empty parameter does; disabling is `PAYMENT_CHANNELS_TRANSPORT=disabled`                                                       |
+| `G10` (infra)     | `PLAN PRET`         | twelve parameters + the prefix into terraform. Plan run and shown, **nothing applied**. Correction-without-deploy proved on a running process                                            |     |
+| `G4`              | `PROUVE`            | the back office and its screen. Five defects only a real request could see; `db:seed` unbroken; deployed-dev pass deferred to `G8`                                                       |
+| `G4` follow-up    | `A DECIDER`         | `GetUploadUrlDto` is declared twice with different schemas (lands + kbs); the API logs `Duplicate DTO detected` on every boot                                                            |
+| `V1` follow-up    | `PROUVE`            | the commission lookup throws now but has never run: 0 sales completed, all 5 commissions seeded. Closed by inspection only                                                               |
+| `B2`              | `PROUVE`            | V1 inventory finished: WhatsApp preference reads nothing, `sendUpdate` skips indistinguishably and defaults off, `RedisService` unused                                                   |
+| `B3`              | `PROUVE`            | 56 dev parameters against 0 on prd; only 7 injected as secrets, so 49 need an apply to take effect. One confirmed unread, the rest candidates                                            |
+| `B4`              | `PROUVE`            | 4 journeys: VERIFY does not exist; reactivation and block/unblock never run; 57 identity documents queued for a review that has never run                                                |
+| `G1`              | `EN COURS`          | payment model in `lands`: BigInt money, 9-state machine, append-only ledger and audit. Pending proof is G8, one payment end to end on dev                                                |
+| `G2`              | `PROUVE`            | the reference generator: 29-char derived alphabet, mod-29 check character, sequence-backed so collision-free by construction                                                             |
+| `G3`              | `PROUVE`            | the instruction and reminder messages, channel details from SSM at runtime, send-before-transition. Real email read out of a mailbox                                                     |
+| `G10b` (infra)    | `PLAN PRET`         | sixteen channel parameters; the twelve existing ones imported so `ignore_changes` bites on the first apply. **Apply before merging #88**                                                 |
+| `G10b` follow-up  | `A DECIDER`         | `MOBILE_MONEY_OPERATOR/NUMBER/NAME` are required at startup and read by no channel. Drop from `FIELDS` in the webapp first, then from terraform                                          |
+| `G11-G14`         | `PROUVE LOCALEMENT` | six channels, the identification gate, A14's review screen, coordinates in the platform. Email carries none                                                                              |
+| `G11` follow-up   | `A DECIDER`         | infra owes `ORANGE_MONEY_*` and `MTN_MONEY_*`: v03 splits mobile money in two but keeps twelve parameters with one number                                                                |
+| `G11` follow-up 2 | `A DECIDER`         | v03 section 5's example uses a hyphen between reference and channel, which section 4b forbids. 4b implemented                                                                            |
+| `A18`             | `PROUVE LOCALEMENT` | queue counts and failed payloads on `/health/queues`, ADMIN_GLOBAL. `failed` 0->1 observed through the endpoint against a real Redis                                                     |
 | `G6`              | `PROUVE LOCALEMENT` | the dunning queue, reminders at J-7 and J-1, EXPIRE at the term. Found and fixed a processor collision that silently ate a reminder email                                                |
 | `R4`              | `EN COURS`          | back to hosted runners under a spending cap. Baseline measured: 27 billed minutes, of which the quality matrix billed 5 to do 102s of checking                                           |
 | `R3`              | `EN COURS`          | CI moved to the self-hosted `kambriq-ci` runner. No `services:` anywhere, so macOS is viable. Exposed three image builds pinning no platform - amd64 held by accident of `ubuntu-latest` |
@@ -872,6 +926,226 @@ unchanged; "fixing" it is refused with `23001`; and
 
 As A17's. The web build is typechecked and linted locally; no CI run has built
 the image.
+
+### L1-contact - the contact form sent nothing, and said it had - `PROUVE LOCALEMENT`
+
+**Cost impact: None.** One table in an existing database, one route on an
+existing controller surface, one job name on an existing queue consumed by the
+existing processor. No new queue, no new Redis, no new dependency.
+
+> **Naming.** The brief calls this chantier `L1 + L2`. This register already
+> uses `L2` and `L3` for the **logging** series (`L2` - logging drops metadata
+> at 106 call sites, `EN COURS`). They are unrelated, so the two entries here
+> are `L1-contact` and `L2-contact`. **Somebody should decide which series keeps
+> the bare letter** before a third arrives; recorded rather than resolved
+> unilaterally.
+
+## The premise, checked before anything was built
+
+An external UX/CRO audit dated 9 September reported the form as submitting
+nothing behind a success toast. Every claim was verified against the code
+first, and every one held:
+
+| Claim                                                       | Verdict       |
+| ----------------------------------------------------------- | ------------- |
+| handler: `preventDefault`, `setTimeout(800)`, toast, reset  | **Confirmed** |
+| no fetch, no server action anywhere in the component        | **Confirmed** |
+| `<select required>` visually hidden at ~1 px behind trigger | **Confirmed** |
+| subject `<label>` has no `for`; trigger has no `aria-label` | **Confirmed** |
+| no consent checkbox, no privacy link                        | **Confirmed** |
+| no `autocomplete` on name / email / phone                   | **Confirmed** |
+| phone placeholder is `+237 6 XX XX XX XX`                   | **Confirmed** |
+
+Measured rather than read, on the component as it stood:
+
+```
+ACCESSIBLE NAME OF SUBJECT TRIGGER: "" (length 0)
+  aria-label      : null
+  aria-labelledby : null
+NATIVE SELECT present: true
+  required    : true
+  aria-hidden : true
+  tabindex    : -1
+  style       : position: absolute; border: 0px; width: 1px; height: 1px; ...
+LABELS:
+  "Nom complet *" for="c-name"
+  "Sujet *"       for="null"
+FORM checkValidity() with empty subject: false
+  #c-name autocomplete=null   #c-email autocomplete=null   #c-phone autocomplete=null
+  phone placeholder : +237 6 XX XX XX XX
+```
+
+**Two refinements the audit did not draw, and one is worse than reported.**
+
+1. **With no subject chosen, the form did not even show its false toast.**
+   Native constraint validation runs _before_ the submit event, so
+   `checkValidity()` returning `false` meant the handler never ran at all. The
+   button did nothing, silently, and the browser could not display its own
+   message either because the control it wanted to annotate was 1 px and
+   `aria-hidden`. The fake toast was the _better_ of the two paths.
+2. **`subscribeNewsletterAction` is a thinner precedent than the brief
+   suggests.** It is four lines wrapping `api.post`, with no server-side
+   validation of its own and one hard-coded English error string for every
+   failure. What is genuinely reusable is its _shape_ - a discriminated result
+   the screen renders - and that shape is what this follows. Its error handling
+   is deliberately **not** copied: see below.
+
+## What decides success, and why the emails do not
+
+**The write.** A `201` means the row exists; the toast fires on nothing else.
+The two emails are queued afterwards and **their failure does not fail the
+request**: the lead is already safe, and answering "not sent" to somebody who
+wrote three paragraphs makes them send it again and gives us the same lead
+twice.
+
+That is only defensible because a lost notification cannot go unnoticed - the
+daily digest counts **rows**, not messages. Without the digest this would be a
+silent failure; with it, it is a delayed one. The trade is written here because
+it is the kind of decision that reads as carelessness to whoever finds it next.
+
+## `CONTACT_INBOX_EMAIL`, and a decision with a cost
+
+No default, and no real address in the repository: it comes from SSM per
+environment, like every other identity.
+
+It is **optional** in `envSchema` rather than required, deliberately. Required
+is the loudest option and would refuse to boot an API that cannot announce a
+lead - and it would also take the deployed API down on the next release, before
+kambriq-infra has added the parameter, in exchange for a form that is strictly
+better than the one it replaces. So instead:
+
+- a request still persists, and the prospect is still acknowledged;
+- the service logs at **`error`**, naming the variable, rather than skipping
+  quietly - a degraded path is an explicit setting, never an inference from
+  absent configuration;
+- there is **no fallback to `EMAIL_FROM`**: a guessed address is a lead in a
+  mailbox nobody reads;
+- the **digest throws** rather than resolving, so it lands on the queue's
+  failed set where `A18`'s `/health/queues/failed` can read it.
+
+**Follow-up for infra:** add `/kambriq/{env}/api/CONTACT_INBOX_EMAIL` and wire
+it into the task definition. Until then dev stores every request and announces
+none, loudly.
+
+## The subject field
+
+`required` is off the hidden native select and the rule lives in the resolver.
+The message renders under the field, `aria-describedby` ties it to the trigger,
+`aria-invalid` marks it, and focus moves to the trigger - which is a thing a
+person can act on and a screen reader can announce.
+
+The trigger has an accessible name for the first time. A `for` on the label
+would **not** have fixed it: `<label for>` does not name a
+`<button role="combobox">`. `aria-labelledby` does.
+
+```
+before: computeAccessibleName(trigger) === ""        (length 0)
+after : computeAccessibleName(trigger) === "Sujet *"
+```
+
+## Proof
+
+`contact-request.dbspec.ts`, against a real Postgres - 7 tests. The row is read
+back through a second client, so what the service says it wrote and what
+Postgres holds are two separate claims. The consent timestamp is present, is
+the server's, and the `NOT NULL` column refuses a row without one (`23502`).
+Two CHECK constraints refuse blank content and an unpublished locale.
+
+Locales: `contact.service.spec.ts` asserts the acknowledgement goes out in the
+page's language for both `fr` and `en`, that the locale is stored on the row,
+and that the **back office is written to in its own language** - a prospect
+writing in English must not switch the team's notification into English.
+
+Mutations, each run and reverted:
+
+| Mutation                                            | Test that went red                            | Result                  |
+| --------------------------------------------------- | --------------------------------------------- | ----------------------- |
+| every field rule deleted from the server DTO        | `contact.dto.spec.ts`                         | **15 failed**, 7 passed |
+| the server action always returns success            | `lib/actions/contact.spec.ts`                 | **6 failed**, 1 passed  |
+| the subject rule made `.optional()` in the resolver | `contact-form.spec.tsx` (the no-subject test) | **2 failed**, 10 passed |
+
+**The second mutation is the one that found something.** It first came back
+**all green**: the component tests mock the server action, so making the action
+always succeed left twelve tests passing. The form was proved correct given an
+honest action and _nothing proved the action was honest_. A guard nothing can
+redden is not a guard, so `lib/actions/contact.spec.ts` was written - and it is
+the file the mutation now fails against.
+
+## Two defects found in the guards themselves
+
+1. **`one-processor-per-queue.spec.ts` counted its own prose.** The sweep
+   matched `@Processor(QUEUES.X)` in raw text, so the three doc comments this
+   chantier wrote _explaining the rule_ were read as declarations, and it went
+   red naming `cleanup.processor.ts` twice and a constants file as rival owners
+   of `CORE`. It is the catalogued _"a sweep that counts a token counts it in
+   prose too"_, in the file whose whole job is counting tokens. Comments are
+   stripped now, with two tests pinning both directions: a real declaration is
+   still found, and a commented-out one is not.
+2. **A timezone trap for anyone reading timestamps in raw SQL.** `TIMESTAMP(3)`
+   is what Prisma maps `DateTime` to and what every table here uses. Prisma
+   reads it as UTC; `node-postgres` reads the same column in the process's local
+   zone, so on a UTC+2 machine they differ by exactly 7 200 000 ms. Nothing is
+   wrong with the stored value - but a script comparing one against `Date.now()`
+   is wrong by whole hours and looks like clock skew.
+
+## Gate - LOCAL ONLY
+
+`nx test api`, `nx test common`, `nx test web`, `pnpm test:db`, both
+typechecks, both lints. **No CI run has confirmed any of it** - the
+organisation's Actions quota is exhausted and jobs do not start. CI still has
+to run all four suites on a clean runner, and needs a Postgres service on the
+quality job for `nx run api:test-db`.
+
+---
+
+### L2-contact - the daily digest, so silence is impossible - `PROUVE LOCALEMENT`
+
+**Cost impact: None.** A job name on `QUEUES.CORE`, handled by the
+`CoreCleanupProcessor` that already owns it, scheduled by the
+`CleanupScheduler` that already exists. **No second `@Processor` on that
+queue**: BullMQ hands a job to exactly one worker, which is how G6's dunning
+processor silently ate a payment reminder.
+
+**A digest, not an alert, and that is the whole design.** An alert fires on a
+condition somebody predicted. The contact form sent nothing for its entire life
+and no alert existed to notice, because there was no traffic to compare
+against. A message that arrives every day - **zero included** - inverts that:
+its _absence_ is the signal, and absence is something a person notices without
+being told what to look for. Same lesson as the seven months of a silent SES
+client, applied before rather than after.
+
+07:00 UTC, which is 08:00 in Douala: an overnight request is on somebody's
+screen when they sit down.
+
+## Exercised once, with a forced zero count
+
+Run end to end: the real API against an emptied database, the real scheduler,
+the real queue, the real processor. The job completed with
+`{"count":0,"pending":0,"sentTo":"backoffice@contact.test"}`.
+
+Rendered through the real template and the real catalogues:
+
+```
+To:      backoffice@contact.test
+SUBJECT: Demandes de contact : 0 sur 48 h
+
+Releve quotidien des demandes de contact
+Sur les 48 dernieres heures (8 septembre 2026 - 10 septembre 2026), 0 demande(s) de contact ont ete recues.
+Aucune demande sur la periode. Ce releve part tous les jours, y compris a zero : s'il cesse d'arriver, c'est le signal.
+En attente de reponse (tous ages confondus)   0
+La plus ancienne en attente                   Aucune
+```
+
+**Reading it as a person found a defect.** The first render put raw ISO strings
+in front of the reader - `Sur les 48 dernieres heures
+(2026-09-08T04:54:45.285Z - 2026-09-10T04:54:45.285Z)`. That is exactly G3's
+`paymentReminder` shipping a deadline as `2026-10-06`, on the same message
+surface, and it was found the same way: by rendering it and reading it rather
+than by inspecting the code. Both messages now format their dates.
+
+## Gate - LOCAL ONLY
+
+As `L1-contact`'s.
 
 ---
 

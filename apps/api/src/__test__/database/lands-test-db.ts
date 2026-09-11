@@ -3,7 +3,7 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@kambriq/common/prisma/lands-client/client';
 import { PaymentState } from '@kambriq/common';
-import { assertIsTestDatabase, TEST_DB_URL } from './test-db-url';
+import { assertIsTestDatabase, TEST_SCHEMAS, urlFor } from './test-db-url';
 
 /**
  * A17 - the handles a database-backed test uses.
@@ -22,16 +22,29 @@ import { assertIsTestDatabase, TEST_DB_URL } from './test-db-url';
 export type TestDatabase = {
   prisma: PrismaClient;
   pool: Pool;
+  /** The resolved connection string, for a spec that must build its own client. */
+  url: string;
   close: () => Promise<void>;
 };
 
+/**
+ * Resolved when #97 and #98 met: both created this harness independently, and
+ * the generic `TEST_SCHEMAS` list is what let them become one rather than one
+ * overwriting the other. `lands` is an entry in that list now, looked up the
+ * same way `core` is.
+ */
+const LANDS = TEST_SCHEMAS.find((s) => s.name === 'lands');
+if (!LANDS) throw new Error('The lands schema is not declared in TEST_SCHEMAS.');
+
 export const openTestDatabase = (): TestDatabase => {
-  assertIsTestDatabase(TEST_DB_URL);
-  const pool = new Pool({ connectionString: TEST_DB_URL });
+  const url = urlFor(LANDS);
+  assertIsTestDatabase(url);
+  const pool = new Pool({ connectionString: url });
   const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
   return {
     prisma,
     pool,
+    url,
     close: async () => {
       await prisma.$disconnect();
       await pool.end();

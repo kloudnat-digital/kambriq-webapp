@@ -1,13 +1,13 @@
 /**
- * A17 - the database-backed suite.
+ * The database-backed suite.
  *
  * A separate configuration from `jest.config.cts`, and a separate file suffix
- * (`*.dbspec.ts`), so that `nx test api` stays what it is: 40-odd suites that
- * open no connection and run anywhere. This one needs a Postgres and is run as
+ * (`*.dbspec.ts`), so that `nx test api` stays what it is: suites that open no
+ * connection and run anywhere. This one needs a Postgres and is run as
  * `pnpm test:db`.
  *
- * `runInBand` because every test shares one database and one migration
- * history; two workers racing `migrate deploy` would be a test of the race.
+ * `runInBand` because every test shares one database and one migration history;
+ * two workers racing `migrate deploy` would be a test of the race.
  */
 module.exports = {
   displayName: 'api-db',

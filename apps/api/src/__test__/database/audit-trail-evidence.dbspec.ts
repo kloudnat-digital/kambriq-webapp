@@ -19,7 +19,6 @@ import {
   mockStorageService,
 } from '../utils';
 import { createPaymentFixture, openTestDatabase, type TestDatabase } from './lands-test-db';
-import { TEST_DB_URL } from './test-db-url';
 
 /**
  * G7 - "sur quelle preuve", through the real service into the real database.
@@ -40,7 +39,7 @@ describe('G7 - a transition records the receipt it rests on', () => {
   beforeAll(async () => {
     db = openTestDatabase();
     lands = new LandsPrismaService({
-      get: (key: string) => (key === 'DATABASE_URL_LANDS' ? TEST_DB_URL : undefined),
+      get: (key: string) => (key === 'DATABASE_URL_LANDS' ? db.url : undefined),
     } as unknown as ConfigService);
     await lands.onModuleInit();
 

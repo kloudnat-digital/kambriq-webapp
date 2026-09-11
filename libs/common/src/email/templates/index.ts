@@ -625,6 +625,103 @@ const templates = defineTemplates({
       i18n,
     ),
   }),
+
+  /**
+   * L1 - the acknowledgement the prospect gets.
+   *
+   * Sent in the language of the page they filled in, which is stored on the
+   * row rather than guessed later: a prospect who wrote in French is answered
+   * in French, by a person, weeks later, without anybody having to work it out.
+   *
+   * It quotes their own message back. That is not padding - it is the only
+   * copy they will have of what they sent, and it is what lets them tell "they
+   * received it" from "they received something".
+   */
+  contactRequestReceived: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.contactRequestReceived.subject', lang),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.contactRequestReceived.heading', lang)}</h1>
+      <p>${t(i18n, 'email.contactRequestReceived.intro', lang, args)}</p>
+      <p class="muted" style="margin-bottom:4px;">${t(i18n, 'email.contactRequestReceived.referenceLabel', lang)}</p>
+      <p style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:18px;font-weight:700;
+                letter-spacing:1px;margin:0 0 8px;word-break:break-all;">${args['reference']}</p>
+      <p class="muted" style="margin-top:0;">${t(i18n, 'email.contactRequestReceived.referenceRule', lang)}</p>
+      <p class="muted" style="margin-bottom:4px;">${t(i18n, 'email.contactRequestReceived.subjectLabel', lang)}: ${args['subjectLabel']}</p>
+      <p class="muted" style="margin-bottom:4px;">${t(i18n, 'email.contactRequestReceived.recapLabel', lang)}</p>
+      <p style="background:#f0f4f8;border-radius:8px;padding:16px;white-space:pre-wrap;">${args['message']}</p>
+      <p>${t(i18n, 'email.contactRequestReceived.closing', lang)}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  /**
+   * L1 - what the back office gets when a request arrives.
+   *
+   * Everything needed to answer without opening the back office: who, how to
+   * reach them, what they asked, and when they consented. The reply-to is the
+   * prospect's own address, in the body rather than as a header, because the
+   * sending identity is a verified SES one and must stay that way.
+   */
+  contactRequestNotification: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.contactRequestNotification.subject', lang, args),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.contactRequestNotification.heading', lang)}</h1>
+      <p>${t(i18n, 'email.contactRequestNotification.intro', lang, args)}</p>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr><td style="padding:6px 0;color:#a0aec0;">${t(i18n, 'email.contactRequestNotification.referenceLabel', lang)}</td><td style="padding:6px 0;font-family:monospace;">${args['reference']}</td></tr>
+        <tr><td style="padding:6px 0;color:#a0aec0;">${t(i18n, 'email.contactRequestNotification.nameLabel', lang)}</td><td style="padding:6px 0;">${args['name']}</td></tr>
+        <tr><td style="padding:6px 0;color:#a0aec0;">${t(i18n, 'email.contactRequestNotification.emailLabel', lang)}</td><td style="padding:6px 0;">${args['email']}</td></tr>
+        <tr><td style="padding:6px 0;color:#a0aec0;">${t(i18n, 'email.contactRequestNotification.phoneLabel', lang)}</td><td style="padding:6px 0;">${args['phone']}</td></tr>
+        <tr><td style="padding:6px 0;color:#a0aec0;">${t(i18n, 'email.contactRequestNotification.subjectLabel', lang)}</td><td style="padding:6px 0;">${args['subjectLabel']}</td></tr>
+        <tr><td style="padding:6px 0;color:#a0aec0;">${t(i18n, 'email.contactRequestNotification.localeLabel', lang)}</td><td style="padding:6px 0;">${args['locale']}</td></tr>
+        <tr><td style="padding:6px 0;color:#a0aec0;">${t(i18n, 'email.contactRequestNotification.consentLabel', lang)}</td><td style="padding:6px 0;">${args['consentGivenAt']}</td></tr>
+      </table>
+      <p class="muted" style="margin-top:24px;margin-bottom:4px;">${t(i18n, 'email.contactRequestNotification.messageLabel', lang)}</p>
+      <p style="background:#f0f4f8;border-radius:8px;padding:16px;white-space:pre-wrap;">${args['message']}</p>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  /**
+   * L1 - the daily digest, and the reason it is a digest rather than an alert.
+   *
+   * **It is sent every day, including when the count is zero.** An alert that
+   * fires only on a condition is a mechanism nobody has ever seen work: the
+   * contact form sent nothing for its entire life and no alert existed to
+   * notice, because there was no traffic to compare against. A message that
+   * always arrives inverts that - its **absence** is the signal, and absence is
+   * something a person notices without being told to look.
+   *
+   * Same lesson as the seven months of a silent SES client, applied before it
+   * can happen again rather than after.
+   */
+  contactDigest: (i18n, lang, args) => ({
+    subject: t(i18n, 'email.contactDigest.subject', lang, args),
+    html: layout(
+      `
+      <h1>${t(i18n, 'email.contactDigest.heading', lang)}</h1>
+      <p>${t(i18n, 'email.contactDigest.intro', lang, args)}</p>
+      ${
+        Number(args['count']) === 0
+          ? `<p class="muted">${t(i18n, 'email.contactDigest.zeroNote', lang)}</p>`
+          : `<p class="muted" style="margin-bottom:4px;">${t(i18n, 'email.contactDigest.breakdownLabel', lang)}</p>
+             <p style="background:#f0f4f8;border-radius:8px;padding:16px;white-space:pre-wrap;">${args['breakdown']}</p>`
+      }
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr><td style="padding:6px 0;color:#a0aec0;">${t(i18n, 'email.contactDigest.pendingLabel', lang)}</td><td style="padding:6px 0;font-weight:700;">${args['pending']}</td></tr>
+        <tr><td style="padding:6px 0;color:#a0aec0;">${t(i18n, 'email.contactDigest.oldestLabel', lang)}</td><td style="padding:6px 0;">${args['oldest']}</td></tr>
+      </table>
+    `,
+      lang,
+      i18n,
+    ),
+  }),
 });
 
 export type TemplateKey = keyof typeof templates;

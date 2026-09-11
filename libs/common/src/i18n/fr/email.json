@@ -250,5 +250,40 @@
     "channelLabel": "Moyen de paiement retenu",
     "button": "Voir mes coordonnées de paiement",
     "why": "Elles ne figurent pas dans cet email : des coordonnées bancaires ne doivent pas circuler dans une boîte mail que l'on peut transférer. Sur votre espace, elles sont au même endroit que votre paiement et vous pouvez y revenir à tout moment."
+  },
+  "contactRequestReceived": {
+    "subject": "Nous avons bien recu votre message - KAMBRIQ",
+    "heading": "Votre message est arrive",
+    "intro": "Bonjour {name}, nous avons bien recu votre demande et une personne de l'equipe vous repondra sous 24 heures ouvrees.",
+    "recapLabel": "Ce que vous nous avez ecrit",
+    "subjectLabel": "Sujet",
+    "referenceLabel": "Reference de votre demande",
+    "referenceRule": "Conservez-la : elle nous permet de retrouver votre message si vous nous rappelez.",
+    "closing": "Si votre demande est urgente, vous pouvez repondre directement a cet email."
+  },
+  "contactRequestNotification": {
+    "subject": "Nouvelle demande de contact - {subject}",
+    "heading": "Une nouvelle demande de contact est arrivee",
+    "intro": "Recue le {receivedAt}. Repondez a {email}.",
+    "nameLabel": "Nom",
+    "emailLabel": "Email",
+    "phoneLabel": "Telephone",
+    "subjectLabel": "Sujet",
+    "localeLabel": "Langue de la page",
+    "messageLabel": "Message",
+    "consentLabel": "Consentement donne le",
+    "referenceLabel": "Reference",
+    "none": "Non renseigne"
+  },
+  "contactDigest": {
+    "subject": "Demandes de contact : {count} sur 48 h",
+    "heading": "Releve quotidien des demandes de contact",
+    "intro": "Sur les 48 dernieres heures ({since} - {until}), {count} demande(s) de contact ont ete recues.",
+    "zeroNote": "Aucune demande sur la periode. Ce releve part tous les jours, y compris a zero : s'il cesse d'arriver, c'est le signal.",
+    "pendingLabel": "En attente de reponse (tous ages confondus)",
+    "oldestLabel": "La plus ancienne en attente",
+    "days": "{days} jour(s)",
+    "none": "Aucune",
+    "breakdownLabel": "Par sujet, sur la periode"
   }
 }

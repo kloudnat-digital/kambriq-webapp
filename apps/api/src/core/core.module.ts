@@ -12,6 +12,8 @@ import { UserController } from './users/users.controller';
 import { JwtStrategy } from './auth/strategies/jwt.strategy';
 import { CoreCleanupProcessor } from './cleanup/cleanup.processor';
 import { CleanupScheduler } from './cleanup/cleanup.scheduler';
+import { ContactController } from './contact/contact.controller';
+import { ContactService } from './contact/contact.service';
 import { StorageService } from '@kambriq/common';
 
 @Module({
@@ -28,7 +30,7 @@ import { StorageService } from '@kambriq/common';
       }),
     }),
   ],
-  controllers: [AuthController, UserController],
+  controllers: [AuthController, UserController, ContactController],
   providers: [
     CorePrismaService,
     AuthService,
@@ -38,8 +40,9 @@ import { StorageService } from '@kambriq/common';
     CoreCleanupProcessor,
     CleanupScheduler,
     StorageService,
+    ContactService,
   ],
   // Export services needed by other modules (e.g., KbsModule)
-  exports: [UsersService, RolesService, CorePrismaService],
+  exports: [UsersService, RolesService, CorePrismaService, ContactService],
 })
 export class CoreModule {}

@@ -1151,6 +1151,59 @@ trigger, nothing would have refused anything and nothing would have gone red.
 on purpose when it stops working.** The two are not the same evidence, and the
 first has a way of being cited as if it were the second.
 
+### A form that validates a control nobody can see refuses and explains nothing
+
+From `L1`. The public contact form put `required` on a Radix `<Select>`, which
+renders a **native `<select required>` at 1x1 pixels**, `aria-hidden`,
+`tabIndex={-1}`, behind the visible trigger. Native constraint validation runs
+_before_ the submit event, so with no subject chosen the browser blocked the
+submission, could neither focus nor annotate the control it objected to, and the
+submit handler never ran. **The button did nothing, silently.**
+
+The audit that found this reported the form as showing a false success toast,
+which was the _other_ path - the one taken once a subject had been picked. The
+worse behaviour was the one nobody could describe, because it produced no
+output at all.
+
+**A validity rule belongs where the message can be rendered.** `required` came
+off, the rule went into the resolver, the message renders under the field tied
+by `aria-describedby`, and focus moves to the trigger. The general form: if a
+guard's failure has no visible surface, it is not a guard, it is a silence.
+
+### `<label for>` does not name a button
+
+Also from `L1`, and worth separating because the obvious fix is wrong. The
+subject label was a `<label>` with no `for`, and the control was a
+`<button role="combobox">`. Adding `for` would have changed nothing:
+`<label for>` names form controls, not buttons, so the computed accessible name
+stays empty and the control keeps announcing itself as an unnamed combo box.
+
+`aria-labelledby` pointing at the label's id is what names it.
+
+```
+before: computeAccessibleName(trigger) === ""        (length 0)
+after : computeAccessibleName(trigger) === "Sujet *"
+```
+
+**Measure the accessible name, do not infer it from the markup.** The DOM had a
+label next to the control the whole time.
+
+### A mutation that cannot fail because the test mocks the thing being mutated
+
+From `L1`, and it is the sharpest thing that chantier found. The server action
+was mutated to always return success - the exact defect being fixed, one layer
+down - and **all twelve component tests stayed green**, because they mock the
+action. The form was proved to behave correctly _given an honest action_, and
+nothing anywhere proved the action was honest.
+
+The tests were not wrong to mock it; a component test that opens a socket is a
+worse test. What was wrong is that the mocked collaborator had **no tests of its
+own**, so the boundary between them was covered from neither side.
+
+**When a mutation comes back green, suspect the test before believing the
+code.** And when a test mocks a module, ask what proves that module - the answer
+is a file, and if it does not exist the mock is a hole rather than a boundary.
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope
@@ -1331,6 +1384,43 @@ come with it:
   other state carries `NULL` on purpose, and the constant says why for each.
   Demanding a receipt where none is behind the step fills a trail with
   evidence of nothing.
+
+### An inbound lead is stored first, and announced second
+
+From `L1`. `ContactRequest` lives in **core**, not in `kamnet`: a public request
+is module-agnostic - its subject can be lands, VERIFY, KAMNET, KBS or a
+partnership - and it arrives from somebody with no account. `KamnetLead` is an
+agent's own prospect, `agentId` required and foreign-keyed; giving a public
+request a fabricated agent would put a lead in an agent's pipeline they never
+spoke to.
+
+**The write is the success criterion and nothing else is.** A `201` means the
+row exists, and the success toast fires on that alone. The notification and the
+acknowledgement are queued afterwards and their failure is logged at `error`
+without failing the request - the lead is already safe, and telling somebody who
+wrote three paragraphs that nothing arrived makes them send it twice.
+
+That trade is only payable because **the daily digest counts rows, not
+messages**, so a request whose email was lost is still in tomorrow's count.
+Remove the digest and this becomes a silent failure again.
+
+**Consent is stored as a timestamp, and the timestamp is the server's.** A
+consent time supplied by a browser is a claim about the past; the column is
+`NOT NULL`, so a row cannot exist without one whatever route wrote it. The
+policy path is stored beside it: consent is to a document, and documents change.
+
+### A digest that always arrives beats an alert that never has
+
+From `L2`. The contact form sent nothing for its entire life and no alert
+noticed, because an alert fires on a condition somebody predicted and nobody had
+predicted this one. The digest goes out **every day, zero included**, so its
+_absence_ is the signal - and absence is something a person notices without
+being told what to watch for.
+
+It rides on `QUEUES.CORE`, as a job name in the processor that already owns that
+queue. **Never a second `@Processor` on an existing queue**: BullMQ hands a job
+to one worker, and that is how G6's dunning processor silently ate a payment
+reminder.
 
 ### SSM is not a live configuration channel, except where it is
 

@@ -68,6 +68,11 @@ const publicCount = (src: string) =>
  */
 const PUBLIC_SURFACE: Record<string, number> = {
   'core/auth/auth.controller.ts': 9,
+  // L1: the public contact form's one route. A prospect has no account - that
+  // is what the form is for - and it is throttled to 3/minute for the same
+  // reason the newsletter is: an unauthenticated write is a mailbox anybody
+  // can address.
+  'core/contact/contact.controller.ts': 1,
   'health/health.controller.ts': 3,
   'kbs/controllers/kbs-public.controller.ts': 1,
   'newsletter/newsletter.controller.ts': 1,
