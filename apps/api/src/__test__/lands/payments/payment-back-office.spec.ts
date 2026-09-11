@@ -100,6 +100,7 @@ describe('G4 - the back office', () => {
 
     it('validating is a separate call, with its own actor and reason', async () => {
       prisma.paymentReceipt.findMany.mockResolvedValue([{ amount: 750_000n }]);
+      prisma.paymentReceipt.findUnique.mockResolvedValue({ id: 'r1', paymentId: 'pay-1' });
 
       const result = await service.validate('pay-1', {
         actorUserId: ADMIN,
@@ -119,9 +120,30 @@ describe('G4 - the back office', () => {
 
     it('refuses to validate without a reason, through G1 guard', async () => {
       await expect(
-        service.validate('pay-1', { actorUserId: ADMIN, reason: '   ' }),
+        service.validate('pay-1', { actorUserId: ADMIN, reason: '   ', evidenceReceiptId: 'r1' }),
       ).rejects.toThrow(/explicit act by a named person/);
       expect(prisma.payment.update).not.toHaveBeenCalled();
+    });
+
+    it('refuses to validate without the receipt it rests on, through the G7 guard', async () => {
+      await expect(
+        service.validate('pay-1', { actorUserId: ADMIN, reason: 'reçus vérifiés' }),
+      ).rejects.toThrow(/without the encaissement it rests on/);
+      expect(prisma.payment.update).not.toHaveBeenCalled();
+      expect(prisma.paymentTransition.create).not.toHaveBeenCalled();
+    });
+
+    it('the validate DTO requires the receipt, a boundary earlier', () => {
+      const dto = readFileSync(
+        join(__dirname, '..', '..', '..', 'lands', 'payments', 'dto', 'payments.dto.ts'),
+        'utf8',
+      );
+      const validate = dto.slice(
+        dto.indexOf('export const validatePaymentSchema'),
+        dto.indexOf('export class ValidatePaymentDto'),
+      );
+      expect(validate).toContain('evidenceReceiptId');
+      expect(validate).not.toContain('.optional()');
     });
   });
 
@@ -224,6 +246,16 @@ describe('G4 - the back office', () => {
     });
 
     it('the database CHECK is the backstop, and still confines the exception', () => {
+      /**
+       * The **live** definition is G11's, which dropped G1's constraint and
+       * re-created it against the `HIST` code. The first version of this test
+       * read G1's file and asserted `INCONNU_HISTORIQUE` - text that was true
+       * of a constraint no database has carried since 7 September. A test
+       * that reads a superseded migration is a test of the archive.
+       *
+       * What the constraint *does* is exercised in `check-constraints.dbspec.ts`
+       * against a real database; this only pins where it is declared.
+       */
       const migration = readFileSync(
         join(
           __dirname,
@@ -236,15 +268,13 @@ describe('G4 - the back office', () => {
           'prisma',
           'lands',
           'migrations',
-          '20260906190000_g1_payment_model',
+          '20260907090000_g11_channels_gate_and_payer',
           'migration.sql',
         ),
         'utf8',
       );
       expect(migration).toContain('PaymentReceipt_evidence_required');
-      expect(migration).toContain(
-        '"evidenceUrl" IS NOT NULL OR "channel" = \'INCONNU_HISTORIQUE\'',
-      );
+      expect(migration).toContain('"evidenceUrl" IS NOT NULL OR "channel" = \'HIST\'');
     });
 
     it('records a receipt that has its proof', async () => {
@@ -298,6 +328,34 @@ describe('G4 - the back office', () => {
           RECORDER,
         ),
       ).rejects.toThrow(/must name who paid/);
+    });
+
+    it('the controller passes the payer through - it did not, and the screen could not record a DEPO', () => {
+      // Found by A17. G11 added `paidBy` to the DTO, the service and the form,
+      // and the controller's call to `recordReceipt` never forwarded it: a
+      // deposit keyed on the screen, with its payer filled in, would have been
+      // refused by the service for having none. Every layer was individually
+      // tested; the seam between two of them was not.
+      const controller = readFileSync(
+        join(__dirname, '..', '..', '..', 'lands', 'controllers', 'payments-admin.controller.ts'),
+        'utf8',
+      );
+      const call = controller.slice(
+        controller.indexOf('this.payments.recordReceipt('),
+        controller.indexOf('admin.id,', controller.indexOf('this.payments.recordReceipt(')),
+      );
+      for (const field of [
+        'amount',
+        'currency',
+        'channel',
+        'receivedAt',
+        'evidenceUrl',
+        'paidBy',
+        'correctsId',
+        'note',
+      ]) {
+        expect(call).toContain(`${field}:`);
+      }
     });
 
     it('records a DEPO receipt that names the depositor', async () => {
@@ -447,16 +505,43 @@ describe('G4 - the back office', () => {
       expect(prisma.paymentTransition.create).not.toHaveBeenCalled();
     });
 
-    it('a global admin may reach a state that commits money', async () => {
+    it('a global admin may reach a state that commits money, naming the receipt it rests on', async () => {
       prisma.payment.findUnique.mockResolvedValue(payment({ state: PaymentState.EN_VERIFICATION }));
+      prisma.paymentReceipt.findUnique.mockResolvedValue({ id: 'r1', paymentId: 'pay-1' });
 
       const result = await service.transitionAsAdmin('pay-1', PaymentState.PARTIELLEMENT_RECU, {
         actorUserId: ADMIN,
         reason: 'two receipts are in',
         roles: ['ADMIN_GLOBAL'],
+        evidenceReceiptId: 'r1',
       });
 
       expect(result.state).toBe(PaymentState.PARTIELLEMENT_RECU);
+      const audit = prisma.paymentTransition.create.mock.calls[0][0] as {
+        data: { evidenceReceiptId: string | null };
+      };
+      expect(audit.data.evidenceReceiptId).toBe('r1');
+    });
+
+    it('the transition route carries the receipt through to the guard', () => {
+      // `transitionAsAdmin` was the gap the G7 assessment measured: four of the
+      // five steps in a real run went through it and it accepted no receipt at
+      // all. Pinned so the field cannot be dropped from the signature again.
+      const src = readFileSync(
+        join(__dirname, '..', '..', '..', 'lands', 'payments', 'payments.service.ts'),
+        'utf8',
+      );
+      const method = src.slice(
+        src.indexOf('async transitionAsAdmin('),
+        src.indexOf('\n  }\n', src.indexOf('async transitionAsAdmin(')),
+      );
+      expect(method).toContain('evidenceReceiptId: by.evidenceReceiptId');
+
+      const controller = readFileSync(
+        join(__dirname, '..', '..', '..', 'lands', 'controllers', 'payments-admin.controller.ts'),
+        'utf8',
+      );
+      expect(controller).toContain('evidenceReceiptId: dto.evidenceReceiptId');
     });
 
     it('moves state and writes no money', async () => {

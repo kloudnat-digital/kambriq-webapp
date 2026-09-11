@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getProofUploadUrl, recordReceipt } from '@/lib/actions/payments';
 import { selectableChannels } from './channel-label';
+import { ReceiptPicker } from './receipt-picker';
 import { PAYMENT_CHANNELS } from '@kambriq/common/payments/payment-channels';
+import type { PaymentReceipt } from '@/types/payments';
 
 /**
- * Records one encaissement, with its proof.
+ * Records one encaissement, with its proof - or one correction of one.
  *
  * **This form cannot validate a payment.** It calls `recordReceipt` and
  * nothing else; validating is a separate action on a separate control, because
@@ -19,13 +21,32 @@ import { PAYMENT_CHANNELS } from '@kambriq/common/payments/payment-channels';
  * with the receipt. A receipt cannot be submitted without one - the button
  * stays disabled until a file has uploaded, the API refuses a blank
  * `evidenceUrl`, and the database `CHECK` refuses it after that.
+ *
+ * ---------------------------------------------------------------------------
+ * G5 - a correction, from this screen
+ * ---------------------------------------------------------------------------
+ * "Une correction s'ajoute au journal, elle ne remplace pas une ligne, et elle
+ * porte sa propre raison et son propre auteur." Until this form carried
+ * `correctsId`, that sentence was true only for a caller writing JSON by hand:
+ * an operator who keyed 3 000 000 twice had no way to say so.
+ *
+ * So: pick the line being corrected from the ledger, enter the signed amount
+ * that puts it right (negative to take money back off the total, positive to
+ * add what was under-keyed), and say why. The reason is required for a
+ * correction and the API refuses one without it. The author is whoever is
+ * signed in, written by the API as `recordedBy`. **Nothing here edits the
+ * original line**; it stays on the ledger, and the database refuses an UPDATE
+ * on it whoever asks.
  */
 export const RecordReceiptForm = ({
   paymentId,
   currency,
+  receipts,
 }: {
   paymentId: string;
   currency: string;
+  /** The ledger as it stands, so a correction can point at a line on it. */
+  receipts: PaymentReceipt[];
 }) => {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -34,9 +55,12 @@ export const RecordReceiptForm = ({
   const [receivedAt, setReceivedAt] = useState('');
   const [note, setNote] = useState('');
   const [paidBy, setPaidBy] = useState('');
+  const [correctsId, setCorrectsId] = useState('');
   const [proofKey, setProofKey] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isCorrection = correctsId !== '';
 
   const upload = async (f: File) => {
     setUploading(true);
@@ -73,6 +97,7 @@ export const RecordReceiptForm = ({
         evidenceUrl: proofKey,
         note: note || undefined,
         paidBy: paidBy.trim() || undefined,
+        correctsId: correctsId || undefined,
       });
       if (!res.success) {
         setError(res.error ?? "L'encaissement a été refusé.");
@@ -80,6 +105,7 @@ export const RecordReceiptForm = ({
       }
       setAmount('');
       setNote('');
+      setCorrectsId('');
       setProofKey(null);
       router.refresh();
     });
@@ -93,15 +119,32 @@ export const RecordReceiptForm = ({
           Enregistrer un encaissement ne valide pas le paiement. La validation est un acte distinct.
         </p>
 
+        {/* Offered only once there is a line to correct. A correction points
+            at a line by choosing it, never by typing an id. */}
+        {receipts.length > 0 && (
+          <ReceiptPicker
+            receipts={receipts}
+            value={correctsId}
+            onChange={setCorrectsId}
+            label="Cette ligne corrige un encaissement existant"
+            emptyLabel="Non — nouvel encaissement"
+            hint="Une correction s'ajoute au journal : la ligne corrigée reste telle quelle. Montant négatif pour retirer du total, positif pour ajouter ce qui manquait."
+            testId="corrects-id"
+          />
+        )}
+
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm">
-            <span className="mb-1 block text-gray-600">Montant ({currency}, entier)</span>
+            <span className="mb-1 block text-gray-600">
+              Montant ({currency}, entier{isCorrection ? ', signé' : ''})
+            </span>
             <input
               inputMode="numeric"
               value={amount}
               onChange={(e) => setAmount(e.target.value.replace(/[^\d-]/g, ''))}
               className="w-full rounded border px-2 py-1"
-              placeholder="250000"
+              placeholder={isCorrection ? '-250000' : '250000'}
+              data-testid="receipt-amount"
             />
           </label>
 
@@ -129,6 +172,7 @@ export const RecordReceiptForm = ({
               value={receivedAt}
               onChange={(e) => setReceivedAt(e.target.value)}
               className="w-full rounded border px-2 py-1"
+              data-testid="receipt-received-at"
             />
             <span className="mt-1 block text-xs text-gray-400">
               La date où l&apos;argent est arrivé, pas la date de saisie.
@@ -146,9 +190,15 @@ export const RecordReceiptForm = ({
                 if (f) void upload(f);
               }}
               className="w-full text-xs"
+              data-testid="receipt-proof"
             />
             {uploading && <span className="text-xs text-gray-500">Téléversement…</span>}
             {proofKey && <span className="text-xs text-green-700">Justificatif téléversé.</span>}
+            {isCorrection && (
+              <span className="mt-1 block text-xs text-gray-400">
+                Pour une correction : la pièce qui montre l&apos;erreur (relevé, confirmation).
+              </span>
+            )}
           </label>
         </div>
 
@@ -172,11 +222,15 @@ export const RecordReceiptForm = ({
         )}
 
         <label className="block text-sm">
-          <span className="mb-1 block text-gray-600">Note (facultatif)</span>
+          <span className="mb-1 block text-gray-600">
+            {isCorrection ? 'Motif de la correction (obligatoire)' : 'Note (facultatif)'}
+          </span>
           <input
             value={note}
             onChange={(e) => setNote(e.target.value)}
             className="w-full rounded border px-2 py-1"
+            placeholder={isCorrection ? 'Montant saisi deux fois' : undefined}
+            data-testid="receipt-note"
           />
         </label>
 
@@ -185,10 +239,21 @@ export const RecordReceiptForm = ({
         <Button
           type="button"
           onClick={submit}
-          disabled={pending || uploading || !proofKey || !amount || !receivedAt}
+          disabled={
+            pending ||
+            uploading ||
+            !proofKey ||
+            !amount ||
+            !receivedAt ||
+            (isCorrection && note.trim() === '')
+          }
           data-testid="record-receipt-submit"
         >
-          {pending ? 'Enregistrement…' : "Enregistrer l'encaissement"}
+          {pending
+            ? 'Enregistrement…'
+            : isCorrection
+              ? 'Enregistrer la correction'
+              : "Enregistrer l'encaissement"}
         </Button>
         {!proofKey && (
           <p className="text-xs text-gray-500">

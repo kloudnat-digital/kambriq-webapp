@@ -1113,6 +1113,44 @@ Two things this cost that are worth keeping:
 
 ---
 
+### Every layer tested, and the seam between two of them not
+
+From `A17`. G11 added `paidBy` to the DTO, the service, the CHECK constraint
+and the form, each with its test, and the controller's hand-built call to
+`recordReceipt` never forwarded it. A `DEPO` keyed on the screen with its payer
+filled in would have been refused by the service for having none. Four green
+suites, one field lost between two of them.
+
+**A field that crosses a boundary by being copied is a field a test has to
+watch cross.** `payment-back-office.spec.ts` now pins every field of that call.
+The general shape: when a layer rebuilds an object by hand rather than passing
+it through, the rebuild is the place a field goes missing, and it is the place
+nobody tests because each side already has its own.
+
+### A test that reads a superseded file is a test of the archive
+
+From `A17`. _the database CHECK is the backstop, and still confines the
+exception_ read G1's migration and asserted `'INCONNU_HISTORIQUE'`. G11 had
+dropped that constraint and re-created it against `HIST` two days earlier. The
+test stayed green about a definition no database carried, because G1's file
+still says what it said.
+
+A migration file is history; the live definition is whatever the last migration
+to touch it says. **Pin the behaviour against a database where you can, and
+where you must read a file, read the one that defines the thing now.**
+
+### A fortuitous observation is not a property
+
+From `A17`. The append-only trigger had refused G11's migration UPDATE, the
+migration's comment recorded it, and the register cited it as the trigger
+working. It was. It was also the only time anything had exercised it, by
+accident, in a direction nobody planned. The day a later migration dropped the
+trigger, nothing would have refused anything and nothing would have gone red.
+
+**An observation tells you the guard worked once. A test tells you it will fail
+on purpose when it stops working.** The two are not the same evidence, and the
+first has a way of being cited as if it were the second.
+
 ### A form that validates a control nobody can see refuses and explains nothing
 
 From `L1`. The public contact form put `required` on a Radix `<Select>`, which
@@ -1310,6 +1348,42 @@ settle money.
 `EXPIRE` is the single sanctioned exception, because the design asks for exactly
 one automatic transition. Recording money and agreeing that it settles a payment
 are **two calls**; the pre-G1 `confirmDownPayment` did both in one `update`.
+
+### A database guarantee has a database-backed test, or it is a claim
+
+From `A17`. Until 9 September no test in this repository opened a database. The
+two append-only triggers and five CHECK constraints on the payment tables were
+text in migration files, and a migration dropping all of them would have passed
+CI with 575 unit tests green. One of the triggers had fired once, in anger,
+refusing G11's own migration UPDATE - which was right, and was an observation,
+not a property.
+
+**`pnpm test:db`** runs `*.dbspec.ts` under `apps/api/src/__test__/database/`
+against `kambriq_lands_test` on the docker-compose Postgres, migrated by the
+real migration files. It refuses any database whose name does not end in
+`_test`. The unit suite (`nx test api`) still opens no connection. Rules that
+come with it:
+
+- **A guarantee is proved by removal.** Drop the trigger or constraint in a
+  scratch migration, watch the test read `Received has value: null` - the
+  UPDATE went through - delete the scratch, `pnpm test:db:reset`. A test that
+  passes against a database where the guarantee was never installed proves
+  nothing about the guarantee. Every one of the nine was done this way, and
+  the failing test names are in the register.
+- **Assert the constraint by its name**, not only the SQLSTATE. A row refused
+  by a different rule would otherwise pass the test for this one.
+- **Send the assault as SQL.** The trigger exists to refuse the caller that does
+  not use the service; a raw `UPDATE` through `pg` is that caller.
+- **`Payment.state` has one door.** `single-state-write-path.spec.ts` finds
+  every Prisma write to `payment` and requires exactly one to set `state`:
+  `transition()`, in the same `$transaction` as the audit row, after every
+  guard. A second `payment.update({ data: { state } })` anywhere fails it by
+  file and method name.
+- **A transition into `PARTIELLEMENT_RECU` or `VALIDE` names the receipt it
+  rests on** (`EVIDENCED_STATES`), which must be on that payment's ledger. Every
+  other state carries `NULL` on purpose, and the constant says why for each.
+  Demanding a receipt where none is behind the step fills a trail with
+  evidence of nothing.
 
 ### An inbound lead is stored first, and announced second
 

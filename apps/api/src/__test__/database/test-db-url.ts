@@ -12,8 +12,13 @@
  * chantier that needs a different one, so the list is the configuration and
  * adding a schema is one entry.
  *
- * Only `core` is here today: it is the only schema with `*.dbspec.ts` files.
- * `lands` is the next one, and it is a single line.
+ * `core` and `lands` are both here: each has `*.dbspec.ts` files. `kbs` and
+ * `kamnet` are each a single entry on the day something needs them.
+ *
+ * The two arrived from different pull requests - core from the contact chantier,
+ * lands from the payment-guarantee one - which both created this file
+ * independently. The generic shape is what let them become one list rather than
+ * one winning.
  */
 export type TestSchema = {
   /** The prisma directory under `prisma/`, and the name used in messages. */
@@ -31,6 +36,12 @@ export const TEST_SCHEMAS: readonly TestSchema[] = [
     urlVar: 'DATABASE_URL_CORE_TEST',
     runtimeVar: 'DATABASE_URL_CORE',
     defaultUrl: 'postgresql://postgres:password@localhost:5432/kambriq_core_test',
+  },
+  {
+    name: 'lands',
+    urlVar: 'DATABASE_URL_LANDS_TEST',
+    runtimeVar: 'DATABASE_URL_LANDS',
+    defaultUrl: 'postgresql://postgres:password@localhost:5432/kambriq_lands_test',
   },
 ];
 

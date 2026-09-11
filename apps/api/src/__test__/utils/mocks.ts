@@ -254,6 +254,8 @@ export const mockLandsPrisma = () => {
     paymentReceipt: {
       create: fn(),
       findMany: fn(),
+      /** G7: the receipt a transition names is read back to check it is this payment's. */
+      findUnique: fn(),
     },
     paymentTransition: {
       create: fn(),

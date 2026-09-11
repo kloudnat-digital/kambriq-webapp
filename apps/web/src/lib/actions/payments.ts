@@ -107,9 +107,13 @@ export const recordReceipt = createAction(
   },
 );
 
-/** Validates a payment. A separate, explicit act, with its reason recorded. */
+/**
+ * Validates a payment. A separate, explicit act, with its reason recorded and
+ * the receipt it rests on - G7's "sur quelle preuve". The API refuses a
+ * validation that names none.
+ */
 export const validatePayment = createAction(
-  async (input: { paymentId: string; reason: string; evidenceReceiptId?: string }) => {
+  async (input: { paymentId: string; reason: string; evidenceReceiptId: string }) => {
     const { paymentId, ...body } = input;
     const result = await refusable(() =>
       serverApi.post(`/lands/admin/payments/${paymentId}/validate`, body),
@@ -127,7 +131,7 @@ export const validatePayment = createAction(
  * cannot do both in one act - the property G4 is proved against.
  */
 export const transitionPayment = createAction(
-  async (input: { paymentId: string; to: string; reason: string }) => {
+  async (input: { paymentId: string; to: string; reason: string; evidenceReceiptId?: string }) => {
     const { paymentId, ...body } = input;
     const result = await refusable(() =>
       serverApi.post(`/lands/admin/payments/${paymentId}/transition`, body),

@@ -156,7 +156,32 @@ describe('journey 2 - a file is uploaded and comes back through a working URL', 
 
     const me = await call('GET', '/users/me', { token: user });
     const profile = me.json<{ data: { profile?: { idDocumentUrls?: string[] } } }>();
-    expect(profile.data.profile?.idDocumentUrls ?? []).toContain(data.fileUrl);
+    const returned = profile.data.profile?.idDocumentUrls ?? [];
+
+    /**
+     * The document comes back **signed**, not as the key that was sent.
+     *
+     * `toUserResponse` signs identity documents the way it signs the avatar
+     * beside them - a named decision in G11-G14, because A14 asks a reviewer to
+     * judge whether a passport is genuine and a raw `users/.../passport.jpg`
+     * cannot be opened. This assertion used to read `toContain(data.fileUrl)`,
+     * comparing a bare key against a signed URL, so it went red on the day the
+     * product became correct and stayed red for four days.
+     *
+     * **Three tails, because "a signed URL came back" is not the claim.** The
+     * claim is that *this* document came back, signed, and alone. Asserting only
+     * that the array is non-empty, or only that it carries `X-Amz-Signature`,
+     * would pass just as happily against a signed link to somebody else's file -
+     * which is the shape of a test that looks like coverage and checks nothing.
+     *
+     * The key is matched against the URL's **path**, never the whole string. The
+     * signature, the credential scope and the expiry all live in the query, and
+     * a key compared against the entire URL can be satisfied by something that
+     * is not the object's name at all.
+     */
+    expect(returned).toHaveLength(1);
+    expect(returned[0]).toContain('X-Amz-Signature');
+    expect(decodeURIComponent(new URL(returned[0]).pathname)).toContain(data.fileUrl);
   });
 });
 

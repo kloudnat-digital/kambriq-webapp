@@ -182,9 +182,6 @@ listed here first.
 | `A10`             | `PROUVE`            | the identity-review queue did not exist - the route and the role did. Queue route + `idSubmittedAt`; the back-office screen stays open                                                   |
 | `A11`             | `PROUVE`            | 13 sites, 15 messages, 12 transactional. `sendUpdate` returns an outcome and throws on a transactional template                                                                          |
 | `A12`             | `PROUVE`            | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                                                            |
-| `G6`              | `PROUVE LOCALEMENT` | the dunning queue, reminders at J-7 and J-1, EXPIRE at the term. Found and fixed a processor collision that silently ate a reminder email                                                |
-| `R4`              | `EN COURS`          | back to hosted runners under a spending cap. Baseline measured: 27 billed minutes, of which the quality matrix billed 5 to do 102s of checking                                           |
-| `R3`              | `EN COURS`          | CI moved to the self-hosted `kambriq-ci` runner. No `services:` anywhere, so macOS is viable. Exposed three image builds pinning no platform - amd64 held by accident of `ubuntu-latest` |
 | `R1`              | `EN COURS`          | **a merge can succeed and have no effect.** `#89` merged into a branch consumed 89 s earlier; `#88` was squash-merged, so nothing showed. Pending proof is the three commands in `R1`    |
 | `G8`              | `ARRETE`            | **G11-G14 is not on develop and not deployed**: #89 merged into the G9 branch 89s after that branch merged to develop. 51 files stranded at `230b827`                                    |
 | `G8` blocker      | `A FAIRE`           | re-land `230b827` on develop (**not** conflict-free - see `R1`), deploy, then re-run G8. Until then dev emails every channel's coordinates to whoever clicks                             |
@@ -207,8 +204,14 @@ listed here first.
 | `G11-G14`         | `PROUVE LOCALEMENT` | six channels, the identification gate, A14's review screen, coordinates in the platform. Email carries none                                                                              |
 | `G11` follow-up   | `A DECIDER`         | infra owes `ORANGE_MONEY_*` and `MTN_MONEY_*`: v03 splits mobile money in two but keeps twelve parameters with one number                                                                |
 | `G11` follow-up 2 | `A DECIDER`         | v03 section 5's example uses a hyphen between reference and channel, which section 4b forbids. 4b implemented                                                                            |
-
-### H1 - `ADMIN_GLOBAL` **is** the super admin - `PROUVE`
+| `A18`             | `PROUVE LOCALEMENT` | queue counts and failed payloads on `/health/queues`, ADMIN_GLOBAL. `failed` 0->1 observed through the endpoint against a real Redis                                                     |
+| `G6`              | `PROUVE LOCALEMENT` | the dunning queue, reminders at J-7 and J-1, EXPIRE at the term. Found and fixed a processor collision that silently ate a reminder email                                                |
+| `R4`              | `EN COURS`          | back to hosted runners under a spending cap. Baseline measured: 27 billed minutes, of which the quality matrix billed 5 to do 102s of checking                                           |
+| `R3`              | `EN COURS`          | CI moved to the self-hosted `kambriq-ci` runner. No `services:` anywhere, so macOS is viable. Exposed three image builds pinning no platform - amd64 held by accident of `ubuntu-latest` |
+| `A17`             | `PROUVE LOCALEMENT` | a database-backed suite, `pnpm test:db`: 51 tests against a real Postgres; both append-only triggers and all five CHECKs proved sharp by removal and restoration                         |
+| `G7`              | `PROUVE LOCALEMENT` | `evidenceReceiptId` filled end to end; NULL deliberate and documented for the other states; the single write path to `Payment.state` pinned, mutation red                                |
+| `G5`              | `PROUVE LOCALEMENT` | a correction entered from the back-office screen: three movements, total 500 000 over four lines, original line unchanged. Correction carries its own reason and author                  |
+| `G11` follow-up 3 | `PROUVE`            | the controller never forwarded `paidBy`: a DEPO keyed on the screen was refused by the service. Fixed and pinned here                                                                    |
 
 **Cost impact: None.** No resource, no dependency, no runtime change.
 
@@ -645,6 +648,284 @@ The manual runbook does not have this gap - it fetches the log and requires the
 tally - so the one-off path already checks what the automated path does not.
 
 ---
+
+### A17 - tests that open a database - `PROUVE LOCALEMENT`
+
+**Cost impact: None.** No new dependency, no new container. The suite uses the
+Postgres already declared in `docker/docker-compose.yml` and creates one more
+database on it. CI will need a `services: postgres` block on the job that runs
+it, which is a hosted-runner container and costs the job's minutes, nothing
+else.
+
+**Not a register entry until this chantier.** The brief named "the A17 register
+entry"; there was none. The G5/G7 assessment closed by saying the harness was
+"a scoping decision for whoever schedules the next chantier" and nobody had
+scheduled it. It is scheduled and delivered here, first, because G5 and G7
+both rest on it.
+
+## What was chosen, and why
+
+**A dedicated database on the docker-compose Postgres, migrated by the real
+migration files, run by a separate jest target.**
+
+- `pnpm test:db` - one command. `docker compose up -d --wait db`, then
+  `nx run api:test-db`. The suite's `globalSetup` creates `kambriq_lands_test`
+  if it is absent and runs `prisma migrate deploy` against it. **The migration
+  files are the thing under test.** A harness that installed the triggers by
+  some other route would prove the harness.
+- `*.dbspec.ts`, matched only by `apps/api/jest.database.config.cts`. `nx test
+api` still opens no connection and runs anywhere; the 43 unit suites did not
+  change shape.
+- **The name must end in `_test` or the suite refuses to start.** It inserts,
+  updates and deletes rows to prove the database refuses it; dev holds real
+  people's accounts (`H6`) and a suite that could be pointed at it by an
+  environment variable would be, once.
+- `KAMBRIQ_DB_TEST_RESET=1` (or `pnpm test:db:reset`) drops and recreates it.
+  That is how a scratch migration used for a sharpness proof is undone.
+
+**Testcontainers was not chosen**: a new dependency and an image pull per run,
+to reproduce a container the repository already declares. **A migration-time
+`pgTAP` was not chosen**: it would test SQL from SQL and leave the service out,
+and G7's proof needs the service's `transition()` writing into a real table.
+
+**What it costs.** First run on a machine with the compose stack up: 12 s wall,
+of which 4 s are the tests; the rest is the compose health wait, creating the
+database and applying the five migrations. Subsequent runs: the same 12 s,
+`No pending migrations to apply`. After a reset, the same. Cold start of the
+compose stack adds whatever Postgres takes to become healthy, ~10 s here.
+
+## What it exercises, and the proof each is sharp
+
+Two clients, deliberately. Prisma writes the fixtures - a land, a reservation, a
+payment, so the generated types vouch for them. **`pg` sends the assaults as
+SQL.** The triggers exist to refuse "a script, a console, or the next developer
+in a hurry"; a raw `UPDATE` is that caller, and the SQLSTATE comes back
+unwrapped.
+
+Every guarantee was removed in a scratch migration
+(`99999999999999_scratch_<name>/migration.sql`), the suite run, the red read,
+the scratch deleted, the database reset, and the suite run green. All nine, the
+same afternoon, scripted so none was skipped:
+
+| Removed                                                      | Red                          | Every failure reads        | Restored |
+| ------------------------------------------------------------ | ---------------------------- | -------------------------- | -------- |
+| `DROP TRIGGER "PaymentReceipt_append_only"`                  | **3 failed**, 38 passed / 41 | `Received has value: null` | 41 / 41  |
+| `DROP TRIGGER "PaymentTransition_append_only"`               | **3 failed**, 38 passed      | `Received has value: null` | 41 / 41  |
+| `DROP CONSTRAINT "PaymentReceipt_evidence_required"`         | **7 failed**, 34 passed      | `Received has value: null` | 41 / 41  |
+| `DROP CONSTRAINT "Payment_reference_format"`                 | **5 failed**, 36 passed      | `Received has value: null` | 41 / 41  |
+| `DROP CONSTRAINT "Payment_currency_iso4217"`                 | **5 failed**, 36 passed      | `Received has value: null` | 41 / 41  |
+| `DROP CONSTRAINT "PaymentReceipt_currency_iso4217"`          | **5 failed**, 36 passed      | `Received has value: null` | 41 / 41  |
+| `DROP CONSTRAINT "PaymentReceipt_depo_requires_payer"` (G11) | **3 failed**, 38 passed      | `Received has value: null` | 41 / 41  |
+| `DROP CONSTRAINT "Payment_channels_are_selectable"` (G11)    | **2 failed**, 39 passed      | `Received has value: null` | 41 / 41  |
+| both `PaymentReminder` triggers (G6)                         | **2 failed**, 39 passed      | `Received has value: null` | 41 / 41  |
+
+`null` is what `attempt()` returns when the database **accepted** the
+statement. That is the whole failure: the UPDATE went through. The three
+receipt-trigger failures are the UPDATE, the DELETE, and the note-only edit
+that G11's migration was refused for; the seven evidence failures are the bare
+case plus one per selectable channel, so no channel is exempt.
+
+The 41 above are the two A17 files. The suite is **51 tests in 4 files** with
+G5's and G7's added below, 51 / 51 green on the final run.
+
+**Also in the suite, and not asked for:** the CHECK is asserted by its own name
+(`constraint: 'PaymentReceipt_evidence_required'`), so a row refused by a
+_different_ rule cannot pass the test; `HIST` with no proof is accepted, so the
+exception is proved to exist and not only the rule; a reference built by
+`buildReference()` is accepted by the SQL regex, which runs the TypeScript
+alphabet against the hand-written SQL one instead of comparing them as text;
+and an INSERT on each append-only table succeeds, so the sharpness of the
+UPDATE tests is not a side effect of a table nobody can write to.
+
+## Two defects the harness found on its way in
+
+1. **The controller never forwarded `paidBy`.** G11 added the payer to the DTO,
+   the service, the CHECK and the form; `PaymentsAdminController.recordReceipt`
+   built the service input by hand and left it out. A `DEPO` receipt keyed on
+   the screen with its payer filled in would have been refused by the service
+   for having none. Every layer had its test; **the seam between two of them
+   had none.** Fixed; `payment-back-office.spec.ts` now pins every field of
+   that call.
+2. **A test that read a superseded migration.** _the database CHECK is the
+   backstop, and still confines the exception_ asserted
+   `'INCONNU_HISTORIQUE'` in G1's file - a constraint G11 dropped and
+   re-created against `HIST` on 7 September. Green for two days about a
+   definition no database carried. Re-pointed at G11's file; the behaviour is
+   now exercised rather than read.
+
+## Gate - LOCAL ONLY
+
+`pnpm test:db` 4 / 51. `nx test api` 43 suites / 575 tests, `nx test common`
+16 / 290, `nx test web` green, both typechecks clean, `nx lint api` clean,
+`nx lint web` the one pre-existing warning. **No CI run has confirmed any of
+it** - the organisation's Actions quota is exhausted. CI still has to: add a
+Postgres service to the quality job and run `nx run api:test-db` there; and
+show the suite green on a runner that is not this machine.
+
+---
+
+### G7 - piste d'audit immuable: "sur quelle preuve", and one door - `PROUVE LOCALEMENT`
+
+**Cost impact: None.** No column added; the column existed and was never
+written.
+
+Assessed on 7 September (`docs/ops/g5-g7-assessment.md`) as a small chantier
+with four remaining items. Re-checked against `develop` at `aa721f0` before
+anything was built: G9 had since closed the creation row (every trail now
+starts at `INITIE`), G6 had added nothing to the trail, and the other three were
+still open. Two are closed here; the immutability clause is A17's.
+
+## "Sur quelle preuve" - filled, and NULL where it is deliberate
+
+`EVIDENCED_STATES = { PARTIELLEMENT_RECU, VALIDE }` in
+`libs/common/src/payments/payment-state.ts`, beside the other sets, with the
+reason for every state that is **not** in it written on the constant. The
+design's own words decide membership: those two are the states that say money
+was "constatee **et prouvee**", and _prouvee_ is a justificatif on a ledger
+line.
+
+`assertTransitionIsEvidenced(to, evidenceReceiptId)` throws when either is
+entered with no receipt. It sits in `transition()` with the other guards, so
+every door - the send, the back-office step, `validate`, the dunning sweep -
+passes it. `assertReceiptBelongsTo` then reads the receipt back and refuses one
+that is not on this payment's ledger: an audit row pointing at somebody else's
+encaissement answers "on what basis" with a document about a different sale,
+which is worse than NULL.
+
+**What happens with no receipt behind the step: NULL, and it is an answer.**
+`INSTRUCTIONS_ENVOYEES` records its evidence in `communicatedDetails`;
+`ANNONCE_CLIENT` is the client's word, a claim not a proof; `EN_VERIFICATION`
+has established nothing yet; `REJETE` and `ANNULE` rest on a named person's
+reason; `EXPIRE` is the calendar. A receipt may be _offered_ on those steps and
+is never _demanded_ - demanding one would have operators attach the nearest
+line to satisfy a field, which is how a trail fills with evidence of nothing.
+The screen says it in words: _"sans preuve rattachée — cette étape ne repose
+sur aucun encaissement"_.
+
+Reached end to end: `transitionPaymentSchema` and `transitionAsAdmin` accept
+it (the four-of-five-steps gap the assessment measured), `validatePaymentSchema`
+**requires** it, both screen controls carry a picker built from the ledger with
+nothing preselected, and the trail renders the receipt by date and amount with
+its proof link.
+
+## One door to `Payment.state`
+
+`single-state-write-path.spec.ts` walks `apps/api/src`, `libs/common/src` and
+`prisma/`, finds every Prisma write to the `payment` model, and requires that
+**exactly one** sets `state`: `transition()` in the payments service. It also
+requires that write to sit in the same `$transaction` as the
+`paymentTransition.create`, every guard to run before the transaction, and no
+raw SQL to touch the table. The failure names the file and the method, not a
+count.
+
+**Mutation (d), run 2026-09-09.** `expireWithoutTrail()` added to
+`DunningService` - one `payment.update` with `state: PaymentState.EXPIRE`, no
+guard, no audit row:
+
+```
+● exactly one Prisma write sets state, and it is transition() in the payments service
+  - Expected  - 0
+  + Received  + 1
+    Array [
+  +   "apps/api/src/lands/payments/dunning.service.ts :: expireWithoutTrail() :: payment.update",
+      "apps/api/src/lands/payments/payments.service.ts :: transition() :: payment.update",
+    ]
+Tests:       1 failed, 5 passed, 6 total
+```
+
+Reverted: 6 / 6. The first run of this mutation reported the method as
+`MUTATION()` - the doc comment above the method had been read as its name.
+Comments are stripped before the enclosing method is looked for now, and the
+mutation was run again to see the right name.
+
+## Proof (c), through the screen, locally
+
+Payment `KBQ-2609-CY44P-2` on the local database, driven through the real
+back-office page by a Playwright script kept outside the repository (the CI
+e2e job runs against deployed dev, and this writes payments). The trail after
+`EN_VERIFICATION -> PARTIELLEMENT_RECU`, as rendered:
+
+```
+EN_VERIFICATION → PARTIELLEMENT_RECU le 9 septembre 2026 à 19:44
+Deux encaissements constatés, un corrigé
+par 00000000-0000-4000-8000-b00000000001
+sur preuve : encaissement du 2 septembre 2026 de 200 000 XAF (c24633ec) — Ouvrir le justificatif
+```
+
+The four earlier rows each read _sans preuve rattachée_. Read back from the
+table: `evidenceReceiptId = c24633ec…` on that row, NULL on the other four.
+And `audit-trail-evidence.dbspec.ts` proves the same through the service into
+the test database, including that the row **cannot be re-pointed afterwards**
+(`23001`) - G7.2 meeting G7.1d.
+
+## Not done here, on purpose
+
+The four-eyes rule stays where the design left it: _"Option a trancher plus
+tard, pas maintenant."_ The seam is unchanged.
+
+## Gate - LOCAL ONLY
+
+As A17's. CI has to confirm the api suite on a clean runner.
+
+---
+
+### G5 - journal des mouvements: the correction, from the screen - `PROUVE LOCALEMENT`
+
+**Cost impact: None.**
+
+Assessed as a formality with one real gap and one test debt. The debt is A17's
+(`ledger-total.dbspec.ts`); the gap is closed here.
+
+## The correction, entered from the back office
+
+`record-receipt-form.tsx` carries a picker, _"Cette ligne corrige un
+encaissement existant"_, built from the ledger on the page; nothing typed,
+nothing preselected. Choosing a line makes the note _"Motif de la correction
+(obligatoire)"_ and the button _"Enregistrer la correction"_. v03 §7:
+_"elle porte sa propre raison et son propre auteur"_ - the reason is the note,
+required for a correction by the DTO and again by the service; the author is
+`recordedBy`, whoever is signed in. The proof is still required: for a
+correction it is the piece that shows the error.
+
+The service refuses a correction with no reason, one pointing at a line on
+another payment, and one pointing at a line that does not exist - each before
+anything is written. **It appends.** `recordReceipt` contains one
+`paymentReceipt.create` and no update; the unit test now sweeps every `data:`
+block in the service for a total, and the database refuses the edit if
+anything gets past it.
+
+## Proof (b), through the screen, locally
+
+Same payment, same script. Three lines entered on the page: 200 000 (2 Sept),
+150 000 (5 Sept), then a correction of the second, **-50 000**, reason
+_"Confirmation OMO lue 150 000, montant réel 100 000 (saisie erronée)"_. The
+ledger as rendered, then read back from `PaymentReceipt`:
+
+```
+id       | amount | receivedAt | corrects | note
+5d17007b | 200000 | 2026-09-02 |          |                       <- an earlier run of the same script
+c24633ec | 200000 | 2026-09-02 |          |
+e99347db | 150000 | 2026-09-05 |          |
+3a709230 | -50000 | 2026-09-05 | e99347db | Confirmation OMO lue 150 000, montant réel 100 000 (saisie erronée)
+
+SUM(amount) = 500000      Montant dû 340 000 · Encaissé 500 000 · Reste à percevoir -160 000
+```
+
+The original 150 000 line is there, unchanged, and the correction points at it.
+The screen marks it _(correction)_. **The first line is itself evidence**: it
+was recorded by a run of the script that failed at its second upload, and
+nothing - not the failed run, not the next one - could remove it. That is the
+property.
+
+`ledger-total.dbspec.ts` proves the same in the test database: three lines sum
+to 2 500 000 by `sumReceipts` and by `SUM()`; the corrected line re-reads
+unchanged; "fixing" it is refused with `23001`; and
+`UPDATE "Payment" SET "totalReceived"` fails with `42703` - there is no column.
+
+## Gate - LOCAL ONLY
+
+As A17's. The web build is typechecked and linted locally; no CI run has built
+the image.
 
 ### L1-contact - the contact form sent nothing, and said it had - `PROUVE LOCALEMENT`
 

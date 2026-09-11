@@ -21,6 +21,7 @@ import {
   assertActorIsNamed,
   assertTransitionAllowed,
   assertTransitionIsDeliberate,
+  assertTransitionIsEvidenced,
   COMMITTING_STATES,
   PaymentChannel,
   PaymentState,
@@ -854,6 +855,38 @@ export class PaymentsService {
       );
     }
 
+    /**
+     * G5 - a correction "porte sa propre raison et son propre auteur" (v03 §7).
+     *
+     * The author is `recordedBy`, written below like any other line. The
+     * reason is the note, and for a correction it is required: a signed line
+     * that points at another and says nothing about why is a number somebody
+     * changed. The line it corrects must be on this payment's ledger - a
+     * correction of a line on another sale is a mistake this refuses rather
+     * than records.
+     *
+     * The correction **appends**. Nothing here touches the original row, and
+     * the database refuses it if anything tries (`PaymentReceipt_append_only`,
+     * exercised in `append-only.dbspec.ts`).
+     */
+    if (input.correctsId !== undefined) {
+      if ((input.note ?? '').trim() === '') {
+        throw new BadRequestException(
+          'A correction carries its own reason. Say what was wrong with the line it corrects.',
+        );
+      }
+      const corrected = await this.prisma.paymentReceipt.findUnique({
+        where: { id: input.correctsId },
+        select: { id: true, paymentId: true },
+      });
+      if (!corrected || corrected.paymentId !== paymentId) {
+        throw new BadRequestException(
+          `Receipt ${input.correctsId} is not on the ledger of payment ${paymentId}. A ` +
+            `correction points at one of this payment's own lines.`,
+        );
+      }
+    }
+
     const created = await this.prisma.paymentReceipt.create({
       data: {
         paymentId,
@@ -876,6 +909,7 @@ export class PaymentsService {
       receiptId: created.id,
       channel: input.channel,
       recordedBy,
+      correctsId: input.correctsId ?? null,
     });
 
     return { id: created.id };
@@ -991,6 +1025,9 @@ export class PaymentsService {
         actorUserId: t.actorUserId,
         reason: t.reason,
         evidenceReceiptId: t.evidenceReceiptId,
+        // Declared on the web's `PaymentTransition` type since G11 and never
+        // mapped here, so the screen typed a field the API did not send.
+        channel: t.channel,
         occurredAt: t.occurredAt,
       })),
     };
@@ -1167,7 +1204,13 @@ export class PaymentsService {
   async transitionAsAdmin(
     paymentId: string,
     to: PaymentState,
-    by: { actorUserId: string; reason: string; roles: readonly string[] },
+    by: {
+      actorUserId: string;
+      reason: string;
+      roles: readonly string[];
+      /** The receipt the step rests on. Required for the states that assert money arrived. */
+      evidenceReceiptId?: string;
+    },
   ): Promise<{ state: PaymentState }> {
     if (COMMITTING_STATES.has(to) && !by.roles.includes(RoleCode.ADMIN_GLOBAL)) {
       throw new ForbiddenException(
@@ -1178,6 +1221,7 @@ export class PaymentsService {
     return this.transition(paymentId, to, {
       actorUserId: by.actorUserId,
       reason: by.reason,
+      evidenceReceiptId: by.evidenceReceiptId,
     });
   }
 
@@ -1202,6 +1246,8 @@ export class PaymentsService {
     assertTransitionAllowed(from, to);
     assertTransitionIsDeliberate(to, by.actorUserId, by.reason);
     await this.assertClientIsIdentified(payment.reservationId, from, to);
+    assertTransitionIsEvidenced(to, by.evidenceReceiptId);
+    await this.assertReceiptBelongsTo(paymentId, by.evidenceReceiptId);
 
     await this.prisma.$transaction([
       this.prisma.payment.update({
@@ -1296,6 +1342,37 @@ export class PaymentsService {
           `verified. ${reservation.clientName}'s identity is "${status}" - ` +
           `${status === IdVerificationStatus.PENDING ? 'a document is waiting in the review queue' : status === IdVerificationStatus.REJECTED ? 'their document was rejected' : 'no document has been submitted'}. ` +
           `Verify it from the identity review queue, then send.`,
+      );
+    }
+  }
+
+  /**
+   * G7 - "sur quelle preuve": the receipt a transition names must be this
+   * payment's.
+   *
+   * `assertTransitionIsEvidenced` decides *whether* a receipt is required and
+   * knows nothing about the database. This decides whether the one named is
+   * real: it exists, and it sits on the ledger of the payment being moved. An
+   * audit row pointing at somebody else's encaissement would answer "on what
+   * basis" with a document about a different sale, which is worse than NULL.
+   *
+   * Checked before the transaction, so a refused transition writes nothing.
+   */
+  private async assertReceiptBelongsTo(
+    paymentId: string,
+    evidenceReceiptId: string | undefined,
+  ): Promise<void> {
+    if (evidenceReceiptId === undefined) return;
+
+    const receipt = await this.prisma.paymentReceipt.findUnique({
+      where: { id: evidenceReceiptId },
+      select: { id: true, paymentId: true },
+    });
+
+    if (!receipt || receipt.paymentId !== paymentId) {
+      throw new BadRequestException(
+        `Receipt ${evidenceReceiptId} is not on the ledger of payment ${paymentId}. A ` +
+          `transition rests on one of this payment's own encaissements, or on none.`,
       );
     }
   }
