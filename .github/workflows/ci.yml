@@ -137,7 +137,10 @@ jobs:
     name: Quality
     runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
     needs: [changes]
-    if: needs.changes.outputs.code == 'true'
+    # THROWAWAY: quality skips while the classifier succeeds and says code=true.
+    # GitHub reads a skipped required check as satisfied, so the old configuration
+    # would have called this mergeable. The gate must not.
+    if: false
     # ~142s measured; twice that, rounded. GitHub's default is 360 minutes, so
     # one hung job would burn 18% of the monthly quota before anyone noticed.
     timeout-minutes: 10
