@@ -17,8 +17,33 @@ test.describe('Authentication', () => {
     await expect(page.locator('input[type="password"]')).toBeVisible();
   });
 
-  test('protected route redirects to login when unauthenticated', async ({ page }) => {
-    await page.goto('/dashboard');
+  /**
+   * The target has to be a route this site actually serves.
+   *
+   * This test pointed at `/dashboard` for months. **There is no such page** -
+   * the agent dashboard is at `/agent/dashboard` - and it passed anyway, because
+   * the middleware was a negative matcher that redirected every URL the site does
+   * not serve straight to login. So the assertion was satisfied by the very
+   * defect `P3` existed to remove, and it went red on the day the product became
+   * correct rather than on the day anything broke.
+   *
+   * Two things are asserted here, and the second is what stops it going hollow
+   * again. A redirect on a protected route says little on its own: it said
+   * exactly the same thing back when *everything* redirected. It only means
+   * something once an unserved path is known to do something else.
+   */
+  test('protected route redirects to login when unauthenticated', async ({ page, request }) => {
+    const unknown = await request.get(`/not-a-route-${Date.now()}`, { maxRedirects: 0 });
+    expect(
+      unknown.status(),
+      'a path the site does not serve must 404; while it redirected, this test proved nothing',
+    ).toBe(404);
+
+    const protectedRoute = await request.get('/agent/dashboard', { maxRedirects: 0 });
+    expect(protectedRoute.status()).toBe(307);
+    expect(protectedRoute.headers()['location']).toContain('/login');
+
+    await page.goto('/agent/dashboard');
     await expect(page).toHaveURL(/login/);
   });
 
