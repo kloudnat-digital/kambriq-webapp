@@ -531,3 +531,83 @@ jobs:
           # report is worse than none, because it looks like evidence and is not.
           if-no-files-found: error
           retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # The one required check, and the reason it exists rather than requiring the
+  # three jobs directly.
+  #
+  # GitHub treats a SKIPPED required check as satisfied. That is fine when a job
+  # skipped because there was genuinely nothing to do, and wrong in every other
+  # case: a job skipped because the thing before it fell over reports the same
+  # green as a job skipped because the change was documentation. One means "no
+  # work needed", the other means "nothing is known", and nothing known must
+  # never read as fine.
+  #
+  # So the gate decides for itself. A skip is acceptable only when the
+  # classifier SUCCEEDED and said documentation only. Anything else - failed,
+  # cancelled, or skipped without that specific reason - is refused.
+  #
+  # Pull requests only. Protection applies to pull requests, and running this on
+  # every push to develop would spend a billed minute proving nothing.
+  # ---------------------------------------------------------------------------
+  gate:
+    name: CI Gate
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    needs: [changes, commitlint, quality]
+    if: always() && github.event_name == 'pull_request'
+    timeout-minutes: 5
+    steps:
+      - name: Refuse unless every job passed, or skipped for a reason we know
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          CHANGES_CODE: ${{ needs.changes.outputs.code }}
+          COMMITLINT_RESULT: ${{ needs.commitlint.result }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+        run: |
+          set -euo pipefail
+          failed=0
+
+          # The classifier is the thing everything else is judged against, so it
+          # has no acceptable outcome other than success. If it did not run, the
+          # reason another job skipped is unknowable.
+          if [ "$CHANGES_RESULT" = "success" ]; then
+            echo "  ok       What changed: success (code=$CHANGES_CODE)"
+          else
+            echo "  REFUSED  What changed: $CHANGES_RESULT - nothing else can be judged without it"
+            failed=1
+          fi
+
+          # A skip is legitimate here only when the classifier said so.
+          docs_only=0
+          if [ "$CHANGES_RESULT" = "success" ] && [ "$CHANGES_CODE" = "false" ]; then
+            docs_only=1
+          fi
+
+          check() {
+            name="$1"; result="$2"; may_skip="$3"
+            case "$result" in
+              success)
+                echo "  ok       $name: success" ;;
+              skipped)
+                if [ "$may_skip" = "1" ]; then
+                  echo "  ok       $name: skipped, documentation only"
+                else
+                  echo "  REFUSED  $name: skipped, and not because the change was documentation - nothing is known"
+                  failed=1
+                fi ;;
+              *)
+                echo "  REFUSED  $name: $result"
+                failed=1 ;;
+            esac
+          }
+
+          # Commitlint runs on every pull request. It has no reason to skip.
+          check "Commitlint" "$COMMITLINT_RESULT" 0
+          check "Quality"    "$QUALITY_RESULT"    "$docs_only"
+
+          if [ "$failed" -ne 0 ]; then
+            echo "CI Gate refuses this pull request." >&2
+            exit 1
+          fi
+          echo "CI Gate: every job passed, or skipped for a reason we know."
+
