@@ -34,6 +34,9 @@ const build = async (over: Partial<Record<string, ReturnType<typeof queue>>> = {
     [QUEUES.NOTIFICATIONS]:
       over[QUEUES.NOTIFICATIONS] ??
       queue({ waiting: 0, active: 1, completed: 9, failed: 2, delayed: 0, paused: 0 }),
+    [QUEUES.DUNNING]:
+      over[QUEUES.DUNNING] ??
+      queue({ waiting: 0, active: 0, completed: 0, failed: 0, delayed: 1, paused: 0 }),
   };
 
   const module: TestingModule = await Test.createTestingModule({
@@ -54,9 +57,11 @@ describe('A18 - queue state is observable', () => {
     const { service } = await build();
     const res = await service.counts();
 
-    expect(res.queues).toHaveLength(4);
+    // Derived, not spelled. The literal 4 sat here while QueueModule registered
+    // five, so the suite agreed with the omission instead of catching it.
+    expect(res.queues).toHaveLength(Object.keys(QUEUES).length);
     const names = res.queues.map((q) => q.queue).sort();
-    expect(names).toEqual(['core', 'kamnet', 'kbs', 'notifications']);
+    expect(names).toEqual(Object.values(QUEUES).sort());
 
     const notifications = res.queues.find((q) => q.queue === 'notifications');
     expect(notifications).toMatchObject({
@@ -105,7 +110,9 @@ describe('A18 - queue state is observable', () => {
 
     const res = await service.counts();
 
-    expect(res.queues).toHaveLength(4);
+    // Derived, not spelled. The literal 4 sat here while QueueModule registered
+    // five, so the suite agreed with the omission instead of catching it.
+    expect(res.queues).toHaveLength(Object.keys(QUEUES).length);
     const kamnet = res.queues.find((q) => q.queue === 'kamnet');
     expect(kamnet).toMatchObject({ error: expect.stringContaining('ECONNREFUSED') });
     // The others are intact.

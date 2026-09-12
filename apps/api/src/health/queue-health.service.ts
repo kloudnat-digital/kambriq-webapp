@@ -60,19 +60,21 @@ export class QueueHealthService {
     @InjectQueue(QUEUES.CORE) core: Queue,
     @InjectQueue(QUEUES.KAMNET) kamnet: Queue,
     @InjectQueue(QUEUES.NOTIFICATIONS) notifications: Queue,
+    @InjectQueue(QUEUES.DUNNING) dunning: Queue,
   ) {
     this.queues = {
       [QUEUES.KBS]: kbs,
       [QUEUES.CORE]: core,
       [QUEUES.KAMNET]: kamnet,
       [QUEUES.NOTIFICATIONS]: notifications,
+      [QUEUES.DUNNING]: dunning,
     };
   }
 
   /**
    * Every queue, every state.
    *
-   * All four are read in parallel and **one failing does not hide the others**:
+   * All five are read in parallel and **one failing does not hide the others**:
    * a queue whose Redis call throws comes back named, with its error, rather
    * than collapsing the whole response - which would turn "one queue is
    * unreachable" into "queues are unobservable", the exact thing this fixes.
