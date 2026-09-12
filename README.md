@@ -412,3 +412,5 @@ MIT
 ## Commit Hygiene
 
 - Do not add `Made-with: Cursor` to commits.
+
+<!-- throwaway: docs-only, checking the gate allows a legitimate skip -->
