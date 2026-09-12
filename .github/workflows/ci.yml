@@ -81,6 +81,9 @@ jobs:
       - id: filter
         run: |
           set -euo pipefail
+          # THROWAWAY: the classifier falls over. Quality then skips with nothing
+          # known, which is the case GitHub's own rule reads as satisfied.
+          echo "throwaway: the classifier is failing on purpose"; exit 1
           if [ "${{ github.event_name }}" != "pull_request" ]; then
             echo "push to ${{ github.ref_name }} - everything runs, so the deployed sha keeps matching develop"
             echo "code=true" >> "$GITHUB_OUTPUT"
