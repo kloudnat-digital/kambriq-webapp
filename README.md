@@ -412,3 +412,5 @@ MIT
 ## Commit Hygiene
 
 - Do not add `Made-with: Cursor` to commits.
+
+<!-- throwaway: testing whether a docs-only PR can merge while Quality is required -->
