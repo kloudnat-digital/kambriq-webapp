@@ -82,11 +82,31 @@ jobs:
       ECS_WEB_SERVICE: ${{ vars.ECS_WEB_SERVICE }}
       ECS_TASK_DEFINITION: ${{ vars.ECS_TASK_DEFINITION }}
       ECS_WEB_TASK_DEFINITION: ${{ vars.ECS_WEB_TASK_DEFINITION }}
-      ECS_SUBNETS: ${{ vars.ECS_SUBNETS }}
-      ECS_SECURITY_GROUPS: ${{ vars.ECS_SECURITY_GROUPS }}
+      # D11 - the one-off tasks take their network from the SERVICE, at run time.
+      #
+      # These were `vars.ECS_SUBNETS` and `vars.ECS_SECURITY_GROUPS`: a second
+      # copy of a network Terraform already owns. D15 moved the services to the
+      # public subnets and deleted the NAT; nothing updated this copy, so the
+      # migration task kept launching into private subnets with no route out. It
+      # did not fail - it never started, and MIGRATION_EXIT_CODE read `None`.
+      # Two deploys were lost before anyone looked.
+      #
+      # Resolved by removing the copy rather than guarding it. A guard comparing
+      # two sources is still two sources; the values are now READ from the
+      # running service in the step below, so the migration necessarily runs
+      # wherever the service runs. That is not a convenience, it is the actual
+      # requirement: a migration that cannot reach what the service reaches is
+      # a migration that should not be trusted.
+      #
+      # Kept only as a fallback for an environment whose service does not exist
+      # yet - the first apply of a new environment. That case cannot read a
+      # service because there is none, and it is named here rather than left to
+      # be discovered.
+      ECS_SUBNETS_FALLBACK: ${{ vars.ECS_SUBNETS }}
+      ECS_SECURITY_GROUPS_FALLBACK: ${{ vars.ECS_SECURITY_GROUPS }}
       CONTAINER_NAME: ${{ vars.CONTAINER_NAME || 'api' }}
       WEB_CONTAINER_NAME: ${{ vars.WEB_CONTAINER_NAME || 'web' }}
-      ASSIGN_PUBLIC_IP: ${{ vars.ASSIGN_PUBLIC_IP || 'DISABLED' }}
+      ASSIGN_PUBLIC_IP_FALLBACK: ${{ vars.ASSIGN_PUBLIC_IP || 'DISABLED' }}
       SMOKE_TEST_URL: ${{ vars.SMOKE_TEST_URL }}
       # The SSM path the super-admin bootstrap reads the two real administrator
       # identities from. Passed as a container override rather than baked into
@@ -107,6 +127,49 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+
+      # D11 - read the network from the running service, not from a copy.
+      #
+      # One source of truth: whatever the service is configured with is what the
+      # one-off tasks get. A change made in Terraform reaches this the moment it
+      # is applied, with nothing to remember and nothing to keep in step.
+      #
+      # It refuses rather than guessing if the service cannot be read AND no
+      # fallback is configured, because launching a migration into a network
+      # nobody chose is how this broke in the first place.
+      - name: Resolve the task network from the service
+        run: |
+          set -euo pipefail
+          net="$(aws ecs describe-services \
+                   --cluster "${ECS_CLUSTER}" --services "${ECS_SERVICE}" \
+                   --query 'services[0].networkConfiguration.awsvpcConfiguration' \
+                   --output json 2>/dev/null || echo 'null')"
+
+          if [ "${net}" != "null" ] && [ -n "${net}" ]; then
+            subnets="$(jq -r '.subnets | join(",")' <<<"${net}")"
+            groups="$(jq -r '.securityGroups | join(",")' <<<"${net}")"
+            public="$(jq -r '.assignPublicIp' <<<"${net}")"
+            echo "network read from service ${ECS_SERVICE}"
+          else
+            subnets="${ECS_SUBNETS_FALLBACK:-}"
+            groups="${ECS_SECURITY_GROUPS_FALLBACK:-}"
+            public="${ASSIGN_PUBLIC_IP_FALLBACK:-DISABLED}"
+            echo "service not readable - falling back to the configured variables"
+          fi
+
+          if [ -z "${subnets}" ] || [ -z "${groups}" ]; then
+            echo "::error::No task network could be resolved. The service could not be read and no fallback is set. Refusing to launch a migration into a network nobody chose." >&2
+            exit 1
+          fi
+
+          echo "  subnets=${subnets}"
+          echo "  securityGroups=${groups}"
+          echo "  assignPublicIp=${public}"
+          {
+            echo "ECS_SUBNETS=${subnets}"
+            echo "ECS_SECURITY_GROUPS=${groups}"
+            echo "ASSIGN_PUBLIC_IP=${public}"
+          } >> "$GITHUB_ENV"
 
       - name: Set image URIs
         run: |
