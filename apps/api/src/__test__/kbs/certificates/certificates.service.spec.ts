@@ -168,6 +168,7 @@ describe('KbsCertificatesService', () => {
 
       const result = await service.verifyCertificate(cert.kcaNumber);
 
+      expect(result.status).toBe('VALID');
       expect(result.valid).toBe(true);
       expect(result.isExpired).toBe(false);
       expect(result.kcaNumber).toBe(cert.kcaNumber);
@@ -182,15 +183,77 @@ describe('KbsCertificatesService', () => {
 
       const result = await service.verifyCertificate(cert.kcaNumber);
 
+      expect(result.status).toBe('EXPIRED');
       expect(result.valid).toBe(false);
       expect(result.isExpired).toBe(true);
+    });
+
+    it('returns valid=false for a revoked certificate that has not expired', async () => {
+      // The case the endpoint used to get wrong: revokedAt was stored and never
+      // read, so a withdrawn certificate answered valid until its expiry date.
+      const revokedAt = new Date('2026-09-01T10:00:00Z');
+      const cert = buildCertificate({
+        validUntil: new Date(Date.now() + 365 * 86_400_000), // +1yr
+        revokedAt,
+        candidate: { userId: 'u1', certifiedAt: new Date() },
+      });
+      prisma.kbsCertificate.findUnique.mockResolvedValue(cert);
+
+      const result = await service.verifyCertificate(cert.kcaNumber);
+
+      expect(result.status).toBe('REVOKED');
+      expect(result.valid).toBe(false);
+      expect(result.revoked).toBe(true);
+      expect(result.revokedAt).toEqual(revokedAt);
+    });
+
+    it('reports REVOKED, not EXPIRED, for a certificate that is both', async () => {
+      const cert = buildCertificate({
+        validUntil: new Date(Date.now() - 86_400_000),
+        revokedAt: new Date('2025-01-01T00:00:00Z'),
+        candidate: { userId: 'u1', certifiedAt: new Date() },
+      });
+      prisma.kbsCertificate.findUnique.mockResolvedValue(cert);
+
+      const result = await service.verifyCertificate(cert.kcaNumber);
+
+      expect(result.status).toBe('REVOKED');
+      expect(result.valid).toBe(false);
     });
 
     it('returns valid=false for an unknown KCA number', async () => {
       prisma.kbsCertificate.findUnique.mockResolvedValue(null);
 
       const result = await service.verifyCertificate('KCA-FAKE-0000');
+      expect(result.status).toBe('UNKNOWN');
       expect(result.valid).toBe(false);
+    });
+
+    it('names nobody: the anonymous answer carries no user or candidate identifier', async () => {
+      // It used to return `candidateId: candidate.userId` - a person's user UUID
+      // handed to any stranger who typed a certificate number. KCA numbers are
+      // enumerable, so the answer is about the certificate, never the person.
+      const cert = buildCertificate({
+        candidate: { userId: 'user-uuid-must-not-leak', certifiedAt: new Date() },
+      });
+      prisma.kbsCertificate.findUnique.mockResolvedValue(cert);
+
+      const result = await service.verifyCertificate(cert.kcaNumber);
+
+      expect(Object.keys(result).sort()).toEqual(
+        [
+          'isExpired',
+          'issueDate',
+          'kcaNumber',
+          'revoked',
+          'revokedAt',
+          'status',
+          'valid',
+          'validUntil',
+        ].sort(),
+      );
+      expect(JSON.stringify(result)).not.toContain('user-uuid-must-not-leak');
+      expect(JSON.stringify(result)).not.toContain(cert.candidateId);
     });
   });
 

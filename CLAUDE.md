@@ -1325,6 +1325,36 @@ Two lessons beside the main one:
   journeys create". The seed created nothing; it overwrote one column under rows
   it had decided to keep. Read the output and the rows, not the hypothesis.
 
+### A public verdict says yes only on an explicit, complete yes
+
+From the verify-certificate chantier (D wave 1). `/verify-certificate/[n]`
+rendered a hard-coded certificate - a name, a score, **"Certificat valide"** -
+for any `n` at all, anonymously, since the page was written. The comment above
+the constant said _"In production, fetch from API"_. A comment refuses nothing.
+
+The endpoint it should have called had two defects of its own:
+
+- **`revokedAt` was stored and never read.** `revokeCertificate` stamped it,
+  `verifyCertificate` ignored it, so a withdrawn certificate answered
+  `valid: true` until it expired. Same family as a setting stored and read by
+  nothing, arriving through a column.
+- **It returned the holder's user UUID to strangers.** KCA numbers are a date
+  and four hex characters, so they enumerate. The answer is now about the
+  certificate and names nobody; whether a name should ever appear is a product
+  and legal decision, not a default.
+
+**The rule, which is directional:** a page that tells the public something is
+authentic gives a positive verdict only when the source says so explicitly,
+about the thing asked, with every field agreeing. Unknown shape, missing
+field, a different number echoed back, an API that could not be reached - all
+of it lands on a negative or on "cannot verify right now", never on yes. And
+"cannot verify" is its own answer: calling a real certificate a fake because
+the API was down is a false statement too.
+
+Proved by mutation at three layers, including a render test that mocks only the
+HTTP client (`page-through-the-bff.spec.tsx`): the page spec that mocks the
+action could not have seen the action lying.
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope
