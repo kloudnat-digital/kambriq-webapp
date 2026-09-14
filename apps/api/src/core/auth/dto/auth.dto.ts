@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
-import { CM_PHONE_ERROR, CM_PHONE_REGEX, SUPPORTED_LANGUAGES } from '@kambriq/common';
+import { PHONE_ERROR, PHONE_REGEX, SUPPORTED_LANGUAGES } from '@kambriq/common';
 
 const passwordFieldSchema = z
   .string()
@@ -16,7 +16,7 @@ export const registerSchema = z.object({
   password: passwordFieldSchema,
   firstName: z.string().min(1, 'First name is required').max(100),
   lastName: z.string().min(1, 'Last name is required').max(100),
-  phone: z.string().regex(CM_PHONE_REGEX, CM_PHONE_ERROR),
+  phone: z.string().regex(PHONE_REGEX, PHONE_ERROR),
   language: z.enum(SUPPORTED_LANGUAGES).default('fr'),
 });
 

@@ -1,9 +1,10 @@
 import * as z from 'zod';
 
-export const PHONE_REGEX = /^(?:\+?237)?6\d{8}$/;
+// A8. International, not Cameroon-only - the clients are the diaspora.
+export const PHONE_REGEX = /^\+?[0-9 ().-]{6,20}$/;
 
 export const PHONE_ERROR =
-  'Enter a valid Cameroonian mobile number (e.g. 695123456 or 237695123456)';
+  'Enter a valid phone number with its international prefix (e.g. +237 6 95 12 34 56 or +33 6 12 34 56 78)';
 
 export const phoneRequired = (message = PHONE_ERROR) =>
   z.string().regex(PHONE_REGEX, { error: message });

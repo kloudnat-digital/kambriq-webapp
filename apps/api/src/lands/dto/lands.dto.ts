@@ -1,6 +1,6 @@
 import {
-  CM_PHONE_ERROR,
-  CM_PHONE_REGEX,
+  PHONE_ERROR,
+  PHONE_REGEX,
   LandClientDocumentType,
   LandDocumentType,
   LandLabelCodes,
@@ -119,7 +119,7 @@ export const createLandReservationSchema = z.object({
   landId: z.uuid('Invalid land ID'),
   clientName: z.string().min(1, 'Client name is required').max(200),
   clientEmail: z.email('Invalid client email'),
-  clientPhone: z.string().regex(CM_PHONE_REGEX, CM_PHONE_ERROR),
+  clientPhone: z.string().regex(PHONE_REGEX, PHONE_ERROR),
 });
 
 export class CreateLandReservationDto extends createZodDto(createLandReservationSchema) {}
@@ -147,7 +147,7 @@ export const inviteClientSchema = z.object({
   phone: z
     .string()
     .optional()
-    .refine((v) => !v || CM_PHONE_REGEX.test(v), CM_PHONE_ERROR),
+    .refine((v) => !v || PHONE_REGEX.test(v), PHONE_ERROR),
 });
 
 export class InviteClientDto extends createZodDto(inviteClientSchema) {}
