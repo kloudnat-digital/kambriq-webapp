@@ -15,6 +15,9 @@ import {
 import { I18nService } from 'nestjs-i18n';
 import { DateTime } from 'luxon';
 
+/** The verdict `verifyCertificate` gives the public. Exactly one applies. */
+export type CertificateVerificationStatus = 'VALID' | 'EXPIRED' | 'REVOKED' | 'UNKNOWN';
+
 @Injectable()
 export class KbsCertificatesService {
   private readonly logger = new Logger(KbsCertificatesService.name);
@@ -177,30 +180,60 @@ export class KbsCertificatesService {
 
   // ----- Public: Verifiy Certificate ---------------------------
 
+  /**
+   * The public answer to "did KAMBRIQ issue this certificate, and does it still
+   * stand?". Read anonymously by `/verify-certificate`, so every field here is a
+   * statement made to a stranger about somebody's qualification.
+   *
+   * `status` is the verdict and the only field a reader should branch on.
+   * `valid` is kept for existing callers and always agrees with it.
+   *
+   * **Revocation is read.** It was not: `revokedAt` was stored by
+   * `revokeCertificate` and ignored here, so a certificate withdrawn by an
+   * administrator answered `valid: true` until the day it expired - the
+   * register said one thing and the public endpoint another. A revoked
+   * certificate is REVOKED whatever its expiry date, because revocation is the
+   * stronger and more recent statement.
+   *
+   * **It names nobody.** This used to return `candidateId` - the holder's user
+   * UUID - to any anonymous caller, which identified a person to a stranger
+   * without telling the stranger anything they could use. KCA numbers are a date
+   * and four hex characters, so they can be enumerated; a name here would turn
+   * this route into a directory of certified people. Whether the public page
+   * should show a name, initials or nothing is a decision for the product and
+   * its legal basis, not for this method - until it is taken, the answer is
+   * about the certificate, not about the person.
+   */
   async verifyCertificate(kcaNumber: string) {
     const certificate = await this.prisma.kbsCertificate.findUnique({
       where: { kcaNumber },
-      include: {
-        candidate: { select: { userId: true, certifiedAt: true } },
-      },
     });
 
     if (!certificate) {
       return {
+        status: 'UNKNOWN' as CertificateVerificationStatus,
         valid: false,
         message: this.t('kbs.certificate.invalid'),
       };
     }
 
+    const revoked = certificate.revokedAt !== null;
     const isExpired = certificate.validUntil < new Date();
+    const status: CertificateVerificationStatus = revoked
+      ? 'REVOKED'
+      : isExpired
+        ? 'EXPIRED'
+        : 'VALID';
 
     return {
+      status,
+      valid: status === 'VALID',
+      revoked,
+      revokedAt: certificate.revokedAt,
       isExpired,
-      valid: !isExpired,
       kcaNumber: certificate.kcaNumber,
       issueDate: certificate.issueDate,
       validUntil: certificate.validUntil,
-      candidateId: certificate.candidate.userId,
     };
   }
 
