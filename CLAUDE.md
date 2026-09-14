@@ -1296,6 +1296,29 @@ command covers is a claim, and it rots silently.** This one was wrong for seven
 months and read as documentation the entire time. If a comment says "the full
 set", something has to make that true.
 
+### A notification is proven by the message that arrived, not the step that sent it
+
+From `D19`. The dev deploy failed on 12 September at 10:28 and again at 19:20,
+at `Run Prisma migrations`, and nobody knew for nine hours: dev served the
+previous image all day while proofs were taken against it. Nobody was careless.
+There was no mechanism, so there was nothing to be vigilant about.
+
+`deploy-dev.yml` now ends with a step on `failure() || cancelled()` that sends
+one message FROM `noreply@` TO `contact@` through SES, naming the run, the
+failed step (read from `steps`, which is why every step carries an `id`), the
+commit, the images and the environment. `cancelled()` is not decoration: a job
+that reaches `timeout-minutes` is cancelled, not failed.
+
+**Its acceptance is a message in the mailbox, never the step's exit code.** D14
+built an SNS topic with no subscription and it published successfully to nobody.
+SES accepting a send is the same claim one hop later. The step logs the SES
+`MessageId`, and the delivered message carries it in its `Message-ID` header -
+that is how a mail in `contact@` is attributed to a run rather than assumed.
+
+What it cannot see, written down so nobody learns it by waiting: a job that
+never starts (quota, runner, environment rule), a failure in the credentials
+step itself, and the delivery journeys, which are another job.
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope
