@@ -1,5 +1,59 @@
 import { test, expect } from '@playwright/test';
 
+/**
+ * A28 - the one journey nothing covered: a login that SUCCEEDS, end to end.
+ *
+ * The suite proved the login page renders, that bad credentials are refused, and
+ * that the NextAuth endpoints answer - every path except the one that matters,
+ * a real user getting in. A green suite that never logs anybody in is the shape
+ * this registry keeps finding: a check that passes by not asking the question.
+ *
+ * The account is minted the way #79 settled it, not from a pre-provisioned
+ * secret (the old E2E_TEST_EMAIL approach, whose secret never existed, so the
+ * test skipped and covered nothing): a disposable maildrop.cc address is
+ * registered through the API, its verification token is read back from the
+ * mailbox, and the address is verified - because login refuses an unverified
+ * email, so a test that skipped verification would prove the refusal, not the
+ * success.
+ */
+const MAILDROP = 'https://api.maildrop.cc/graphql';
+
+async function maildropToken(
+  mailbox: string,
+  pattern: RegExp,
+  timeoutMs = 60_000,
+): Promise<string> {
+  const deadline = Date.now() + timeoutMs;
+  const subjects: string[] = [];
+  const q = async (query: string) => {
+    const res = await fetch(MAILDROP, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
+    if (!res.ok)
+      throw new Error(`maildrop unavailable (HTTP ${res.status}) - not a product failure`);
+    return res.json() as Promise<{
+      data?: { inbox?: Array<{ id: string; subject: string }>; message?: { html: string } };
+    }>;
+  };
+  while (Date.now() < deadline) {
+    const list = (await q(`query{inbox(mailbox:"${mailbox}"){id subject}}`)).data?.inbox ?? [];
+    for (const m of list) {
+      subjects.push(m.subject);
+      const html =
+        (await q(`query{message(mailbox:"${mailbox}",id:"${m.id}"){html}}`)).data?.message?.html ??
+        '';
+      const found = pattern.exec(html);
+      if (found?.[1]) return found[1];
+    }
+    await new Promise((r) => setTimeout(r, 5000));
+  }
+  throw new Error(
+    `no token in mailbox ${mailbox} after ${timeoutMs}ms. Subjects seen: ${subjects.join(' | ') || '(empty)'}`,
+  );
+}
+
 test.describe('Authentication', () => {
   test('login page is accessible and renders form', async ({ page }) => {
     await page.goto('/login');
@@ -75,5 +129,45 @@ test.describe('Authentication', () => {
     expect(body).toHaveProperty('csrfToken');
     expect(typeof body.csrfToken).toBe('string');
     expect(body.csrfToken.length).toBeGreaterThan(20);
+  });
+
+  test('a real user can log in: verified account reaches an authenticated page with a session', async ({
+    page,
+    request,
+  }) => {
+    const stamp = `${Date.now()}.${Math.floor(Math.random() * 1e4)}`;
+    const mailbox = `e2e-login.${stamp}`;
+    const email = `${mailbox}@maildrop.cc`;
+    const password = 'Test1234!';
+
+    // Mint through the API, the #79 way.
+    const registered = await request.post('/api/v1/auth', {
+      data: {
+        email,
+        password,
+        firstName: 'E2E',
+        lastName: 'Login',
+        phone: '690000000',
+        language: 'fr',
+      },
+    });
+    expect(registered.status(), 'registration should return 201').toBe(201);
+
+    const token = await maildropToken(mailbox, /verify-email\?token=([0-9a-fA-F]+)/);
+    const verified = await request.post('/api/v1/auth/verify-email', { data: { token } });
+    expect(verified.status(), 'email verification should return 200').toBe(200);
+
+    // The actual subject of the test: logging in through the UI.
+    await page.goto('/login');
+    await page.locator('input[type="email"]').fill(email);
+    await page.locator('input[type="password"]').fill(password);
+    await page.getByRole('button', { name: /connecter|log ?in|sign ?in/i }).click();
+
+    // Success is leaving /login for an authenticated page, with a session cookie set.
+    await page.waitForURL((url) => !url.toString().includes('/login'), { timeout: 15_000 });
+    await expect(page).not.toHaveURL(/login/);
+
+    const cookies = await page.context().cookies();
+    expect(cookies.some((c) => c.name.includes('session-token'))).toBe(true);
   });
 });
