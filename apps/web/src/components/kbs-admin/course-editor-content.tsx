@@ -199,7 +199,7 @@ export const CourseEditorContent = ({ course, activeCourseId }: Props) => {
                     {m.order}. {m.title}
                   </span>
                   <span className="text-xs text-gray-500">
-                    {m.lessons.length} lessons · {m.questionsCount} Q quiz
+                    {m.lessons.length} leçons · {m.questionsCount} questions
                   </span>
                   <div className="ml-auto flex gap-2">
                     <Button variant="ghost" size="sm" onClick={() => setEditingModule(m.id)}>
