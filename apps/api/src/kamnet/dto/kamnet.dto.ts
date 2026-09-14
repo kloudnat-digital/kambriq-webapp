@@ -1,6 +1,6 @@
 import {
-  CM_PHONE_ERROR,
-  CM_PHONE_REGEX,
+  PHONE_ERROR,
+  PHONE_REGEX,
   KamnetAgentTier,
   KamnetApplicationStatus,
   KamnetCommissionStatus,
@@ -21,7 +21,7 @@ export const updateAgentProfileDto = z.object({
   phone: z
     .string()
     .optional()
-    .refine((v) => !v || CM_PHONE_REGEX.test(v), CM_PHONE_ERROR),
+    .refine((v) => !v || PHONE_REGEX.test(v), PHONE_ERROR),
   language: z.enum(SUPPORTED_LANGUAGES).optional(),
 
   avatarUrl: z.url('Must be a valid URL').optional(),
