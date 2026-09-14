@@ -1270,8 +1270,8 @@ sitting next to what they are about to use.
 
 From `A19`, and it had been true for seven months.
 
-`ci.yml` says, in as many words, that a push to develop runs *"the full set, no
-base to diff against"*. The command it called was `pnpm run lint`, and that
+`ci.yml` says, in as many words, that a push to develop runs _"the full set, no
+base to diff against"_. The command it called was `pnpm run lint`, and that
 script was `nx lint api` - **one project of six**. So develop linted the API and
 nothing else, and `libs/common` carried two real dependency errors the whole
 time: `ioredis` and `@jest/globals` imported and undeclared.
