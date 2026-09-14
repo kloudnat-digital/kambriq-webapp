@@ -235,7 +235,7 @@ jobs:
           OVERRIDES="$(jq -nc --arg name "${CONTAINER_NAME}" '{
             containerOverrides: [{
               name: $name,
-              command: ["node", "prisma/run-migrations.js", "--seed"]
+              command: ["npx", "tsx", "--tsconfig", "tsconfig.base.json", "prisma/seed.ts"]
             }]
           }')"
           TASK_ARN="$(aws ecs run-task \
@@ -380,9 +380,9 @@ jobs:
       # administrator and nothing would say so.
       #
       # Invoked directly rather than through a flag on run-migrations.js. The
-      # seed step below passes `--seed` to that script, which does not read
-      # process.argv at all - so it runs the migrations, exits 0, and seeds
-      # nothing. Recorded in the register; not fixed here.
+      # seed step below now does the same. `--seed` on that script did nothing:
+        # it never read process.argv, so it ran the migrations, exited 0, and
+        # seeded nothing (A9). Both steps now call their script by name.
       #
       # Cost: one Fargate task of a few seconds per deploy, under $0.001.
       - name: Bootstrap super-admin accounts
