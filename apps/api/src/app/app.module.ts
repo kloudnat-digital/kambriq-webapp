@@ -15,7 +15,8 @@ import {
 import { AcceptLanguageResolver, HeaderResolver, I18nModule } from 'nestjs-i18n';
 import { LoggerModule } from 'nestjs-pino';
 import { IncomingMessage } from 'http';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerBehindProxyGuard } from '../core/throttler/throttler-behind-proxy.guard';
 import { CoreModule } from '../core/core.module';
 import { HealthModule } from '../health/health.module';
 import { APP_GUARD, APP_PIPE } from '@nestjs/core';
@@ -107,7 +108,7 @@ import { NewsletterModule } from '../newsletter/newsletter.module';
     { provide: APP_PIPE, useClass: ZodValidationPipe },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: ThrottlerBehindProxyGuard },
   ],
   controllers: [AppController],
 })
