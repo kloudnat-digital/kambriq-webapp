@@ -7,7 +7,7 @@ import {
   LandFilterDto,
   AddMediaDto,
   AddDocumentDto,
-  GetUploadUrlDto,
+  GetLandUploadUrlDto,
 } from './dto/lands.dto';
 import {
   buildPaginatedResponse,
@@ -471,7 +471,7 @@ export class LandsService {
 
   // ----- Generate S3 Upload URL ----- //
   // Returns a presigned URL for the frontend to upload directly to S3.
-  async getUploadUrl(landId: string, dto: GetUploadUrlDto) {
+  async getUploadUrl(landId: string, dto: GetLandUploadUrlDto) {
     await this.findByIdOrThrow(landId);
 
     const timestamp = Date.now();

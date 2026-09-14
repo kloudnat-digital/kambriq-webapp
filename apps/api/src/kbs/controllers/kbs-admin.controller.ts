@@ -35,7 +35,7 @@ import {
   CreateLessonDto,
   CreateModuleDto,
   CreateQuestionDto,
-  GetUploadUrlDto,
+  GetCourseUploadUrlDto,
   ReorderModulesDto,
   UpdateCourseDto,
   UpdateLessonDto,
@@ -444,7 +444,7 @@ export class KbsAdminController {
   @ApiResponse({ status: 400, description: 'Validation error.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions.' })
-  async getUploadUrl(@Body() dto: GetUploadUrlDto) {
+  async getUploadUrl(@Body() dto: GetCourseUploadUrlDto) {
     return this.coursesService.getUploadUrl(dto);
   }
 

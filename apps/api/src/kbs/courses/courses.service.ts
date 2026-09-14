@@ -11,7 +11,7 @@ import {
   CreateLessonDto,
   CreateModuleDto,
   CreateQuestionDto,
-  GetUploadUrlDto,
+  GetCourseUploadUrlDto,
   ReorderModulesDto,
   UpdateCourseDto,
   UpdateLessonDto,
@@ -565,7 +565,7 @@ export class KbsCoursesService {
 
   // ----- Utils ---------------------------
 
-  async getUploadUrl(dto: GetUploadUrlDto) {
+  async getUploadUrl(dto: GetCourseUploadUrlDto) {
     const key = this.storage.buildKey(
       'kbs',
       'content',
