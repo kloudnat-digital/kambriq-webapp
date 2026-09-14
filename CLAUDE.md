@@ -1270,8 +1270,8 @@ sitting next to what they are about to use.
 
 From `A19`, and it had been true for seven months.
 
-`ci.yml` says, in as many words, that a push to develop runs *"the full set, no
-base to diff against"*. The command it called was `pnpm run lint`, and that
+`ci.yml` says, in as many words, that a push to develop runs _"the full set, no
+base to diff against"_. The command it called was `pnpm run lint`, and that
 script was `nx lint api` - **one project of six**. So develop linted the API and
 nothing else, and `libs/common` carried two real dependency errors the whole
 time: `ioredis` and `@jest/globals` imported and undeclared.
@@ -1295,6 +1295,35 @@ And the corollary, which is the cheaper habit: **a comment that describes what a
 command covers is a claim, and it rots silently.** This one was wrong for seven
 months and read as documentation the entire time. If a comment says "the full
 set", something has to make that true.
+
+### A postcondition that counts a word has not checked the thing
+
+From `A31`, which turned develop red on 14 September and let four merges in on
+top of it.
+
+The seed keeps reservations that carry payments, because the ledger is
+append-only and money is not test data - correct. It printed _"Those parcels
+keep their current status"_ - and the next loop reset every seeded parcel to its
+seeded status regardless. Eight parcels on dev were listed AVAILABLE under a
+PENDING reservation. The listing said free; the reservation service, which
+refuses any parcel with a reservation that is not CANCELLED, said taken; every
+journey that took the first available parcel got a 409.
+
+Its postcondition passed. It counted rows whose `status` was AVAILABLE, found
+the eighteen it expected, and said so - over eight parcels nobody could
+reserve. **A count says how many rows carry a word, not whether the word is
+true.** The check now asks the question a caller relies on: no seeded parcel is
+AVAILABLE while a reservation holds it. Proved by the mutation that matters -
+develop's seed with only the new check added: the count passes exactly as it did
+on dev, and the new check alone refuses, naming the parcels.
+
+Two lessons beside the main one:
+
+- **a log line is a claim about the code below it**, and this one was false from
+  the day it was written. Nothing read it against the loop that followed.
+- **the brief's hypothesis was wrong in its detail** - "the seed creates rows the
+  journeys create". The seed created nothing; it overwrote one column under rows
+  it had decided to keep. Read the output and the rows, not the hypothesis.
 
 ## 5. Invariants somebody will otherwise break
 

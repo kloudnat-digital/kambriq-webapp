@@ -128,7 +128,12 @@ describe('the seed restores the fixtures it owns', () => {
       landsBlock.indexOf('lands.land.upsert'),
       landsBlock.indexOf('lands.landReservation.upsert'),
     );
-    expect(upsert).toContain('status: parcel.status');
+    // The requirement is that the update clause writes a status derived from the
+    // seeded one, not that it copies it verbatim. A31 routes it through
+    // restoredParcelStatus, which returns the seeded status unless a reservation
+    // the seed could not delete still holds the parcel. Asserting the literal
+    // `status: parcel.status` pinned the defect, not the rule.
+    expect(upsert).toMatch(/status:\s*restoredParcelStatus\(parcel\.status,/);
     expect(upsert).not.toMatch(/update:\s*\{\s*\}/);
   });
 
