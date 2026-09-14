@@ -30,7 +30,7 @@ import {
   UpdateLabelDto,
   AddMediaDto,
   AddDocumentDto,
-  GetUploadUrlDto,
+  GetLandUploadUrlDto,
   LandReservationFilterDto,
   CancelLandReservationDto,
   InviteClientDto,
@@ -264,7 +264,7 @@ export class LandsAdminController {
       'Frontend uses this URL to upload files directly to S3. Returns { uploadUrl, fileUrl }.',
   })
   @ApiParam({ name: 'id', description: 'Land ID' })
-  async getUploadUrl(@Param('id') landId: string, @Body() dto: GetUploadUrlDto) {
+  async getUploadUrl(@Param('id') landId: string, @Body() dto: GetLandUploadUrlDto) {
     return this.landsService.getUploadUrl(landId, dto);
   }
 

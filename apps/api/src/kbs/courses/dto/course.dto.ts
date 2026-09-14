@@ -119,4 +119,7 @@ export const uploadUrlSchema = z.object({
   lessonId: z.uuid().optional(),
 });
 
-export class GetUploadUrlDto extends createZodDto(uploadUrlSchema) {}
+// A15. See GetLandUploadUrlDto in lands: both were GetUploadUrlDto and collided
+// in the OpenAPI. Distinct contracts - this one carries moduleId/lessonId, the
+// land one a media category - so they are named apart, not merged.
+export class GetCourseUploadUrlDto extends createZodDto(uploadUrlSchema) {}

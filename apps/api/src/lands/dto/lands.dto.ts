@@ -160,7 +160,14 @@ export const getUploadUrlSchema = z.object({
   category: z.enum(LandMediaCategory).default(LandMediaCategory.MEDIA),
 });
 
-export class GetUploadUrlDto extends createZodDto(getUploadUrlSchema) {}
+// A15. Named for its module, not just its verb. There is a same-shaped verb in
+// kbs (GetCourseUploadUrlDto), and both were called GetUploadUrlDto - which
+// collided in the OpenAPI document, where the second registration silently
+// overwrote the first and one endpoint documented the other's body. They are
+// NOT the same contract and must not be merged: a land upload carries a media
+// `category`, a course upload carries `moduleId`/`lessonId`. Two modules that
+// needed a similar shape, not one definition that leaked.
+export class GetLandUploadUrlDto extends createZodDto(getUploadUrlSchema) {}
 
 // ----- Client Documents ----- //
 
