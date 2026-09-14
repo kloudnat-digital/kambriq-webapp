@@ -1,17 +1,10 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { ApiError, serverApi } from '@/lib/api/server';
+import { api, ApiError, serverApi } from '@/lib/api/server';
+import { type CertificateVerdict, toCertificateVerdict } from '@/lib/certificate-verdict';
+import { logger } from '@/lib/logger';
 import { createAction, ServerActionError } from './create-action';
-
-const nullOn404 = async <T>(fn: () => Promise<T>): Promise<T | null> => {
-  try {
-    return await fn();
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) return null;
-    throw error;
-  }
-};
 import type {
   AdminCandidateDetail,
   AdminCandidateRow,
@@ -40,6 +33,44 @@ import type {
   QuizView,
 } from '@/types/kbs';
 import type { PaginatedResponse } from '@/types/api';
+
+const nullOn404 = async <T>(fn: () => Promise<T>): Promise<T | null> => {
+  try {
+    return await fn();
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+};
+
+// ==== Public ====
+
+/**
+ * The verdict `/verify-certificate` shows a stranger. Anonymous, so it goes
+ * through `api`, not `serverApi`: a visitor with an expired session must get an
+ * answer, not a redirect to a login page.
+ *
+ * It never throws and never guesses. An API that could not be reached, or that
+ * answered with anything but a clean verdict, is `unavailable` - "we cannot say
+ * right now" - and never a stale or assumed `valid`. A 404 is read as unknown
+ * because the controller's contract once declared one, although the service
+ * answers 200 with `status: 'UNKNOWN'`.
+ */
+export const verifyCertificate = createAction(
+  async (kcaNumber: string): Promise<CertificateVerdict> => {
+    try {
+      const body = await api.get<unknown>(`/kbs/public/verify/${encodeURIComponent(kcaNumber)}`);
+      return toCertificateVerdict(kcaNumber, body);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) return { kind: 'unknown' };
+      logger.error('CertificateVerificationUnavailable', {
+        status: error instanceof ApiError ? error.status : undefined,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return { kind: 'unavailable' };
+    }
+  },
+);
 
 // ==== Candidate ====
 
