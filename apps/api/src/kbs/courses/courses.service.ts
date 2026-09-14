@@ -75,8 +75,8 @@ export class KbsCoursesService {
       ...course,
       modules: course.modules.map((module) => ({
         ...module,
-        lessonsCount: module.lessons.length,
-        questionsCount: module._count.questions,
+        lessonsCount: module.lessons?.length ?? 0,
+        questionsCount: module._count?.questions ?? 0,
       })),
     };
   }
@@ -264,7 +264,7 @@ export class KbsCoursesService {
         description: module.description,
         order: module.order,
         lessonsCount: module._count.lessons,
-        questionsCount: module._count.questions,
+        questionsCount: module._count?.questions ?? 0,
         lessons: module.lessons,
         progress: progress
           ? {
