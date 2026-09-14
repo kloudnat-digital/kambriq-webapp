@@ -18,6 +18,11 @@ import { assertIsTestDatabase, TEST_SCHEMAS, urlFor } from './test-db-url';
  * Nothing here re-declares a table, a constraint or a trigger. The migration is
  * the thing under test; a harness that built the schema by another route would
  * be testing the harness.
+ *
+ * A17: in CI, localhost:5432 is a postgres:16-alpine service container on the
+ * Database suite job in ci.yml. This setup connects to it exactly as it does to
+ * pnpm docker:dev locally - same default URL - so the suite that could not run
+ * in CI for months now does, path-filtered to changes under prisma/ and here.
  */
 const ROOT = join(__dirname, '..', '..', '..', '..', '..');
 
