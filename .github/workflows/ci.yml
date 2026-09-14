@@ -73,6 +73,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       code: ${{ steps.filter.outputs.code }}
+      db: ${{ steps.filter.outputs.db }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -84,6 +85,7 @@ jobs:
           if [ "${{ github.event_name }}" != "pull_request" ]; then
             echo "push to ${{ github.ref_name }} - everything runs, so the deployed sha keeps matching develop"
             echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "db=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           FILES="$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")"
@@ -96,6 +98,17 @@ jobs:
           else
             echo "documentation only - skipping quality, build, deploy and e2e"
             echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # A17. The database-backed suite (pnpm test:db) needs a Postgres service,
+          # so it runs only where it can fail: a change to a prisma schema or
+          # migration, or to the database test directory itself. Filtering it here
+          # keeps the service container off every unrelated push.
+          if echo "${FILES}" | grep -qE '^(prisma/|apps/api/src/__test__/database/|apps/api/jest\.database\.config)'; then
+            echo "db=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no database-relevant change - test:db skipped"
+            echo "db=false" >> "$GITHUB_OUTPUT"
           fi
 
   # -- Commit message validation (PR only) -------------------------------------
@@ -213,6 +226,52 @@ jobs:
           fail_ci_if_error: false
 
   # -- Build and push API image (develop push only) -----------------------------
+  # -- A17: the database-backed suite, with a Postgres service ----------------
+  # Path-filtered (needs.changes.outputs.db): runs only when a prisma schema, a
+  # migration, or the database test directory changed, so the service container
+  # is not attached to every push. On push to develop everything runs.
+  test-db:
+    name: Database suite
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    needs: [changes]
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.db == 'true'
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      # postinstall generates the four prisma clients the *.dbspec.ts import.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # global-setup.ts connects to the service, creates kambriq_core_test and
+      # kambriq_lands_test (names it refuses unless they end in _test), applies
+      # every real migration, and only then runs the suite. The default URL is
+      # postgres:password@localhost:5432, which the service maps onto the runner.
+      - name: Run the database-backed suite
+        run: npx nx run api:test-db
+
   build-api:
     name: Build & push API image
     runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
@@ -553,7 +612,7 @@ jobs:
   gate:
     name: CI Gate
     runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
-    needs: [changes, commitlint, quality]
+    needs: [changes, commitlint, quality, test-db]
     if: always() && github.event_name == 'pull_request'
     timeout-minutes: 5
     steps:
@@ -561,8 +620,10 @@ jobs:
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
           CHANGES_CODE: ${{ needs.changes.outputs.code }}
+          CHANGES_DB: ${{ needs.changes.outputs.db }}
           COMMITLINT_RESULT: ${{ needs.commitlint.result }}
           QUALITY_RESULT: ${{ needs.quality.result }}
+          TESTDB_RESULT: ${{ needs.test-db.result }}
         run: |
           set -euo pipefail
           failed=0
@@ -601,9 +662,18 @@ jobs:
             esac
           }
 
+          # The database suite is path-filtered: it skips legitimately when the
+          # change is documentation, or when nothing under prisma/ or the database
+          # test directory moved. Any other skip is unknown; a failure is a failure.
+          testdb_may_skip=0
+          if [ "$docs_only" = "1" ] || { [ "$CHANGES_RESULT" = "success" ] && [ "$CHANGES_DB" != "true" ]; }; then
+            testdb_may_skip=1
+          fi
+
           # Commitlint runs on every pull request. It has no reason to skip.
-          check "Commitlint" "$COMMITLINT_RESULT" 0
-          check "Quality"    "$QUALITY_RESULT"    "$docs_only"
+          check "Commitlint"     "$COMMITLINT_RESULT" 0
+          check "Quality"        "$QUALITY_RESULT"    "$docs_only"
+          check "Database suite" "$TESTDB_RESULT"     "$testdb_may_skip"
 
           if [ "$failed" -ne 0 ]; then
             echo "CI Gate refuses this pull request." >&2
