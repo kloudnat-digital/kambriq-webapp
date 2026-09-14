@@ -327,7 +327,9 @@ describe('G3 - payment instructions and reminders', () => {
         expect(JSON.stringify(args)).not.toContain(value);
       }
       expect(args['bankIban']).toBeUndefined();
-      expect(args['mobileMoneyNumber']).toBeUndefined();
+      // A coordinate that can exist: the per-operator number, not the
+      // MOBILE_MONEY_* field D9 removed and which no longer can.
+      expect(args['orangeMoneyNumber']).toBeUndefined();
       expect(args['notaryName']).toBeUndefined();
     });
 

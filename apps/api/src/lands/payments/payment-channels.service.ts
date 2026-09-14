@@ -44,9 +44,6 @@ export type PaymentChannels = {
   bankAccountName: string;
   bankIban: string;
   bankSwift: string;
-  mobileMoneyOperator: string;
-  mobileMoneyNumber: string;
-  mobileMoneyName: string;
   notaryName: string;
   notaryPhone: string;
   notaryAddress: string;
@@ -54,15 +51,21 @@ export type PaymentChannels = {
   supportPhone: string;
 };
 
-/** Parameter name -> field. The single place the mapping is written. */
+/**
+ * Parameter name -> field. The single place the mapping is written.
+ *
+ * **Nine, required at startup.** D9 removed `MOBILE_MONEY_OPERATOR`,
+ * `MOBILE_MONEY_NUMBER` and `MOBILE_MONEY_NAME`: once OMO and MOMO each had
+ * their own pair (`OPTIONAL_FIELDS`), no channel read them, and requiring them
+ * here was the only thing keeping three dead parameters alive - deleting them
+ * would have stopped the boot. They leave this map first; the parameters are
+ * deleted in terraform only once an API without them has been seen running.
+ */
 const FIELDS: Record<keyof PaymentChannels, string> = {
   bankName: 'BANK_NAME',
   bankAccountName: 'BANK_ACCOUNT_NAME',
   bankIban: 'BANK_IBAN',
   bankSwift: 'BANK_SWIFT',
-  mobileMoneyOperator: 'MOBILE_MONEY_OPERATOR',
-  mobileMoneyNumber: 'MOBILE_MONEY_NUMBER',
-  mobileMoneyName: 'MOBILE_MONEY_NAME',
   notaryName: 'NOTARY_NAME',
   notaryPhone: 'NOTARY_PHONE',
   notaryAddress: 'NOTARY_ADDRESS',
@@ -194,7 +197,7 @@ export class PaymentChannelsService implements OnModuleInit {
      * `perOperator: 0` now says, at boot, that `OMO` and `MOMO` cannot be sent.
      * It is still not a startup failure: refusing to boot an environment because
      * two of six channels are unconfigured is worse than refusing those two
-     * loudly, and the required twelve are what the service genuinely cannot work
+     * loudly, and the required nine are what the service genuinely cannot work
      * without.
      */
     const perOperator = Object.keys(await this.optional()).length;
@@ -231,7 +234,7 @@ export class PaymentChannelsService implements OnModuleInit {
    *
    * Throws, naming the parameters, when the chosen channel's details are not
    * configured. `OMO` and `MOMO` need their own operator parameters, which the
-   * twelve required ones do not include - see `OPTIONAL_FIELDS`.
+   * nine required ones do not include - see `OPTIONAL_FIELDS`.
    */
   async detailsFor(channel: string): Promise<Record<string, string>> {
     const fields = CHANNEL_FIELDS[channel];
