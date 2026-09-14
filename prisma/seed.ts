@@ -6,6 +6,7 @@ import {
   orderAnswers,
   type SeedQuestion,
 } from './seed-data/kbs-questions';
+import { restoredParcelStatus } from './seed-data/parcel-status';
 /**
  * Kambriq - Database seed script
  *
@@ -1355,11 +1356,33 @@ async function seedLands() {
       landId: { in: seededParcelIds },
       id: { not: IDS.LAND_RESERVATION_SEEDED },
     },
-    select: { id: true, landId: true, payments: { select: { reference: true } } },
+    select: {
+      id: true,
+      landId: true,
+      status: true,
+      payments: { select: { reference: true } },
+    },
   });
 
   const withMoney = reservationsToClear.filter((r) => r.payments.length > 0);
   const clearable = reservationsToClear.filter((r) => r.payments.length === 0);
+
+  /**
+   * A31 - a kept reservation still holds its parcel.
+   *
+   * The rows above are kept, not deleted, so whatever they held they still
+   * hold. This used to print "Those parcels keep their current status" and then
+   * reset every parcel to its seeded status regardless: on dev on 14 September
+   * that listed eight parcels AVAILABLE under a PENDING reservation, and journeys
+   * 4 and 5 met a 409 on every push from 08:22 UTC - the listing said free and
+   * the reservation service, which checks for an active reservation, said taken.
+   *
+   * So each parcel is written through `restoredParcelStatus`: its seeded status
+   * only when no kept reservation holds it, otherwise the status the API itself
+   * gives a parcel under that reservation.
+   */
+  const keptOn = new Map<string, LandReservationStatus[]>();
+  for (const r of withMoney) keptOn.set(r.landId, [...(keptOn.get(r.landId) ?? []), r.status]);
 
   if (withMoney.length > 0) {
     console.log(
@@ -1368,11 +1391,13 @@ async function seedLands() {
     );
     for (const r of withMoney) {
       const refs = r.payments.map((p) => p.reference ?? '(no reference)').join(', ');
-      console.log(`    - reservation ${r.id} on parcel ${r.landId} - payments: ${refs}`);
+      console.log(
+        `    - reservation ${r.id} (${r.status}) on parcel ${r.landId} - payments: ${refs}`,
+      );
     }
     console.log(
-      `    Those parcels keep their current status. To reset them, the payments have to be ` +
-        `dealt with deliberately first.`,
+      `    A parcel one of them still holds stays RESERVED or SOLD, as the API left it, and is ` +
+        `not listed AVAILABLE. To free it, the payment has to be dealt with deliberately first.`,
     );
   }
 
@@ -1386,9 +1411,10 @@ async function seedLands() {
       create: parcel,
       // The mutable surface of a parcel, reset. `status` is what a journey
       // changes; the rest are here because a half-restored fixture is worse than
-      // an unrestored one - it looks correct.
+      // an unrestored one - it looks correct. Status only where nothing the seed
+      // kept still holds the parcel (A31).
       update: {
-        status: parcel.status,
+        status: restoredParcelStatus(parcel.status, keptOn.get(parcel.id) ?? []),
         isPublished: parcel.isPublished,
         price: parcel.price,
         labelId: parcel.labelId,
@@ -1440,13 +1466,41 @@ async function seedLands() {
    * So the last thing this function does is read back what it claims. A seed
    * that says "18 available" has now counted them.
    */
-  const expectedAvailable = parcels.filter((p) => p.status === LandStatus.AVAILABLE).length;
+  const expectedAvailable = parcels.filter(
+    (p) => restoredParcelStatus(p.status, keptOn.get(p.id) ?? []) === LandStatus.AVAILABLE,
+  ).length;
   const actualAvailable = await lands.land.count({ where: { status: LandStatus.AVAILABLE } });
 
   if (actualAvailable !== expectedAvailable) {
     throw new Error(
       `Lands seed postcondition failed: expected ${expectedAvailable} AVAILABLE parcels, found ${actualAvailable}. ` +
         `The fixtures were not restored.`,
+    );
+  }
+
+  /**
+   * A31 - the property, not only the count.
+   *
+   * The count above passed on dev on 14 September with eight of its eighteen
+   * AVAILABLE parcels unreservable: a count says how many rows carry a word, not
+   * whether the word is true. What a journey - or an agent - relies on is that an
+   * AVAILABLE parcel can be reserved, and the reservation service refuses any
+   * parcel with a reservation that is not CANCELLED. So that is what is checked.
+   */
+  const falselyFree = await lands.land.findMany({
+    where: {
+      id: { in: seededParcelIds },
+      status: LandStatus.AVAILABLE,
+      reservations: { some: { status: { not: LandReservationStatus.CANCELLED } } },
+    },
+    select: { id: true },
+  });
+
+  if (falselyFree.length > 0) {
+    throw new Error(
+      `Lands seed postcondition failed: ${falselyFree.length} seeded parcel(s) are listed ` +
+        `AVAILABLE while a reservation holds them, so reserving them answers 409: ` +
+        `${falselyFree.map((l) => l.id).join(', ')}.`,
     );
   }
 
