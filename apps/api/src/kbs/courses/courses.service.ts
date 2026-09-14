@@ -66,7 +66,19 @@ export class KbsCoursesService {
 
     if (!course)
       throw new NotFoundException(this.t('kbs.course.notFound', undefined, { id: courseId }));
-    return course;
+
+    // A24. The admin course editor reads each module as AdminModule, which has
+    // questionsCount (and lessonsCount). The raw Prisma module carries
+    // _count.questions and a lessons array instead, so the editor rendered a
+    // quiz count that was never there ("Q quiz"). Shape it to the type it is read as.
+    return {
+      ...course,
+      modules: course.modules.map((module) => ({
+        ...module,
+        lessonsCount: module.lessons.length,
+        questionsCount: module._count.questions,
+      })),
+    };
   }
 
   async createCourse(dto: CreateCourseDto) {
