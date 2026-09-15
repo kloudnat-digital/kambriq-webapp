@@ -157,6 +157,28 @@ describe('AuthService', () => {
       expect(sentUrl).toContain(`token=${persisted}`);
       expect(sentUrl).not.toContain('[object');
     });
+
+    /**
+     * I19. A missing CLIENT row is a broken database, not a user to create
+     * quietly.
+     *
+     * Registration created the account first, looked the role up second, and
+     * skipped the assignment when the row was absent: the account existed, the
+     * verification email went out, the token carried no role at all, and the
+     * only log line said "User registered". The same silence was already
+     * removed from `findOrCreateClientUser`; this door stayed open.
+     */
+    it('refuses to register when the CLIENT role row is missing, and creates nothing', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue(buildUser({ id: 'user-1', email: dto.email }));
+      prisma.role.findUnique.mockResolvedValue(null);
+
+      await expect(service.register(dto)).rejects.toThrow(/CLIENT role is missing/);
+
+      expect(prisma.user.create).not.toHaveBeenCalled();
+      expect(prisma.userRole.create).not.toHaveBeenCalled();
+      expect(email.send).not.toHaveBeenCalled();
+    });
   });
 
   // ----- LOGIN ----- //
