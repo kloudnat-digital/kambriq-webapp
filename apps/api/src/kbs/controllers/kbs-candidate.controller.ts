@@ -29,7 +29,11 @@ export class KbsCandidateController {
     status: 201,
     description: 'Enrolled successfully. Returns the new candidate profile.',
   })
-  @ApiResponse({ status: 400, description: 'User is already enrolled in KBS.' })
+  @ApiResponse({
+    status: 400,
+    description: 'No identity document on file, or the engagement was not accepted.',
+  })
+  @ApiResponse({ status: 409, description: 'User is already enrolled in KBS.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   async enroll(@CurrentUser() user: RequestUser, @Body() dto: EnrollDto) {
     return this.candidatesService.enroll(user.id, dto);
@@ -100,8 +104,9 @@ export class KbsCandidateController {
     description: 'Module list returned, with progress indicators for enrolled candidates.',
   })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
-  @ApiResponse({ status: 404, description: 'Course not found.' })
+  @ApiResponse({ status: 404, description: 'Course not found, or not published.' })
   async getCourseModules(@CurrentUser() user: RequestUser, @Param('courseId') courseId: string) {
+    await this.coursesService.findCandidateCourseOrThrow(courseId);
     const candidate = await this.candidatesService.findByUserId(user.id);
     if (!candidate) {
       return this.coursesService.findModulesByCourseId(courseId);
@@ -256,10 +261,8 @@ export class KbsCandidateController {
     description: 'New date must be in the future, or exam is not in SCHEDULED status.',
   })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
-  @ApiResponse({
-    status: 404,
-    description: 'Exam not found or does not belong to this candidate.',
-  })
+  @ApiResponse({ status: 403, description: 'The exam belongs to another candidate.' })
+  @ApiResponse({ status: 404, description: 'Exam not found.' })
   async rescheduleExam(
     @CurrentUser() user: RequestUser,
     @Param('examId') examId: string,
@@ -285,10 +288,8 @@ export class KbsCandidateController {
     description: 'Exam cannot be started (wrong status or outside time window).',
   })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
-  @ApiResponse({
-    status: 404,
-    description: 'Exam not found or does not belong to this candidate.',
-  })
+  @ApiResponse({ status: 403, description: 'The exam belongs to another candidate.' })
+  @ApiResponse({ status: 404, description: 'Exam not found.' })
   async startExam(@CurrentUser() user: RequestUser, @Param('examId') examId: string) {
     return this.examService.startExam(user.id, examId);
   }
@@ -302,9 +303,14 @@ export class KbsCandidateController {
   })
   @ApiParam({ name: 'examId', description: 'Exam ID (CUID)', example: 'clxxxxxxxxxxxxxx' })
   @ApiResponse({ status: 200, description: 'Answer saved.' })
-  @ApiResponse({ status: 400, description: 'Exam is not IN_PROGRESS.' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Exam is not IN_PROGRESS or has expired, the question was not served in this exam, or an answer does not belong to the question.',
+  })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
-  @ApiResponse({ status: 404, description: 'Exam or question not found.' })
+  @ApiResponse({ status: 403, description: 'The exam belongs to another candidate.' })
+  @ApiResponse({ status: 404, description: 'Exam not found.' })
   async submitExamAnswer(
     @CurrentUser() user: RequestUser,
     @Param('examId') examId: string,
@@ -325,12 +331,14 @@ export class KbsCandidateController {
     status: 200,
     description: 'Exam submitted for grading. Status set to SUBMITTED.',
   })
-  @ApiResponse({ status: 400, description: 'Exam is not IN_PROGRESS.' })
-  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({
-    status: 404,
-    description: 'Exam not found or does not belong to this candidate.',
+    status: 400,
+    description:
+      'Exam is not IN_PROGRESS; or it is past its deadline, in which case it is closed and graded on the answers saved in time; or an answer is on a question this exam did not serve (nothing is written).',
   })
+  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
+  @ApiResponse({ status: 403, description: 'The exam belongs to another candidate.' })
+  @ApiResponse({ status: 404, description: 'Exam not found.' })
   async submitExam(
     @CurrentUser() user: RequestUser,
     @Param('examId') examId: string,
@@ -357,7 +365,7 @@ export class KbsCandidateController {
   @ApiOperation({
     summary: 'Get exam results',
     description:
-      'Returns the graded results including score, pass/fail, time taken, and per-question correct answer breakdown. Only available after grading is complete (status PASSED or FAILED).',
+      'Returns the graded results including score, pass/fail, time taken, and a per-module breakdown (correct, total, percentage). Never the correct answers: the question pool is reused across attempts and candidates. Only available after grading is complete (status PASSED or FAILED).',
   })
   @ApiParam({ name: 'examId', description: 'Exam ID (CUID)', example: 'clxxxxxxxxxxxxxx' })
   @ApiResponse({
@@ -369,10 +377,8 @@ export class KbsCandidateController {
     description: 'Grading not yet complete (status still SUBMITTED).',
   })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
-  @ApiResponse({
-    status: 404,
-    description: 'Exam not found or does not belong to this candidate.',
-  })
+  @ApiResponse({ status: 403, description: 'The exam belongs to another candidate.' })
+  @ApiResponse({ status: 404, description: 'Exam not found.' })
   async getExamResults(@CurrentUser() user: RequestUser, @Param('examId') examId: string) {
     return this.examService.getExamResult(user.id, examId);
   }
@@ -383,12 +389,12 @@ export class KbsCandidateController {
     description:
       'Returns the KCA certificate details including KCA number, issue date, expiry date, and PDF URL if available.',
   })
-  @ApiResponse({ status: 200, description: 'Certificate returned.' })
-  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({
-    status: 404,
-    description: 'No certificate has been issued yet for this candidate.',
+    status: 200,
+    description: 'Certificate returned, or `data: null` when none has been issued yet.',
   })
+  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
+  @ApiResponse({ status: 404, description: 'The user is not enrolled in KBS.' })
   async getMyCertificate(@CurrentUser() user: RequestUser) {
     return this.certificateService.findByUserId(user.id);
   }

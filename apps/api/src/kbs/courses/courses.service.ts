@@ -144,6 +144,22 @@ export class KbsCoursesService {
     });
   }
 
+  /**
+   * I21 - the candidate-facing outline is of a course that exists and is
+   * published. An unknown id answered [], indistinguishable from a course with
+   * no modules; the Swagger said 404.
+   */
+  async findCandidateCourseOrThrow(courseId: string) {
+    const course = await this.prisma.kbsCourse.findUnique({
+      where: { id: courseId },
+      select: { id: true, isPublished: true },
+    });
+    if (!course || !course.isPublished) {
+      throw new NotFoundException(this.t('kbs.course.notFound', undefined, { id: courseId }));
+    }
+    return course;
+  }
+
   async findModuleDetail(moduleId: string, userId: string) {
     const candidate = await this.requireVerifiedCandidateByUserIdOrThrow(userId);
 
@@ -168,10 +184,13 @@ export class KbsCoursesService {
         this.t('kbs.module.notFound', DEFAULT_LANGUAGE, { id: moduleId }),
       );
 
+    // I21 - no settings row answered 500. The fallbacks are the ones the quiz
+    // itself enforces (`submitQuiz`, `findQuestionsForQuiz`): this screen said
+    // 5 attempts while the server allowed any number.
     const settings = await this.prisma.kbsSettings.findFirst();
-    const quizQuestionCount = settings.quizQuestionCount ?? 10;
-    const quizMaxAttempts = settings.quizMaxAttempts ?? 5;
-    const cooldownMinutes = settings.quizCooldownMinutes ?? 0;
+    const quizQuestionCount = settings?.quizQuestionCount ?? DEFAULT_QUIZ_QUESTION_COUNT;
+    const quizMaxAttempts = settings?.quizMaxAttempts ?? 0;
+    const cooldownMinutes = settings?.quizCooldownMinutes ?? 0;
 
     const [lessonCompletions, progress] = await Promise.all([
       this.prisma.kbsLessonCompletion.findMany({

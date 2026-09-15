@@ -1620,6 +1620,30 @@ come with it:
   Demanding a receipt where none is behind the step fills a trail with
   evidence of nothing.
 
+### An exam records which questions it served, not how many
+
+From `I21`. `startExam` drew 20 questions from a pool of 60 and stored only
+`totalQuestions: 20`. `saveAnswer` upserted an answer for any `questionId` in
+the pool, and `gradeExam` divided every correct saved answer by 20, uncapped.
+Answering the whole pool graded 300%; a few answers remembered from an earlier
+attempt turned a fail into a pass. Since I15 a certificate confers
+`KCA_CERTIFIED` and, through KAMNET, `AGENT`.
+
+- **The served set is data.** One empty `KbsExamAnswer` slot per served
+  question, written in the start's own transaction. An answer is accepted only
+  onto an existing slot, and only with answer ids of that question. The table
+  already existed; what was missing was writing it at the right moment.
+- **The cap at 100 is a second barrier, and it never fires.** It is there so the
+  next hole of this kind grades 100, not 300.
+- **Proved red with the exploit itself**, in `exam-integrity.dbspec.ts` against
+  the real kbs migrations: 60 correct answers on a 20-question exam gave
+  `{ refused: 0, score: 300 }` before and `{ refused: 40, score: 100 }` after.
+- **The clock is checked where answers are written.** Only `saveAnswer` checked
+  it, so a late submit wrote answers until the expiry job ran. Past the deadline
+  plus 30 s the exam is closed on what was saved in time, graded, and the
+  submission refused. The close is `updateMany ... where status = IN_PROGRESS`,
+  because the expiry job races for the same row.
+
 ### An inbound lead is stored first, and announced second
 
 From `L1`. `ContactRequest` lives in **core**, not in `kamnet`: a public request

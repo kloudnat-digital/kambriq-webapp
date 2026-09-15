@@ -274,7 +274,7 @@ describe('KbsExamService', () => {
   // ----- SAVE ANSWER ----- //
 
   describe('saveAnswer', () => {
-    it('upserts answer slot and replaces selections atomically', async () => {
+    it('writes onto the served slot and replaces selections atomically', async () => {
       const candidate = buildCandidate({ status: 'EXAM_PENDING' });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
 
@@ -285,19 +285,22 @@ describe('KbsExamService', () => {
       });
       prisma.kbsExam.findUnique.mockResolvedValue(exam);
 
-      // Mock transaction callback
-      prisma.$transaction.mockImplementation(async (cb: (client: unknown) => Promise<unknown>) => {
-        const tx = {
-          kbsExamAnswer: {
-            upsert: jest.fn().mockResolvedValue({ id: 'ea1' }),
-          },
-          kbsExamAnswerSelection: {
-            deleteMany: jest.fn(),
-            createMany: jest.fn(),
-          },
-        };
-        return cb(tx);
-      });
+      // I21 - the slot was created at start; saving looks it up, never creates it.
+      const tx = {
+        kbsExamAnswer: {
+          findUnique: jest.fn().mockResolvedValue({ id: 'ea1' }),
+          update: jest.fn().mockResolvedValue({ id: 'ea1' }),
+          upsert: jest.fn(),
+        },
+        kbsExamQuestionAnswer: { count: jest.fn().mockResolvedValue(2) },
+        kbsExamAnswerSelection: {
+          deleteMany: jest.fn(),
+          createMany: jest.fn(),
+        },
+      };
+      prisma.$transaction.mockImplementation(async (cb: (client: unknown) => Promise<unknown>) =>
+        cb(tx),
+      );
 
       await service.saveAnswer(candidate.userId, exam.id, {
         questionId: 'q1',
@@ -305,7 +308,16 @@ describe('KbsExamService', () => {
         flagged: true,
       });
 
-      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(tx.kbsExamAnswer.upsert).not.toHaveBeenCalled();
+      expect(tx.kbsExamQuestionAnswer.count).toHaveBeenCalledWith({
+        where: { id: { in: ['a1', 'a2'] }, questionId: 'q1' },
+      });
+      expect(tx.kbsExamAnswerSelection.createMany).toHaveBeenCalledWith({
+        data: [
+          { examAnswerId: 'ea1', answerId: 'a1' },
+          { examAnswerId: 'ea1', answerId: 'a2' },
+        ],
+      });
     });
 
     it('throws if exam is not IN_PROGRESS', async () => {
@@ -337,31 +349,32 @@ describe('KbsExamService', () => {
           startedAt: new Date(),
         }),
       );
-      prisma.kbsExam.update.mockResolvedValue({});
-
-      // Mock per-answer transaction
-      prisma.$transaction.mockImplementation(async (cb: (client: unknown) => Promise<unknown>) => {
-        const tx = {
-          kbsExamAnswer: {
-            upsert: jest.fn().mockResolvedValue({ id: 'ea1' }),
-          },
-          kbsExamAnswerSelection: {
-            deleteMany: jest.fn(),
-            createMany: jest.fn(),
-          },
-        };
-        return cb(tx);
-      });
+      // I21 - claim and answers in one transaction; the claim holds only while
+      // the exam is still IN_PROGRESS.
+      const tx = {
+        kbsExam: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+        kbsExamAnswer: {
+          findUnique: jest.fn().mockResolvedValue({ id: 'ea1' }),
+          update: jest.fn().mockResolvedValue({ id: 'ea1' }),
+        },
+        kbsExamQuestionAnswer: { count: jest.fn().mockResolvedValue(1) },
+        kbsExamAnswerSelection: {
+          deleteMany: jest.fn(),
+          createMany: jest.fn(),
+        },
+      };
+      prisma.$transaction.mockImplementation(async (cb: (client: unknown) => Promise<unknown>) =>
+        cb(tx),
+      );
 
       await service.submitExam(candidate.userId, 'exam-1', {
         answers: [{ questionId: 'q1', answerIds: ['a1'] }],
       });
 
-      expect(prisma.kbsExam.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ status: 'SUBMITTED' }),
-        }),
-      );
+      expect(tx.kbsExam.updateMany).toHaveBeenCalledWith({
+        where: { id: 'exam-1', status: 'IN_PROGRESS' },
+        data: expect.objectContaining({ status: 'SUBMITTED' }),
+      });
       expect(queue.add).toHaveBeenCalledWith(
         'kbs.grade-exam',
         expect.objectContaining({ examId: 'exam-1' }),
