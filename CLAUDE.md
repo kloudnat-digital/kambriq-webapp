@@ -1355,6 +1355,23 @@ Proved by mutation at three layers, including a render test that mocks only the
 HTTP client (`page-through-the-bff.spec.tsx`): the page spec that mocks the
 action could not have seen the action lying.
 
+### A test that fails every other run is not coverage, and saying so is
+
+From `A33`. The WebKit successful-login test (A28) failed on 4 of the 8 develop
+runs that ran E2E since it was added, and a fifth passed only on its retry. Every
+failure looked the same: the click was accepted and **no request left the
+page** for 15 seconds. That rules out a slow server and a wait that is too
+short - nothing was in flight to wait for. Twenty local WebKit runs all passed,
+so the cause (a click landing before hydration on a slower runner, or a WebKit
+event difference) was not established in the hour bounded for it.
+
+Raising the timeout would have hidden exactly that. WebKit is out of the matrix
+instead, with the reason at the line where it was and in the register:
+**Safari is not tested.** That sentence is honest; a test that lies every other
+run and is retried into green is a claim of coverage that is not there. Safari
+is the default browser on the iPhone the diaspora uses, so WebKit comes back
+with its cause, not without it.
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope
