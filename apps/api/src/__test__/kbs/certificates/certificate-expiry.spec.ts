@@ -39,11 +39,19 @@ describe('KbsCertificatesService.withdrawExpiredCertifications', () => {
   });
 
   const now = new Date('2027-01-02T02:30:00Z');
+  const lapsedOn = new Date('2027-01-01T00:00:00Z');
 
   it('removes KCA_CERTIFIED from every holder whose certificate has expired', async () => {
     prisma.kbsCertificate.findMany.mockResolvedValue([
-      { kcaNumber: 'KCA-20250101-0001', candidate: { userId: 'u1' } },
-      { kcaNumber: 'KCA-20250101-0002', candidate: { userId: 'u2' } },
+      // Each holder's newest certificate is the expired one: nothing renewed it.
+      {
+        kcaNumber: 'KCA-20250101-0001',
+        candidate: { userId: 'u1', certificates: [{ validUntil: lapsedOn, revokedAt: null }] },
+      },
+      {
+        kcaNumber: 'KCA-20250101-0002',
+        candidate: { userId: 'u2', certificates: [{ validUntil: lapsedOn, revokedAt: null }] },
+      },
     ]);
 
     const withdrawn = await service.withdrawExpiredCertifications(now);

@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { KbsPrismaService } from '../prisma/kbs-prisma.service';
+import { isActive, NEWEST_FIRST } from './current-certificate';
 import { UsersService } from '../../core/users/users.service';
 import { IssueCertificateDto, RevokeCertificateDto } from './dto/certificate.dto';
 import {
@@ -33,7 +34,7 @@ export class KbsCertificatesService {
   async issueCertificate(candidateId: string, adminUserId: string, dto?: IssueCertificateDto) {
     const candidate = await this.prisma.kbsCandidate.findUnique({
       where: { id: candidateId },
-      include: { certificate: true },
+      include: { certificates: { ...NEWEST_FIRST, take: 1 } },
     });
 
     if (!candidate) {
@@ -65,11 +66,21 @@ export class KbsCertificatesService {
       throw new NotFoundException(this.t('kbs.certificate.notPassed', DEFAULT_LANGUAGE));
     }
 
-    // Prevent duplicate certificates
-    if (candidate.certificate) {
+    /**
+     * I15 renewal - refused only while the current certificate stands.
+     *
+     * This refused any second certificate for life, so a candidate whose
+     * certificate had expired or been revoked could never be certified again.
+     * A renewal is a new certificate, with its own number and its own dates; the
+     * predecessor is not touched and stays verifiable as expired or revoked.
+     * Whether a renewal needs the exam re-sat is I3's to decide: today the
+     * requirement above accepts an earlier PASSED exam.
+     */
+    const current = candidate.certificates[0];
+    if (current && isActive(current)) {
       throw new ConflictException(
         this.t('kbs.certificate.alreadyIssued', DEFAULT_LANGUAGE, {
-          kcaNumber: candidate.certificate.kcaNumber,
+          kcaNumber: current.kcaNumber,
         }),
       );
     }
@@ -129,7 +140,7 @@ export class KbsCertificatesService {
     const candidate = await this.prisma.kbsCandidate.findUnique({
       where: { userId },
       include: {
-        certificate: true,
+        certificates: { ...NEWEST_FIRST, take: 1 },
         progress: { select: { passed: true } },
         exams: {
           where: { status: 'PASSED' },
@@ -144,7 +155,9 @@ export class KbsCertificatesService {
       throw new NotFoundException(this.t('kbs.enrollment.notEnrolled'));
     }
 
-    if (!candidate.certificate) {
+    // I15 renewal: "my certificate" is the current one, the newest issued.
+    const current = candidate.certificates[0];
+    if (!current) {
       return null;
     }
 
@@ -161,13 +174,13 @@ export class KbsCertificatesService {
     const modulesCompleted = candidate.progress.filter((p) => p.passed).length;
 
     return {
-      id: candidate.certificate.id,
-      kcaNumber: candidate.certificate.kcaNumber,
-      issueDate: candidate.certificate.issueDate,
-      validUntil: candidate.certificate.validUntil,
-      pdfUrl: candidate.certificate.pdfUrl,
-      revokedAt: candidate.certificate.revokedAt,
-      isValid: candidate.certificate.validUntil > new Date() && !candidate.certificate.revokedAt,
+      id: current.id,
+      kcaNumber: current.kcaNumber,
+      issueDate: current.issueDate,
+      validUntil: current.validUntil,
+      pdfUrl: current.pdfUrl,
+      revokedAt: current.revokedAt,
+      isValid: isActive(current),
       candidate: {
         firstName: user.firstName,
         lastName: user.lastName,
@@ -242,7 +255,8 @@ export class KbsCertificatesService {
   async revokeCertificate(candidateId: string, adminUserId: string, dto: RevokeCertificateDto) {
     const candidate = await this.prisma.kbsCandidate.findUnique({
       where: { id: candidateId },
-      include: { certificate: true },
+      // I15 renewal: revocation withdraws the current certificate, the newest.
+      include: { certificates: { ...NEWEST_FIRST, take: 1 } },
     });
 
     if (!candidate) {
@@ -253,16 +267,17 @@ export class KbsCertificatesService {
       );
     }
 
-    if (!candidate.certificate) {
+    const current = candidate.certificates[0];
+    if (!current) {
       throw new NotFoundException(this.t('kbs.certificate.notFound', 'en'));
     }
 
-    if (candidate.certificate.revokedAt) {
+    if (current.revokedAt) {
       throw new ConflictException(this.t('kbs.certificate.alreadyRevoked', 'en'));
     }
 
     const revoked = await this.prisma.kbsCertificate.update({
-      where: { id: candidate.certificate.id },
+      where: { id: current.id },
       data: {
         revokedAt: new Date(),
         revokedBy: adminUserId,
@@ -281,7 +296,7 @@ export class KbsCertificatesService {
 
     this.logger.log('Certificate revoked %o', {
       candidateId,
-      kcaNumber: candidate.certificate.kcaNumber,
+      kcaNumber: current.kcaNumber,
       revokedBy: adminUserId,
       reason: dto.reason,
     });
@@ -309,15 +324,38 @@ export class KbsCertificatesService {
   async withdrawExpiredCertifications(now: Date = new Date()): Promise<number> {
     const expired = await this.prisma.kbsCertificate.findMany({
       where: { validUntil: { lt: now } },
-      select: { kcaNumber: true, candidate: { select: { userId: true } } },
+      select: {
+        kcaNumber: true,
+        candidate: {
+          select: {
+            userId: true,
+            certificates: {
+              ...NEWEST_FIRST,
+              take: 1,
+              select: { validUntil: true, revokedAt: true },
+            },
+          },
+        },
+      },
     });
 
-    for (const certificate of expired) {
+    // I15 renewal - an expired certificate withdraws the role only from a holder
+    // with no newer certificate standing. After a renewal the old certificate is
+    // still expired, and must not take away what the new one confers.
+    const lapsed = expired.filter((certificate) => {
+      const current = certificate.candidate.certificates[0];
+      return !current || !isActive(current, now);
+    });
+
+    for (const certificate of lapsed) {
       await this.usersService.removeRole(certificate.candidate.userId, RoleCode.KCA_CERTIFIED);
     }
 
-    this.logger.log('Expired certifications withdrawn %o', { count: expired.length });
-    return expired.length;
+    this.logger.log('Expired certifications withdrawn %o', {
+      count: lapsed.length,
+      renewedAndKept: expired.length - lapsed.length,
+    });
+    return lapsed.length;
   }
 
   // ----- Admin: List All Certificates---------------
