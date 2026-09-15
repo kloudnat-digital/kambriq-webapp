@@ -573,8 +573,14 @@ reservation got **no roles at all**, was emailed portal access, and was refused
 by every route in the portal.
 
 The casing was how it surfaced; **the literal was the defect**.
-`role-code-literals.spec.ts` bans them across `apps/api/src`, `libs/common/src`
-and `prisma/`. The enum is the only exemption.
+`role-code-literals.spec.ts` bans them across `apps/api/src`, `libs/common/src`,
+`prisma/`, `apps/web/src` and the e2e suite. It covered only the first three
+while every web gate was a bare string - which is how a role that does not exist,
+`ROOT`, came to guard a real layout (`I18`). The web imports the enum once,
+through `apps/web/src/lib/roles.ts`. The enum is the only exemption for a role
+code; a word merely spelled like one (a translation key, a URL segment) is
+exempted per file with its reason, and the exemption fails once it stops
+matching.
 
 ### An identifier where a customer expects a name
 

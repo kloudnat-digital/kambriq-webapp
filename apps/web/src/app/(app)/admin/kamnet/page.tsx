@@ -1,3 +1,4 @@
+import { RoleCode } from '@/lib/roles';
 import { getTranslations } from 'next-intl/server';
 import { PlaceholderPage } from '@/components/placeholder-page';
 
@@ -18,7 +19,7 @@ export default function AdminKamnetPage() {
         'Validation des certifications KCA',
         'Statistiques du réseau',
       ]}
-      roles={['ADMIN_KAMNET', 'ADMIN_GLOBAL', 'ROOT']}
+      roles={[RoleCode.ADMIN_KAMNET, RoleCode.ADMIN_GLOBAL, 'ROOT']}
     />
   );
 }

@@ -1,3 +1,4 @@
+import { RoleCode } from '@/lib/roles';
 import { getTranslations } from 'next-intl/server';
 import { PlaceholderPage } from '@/components/placeholder-page';
 
@@ -18,7 +19,7 @@ export default function AgentDashboardPage() {
         'Clients récents',
         'Graphique des commissions (6 derniers mois)',
       ]}
-      roles={['AGENT', 'OPS', 'ADMIN_GLOBAL', 'ROOT']}
+      roles={[RoleCode.AGENT, 'OPS', RoleCode.ADMIN_GLOBAL, 'ROOT']}
     />
   );
 }

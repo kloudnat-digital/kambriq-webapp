@@ -1,3 +1,4 @@
+import { RoleCode } from '@/lib/roles';
 import { getTranslations } from 'next-intl/server';
 import { PlaceholderPage } from '@/components/placeholder-page';
 
@@ -18,7 +19,7 @@ export default function ClientVerifyPage() {
         'Résultats et rapports de vérification',
         'Nouvelle demande de vérification',
       ]}
-      roles={['CLIENT']}
+      roles={[RoleCode.CLIENT]}
     />
   );
 }

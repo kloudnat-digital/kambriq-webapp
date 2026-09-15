@@ -1,3 +1,4 @@
+import { RoleCode } from '@/lib/roles';
 import {
   LayoutGrid,
   Map,
@@ -36,13 +37,13 @@ export const NAV_SECTIONS: NavSection[] = [
         labelKey: 'items.mylands',
         href: '/mylands',
         icon: LayoutGrid,
-        roles: ['CLIENT'],
+        roles: [RoleCode.CLIENT],
       },
       {
         labelKey: 'items.profile',
         href: '/account',
         icon: CircleUser,
-        roles: ['CLIENT'],
+        roles: [RoleCode.CLIENT],
       },
     ],
   },
@@ -53,13 +54,13 @@ export const NAV_SECTIONS: NavSection[] = [
         labelKey: 'items.catalogue',
         href: '/lands',
         icon: Map,
-        roles: ['AGENT', 'ADMIN_LANDS', 'ADMIN_GLOBAL'],
+        roles: [RoleCode.AGENT, RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL],
       },
       {
         labelKey: 'items.reservations',
         href: '/reservations',
         icon: BookmarkCheck,
-        roles: ['AGENT', 'ADMIN_LANDS', 'ADMIN_GLOBAL'],
+        roles: [RoleCode.AGENT, RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL],
       },
     ],
   },
@@ -71,26 +72,26 @@ export const NAV_SECTIONS: NavSection[] = [
         href: '/kbs/enroll',
         icon: GraduationCap,
         roles: [],
-        hideForRoles: ['CANDIDATE_KBS'],
+        hideForRoles: [RoleCode.CANDIDATE_KBS],
       },
       {
         labelKey: 'items.kbsDashboard',
         href: '/kbs',
         icon: BookOpen,
-        roles: ['CANDIDATE_KBS'],
+        roles: [RoleCode.CANDIDATE_KBS],
         exact: true,
       },
       {
         labelKey: 'items.kbsExam',
         href: '/kbs/exam',
         icon: ClipboardCheck,
-        roles: ['CANDIDATE_KBS'],
+        roles: [RoleCode.CANDIDATE_KBS],
       },
       {
         labelKey: 'items.kbsCertificate',
         href: '/kbs/certificate',
         icon: Award,
-        roles: ['KCA_CERTIFIED'],
+        roles: [RoleCode.KCA_CERTIFIED],
       },
     ],
   },
@@ -103,7 +104,7 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: BookmarkCheck,
         // The queue of clients waiting for an answer. First in the section
         // because it is the one that has somebody on the other end of it.
-        roles: ['ADMIN_LANDS', 'ADMIN_GLOBAL'],
+        roles: [RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL],
       },
       {
         labelKey: 'items.adminIdentities',
@@ -112,7 +113,7 @@ export const NAV_SECTIONS: NavSection[] = [
         // v03 section 8 puts identity verification on ADMIN_LANDS as well as
         // ADMIN_GLOBAL: it is now on the path of the money, and a queue only a
         // super admin can clear is a queue that does not get cleared.
-        roles: ['ADMIN_LANDS', 'ADMIN_GLOBAL'],
+        roles: [RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL],
       },
       {
         labelKey: 'items.adminPayments',
@@ -120,13 +121,13 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: BookmarkCheck,
         // Recording is ADMIN_LANDS; validating inside the screen is
         // ADMIN_GLOBAL, which the detail page enforces. Both may see the list.
-        roles: ['ADMIN_LANDS', 'ADMIN_GLOBAL'],
+        roles: [RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL],
       },
       {
         labelKey: 'items.adminLands',
         href: '/admin/lands',
         icon: Map,
-        roles: ['ADMIN_LANDS', 'ADMIN_GLOBAL'],
+        roles: [RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL],
       },
     ],
   },
@@ -137,37 +138,37 @@ export const NAV_SECTIONS: NavSection[] = [
         labelKey: 'items.adminKbsCandidates',
         href: '/admin/kbs/candidates',
         icon: Users,
-        roles: ['ADMIN_KBS', 'ADMIN_GLOBAL'],
+        roles: [RoleCode.ADMIN_KBS, RoleCode.ADMIN_GLOBAL],
       },
       {
         labelKey: 'items.adminKbsCourse',
         href: '/admin/kbs/course',
         icon: BookOpen,
-        roles: ['ADMIN_KBS', 'ADMIN_GLOBAL'],
+        roles: [RoleCode.ADMIN_KBS, RoleCode.ADMIN_GLOBAL],
       },
       {
         labelKey: 'items.adminKbsQuestions',
         href: '/admin/kbs/questions',
         icon: ListChecks,
-        roles: ['ADMIN_KBS', 'ADMIN_GLOBAL'],
+        roles: [RoleCode.ADMIN_KBS, RoleCode.ADMIN_GLOBAL],
       },
       {
         labelKey: 'items.adminKbsExams',
         href: '/admin/kbs/exams',
         icon: CalendarClock,
-        roles: ['ADMIN_KBS', 'ADMIN_GLOBAL'],
+        roles: [RoleCode.ADMIN_KBS, RoleCode.ADMIN_GLOBAL],
       },
       {
         labelKey: 'items.adminKbsCertificates',
         href: '/admin/kbs/certificates',
         icon: Award,
-        roles: ['ADMIN_KBS', 'ADMIN_GLOBAL'],
+        roles: [RoleCode.ADMIN_KBS, RoleCode.ADMIN_GLOBAL],
       },
       {
         labelKey: 'items.adminKbsSettings',
         href: '/admin/kbs/settings',
         icon: Settings,
-        roles: ['ADMIN_KBS', 'ADMIN_GLOBAL'],
+        roles: [RoleCode.ADMIN_KBS, RoleCode.ADMIN_GLOBAL],
       },
     ],
   },
@@ -178,7 +179,7 @@ export const NAV_SECTIONS: NavSection[] = [
         labelKey: 'items.profile',
         href: '/account',
         icon: CircleUser,
-        roles: ['AGENT', 'ADMIN_LANDS', 'ADMIN_GLOBAL', 'ADMIN_KBS'],
+        roles: [RoleCode.AGENT, RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL, RoleCode.ADMIN_KBS],
       },
     ],
   },
