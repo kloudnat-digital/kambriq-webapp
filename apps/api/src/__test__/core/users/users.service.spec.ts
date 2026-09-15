@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 import { RoleCode } from '@kambriq/common';
 import { UsersService } from '../../../core/users/users.service';
 import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
@@ -247,6 +247,53 @@ describe('UsersService', () => {
       await expect(
         service.adminUpdate(user.id, { roleCodes: ['CLIENT', 'INVALID'] }, 'admin-1'),
       ).rejects.toThrow();
+    });
+
+    /**
+     * I15 - KCA_CERTIFIED reflects a certificate; it is not an admin setting.
+     *
+     * The replace door could hand it to somebody who holds no certificate, or
+     * take it from somebody whose certificate stands. Either way the role and
+     * the register would disagree, which is the contradiction I15 closes.
+     */
+    it('refuses a role set that adds KCA_CERTIFIED by hand', async () => {
+      prisma.user.findUnique.mockResolvedValue(buildUserWithRoles(['CLIENT']));
+      prisma.role.findMany.mockResolvedValue([buildRole('CLIENT'), buildRole('KCA_CERTIFIED')]);
+
+      await expect(
+        service.adminUpdate('u1', { roleCodes: ['CLIENT', 'KCA_CERTIFIED'] }, 'admin-1'),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('refuses a role set that drops KCA_CERTIFIED by hand', async () => {
+      prisma.user.findUnique.mockResolvedValue(buildUserWithRoles(['CLIENT', 'KCA_CERTIFIED']));
+      prisma.role.findMany.mockResolvedValue([buildRole('CLIENT')]);
+
+      await expect(
+        service.adminUpdate('u1', { roleCodes: ['CLIENT'] }, 'admin-1'),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('lets a role set carry KCA_CERTIFIED through unchanged', async () => {
+      prisma.user.findUnique.mockResolvedValue(buildUserWithRoles(['CLIENT', 'KCA_CERTIFIED']));
+      prisma.role.findMany.mockResolvedValue([
+        buildRole('CLIENT'),
+        buildRole('KCA_CERTIFIED'),
+        buildRole('ADMIN_KBS'),
+      ]);
+      prisma.$transaction.mockImplementation((cb: (client: unknown) => Promise<unknown>) =>
+        cb({ userRole: { deleteMany: jest.fn(), createMany: jest.fn() } }),
+      );
+
+      await service.adminUpdate(
+        'u1',
+        { roleCodes: ['CLIENT', 'KCA_CERTIFIED', 'ADMIN_KBS'] },
+        'admin-1',
+      );
+
+      expect(prisma.$transaction).toHaveBeenCalled();
     });
   });
 

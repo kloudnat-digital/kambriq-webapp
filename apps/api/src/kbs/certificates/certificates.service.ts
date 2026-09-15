@@ -289,6 +289,37 @@ export class KbsCertificatesService {
     return revoked;
   }
 
+  // ----- Scheduled: Expiry ---------------------------
+
+  /**
+   * I15 - expiry withdraws KCA_CERTIFIED, as revocation does.
+   *
+   * The role is a projection of the certificate. Nothing used to happen when a
+   * certificate expired: the role stayed on the account, and the platform went
+   * on treating as certified somebody `/verify-certificate` answered "expiré"
+   * for. Run daily by `KbsCertificateExpiryScheduler`.
+   *
+   * Every expired certificate is swept, not only those expired since the last
+   * run: the role lives in the core database, so there is no join to narrow the
+   * set, and `removeRole` on a user who no longer holds the role deletes
+   * nothing. A missed day is therefore healed by the next run. The candidate's
+   * status is left as it is: `isUserCertified` already answers no for an
+   * expired certificate.
+   */
+  async withdrawExpiredCertifications(now: Date = new Date()): Promise<number> {
+    const expired = await this.prisma.kbsCertificate.findMany({
+      where: { validUntil: { lt: now } },
+      select: { kcaNumber: true, candidate: { select: { userId: true } } },
+    });
+
+    for (const certificate of expired) {
+      await this.usersService.removeRole(certificate.candidate.userId, RoleCode.KCA_CERTIFIED);
+    }
+
+    this.logger.log('Expired certifications withdrawn %o', { count: expired.length });
+    return expired.length;
+  }
+
   // ----- Admin: List All Certificates---------------
 
   async findAll(query: PaginationQuery) {
