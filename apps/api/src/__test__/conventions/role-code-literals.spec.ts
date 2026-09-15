@@ -27,13 +27,62 @@ import { RoleCode } from '@kambriq/common';
  */
 const ROOT = join(__dirname, '..', '..', '..', '..', '..');
 
-const SEARCHED = ['apps/api/src', 'libs/common/src', 'prisma'];
+/**
+ * I18 - the web and the e2e suite are scanned too.
+ *
+ * This looked at `apps/api`, `libs/common` and `prisma` only, while every role
+ * check the web makes - the proxy's gates, the nav, the layouts - was written as
+ * a bare string. A check that does not look at half the repository reads as
+ * covered and is not.
+ */
+const SEARCHED = ['apps/api/src', 'libs/common/src', 'prisma', 'apps/web/src', 'apps/web-e2e/src'];
 
 /**
  * The enum has to write the strings once; that is its whole job. Nothing else is
  * exempt — not the seed, not a DTO example, not a comment quoting the old bug.
  */
 const ALLOWED = ['libs/common/src/types/roles.enum.ts'];
+
+/**
+ * Literals spelled like a role code that are not one, each exempt in exactly
+ * one file and with its reason. The last test fails when one stops matching, so
+ * an exemption cannot outlive what it excuses.
+ */
+const NOT_A_ROLE: ReadonlyArray<{ file: string; literal: string; why: string }> = [
+  {
+    file: 'apps/web/src/hooks/use-breadcrumbs.ts',
+    literal: "'agent'",
+    why: 'the /agent URL segment, mapped to its breadcrumb translation key',
+  },
+  {
+    file: 'apps/web/src/components/reservations/reservation-card.tsx',
+    literal: "'client'",
+    why: "a translation key, t('client')",
+  },
+  {
+    file: 'apps/web/src/components/reservations/reservation-client-info-card.tsx',
+    literal: "'client'",
+    why: "a translation key, t('client')",
+  },
+  {
+    file: 'apps/web/src/components/products/lands/search/land-detail-modal/dialogs.tsx',
+    literal: "'client'",
+    why: 'a support-request category, not a person',
+  },
+  // I18 - this layout's gate also names ROOT, a role that does not exist. What
+  // the gate does is reported and awaits a decision; the file is not touched
+  // until it is taken.
+  {
+    file: 'apps/web/src/app/(app)/admin/kbs/layout.tsx',
+    literal: "'ADMIN_KBS'",
+    why: 'the I18 ROOT gate, awaiting a decision',
+  },
+  {
+    file: 'apps/web/src/app/(app)/admin/kbs/layout.tsx',
+    literal: "'ADMIN_GLOBAL'",
+    why: 'the I18 ROOT gate, awaiting a decision',
+  },
+];
 
 const CODES = Object.values(RoleCode);
 
@@ -52,10 +101,25 @@ const walk = (dir: string): string[] => {
 const stripComments = (src: string): string =>
   src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
+/**
+ * Unit tests stay exempt: they hand literal role arrays to the function under
+ * test on purpose. The e2e suite is not a unit test - its specs are the code
+ * that drives the deployed app - so it is scanned whole.
+ */
+const isUnitTest = (f: string): boolean =>
+  !f.startsWith('apps/web-e2e/') && (f.includes('__test__') || /\.spec\.tsx?$/.test(f));
+
 const FILES = SEARCHED.flatMap((d) => walk(join(ROOT, d)))
   .map((f) => relative(ROOT, f))
   .filter((f) => !ALLOWED.includes(f))
-  .filter((f) => !f.includes('__test__') && !f.endsWith('.spec.ts'));
+  .filter((f) => !isUnitTest(f));
+
+/** A file's source with comments, and its own exempt literals, removed. */
+const scanned = (f: string): string =>
+  NOT_A_ROLE.filter((e) => e.file === f).reduce(
+    (src, e) => src.split(e.literal).join(''),
+    stripComments(readFileSync(join(ROOT, f), 'utf8')),
+  );
 
 describe('role codes are never bare strings', () => {
   it('is looking at the source tree at all', () => {
@@ -64,6 +128,8 @@ describe('role codes are never bare strings', () => {
     expect(FILES.length).toBeGreaterThan(50);
     expect(FILES).toContain('apps/api/src/core/users/users.service.ts');
     expect(FILES).toContain('prisma/seed.ts');
+    expect(FILES).toContain('apps/web/src/routes.ts');
+    expect(FILES.some((f) => f.startsWith('apps/web-e2e/'))).toBe(true);
   });
 
   it('knows what the role codes are', () => {
@@ -82,10 +148,16 @@ describe('role codes are never bare strings', () => {
     // measurement, and it is left recorded here rather than tidied away.
     const pattern = new RegExp(`(['"\`])(${code}|${code.toLowerCase()})\\1`);
 
-    const offenders = FILES.filter((f) =>
-      pattern.test(stripComments(readFileSync(join(ROOT, f), 'utf8'))),
-    );
+    const offenders = FILES.filter((f) => pattern.test(scanned(f)));
 
     expect(offenders).toEqual([]);
   });
+
+  it.each(NOT_A_ROLE.map((e) => [e.file, e.literal] as const))(
+    'the exemption for %s %s still matches something',
+    (file, literal) => {
+      expect(FILES).toContain(file);
+      expect(stripComments(readFileSync(join(ROOT, file), 'utf8'))).toContain(literal);
+    },
+  );
 });
