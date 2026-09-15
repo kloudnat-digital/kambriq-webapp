@@ -1378,6 +1378,23 @@ worth keeping:
   journeys is still only seen after deploy. What this prevents is the second
   merge on a known red.
 
+### A test that fails every other run is not coverage, and saying so is
+
+From `A33`. The WebKit successful-login test (A28) failed on 4 of the 8 develop
+runs that ran E2E since it was added, and a fifth passed only on its retry. Every
+failure looked the same: the click was accepted and **no request left the
+page** for 15 seconds. That rules out a slow server and a wait that is too
+short - nothing was in flight to wait for. Twenty local WebKit runs all passed,
+so the cause (a click landing before hydration on a slower runner, or a WebKit
+event difference) was not established in the hour bounded for it.
+
+Raising the timeout would have hidden exactly that. WebKit is out of the matrix
+instead, with the reason at the line where it was and in the register:
+**Safari is not tested.** That sentence is honest; a test that lies every other
+run and is retried into green is a claim of coverage that is not there. Safari
+is the default browser on the iPhone the diaspora uses, so WebKit comes back
+with its cause, not without it.
+
 ### A notification is proven by the message that arrived, not the step that sent it
 
 From `D19`. The dev deploy failed on 12 September at 10:28 and again at 19:20,

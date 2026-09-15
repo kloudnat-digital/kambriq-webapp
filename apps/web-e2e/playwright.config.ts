@@ -68,12 +68,17 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
 
-    // Firefox and WebKit run in CI only (set CI=true to enable)
-    ...(process.env['CI']
-      ? [
-          { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-          { name: 'webkit', use: { ...devices['Desktop Safari'] } },
-        ]
-      : []),
+    // Firefox runs in CI only (set CI=true to enable).
+    //
+    // WebKit is NOT in this matrix, deliberately, and that means Safari is not
+    // tested (A33, register). Its successful-login test failed on 4 of the 8
+    // develop runs that ran E2E since A28, and a fifth passed only on its retry -
+    // each failure the same way: the click sent no request at all,
+    // so it was neither a slow server nor a wait that was too short. The cause
+    // was not established in the time bounded for it - 20 local WebKit runs all
+    // passed - and a test that lies every other run and is retried into green
+    // claims coverage it does not give. Safari is the default browser on the
+    // iPhone the diaspora uses, so putting it back is owed, with the cause.
+    ...(process.env['CI'] ? [{ name: 'firefox', use: { ...devices['Desktop Firefox'] } }] : []),
   ],
 });
