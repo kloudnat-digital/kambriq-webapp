@@ -39,12 +39,35 @@ including other holders of itself.**
 Those two properties - implies everything, administers administrators - are the
 whole definition of a super admin. The role exists. It is called `ADMIN_GLOBAL`.
 
-The `RoleCode` enum also carries `STAFF_VERIFY`, `STAFF_VALUATION` and
-`PARTNER_GEO`. They are placeholders for VERIFY, VALUATION and KCPI: no row in
-the database, no `@Roles()` decorator, no entry in the hierarchy. They gate
-nothing, so they cannot create a route the super admin is refused. The day one of
-them gates something, the guard below fails until the hierarchy is updated - and
-that is exactly when the decision needs re-reading.
+The `RoleCode` enum also carries `STAFF_VALUATION` and `PARTNER_GEO`,
+placeholders for VALUATION and KCPI: no `@Roles()` decorator, no entry in the
+hierarchy. They gate nothing, so they cannot create a route the super admin is
+refused. The day one of them gates something, the guard below fails until the
+hierarchy is updated - and that is exactly when the decision needs re-reading.
+
+**`STAFF_VERIFY` was re-read on 15 September 2026 (`I7`).** VERIFY - land titles
+and identity documents - is operated by `STAFF_VERIFY`, a job separate from
+selling land, so that it can be handed to somebody with no power over the
+catalogue or payments. `ADMIN_GLOBAL` inherits it, like every other
+administration. It is listed on `ADMIN_GLOBAL` itself - the hierarchy is one
+level deep - and `super-admin.spec.ts` pins it before any route uses it.
+
+The consequence, written down rather than discovered: **every super admin reaches
+identity documents and land titles, and nothing distinguishes one who uses that
+from one who does not.** As of this decision:
+
+- the read route (`GET /users/id-documents/:id`) signs download links and writes
+  no log line of its own; the API's access log records the URL and a correlation
+  id, not the authenticated caller;
+- D14's CloudTrail data-event trail (`kambriq-dev-kyc-data-events`) records every
+  read of an object under `kambriq-media-dev/users/`, but a presigned read is
+  attributed to the principal that signed the link - the API's task role - never
+  to the administrator who asked for it;
+- anything VERIFY stores outside `users/` - land titles, for instance - is
+  outside that trail's selector altogether.
+
+Knowing which administrator opened which document needs the API to record who
+requested the link. That is VERIFY's to build, not an accident to rely on.
 
 ## Decision
 

@@ -105,6 +105,28 @@ describe('proxy: authenticated with a valid session', () => {
     });
   });
 
+  /**
+   * I18 - /admin/kbs has one gate, and this is it.
+   *
+   * `admin/kbs/layout.tsx` carried a second check, `['ADMIN_KBS', 'ADMIN_GLOBAL',
+   * 'ROOT']`, and had already diverged from this one: it admitted `ROOT`, a role
+   * that exists nowhere, which this gate never did. The layout check is removed
+   * (decided 15 September); what is left must refuse everybody else on its own.
+   */
+  it.each([
+    ['ROOT, the role the layout used to admit', ['ROOT']],
+    ['every other administration', ['ADMIN_LANDS', 'ADMIN_KAMNET']],
+    ['an agent who is also a client', ['AGENT', 'CLIENT', 'KCA_CERTIFIED', 'CANDIDATE_KBS']],
+  ])('refuses /admin/kbs and its pages to %s', (_label, roles) => {
+    for (const path of ['/admin/kbs', '/admin/kbs/candidates', '/admin/kbs/certificates']) {
+      const outcome = run(path, authed(roles));
+      expect(outcome.kind).toBe('redirect');
+      expect(outcome.kind === 'redirect' && outcome.url.startsWith(`${ORIGIN}/admin/kbs`)).toBe(
+        false,
+      );
+    }
+  });
+
   it('treats a missing roles array as no roles', () => {
     expect(run('/admin/kbs', { user: {} })).toEqual({
       kind: 'redirect',
