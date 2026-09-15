@@ -13,9 +13,11 @@ import {
   KamnetAgentTier,
   PaginationQuery,
   RedisService,
+  RoleCode,
 } from '@kambriq/common';
 import { KamnetPrismaService } from '../prisma/kamnet-prisma.service';
 import { UsersService } from '../../core/users/users.service';
+import { KbsCandidatesService } from '../../kbs/candidates/candidates.service';
 import { AgentFilterDto, UpdateAgentProfileDto, UpdateAgentStatusDto } from '../dto/kamnet.dto';
 
 @Injectable()
@@ -31,6 +33,7 @@ export class KamnetAgentsService {
     private readonly emailService: EmailService,
     private readonly i18n: I18nService,
     private readonly redis: RedisService,
+    private readonly candidatesService: KbsCandidatesService,
   ) {}
 
   // ----- My Profile ----- //
@@ -257,6 +260,22 @@ export class KamnetAgentsService {
       data: { suspendedAt: new Date(), suspendedBy: adminUserId },
     });
 
+    /**
+     * I16 - suspension removes the power to act, and keeps the account.
+     *
+     * Before this, suspension changed no role: the lands routes guard on AGENT
+     * and never read `suspendedAt`, so a suspended agent went on reserving land.
+     * Removing the role needs nothing new from lands - no second rule a module
+     * could forget to read. The record, the history and earned commissions stay:
+     * commissions are read by ownership of the record, not by the role.
+     *
+     * Only AGENT goes. Every agent holds CLIENT in their own right (the I16
+     * one-off on dev; approval grants it explicitly), so their own purchases
+     * stay open. Before that grant, CLIENT came only through AGENT and would
+     * have gone with it.
+     */
+    await this.usersService.removeRole(agent.userId, RoleCode.AGENT);
+
     await this.redis.del(KamnetAgentsService.agentCacheKey(agent.userId));
 
     // Notify agent by email
@@ -288,6 +307,19 @@ export class KamnetAgentsService {
       where: { id: agentId },
       data: { suspendedAt: null, suspendedBy: null },
     });
+
+    // I16 - lifting the suspension returns AGENT, but only to somebody who is
+    // still certified (I15: the certificate is the truth). A certificate revoked
+    // or expired during the suspension removed AGENT on its own account, and
+    // lifting the suspension must not hand it back.
+    if (await this.candidatesService.isUserCertified(agent.userId)) {
+      await this.usersService.addRole(agent.userId, RoleCode.AGENT, adminUserId);
+    } else {
+      this.logger.warn('Agent reactivated without AGENT: no active certificate %o', {
+        agentId,
+        adminUserId,
+      });
+    }
 
     await this.redis.del(KamnetAgentsService.agentCacheKey(agent.userId));
 
