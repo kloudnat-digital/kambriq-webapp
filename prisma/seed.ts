@@ -59,6 +59,7 @@ import * as bcrypt from 'bcryptjs';
 const IDS = {
   // Roles (Core) - the rows themselves are in seed-data/roles.ts
   ROLE_ADMIN_GLOBAL: seedRoleId(RoleCode.ADMIN_GLOBAL),
+  ROLE_CLIENT: seedRoleId(RoleCode.CLIENT),
   ROLE_CANDIDATE_KBS: seedRoleId(RoleCode.CANDIDATE_KBS),
   ROLE_KCA_CERTIFIED: seedRoleId(RoleCode.KCA_CERTIFIED),
   ROLE_AGENT: seedRoleId(RoleCode.AGENT),
@@ -280,14 +281,22 @@ async function seedCore() {
     [IDS.USER_ADMIN_KBS, IDS.ROLE_ADMIN_KBS],
     [IDS.USER_ADMIN_KAMNET, IDS.ROLE_ADMIN_KAMNET],
     [IDS.USER_ADMIN_LANDS, IDS.ROLE_ADMIN_LANDS],
+    // I16 - every agent holds CLIENT in its own right, not only through AGENT:
+    // suspension and revocation remove AGENT, and must not take the agent's own
+    // purchases with it. An inherited role is not a held role.
+    [IDS.USER_ERIC, IDS.ROLE_CLIENT],
     [IDS.USER_ERIC, IDS.ROLE_KCA_CERTIFIED],
     [IDS.USER_ERIC, IDS.ROLE_AGENT],
+    [IDS.USER_SYLVIE, IDS.ROLE_CLIENT],
     [IDS.USER_SYLVIE, IDS.ROLE_KCA_CERTIFIED],
     [IDS.USER_SYLVIE, IDS.ROLE_AGENT],
+    [IDS.USER_BORIS, IDS.ROLE_CLIENT],
     [IDS.USER_BORIS, IDS.ROLE_KCA_CERTIFIED],
     [IDS.USER_BORIS, IDS.ROLE_AGENT],
+    [IDS.USER_AMINA, IDS.ROLE_CLIENT],
     [IDS.USER_AMINA, IDS.ROLE_KCA_CERTIFIED],
     [IDS.USER_AMINA, IDS.ROLE_AGENT],
+    [IDS.USER_PAUL, IDS.ROLE_CLIENT],
     [IDS.USER_PAUL, IDS.ROLE_KCA_CERTIFIED],
     [IDS.USER_PAUL, IDS.ROLE_AGENT],
   ];
