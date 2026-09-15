@@ -88,15 +88,14 @@ describe('G10 - an unconfigured payment channel service refuses to start', () =>
     expect(disabledBranch).toContain('return;');
   });
 
-  it('reports sixteen fields when all sixteen are configured, and says so when not', async () => {
+  it('reports every field it loaded, required and per-operator, and says so when some are missing', async () => {
     /**
-     * v03 section 9 requires sixteen. The startup line used to report the size
-     * of the *required* set - twelve - so a complete apply and a half-finished
-     * one logged the same thing, and the only way to tell them apart was to send
-     * an OMO payment and watch it fail.
+     * The startup line used to report only the size of the *required* set, so
+     * a complete apply and a half-finished one logged the same thing, and the
+     * only way to tell them apart was to send an OMO payment and watch it fail.
      *
      * This is the line `G10b`'s post-apply checklist asks somebody to read, so
-     * it has to mean what the checklist says it means.
+     * it has to mean what the checklist says it means. Nine required since D9.
      */
     const service = new PaymentChannelsService(
       config({ PAYMENT_CHANNELS_SSM_PREFIX: '/kambriq/test/api/payment-channels' }),
@@ -111,8 +110,7 @@ describe('G10 - an unconfigured payment channel service refuses to start', () =>
       warned.push(String(m));
     });
 
-    // The twelve required load; the four per-operator ones are absent, which is
-    // the state dev is in until G10b is applied.
+    // The nine required load; the four per-operator ones are absent.
     // `onModuleInit` calls `load`, not `get` - mocking the wrong one let the
     // real SSM read run and the test failed with twelve MISSING parameters.
     const internals = service as unknown as {
@@ -124,9 +122,69 @@ describe('G10 - an unconfigured payment channel service refuses to start', () =>
 
     await service.onModuleInit();
 
-    expect(logged[0]).toMatchObject({ required: 12, perOperator: 0, fields: 12 });
+    expect(logged[0]).toMatchObject({ required: 9, perOperator: 0, fields: 9 });
     expect(warned.join(' ')).toContain('OMO and MOMO cannot be sent');
     expect(warned.join(' ')).toContain('ORANGE_MONEY_NUMBER');
+  });
+
+  it('D9 - boots on the nine it requires, with no MOBILE_MONEY_* parameter in SSM', async () => {
+    /**
+     * The three MOBILE_MONEY_* parameters were read by no channel once OMO and
+     * MOMO had their own pairs, and still required at startup - the only thing
+     * that made them impossible to delete. They are out of FIELDS now.
+     *
+     * This is the property the infra deletion rests on, so it runs the real
+     * `load()` - not a mock of it - against an SSM that holds the nine and
+     * nothing else, and requires the boot to succeed. Put one of the three back
+     * into FIELDS and this fails naming it as MISSING.
+     */
+    const prefix = '/kambriq/test/api/payment-channels';
+    const nine = [
+      'BANK_NAME',
+      'BANK_ACCOUNT_NAME',
+      'BANK_IBAN',
+      'BANK_SWIFT',
+      'NOTARY_NAME',
+      'NOTARY_PHONE',
+      'NOTARY_ADDRESS',
+      'SUPPORT_EMAIL',
+      'SUPPORT_PHONE',
+    ];
+    const send = jest.fn(async (command: { input: Record<string, unknown> }) => {
+      // GetParametersByPath carries `Path`; GetParameter (the per-operator
+      // reads) carries `Name` and is absent here, as on dev today.
+      if ('Path' in command.input) {
+        return { Parameters: nine.map((n) => ({ Name: `${prefix}/${n}`, Value: `test ${n}` })) };
+      }
+      throw Object.assign(new Error('ParameterNotFound'), { name: 'ParameterNotFound' });
+    });
+
+    const service = new PaymentChannelsService(config({ PAYMENT_CHANNELS_SSM_PREFIX: prefix }));
+    (service as unknown as { ssm: { send: typeof send } }).ssm = { send };
+    const logged: unknown[] = [];
+    jest.spyOn(service['logger'], 'log').mockImplementation((...a: unknown[]) => {
+      logged.push(a[1]);
+    });
+    jest.spyOn(service['logger'], 'warn').mockImplementation(() => undefined);
+
+    await expect(service.onModuleInit()).resolves.toBeUndefined();
+
+    expect(logged[0]).toMatchObject({ required: 9, perOperator: 0 });
+    expect(Object.keys(await service.get()).sort()).toEqual(
+      [
+        'bankAccountName',
+        'bankIban',
+        'bankName',
+        'bankSwift',
+        'notaryAddress',
+        'notaryName',
+        'notaryPhone',
+        'supportEmail',
+        'supportPhone',
+      ].sort(),
+    );
+    const asked = send.mock.calls.map(([c]) => JSON.stringify(c.input)).join(' ');
+    expect(asked).not.toContain('MOBILE_MONEY');
   });
 
   it('the transport variable is declared, so an environment cannot invent a third value', () => {
