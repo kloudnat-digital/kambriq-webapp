@@ -1,3 +1,4 @@
+import { RoleCode } from '@/lib/roles';
 import { getTranslations } from 'next-intl/server';
 import { PlaceholderPage } from '@/components/placeholder-page';
 
@@ -18,7 +19,7 @@ export default function CommissionsPage() {
         'Historique des paiements',
         'Export des relevés',
       ]}
-      roles={['AGENT', 'OPS', 'ADMIN_GLOBAL', 'ROOT']}
+      roles={[RoleCode.AGENT, 'OPS', RoleCode.ADMIN_GLOBAL, 'ROOT']}
     />
   );
 }

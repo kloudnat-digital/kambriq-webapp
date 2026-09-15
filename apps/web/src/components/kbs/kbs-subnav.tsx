@@ -1,5 +1,6 @@
 'use client';
 
+import { RoleCode } from '@/lib/roles';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -13,9 +14,9 @@ type Tab = { href: string; labelKey: string; requires?: string };
 
 const TABS: Tab[] = [
   { href: '/kbs/enroll', labelKey: 'items.kbsEnroll' },
-  { href: '/kbs', labelKey: 'items.kbsDashboard', requires: 'CANDIDATE_KBS' },
-  { href: '/kbs/exam', labelKey: 'items.kbsExam', requires: 'CANDIDATE_KBS' },
-  { href: '/kbs/certificate', labelKey: 'items.kbsCertificate', requires: 'KCA_CERTIFIED' },
+  { href: '/kbs', labelKey: 'items.kbsDashboard', requires: RoleCode.CANDIDATE_KBS },
+  { href: '/kbs/exam', labelKey: 'items.kbsExam', requires: RoleCode.CANDIDATE_KBS },
+  { href: '/kbs/certificate', labelKey: 'items.kbsCertificate', requires: RoleCode.KCA_CERTIFIED },
 ];
 
 export const KbsSubnav = ({ roles }: KbsSubnavProps) => {

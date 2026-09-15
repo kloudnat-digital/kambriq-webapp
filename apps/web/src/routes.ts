@@ -1,3 +1,5 @@
+import { RoleCode } from '@/lib/roles';
+
 export const AUTH_ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
@@ -161,30 +163,30 @@ export const safeCallbackUrl = (value: string | null | undefined, fallback = '/'
 };
 
 export const ROLE_GATES: Array<{ prefix: string; roles: string[] }> = [
-  { prefix: '/admin/kbs', roles: ['ADMIN_KBS', 'ADMIN_GLOBAL'] },
-  { prefix: '/admin/kamnet', roles: ['ADMIN_KAMNET', 'ADMIN_GLOBAL'] },
-  { prefix: '/admin/lands', roles: ['ADMIN_LANDS', 'ADMIN_GLOBAL'] },
-  { prefix: '/admin/reservations', roles: ['ADMIN_LANDS', 'ADMIN_GLOBAL'] },
-  { prefix: '/admin/verify', roles: ['ADMIN_LANDS', 'ADMIN_GLOBAL'] },
-  { prefix: '/agent', roles: ['AGENT', 'ADMIN_GLOBAL'] },
-  { prefix: '/land', roles: ['AGENT', 'ADMIN_GLOBAL'] },
+  { prefix: '/admin/kbs', roles: [RoleCode.ADMIN_KBS, RoleCode.ADMIN_GLOBAL] },
+  { prefix: '/admin/kamnet', roles: [RoleCode.ADMIN_KAMNET, RoleCode.ADMIN_GLOBAL] },
+  { prefix: '/admin/lands', roles: [RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL] },
+  { prefix: '/admin/reservations', roles: [RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL] },
+  { prefix: '/admin/verify', roles: [RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL] },
+  { prefix: '/agent', roles: [RoleCode.AGENT, RoleCode.ADMIN_GLOBAL] },
+  { prefix: '/land', roles: [RoleCode.AGENT, RoleCode.ADMIN_GLOBAL] },
 ];
 
 export const ROLE_DEFAULTS: Record<string, string> = {
-  CLIENT: '/mylands',
-  AGENT: '/lands',
-  ADMIN_LANDS: '/lands',
-  ADMIN_GLOBAL: '/lands',
-  ADMIN_KBS: '/admin/kbs',
-  ADMIN_KAMNET: '/admin/kamnet',
+  [RoleCode.CLIENT]: '/mylands',
+  [RoleCode.AGENT]: '/lands',
+  [RoleCode.ADMIN_LANDS]: '/lands',
+  [RoleCode.ADMIN_GLOBAL]: '/lands',
+  [RoleCode.ADMIN_KBS]: '/admin/kbs',
+  [RoleCode.ADMIN_KAMNET]: '/admin/kamnet',
 };
 
-export const ADMIN_LANDS_ROLES: readonly string[] = ['ADMIN_LANDS', 'ADMIN_GLOBAL'];
+export const ADMIN_LANDS_ROLES: readonly string[] = [RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL];
 
 export const isAdminLands = (roles: string[]) => roles.some((r) => ADMIN_LANDS_ROLES.includes(r));
 
 export const canManageReservations = (roles: string[]) =>
-  isAdminLands(roles) || roles.includes('AGENT');
+  isAdminLands(roles) || roles.includes(RoleCode.AGENT);
 
 export const isPublic = (pathname: string) => {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
