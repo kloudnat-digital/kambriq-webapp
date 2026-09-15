@@ -13,21 +13,20 @@ export class KbsPublicController {
   @ApiOperation({
     summary: 'Verify a KCA certificate by number',
     description:
-      'Public endpoint to verify the authenticity and validity of a KCA certificate. Returns certificate details and whether it is currently valid or expired. No authentication required.',
+      'Public endpoint to verify the authenticity and validity of a KCA certificate. `status` is the verdict: VALID, EXPIRED, REVOKED, or UNKNOWN for a number the register does not hold. No authentication required.',
   })
   @ApiParam({
     name: 'kcaNumber',
     description: 'KCA certificate number (format: KCA-YYYYMMDD-XXXX)',
     example: 'KCA-20240115-0042',
   })
+  // One response, deliberately. An unknown number is an answer, not an error:
+  // it returns 200 with status UNKNOWN. This used to declare a 404 the service
+  // has never sent.
   @ApiResponse({
     status: 200,
     description:
-      'Certificate found. Returns details and validity status (valid or expired).',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'No certificate found with this KCA number.',
+      'The verdict: status VALID, EXPIRED or REVOKED with the certificate dates, or UNKNOWN with valid=false.',
   })
   async verifyCertificate(@Param('kcaNumber') kcaNumber: string) {
     return this.certificatesService.verifyCertificate(kcaNumber);
