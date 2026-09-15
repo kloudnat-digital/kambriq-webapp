@@ -102,7 +102,9 @@ describe('I16 - the AGENT role follows the agent status', () => {
     kbs.kbsCandidate.findUnique.mockResolvedValue({
       id: 'cand-1',
       userId: agent.userId,
-      certificate: { id: 'cert-1', kcaNumber: 'KCA-20250101-0001', revokedAt: null },
+      // Since the I15 renewal a candidate holds every certificate ever issued,
+      // newest first; revocation acts on the current one.
+      certificates: [{ id: 'cert-1', kcaNumber: 'KCA-20250101-0001', revokedAt: null }],
     });
     kbs.kbsCertificate.update.mockResolvedValue({ id: 'cert-1' });
     kbs.kbsCandidate.update.mockResolvedValue({});
