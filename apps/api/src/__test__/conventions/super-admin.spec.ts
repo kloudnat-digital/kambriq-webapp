@@ -119,6 +119,21 @@ describe('ADMIN_GLOBAL is the super admin, and nothing else is', () => {
     },
   );
 
+  /**
+   * I7 - VERIFY is operated by STAFF_VERIFY, and the super admin inherits it,
+   * like every other administration (decided 15 September).
+   *
+   * Stated on its own rather than left to the `@Roles` sweep above: no route is
+   * guarded by STAFF_VERIFY yet, so the sweep cannot see it, and the decision
+   * would otherwise hold only from the day the first VERIFY route is written.
+   * The hierarchy is one level deep, so STAFF_VERIFY must be listed on
+   * ADMIN_GLOBAL itself - putting it under another role would not reach it.
+   */
+  it('the super admin implies STAFF_VERIFY before any route needs it', () => {
+    expect(ROLE_HIERARCHY[SUPER_ADMIN_ROLE]).toContain(RoleCode.STAFF_VERIFY);
+    expect([...effectiveRoles([SUPER_ADMIN_ROLE])]).toContain(RoleCode.STAFF_VERIFY);
+  });
+
   it('no other role implies the super admin, so there is exactly one top', () => {
     const impliers = HOLDERS.filter((holder) =>
       (ROLE_HIERARCHY[holder] ?? []).includes(SUPER_ADMIN_ROLE),

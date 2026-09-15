@@ -28,6 +28,7 @@ import {
   UpdateExamQuestionDto,
 } from './dto/exam.dto';
 import { KbsPrismaService } from '../prisma/kbs-prisma.service';
+import { NEWEST_FIRST } from '../certificates/current-certificate';
 import { UsersService } from '../../core/users/users.service';
 import type { Prisma } from '@kambriq/common/prisma/kbs-client/client';
 
@@ -84,8 +85,10 @@ export class KbsExamService {
 
     // Certified but certificate expired → renewal path
     if (candidate.status === CandidateStatus.CERTIFIED) {
-      const cert = await this.prisma.kbsCertificate.findUnique({
+      // I15 renewal: a candidate may hold several certificates; the current is the newest.
+      const cert = await this.prisma.kbsCertificate.findFirst({
         where: { candidateId: candidate.id },
+        ...NEWEST_FIRST,
       });
       if (cert && cert.validUntil < new Date()) {
         return await this.checkEligibilityRules(candidate, true);

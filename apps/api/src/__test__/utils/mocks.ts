@@ -167,6 +167,7 @@ export const mockKbsPrisma = () => ({
   },
   kbsCertificate: {
     findUnique: fn(),
+    findFirst: fn(),
     findMany: fn(),
     create: fn(),
     update: fn(),

@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { UsersService } from '../../core/users/users.service';
 import { KbsPrismaService } from '../prisma/kbs-prisma.service';
+import { NEWEST_FIRST } from '../certificates/current-certificate';
 import {
   CvUploadUrlDto,
   EnrollDto,
@@ -112,7 +113,9 @@ export class KbsCandidatesService {
           },
           orderBy: { module: { order: 'asc' } },
         },
-        certificate: {
+        certificates: {
+          ...NEWEST_FIRST,
+          take: 1,
           select: { kcaNumber: true, issueDate: true, validUntil: true },
         },
       },
@@ -148,7 +151,7 @@ export class KbsCandidatesService {
         passed: p.passed,
         completedAt: p.completedAt,
       })),
-      certificate: candidate.certificate,
+      certificate: candidate.certificates[0] ?? null,
     };
   }
 
@@ -160,7 +163,7 @@ export class KbsCandidatesService {
       include: {
         progress: true,
         lessonCompletions: { select: { lessonId: true } },
-        certificate: { select: { kcaNumber: true } },
+        certificates: { ...NEWEST_FIRST, take: 1, select: { kcaNumber: true } },
       },
     });
 
@@ -511,7 +514,7 @@ export class KbsCandidatesService {
         orderBy: { [sort]: order },
         include: {
           progress: { select: { passed: true } },
-          certificate: { select: { kcaNumber: true } },
+          certificates: { ...NEWEST_FIRST, take: 1, select: { kcaNumber: true } },
         },
       }),
       this.prisma.kbsCandidate.count({ where }),
@@ -534,7 +537,7 @@ export class KbsCandidatesService {
         enrolledAt: c.enrolledAt,
         certifiedAt: c.certifiedAt,
         modulesCompleted: c.progress.filter((p) => p.passed).length,
-        kcaNumber: c.certificate?.kcaNumber || null,
+        kcaNumber: c.certificates[0]?.kcaNumber || null,
       };
     });
 
@@ -563,7 +566,7 @@ export class KbsCandidatesService {
             submittedAt: true,
           },
         },
-        certificate: true,
+        certificates: { ...NEWEST_FIRST, take: 1 },
       },
     });
 
@@ -582,8 +585,12 @@ export class KbsCandidatesService {
       candidate.cvUrl ? this.storage.getDownloadUrl(candidate.cvUrl) : Promise.resolve(null),
     ]);
 
+    // I15 renewal: the admin screen shows the current certificate, as before.
+    const { certificates, ...rest } = candidate;
+
     return {
-      ...candidate,
+      ...rest,
+      certificate: certificates[0] ?? null,
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
@@ -670,13 +677,18 @@ export class KbsCandidatesService {
       where: { userId },
       select: {
         status: true,
-        certificate: { select: { kcaNumber: true, validUntil: true, revokedAt: true } },
+        // I15 renewal: the current certificate is the newest one.
+        certificates: {
+          ...NEWEST_FIRST,
+          take: 1,
+          select: { kcaNumber: true, validUntil: true, revokedAt: true },
+        },
       },
     });
 
     if (candidate?.status !== CandidateStatus.CERTIFIED) return null;
 
-    const certificate = candidate.certificate;
+    const certificate = candidate.certificates[0];
     if (!certificate || certificate.revokedAt) return null;
     if (certificate.validUntil <= new Date()) return null;
 

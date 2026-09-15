@@ -1384,16 +1384,23 @@ it. Every one of their gates was green, correctly: the journeys need a deployed
 build, so they run on develop after the merge, and nothing a pull request runs
 could see them.
 
-The CI Gate now reads develop's state: the journeys verdict of the most recent
-completed push to develop that reached one. Red refuses. Three decisions are
-worth keeping:
+The CI Gate now reads develop's state **at its head**: the sha of `develop`,
+then the CI run for that sha, then its journeys. Green passes; anything else
+refuses. Four decisions are worth keeping:
+
+- **Ask by name, not from a list.** The first version took the newest completed
+  develop run from a list, and on 15 September the list answered #134 with a
+  run six merges old: the gate passed on a verdict about another build. Asked
+  by sha, the only wrong answer left is "no run", and that refuses. The price is
+  stated where it is paid: every push to develop blocks merges for the ~20
+  minutes its run takes, and the step prints so.
 
 - **The override is a label, `merge-on-red-develop`, then a re-run of the
   job.** Without one, the pull request that repairs develop could never merge
   and the first red would close the repository. Labels are read live through
   the API, because a re-run replays the original event and its stale labels.
-- **It fails closed.** A call that cannot be made, or ten runs with no verdict,
-  is "unknown", and unknown refuses. A probe that fails to run looks exactly
+- **It fails closed.** A call that cannot be made, a head with no run, or a run
+  not finished is "unknown", and unknown refuses. A probe that fails to run looks exactly
   like one that was refused; an empty answer is never "fine".
 - **It stops the stacking, not the breaking.** The first merge that breaks the
   journeys is still only seen after deploy. What this prevents is the second

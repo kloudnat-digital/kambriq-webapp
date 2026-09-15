@@ -178,9 +178,18 @@ export class KamnetAgentController {
     return this.leadsService.delete(leadId, agent.id);
   }
 
+  /**
+   * I16 - the two commission routes are read by ownership, not by role.
+   *
+   * They required AGENT, so suspending an agent - which now removes AGENT -
+   * would have hidden the commissions they earned. The data belongs to the
+   * KamnetAgent record, not to the agent's status: `findByUserId` resolves the
+   * caller's own record (404 for anybody without one) and the query is scoped to
+   * it. No role is needed and none is added.
+   */
   @Get('commissions')
-  @Roles(RoleCode.AGENT)
   @ApiOperation({ summary: 'List my commission records' })
+  @ApiResponse({ status: 404, description: 'The caller has no KAMNET agent record.' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
   @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'VALIDATED', 'PAID'], description: 'Filter by commission status' })
@@ -198,7 +207,8 @@ export class KamnetAgentController {
   }
 
   @Get('commissions/summary')
-  @Roles(RoleCode.AGENT)
+  // Ownership, not role - see `getMyCommissions` (I16).
+  @ApiResponse({ status: 404, description: 'The caller has no KAMNET agent record.' })
   @ApiOperation({
     summary: 'Get my commission summary',
     description: 'Aggregate totals: pending, validated, and paid commissions.',
