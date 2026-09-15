@@ -60,6 +60,7 @@
     "numberGenerationFailed": "Impossible de générer un numéro KCA unique après {attempts} tentatives"
   },
   "candidate": {
-    "invalidTransition": "Impossible de passer du statut \"{from}\" à \"{to}\". Statuts autorisés : [{allowed}]"
+    "invalidTransition": "Impossible de passer du statut \"{from}\" à \"{to}\". Statuts autorisés : [{allowed}]",
+    "certifiedByIssuanceOnly": "Un candidat est certifié par l'émission de son certificat, pas par un changement de statut. Utilisez « Émettre le certificat »."
   }
 }

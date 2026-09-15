@@ -26,6 +26,8 @@ export const KBS_JOBS = {
   GRADE_EXAM: 'kbs.grade-exam',
   AUTO_TRANSITION_STATUS: 'kbs.auto-transition-status',
   EXPIRE_EXAM: 'kbs.expire-exam',
+  /** I15 - daily: KCA_CERTIFIED is withdrawn from holders whose certificate has expired. */
+  WITHDRAW_EXPIRED_CERTIFICATIONS: 'kbs.withdraw-expired-certifications',
 } as const;
 
 export const CORE_JOBS = {

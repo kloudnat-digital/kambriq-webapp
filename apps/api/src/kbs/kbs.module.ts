@@ -11,6 +11,7 @@ import { KbsExamService } from './exam/exam.service';
 import { KbsCertificatesService } from './certificates/certificates.service';
 import { KbsGradingProcessor } from './exam/grading-processor';
 import { KbsSettingsService } from './settings/settings.service';
+import { KbsCertificateExpiryScheduler } from './certificates/certificate-expiry.scheduler';
 
 @Module({
   imports: [CoreModule],
@@ -25,6 +26,7 @@ import { KbsSettingsService } from './settings/settings.service';
     KbsSettingsService,
     KbsCertificatesService,
     KbsGradingProcessor,
+    KbsCertificateExpiryScheduler,
   ],
   // Export services needed by other modules (e.g., HealthModule)
   exports: [KbsCandidatesService, KbsCertificatesService, KbsPrismaService],

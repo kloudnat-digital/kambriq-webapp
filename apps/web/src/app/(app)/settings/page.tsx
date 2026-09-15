@@ -1,3 +1,4 @@
+import { RoleCode } from '@/lib/roles';
 import { getTranslations } from 'next-intl/server';
 import { PlaceholderPage } from '@/components/placeholder-page';
 
@@ -17,7 +18,7 @@ export default function SettingsPage() {
         'Paramètres de la plateforme',
         'Gestion des intégrations',
       ]}
-      roles={['ADMIN_GLOBAL', 'ROOT']}
+      roles={[RoleCode.ADMIN_GLOBAL, 'ROOT']}
     />
   );
 }

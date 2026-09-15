@@ -4,6 +4,7 @@ import { Logger } from '@nestjs/common';
 import { KbsExamService } from './exam.service';
 import { UsersService } from '../../core/users/users.service';
 import { KbsPrismaService } from '../prisma/kbs-prisma.service';
+import { KbsCertificatesService } from '../certificates/certificates.service';
 import { Job, Queue } from 'bullmq';
 import { DateTime } from 'luxon';
 
@@ -16,6 +17,7 @@ export class KbsGradingProcessor extends WorkerHost {
     private readonly usersService: UsersService,
     private readonly emailService: EmailService,
     private readonly kbsPrisma: KbsPrismaService,
+    private readonly certificatesService: KbsCertificatesService,
     @InjectQueue(QUEUES.KBS) private readonly kbsQueue: Queue,
   ) {
     super();
@@ -27,6 +29,9 @@ export class KbsGradingProcessor extends WorkerHost {
         return this.handleGradeExam(job);
       case KBS_JOBS.EXPIRE_EXAM:
         return this.handleExpireExam(job);
+      // I15 - the one processor on the KBS queue also runs the daily expiry sweep.
+      case KBS_JOBS.WITHDRAW_EXPIRED_CERTIFICATIONS:
+        return this.certificatesService.withdrawExpiredCertifications();
       default:
         throw new Error(`Unknown KBS job: ${job.name}`);
     }

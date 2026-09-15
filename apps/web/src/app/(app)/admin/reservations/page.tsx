@@ -1,3 +1,4 @@
+import { RoleCode } from '@/lib/roles';
 import { getTranslations } from 'next-intl/server';
 import { PlaceholderPage } from '@/components/placeholder-page';
 
@@ -18,7 +19,7 @@ export default function AdminReservationsPage() {
         'Confirmation / annulation de réservation',
         'Export des données',
       ]}
-      roles={['OPS', 'ADMIN_LANDS', 'ADMIN_GLOBAL', 'ROOT']}
+      roles={['OPS', RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL, 'ROOT']}
     />
   );
 }
