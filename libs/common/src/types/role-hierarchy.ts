@@ -45,6 +45,10 @@ export const ROLE_HIERARCHY: Partial<Record<RoleCode, RoleCode[]>> = {
     RoleCode.CLIENT,
     RoleCode.KCA_CERTIFIED,
     RoleCode.CANDIDATE_KBS,
+    // I7 (15 September): VERIFY is operated by STAFF_VERIFY, and the super admin
+    // inherits it like every other administration. Listed here, on ADMIN_GLOBAL
+    // itself: `effectiveRoles` expands one level, so it reaches nobody else.
+    RoleCode.STAFF_VERIFY,
   ],
   [RoleCode.ADMIN_LANDS]: [RoleCode.AGENT, RoleCode.CLIENT],
   [RoleCode.ADMIN_KBS]: [RoleCode.CANDIDATE_KBS],
