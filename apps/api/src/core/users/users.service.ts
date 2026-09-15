@@ -594,11 +594,53 @@ export class UsersService {
     phone?: string,
   ): Promise<{ id: string; email: string; isNew: boolean }> {
     const normalizedEmail = email.trim().toLowerCase();
+
+    /**
+     * `RoleCode.CLIENT`, not `'client'`.
+     *
+     * This read `where: { code: 'client' }` while the stored code is `'CLIENT'`.
+     * Postgres comparison is case-sensitive, so the lookup returned `null` and
+     * the `if` below swallowed it: the client was created with **no roles at
+     * all**. `@Roles(RoleCode.CLIENT)` gates the whole client portal, so the
+     * reservation returned 201, the portal-access email sent, the job was green,
+     * and the only symptom was a person who could not get into the thing they
+     * had just been invited to.
+     *
+     * The missing role is now a failure rather than a silence. A client user
+     * without the client role is not a user worth keeping: the row would exist,
+     * the email would promise access, and the access would not be there. It is
+     * looked up first, so an existing user is refused for the same reason.
+     */
+    const clientRole = await this.prisma.role.findUnique({
+      where: { code: RoleCode.CLIENT },
+    });
+    if (!clientRole) {
+      throw new Error(
+        `Cannot create a client user: the ${RoleCode.CLIENT} role is missing from the database.`,
+      );
+    }
+
     const existingUser = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
 
+    /**
+     * I19 - an existing account reserved as a client becomes a client.
+     *
+     * It used to come back unchanged. Unless it already held CLIENT, the person
+     * now owned a reservation the client portal would not show them. Granting
+     * is idempotent, so an account that already holds the role is untouched.
+     */
     if (existingUser) {
+      const held = await this.prisma.userRole.findUnique({
+        where: { userId_roleId: { userId: existingUser.id, roleId: clientRole.id } },
+      });
+      if (!held) {
+        await this.prisma.userRole.create({
+          data: { userId: existingUser.id, roleId: clientRole.id },
+        });
+        this.logger.log(`Role ${RoleCode.CLIENT} granted to existing user ${existingUser.id}`);
+      }
       return { id: existingUser.id, email: existingUser.email, isNew: false };
     }
 
@@ -615,29 +657,6 @@ export class UsersService {
       },
     });
 
-    /**
-     * `RoleCode.CLIENT`, not `'client'`.
-     *
-     * This read `where: { code: 'client' }` while the stored code is `'CLIENT'`.
-     * Postgres comparison is case-sensitive, so the lookup returned `null` and
-     * the `if` below swallowed it: the client was created with **no roles at
-     * all**. `@Roles(RoleCode.CLIENT)` gates the whole client portal, so the
-     * reservation returned 201, the portal-access email sent, the job was green,
-     * and the only symptom was a person who could not get into the thing they
-     * had just been invited to.
-     *
-     * The missing role is now a failure rather than a silence. A client user
-     * without the client role is not a user worth keeping: the row would exist,
-     * the email would promise access, and the access would not be there.
-     */
-    const clientRole = await this.prisma.role.findUnique({
-      where: { code: RoleCode.CLIENT },
-    });
-    if (!clientRole) {
-      throw new Error(
-        `Cannot create a client user: the ${RoleCode.CLIENT} role is missing from the database.`,
-      );
-    }
     await this.prisma.userRole.create({
       data: { userId: newUser.id, roleId: clientRole.id },
     });

@@ -1370,6 +1370,69 @@ Proved by mutation at three layers, including a render test that mocks only the
 HTTP client (`page-through-the-bff.spec.tsx`): the page spec that mocks the
 action could not have seen the action lying.
 
+### A gate that only sees the pull request cannot see develop
+
+From `A32`. On 14 September develop was red on the delivery journeys from
+08:22 UTC, and six pull requests merged on top of it before anybody repaired
+it. Every one of their gates was green, correctly: the journeys need a deployed
+build, so they run on develop after the merge, and nothing a pull request runs
+could see them.
+
+The CI Gate now reads develop's state: the journeys verdict of the most recent
+completed push to develop that reached one. Red refuses. Three decisions are
+worth keeping:
+
+- **The override is a label, `merge-on-red-develop`, then a re-run of the
+  job.** Without one, the pull request that repairs develop could never merge
+  and the first red would close the repository. Labels are read live through
+  the API, because a re-run replays the original event and its stale labels.
+- **It fails closed.** A call that cannot be made, or ten runs with no verdict,
+  is "unknown", and unknown refuses. A probe that fails to run looks exactly
+  like one that was refused; an empty answer is never "fine".
+- **It stops the stacking, not the breaking.** The first merge that breaks the
+  journeys is still only seen after deploy. What this prevents is the second
+  merge on a known red.
+
+### A test that fails every other run is not coverage, and saying so is
+
+From `A33`. The WebKit successful-login test (A28) failed on 4 of the 8 develop
+runs that ran E2E since it was added, and a fifth passed only on its retry. Every
+failure looked the same: the click was accepted and **no request left the
+page** for 15 seconds. That rules out a slow server and a wait that is too
+short - nothing was in flight to wait for. Twenty local WebKit runs all passed,
+so the cause (a click landing before hydration on a slower runner, or a WebKit
+event difference) was not established in the hour bounded for it.
+
+Raising the timeout would have hidden exactly that. WebKit is out of the matrix
+instead, with the reason at the line where it was and in the register:
+**Safari is not tested.** That sentence is honest; a test that lies every other
+run and is retried into green is a claim of coverage that is not there. Safari
+is the default browser on the iPhone the diaspora uses, so WebKit comes back
+with its cause, not without it.
+
+### A notification is proven by the message that arrived, not the step that sent it
+
+From `D19`. The dev deploy failed on 12 September at 10:28 and again at 19:20,
+at `Run Prisma migrations`, and nobody knew for nine hours: dev served the
+previous image all day while proofs were taken against it. Nobody was careless.
+There was no mechanism, so there was nothing to be vigilant about.
+
+`deploy-dev.yml` now ends with a step on `failure() || cancelled()` that sends
+one message FROM `noreply@` TO `contact@` through SES, naming the run, the
+failed step (read from `steps`, which is why every step carries an `id`), the
+commit, the images and the environment. `cancelled()` is not decoration: a job
+that reaches `timeout-minutes` is cancelled, not failed.
+
+**Its acceptance is a message in the mailbox, never the step's exit code.** D14
+built an SNS topic with no subscription and it published successfully to nobody.
+SES accepting a send is the same claim one hop later. The step logs the SES
+`MessageId`, and the delivered message carries it in its `Message-ID` header -
+that is how a mail in `contact@` is attributed to a run rather than assumed.
+
+What it cannot see, written down so nobody learns it by waiting: a job that
+never starts (quota, runner, environment rule), a failure in the credentials
+step itself, and the delivery journeys, which are another job.
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope

@@ -831,15 +831,76 @@ describe('UsersService', () => {
   // ----- FIND OR CREATE CLIENT USER ----- //
 
   describe('findOrCreateClientUser', () => {
+    /** Answers only for the exact stored code, like the lookup it stands in for. */
+    const clientRoleOnly = () =>
+      prisma.role.findUnique.mockImplementation((args: { where: { code: string } }) =>
+        Promise.resolve(
+          args.where.code === RoleCode.CLIENT ? buildRole(RoleCode.CLIENT, { id: 'role-c' }) : null,
+        ),
+      );
+
     it('returns existing user without sending email', async () => {
       const existing = buildUser({ email: 'existing@test.com' });
       prisma.user.findUnique.mockResolvedValue(existing);
+      clientRoleOnly();
+      prisma.userRole.findUnique.mockResolvedValue(null);
 
       const result = await service.findOrCreateClientUser('EXISTING@TEST.COM', 'Jane', 'Smith');
 
       expect(result.isNew).toBe(false);
       expect(result.email).toBe(existing.email);
       expect(email.send).not.toHaveBeenCalled();
+    });
+
+    /**
+     * I19. Somebody who already had an account and is then reserved a parcel
+     * as a client owns that reservation. The account used to come back
+     * unchanged, so unless it happened to hold CLIENT already, the client
+     * portal - `@Roles(RoleCode.CLIENT)` - refused them the page showing the
+     * reservation they had just been told about.
+     */
+    it('gives an existing user the CLIENT role, so they can open the reservation they now own', async () => {
+      prisma.user.findUnique.mockResolvedValue(
+        buildUser({ id: 'u-old', email: 'existing@test.com' }),
+      );
+      clientRoleOnly();
+      prisma.userRole.findUnique.mockResolvedValue(null);
+
+      await service.findOrCreateClientUser('existing@test.com', 'Jane', 'Smith');
+
+      expect(prisma.userRole.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ userId: 'u-old', roleId: 'role-c' }),
+        }),
+      );
+    });
+
+    it('does not grant CLIENT twice to an existing user who already holds it', async () => {
+      prisma.user.findUnique.mockResolvedValue(
+        buildUser({ id: 'u-old', email: 'existing@test.com' }),
+      );
+      clientRoleOnly();
+      prisma.userRole.findUnique.mockResolvedValue({
+        id: 'ur-1',
+        userId: 'u-old',
+        roleId: 'role-c',
+      });
+
+      await service.findOrCreateClientUser('existing@test.com', 'Jane', 'Smith');
+
+      expect(prisma.userRole.create).not.toHaveBeenCalled();
+    });
+
+    it('fails loudly for an existing user too when the CLIENT role row is missing', async () => {
+      prisma.user.findUnique.mockResolvedValue(
+        buildUser({ id: 'u-old', email: 'existing@test.com' }),
+      );
+      prisma.role.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.findOrCreateClientUser('existing@test.com', 'Jane', 'Smith'),
+      ).rejects.toThrow(/CLIENT role is missing/);
+      expect(prisma.userRole.create).not.toHaveBeenCalled();
     });
 
     /**
