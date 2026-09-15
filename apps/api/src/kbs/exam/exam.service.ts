@@ -30,6 +30,9 @@ import {
 import { KbsPrismaService } from '../prisma/kbs-prisma.service';
 import { NEWEST_FIRST } from '../certificates/current-certificate';
 import { UsersService } from '../../core/users/users.service';
+import type { Prisma } from '@kambriq/common/prisma/kbs-client/client';
+
+type KbsTransaction = Prisma.TransactionClient;
 
 @Injectable()
 export class KbsExamService {
@@ -190,14 +193,27 @@ export class KbsExamService {
       }));
 
     const startedAt = new Date();
-    await this.prisma.kbsExam.update({
-      where: { id: exam.id },
-      data: {
-        status: ExamStatus.IN_PROGRESS,
-        startedAt,
-        totalQuestions: shuffled.length,
-      },
-    });
+    /**
+     * I21 - the exam records WHICH questions it served, not only how many.
+     *
+     * One empty answer slot per served question, written in the same
+     * transaction as the start. `saveAnswer` and `submitExam` accept answers
+     * only on these slots. Before this, only `totalQuestions` was stored, any
+     * pool question could be answered, and an exam of 20 graded at 300.
+     */
+    await this.prisma.$transaction([
+      this.prisma.kbsExam.update({
+        where: { id: exam.id },
+        data: {
+          status: ExamStatus.IN_PROGRESS,
+          startedAt,
+          totalQuestions: shuffled.length,
+        },
+      }),
+      this.prisma.kbsExamAnswer.createMany({
+        data: shuffled.map((q) => ({ examId: exam.id, questionId: q.id })),
+      }),
+    ]);
 
     // Schedule auto-expiry job - fires when the exam duration elapses.
     // The processor will force-submit and grade the exam if it is still IN_PROGRESS.
@@ -242,30 +258,14 @@ export class KbsExamService {
     this.assertExamNotExpired(exam);
 
     return this.prisma.$transaction(async (tx) => {
-      const slot = await tx.kbsExamAnswer.upsert({
-        where: { examId_questionId: { examId, questionId: dto.questionId } },
-        create: {
-          examId,
-          questionId: dto.questionId,
-          flagged: dto.flagged ?? false,
-        },
-        update: { flagged: dto.flagged ?? false, answeredAt: new Date() },
+      // I21 - only a question this exam served, only with that question's answers.
+      const slot = await this.servedSlotOrThrow(tx, examId, dto.questionId, dto.answerIds);
+      const saved = await tx.kbsExamAnswer.update({
+        where: { id: slot.id },
+        data: { flagged: dto.flagged ?? false, answeredAt: new Date() },
       });
-
-      // Replace selections atomically (handles both SINGLE and MULTIPLE)
-      await tx.kbsExamAnswerSelection.deleteMany({
-        where: { examAnswerId: slot.id },
-      });
-      if (dto.answerIds.length > 0) {
-        await tx.kbsExamAnswerSelection.createMany({
-          data: dto.answerIds.map((answerId) => ({
-            examAnswerId: slot.id,
-            answerId,
-          })),
-        });
-      }
-
-      return slot;
+      await this.replaceSelections(tx, slot.id, dto.answerIds);
+      return saved;
     });
   }
 
@@ -282,49 +282,101 @@ export class KbsExamService {
       throw new BadRequestException(this.t('kbs.exam.notInProgress'));
     }
 
-    // Save final answers - same atomic slot+selection logic as saveAnswer
-    for (const answer of dto.answers) {
-      await this.prisma.$transaction(async (tx) => {
-        const slot = await tx.kbsExamAnswer.upsert({
-          where: {
-            examId_questionId: { examId, questionId: answer.questionId },
-          },
-          create: { examId, questionId: answer.questionId },
-          update: { answeredAt: new Date() },
-        });
-
-        await tx.kbsExamAnswerSelection.deleteMany({
-          where: { examAnswerId: slot.id },
-        });
-        if (answer.answerIds.length > 0) {
-          await tx.kbsExamAnswerSelection.createMany({
-            data: answer.answerIds.map((answerId) => ({
-              examAnswerId: slot.id,
-              answerId,
-            })),
-          });
-        }
+    /**
+     * I21 - a submission after the deadline writes nothing.
+     *
+     * Only `saveAnswer` checked the clock, so a late submit could write answers
+     * after time until the expiry job ran. Past the deadline plus a short grace
+     * for the network, the exam is closed on what was saved in time - atomically,
+     * only if it is still open, since the expiry job may have closed it first -
+     * graded, and the submission is refused.
+     */
+    const deadline = this.deadlineOf(exam);
+    if (deadline && Date.now() > deadline.getTime() + KbsExamService.SUBMIT_GRACE_MS) {
+      const closed = await this.prisma.kbsExam.updateMany({
+        where: { id: examId, status: ExamStatus.IN_PROGRESS },
+        data: { status: ExamStatus.SUBMITTED, submittedAt: deadline },
       });
+      if (closed.count > 0) await this.enqueueGrading(examId, candidate);
+      throw new BadRequestException(this.t('kbs.exam.timeExpired'));
     }
 
-    await this.prisma.kbsExam.update({
-      where: { id: examId },
-      data: {
-        status: ExamStatus.SUBMITTED,
-        submittedAt: new Date(),
-      },
+    /**
+     * The claim and the final answers in ONE transaction. The claim succeeds only
+     * while the exam is still IN_PROGRESS; an answer on a question this exam did
+     * not serve rolls the whole submission back and leaves the exam open.
+     */
+    await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.kbsExam.updateMany({
+        where: { id: examId, status: ExamStatus.IN_PROGRESS },
+        data: { status: ExamStatus.SUBMITTED, submittedAt: new Date() },
+      });
+      if (claimed.count === 0) {
+        throw new BadRequestException(this.t('kbs.exam.notInProgress'));
+      }
+      for (const answer of dto.answers) {
+        const slot = await this.servedSlotOrThrow(tx, examId, answer.questionId, answer.answerIds);
+        await tx.kbsExamAnswer.update({ where: { id: slot.id }, data: { answeredAt: new Date() } });
+        await this.replaceSelections(tx, slot.id, answer.answerIds);
+      }
     });
 
-    // Enqueue grading job
+    await this.enqueueGrading(examId, candidate);
+  }
+
+  /** A short allowance for the network between the last click and the request. */
+  private static readonly SUBMIT_GRACE_MS = 30_000;
+
+  private deadlineOf(exam: { startedAt: Date | null; durationMinutes: number }): Date | null {
+    return exam.startedAt
+      ? new Date(exam.startedAt.getTime() + exam.durationMinutes * 60_000)
+      : null;
+  }
+
+  private async enqueueGrading(examId: string, candidate: { id: string; userId: string }) {
     await this.kbsQueue.add(
       KBS_JOBS.GRADE_EXAM,
-      {
-        examId,
-        candidateId: candidate.id,
-        userId: candidate.userId,
-      },
+      { examId, candidateId: candidate.id, userId: candidate.userId },
       { jobId: `grade-exam-${examId}` },
     );
+  }
+
+  /**
+   * I21 - an answer is accepted only on a question this exam served, and only
+   * with answer ids that belong to that question.
+   */
+  private async servedSlotOrThrow(
+    tx: KbsTransaction,
+    examId: string,
+    questionId: string,
+    answerIds: string[],
+  ) {
+    const slot = await tx.kbsExamAnswer.findUnique({
+      where: { examId_questionId: { examId, questionId } },
+    });
+    if (!slot) throw new BadRequestException(this.t('kbs.exam.questionNotServed'));
+
+    const unique = [...new Set(answerIds)];
+    if (unique.length > 0) {
+      const owned = await tx.kbsExamQuestionAnswer.count({
+        where: { id: { in: unique }, questionId },
+      });
+      if (owned !== unique.length) {
+        throw new BadRequestException(this.t('kbs.exam.answerNotOfQuestion'));
+      }
+    }
+    return slot;
+  }
+
+  /** Replaces a slot's selections (SINGLE and MULTIPLE alike). */
+  private async replaceSelections(tx: KbsTransaction, examAnswerId: string, answerIds: string[]) {
+    await tx.kbsExamAnswerSelection.deleteMany({ where: { examAnswerId } });
+    const unique = [...new Set(answerIds)];
+    if (unique.length > 0) {
+      await tx.kbsExamAnswerSelection.createMany({
+        data: unique.map((answerId) => ({ examAnswerId, answerId })),
+      });
+    }
   }
 
   // ----- Get Results ---------------------------
@@ -577,7 +629,10 @@ export class KbsExamService {
     }
 
     const totalQuestions = exam.totalQuestions || exam.examAnswers.length;
-    const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+    // I21 - capped as a second barrier. With answers accepted only on served
+    // questions it never fires; a barrier that never fires is the point.
+    const score =
+      totalQuestions > 0 ? Math.min(100, Math.round((correctCount / totalQuestions) * 100)) : 0;
     const passed = score >= exam.passingScore;
 
     await this.prisma.kbsExam.update({

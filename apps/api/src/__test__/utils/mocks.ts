@@ -111,6 +111,11 @@ export const mockKbsPrisma = () => ({
     delete: fn(),
     count: fn(),
   },
+  kbsLessonCompletion: {
+    findMany: fn(),
+    upsert: fn(),
+    count: fn(),
+  },
   kbsLesson: {
     findUnique: fn(),
     findMany: fn(),
@@ -134,6 +139,7 @@ export const mockKbsPrisma = () => ({
     findMany: fn(),
     create: fn(),
     update: fn(),
+    updateMany: fn(),
     count: fn(),
   },
   kbsExamQuestion: {
@@ -146,11 +152,13 @@ export const mockKbsPrisma = () => ({
   },
   kbsExamQuestionAnswer: {
     deleteMany: fn(),
+    count: fn(),
   },
   kbsExamAnswer: {
     findUnique: fn(),
     upsert: fn(),
     update: fn(),
+    createMany: fn(),
   },
   kbsExamAnswerSelection: {
     deleteMany: fn(),

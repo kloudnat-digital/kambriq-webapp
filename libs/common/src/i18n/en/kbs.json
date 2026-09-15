@@ -22,7 +22,8 @@
     "alreadyPassed": "Module quiz already passed",
     "pass": "Quiz passed! Score: {score}%",
     "fail": "Quiz not passed. Score: {score}% (required: {required}%)",
-    "incompleteSubmission": "Incomplete submission: the whole quiz must be submitted."
+    "incompleteSubmission": "Incomplete submission: the whole quiz must be submitted.",
+    "duplicateQuestion": "Each question may be answered only once."
   },
   "exam": {
     "notFound": "Exam {id} not found",
@@ -48,7 +49,9 @@
     "candidateNotFound": "Candidate {id} not found",
     "completeAllModules": "Complete every module of the programme before taking the exam.",
     "notInTraining": "You must be in training to submit a quiz.",
-    "awaitingCertificate": "Exam passed. Your certificate is awaiting issuance."
+    "awaitingCertificate": "Exam passed. Your certificate is awaiting issuance.",
+    "questionNotServed": "This question is not part of your exam.",
+    "answerNotOfQuestion": "This answer does not belong to the question."
   },
   "certificate": {
     "notFound": "Certificate not found",

@@ -64,10 +64,13 @@ export class KbsGradingProcessor extends WorkerHost {
 
     this.logger.warn('Auto-expiring abandoned exam %o', { examId, candidateId });
 
-    await this.kbsPrisma.kbsExam.update({
-      where: { id: examId },
+    // I21 - closed only if still open: a late submit may close it in between,
+    // and the loser of that race must not enqueue a second grading.
+    const closed = await this.kbsPrisma.kbsExam.updateMany({
+      where: { id: examId, status: ExamStatus.IN_PROGRESS },
       data: { status: ExamStatus.SUBMITTED, submittedAt: new Date() },
     });
+    if (closed.count === 0) return;
 
     await this.kbsQueue.add(
       KBS_JOBS.GRADE_EXAM,

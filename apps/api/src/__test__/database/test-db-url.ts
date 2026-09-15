@@ -43,6 +43,14 @@ export const TEST_SCHEMAS: readonly TestSchema[] = [
     runtimeVar: 'DATABASE_URL_LANDS',
     defaultUrl: 'postgresql://postgres:password@localhost:5432/kambriq_lands_test',
   },
+  // I21 - the exam exploit is proven against the real kbs migrations: which
+  // questions an exam may be answered on is a fact the database now holds.
+  {
+    name: 'kbs',
+    urlVar: 'DATABASE_URL_KBS_TEST',
+    runtimeVar: 'DATABASE_URL_KBS',
+    defaultUrl: 'postgresql://postgres:password@localhost:5432/kambriq_kbs_test',
+  },
 ];
 
 /** The URL for one schema: the override if set, the compose default otherwise. */

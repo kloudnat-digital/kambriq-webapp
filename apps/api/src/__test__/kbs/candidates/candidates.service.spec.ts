@@ -205,6 +205,27 @@ describe('KbsCandidatesService', () => {
     });
 
     /**
+     * I21 - one question answered ten times is not ten answers.
+     *
+     * The grading loop had no "already seen" set: the same correct question id
+     * sent as all ten entries scored 10/10. A candidate needed to know one answer
+     * to pass a module. The schema now refuses duplicates; the service refuses
+     * them too, for any caller that does not come through the DTO.
+     */
+    it('refuses a submission that repeats a question id', async () => {
+      arrangeQuiz();
+      const same = Array.from({ length: QUIZ_LENGTH }, () => ({
+        questionId: 'q1',
+        answerIds: ['a1'],
+      }));
+
+      await expect(service.submitQuiz('u1', 'mod1', { answers: same })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prisma.kbsCandidateProgress.upsert).not.toHaveBeenCalled();
+    });
+
+    /**
      * A candidate who has passed everything and cannot sit the exam must not be
      * silent.
      *

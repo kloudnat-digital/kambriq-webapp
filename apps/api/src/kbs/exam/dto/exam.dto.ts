@@ -16,8 +16,13 @@ const examAnswerSchema = z.object({
   answerIds: z.array(z.uuid()).default([]),
 });
 
+// I21 - one question id per answer, as for the module quiz.
 export const submitExamSchema = z.object({
-  answers: z.array(examAnswerSchema),
+  answers: z
+    .array(examAnswerSchema)
+    .refine((answers) => new Set(answers.map((a) => a.questionId)).size === answers.length, {
+      message: 'Each question may be answered only once.',
+    }),
 });
 
 export class SubmitExamDto extends createZodDto(submitExamSchema) {}
@@ -58,9 +63,7 @@ export const createExamQuestionSchema = z
     message: 'At least one answer must be marked as correct',
   });
 
-export class CreateExamQuestionDto extends createZodDto(
-  createExamQuestionSchema,
-) {}
+export class CreateExamQuestionDto extends createZodDto(createExamQuestionSchema) {}
 
 export const updateExamQuestionSchema = z
   .object({
@@ -73,6 +76,4 @@ export const updateExamQuestionSchema = z
     message: 'At least one answer must be marked as correct',
   });
 
-export class UpdateExamQuestionDto extends createZodDto(
-  updateExamQuestionSchema,
-) {}
+export class UpdateExamQuestionDto extends createZodDto(updateExamQuestionSchema) {}

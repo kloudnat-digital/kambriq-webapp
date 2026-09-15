@@ -174,8 +174,9 @@ export class KbsCandidatesService {
       throw new ForbiddenException(this.t('kbs.enrollment.awaitingVerification'));
     }
 
+    // I21 - no settings row is "no active course", not a 500.
     const settings = await this.prisma.kbsSettings.findFirst();
-    const activeCourseId = settings.activeCourseId ?? null;
+    const activeCourseId = settings?.activeCourseId ?? null;
 
     if (!activeCourseId) {
       return {
@@ -327,6 +328,13 @@ export class KbsCandidatesService {
     // blocked by the gate above; EXAM_PENDING/CERTIFIED/FAILED are done with training).
     if (candidate.status !== CandidateStatus.IN_TRAINING) {
       throw new ForbiddenException(this.t('kbs.exam.notInTraining'));
+    }
+
+    // I21 - one question answered ten times is not ten answers. The schema
+    // refuses repeats too; this covers any caller that skips the DTO.
+    const questionIds = dto.answers.map((a) => a.questionId);
+    if (new Set(questionIds).size !== questionIds.length) {
+      throw new BadRequestException(this.t('kbs.quiz.duplicateQuestion'));
     }
 
     // Validate module exists

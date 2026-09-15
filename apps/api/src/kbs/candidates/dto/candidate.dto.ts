@@ -27,8 +27,14 @@ const quizAnswerSchema = z.object({
   answerIds: z.array(z.uuid()).min(1), // SINGLE: 1 element; MULTIPLE: ≥1 elements
 });
 
+// I21 - one question id per answer: ten answers to one question graded as ten.
 export const submitQuizSchema = z.object({
-  answers: z.array(quizAnswerSchema).min(1),
+  answers: z
+    .array(quizAnswerSchema)
+    .min(1)
+    .refine((answers) => new Set(answers.map((a) => a.questionId)).size === answers.length, {
+      message: 'Each question may be answered only once.',
+    }),
 });
 
 export class SubmitQuizDto extends createZodDto(submitQuizSchema) {}

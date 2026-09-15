@@ -22,7 +22,8 @@
     "alreadyPassed": "Le quiz du module est déjà réussi",
     "pass": "Quiz réussi ! Score : {score}%",
     "fail": "Quiz non réussi. Score : {score}% (requis : {required}%)",
-    "incompleteSubmission": "Réponses incomplètes : le quiz doit être soumis en entier."
+    "incompleteSubmission": "Réponses incomplètes : le quiz doit être soumis en entier.",
+    "duplicateQuestion": "Chaque question ne peut recevoir qu'une seule réponse."
   },
   "exam": {
     "notFound": "Examen {id} introuvable",
@@ -48,7 +49,9 @@
     "candidateNotFound": "Candidat {id} introuvable",
     "completeAllModules": "Terminez tous les modules du programme avant de passer l'examen.",
     "notInTraining": "Vous devez être en cours de formation pour soumettre un QCM.",
-    "awaitingCertificate": "Examen réussi. Votre certificat est en cours d'émission."
+    "awaitingCertificate": "Examen réussi. Votre certificat est en cours d'émission.",
+    "questionNotServed": "Cette question ne fait pas partie de votre examen.",
+    "answerNotOfQuestion": "Cette réponse n'appartient pas à la question."
   },
   "certificate": {
     "notFound": "Certificat introuvable",
