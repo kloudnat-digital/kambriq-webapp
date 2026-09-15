@@ -50,6 +50,26 @@ export class KbsCoursesService {
     });
   }
 
+  /**
+   * I20 - the candidate-facing list: published courses only.
+   *
+   * `GET /kbs/courses` said "published courses" and returned every course,
+   * drafts included, to any logged-in account. Admins keep `findAllCourses`
+   * through `/kbs/admin/courses`.
+   */
+  async findPublishedCourses() {
+    return this.prisma.kbsCourse.findMany({
+      where: { isPublished: true },
+      include: {
+        modules: {
+          orderBy: { order: 'asc' },
+          select: { id: true, title: true, order: true },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
   async findCourseById(courseId: string) {
     const course = await this.prisma.kbsCourse.findUnique({
       where: { id: courseId },
@@ -124,9 +144,10 @@ export class KbsCoursesService {
   }
 
   // ----- Modules ---------------------------
+  // I20 - both outlines are candidate-facing: an unpublished course has none.
   async findModulesByCourseId(courseId: string) {
     return this.prisma.kbsModule.findMany({
-      where: { courseId },
+      where: { courseId, course: { isPublished: true } },
       orderBy: { order: 'asc' },
       include: {
         lessons: {
@@ -235,7 +256,7 @@ export class KbsCoursesService {
 
   async findModulesWithProgress(courseId: string, candidateId: string) {
     const modules = await this.prisma.kbsModule.findMany({
-      where: { courseId },
+      where: { courseId, course: { isPublished: true } },
       orderBy: { order: 'asc' },
       include: {
         lessons: {
@@ -326,7 +347,19 @@ export class KbsCoursesService {
   }
 
   // ----- Lessons ---------------------------
-  async findLessonById(id: string) {
+  /**
+   * I20 - a lesson is served only to someone whose enrolment permits it.
+   *
+   * This served any lesson - inline content and a signed download URL - to any
+   * logged-in account, with no candidate record at all, and registration is
+   * open. It now applies the rule every other candidate content route applies,
+   * the KbsCandidate record past verification (`requireVerifiedCandidateByUserIdOrThrow`),
+   * and serves only a lesson of a published course. An unpublished course's
+   * lesson answers exactly like a missing one.
+   */
+  async findLessonById(id: string, userId: string) {
+    await this.requireVerifiedCandidateByUserIdOrThrow(userId);
+
     const lesson = await this.prisma.kbsLesson.findUnique({
       where: { id },
       include: {
@@ -335,12 +368,15 @@ export class KbsCoursesService {
             id: true,
             courseId: true,
             title: true,
+            course: { select: { isPublished: true } },
           },
         },
       },
     });
 
-    if (!lesson) throw new NotFoundException(this.t('kbs.lesson.notFound', undefined, { id }));
+    if (!lesson || !lesson.module.course.isPublished) {
+      throw new NotFoundException(this.t('kbs.lesson.notFound', undefined, { id }));
+    }
 
     const contentUrl =
       lesson.contentUrl && (lesson.contentType === 'VIDEO' || lesson.contentType === 'PDF')

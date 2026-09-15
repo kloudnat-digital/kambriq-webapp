@@ -193,6 +193,11 @@ export class KamnetApplicationsService {
         },
       });
 
+      // I16 - CLIENT in its own right first. AGENT implies CLIENT, and an
+      // inherited role is not a held one: when suspension or revocation removes
+      // AGENT, a CLIENT that only came with it would cut the agent off from their
+      // own purchases.
+      await this.usersService.addRole(application.userId, RoleCode.CLIENT, adminUserId);
       await this.usersService.addRole(application.userId, RoleCode.AGENT, adminUserId);
 
       await this.emailService.send({

@@ -294,6 +294,12 @@ export class KbsCertificatesService {
     // Remove KCA_CERTIFIED role from the user in Core
     await this.usersService.removeRole(candidate.userId, RoleCode.KCA_CERTIFIED);
 
+    // I16 - revocation removes the power to act, exactly as suspension does: AGENT
+    // goes, the KamnetAgent record, its history and its commissions stay. It used
+    // to leave AGENT in place, so an agent whose certificate was withdrawn kept
+    // selling. CLIENT is held in its own right and is untouched.
+    await this.usersService.removeRole(candidate.userId, RoleCode.AGENT);
+
     this.logger.log('Certificate revoked %o', {
       candidateId,
       kcaNumber: current.kcaNumber,
