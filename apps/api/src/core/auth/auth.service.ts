@@ -66,9 +66,26 @@ export class AuthService {
       throw new EmailAlreadyExistsException(this.t('auth.emailExists', lang));
     }
 
+    /**
+     * I19 - the role is looked up BEFORE anything is created, and its absence
+     * stops registration.
+     *
+     * This used to create the user first and skip the assignment when the row
+     * was missing: the account existed, the verification email went out, the
+     * token carried no role, and the log said "User registered". A missing
+     * CLIENT row is a broken database, not a user to create quietly.
+     */
+    const clientRole = await this.prisma.role.findUnique({
+      where: { code: RoleCode.CLIENT },
+    });
+    if (!clientRole) {
+      throw new Error(
+        `Cannot register a user: the ${RoleCode.CLIENT} role is missing from the database.`,
+      );
+    }
+
     const passwordHash = await hashPassword(dto.password);
 
-    // Create user with default 'client' role
     const user = await this.prisma.user.create({
       data: {
         email: dto.email.toLowerCase(),
@@ -80,15 +97,9 @@ export class AuthService {
       },
     });
 
-    // Assign default 'client' role
-    const clientRole = await this.prisma.role.findUnique({
-      where: { code: RoleCode.CLIENT },
+    await this.prisma.userRole.create({
+      data: { userId: user.id, roleId: clientRole.id },
     });
-    if (clientRole) {
-      await this.prisma.userRole.create({
-        data: { userId: user.id, roleId: clientRole.id },
-      });
-    }
 
     // Send verification email
     const verificationToken = await this.createVerificationToken(
@@ -106,7 +117,7 @@ export class AuthService {
       },
     });
 
-    const roles = clientRole ? [RoleCode.CLIENT] : [];
+    const roles = [RoleCode.CLIENT];
     const tokens = await this.generateTokens(user.id, user.email, roles, lang);
 
     this.logger.log('User registered %o', { userId: user.id, lang });
