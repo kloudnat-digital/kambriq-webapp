@@ -4,6 +4,7 @@ import { KbsGradingProcessor } from '../../../kbs/exam/grading-processor';
 import { KbsExamService } from '../../../kbs/exam/exam.service';
 import { UsersService } from '../../../core/users/users.service';
 import { KbsPrismaService } from '../../../kbs/prisma/kbs-prisma.service';
+import { KbsCertificatesService } from '../../../kbs/certificates/certificates.service';
 import { EmailService, QUEUES, KBS_JOBS } from '@kambriq/common';
 import { Job } from 'bullmq';
 import {
@@ -22,9 +23,11 @@ describe('KbsGradingProcessor', () => {
   let emailService: ReturnType<typeof mockEmailService>;
   let queue: ReturnType<typeof mockQueue>;
   let kbsPrisma: ReturnType<typeof mockKbsPrisma>;
+  let certificates: { withdrawExpiredCertifications: jest.Mock };
 
   beforeEach(async () => {
     resetIdCounter();
+    certificates = { withdrawExpiredCertifications: jest.fn() };
     examService = { gradeExam: jest.fn() };
     usersService = {
       findById: jest.fn().mockResolvedValue(buildUserResponse({ language: 'fr' })),
@@ -41,6 +44,7 @@ describe('KbsGradingProcessor', () => {
         { provide: UsersService, useValue: usersService },
         { provide: EmailService, useValue: emailService },
         { provide: KbsPrismaService, useValue: kbsPrisma },
+        { provide: KbsCertificatesService, useValue: certificates },
         { provide: getQueueToken(QUEUES.KBS), useValue: queue },
       ],
     }).compile();
@@ -52,6 +56,21 @@ describe('KbsGradingProcessor', () => {
     ({ name, data }) as unknown as Job;
 
   describe('process()', () => {
+    /**
+     * I15 - the daily expiry sweep runs on the KBS queue's one processor.
+     *
+     * Not a second `@Processor(QUEUES.KBS)`: BullMQ hands each job to one
+     * worker, and a second processor on a queue is how a dunning reminder was
+     * silently eaten (`QUEUES.DUNNING`).
+     */
+    it('routes the certificate-expiry sweep to the certificates service', async () => {
+      certificates.withdrawExpiredCertifications.mockResolvedValue(0);
+
+      await processor.process(makeJob(KBS_JOBS.WITHDRAW_EXPIRED_CERTIFICATIONS, {}));
+
+      expect(certificates.withdrawExpiredCertifications).toHaveBeenCalledTimes(1);
+    });
+
     it('routes GRADE_EXAM jobs correctly', async () => {
       examService.gradeExam.mockResolvedValue({ score: 80, passed: true });
       kbsPrisma.kbsCandidate.findUnique.mockResolvedValue(buildCandidate());

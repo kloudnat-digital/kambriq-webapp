@@ -13,6 +13,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { RolesService } from '../roles/roles.service';
+import { assertNotRecordDerived } from './record-derived-roles';
 import { CurrentUser, PaginationQueryDto, RequestUser, RoleCode, Roles } from '@kambriq/common';
 import {
   AdminUpdateUserDto,
@@ -334,15 +335,19 @@ export class UserController {
   })
   @ApiParam({ name: 'id', description: 'User ID (CUID)', example: 'clxxxxxxxxxxxxxx' })
   @ApiResponse({ status: 200, description: 'Role granted.' })
-  @ApiResponse({ status: 400, description: 'Role code not found.' })
+  @ApiResponse({
+    status: 400,
+    description: 'A role that follows a record (KCA_CERTIFIED): issue the certificate instead.',
+  })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions.' })
-  @ApiResponse({ status: 404, description: 'User not found.' })
+  @ApiResponse({ status: 404, description: 'User not found, or role code not found.' })
   async grantRole(
     @Param('id') userId: string,
     @Body() dto: RoleCodeDto,
     @CurrentUser() admin: RequestUser,
   ) {
+    assertNotRecordDerived(dto.roleCode);
     await this.usersService.addRole(userId, dto.roleCode, admin.id);
     return this.usersService.findById(userId);
   }
@@ -358,6 +363,10 @@ export class UserController {
   @ApiParam({ name: 'id', description: 'User ID (CUID)', example: 'clxxxxxxxxxxxxxx' })
   @ApiParam({ name: 'roleCode', description: 'Role code to remove', example: RoleCode.ADMIN_KBS })
   @ApiResponse({ status: 200, description: 'Role revoked.' })
+  @ApiResponse({
+    status: 400,
+    description: 'A role that follows a record (KCA_CERTIFIED): revoke the certificate instead.',
+  })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions.' })
   @ApiResponse({ status: 404, description: 'User not found.' })
@@ -373,6 +382,7 @@ export class UserController {
     @CurrentUser() admin: RequestUser,
   ) {
     void admin; // The service logs the revocation; the admin id is not needed there yet.
+    assertNotRecordDerived(roleCode);
     await this.usersService.removeRole(userId, roleCode);
     return this.usersService.findById(userId);
   }

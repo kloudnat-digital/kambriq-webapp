@@ -60,6 +60,7 @@
     "numberGenerationFailed": "Failed to generate a unique KCA number after {attempts} attempts"
   },
   "candidate": {
-    "invalidTransition": "Cannot transition from \"{from}\" to \"{to}\". Allowed: [{allowed}]"
+    "invalidTransition": "Cannot transition from \"{from}\" to \"{to}\". Allowed: [{allowed}]",
+    "certifiedByIssuanceOnly": "A candidate is certified by issuing their certificate, not by changing their status. Use \"Issue certificate\"."
   }
 }

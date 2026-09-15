@@ -30,7 +30,9 @@ export const STATUS_TRANSITIONS: Record<string, string[]> = {
   [CandidateStatus.CANDIDATE]: [CandidateStatus.IN_TRAINING],
   [CandidateStatus.IN_TRAINING]: [CandidateStatus.EXAM_PENDING],
   [CandidateStatus.EXAM_PENDING]: [CandidateStatus.EXAM_PASSED, CandidateStatus.FAILED],
-  [CandidateStatus.EXAM_PASSED]: [CandidateStatus.CERTIFIED],
+  // I15 - nothing: CERTIFIED is reached only by issuing the certificate
+  // (`KbsCertificatesService.issueCertificate`), never by a status change.
+  [CandidateStatus.EXAM_PASSED]: [],
   [CandidateStatus.FAILED]: [CandidateStatus.EXAM_PENDING],
   [CandidateStatus.CERTIFIED]: [],
 } as const;
