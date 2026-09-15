@@ -621,6 +621,7 @@ jobs:
       contents: read
       actions: read
       pull-requests: read
+      checks: read
     steps:
       - name: Refuse unless every job passed, or skipped for a reason we know
         env:
@@ -711,6 +712,14 @@ jobs:
       # fails to run looks exactly like a call that was refused, so every call's
       # exit status is checked and an empty answer counts as "unknown".
       #
+      # NEVER STARTED IS NOT RED. A job GitHub refuses to start (billing, no
+      # runner) also reports `failure`, with no step carrying an outcome. On 15
+      # September that would have read as "develop is red on the delivery
+      # journeys" and sent somebody hunting a code defect while no test had run.
+      # So the step counts the steps that ran: none means NEVER STARTED, and it
+      # quotes GitHub's annotation. Still refused - an unrun develop is not a
+      # green one - but the message points at Actions, not at the code.
+      #
       # WHAT IT DOES NOT CATCH: the first merge that breaks the journeys. They
       # need a deployed build, so that merge is only seen after deploy. This stops
       # merges stacking on a known red; it does not prevent the red.
@@ -738,20 +747,35 @@ jobs:
 
           verdict="unknown"
           run_url=""
+          detail=""
           if runs="$(gh api "repos/${REPO}/actions/workflows/ci.yml/runs?branch=develop&event=push&status=completed&per_page=10" \
                        --jq '.workflow_runs[] | "\(.id) \(.head_sha[0:7]) \(.html_url)"' 2>&1)"; then
             while read -r id sha url; do
               [ -n "${id}" ] || continue
-              if ! conclusion="$(gh api "repos/${REPO}/actions/runs/${id}/jobs?per_page=100" \
-                                   --jq ".jobs[] | select(.name == \"${JOURNEYS_JOB}\") | .conclusion" 2>&1)"; then
-                echo "  could not read the jobs of develop run ${id}: ${conclusion}"
+              # conclusion, how many steps carry an outcome, and the job id
+              if ! job="$(gh api "repos/${REPO}/actions/runs/${id}/jobs?per_page=100" \
+                            --jq ".jobs[] | select(.name == \"${JOURNEYS_JOB}\") | \"\(.conclusion // \"none\") \([.steps[]? | select(.conclusion != null)] | length) \(.id)\"" 2>&1)"; then
+                echo "  could not read the jobs of develop run ${id}: ${job}"
                 break
               fi
+              read -r conclusion steps_run job_id <<<"${job}"
               case "${conclusion}" in
-                success|failure)
-                  verdict="${conclusion}"
+                success)
+                  verdict="success"
                   run_url="${url}"
-                  echo "  develop ${sha}: ${JOURNEYS_JOB} = ${conclusion} (${url})"
+                  echo "  develop ${sha}: ${JOURNEYS_JOB} = success (${url})"
+                  break ;;
+                failure)
+                  run_url="${url}"
+                  if [ "${steps_run:-0}" -gt 0 ]; then
+                    verdict="failure"
+                    echo "  develop ${sha}: ${JOURNEYS_JOB} = failure, ${steps_run} step(s) ran (${url})"
+                  else
+                    verdict="unstarted"
+                    detail="$(gh api "repos/${REPO}/check-runs/${job_id}/annotations" --jq '.[0].message // empty' 2>/dev/null || true)"
+                    echo "  develop ${sha}: ${JOURNEYS_JOB} NEVER STARTED - no step has an outcome (${url})"
+                    if [ -n "${detail}" ]; then echo "    GitHub said: ${detail}"; fi
+                  fi
                   break ;;
                 *)
                   # Skipped (a documentation push), cancelled, or absent: not a
@@ -775,6 +799,15 @@ jobs:
               echo "  REFUSED  develop is red on the delivery journeys: ${run_url}" >&2
               echo "           Merging now stacks this change on a build nobody has verified." >&2
               echo "           If this pull request is the repair, add the label '${OVERRIDE_LABEL}' and re-run this job." >&2
+              exit 1 ;;
+            unstarted)
+              if [ "${override}" = "1" ]; then
+                echo "::warning::Develop is UNVERIFIED - its delivery journeys never started (${run_url}) - and this pull request carries '${OVERRIDE_LABEL}'. Proceeding by a person's decision."
+                exit 0
+              fi
+              echo "  REFUSED  develop is UNVERIFIED, not red: its delivery journeys job never started, so no test ran: ${run_url}" >&2
+              if [ -n "${detail}" ]; then echo "           GitHub said: ${detail}" >&2; fi
+              echo "           Look at Actions billing and runners, not at the code. Re-run the journeys once jobs start, or add '${OVERRIDE_LABEL}' and re-run this job." >&2
               exit 1 ;;
             *)
               if [ "${override}" = "1" ]; then
