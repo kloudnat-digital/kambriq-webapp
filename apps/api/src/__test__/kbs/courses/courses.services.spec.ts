@@ -1,8 +1,9 @@
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { Test, TestingModule } from '@nestjs/testing';
 import { StorageService } from '@kambriq/common/services/storage.service';
 import { KbsCoursesService } from '../../../kbs/courses/courses.service';
+import { KbsCandidateController } from '../../../kbs/controllers/kbs-candidate.controller';
 import { KbsPrismaService } from '../../../kbs/prisma/kbs-prisma.service';
 import {
   buildCandidate,
@@ -155,23 +156,106 @@ describe('KbsCoursesService', () => {
 
   // ----- Lessons ----- //
 
+  /**
+   * I20 - a lesson is served only to someone whose enrolment permits it.
+   *
+   * `GET /kbs/lesson/:lessonId` served any lesson - its inline content and a
+   * signed download URL - to any logged-in account: no candidate record, no
+   * status, no published course. Registration is open, so that was anybody with
+   * an e-mail address reading the training KBS sells. The rule the rest of the
+   * candidate routes already apply is the KbsCandidate record past verification;
+   * it is applied here too, plus a published course.
+   */
   describe('findLessonById', () => {
-    it('returns lesson with a signed download URL', async () => {
-      const lesson = buildLesson({
-        module: { id: 'mod1', courseId: 'c1', title: 'Mod 1' },
+    const read = (id: string, userId: string) => service.findLessonById(id, userId);
+    const lessonOf = (isPublished: boolean) =>
+      buildLesson({
+        module: { id: 'mod1', courseId: 'c1', title: 'Mod 1', course: { isPublished } },
       });
+
+    it('serves a verified candidate a lesson of a published course, with a signed URL', async () => {
+      prisma.kbsCandidate.findUnique.mockResolvedValue(buildCandidate({ status: 'IN_TRAINING' }));
+      const lesson = lessonOf(true);
       prisma.kbsLesson.findUnique.mockResolvedValue(lesson);
 
-      const result = await service.findLessonById(lesson.id);
+      const result = await read(lesson.id, 'u1');
 
       expect(storage.getDownloadUrl).toHaveBeenCalledWith(lesson.contentUrl);
       expect(result.contentUrl).toBe('https://s3.example.com/download');
     });
 
+    it('refuses an account with no candidate record, and signs nothing', async () => {
+      prisma.kbsCandidate.findUnique.mockResolvedValue(null);
+      prisma.kbsLesson.findUnique.mockResolvedValue(lessonOf(true));
+
+      await expect(read('l1', 'u-stranger')).rejects.toThrow(NotFoundException);
+      expect(storage.getDownloadUrl).not.toHaveBeenCalled();
+    });
+
+    it('refuses a candidate still awaiting verification', async () => {
+      prisma.kbsCandidate.findUnique.mockResolvedValue(buildCandidate({ status: 'CANDIDATE' }));
+      prisma.kbsLesson.findUnique.mockResolvedValue(lessonOf(true));
+
+      await expect(read('l1', 'u1')).rejects.toThrow(ForbiddenException);
+      expect(storage.getDownloadUrl).not.toHaveBeenCalled();
+    });
+
+    it('refuses a lesson of an unpublished course, even to a verified candidate', async () => {
+      prisma.kbsCandidate.findUnique.mockResolvedValue(buildCandidate({ status: 'IN_TRAINING' }));
+      prisma.kbsLesson.findUnique.mockResolvedValue(lessonOf(false));
+
+      await expect(read('l1', 'u1')).rejects.toThrow(NotFoundException);
+      expect(storage.getDownloadUrl).not.toHaveBeenCalled();
+    });
+
     it('throws NotFoundException for missing lesson', async () => {
+      prisma.kbsCandidate.findUnique.mockResolvedValue(buildCandidate({ status: 'IN_TRAINING' }));
       prisma.kbsLesson.findUnique.mockResolvedValue(null);
 
-      await expect(service.findLessonById('bad')).rejects.toThrow(NotFoundException);
+      await expect(read('bad', 'u1')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  /**
+   * I20 - an unpublished course's outline is not shown on the candidate side.
+   * Admins read every course through `/kbs/admin/courses`.
+   */
+  describe('module outline', () => {
+    it('lists modules of a published course only', async () => {
+      prisma.kbsModule.findMany.mockResolvedValue([]);
+
+      await service.findModulesByCourseId('c1');
+
+      expect(prisma.kbsModule.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { courseId: 'c1', course: { isPublished: true } } }),
+      );
+    });
+
+    it('does the same when the caller is a candidate with progress', async () => {
+      prisma.kbsModule.findMany.mockResolvedValue([]);
+
+      await service.findModulesWithProgress('c1', 'cand-1');
+
+      expect(prisma.kbsModule.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { courseId: 'c1', course: { isPublished: true } } }),
+      );
+    });
+  });
+
+  /**
+   * I20 - `GET /kbs/courses` said "published courses" and returned every course.
+   * The candidate-facing list shows published ones; the admin list keeps all.
+   */
+  describe('course listing', () => {
+    it('the candidate-facing list asks for published courses only', async () => {
+      prisma.kbsCourse.findMany.mockResolvedValue([]);
+      const controller = new KbsCandidateController(service, {} as never, {} as never, {} as never);
+
+      await controller.listCourses();
+
+      expect(prisma.kbsCourse.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { isPublished: true } }),
+      );
     });
   });
 

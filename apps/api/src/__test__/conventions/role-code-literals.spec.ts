@@ -69,19 +69,6 @@ const NOT_A_ROLE: ReadonlyArray<{ file: string; literal: string; why: string }> 
     literal: "'client'",
     why: 'a support-request category, not a person',
   },
-  // I18 - this layout's gate also names ROOT, a role that does not exist. What
-  // the gate does is reported and awaits a decision; the file is not touched
-  // until it is taken.
-  {
-    file: 'apps/web/src/app/(app)/admin/kbs/layout.tsx',
-    literal: "'ADMIN_KBS'",
-    why: 'the I18 ROOT gate, awaiting a decision',
-  },
-  {
-    file: 'apps/web/src/app/(app)/admin/kbs/layout.tsx',
-    literal: "'ADMIN_GLOBAL'",
-    why: 'the I18 ROOT gate, awaiting a decision',
-  },
 ];
 
 const CODES = Object.values(RoleCode);

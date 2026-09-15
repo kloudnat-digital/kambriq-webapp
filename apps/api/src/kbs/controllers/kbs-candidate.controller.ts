@@ -89,7 +89,7 @@ export class KbsCandidateController {
   @ApiResponse({ status: 200, description: 'Published courses returned.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
   async listCourses() {
-    return this.coursesService.findAllCourses();
+    return this.coursesService.findPublishedCourses();
   }
 
   @Get('courses/:courseId/modules')
@@ -122,9 +122,13 @@ export class KbsCandidateController {
   @ApiParam({ name: 'lessonId', description: 'Lesson ID (CUID)', example: 'clxxxxxxxxxxxxxx' })
   @ApiResponse({ status: 200, description: 'Lesson content returned.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
-  @ApiResponse({ status: 404, description: 'Lesson not found.' })
-  async getLessonContent(@Param('lessonId') lessonId: string) {
-    return this.coursesService.findLessonById(lessonId);
+  @ApiResponse({ status: 403, description: 'Enrolled, but the enrolment is not verified yet.' })
+  @ApiResponse({
+    status: 404,
+    description: 'Not enrolled in KBS, or lesson not found, or its course is not published.',
+  })
+  async getLessonContent(@CurrentUser() user: RequestUser, @Param('lessonId') lessonId: string) {
+    return this.coursesService.findLessonById(lessonId, user.id);
   }
 
   @Get('lessons/:lessonId/view')
