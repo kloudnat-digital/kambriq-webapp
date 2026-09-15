@@ -7,6 +7,7 @@ import {
   type SeedQuestion,
 } from './seed-data/kbs-questions';
 import { restoredParcelStatus } from './seed-data/parcel-status';
+import { SEED_ROLES, seedRoleId } from './seed-data/roles';
 /**
  * Kambriq - Database seed script
  *
@@ -56,15 +57,14 @@ import * as bcrypt from 'bcryptjs';
 // ---------------------------------------------------------------------------
 
 const IDS = {
-  // Roles (Core)
-  ROLE_ADMIN_GLOBAL: '00000000-0000-4000-8000-a00000000001',
-  ROLE_CLIENT: '00000000-0000-4000-8000-a00000000002',
-  ROLE_CANDIDATE_KBS: '00000000-0000-4000-8000-a00000000003',
-  ROLE_KCA_CERTIFIED: '00000000-0000-4000-8000-a00000000004',
-  ROLE_AGENT: '00000000-0000-4000-8000-a00000000005',
-  ROLE_ADMIN_KBS: '00000000-0000-4000-8000-a00000000006',
-  ROLE_ADMIN_KAMNET: '00000000-0000-4000-8000-a00000000007',
-  ROLE_ADMIN_LANDS: '00000000-0000-4000-8000-a00000000008',
+  // Roles (Core) - the rows themselves are in seed-data/roles.ts
+  ROLE_ADMIN_GLOBAL: seedRoleId(RoleCode.ADMIN_GLOBAL),
+  ROLE_CANDIDATE_KBS: seedRoleId(RoleCode.CANDIDATE_KBS),
+  ROLE_KCA_CERTIFIED: seedRoleId(RoleCode.KCA_CERTIFIED),
+  ROLE_AGENT: seedRoleId(RoleCode.AGENT),
+  ROLE_ADMIN_KBS: seedRoleId(RoleCode.ADMIN_KBS),
+  ROLE_ADMIN_KAMNET: seedRoleId(RoleCode.ADMIN_KAMNET),
+  ROLE_ADMIN_LANDS: seedRoleId(RoleCode.ADMIN_LANDS),
 
   // Users (Core)
   USER_ADMIN_GLOBAL: '00000000-0000-4000-8000-b00000000001',
@@ -183,59 +183,8 @@ async function assignRole(userId: string, roleId: string, grantedBy: string) {
 async function seedCore() {
   console.log('  → Seeding Core (roles, users, profiles)...');
 
-  // Roles
-  const roles = [
-    {
-      id: IDS.ROLE_ADMIN_GLOBAL,
-      code: RoleCode.ADMIN_GLOBAL,
-      name: 'Global Administrator',
-      description: 'Full platform access',
-    },
-    {
-      id: IDS.ROLE_CLIENT,
-      code: RoleCode.CLIENT,
-      name: 'Client',
-      description: 'Portal access for land buyers',
-    },
-    {
-      id: IDS.ROLE_CANDIDATE_KBS,
-      code: RoleCode.CANDIDATE_KBS,
-      name: 'KBS Candidate',
-      description: 'Enrolled in KBS training',
-    },
-    {
-      id: IDS.ROLE_KCA_CERTIFIED,
-      code: RoleCode.KCA_CERTIFIED,
-      name: 'KCA Certified',
-      description: 'Holds a valid KCA certificate',
-    },
-    {
-      id: IDS.ROLE_AGENT,
-      code: RoleCode.AGENT,
-      name: 'KAMNET Agent',
-      description: 'Certified commercial agent',
-    },
-    {
-      id: IDS.ROLE_ADMIN_KBS,
-      code: RoleCode.ADMIN_KBS,
-      name: 'KBS Administrator',
-      description: 'Manages courses, exams and certificates',
-    },
-    {
-      id: IDS.ROLE_ADMIN_KAMNET,
-      code: RoleCode.ADMIN_KAMNET,
-      name: 'KAMNET Administrator',
-      description: 'Manages agents and commissions',
-    },
-    {
-      id: IDS.ROLE_ADMIN_LANDS,
-      code: RoleCode.ADMIN_LANDS,
-      name: 'LANDS Administrator',
-      description: 'Manages land inventory and reservations',
-    },
-  ];
-
-  for (const { id, ...rest } of roles) {
+  // Roles - one row per RoleCode (seed-data/roles.ts, held against the enum by seed-roles.spec.ts)
+  for (const { id, ...rest } of SEED_ROLES) {
     await core.role.upsert({ where: { code: rest.code }, create: { id, ...rest }, update: {} });
   }
 
@@ -347,7 +296,7 @@ async function seedCore() {
     await assignRole(userId, roleId, IDS.USER_ADMIN_GLOBAL);
   }
 
-  console.log('  ✓ Core seeded (9 users, 8 roles)');
+  console.log(`  ✓ Core seeded (9 users, ${SEED_ROLES.length} roles)`);
 }
 
 // ---------------------------------------------------------------------------

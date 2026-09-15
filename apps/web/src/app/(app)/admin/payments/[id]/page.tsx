@@ -1,3 +1,4 @@
+import { RoleCode } from '@/lib/roles';
 import { PaymentDetailContent } from '@/components/payments-admin/payment-detail-content';
 import { getPayment } from '@/lib/actions/payments';
 import { auth } from '@/auth';
@@ -15,7 +16,7 @@ export default async function AdminPaymentDetailPage({
   // Validating is ADMIN_GLOBAL: it is the act that commits money. Recording is
   // ADMIN_LANDS. The screen reflects the same split the API enforces, so a
   // lands admin is not offered a control the API would refuse.
-  const canValidate = (session?.user?.roles ?? []).includes('ADMIN_GLOBAL');
+  const canValidate = (session?.user?.roles ?? []).includes(RoleCode.ADMIN_GLOBAL);
 
   return <PaymentDetailContent payment={payment} canValidate={canValidate} />;
 }

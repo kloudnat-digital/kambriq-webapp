@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 import { RoleCode } from '@kambriq/common';
 import { UsersService } from '../../../core/users/users.service';
 import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
@@ -247,6 +247,53 @@ describe('UsersService', () => {
       await expect(
         service.adminUpdate(user.id, { roleCodes: ['CLIENT', 'INVALID'] }, 'admin-1'),
       ).rejects.toThrow();
+    });
+
+    /**
+     * I15 - KCA_CERTIFIED reflects a certificate; it is not an admin setting.
+     *
+     * The replace door could hand it to somebody who holds no certificate, or
+     * take it from somebody whose certificate stands. Either way the role and
+     * the register would disagree, which is the contradiction I15 closes.
+     */
+    it('refuses a role set that adds KCA_CERTIFIED by hand', async () => {
+      prisma.user.findUnique.mockResolvedValue(buildUserWithRoles(['CLIENT']));
+      prisma.role.findMany.mockResolvedValue([buildRole('CLIENT'), buildRole('KCA_CERTIFIED')]);
+
+      await expect(
+        service.adminUpdate('u1', { roleCodes: ['CLIENT', 'KCA_CERTIFIED'] }, 'admin-1'),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('refuses a role set that drops KCA_CERTIFIED by hand', async () => {
+      prisma.user.findUnique.mockResolvedValue(buildUserWithRoles(['CLIENT', 'KCA_CERTIFIED']));
+      prisma.role.findMany.mockResolvedValue([buildRole('CLIENT')]);
+
+      await expect(
+        service.adminUpdate('u1', { roleCodes: ['CLIENT'] }, 'admin-1'),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('lets a role set carry KCA_CERTIFIED through unchanged', async () => {
+      prisma.user.findUnique.mockResolvedValue(buildUserWithRoles(['CLIENT', 'KCA_CERTIFIED']));
+      prisma.role.findMany.mockResolvedValue([
+        buildRole('CLIENT'),
+        buildRole('KCA_CERTIFIED'),
+        buildRole('ADMIN_KBS'),
+      ]);
+      prisma.$transaction.mockImplementation((cb: (client: unknown) => Promise<unknown>) =>
+        cb({ userRole: { deleteMany: jest.fn(), createMany: jest.fn() } }),
+      );
+
+      await service.adminUpdate(
+        'u1',
+        { roleCodes: ['CLIENT', 'KCA_CERTIFIED', 'ADMIN_KBS'] },
+        'admin-1',
+      );
+
+      expect(prisma.$transaction).toHaveBeenCalled();
     });
   });
 
@@ -784,15 +831,76 @@ describe('UsersService', () => {
   // ----- FIND OR CREATE CLIENT USER ----- //
 
   describe('findOrCreateClientUser', () => {
+    /** Answers only for the exact stored code, like the lookup it stands in for. */
+    const clientRoleOnly = () =>
+      prisma.role.findUnique.mockImplementation((args: { where: { code: string } }) =>
+        Promise.resolve(
+          args.where.code === RoleCode.CLIENT ? buildRole(RoleCode.CLIENT, { id: 'role-c' }) : null,
+        ),
+      );
+
     it('returns existing user without sending email', async () => {
       const existing = buildUser({ email: 'existing@test.com' });
       prisma.user.findUnique.mockResolvedValue(existing);
+      clientRoleOnly();
+      prisma.userRole.findUnique.mockResolvedValue(null);
 
       const result = await service.findOrCreateClientUser('EXISTING@TEST.COM', 'Jane', 'Smith');
 
       expect(result.isNew).toBe(false);
       expect(result.email).toBe(existing.email);
       expect(email.send).not.toHaveBeenCalled();
+    });
+
+    /**
+     * I19. Somebody who already had an account and is then reserved a parcel
+     * as a client owns that reservation. The account used to come back
+     * unchanged, so unless it happened to hold CLIENT already, the client
+     * portal - `@Roles(RoleCode.CLIENT)` - refused them the page showing the
+     * reservation they had just been told about.
+     */
+    it('gives an existing user the CLIENT role, so they can open the reservation they now own', async () => {
+      prisma.user.findUnique.mockResolvedValue(
+        buildUser({ id: 'u-old', email: 'existing@test.com' }),
+      );
+      clientRoleOnly();
+      prisma.userRole.findUnique.mockResolvedValue(null);
+
+      await service.findOrCreateClientUser('existing@test.com', 'Jane', 'Smith');
+
+      expect(prisma.userRole.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ userId: 'u-old', roleId: 'role-c' }),
+        }),
+      );
+    });
+
+    it('does not grant CLIENT twice to an existing user who already holds it', async () => {
+      prisma.user.findUnique.mockResolvedValue(
+        buildUser({ id: 'u-old', email: 'existing@test.com' }),
+      );
+      clientRoleOnly();
+      prisma.userRole.findUnique.mockResolvedValue({
+        id: 'ur-1',
+        userId: 'u-old',
+        roleId: 'role-c',
+      });
+
+      await service.findOrCreateClientUser('existing@test.com', 'Jane', 'Smith');
+
+      expect(prisma.userRole.create).not.toHaveBeenCalled();
+    });
+
+    it('fails loudly for an existing user too when the CLIENT role row is missing', async () => {
+      prisma.user.findUnique.mockResolvedValue(
+        buildUser({ id: 'u-old', email: 'existing@test.com' }),
+      );
+      prisma.role.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.findOrCreateClientUser('existing@test.com', 'Jane', 'Smith'),
+      ).rejects.toThrow(/CLIENT role is missing/);
+      expect(prisma.userRole.create).not.toHaveBeenCalled();
     });
 
     /**

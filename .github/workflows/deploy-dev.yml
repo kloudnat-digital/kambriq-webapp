@@ -123,6 +123,7 @@ jobs:
 
     steps:
       - name: Configure AWS credentials
+        id: aws-credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
@@ -138,6 +139,7 @@ jobs:
       # fallback is configured, because launching a migration into a network
       # nobody chose is how this broke in the first place.
       - name: Resolve the task network from the service
+        id: resolve-network
         run: |
           set -euo pipefail
           net="$(aws ecs describe-services \
@@ -172,12 +174,14 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Set image URIs
+        id: image-uris
         run: |
           echo "API_IMAGE_URI=${ECR_REPO}:${API_IMAGE_TAG}" >> "$GITHUB_ENV"
           echo "WEB_IMAGE_URI=${ECR_WEB_REPO}:${WEB_IMAGE_TAG}" >> "$GITHUB_ENV"
 
       # -- API: register task definition ----------------------------------------
       - name: Register API task definition
+        id: register-api-taskdef
         run: |
           set -euo pipefail
           TASK_DEF_JSON="$(aws ecs describe-task-definition --task-definition "${ECS_TASK_DEFINITION}")"
@@ -194,6 +198,7 @@ jobs:
 
       # -- Run Prisma migrations ------------------------------------------------
       - name: Run Prisma migrations
+        id: run-migrations
         run: |
           set -euo pipefail
           OVERRIDES="$(jq -nc --arg name "${CONTAINER_NAME}" '{
@@ -229,6 +234,7 @@ jobs:
 
       # -- Seed: opt-in only (run_seed=true), first-deploy use-case ------------
       - name: Run database seed
+        id: run-seed
         if: inputs.run_seed == true
         run: |
           set -euo pipefail
@@ -261,6 +267,7 @@ jobs:
 
       # -- Deploy API service ---------------------------------------------------
       - name: Deploy API to ECS
+        id: deploy-api
         run: |
           set -euo pipefail
           aws ecs update-service \
@@ -291,6 +298,7 @@ jobs:
 
       # -- Web: register task definition and deploy -----------------------------
       - name: Register Web task definition
+        id: register-web-taskdef
         if: env.ECS_WEB_SERVICE != '' && env.ECS_WEB_TASK_DEFINITION != ''
         run: |
           set -euo pipefail
@@ -311,6 +319,7 @@ jobs:
           echo "NEW_WEB_TASK_DEF_ARN=${NEW_WEB_TASK_DEF_ARN}" >> "$GITHUB_ENV"
 
       - name: Deploy Web to ECS
+        id: deploy-web
         if: env.ECS_WEB_SERVICE != '' && env.NEW_WEB_TASK_DEF_ARN != ''
         run: |
           set -euo pipefail
@@ -386,6 +395,7 @@ jobs:
       #
       # Cost: one Fargate task of a few seconds per deploy, under $0.001.
       - name: Bootstrap super-admin accounts
+        id: bootstrap-admins
         run: |
           set -euo pipefail
           OVERRIDES="$(jq -nc --arg name "${CONTAINER_NAME}" --arg prefix "${BOOTSTRAP_SSM_PREFIX}" '{
@@ -421,6 +431,7 @@ jobs:
 
       # -- Smoke test -----------------------------------------------------------
       - name: Smoke test
+        id: smoke-test
         if: env.SMOKE_TEST_URL != ''
         run: |
           set -euo pipefail
@@ -448,6 +459,7 @@ jobs:
       # The tag is baked into the image at build time (docker/Dockerfile.*), so
       # an image cannot claim a tag it was not built as.
       - name: Verify API version
+        id: verify-api-version
         run: |
           set -euo pipefail
           # Deliberately not guarded by an `if:`. A missing URL means we cannot
@@ -492,6 +504,7 @@ jobs:
           exit 1
 
       - name: Verify Web version
+        id: verify-web-version
         run: |
           set -euo pipefail
           if [[ -z "${WEB_HEALTH_URL:-}" ]]; then
@@ -533,6 +546,7 @@ jobs:
           exit 1
 
       - name: Deployment summary
+        id: summary
         if: always()
         run: |
           {
@@ -549,3 +563,105 @@ jobs:
             echo "| Web version verified | \`${VERIFIED_WEB_TAG:-not verified}\` |"
             [[ -n "${SMOKE_TEST_URL:-}" ]] && echo "| Smoke test | ${SMOKE_TEST_RESOLVED_URL:-${SMOKE_TEST_URL}} |"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # -- D19: a failed deploy tells a human ------------------------------------
+      #
+      # On 12 September this job failed at 10:28 and again at 19:20 and nobody
+      # knew for nine hours. dev served the previous image all day while proofs
+      # were taken against it. Nobody was careless: there was no mechanism, so
+      # there was nothing to be vigilant about.
+      #
+      # One message, FROM the platform's transactional sender TO the mailbox
+      # people read, through the SES identity that already sends every other
+      # platform email. It carries what somebody needs to act without opening the
+      # run list: the run, the step that failed, the commit, the images and the
+      # environment. The failed step is read from `steps`, which is why every
+      # step above carries an `id` - a step without one is not in that context.
+      #
+      # `failure() || cancelled()`: a job that reaches `timeout-minutes` is
+      # cancelled, not failed, and a rollout wedged until the timeout is exactly
+      # the failure this exists for. A person pressing Cancel also gets a mail;
+      # that is noise they caused and can ignore.
+      #
+      # Cost: a few seconds, and only on a run that already failed. No separate
+      # workflow and no polling: minutes are not spent watching minutes.
+      #
+      # What it cannot report, written down rather than discovered:
+      #   - a job that never starts (quota exhausted, runner offline, an
+      #     environment rule refusing the ref): no step runs, this one included;
+      #   - a failure of "Configure AWS credentials": there is no credential to
+      #     send with, and this step then fails loudly in the log;
+      #   - the delivery journeys, which are a separate job in ci.yml.
+      #
+      # Needs ses:SendEmail on the deploy role, scoped to this sender and this
+      # recipient (kambriq-infra, envs/dev/main.tf, statement DeployFailureNotice).
+      - name: Notify contact@ of the failure
+        id: notify-failure
+        if: failure() || cancelled()
+        env:
+          NOTIFY_FROM: noreply@kambriq.com
+          NOTIFY_TO: contact@kambriq.com
+          # The `environment:` this job declares. Contexts do not expose it.
+          DEPLOY_ENVIRONMENT: dev
+          JOB_STATUS: ${{ job.status }}
+          STEPS_JSON: ${{ toJSON(steps) }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+          TRIGGER: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -uo pipefail
+          case "${JOB_STATUS}" in
+            cancelled) outcome="was cancelled" ;;
+            *) outcome="failed" ;;
+          esac
+          failed="$(jq -r 'to_entries | map(select(.value.outcome == "failure") | .key) | join(", ")' <<<"${STEPS_JSON}")"
+          if [[ -n "${failed}" ]]; then
+            where="at ${failed%%,*}"
+          else
+            failed="none - the job was cancelled before a step failed (timeout-minutes, or a manual cancel)"
+            where="(timeout or cancel)"
+          fi
+          outcomes="$(jq -r 'to_entries[] | "  \(.key): \(.value.outcome)"' <<<"${STEPS_JSON}")"
+          version_url="${VERSION_CHECK_URL:-${SMOKE_TEST_URL%/health/*}/health/version}"
+
+          subject="[KAMBRIQ ${DEPLOY_ENVIRONMENT}] Deploy ${outcome} ${where} - ${COMMIT_SHA:0:7}"
+          body="$(cat <<EOF
+          The deployment to ${DEPLOY_ENVIRONMENT} ${outcome}.
+
+          Failed step:  ${failed}
+          Run:          ${RUN_URL}
+          Workflow:     ${WORKFLOW_NAME} -> deploy-dev.yml, job "Deploy to dev"
+          Trigger:      ${TRIGGER} on ${REF_NAME} by ${ACTOR}
+          Commit:       ${COMMIT_SHA}
+          API image:    ${API_IMAGE_URI:-not resolved}
+          Web image:    ${WEB_IMAGE_URI:-not resolved}
+          Environment:  ${DEPLOY_ENVIRONMENT}
+
+          Every step, in order:
+          ${outcomes}
+
+          ${DEPLOY_ENVIRONMENT} may still be serving the previous build. What it serves now:
+            ${version_url}
+          EOF
+          )"
+
+          content="$(jq -nc --arg s "${subject}" --arg b "${body}" \
+            '{Simple: {Subject: {Data: $s, Charset: "UTF-8"}, Body: {Text: {Data: $b, Charset: "UTF-8"}}}}')"
+
+          if message_id="$(aws sesv2 send-email \
+                --from-email-address "${NOTIFY_FROM}" \
+                --destination "ToAddresses=${NOTIFY_TO}" \
+                --content "${content}" \
+                --query MessageId --output text 2>&1)"; then
+            # Accepted by SES is not received by a person. The MessageId is what
+            # to look for in the mailbox: the delivered message carries it in its
+            # Message-ID header.
+            echo "Failure notice accepted by SES for ${NOTIFY_TO}: MessageId ${message_id}"
+            echo "Subject: ${subject}"
+          else
+            echo "::error::The failure notice was NOT sent - nobody has been told. ${message_id}" >&2
+            exit 1
+          fi

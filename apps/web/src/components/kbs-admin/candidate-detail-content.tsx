@@ -24,13 +24,9 @@ interface Props {
   candidate: AdminCandidateDetail;
 }
 
-const STATUSES: KbsCandidateStatus[] = [
-  'CANDIDATE',
-  'IN_TRAINING',
-  'EXAM_PENDING',
-  'CERTIFIED',
-  'FAILED',
-];
+// No CERTIFIED: a status change certifies nobody. "Issue certificate" below is
+// the one act that certifies, and the API now refuses the status (I15).
+const STATUSES: KbsCandidateStatus[] = ['CANDIDATE', 'IN_TRAINING', 'EXAM_PENDING', 'FAILED'];
 
 export const CandidateDetailContent = ({ candidate }: Props) => {
   const t = useTranslations('app.adminKbs.candidates.detail');
