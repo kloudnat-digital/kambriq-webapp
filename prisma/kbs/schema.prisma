@@ -138,7 +138,9 @@ model KbsCandidate {
   progress           KbsCandidateProgress[]
   lessonCompletions  KbsLessonCompletion[]
   exams              KbsExam[]
-  certificate        KbsCertificate?
+  // I15 renewal: every certificate ever issued, the current one being the
+  // latest by issueDate. A renewal adds one; the old stays verifiable.
+  certificates       KbsCertificate[]
 }
 
 model KbsCandidateProgress {
@@ -224,7 +226,7 @@ model KbsSettings {
 
 model KbsCertificate {
   id          String    @id @default(uuid())
-  candidateId String    @unique
+  candidateId String    // not unique since I15 renewal: one row per issuance
   kcaNumber   String    @unique // KCA-YYYYMMDD-XXXX
   issueDate   DateTime  @default(now())
   validUntil  DateTime  // 2 years from issue
@@ -237,4 +239,6 @@ model KbsCertificate {
   updatedAt   DateTime  @updatedAt
 
   candidate KbsCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId])
 }

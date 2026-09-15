@@ -97,7 +97,7 @@ export const buildCandidate = (overrides: Record<string, unknown> = {}) => ({
   createdAt: new Date('2025-01-15'),
   updatedAt: new Date('2025-01-15'),
   progress: [],
-  certificate: null,
+  certificates: [], // I15 renewal: the history, newest first
   exams: [],
   ...overrides,
 });

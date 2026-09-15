@@ -114,7 +114,7 @@ describe('KbsCandidatesService', () => {
             module: { id: 'm2', title: 'Mod 2', order: 2 },
           },
         ],
-        certificate: null,
+        certificates: [],
       });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
       prisma.kbsModule.count.mockResolvedValue(3);
@@ -370,9 +370,13 @@ describe('KbsCandidatesService', () => {
     it('returns true for CERTIFIED candidate', async () => {
       prisma.kbsCandidate.findUnique.mockResolvedValue({
         status: 'CERTIFIED',
-        certificate: {
-          validUntil: new Date(Date.now() + 86_400_000) /* +1 day */,
-        },
+        certificates: [
+          {
+            kcaNumber: 'KCA-20250101-0001',
+            validUntil: new Date(Date.now() + 86_400_000) /* +1 day */,
+            revokedAt: null,
+          },
+        ],
       });
       expect(await service.isUserCertified('u1')).toBe(true);
     });
@@ -399,11 +403,13 @@ describe('KbsCandidatesService', () => {
     it('returns false when the certificate is revoked, even with status CERTIFIED', async () => {
       prisma.kbsCandidate.findUnique.mockResolvedValue({
         status: 'CERTIFIED',
-        certificate: {
-          kcaNumber: 'KCA-20250101-0001',
-          validUntil: new Date(Date.now() + 86_400_000),
-          revokedAt: new Date(),
-        },
+        certificates: [
+          {
+            kcaNumber: 'KCA-20250101-0001',
+            validUntil: new Date(Date.now() + 86_400_000),
+            revokedAt: new Date(),
+          },
+        ],
       });
       expect(await service.isUserCertified('u1')).toBe(false);
     });
@@ -411,11 +417,13 @@ describe('KbsCandidatesService', () => {
     it('returns false when the certificate has expired', async () => {
       prisma.kbsCandidate.findUnique.mockResolvedValue({
         status: 'CERTIFIED',
-        certificate: {
-          kcaNumber: 'KCA-20250101-0001',
-          validUntil: new Date(Date.now() - 86_400_000),
-          revokedAt: null,
-        },
+        certificates: [
+          {
+            kcaNumber: 'KCA-20250101-0001',
+            validUntil: new Date(Date.now() - 86_400_000),
+            revokedAt: null,
+          },
+        ],
       });
       expect(await service.isUserCertified('u1')).toBe(false);
     });

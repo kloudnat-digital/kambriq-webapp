@@ -54,7 +54,7 @@ describe('KbsCertificatesService', () => {
     it('issues certificate, grants KCA role, sends email', async () => {
       const candidate = buildCandidate({
         status: 'CERTIFIED',
-        certificate: null,
+        certificates: [],
       });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
       prisma.kbsExam.findFirst.mockResolvedValue({ id: 'ex1', status: 'PASSED' });
@@ -87,7 +87,7 @@ describe('KbsCertificatesService', () => {
      * date and the role, and issuance was a formality that created a row.
      */
     it('turns EXAM_PASSED into CERTIFIED, and stamps certifiedAt', async () => {
-      const candidate = buildCandidate({ status: 'EXAM_PASSED', certificate: null });
+      const candidate = buildCandidate({ status: 'EXAM_PASSED', certificates: [] });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
       prisma.kbsExam.findFirst.mockResolvedValue({ id: 'ex1', status: 'PASSED' });
       prisma.kbsCertificate.create.mockResolvedValue(
@@ -122,7 +122,7 @@ describe('KbsCertificatesService', () => {
      * that is checked.
      */
     it('refuses a candidate who passed a quiz but never sat the exam', async () => {
-      const candidate = buildCandidate({ status: 'IN_TRAINING', certificate: null });
+      const candidate = buildCandidate({ status: 'IN_TRAINING', certificates: [] });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
       prisma.kbsCandidateProgress.findFirst.mockResolvedValue({ passed: true }); // a quiz
       prisma.kbsExam.findFirst.mockResolvedValue(null); // no passed exam
@@ -137,7 +137,7 @@ describe('KbsCertificatesService', () => {
     it('throws ConflictException if certificate already exists', async () => {
       const candidate = buildCandidate({
         status: 'CERTIFIED',
-        certificate: buildCertificate(),
+        certificates: [buildCertificate()], // still valid until 2027-06-01
       });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
       prisma.kbsExam.findFirst.mockResolvedValue({ id: 'ex1', status: 'PASSED' });
@@ -264,7 +264,7 @@ describe('KbsCertificatesService', () => {
       const cert = buildCertificate({ revokedAt: null });
       const candidate = buildCandidate({
         status: 'CERTIFIED',
-        certificate: cert,
+        certificates: [cert],
       });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
       prisma.kbsCertificate.update.mockResolvedValue({
@@ -306,7 +306,7 @@ describe('KbsCertificatesService', () => {
     it('throws NotFoundException when candidate has no certificate', async () => {
       const candidate = buildCandidate({
         status: 'CERTIFIED',
-        certificate: null,
+        certificates: [],
       });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
 
@@ -321,7 +321,7 @@ describe('KbsCertificatesService', () => {
       const cert = buildCertificate({ revokedAt: new Date('2025-03-01') });
       const candidate = buildCandidate({
         status: 'CERTIFIED',
-        certificate: cert,
+        certificates: [cert],
       });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
 
@@ -338,9 +338,11 @@ describe('KbsCertificatesService', () => {
   describe('findByUserId', () => {
     it('returns certificate details with validity flag', async () => {
       const candidate = buildCandidate({
-        certificate: buildCertificate({
-          validUntil: new Date(Date.now() + 86_400_000),
-        }),
+        certificates: [
+          buildCertificate({
+            validUntil: new Date(Date.now() + 86_400_000),
+          }),
+        ],
       });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
 
@@ -351,7 +353,7 @@ describe('KbsCertificatesService', () => {
     });
 
     it('returns null if candidate has no certificate', async () => {
-      prisma.kbsCandidate.findUnique.mockResolvedValue(buildCandidate({ certificate: null }));
+      prisma.kbsCandidate.findUnique.mockResolvedValue(buildCandidate({ certificates: [] }));
 
       const result = await service.findByUserId('u1');
       expect(result).toBeNull();
