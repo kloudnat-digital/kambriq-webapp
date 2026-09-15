@@ -1,4 +1,9 @@
-import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { Test, TestingModule } from '@nestjs/testing';
 import { EmailService, StorageService } from '@kambriq/common';
@@ -294,22 +299,26 @@ describe('KbsCandidatesService', () => {
       expect(result.status).toBe('IN_TRAINING');
     });
 
-    it('grants KCA_CERTIFIED role on transition to CERTIFIED', async () => {
-      const candidate = buildCandidate({
-        status: 'EXAM_PASSED',
-        userId: 'u1',
-      });
+    /**
+     * I15 - the certificate is the truth, and the role reflects it.
+     *
+     * `EXAM_PASSED -> CERTIFIED` through this endpoint set the status and
+     * granted KCA_CERTIFIED without creating a certificate: the platform then
+     * treated as certified somebody whose number `/verify-certificate` would
+     * answer "non reconnu". Issuing the certificate
+     * (`KbsCertificatesService.issueCertificate`) is the one act that sets the
+     * status, grants the role and creates the document together.
+     */
+    it('refuses EXAM_PASSED -> CERTIFIED: only issuing a certificate certifies', async () => {
+      const candidate = buildCandidate({ status: 'EXAM_PASSED', userId: 'u1' });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
-      prisma.kbsCandidate.update.mockResolvedValue({
-        ...candidate,
-        status: 'CERTIFIED',
-      });
 
-      await service.updateStatus(candidate.id, 'admin-1', {
-        status: 'CERTIFIED',
-      });
+      await expect(
+        service.updateStatus(candidate.id, 'admin-1', { status: 'CERTIFIED' }),
+      ).rejects.toThrow(BadRequestException);
 
-      expect(usersService.addRole).toHaveBeenCalledWith('u1', 'KCA_CERTIFIED', 'admin-1');
+      expect(prisma.kbsCandidate.update).not.toHaveBeenCalled();
+      expect(usersService.addRole).not.toHaveBeenCalled();
     });
 
     /**
@@ -377,6 +386,37 @@ describe('KbsCandidatesService', () => {
 
     it('returns false if user is not enrolled at all', async () => {
       prisma.kbsCandidate.findUnique.mockResolvedValue(null);
+      expect(await service.isUserCertified('u1')).toBe(false);
+    });
+
+    /**
+     * I15 - a revoked certificate certifies nobody, whatever the status says.
+     *
+     * This read `status` and `validUntil` and never `revokedAt`. It was right
+     * only because `revokeCertificate` also happens to reset the status - the
+     * answer rested on a side effect in another service.
+     */
+    it('returns false when the certificate is revoked, even with status CERTIFIED', async () => {
+      prisma.kbsCandidate.findUnique.mockResolvedValue({
+        status: 'CERTIFIED',
+        certificate: {
+          kcaNumber: 'KCA-20250101-0001',
+          validUntil: new Date(Date.now() + 86_400_000),
+          revokedAt: new Date(),
+        },
+      });
+      expect(await service.isUserCertified('u1')).toBe(false);
+    });
+
+    it('returns false when the certificate has expired', async () => {
+      prisma.kbsCandidate.findUnique.mockResolvedValue({
+        status: 'CERTIFIED',
+        certificate: {
+          kcaNumber: 'KCA-20250101-0001',
+          validUntil: new Date(Date.now() - 86_400_000),
+          revokedAt: null,
+        },
+      });
       expect(await service.isUserCertified('u1')).toBe(false);
     });
   });

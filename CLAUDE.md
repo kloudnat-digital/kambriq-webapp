@@ -816,6 +816,21 @@ the step before: **a method is not delivered until something calls it.** When a
 chantier ends, ask what invokes the code, and if the answer is "a test", say so
 in the register.
 
+### A role that projects a record is not a setting
+
+`KCA_CERTIFIED` says "holds a valid KCA certificate". Four writers disagreed with
+that sentence. An admin status change granted it with no certificate. The admin
+role doors could grant or drop it by hand. Expiry never removed it. And the one
+function that asked the certificate - `isUserCertified` - had no caller and
+ignored revocation. KAMNET meanwhile asked a different question, whether the
+number the applicant _typed_ was valid, so a stranger's number passed.
+
+A role that reflects a record is written only by the service that owns the
+record (`record-derived-roles.ts` closes the admin doors), withdrawn by every
+event that ends the record - revocation **and** expiry - and never consulted to
+answer the question the record answers. "Is this person certified" is asked of
+the certificate (`findActiveCertificate`), not of the role. (`I15`)
+
 ### Configuration written by hand is configuration that exists on one environment
 
 `G3` reads twelve SSM parameters at runtime, and the reasoning was good: a wrong

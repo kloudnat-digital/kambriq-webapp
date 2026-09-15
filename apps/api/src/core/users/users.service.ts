@@ -7,6 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CorePrismaService } from '../prisma/core-prisma.service';
+import { assertNotRecordDerived, RECORD_DERIVED_ROLES } from './record-derived-roles';
 import {
   AdminUpdateUserDto,
   AvatarUploadUrlDto,
@@ -325,6 +326,13 @@ export class UsersService {
             codes: missingCodes.join(', '),
           }),
         );
+      }
+
+      // I15 - a role that follows a record may be carried through a replace
+      // unchanged, never added or dropped by one.
+      const current = (await this.findByIdOrThrow(userId)).userRoles.map((ur) => ur.role.code);
+      for (const code of RECORD_DERIVED_ROLES.keys()) {
+        if (current.includes(code) !== dto.roleCodes.includes(code)) assertNotRecordDerived(code);
       }
 
       // Delete existing roles and assign new ones

@@ -8,7 +8,7 @@ import {
 import { randomBytes } from 'crypto';
 import { KamnetPrismaService } from '../prisma/kamnet-prisma.service';
 import { UsersService } from '../../core/users/users.service';
-import { KbsCertificatesService } from '../../kbs/certificates/certificates.service';
+import { KbsCandidatesService } from '../../kbs/candidates/candidates.service';
 import { I18nService } from 'nestjs-i18n';
 import {
   buildPaginatedResponse,
@@ -33,7 +33,8 @@ import {
  * 3. On approval -> KamnetAgent record is created
  *
  * Cross-module interactions:
- * - Calls KbsCertificatesService to verify KCA certification
+ * - Asks KbsCandidatesService whether the applicant is certified (I15: their own
+ *   active certificate decides, at submission and again at approval)
  * - Calls UsersService to grant AGENT role and look up user info
  */
 
@@ -44,7 +45,7 @@ export class KamnetApplicationsService {
   constructor(
     private readonly prisma: KamnetPrismaService,
     private readonly usersService: UsersService,
-    private readonly certificatesService: KbsCertificatesService,
+    private readonly candidatesService: KbsCandidatesService,
     private readonly emailService: EmailService,
     private readonly i18n: I18nService,
   ) {}
@@ -67,10 +68,16 @@ export class KamnetApplicationsService {
       throw new ConflictException(this.t('kamnet.agent.alreadyExists'));
     }
 
-    const kcaResult = await this.certificatesService.verifyCertificate(dto.kcaNumber);
-
-    if (!kcaResult.valid) {
-      throw new ForbiddenException(this.t('kamnet.application.invalidKCA'));
+    /**
+     * I15 - the question is whether THIS person is certified, answered by their
+     * own certificate. This used to verify the number the caller typed, so any
+     * valid number passed - somebody else's included - and was stored as the
+     * applicant's. The key was also misspelt (`invalidKCA`), so the refusal
+     * showed the raw key instead of the message.
+     */
+    const certificate = await this.candidatesService.findActiveCertificate(userId);
+    if (!certificate || certificate.kcaNumber !== dto.kcaNumber) {
+      throw new ForbiddenException(this.t('kamnet.application.invalidKca'));
     }
 
     if (dto.sponsorCode) {
@@ -137,7 +144,18 @@ export class KamnetApplicationsService {
     }
 
     if (application.status !== KamnetApplicationStatus.PENDING) {
-      throw new ConflictException(this.t('kamnet.application.alreadyReviewed'));
+      // `notPending`: `alreadyReviewed` does not exist in kamnet.json, so this
+      // refusal used to show its raw key.
+      throw new ConflictException(this.t('kamnet.application.notPending'));
+    }
+
+    // I15 - a certificate revoked or expired since submission makes nobody an
+    // agent. Checked before anything is written, so a refusal leaves no trace.
+    if (
+      dto.status === KamnetApplicationStatus.APPROVED &&
+      !(await this.candidatesService.isUserCertified(application.userId))
+    ) {
+      throw new ForbiddenException(this.t('kamnet.application.invalidKca'));
     }
 
     const update = await this.prisma.kamnetApplication.update({

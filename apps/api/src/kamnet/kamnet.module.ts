@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CoreModule } from '../core/core.module';
-import { KbsCertificatesModule } from '../kbs/certificates/certificates.module';
+import { KbsModule } from '../kbs/kbs.module';
 import { KamnetPrismaService } from './prisma/kamnet-prisma.service';
 import { KamnetApplicationsService } from './applications/applications.service';
 import { KamnetAgentsService } from './agents/agents.service';
@@ -23,7 +23,10 @@ import { KamnetAdminController } from './controllers/kamnet-admin.controller';
  */
 
 @Module({
-  imports: [CoreModule, KbsCertificatesModule],
+  // KbsModule, not the former `KbsCertificatesModule`: KAMNET asks
+  // `KbsCandidatesService.isUserCertified` (I15), and the light module built a
+  // second KbsPrismaService - a second connection pool - of its own.
+  imports: [CoreModule, KbsModule],
   providers: [
     KamnetPrismaService,
     KamnetApplicationsService,

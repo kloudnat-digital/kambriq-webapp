@@ -606,6 +606,16 @@ export class KbsCandidatesService {
       );
     }
 
+    /**
+     * I15 - certification is conferred by issuing the certificate, never by
+     * setting a status. This endpoint set CERTIFIED and granted KCA_CERTIFIED
+     * with no certificate behind it, so the platform treated as certified
+     * somebody whose number `/verify-certificate` answered "non reconnu" for.
+     */
+    if (dto.status === CandidateStatus.CERTIFIED) {
+      throw new BadRequestException(this.t('kbs.candidate.certifiedByIssuanceOnly'));
+    }
+
     const allowed = STATUS_TRANSITIONS[candidate.status as CandidateStatus] || [];
     if (!allowed.includes(dto.status as CandidateStatus)) {
       throw new BadRequestException(
@@ -617,20 +627,10 @@ export class KbsCandidatesService {
       );
     }
 
-    const updateData: Record<string, unknown> = { status: dto.status };
-    if (dto.status === CandidateStatus.CERTIFIED) {
-      updateData.certifiedAt = new Date();
-    }
     const updated = await this.prisma.kbsCandidate.update({
       where: { id: candidateId },
-      data: updateData,
+      data: { status: dto.status },
     });
-
-    // Cross module side effect
-    if (dto.status === CandidateStatus.CERTIFIED) {
-      await this.userService.addRole(candidate.userId, RoleCode.KCA_CERTIFIED, adminUserId);
-      this.logger.log(`KCA role granted to user ${candidate.userId} by admin ${adminUserId}`);
-    }
 
     this.logger.log('Candidate status updated %o', {
       candidateId,
@@ -643,24 +643,41 @@ export class KbsCandidatesService {
 
   // ----- Cross Module Interface ----------------------------------
   /**
-   * Used by KAMNET to check if a user has an active (non-expired) KBS certification.
-   * Returns false if the candidate is not certified or if the certificate has expired.
+   * I15 - the one answer to "is this person certified".
+   *
+   * The certificate is the truth: it exists, it is not revoked, it has not
+   * expired, and the candidate's status is CERTIFIED. The KCA_CERTIFIED role is
+   * a projection of this - granted on issue, withdrawn on revocation and on
+   * expiry - and is deliberately not consulted here.
+   *
+   * Revocation is read directly. The previous version read only `status` and
+   * `validUntil`, and was right about a revoked certificate only because
+   * `revokeCertificate` also resets the status: a side effect in another
+   * service standing in for the fact itself.
    */
-  async isUserCertified(userId: string): Promise<boolean> {
+  async findActiveCertificate(
+    userId: string,
+  ): Promise<{ kcaNumber: string; validUntil: Date } | null> {
     const candidate = await this.prisma.kbsCandidate.findUnique({
       where: { userId },
       select: {
         status: true,
-        certificate: { select: { validUntil: true } },
+        certificate: { select: { kcaNumber: true, validUntil: true, revokedAt: true } },
       },
     });
 
-    if (candidate?.status !== CandidateStatus.CERTIFIED) return false;
+    if (candidate?.status !== CandidateStatus.CERTIFIED) return null;
 
-    // If no certificate has been issued yet the status alone is not enough
-    if (!candidate.certificate) return false;
+    const certificate = candidate.certificate;
+    if (!certificate || certificate.revokedAt) return null;
+    if (certificate.validUntil <= new Date()) return null;
 
-    return candidate.certificate.validUntil > new Date();
+    return { kcaNumber: certificate.kcaNumber, validUntil: certificate.validUntil };
+  }
+
+  /** Whether the user holds an active certificate. KAMNET asks this at submission and at approval. */
+  async isUserCertified(userId: string): Promise<boolean> {
+    return (await this.findActiveCertificate(userId)) !== null;
   }
 
   async findByUserId(userId: string) {
