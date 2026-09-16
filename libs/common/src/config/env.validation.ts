@@ -30,6 +30,22 @@ export const envSchema = z.object({
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.coerce.number().default(6379),
 
+  // D20. ElastiCache on dev has no password and no TLS today. AWS will not let
+  // AUTH be enabled without in-transit encryption, so the application must be
+  // able to speak both BEFORE the cluster demands them - these two are that
+  // ability, and both default to off so the local compose Redis and the current
+  // dev task keep working unchanged.
+  //
+  // Optional, not required: the ECS `secrets:` entry appears on the task only
+  // once the infrastructure side lands, and an API that refuses to boot without
+  // it would turn a one-step rollout into an outage.
+  REDIS_PASSWORD: z.string().optional(),
+
+  // A string, deliberately, and read case-insensitively by
+  // `redisConnectionOptions`. `z.coerce.boolean()` would turn the string
+  // "false" into `true`, which is exactly the value this needs to honour.
+  REDIS_TLS: z.string().default('false'),
+
   // ----- AWS -----
   // AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are deliberately absent. Nothing
   // reads them: SES and S3 both resolve the ECS task role through the default

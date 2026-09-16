@@ -111,6 +111,13 @@ export { QueueModule } from './queue/queue.module';
 // ----- Redis -----
 export { RedisModule } from './redis/redis.module';
 export { RedisService } from './redis/redis.service';
+// D20 - one decision about TLS and the AUTH token, shared by every client:
+// RedisService, the BullMQ root connection, and prisma/bootstrap-admins.ts.
+export {
+  redisConnectionOptions,
+  type RedisConnectionOptions,
+  type RedisEnvLookup,
+} from './redis/redis-connection';
 
 // ----- Email -----
 export { EmailModule } from './email/email.module';
