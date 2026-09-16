@@ -1,11 +1,7 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
+import { redisConnectionOptions } from './redis-connection';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
@@ -15,15 +11,14 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly config: ConfigService) {}
 
   onModuleInit() {
+    // D20 - host, port, and (when configured) the AUTH token and TLS, from the
+    // one helper every Redis client in this repository uses.
     this.client = new Redis({
-      host: this.config.get<string>('REDIS_HOST', 'localhost'),
-      port: this.config.get<number>('REDIS_PORT', 6379),
+      ...redisConnectionOptions((key) => this.config.get<string>(key)),
       lazyConnect: true,
     });
 
-    this.client.on('error', (err) =>
-      this.logger.error('Redis client error', err),
-    );
+    this.client.on('error', (err) => this.logger.error('Redis client error', err));
   }
 
   async onModuleDestroy() {

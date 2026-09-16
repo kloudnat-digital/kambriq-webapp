@@ -73,6 +73,7 @@ import { planBootstrap } from '../libs/common/src/bootstrap/bootstrap-plan';
 import { issueVerificationToken } from '../libs/common/src/auth/verification-token';
 import { VerificationTokenType } from '../libs/common/src/constants/core';
 import { QUEUES } from '../libs/common/src/constants/queue';
+import { redisConnectionOptions } from '../libs/common/src/redis/redis-connection';
 import { EmailService } from '../libs/common/src/email/email.service';
 import { Queue } from 'bullmq';
 
@@ -318,14 +319,19 @@ let emailQueue: Queue | null = null;
 
 function emailService(): EmailService {
   if (!emailQueue) {
-    const host = process.env['REDIS_HOST'];
-    const port = Number(process.env['REDIS_PORT'] ?? 6379);
-    if (!host) {
+    if (!process.env['REDIS_HOST']) {
       throw new Error(
         'REDIS_HOST is not set, so no email can be enqueued. Nothing further will be written.',
       );
     }
-    emailQueue = new Queue(QUEUES.NOTIFICATIONS, { connection: { host, port } });
+    // D20 - the same connection helper the API uses, so this task speaks TLS
+    // and sends the AUTH token exactly when the API does. It runs as a one-off
+    // ECS task on every deploy, on the API's own task definition, so it
+    // receives REDIS_PASSWORD and REDIS_TLS without any further wiring - and if
+    // it were left on a plain connection it would be the one client that breaks
+    // when the cluster starts requiring them.
+    const connection = redisConnectionOptions((key) => process.env[key]);
+    emailQueue = new Queue(QUEUES.NOTIFICATIONS, { connection });
   }
   return new EmailService(emailQueue);
 }

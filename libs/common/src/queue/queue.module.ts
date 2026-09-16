@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigService } from '@nestjs/config';
 import { QUEUES } from '../constants/queue';
+import { redisConnectionOptions } from '../redis/redis-connection';
 
 @Global()
 @Module({
@@ -10,10 +11,10 @@ import { QUEUES } from '../constants/queue';
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        connection: {
-          host: config.get<string>('REDIS_HOST', 'localhost'),
-          port: config.get<number>('REDIS_PORT', 6379),
-        },
+        // D20 - the five queues share this connection, so TLS and the AUTH
+        // token arrive here for all of them at once. Same helper as
+        // RedisService and the bootstrap task: one decision, three callers.
+        connection: redisConnectionOptions((key) => config.get<string>(key)),
         defaultJobOptions: {
           removeOnComplete: 100, // Keep last 100 completed jobs
           removeOnFailed: 200, // Keep last 200 failed jobs
