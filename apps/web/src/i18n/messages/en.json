@@ -1744,7 +1744,19 @@
     },
     "network": {
       "pageTitle": "My KAMNET network",
-      "pageSubtitle": "Sponsored agents and network connections"
+      "pageSubtitle": "Sponsored agents and network connections",
+      "emptyTitle": "You have no referrals yet",
+      "emptyMessage": "Your network grows when a candidate signs up with your agent code. Share your code, support the person through to certification, and they will appear here.",
+      "sponsorChain": "Who sponsored me",
+      "level": "N{level}",
+      "statAgents": "Agents in my network",
+      "statPlaces": "Cities covered",
+      "statManagers": "Managers in the network",
+      "tier": {
+        "JUNIOR": "Junior",
+        "CONFIRMED": "Confirmed",
+        "MANAGER": "Manager"
+      }
     },
     "breadcrumbs": {
       "lands": "My land parcels",

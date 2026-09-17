@@ -1,87 +1,86 @@
 export const dynamic = 'force-dynamic';
 
-import { Users, MapPin, Award } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
-import { Badge } from '@/components/ui/badge';
-import { StatCard } from '@/components/dashboard/shared/stat-card';
+import { getMyAgentProfile, getMyNetwork, getMySponsors } from '@/lib/actions/kamnet';
+import { NetworkContent } from './network-content';
+import { NetworkEmpty } from './network-empty';
 
-const NETWORK = [
-  { name: 'Marie Kameni', region: 'Centre · Yaoundé', level: 'Expert', sales: 24, referrals: 3 },
-  { name: 'Paul Eteme', region: 'Littoral · Douala', level: 'Senior', sales: 15, referrals: 2 },
-  { name: 'Sophie Mbarga', region: 'Ouest · Bafoussam', level: 'Expert', sales: 20, referrals: 4 },
-  { name: 'Alain Fotso', region: 'Sud · Kribi', level: 'Junior', sales: 5, referrals: 1 },
-  { name: 'Claire Ngo', region: 'Adamaoua · Ngaoundéré', level: 'Junior', sales: 3, referrals: 0 },
-  { name: 'Jean Dupont', region: 'Nord · Garoua', level: 'Senior', sales: 11, referrals: 2 },
-];
+/**
+ * `/agent/network`, served from the API.
+ *
+ * What this page used to be is worth recording, because it is why the tests
+ * around it are mostly negative. It declared a module-level constant of six
+ * agents who do not exist, with invented sales and referral counts, three
+ * hard-coded statistics, and a badge map keyed on "Expert" and "Senior" -
+ * tiers this system does not have. It rendered all of it. A placeholder is
+ * honest; this looked finished, and it was the screen an agent would open
+ * first.
+ *
+ * The depth requested follows the agent's tier, from UX specification section
+ * 2.3: JUNIOR and CONFIRMED see N1, MANAGER sees N1 to N3 plus statistics.
+ *
+ * One thing this page cannot do, said plainly rather than implied: the tier rule
+ * is applied HERE, and GET /kamnet/network does not enforce it. The service
+ * reads `depth` from the query and never looks at the caller's tier, so a
+ * JUNIOR asking for depth 3 receives N1 to N3 from the API today. This is a
+ * presentation rule, not a boundary, and closing it belongs on the server.
+ *
+ * Translations are fetched once here and passed down as plain strings. The
+ * children are synchronous for that reason - see `network-empty.tsx`.
+ */
 
-const LEVEL_STYLES = {
-  Junior: 'border-gray-200 text-gray-600',
-  Senior: 'border-primary-200 text-primary-700',
-  Expert: 'border-gold-300 text-gold-700 bg-gold-50',
+const DEPTH_FOR_TIER: Record<string, number> = {
+  JUNIOR: 1,
+  CONFIRMED: 1,
+  MANAGER: 3,
 };
+
+export async function generateMetadata() {
+  const t = await getTranslations('app.network');
+  return { title: t('pageTitle') };
+}
 
 export default async function AgentNetworkPage() {
   const t = await getTranslations('app.network');
+
+  const profileRes = await getMyAgentProfile();
+  const profile = profileRes.success ? profileRes.data : null;
+
+  const tier = profile?.tier ?? 'JUNIOR';
+  const depth = DEPTH_FOR_TIER[tier] ?? 1;
+
+  const [networkRes, sponsorsRes] = await Promise.all([getMyNetwork(depth), getMySponsors()]);
+  const root = networkRes.success ? networkRes.data : null;
+  const sponsors = sponsorsRes.success ? sponsorsRes.data : null;
+
+  const hasReferrals = Boolean(root && root.referrals.length > 0);
+
   return (
     <div className="p-6 lg:p-8">
       <div className="mx-auto max-w-5xl space-y-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('pageTitle')}</h1>
-          <p className="text-sm text-gray-500">{t('pageSubtitle')}</p>
+          <h1 className="text-2xl font-bold text-foreground">{t('pageTitle')}</h1>
+          <p className="text-sm text-muted-foreground">{t('pageSubtitle')}</p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <StatCard
-            label="Agents dans mon réseau"
-            value={6}
-            icon={<Users className="size-4 text-primary-600" />}
-            accent="text-primary-600"
+
+        {hasReferrals && root ? (
+          <NetworkContent
+            root={root}
+            sponsors={sponsors}
+            showStatistics={tier === 'MANAGER'}
+            labels={{
+              statAgents: t('statAgents'),
+              statPlaces: t('statPlaces'),
+              statManagers: t('statManagers'),
+              sponsorChain: t('sponsorChain'),
+              tier: (value: string) => t(`tier.${value}` as never),
+              level: (value: number) => t('level', { level: value }),
+            }}
           />
-          <StatCard
-            label="Régions couvertes"
-            value={6}
-            icon={<MapPin className="size-4 text-success" />}
-            accent="text-success"
-          />
-          <StatCard
-            label="Experts dans le réseau"
-            value={2}
-            icon={<Award className="size-4 text-gold-600" />}
-            accent="text-gold-600"
-          />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {NETWORK.map((agent) => (
-            <div
-              key={agent.name}
-              className="rounded-2xl border border-border bg-white p-5 shadow-sm"
-            >
-              <div className="mb-3 flex items-center gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-500/10 text-sm font-bold text-primary-600">
-                  {agent.name.charAt(0)}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{agent.name}</p>
-                  <p className="flex items-center gap-1 text-xs text-gray-400">
-                    <MapPin className="size-3" /> {agent.region}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <Badge
-                  variant="outline"
-                  className={LEVEL_STYLES[agent.level as keyof typeof LEVEL_STYLES]}
-                >
-                  {agent.level}
-                </Badge>
-                <div className="text-right">
-                  <p className="text-xs text-gray-400">{agent.sales} ventes</p>
-                  <p className="text-xs text-gray-400">{agent.referrals} filleul(s)</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        ) : (
+          <NetworkEmpty title={t('emptyTitle')} message={t('emptyMessage')} />
+        )}
       </div>
     </div>
   );

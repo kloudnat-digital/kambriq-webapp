@@ -1744,7 +1744,19 @@
     },
     "network": {
       "pageTitle": "Mon réseau KAMNET",
-      "pageSubtitle": "Agents parrainés et connexions de réseau"
+      "pageSubtitle": "Agents parrainés et connexions de réseau",
+      "emptyTitle": "Vous n'avez pas encore de filleul",
+      "emptyMessage": "Votre réseau se construit quand un candidat s'inscrit avec votre code agent. Partagez votre code, accompagnez la personne jusqu'à sa certification, et elle apparaîtra ici.",
+      "sponsorChain": "Qui m'a parrainé",
+      "level": "N{level}",
+      "statAgents": "Agents dans mon réseau",
+      "statPlaces": "Villes couvertes",
+      "statManagers": "Managers dans le réseau",
+      "tier": {
+        "JUNIOR": "Junior",
+        "CONFIRMED": "Confirmé",
+        "MANAGER": "Manager"
+      }
     },
     "breadcrumbs": {
       "lands": "Mes terrains",

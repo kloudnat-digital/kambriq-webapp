@@ -61,7 +61,15 @@ const interpolate = (template: string, args?: Record<string, string | number>): 
       )
     : template;
 
-export const useTranslations = (namespace?: string) => {
+/**
+ * The translator itself, as a plain function.
+ *
+ * Separated from `useTranslations` so that `getTranslations` can return the
+ * same thing without calling a hook: a hook invoked from a function that is
+ * neither a component nor a hook is a `react-hooks/rules-of-hooks` error, and
+ * silencing that rule to make a mock compile would blunt it everywhere else.
+ */
+const makeTranslator = (namespace?: string) => {
   const prefix = namespace ? `${namespace}.` : '';
   const translate = (key: string, args?: Record<string, string | number>): string => {
     const value = resolve(`${prefix}${key}`);
@@ -78,10 +86,33 @@ export const useTranslations = (namespace?: string) => {
   return translate;
 };
 
-export const useLocale = () => locale;
-export const useMessages = () => CATALOGUES[locale];
-export const useFormatter = () => ({
+const makeFormatter = () => ({
   dateTime: (value: Date) => value.toISOString(),
   number: (value: number) => String(value),
 });
+
+export const useTranslations = (namespace?: string) => makeTranslator(namespace);
+
+/**
+ * `getTranslations` from `next-intl/server`, for async server components.
+ *
+ * Same catalogue, same loudness on a miss, same interpolation - the only
+ * difference is that it is awaited. A server component cannot use the hook, so
+ * without this a page that calls `getTranslations` cannot be rendered under
+ * Jest at all: `next-intl/server` is ESM and fails with
+ * `SyntaxError: Unexpected token 'export'` before any assertion runs.
+ *
+ * Usage differs from the hook, because the two live in different modules:
+ *
+ *   jest.mock('next-intl/server', () => require('@/test-utils/next-intl-mock'));
+ */
+export const getTranslations = async (namespace?: string) => makeTranslator(namespace);
+
+export const getLocale = async () => locale;
+export const getMessages = async () => CATALOGUES[locale];
+export const getFormatter = async () => makeFormatter();
+
+export const useLocale = () => locale;
+export const useMessages = () => CATALOGUES[locale];
+export const useFormatter = () => makeFormatter();
 export const NextIntlClientProvider = ({ children }: { children: ReactNode }) => children;
