@@ -20,7 +20,7 @@ export const Sidebar = ({ userRoles, userName, userRole, initials, onNavigate }:
   const sections = filterNavForRoles(NAV_SECTIONS, userRoles);
 
   return (
-    <div className="flex h-full flex-col bg-[#0f1923]">
+    <div className="flex h-full flex-col bg-accent-800">
       {/* Logo */}
       <div className="flex h-16 shrink-0 items-center px-4">
         <Link href="/" className="flex items-center gap-2">

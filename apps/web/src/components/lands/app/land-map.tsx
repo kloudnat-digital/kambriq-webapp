@@ -4,6 +4,8 @@ import { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
+import { BRAND_TEAL } from '@/lib/brand-colors';
+
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
 
 interface LandMapProps {
@@ -30,9 +32,10 @@ export const LandMap = ({ latitude, longitude, title }: LandMapProps) => {
 
     // Marker dot
     const el = document.createElement('div');
+    // Built imperatively for Mapbox, so a Tailwind class cannot reach it.
     el.style.cssText = `
       width: 14px; height: 14px;
-      background: #32723b;
+      background: ${BRAND_TEAL};
       border: 3px solid white;
       border-radius: 50%;
       box-shadow: 0 2px 6px rgba(0,0,0,0.35);
