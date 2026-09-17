@@ -4,10 +4,22 @@
 /* ─────────────────────────────────────────────────────────────
    KAMBRIQ DESIGN SYSTEM
    Brand colors:
-     Primary  - Forest Green  #32723B
+     Primary  - Teal          #1A7A6E   (the action colour)
+     Chrome   - Navy          #0D1B2A   (accent family, anchored at 800)
+     Gold     - Antique Gold  #B8972A
      Surface  - Warm Cream    #EEECE5
-     Accent   - Dark Brown    #4F2E04
-     Gold     - Golden Yellow #F1BD2F
+
+   Arbitrated by Visquis on 17 September 2026: the brand palette wins and the
+   code aligns. The STRUCTURE here is kept whole - four eleven-step families,
+   semantic role tokens, six radii, three shadows, Switzer and JetBrains Mono -
+   and only the anchor values change. Navy is chrome, teal is the action
+   colour, which is why teal takes `primary` and navy takes `accent` at step
+   800 (navy is a dark value and `accent` is the dark family).
+
+   Every ramp was generated from its anchor and then CHECKED, not eyeballed:
+   `apps/web/src/app/brand-palette.spec.ts` computes the WCAG ratio of every
+   declared text-on-background pair and fails below AA. Five pairs failed
+   before this change and pass after it - see the spec for the numbers.
    ───────────────────────────────────────────────────────────── */
 
 @theme {
@@ -17,91 +29,103 @@
 
   /* ── Brand Palette ───────────────────────────────────────── */
 
-  /* Primary - Forest Green #32723B */
-  --color-primary-50: #f0f7f1;
-  --color-primary-100: #d9eddb;
-  --color-primary-200: #b4dcb8;
-  --color-primary-300: #82c389;
-  --color-primary-400: #52a45b;
-  --color-primary-500: #32723b; /* Brand anchor */
-  --color-primary-600: #275c2f;
-  --color-primary-700: #1f4825;
-  --color-primary-800: #183820;
-  --color-primary-900: #122d19;
-  --color-primary-950: #0a1a0e;
+  /* Primary - Teal #1A7A6E. The action colour: buttons, links, focus ring. */
+  --color-primary-50: #f1f7f6;
+  --color-primary-100: #cce1df;
+  --color-primary-200: #a5cbc6;
+  --color-primary-300: #7db3ad;
+  --color-primary-400: #519a91;
+  --color-primary-500: #1a7a6e; /* Brand anchor */
+  --color-primary-600: #17665d;
+  --color-primary-700: #14544e;
+  --color-primary-800: #124441;
+  --color-primary-900: #103433;
+  --color-primary-950: #0d2426;
 
-  /* Accent - Dark Brown #4F2E04 */
-  --color-accent-50: #fdf8f0;
-  --color-accent-100: #f7ead8;
-  --color-accent-200: #efd4ac;
-  --color-accent-300: #e4b478;
-  --color-accent-400: #d68e44;
-  --color-accent-500: #b86e23;
-  --color-accent-600: #8c511a;
-  --color-accent-700: #6b3c12;
-  --color-accent-800: #4f2e04; /* Brand anchor */
-  --color-accent-900: #3a2108;
-  --color-accent-950: #1e1104;
+  /* Accent - Navy #0D1B2A. Chrome: the app shell, headers, dark surfaces.
+     Anchored at 800 because navy is a dark value, exactly as the previous
+     Dark Brown anchor sat at 800. */
+  --color-accent-50: #f0f1f2;
+  --color-accent-100: #d8dadd;
+  --color-accent-200: #bfc3c7;
+  --color-accent-300: #a6abb0;
+  --color-accent-400: #8b9299;
+  --color-accent-500: #707881;
+  --color-accent-600: #535d68;
+  --color-accent-700: #34404c;
+  --color-accent-800: #0d1b2a; /* Brand anchor */
+  --color-accent-900: #09131d;
+  --color-accent-950: #060c12;
 
-  /* Gold - Golden Yellow #F1BD2F */
-  --color-gold-50: #fefaeb;
-  --color-gold-100: #fdf3c6;
-  --color-gold-200: #fae78d;
-  --color-gold-300: #f7d75b;
-  --color-gold-400: #f4c93f;
-  --color-gold-500: #f1bd2f; /* Brand anchor */
-  --color-gold-600: #ca9a1c;
-  --color-gold-700: #9c7713;
-  --color-gold-800: #74590f;
-  --color-gold-900: #523f0b;
-  --color-gold-950: #2c2106;
+  /* Gold - Antique Gold #B8972A. Darker than the old #F1BD2F on purpose:
+     white on #F1BD2F measured 1.74:1, which is unreadable. */
+  --color-gold-50: #fbf9f2;
+  --color-gold-100: #efe8d0;
+  --color-gold-200: #e3d6ac;
+  --color-gold-300: #d7c486;
+  --color-gold-400: #c9b05d;
+  --color-gold-500: #b8972a; /* Brand anchor */
+  --color-gold-600: #977d26;
+  --color-gold-700: #7b6722;
+  --color-gold-800: #60521f;
+  --color-gold-900: #463e1c;
+  --color-gold-950: #2d2a18;
 
-  /* Surface - Warm Cream #EEECE5 */
-  --color-surface-50: #fdfcfa;
+  /* Surface - Warm Cream #EEECE5. The neutral ramp. */
+  --color-surface-50: #fefefd;
   --color-surface-100: #eeece5; /* Brand anchor */
-  --color-surface-200: #dedad0;
-  --color-surface-300: #cbc6b8;
-  --color-surface-400: #b3ae9f;
-  --color-surface-500: #928d7e;
-  --color-surface-600: #736e61;
-  --color-surface-700: #5a564b;
-  --color-surface-800: #403d35;
-  --color-surface-900: #2a2821;
-  --color-surface-950: #16150f;
+  --color-surface-200: #d6d4cd;
+  --color-surface-300: #c1bfb9;
+  --color-surface-400: #adaba5;
+  --color-surface-500: #9a9892;
+  --color-surface-600: #878680;
+  --color-surface-700: #75736e;
+  --color-surface-800: #63625c;
+  --color-surface-900: #51504b;
+  --color-surface-950: #403e3a;
 
   /* ── Semantic Tokens (Light Mode) ────────────────────────── */
   --color-background: var(--color-surface-50);
-  --color-foreground: var(--color-surface-900);
+  --color-foreground: var(--color-surface-950);
 
   --color-card: #ffffff;
-  --color-card-foreground: var(--color-surface-900);
+  --color-card-foreground: var(--color-surface-950);
 
   --color-muted: var(--color-surface-100);
-  --color-muted-foreground: var(--color-surface-600);
+  /* surface-800, not 700. On cream, 700 measures 4.01:1 and fails AA - and
+     this is the application's most-used pair, 104 occurrences of
+     `text-muted-foreground`. 800 measures 5.18:1. The old palette was 4.30:1,
+     so this pair was already failing before the re-anchoring. */
+  --color-muted-foreground: var(--color-surface-800);
 
-  --color-border: var(--color-surface-200);
-  --color-input: var(--color-surface-200);
+  --color-border: var(--color-surface-300);
+  --color-input: var(--color-surface-300);
   --color-ring: var(--color-primary-500);
 
   --color-primary: var(--color-primary-500);
   --color-primary-foreground: #ffffff;
 
   --color-secondary: var(--color-surface-100);
-  --color-secondary-foreground: var(--color-surface-800);
+  --color-secondary-foreground: var(--color-accent-800);
 
   --color-accent: var(--color-accent-800);
   --color-accent-foreground: #ffffff;
 
   --color-gold: var(--color-gold-500);
-  --color-gold-foreground: #ffffff;
+  /* Navy on gold, not white. White on gold is 1.74:1 - the worst pair in the
+     previous palette. Navy on this gold is 6.68:1. */
+  --color-gold-foreground: var(--color-accent-900);
 
-  --color-destructive: #dc2626;
+  /* Status colours are not brand colours and keep their own hues. Both were
+     darkened to clear AA against white text: #dc2626 gave 4.83 (passing but
+     thin) and #d97706 gave 3.19 (failing). */
+  --color-destructive: #b42318;
   --color-destructive-foreground: #ffffff;
 
-  --color-success: var(--color-primary-500);
+  --color-success: var(--color-primary-600);
   --color-success-foreground: #ffffff;
 
-  --color-warning: #d97706;
+  --color-warning: #8a5a00;
   --color-warning-foreground: #ffffff;
 
   /* ── Border Radius ───────────────────────────────────────── */
@@ -120,6 +144,14 @@
   /* ── Transitions ─────────────────────────────────────────── */
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Code that cannot reach a token - the Mapbox markers, which are styled
+   through `style.cssText`, and `app/global-error.tsx`, which renders its own
+   document and never sees this file - reads the palette from
+   `@/lib/brand-colors` instead. That module is the single place a brand hex
+   may be spelled, and the spec asserts it stays in step with the anchors
+   above. A `:root` variable would not serve those cases: the error boundary
+   cannot see this stylesheet, which is the whole reason it needs the values. */
 
 /* ── Base Reset ──────────────────────────────────────────── */
 * {

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
+import { BRAND_TEAL, BRAND_TEAL_DARK } from '@/lib/brand-colors';
 import { formatXAFCompact } from '@/lib/money';
 import { useLandsSearchStore } from '@/store/lands-search.store';
 import type { MockLand } from '@/data/mock-lands';
@@ -24,9 +25,11 @@ const CITY_COORDS: Record<string, [number, number]> = {
   Ebolowa: [11.1519, 2.9003],
 };
 
-// Brand colors
-const PRIMARY = '#32723b';
-const PRIMARY_DARK = '#275c2f';
+// Brand colours. Mapbox markers are built imperatively and styled through
+// `style.cssText`, so a Tailwind class cannot reach them - see the comment at
+// the marker below. The values come from the one module allowed to spell them.
+const PRIMARY = BRAND_TEAL;
+const PRIMARY_DARK = BRAND_TEAL_DARK;
 
 type LandsMapProps = {
   lands: MockLand[];

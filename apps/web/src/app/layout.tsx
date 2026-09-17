@@ -7,6 +7,7 @@ import { Providers } from '@/components/providers';
 import { Toaster } from '@/components/ui/sonner';
 import ToastContainer from '@/components/ui/toast-container';
 import './globals.css';
+import { BRAND_NAVY } from '@/lib/brand-colors';
 import { cn } from '@/lib/utils';
 
 // Fonts
@@ -16,9 +17,14 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
-// Viewport (theme-color lives here in Next.js 14+)
+// Viewport (theme-color lives here in Next.js 14+).
+//
+// A Viewport value is serialised into <meta name="theme-color"> at build time,
+// so it cannot be a CSS variable - hence the constant rather than a token.
+// This value was ALREADY #0D1B2A before step 0: the right colour in the wrong
+// place, agreeing with the new palette by accident.
 export const viewport: Viewport = {
-  themeColor: '#0D1B2A',
+  themeColor: BRAND_NAVY,
 };
 
 // Metadata
