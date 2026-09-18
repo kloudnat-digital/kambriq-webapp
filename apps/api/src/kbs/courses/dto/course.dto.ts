@@ -1,4 +1,9 @@
 import { createZodDto } from 'nestjs-zod';
+import {
+  LESSON_CONTENT_TYPES,
+  isFileBackedContentType,
+  type KbsLessonContentType,
+} from '@kambriq/common/constants/kbs/lesson-content';
 import { z } from 'zod';
 
 // ----- Course -----
@@ -39,8 +44,10 @@ export const reorderModulesSchema = z.object({
 export class ReorderModulesDto extends createZodDto(reorderModulesSchema) {}
 
 // ----- Lesson -----
-const LESSON_CONTENT_TYPES = ['VIDEO', 'PDF', 'HTML', 'TEXT'] as const;
-const isFileBacked = (t: (typeof LESSON_CONTENT_TYPES)[number]) => t === 'VIDEO' || t === 'PDF';
+// A4: the values and the file-backed rule come from `libs/common`, which is the
+// only place either is written. They used to be declared here as well, and the
+// second copy is what let the seed drift to lower case unnoticed.
+const isFileBacked = (t: KbsLessonContentType) => isFileBackedContentType(t);
 
 export const createLessonSchema = z
   .object({

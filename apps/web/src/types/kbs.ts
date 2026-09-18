@@ -5,7 +5,14 @@ export type KbsCandidateStatus =
   | 'CERTIFIED'
   | 'FAILED';
 
-export type KbsLessonContentType = 'VIDEO' | 'PDF' | 'HTML' | 'TEXT';
+import type { KbsLessonContentType } from '@kambriq/common/constants/kbs/lesson-content';
+
+/**
+ * A4: the four values are declared once, in `libs/common`. Re-exported here so
+ * the web's existing `@/types/kbs` imports keep working, and imported above so
+ * this file can use the name itself.
+ */
+export type { KbsLessonContentType };
 
 export type KbsModuleStatus = 'locked' | 'in_progress' | 'completed';
 
