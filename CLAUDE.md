@@ -1446,6 +1446,74 @@ What it cannot see, written down so nobody learns it by waiting: a job that
 never starts (quota, runner, environment rule), a failure in the credentials
 step itself, and the delivery journeys, which are another job.
 
+### A prose guarantee is a claim, and the system is not obliged to keep it
+
+From `A36`. The journey client threw on a 429 and explained itself in a comment:
+_"In CI the suite runs once per deploy and never sees it."_ Run `35306506751`
+saw it twice, in one job, four minutes apart.
+
+The sentence was not careless when it was written - it was true of one suite. It
+stopped being true when `#146` added a second one, and **nothing anywhere had to
+change for it to become false.** That is the same family as
+[a comment that describes what a command covers](#a-check-that-never-runs-looks-exactly-like-a-check-that-passes)
+and as a guard that names a danger without refusing it: a guarantee written in
+prose has no mechanism behind it, so it rots without a single line being edited.
+
+**What was actually true**, and is now in the file with its measurements: the
+`journeys` target runs `runInBand`, so both suites execute in **one process from
+one runner address**, and `ThrottlerBehindProxyGuard.getTracker` keys on the last
+`X-Forwarded-For` entry - so the two suites **legitimately** share one bucket of
+100 requests per 60 000 ms. The gap between them is the whole variable: 9.33 s
+passed on `1cbde1a`; 0.36 s failed on `70a5e07`; that job re-run alone, at
+0.35 s, failed identically. The guard was doing its job and the product was
+fine.
+
+**Waiting is what a client owes a rate limiter.** So `call()` waits one full
+window and retries, bounded, printing one line per wait. Two fixes were refused
+on the way: a fixed pause between suites works today and breaks when the fourth
+suite arrives, and raising `THROTTLE_LIMIT` on dev removes a real protection to
+make a test pass. The wait is the **whole** window because the throttler's record
+expires one TTL after the request that opened it and a client holding a 429
+cannot know when that was - anything shorter is a guess. And the message it
+throws after the last attempt is pinned **verbatim**, so a genuine throttle
+problem is never absorbed by the waiting.
+
+### A test has to live somewhere that runs, and a project can have nowhere
+
+Also `A36`, and it nearly shipped as coverage that never executed.
+
+The natural home for a unit test of `support.ts` is `apps/api-e2e`. That project
+had **one target, `journeys`** - no `test` - and the root script ran
+`--projects=api,common,web`. A spec dropped in next to the helper it tests would
+therefore have run in exactly one place: `Delivery journeys (dev)`, against a
+deployed environment, **after** the merge, and never on a pull request. The only
+job it would execute in is the job it was written to repair.
+
+So the project gained a `test` target and a second Jest config with no
+`globalSetup`, `src/unit/` is ignored by the journeys config, and both root
+scripts name `api-e2e`. Both halves matter: the target puts it in `Quality` on
+pull requests, and the script puts it in the develop run - narrow one and it
+becomes [a check that never runs](#a-check-that-never-runs-looks-exactly-like-a-check-that-passes)
+again.
+
+**Before writing a test, name the job that will run it.** "It is in the repo" is
+not an answer, and a green pipeline looks identical either way.
+
+### The code that decides who owns the bucket had no test
+
+`getTracker` was one occurrence in the whole of `apps/api`: its own definition.
+It answers "whose quota is this request spending", and it is wrong in two
+directions. Key on the ALB's address and every client shares one bucket, so one
+user exhausts the login limit for everybody - the `A2` defect it was written to
+fix. Key on an entry the **client** controls and any client picks its own bucket,
+which is the same as having no limit at all.
+
+Eleven tests now pin it, and they were **watched failing**: mutated to
+`parts[0]`, five fail, including `Received: "a-value-the-client-chose"`. That
+mutation is the one that matters, because the plain "takes the last entry" case
+also passes a leftmost implementation on a one-element chain - so the spoofing
+case is a separate test rather than a second tail on the first.
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope

@@ -12,44 +12,117 @@ export const API =
 
 export type Res = { status: number; body: string; json: <T>() => T };
 
+/**
+ * The wait this client owes the rate limiter, and where the number comes from.
+ *
+ * The API throttles at `THROTTLE_LIMIT` 100 requests per `THROTTLE_TTL` 60000
+ * ms, both declared at `libs/common/src/config/env.validation.ts:26-27`. Those
+ * are the values that actually run: `apps/api/src/app/app.module.ts:34` wires
+ * `ConfigModule.forRoot({ validate: validateEnv })`, so `ConfigService` serves
+ * the validated default and the contradictory `6000` written as a fallback at
+ * `apps/api/src/app/app.module.ts:84` is never reached. Nothing under `docker/`
+ * or `.github/` sets either variable, so the schema default is the deployed
+ * value - this constant tracks that declaration and nothing else.
+ *
+ * The wait is the WHOLE window rather than a fraction of it. The throttler's
+ * record expires one TTL after the request that opened it, and a client holding
+ * a 429 cannot know when that was, so one full window is the only wait
+ * guaranteed to meet a drained bucket. Anything shorter is a guess that works
+ * until the day it does not.
+ */
+export const THROTTLE_WAIT_MS = 60_000;
+
+/** Requests the API allows inside one `THROTTLE_WAIT_MS` window. Same source. */
+const THROTTLE_LIMIT = 100;
+
+/** Total attempts per request, so at most two waits and never an open loop. */
+export const THROTTLE_MAX_ATTEMPTS = 3;
+
+/**
+ * The clock, as a replaceable collaborator.
+ *
+ * The journeys use the real one. `src/unit/support.call.spec.ts` replaces it,
+ * because the property under test is that the client waits the window - and a
+ * test that waited sixty real seconds to prove it is a test nobody would keep
+ * running.
+ */
+export const clock = {
+  sleep: (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms)),
+};
+
 export const call = async (
   method: string,
   path: string,
   opts: { body?: unknown; token?: string } = {},
 ): Promise<Res> => {
-  const res = await fetch(`${API}${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(opts.token ? { Authorization: `Bearer ${opts.token}` } : {}),
-    },
-    ...(opts.body === undefined ? {} : { body: JSON.stringify(opts.body) }),
-  });
-  const body = await res.text();
+  for (let attempt = 1; ; attempt += 1) {
+    const res = await fetch(`${API}${path}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(opts.token ? { Authorization: `Bearer ${opts.token}` } : {}),
+      },
+      ...(opts.body === undefined ? {} : { body: JSON.stringify(opts.body) }),
+    });
+    const body = await res.text();
 
-  /**
-   * 429 is never a legitimate result here, so it is named rather than asserted
-   * against.
-   *
-   * The API throttles at `THROTTLE_LIMIT` requests per `THROTTLE_TTL`. Running
-   * this suite back to back exhausts that, and the failure then surfaces as
-   * "expected 200, received 429" on a login — which reads as a broken auth path
-   * and is not. In CI the suite runs once per deploy and never sees it; a human
-   * re-running it three times in a minute will, and should be told what happened
-   * instead of debugging the product.
-   */
-  if (res.status === 429) {
-    throw new Error(
-      `${method} ${path} was rate limited (429). This suite ran too soon after a ` +
-        `previous run - wait for the throttle window and retry. Not a product failure.`,
-    );
+    /**
+     * A 429 is not a result. It is the rate limiter asking this client to wait,
+     * so this client waits - bounded, and loud about it.
+     *
+     * A36. The comment that stood here said "in CI the suite runs once per
+     * deploy and never sees it", and run 35306506751 saw it twice. What is
+     * true: the `journeys` target runs `runInBand`, so both suites execute in
+     * ONE process from ONE runner address, and
+     * `ThrottlerBehindProxyGuard.getTracker` keys on the last X-Forwarded-For
+     * entry - so the two suites legitimately share ONE bucket, and the gap
+     * between them decides the outcome. Measured across three runs with
+     * identical accounts: a gap of 9.33 s between the end of `journeys.spec.ts`
+     * and the start of `kamnet-network-isolation.spec.ts` PASSED on 1cbde1a;
+     * 0.36 s FAILED on 70a5e07; that job re-run alone, at 0.35 s, FAILED
+     * identically. `journeys.spec.ts` issues 53 requests including 5 logins
+     * inside one minute and fills almost the whole window, so whichever suite
+     * follows it finds the bucket full. A prose guarantee the system does not
+     * keep is the same family as a guard that names a danger without refusing
+     * it.
+     *
+     * Two alternatives were refused rather than overlooked. A fixed pause
+     * between suites works today and breaks when the fourth suite arrives.
+     * Raising `THROTTLE_LIMIT` on dev removes a real protection to make a test
+     * pass. Waiting is what a client owes a rate limiter.
+     *
+     * After `THROTTLE_MAX_ATTEMPTS` it gives up with the sentence this suite
+     * has always printed, so a genuine throttle problem - a limit set too low,
+     * a client hammering the API - is never absorbed by the waiting.
+     */
+    if (res.status === 429) {
+      if (attempt >= THROTTLE_MAX_ATTEMPTS) {
+        throw new Error(
+          `${method} ${path} was rate limited (429). This suite ran too soon after a ` +
+            `previous run - wait for the throttle window and retry. Not a product failure. ` +
+            `Gave up after ${THROTTLE_MAX_ATTEMPTS} attempts and ` +
+            `${THROTTLE_MAX_ATTEMPTS - 1} waits of ${THROTTLE_WAIT_MS} ms.`,
+        );
+      }
+
+      // One line per wait. Sixty silent seconds reads as a hung runner, and a
+      // hung runner is what somebody cancels.
+      console.warn(
+        `[journeys] ${method} ${path} answered 429. The API allows ${THROTTLE_LIMIT} ` +
+          `requests per ${THROTTLE_WAIT_MS} ms and this runner's bucket is full. Waiting ` +
+          `${THROTTLE_WAIT_MS} ms for the window to roll, then retrying - attempt ` +
+          `${attempt + 1} of ${THROTTLE_MAX_ATTEMPTS}.`,
+      );
+      await clock.sleep(THROTTLE_WAIT_MS);
+      continue;
+    }
+
+    return {
+      status: res.status,
+      body,
+      json: <T>() => JSON.parse(body) as T,
+    };
   }
-
-  return {
-    status: res.status,
-    body,
-    json: <T>() => JSON.parse(body) as T,
-  };
 };
 
 export const login = async (email: string, password = 'Test1234!'): Promise<string> => {
