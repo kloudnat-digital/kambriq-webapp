@@ -1,5 +1,23 @@
+/**
+ * Two thresholds, two meanings, decided by Visquis on 18 September 2026.
+ *
+ * The certification document governs what is promised to the candidate, so the
+ * EXAM threshold is that promise and it went from 75 to 80. The module quizzes
+ * stay at 70 because they are drilling, and drilling is allowed to be easier
+ * than the examination it prepares for.
+ *
+ * They are deliberately not one constant. The day somebody decides the quizzes
+ * should also be 80, that is a decision to record here - not a tidy-up that
+ * collapses two different promises into one number.
+ *
+ * `KbsExam.passingScore` is stamped from `EXAM_PASSING_SCORE` at schedule time
+ * and `gradeExam` judges on the stored column, never on this constant. So a
+ * change here governs exams scheduled from now on and moves no past verdict.
+ * Pinned in `libs/common/src/__test__/constants/kbs-passing-scores.spec.ts`,
+ * which is the first test either constant has ever had.
+ */
 export const MODULE_PASSING_SCORE = 70 as const;
-export const EXAM_PASSING_SCORE = 75 as const;
+export const EXAM_PASSING_SCORE = 80 as const;
 export const DEFAULT_EXAM_QUESTION_COUNT = 20 as const;
 export const DEFAULT_QUIZ_QUESTION_COUNT = 10 as const;
 

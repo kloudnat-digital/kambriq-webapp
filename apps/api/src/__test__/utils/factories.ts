@@ -6,6 +6,8 @@
  * const candidate = buildCandidate({ status: 'CERTIFIED', ... });
  */
 
+import { EXAM_PASSING_SCORE } from '@kambriq/common/constants/kbs';
+
 let userIdCounter = 1;
 const id = () => `uuid-${userIdCounter++}`;
 
@@ -157,7 +159,7 @@ export const buildExam = (overrides: Record<string, unknown> = {}) => ({
   candidateId: id(),
   cycle: 1,
   attemptNumber: 1,
-  passingScore: 75,
+  passingScore: EXAM_PASSING_SCORE,
   totalQuestions: 20,
   score: null,
   status: 'SCHEDULED',

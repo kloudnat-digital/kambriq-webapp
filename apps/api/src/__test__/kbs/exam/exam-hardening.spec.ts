@@ -7,6 +7,7 @@ import { KbsExamService } from '../../../kbs/exam/exam.service';
 import { KbsPrismaService } from '../../../kbs/prisma/kbs-prisma.service';
 import { UsersService } from '../../../core/users/users.service';
 import { buildCandidate, mockI18n, mockKbsPrisma, mockQueue } from '../../utils';
+import { EXAM_PASSING_SCORE } from '@kambriq/common/constants/kbs';
 
 /**
  * I21 - the two barriers behind the first one.
@@ -49,7 +50,7 @@ describe('I21 - exam hardening', () => {
       id: 'ex1',
       candidateId: 'c1',
       totalQuestions: 20,
-      passingScore: 75,
+      passingScore: EXAM_PASSING_SCORE,
       examAnswers: Array.from({ length: 25 }, (_, i) => correct(i)),
     });
 
