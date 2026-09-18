@@ -1880,7 +1880,62 @@
     },
     "prospects": {
       "pageTitle": "Mes prospects",
-      "subtitle": "Gérez vos contacts et prospects clients."
+      "subtitle": "Gérez vos contacts et prospects clients.",
+      "search": "Rechercher par nom de client",
+      "filterStatus": "Filtrer par statut",
+      "allStatuses": "Tous les statuts",
+      "create": "Nouveau prospect",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "emptyTitle": "Aucun prospect pour le moment",
+      "emptyMessage": "Enregistrez un premier contact et suivez-le jusqu'a la famille accompagnee. Les prospects que vous creez ne sont visibles que par vous.",
+      "emptyFiltered": "Aucun prospect ne correspond a cette recherche.",
+      "deleteTitle": "Supprimer ce prospect ?",
+      "deleteBody": "Le prospect est retire de votre liste. Cette action ne peut pas etre annulee depuis l ecran.",
+      "moveTo": "Passer a",
+      "created": "Prospect enregistre",
+      "updated": "Prospect mis a jour",
+      "deleted": "Prospect supprime",
+      "failed": "L operation a echoue",
+      "columns": {
+        "client": "Client",
+        "contact": "Contact",
+        "source": "Source",
+        "status": "Statut",
+        "createdAt": "Cree le",
+        "actions": "Actions"
+      },
+      "fields": {
+        "clientName": "Nom du client",
+        "clientEmail": "Courriel",
+        "clientPhone": "Telephone",
+        "source": "Source",
+        "notes": "Notes"
+      },
+      "status": {
+        "NEW": "Nouveau",
+        "CONTACTED": "Contacte",
+        "QUALIFIED": "Qualifie",
+        "CONVERTED": "Converti",
+        "LOST": "Perdu"
+      },
+      "source": {
+        "SOCIAL_MEDIA": "Reseaux sociaux",
+        "REFERRAL": "Recommandation",
+        "EVENT": "Evenement",
+        "OTHER": "Autre"
+      },
+      "errors": {
+        "clientNameRequired": "Le nom du client est requis",
+        "clientNameTooLong": "Le nom est trop long",
+        "clientEmailInvalid": "Courriel invalide",
+        "clientPhoneInvalid": "Numero de telephone invalide",
+        "sourceRequired": "Choisissez une source",
+        "notesRequired": "Ajoutez une note sur ce contact",
+        "notesTooLong": "La note est trop longue"
+      }
     },
     "commissions": {
       "pageTitle": "Commissions",

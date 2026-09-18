@@ -1880,7 +1880,62 @@
     },
     "prospects": {
       "pageTitle": "My prospects",
-      "subtitle": "Manage your contacts and client prospects."
+      "subtitle": "Manage your contacts and client prospects.",
+      "search": "Search by client name",
+      "filterStatus": "Filter by status",
+      "allStatuses": "All statuses",
+      "create": "New prospect",
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "emptyTitle": "No prospects yet",
+      "emptyMessage": "Record a first contact and follow it through to a family accompanied. Prospects you create are visible to you alone.",
+      "emptyFiltered": "No prospect matches this search.",
+      "deleteTitle": "Delete this prospect?",
+      "deleteBody": "The prospect is removed from your list. This cannot be undone from the screen.",
+      "moveTo": "Move to",
+      "created": "Prospect saved",
+      "updated": "Prospect updated",
+      "deleted": "Prospect deleted",
+      "failed": "The operation failed",
+      "columns": {
+        "client": "Client",
+        "contact": "Contact",
+        "source": "Source",
+        "status": "Status",
+        "createdAt": "Created",
+        "actions": "Actions"
+      },
+      "fields": {
+        "clientName": "Client name",
+        "clientEmail": "Email",
+        "clientPhone": "Phone",
+        "source": "Source",
+        "notes": "Notes"
+      },
+      "status": {
+        "NEW": "New",
+        "CONTACTED": "Contacted",
+        "QUALIFIED": "Qualified",
+        "CONVERTED": "Converted",
+        "LOST": "Lost"
+      },
+      "source": {
+        "SOCIAL_MEDIA": "Social media",
+        "REFERRAL": "Referral",
+        "EVENT": "Event",
+        "OTHER": "Other"
+      },
+      "errors": {
+        "clientNameRequired": "The client name is required",
+        "clientNameTooLong": "The name is too long",
+        "clientEmailInvalid": "Invalid email",
+        "clientPhoneInvalid": "Invalid phone number",
+        "sourceRequired": "Choose a source",
+        "notesRequired": "Add a note about this contact",
+        "notesTooLong": "The note is too long"
+      }
     },
     "commissions": {
       "pageTitle": "Commissions",
