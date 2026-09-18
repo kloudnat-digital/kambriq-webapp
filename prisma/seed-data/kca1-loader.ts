@@ -24,11 +24,18 @@
 import { parse } from 'csv-parse/sync';
 
 import { LessonContentType } from '@kambriq/common/constants/kbs/lesson-content';
+import { type KbsLessonMediaKind } from '@kambriq/common/constants/kbs/lesson-media';
 
 import { orderAnswers, type SeedQuestion } from './kbs-questions';
 
-/** The marker families the source actually uses. */
-export type Kca1MarkerKind = 'VIDEO' | 'IMAGE' | 'DOCUMENT';
+/**
+ * The marker families the source actually uses.
+ *
+ * The kinds themselves come from `libs/common` - they are the same three values
+ * `KbsLessonMedia.kind` holds, and spelling them again here is the defect this
+ * work has already closed twice.
+ */
+export type Kca1MarkerKind = KbsLessonMediaKind;
 
 /**
  * The marker literals, and the accent that matters.
