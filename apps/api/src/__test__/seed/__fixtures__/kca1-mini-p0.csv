@@ -1,0 +1,3 @@
+id,parcours,question,option_A,option_B,option_C,option_D,bonne_reponse,explication,tag,niveau_kca
+FX0-01,P0,Quelle est la vocation du fixture ?,Option A du fixture,Option B du fixture,Option C du fixture,Option D du fixture,C,"La bonne reponse est C, et cette explication contient une virgule.",vision,1
+FX0-02,P0,Que verifie le fixture ?,Premier choix,Deuxieme choix,Troisieme choix,Quatrieme choix,B,Une explication simple sans virgule.,methode,1
