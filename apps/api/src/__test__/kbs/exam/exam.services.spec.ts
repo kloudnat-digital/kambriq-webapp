@@ -19,7 +19,7 @@ import {
 } from '../../utils';
 import { getQueueToken } from '@nestjs/bullmq';
 import { QUEUES } from '@kambriq/common/constants/queue';
-import { DEFAULT_EXAM_QUESTION_COUNT } from '@kambriq/common/constants/kbs';
+import { DEFAULT_EXAM_QUESTION_COUNT, EXAM_PASSING_SCORE } from '@kambriq/common/constants/kbs';
 
 describe('KbsExamService', () => {
   let service: KbsExamService;
@@ -128,7 +128,18 @@ describe('KbsExamService', () => {
       const result = await service.scheduleExam(candidate.userId);
 
       expect(result.status).toBe('SCHEDULED');
-      expect(prisma.kbsExam.create).toHaveBeenCalled();
+      /**
+       * The threshold is stamped onto the row here, and `gradeExam` judges on
+       * `exam.passingScore` rather than on the constant - so this write is what
+       * decides the verdict, and it is also the only thing keeping the
+       * `@default(75)` in `prisma/kbs/schema.prisma` unreachable.
+       * `toHaveBeenCalled()` said nothing about either.
+       */
+      expect(prisma.kbsExam.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ passingScore: EXAM_PASSING_SCORE }),
+        }),
+      );
     });
 
     it('throws ForbiddenException if not eligible', async () => {
@@ -390,7 +401,7 @@ describe('KbsExamService', () => {
       const exam = buildExam({
         id: 'ex1',
         candidateId: 'cand1',
-        passingScore: 75,
+        passingScore: EXAM_PASSING_SCORE,
         totalQuestions: 2,
         examAnswers: [
           {
@@ -423,7 +434,7 @@ describe('KbsExamService', () => {
       const result = await service.gradeExam('ex1');
 
       expect(result.score).toBe(50); // 1/2 correct
-      expect(result.passed).toBe(false); // 50 < 75
+      expect(result.passed).toBe(false); // 50 < EXAM_PASSING_SCORE
       expect(prisma.kbsExam.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ status: 'FAILED' }),
@@ -449,7 +460,7 @@ describe('KbsExamService', () => {
       const exam = buildExam({
         id: 'ex1',
         candidateId: 'cand1',
-        passingScore: 75,
+        passingScore: EXAM_PASSING_SCORE,
         totalQuestions: 1,
         examAnswers: [
           {

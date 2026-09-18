@@ -11,6 +11,14 @@
         "passWithNoTests": false,
         "runInBand": true
       }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/api-e2e-unit"],
+      "options": {
+        "jestConfig": "apps/api-e2e/jest.unit.config.cts",
+        "passWithNoTests": false
+      }
     }
   }
 }

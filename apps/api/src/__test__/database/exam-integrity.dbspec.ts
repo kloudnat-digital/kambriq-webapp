@@ -5,6 +5,7 @@ import { Test } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bullmq';
 import { I18nService } from 'nestjs-i18n';
 import { QUEUES } from '@kambriq/common/constants/queue';
+import { EXAM_PASSING_SCORE } from '@kambriq/common/constants/kbs';
 import { KbsExamService } from '../../kbs/exam/exam.service';
 import { KbsPrismaService } from '../../kbs/prisma/kbs-prisma.service';
 import { UsersService } from '../../core/users/users.service';
@@ -103,7 +104,7 @@ describe('I21 - an exam is answered only on the questions it served', () => {
         status: 'SCHEDULED',
         scheduledAt: new Date(Date.now() - 60_000),
         durationMinutes: 60,
-        passingScore: 75,
+        passingScore: EXAM_PASSING_SCORE,
       },
     });
     examId = exam.id;
