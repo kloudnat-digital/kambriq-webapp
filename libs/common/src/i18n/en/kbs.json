@@ -43,6 +43,7 @@
     "cooldownActive": "Retake available after {date}",
     "trainingIncomplete": "Training not complete: {completed}/{total} modules finished",
     "noQuestions": "No exam questions available. Please contact admin.",
+    "noActiveCourse": "No course is currently active. Please contact an administrator.",
     "attemptsReset": "Exam attempts reset. Candidate can retake the exam.",
     "notYetAvailable": "The exam is not yet available.",
     "startWindowExpired": "The exam start window has expired.",

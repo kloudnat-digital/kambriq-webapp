@@ -175,7 +175,11 @@ export class KbsExamService {
     const settings = await this.prisma.kbsSettings.findFirst();
     const questionCount = settings?.examQuestionCount ?? DEFAULT_EXAM_QUESTION_COUNT;
 
+    // I36 - scoped to the active course. Unfiltered, this drew from every exam
+    // question in the database, so a second course meant a candidate could be
+    // examined on a course they never studied.
     const allQuestions = await this.prisma.kbsExamQuestion.findMany({
+      where: { module: { courseId: this.activeCourseIdOrThrow(settings) } },
       include: {
         answers: { select: { id: true, text: true } }, // No isCorrect!
         module: { select: { id: true, title: true } },
@@ -769,9 +773,27 @@ export class KbsExamService {
     },
     isRenewal: boolean,
   ) {
-    await this.ensureQuestionPoolAvailable();
-
     const base = await this.buildBaseEligibility(candidate);
+
+    /**
+     * I36 - eligibility ANSWERS the question; it does not refuse to consider it.
+     *
+     * The pool is scoped to the active course here as it is in the draw, but a
+     * shortfall is a reason the candidate is told, not a 503. "Can I sit an
+     * exam" has an honest answer on an environment with no course configured,
+     * and that answer is "no, and here is why". The hard refusal belongs to
+     * `startExam`, where a draw would otherwise come from nowhere.
+     */
+    const poolShortfall = await this.examPoolShortfall();
+    if (poolShortfall) {
+      return {
+        ...base,
+        eligible: false,
+        reason: poolShortfall,
+        nextAttemptAt: null,
+        activeExamId: null,
+      };
+    }
 
     // Check for active exam
     const activeExam = await this.prisma.kbsExam.findFirst({
@@ -908,13 +930,61 @@ export class KbsExamService {
   private async ensureQuestionPoolAvailable() {
     const settings = await this.prisma.kbsSettings.findFirst();
     const required = settings?.examQuestionCount ?? DEFAULT_EXAM_QUESTION_COUNT;
-    const poolSize = await this.prisma.kbsExamQuestion.count();
+    const poolSize = await this.prisma.kbsExamQuestion.count({
+      where: { module: { courseId: this.activeCourseIdOrThrow(settings) } },
+    });
 
     if (poolSize < required) {
       throw new ServiceUnavailableException(
         `${this.t('kbs.exam.noQuestions')} (pool ${poolSize}, requis ${required})`,
       );
     }
+  }
+
+  /**
+   * The same reckoning as the guard, as a REASON rather than an exception.
+   *
+   * Returns null when the active course has questions enough to sit an exam,
+   * and a sentence for the candidate when it does not. One place computes it so
+   * the two paths cannot disagree about what "enough" means.
+   */
+  private async examPoolShortfall(): Promise<string | null> {
+    const settings = await this.prisma.kbsSettings.findFirst();
+    const activeCourseId = settings?.activeCourseId;
+    if (!activeCourseId) {
+      return this.t('kbs.exam.noActiveCourse');
+    }
+
+    const required = settings?.examQuestionCount ?? DEFAULT_EXAM_QUESTION_COUNT;
+    const poolSize = await this.prisma.kbsExamQuestion.count({
+      where: { module: { courseId: activeCourseId } },
+    });
+
+    return poolSize < required ? this.t('kbs.exam.noQuestions') : null;
+  }
+
+  /**
+   * I36 - the course an exam belongs to, and why it comes from the settings.
+   *
+   * `KbsExam` carries no course reference: only a candidate, a cycle and an
+   * attempt number. The course a candidate is studying is the active one, which
+   * is the same source `getMyOverview` and `checkAndTransitionToExamPending`
+   * already read.
+   *
+   * Absent, this refuses rather than falling back to every question in the
+   * database. An exam drawn from "no course in particular" is precisely the
+   * unscoped read this fixes: on dev it would have drawn 20 demonstration
+   * questions for a KCA1 candidate, and every mechanical step would have passed
+   * while the candidate was examined on material they never studied.
+   */
+  private activeCourseIdOrThrow(settings: { activeCourseId?: string | null } | null): string {
+    const activeCourseId = settings?.activeCourseId;
+    if (!activeCourseId) {
+      throw new ServiceUnavailableException(
+        `${this.t('kbs.exam.noQuestions')} (aucun cours actif: kbsSettings.activeCourseId est vide)`,
+      );
+    }
+    return activeCourseId;
   }
 
   private shuffle<T>(array: T[]): T[] {
