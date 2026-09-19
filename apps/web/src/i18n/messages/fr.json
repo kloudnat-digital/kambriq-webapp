@@ -191,16 +191,16 @@
         "subtitle": "KAMBRIQ Business School (KBS) est la formation de référence pour maîtriser le foncier camerounais et rejoindre le réseau KAMNET.",
         "applyNow": "Nous contacter",
         "learnMore": "En savoir plus sur KAMNET",
-        "certificateBadge": "Obtenez votre certificat KCA (KAMBRIQ Certified Agent) en 2 mois"
+        "certificateBadge": "Obtenez votre certificat KCA (KAMBRIQ Certified Agent)"
       },
       "program": {
         "title": "Programme de formation KAMBRIQ Business School",
-        "subtitle": "6 modules complets pour devenir un Agent Certifié KAMBRIQ (KCA)",
+        "subtitle": "4 parcours complets pour devenir un Agent Certifié KAMBRIQ (KCA)",
         "features": [
           {
-            "name": "Durée totale",
-            "title": "8 semaines",
-            "description": "À votre rythme"
+            "name": "Rythme",
+            "title": "À votre rythme",
+            "description": "Durée indiquée par module"
           },
           {
             "name": "Format",
@@ -208,9 +208,9 @@
             "description": "Accessible 24/7"
           },
           {
-            "name": "Modules",
-            "title": "6 modules",
-            "description": "32 leçons"
+            "name": "Parcours",
+            "title": "4 parcours",
+            "description": "33 leçons"
           }
         ]
       },
@@ -229,9 +229,9 @@
         },
         "pricing": {
           "label": "Tarif de la formation",
-          "description": "Formation complète de 2 mois + examen KCA + certificat valable 2 ans",
-          "price": "249€",
-          "tax": "TTC",
+          "description": "Formation KCA1 + examen KCA + certificat valable 2 ans",
+          "price": "249 €",
+          "tax": "TTC - soit 163 333 FCFA",
           "cta": "Candidater maintenant"
         }
       },
@@ -419,7 +419,7 @@
       },
       "modules": {
         "title": "Programme de formation",
-        "subtitle": "6 modules complets pour maîtriser le foncier camerounais.",
+        "subtitle": "4 parcours complets pour maîtriser le foncier camerounais.",
         "items": [
           {
             "title": "Fondamentaux du marché foncier camerounais",
@@ -453,7 +453,7 @@
       "cta": "Découvrir KBS",
       "about": {
         "title": "Qu'est-ce que KAMBRIQ Business School ?",
-        "subtitle": "KAMBRIQ Business School (KBS) est le centre de formation officiel pour devenir Agent KAMNET certifié. Notre programme intensif de 8 semaines vous prépare à maîtriser le marché foncier camerounais et à réussir dans le réseau d'agents KAMBRIQ.",
+        "subtitle": "KAMBRIQ Business School (KBS) est le centre de formation officiel pour devenir Agent KAMNET certifié. Le programme KCA1 vous prépare à maîtriser le marché foncier camerounais et à réussir dans le réseau d'agents KAMBRIQ.",
         "missionLabel": "Notre mission",
         "missionText": "Former des professionnels compétents et éthiques capables d'accompagner les investisseurs (diaspora et locaux) dans leurs projets fonciers au Cameroun, en veillant à la sécurité juridique et à la transparence."
       },
@@ -531,9 +531,9 @@
         "title": "Examen final et certification",
         "subtitle": "Validez vos compétences et devenez Agent Certifié KAMBRIQ",
         "formatTitle": "Format de l'examen",
-        "format1": "QCM de 30 questions",
-        "format2": "Durée : 30 minutes",
-        "format3": "Score minimal : 85 %",
+        "format1": "QCM de 20 questions",
+        "format2": "Tirées des 4 parcours",
+        "format3": "Score minimal : 80 %",
         "afterTitle": "Après certification",
         "after1": "Certificat KCA téléchargeable",
         "after2": "Éligibilité KAMNET",
@@ -571,7 +571,7 @@
         "title": "Comment se passe le parcours ?",
         "subtitle": "4 étapes pour devenir Agent KAMNET certifié",
         "step1": {
-          "title": "2 mois de formation",
+          "title": "Formation en ligne",
           "description": "Parcours complet en ligne : modules théoriques, cas pratiques, et accompagnement personnalisé."
         },
         "step2": {
@@ -725,7 +725,7 @@
       {
         "id": "7",
         "q": "Comment devenir agent KAMNET ?",
-        "a": "En passant la certification KCA via KAMBRIQ Business School (KBS). Formation en ligne, examen final (score minimum 85%), certificat numéroté valable 2 ans. Consultez la page KBS pour en savoir plus."
+        "a": "En passant la certification KCA via KAMBRIQ Business School (KBS). Formation en ligne, examen final (score minimum 80%), certificat numéroté valable 2 ans. Consultez la page KBS pour en savoir plus."
       },
       {
         "id": "8",
@@ -1977,8 +1977,8 @@
       },
       "awaiting": {
         "title": "Inscription en attente de validation",
-        "description": "Nous avons bien reçu votre candidature. Un administrateur KAMBRIQ doit encore activer votre accès à la formation : c'est la dernière étape avant de commencer.",
-        "hint": "Rien ne vous est demandé pour l'instant. Revenez sur cette page pour voir si votre accès a été activé."
+        "description": "Nous avons bien reçu votre candidature. La formation KCA1 coûte 249 € (163 333 FCFA), à régler directement avec l'équipe KAMBRIQ : le règlement ne se fait pas sur la plateforme.",
+        "hint": "Dès que votre règlement est enregistré, un administrateur KAMBRIQ active votre accès et la formation s'ouvre sur cette page."
       },
       "enroll": {
         "pageTitle": "Inscription KBS",

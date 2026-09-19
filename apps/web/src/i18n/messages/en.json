@@ -191,16 +191,16 @@
         "subtitle": "KAMBRIQ Business School (KBS) is the reference training to master Cameroonian land and join the KAMNET network.",
         "applyNow": "Contact us",
         "learnMore": "Learn more about KAMNET",
-        "certificateBadge": "Earn your KCA (KAMBRIQ Certified Agent) certificate in 2 months"
+        "certificateBadge": "Earn your KCA (KAMBRIQ Certified Agent) certificate"
       },
       "program": {
         "title": "KAMBRIQ Business School training program",
-        "subtitle": "6 complete modules to become a KAMBRIQ Certified Agent (KCA)",
+        "subtitle": "4 complete parcours to become a KAMBRIQ Certified Agent (KCA)",
         "features": [
           {
-            "name": "Total duration",
-            "title": "8 weeks",
-            "description": "At your own pace"
+            "name": "Pace",
+            "title": "At your own pace",
+            "description": "Duration shown per module"
           },
           {
             "name": "Format",
@@ -208,9 +208,9 @@
             "description": "Accessible 24/7"
           },
           {
-            "name": "Modules",
-            "title": "6 modules",
-            "description": "32 lessons"
+            "name": "Parcours",
+            "title": "4 parcours",
+            "description": "33 lessons"
           }
         ]
       },
@@ -229,9 +229,9 @@
         },
         "pricing": {
           "label": "Training fee",
-          "description": "Full 2-month training + KCA exam + certificate valid for 2 years",
+          "description": "KCA1 training + KCA exam + certificate valid for 2 years",
           "price": "€249",
-          "tax": "incl. tax",
+          "tax": "incl. tax - i.e. 163 333 FCFA",
           "cta": "Apply now"
         }
       },
@@ -419,7 +419,7 @@
       },
       "modules": {
         "title": "Training curriculum",
-        "subtitle": "6 comprehensive modules to master the Cameroonian land market.",
+        "subtitle": "4 complete parcours to master the Cameroonian land market.",
         "items": [
           {
             "title": "Fundamentals of the Cameroonian land market",
@@ -453,7 +453,7 @@
       "cta": "Discover KBS",
       "about": {
         "title": "What is KAMBRIQ Business School?",
-        "subtitle": "KAMBRIQ Business School (KBS) is the official training centre to become a certified KAMNET Agent. Our intensive 8-week programme prepares you to master the Cameroonian land market and succeed in the KAMBRIQ agent network.",
+        "subtitle": "KAMBRIQ Business School (KBS) is the official training centre to become a certified KAMNET Agent. The KCA1 programme prepares you to master the Cameroonian land market and succeed in the KAMBRIQ agent network.",
         "missionLabel": "Our mission",
         "missionText": "Train competent, ethical professionals able to guide investors (diaspora and local) through their land projects in Cameroon, ensuring legal security and transparency."
       },
@@ -531,9 +531,9 @@
         "title": "Final exam and certification",
         "subtitle": "Validate your skills and become a certified KAMBRIQ Agent",
         "formatTitle": "Exam format",
-        "format1": "30-question MCQ",
-        "format2": "Duration: 30 minutes",
-        "format3": "Minimum score: 85%",
+        "format1": "20-question MCQ",
+        "format2": "Drawn from the 4 parcours",
+        "format3": "Minimum score: 80%",
         "afterTitle": "After certification",
         "after1": "Downloadable KCA certificate",
         "after2": "KAMNET eligibility",
@@ -571,7 +571,7 @@
         "title": "How does the journey work?",
         "subtitle": "4 steps to become a certified KAMNET Agent",
         "step1": {
-          "title": "2-month training",
+          "title": "Online training",
           "description": "Complete online programme: theory modules, practical cases, and personalised support."
         },
         "step2": {
@@ -725,7 +725,7 @@
       {
         "id": "7",
         "q": "How do I become a KAMNET agent?",
-        "a": "By completing the KCA certification through KAMBRIQ Business School (KBS). Online training, final exam (minimum score 85%), numbered certificate valid for 2 years. See the KBS page to learn more."
+        "a": "By completing the KCA certification through KAMBRIQ Business School (KBS). Online training, final exam (minimum score 80%), numbered certificate valid for 2 years. See the KBS page to learn more."
       },
       {
         "id": "8",
@@ -1977,8 +1977,8 @@
       },
       "awaiting": {
         "title": "Enrollment awaiting validation",
-        "description": "We received your application. A KAMBRIQ admin still has to enable your access to the training: that is the last step before you can start.",
-        "hint": "Nothing is expected from you right now. Come back to this page to see whether your access has been enabled."
+        "description": "We received your application. The KCA1 training costs €249 (163 333 FCFA), arranged directly with the KAMBRIQ team: payment is not taken on the platform.",
+        "hint": "Once your payment is recorded, a KAMBRIQ admin activates your access and the training opens on this page."
       },
       "enroll": {
         "pageTitle": "KBS enrollment",
