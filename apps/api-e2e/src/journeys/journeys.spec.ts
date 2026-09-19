@@ -18,10 +18,11 @@ import {
  */
 
 const PASSWORD = 'Test1234!';
-const PRE = '00000000-0000-4000-8000-';
-const MODULE_1 = `${PRE}c00000000002`;
-const MODULE_2 = `${PRE}c00000000003`;
-const LESSONS = [31, 32, 33, 34, 35, 36].map((n) => `${PRE}c0000000${String(n).padStart(4, '0')}`);
+
+// A37: there are deliberately no course, module or lesson ids here. Journey 3
+// reads the active course from the candidate's own overview and drives whatever
+// modules it holds. Naming a seeded id is what tied this file to the
+// demonstration course and broke it the day the course changed.
 
 jest.setTimeout(300_000);
 
@@ -237,12 +238,52 @@ describe('journey 3 - a candidate trains, passes the exam, and is certified', ()
   });
 
   it('serves exactly ten quiz questions per module and scores them out of ten', async () => {
-    for (const lesson of LESSONS) {
-      await call('POST', `/kbs/lesson/${lesson}/complete`, { token: candidateToken, body: {} });
-    }
+    /**
+     * A37 - this journey reads the ACTIVE course instead of naming seeded ids.
+     *
+     * It used to drive two hardcoded demonstration modules, under a comment
+     * saying the transition needs `activeCourseId`, "which the seed sets". That
+     * was true until the course was switched to KCA1, and then this journey
+     * passed the quizzes of a course nobody was studying and was refused the
+     * exam it went on to assert. The ids were never the subject: the subject is
+     * that a candidate can finish whatever course the platform is serving.
+     *
+     * So the modules come from the candidate's own overview, which is scoped to
+     * the active course. This passes on KCA1 today and on KCA2 the day it
+     * exists, with no edit here.
+     */
+    const overview = await call('GET', '/kbs/me/overview', { token: candidateToken });
+    expect(overview.status).toBe(200);
+    const active = overview.json<{
+      data: {
+        course: { id: string; title: string } | null;
+        modules: Array<{ id: string; order: number; title: string }>;
+      };
+    }>().data;
 
-    for (const moduleId of [MODULE_1, MODULE_2]) {
-      const keyRes = await call('GET', `/kbs/admin/modules/${moduleId}/questions?limit=100`, {
+    // A loop over an empty list satisfies every assertion inside it. The course
+    // and its modules are asserted before anything is driven by them, so a day
+    // when the overview returns nothing fails here rather than passing quietly.
+    expect(active.course).not.toBeNull();
+    expect(active.modules.length).toBeGreaterThan(0);
+
+    const modules = [...active.modules].sort((a, b) => a.order - b.order);
+
+    for (const mod of modules) {
+      const detail = await call('GET', `/kbs/modules/${mod.id}/detail`, { token: candidateToken });
+      expect(detail.status).toBe(200);
+      const lessons = detail.json<{ data: { lessons: Array<{ id: string; order: number }> } }>()
+        .data.lessons;
+      expect(lessons.length).toBeGreaterThan(0);
+
+      for (const lesson of [...lessons].sort((a, b) => a.order - b.order)) {
+        await call('POST', `/kbs/lesson/${lesson.id}/complete`, {
+          token: candidateToken,
+          body: {},
+        });
+      }
+
+      const keyRes = await call('GET', `/kbs/admin/modules/${mod.id}/questions?limit=100`, {
         token: admin,
       });
       const key = new Map(
@@ -253,7 +294,7 @@ describe('journey 3 - a candidate trains, passes the exam, and is certified', ()
           .data.map((q) => [q.id, q.answers.filter((a) => a.isCorrect).map((a) => a.id)]),
       );
 
-      const quizRes = await call('GET', `/kbs/modules/${moduleId}/quiz`, { token: candidateToken });
+      const quizRes = await call('GET', `/kbs/modules/${mod.id}/quiz`, { token: candidateToken });
       expect(quizRes.status).toBe(200);
       // The quiz payload is `{ moduleId, moduleTitle, questions: [...] }`, not a
       // bare array. Reading `data` as the array is what the first version of
@@ -263,13 +304,13 @@ describe('journey 3 - a candidate trains, passes the exam, and is certified', ()
         data: { questions: Array<{ id: string; answers: Array<{ id: string }> }> };
       }>().data.questions;
 
-      // B3: the pool is 30 per module and the quiz is 10. A short pool used to
-      // shrink the quiz silently.
+      // B3: the module pool is larger than the quiz, and the quiz is 10. A short
+      // pool used to shrink the quiz silently.
       expect(quiz).toHaveLength(10);
       // The candidate must never be told which answer is right.
       expect(JSON.stringify(quiz)).not.toContain('isCorrect');
 
-      const submit = await call('POST', `/kbs/modules/${moduleId}/quiz`, {
+      const submit = await call('POST', `/kbs/modules/${mod.id}/quiz`, {
         token: candidateToken,
         body: { answers: quiz.map((q) => ({ questionId: q.id, answerIds: key.get(q.id) })) },
       });
@@ -286,7 +327,9 @@ describe('journey 3 - a candidate trains, passes the exam, and is certified', ()
   });
 
   it('becomes eligible, sits a twenty-question exam, and passes', async () => {
-    // K2: the transition needs kbsSettings.activeCourseId, which the seed sets.
+    // K2: the transition needs kbsSettings.activeCourseId. The modules passed
+    // above are whatever that course holds, so this asserts eligibility for the
+    // course the platform is serving rather than for one this file names.
     const eligibility = await call('GET', '/kbs/exam/eligibility', { token: candidateToken });
     expect(eligibility.json<{ data: { eligible: boolean } }>().data.eligible).toBe(true);
 
