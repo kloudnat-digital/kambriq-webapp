@@ -131,3 +131,103 @@ describe('the public KBS page describes the programme that is served', () => {
     expect(text).not.toMatch(/\b85\s?%/);
   });
 });
+
+/**
+ * WHICH four, not just four - the hole the count-only guard left open.
+ *
+ * The first version of this file asserted the page said "4" and "33". It passed
+ * while the rendered accordion still listed Module 1 to Module 6 of a syllabus
+ * that does not exist, because the counts lived in `program` and the syllabus
+ * lived in `modulesDetail`. A page that says "4 parcours" above six invented
+ * modules is worse than one with the old numbers: the reader sees the
+ * contradiction and cannot tell which half to believe.
+ *
+ * So the titles are pinned to `KCA1_PARCOURS` - the same generated module the
+ * loader writes and the platform serves - and so are the four chapters of
+ * `whatYouLearn`, which described a different programme again.
+ *
+ * **The titles stay in French in both locales.** The course is served with
+ * `language: 'fr'`; an English visitor reading an English gloss of a parcours
+ * they will meet in French would be told something the platform does not do.
+ */
+describe('the public KBS page names the parcours that are served', () => {
+  /** Accents and case are presentation; the words are the claim. */
+  const normalise = (s: string) =>
+    s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+  const REAL_TITLES = KCA1_PARCOURS.map((p) => normalise(p.title));
+
+  type Detail = { items?: Array<{ title?: string; duration?: string }> };
+  type Chapters = Record<string, { title?: string } | undefined>;
+
+  const detail = (locale: string) =>
+    (load(locale).products.kbs as Record<string, unknown>)['modulesDetail'] as Detail;
+  const chapters = (locale: string) =>
+    (load(locale).products.kbs as Record<string, unknown>)['whatYouLearn'] as Chapters;
+
+  it('is reading four real parcours', () => {
+    expect(REAL_TITLES).toHaveLength(4);
+    expect(REAL_TITLES[0]).toContain('ecosysteme');
+  });
+
+  it.each(LOCALES)('%s lists exactly the four parcours in the accordion', (locale) => {
+    const items = detail(locale).items ?? [];
+
+    expect(items).toHaveLength(4);
+    const titles = items.map((i) => normalise(i.title ?? ''));
+    for (const real of REAL_TITLES) {
+      expect(titles.some((t) => t.includes(real))).toBe(true);
+    }
+  });
+
+  it.each(LOCALES)('%s names the same four in what-you-will-learn', (locale) => {
+    const block = chapters(locale);
+    const titles = ['chapter1', 'chapter2', 'chapter3', 'chapter4'].map((k) =>
+      normalise(block[k]?.title ?? ''),
+    );
+
+    for (const real of REAL_TITLES) {
+      expect(titles.some((t) => t.includes(real))).toBe(true);
+    }
+  });
+
+  /**
+   * The syllabus that was there instead. Banned by its own distinctive titles,
+   * because a count can be corrected while the invented modules stay.
+   */
+  it.each(LOCALES)('%s no longer carries the invented syllabus', (locale) => {
+    const text = allText(load(locale).products.kbs).toLowerCase();
+
+    for (const invented of [
+      'prospection diaspora',
+      'negociation et closing',
+      'négociation et closing',
+      "processus d'acquisition",
+      'acquisition process',
+      'sales techniques',
+      'platform usage',
+    ]) {
+      expect(text).not.toContain(invented);
+    }
+  });
+
+  /**
+   * Per-module durations in WEEKS are a global total by another door: "1
+   * semaine" six times is eight weeks, which is the claim decision 4 removed.
+   * A duration measured in hours or lessons describes one module and sums to
+   * nothing a reader will mistake for a programme length.
+   */
+  it.each(LOCALES)('%s expresses no module duration in weeks or months', (locale) => {
+    const durations = (detail(locale).items ?? []).map((i) => i.duration ?? '').join(' ');
+
+    expect(durations.length).toBeGreaterThan(0);
+    expect(durations).not.toMatch(/semaine|week|mois|month/i);
+  });
+
+  /** And the weekly-availability line, which implied a programme length too. */
+  it.each(LOCALES)('%s asks for no weekly availability', (locale) => {
+    const text = allText(load(locale).products.kbs);
+
+    expect(text).not.toMatch(/heures? par semaine|hours? per week/i);
+  });
+});

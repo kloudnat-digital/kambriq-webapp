@@ -240,212 +240,171 @@
         "contentLabel": "Contenu du module :",
         "items": [
           {
-            "name": "Module 1",
-            "title": "Fondamentaux du foncier camerounais",
-            "duration": "1 semaine",
-            "description": "Donner les bases foncières essentielles aux futurs Agents KAMNET.",
+            "name": "Parcours 1",
+            "title": "ÉCOSYSTÈME KAMBRIQ",
+            "duration": "2 h 30",
+            "description": "Comprendre avant de vendre - Le filtre culturel, éthique et professionnel de KAMBRIQ",
             "lectures": [
               {
-                "title": "Introduction au système foncier camerounais",
-                "description": "Comprendre l'historique, les institutions et la complexité du foncier au Cameroun."
+                "title": "ADN, Vision & Raison d'être de KAMBRIQ",
+                "description": "Aligner mentalement l'apprenant avant toute technique"
               },
               {
-                "title": "Les 3 catégories de terrains commercialisables par KAMBRIQ",
-                "description": "Différencier les terrains KAMBRIQ TFL™, VEFL™ et VEFIL™."
+                "title": "L'Architecture de l'écosystème KAMBRIQ",
+                "description": "Comprendre qui fait quoi et pourquoi l'agent n'agit jamais seul"
               },
               {
-                "title": "Pourquoi KAMBRIQ se limite à ces 3 catégories",
-                "description": "Sécurité, traçabilité, cohérence commerciale."
+                "title": "Produits & Labels KAMBRIQ",
+                "description": "Présenter TFL/VEFL/VEFIL sans confusion ni survente"
               },
               {
-                "title": "Risques courants dans le foncier",
-                "description": "Identifier les pièges majeurs pour mieux les éviter."
+                "title": "Vocabulaire interne KAMBRIQ",
+                "description": "Parler le même langage dans tout le réseau"
+              },
+              {
+                "title": "Règles non négociables - La liste rouge",
+                "description": "Créer des réflexes automatiques avant l'accès terrain"
+              },
+              {
+                "title": "Méthode KAMBRIQ : Preuve → Process → Confiance",
+                "description": "Installer le réflexe fondamental avant toute vente"
+              },
+              {
+                "title": "Pitch officiel de l'agent",
+                "description": "Délivrer un discours standard mémorisable et conforme"
+              },
+              {
+                "title": "Engagement & Responsabilisation",
+                "description": "Signer mentalement le contrat moral avant l'accès à la vente"
               }
             ]
           },
           {
-            "name": "Module 2",
-            "title": "Le KAMBRIQ TFL™ : comprendre, lire, vérifier",
-            "duration": "1 semaine",
-            "description": "Permettre à l'agent de lire, interpréter et vérifier un Titre Foncier simple.",
+            "name": "Parcours 2",
+            "title": "VOCABULAIRE DU FONCIER CAMEROUNAIS",
+            "duration": "3 h",
+            "description": "Comprendre les mots pour éviter les pièges - Former des agents capables de détecter quand un mot cache un risque",
             "lectures": [
               {
-                "title": "Qu'est-ce qu'un Titre Foncier ?",
-                "description": "Comprendre le rôle et la définition du Titre Foncier dans le système foncier camerounais."
+                "title": "Pourquoi le vocabulaire foncier est dangereux",
+                "description": "Installer le réflexe : un mot mal compris = une décision risquée"
               },
               {
-                "title": "Anatomie d'un Titre Foncier",
-                "description": "Savoir lire champ par champ un Titre Foncier."
+                "title": "Glossaire essentiel - 30 termes indispensables",
+                "description": "Être opérationnel immédiatement avec le vocabulaire terrain"
               },
               {
-                "title": "Vérifier un Titre Foncier",
-                "description": "Mettre en place une méthode simple pour vérifier un TF avant de le proposer à un client."
+                "title": "Les domaines fonciers - version non juridique",
+                "description": "Savoir expliquer pourquoi certains terrains sont dangereux"
               },
               {
-                "title": "Cas pratiques et erreurs fréquentes",
-                "description": "Identifier les signaux d'alerte à partir d'exemples concrets."
+                "title": "Acteurs du foncier - Qui fait quoi ?",
+                "description": "Ne jamais confondre autorité, rôle, pouvoir et responsabilité"
+              },
+              {
+                "title": "Institutions officielles - À qui parler, quand, pourquoi",
+                "description": "Éviter les démarches inutiles et les circuits parallèles"
+              },
+              {
+                "title": "Documents cités dans les discussions",
+                "description": "Distinguer document existant et document utile"
+              },
+              {
+                "title": "Sigles & abréviations - Usage intelligent",
+                "description": "Ne pas être impressionné par les acronymes"
+              },
+              {
+                "title": "Discours à risque & mots pièges",
+                "description": "Créer un réflexe d'alerte immédiat chez l'agent"
               }
             ]
           },
           {
-            "name": "Module 3",
-            "title": "VEFL™ & VEFIL™ : comprendre & vendre les projets en cours",
-            "duration": "3 semaines",
-            "description": "Permettre à l'agent de comprendre et d'expliquer clairement les offres VEFL™ et VEFIL™ de KAMBRIQ, leurs processus administratifs, leurs risques et leurs avantages commerciaux.",
+            "name": "Parcours 3",
+            "title": "FONDAMENTAUX DU FONCIER CAMEROUNAIS",
+            "duration": "3 h 45",
+            "description": "Comprendre le système pour ne plus subir le système",
             "lectures": [
               {
-                "title": "Introduction générale",
-                "description": "Comprendre pourquoi VEFL™ et VEFIL™ représentent une grande part du marché foncier réel et pourquoi KAMBRIQ les propose."
+                "title": "La boussole KAMBRIQ en 6 mots",
+                "description": "Avoir une grille de lecture avant tout"
               },
               {
-                "title": "VEFL™ : Vente en État Futur de Lotissement",
-                "description": "Maîtriser le processus VEFL™, ses documents obligatoires, les risques associés et les contrôles KAMBRIQ."
+                "title": "Pourquoi le foncier camerounais est complexe",
+                "description": "Savoir expliquer en 90 secondes sans faire peur"
               },
               {
-                "title": "VEFIL™ : Vente en État Futur d'Immatriculation & Lotissement",
-                "description": "Comprendre le processus VEFIL™, ses documents, les risques plus élevés et les contrôles renforcés de KAMBRIQ."
+                "title": "Historique ultra-synthétique - Les 3 âges",
+                "description": "Comprendre la logique, pas les dates"
               },
               {
-                "title": "Comparatif KAMBRIQ TFL™ / VEFL™ / VEFIL™",
-                "description": "Tableau comparatif des trois catégories de terrains KAMBRIQ selon les critères clés."
+                "title": "Les 5 principes fondamentaux - Les règles invisibles",
+                "description": "Donner une boussole mentale qui évite 80% des erreurs terrain"
               },
               {
-                "title": "Checklists professionnelles",
-                "description": "Listes de vérification essentielles pour valider un dossier VEFL™ ou VEFIL™ avant présentation au client."
+                "title": "Les domaines fonciers - La carte du risque",
+                "description": "Savoir dire exactement pourquoi KAMBRIQ choisit son terrain"
               },
               {
-                "title": "Mini-Examen Module 3",
-                "description": "Évaluation des connaissances acquises sur VEFL™ et VEFIL™ : procédures, risques, analyses documentaires."
+                "title": "Ce que le client achète vraiment",
+                "description": "Rassurer par la méthode, jamais par l'assurance personnelle"
+              },
+              {
+                "title": "TFL / VEFL / VEFIL - Relier le système aux produits",
+                "description": "Maîtriser le discours standard par label"
+              },
+              {
+                "title": "Où naissent les risques - Les 7 foyers",
+                "description": "Développer le radar terrain pour détecter avant que ça devienne un litige"
+              },
+              {
+                "title": "Synthèse & préparation Parcours 3",
+                "description": "Fixer les 5 phrases-ciment et préparer le passage aux documents"
               }
             ]
           },
           {
-            "name": "Module 4",
-            "title": "Techniques de commercialisation & argumentaire KAMBRIQ",
-            "duration": "2 semaines",
-            "description": "Former l'Agent KAMNET à présenter un terrain, rassurer un client, traiter les objections et conclure une vente en respectant la méthode KAMBRIQ.",
+            "name": "Parcours 4",
+            "title": "ÉTHIQUE · CONFORMITÉ · MARQUE KAMBRIQ",
+            "duration": "2 h 20",
+            "description": "On ne vend pas du foncier sans rigueur morale - L'éthique est le cœur du modèle économique",
             "lectures": [
               {
-                "title": "Bases de la vente foncière KAMBRIQ",
-                "description": "Comprendre le rôle de l'Agent KAMNET, les profils clients et les 3 piliers de la méthode KAMBRIQ."
+                "title": "Pourquoi l'éthique est centrale dans le foncier",
+                "description": "Comprendre que les dérives humaines détruisent la confiance plus vite que les fraudes documentaires"
               },
               {
-                "title": "Comment présenter un terrain KAMBRIQ",
-                "description": "Structure de présentation d'un terrain selon son label (TFL™, VEFL™, VEFIL™) et règles de présentation des documents."
+                "title": "Le cadre éthique KAMBRIQ - Les 6 piliers",
+                "description": "Transformer l'éthique en pratique quotidienne"
               },
               {
-                "title": "Gérer les objections",
-                "description": "Techniques de réponse aux objections les plus courantes avec méthode structurée."
+                "title": "La Liste Rouge - Interdictions absolues",
+                "description": "Créer des réflexes automatiques, pas de discussion intérieure"
               },
               {
-                "title": "Scripts commerciaux KAMBRIQ",
-                "description": "Scripts adaptés selon le profil client : diaspora, local, investisseur."
+                "title": "Argent & commissions - Pourquoi l'agent ne touche jamais l'argent",
+                "description": "Comprendre que cette règle protège l'agent autant que le client"
               },
               {
-                "title": "Processus de vente KAMNET",
-                "description": "Étapes obligatoires du processus de vente et interdictions absolues pour les agents."
+                "title": "Confidentialité & discipline de communication",
+                "description": "Protéger les données clients et les informations sensibles KAMBRIQ"
               },
               {
-                "title": "Exercice pratique",
-                "description": "Cas pratique de vente : client diaspora hésitant entre TFL™ et VEFL™."
-              }
-            ]
-          },
-          {
-            "name": "Module 5",
-            "title": "Outils & plateforme KAMNET",
-            "duration": "2 semaines",
-            "description": "Former l'Agent KAMNET à maîtriser l'interface, la navigation, la réservation des terrains, le suivi des ventes et la gestion des commissions.",
-            "lectures": [
-              {
-                "title": "Introduction à la plateforme KAMNET",
-                "description": "Comprendre le rôle de KAMNET dans l'écosystème KAMBRIQ et le flux général d'utilisation."
+                "title": "Posture & communication - Incarner la marque",
+                "description": "Créer une posture stable : calme, crédible, structuré"
               },
               {
-                "title": "Navigation de la plateforme",
-                "description": "Maîtriser le tableau de bord agent, l'accès aux terrains et la structure des fiches terrain."
+                "title": "Situations à risque - STOP → TRACE → ESCALADE",
+                "description": "Protocole officiel complet avec 8 scénarios terrain"
               },
               {
-                "title": "Gestion des prospects",
-                "description": "Apprendre à créer et gérer des prospects dans la plateforme KAMNET."
-              },
-              {
-                "title": "Réservations KAMNET",
-                "description": "Maîtriser le processus de réservation et ses règles."
-              },
-              {
-                "title": "Suivi des ventes",
-                "description": "Comprendre le pipeline de vente et les actions disponibles par rôle."
-              },
-              {
-                "title": "Commissions KAMNET",
-                "description": "Comprendre le fonctionnement et le suivi des commissions."
-              }
-            ]
-          },
-          {
-            "name": "Module 6",
-            "title": "Éthique, Conformité & Marque KAMBRIQ",
-            "duration": "1 semaine",
-            "description": "Former les Agents KAMNET à respecter les règles déontologiques, protéger la marque KAMBRIQ, prévenir la fraude et garantir une expérience client exemplaire.",
-            "lectures": [
-              {
-                "title": "Introduction à l'éthique KAMBRIQ",
-                "description": "Comprendre l'importance d'une éthique stricte dans le secteur foncier et l'engagement KAMNET."
-              },
-              {
-                "title": "Code de conduite KAMNET",
-                "description": "Découvrir les comportements attendus et interdits pour maintenir l'intégrité du réseau KAMNET."
-              },
-              {
-                "title": "Conformité & protection des données",
-                "description": "Maîtriser les règles de confidentialité et la gestion sécurisée des données clients."
-              },
-              {
-                "title": "Prévention de la fraude",
-                "description": "Identifier les types de fraude courants et apprendre à détecter et signaler les cas suspects."
-              },
-              {
-                "title": "Image & marque KAMBRIQ",
-                "description": "Comprendre le devoir de représentation et les règles de communication officielle."
-              },
-              {
-                "title": "Responsabilité professionnelle",
-                "description": "Maîtriser le devoir de diligence et l'engagement final de l'agent certifié KCA."
+                "title": "Sanctions & protection de l'agent",
+                "description": "Comprendre que la discipline protège autant qu'elle contraint"
               }
             ]
           }
-        ]
-      },
-      "modules": {
-        "title": "Programme de formation",
-        "subtitle": "4 parcours complets pour maîtriser le foncier camerounais.",
-        "items": [
-          {
-            "title": "Fondamentaux du marché foncier camerounais",
-            "description": "Comprendre les acteurs, le cadre juridique et les 4 domaines fonciers au Cameroun."
-          },
-          {
-            "title": "Cadre légal et types de titres",
-            "description": "Maîtriser KAMBRIQ TFL™, VEFL™ et VEFIL™ et leurs implications pratiques."
-          },
-          {
-            "title": "Techniques de prospection diaspora",
-            "description": "Comment identifier et engager efficacement les clients de la diaspora."
-          },
-          {
-            "title": "Négociation et closing",
-            "description": "Maîtriser l'art de la négociation et la conclusion des transactions immobilières."
-          },
-          {
-            "title": "Gestion des transactions",
-            "description": "Gérer les paiements, contrats et documents en toute fluidité."
-          },
-          {
-            "title": "Certification KCA et KAMNET",
-            "description": "Finaliser votre certification et rejoindre le réseau KAMNET."
-          }
-        ]
+        ],
+        "subtitle": "Le programme KCA1 : quatre parcours, 33 leçons."
       },
       "badge": "Formation certifiante",
       "title": "KAMBRIQ Business School",
@@ -491,40 +450,40 @@
         "title": "Qu'allez-vous apprendre ?",
         "subtitle": "Une formation complète couvrant tous les aspects essentiels pour réussir comme Agent KAMNET",
         "chapter1": {
-          "name": "Chapitre 1",
-          "title": "Droit foncier et juridique",
-          "description": "Maîtrisez le cadre légal du foncier camerounais",
-          "item1": "Système foncier camerounais et acteurs clés",
-          "item2": "Lecture et validation des titres fonciers",
-          "item3": "Procédures cadastrales et administratives",
-          "item4": "Prévention des risques et litiges fonciers"
+          "name": "Parcours 1",
+          "title": "ÉCOSYSTÈME KAMBRIQ",
+          "description": "Comprendre avant de vendre - Le filtre culturel, éthique et professionnel de KAMBRIQ",
+          "item1": "Expliquer pourquoi KAMBRIQ existe en une phrase claire",
+          "item2": "Comprendre l'architecture de l'écosystème (KAMBRIQ / LANDS / KAMNET / KBS / VERIFY / KPVE / KCPI)",
+          "item3": "Présenter les 3 labels produits sans confusion ni survente",
+          "item4": "Appliquer les règles non négociables et les interdictions absolues"
         },
         "chapter2": {
-          "name": "Chapitre 2",
-          "title": "Processus d'acquisition",
-          "description": "Accompagnez vos clients dans l'achat sécurisé de terrains",
-          "item1": "Vérification pré-achat avec KAMBRIQ VERIFY™",
-          "item2": "Étapes de l'acquisition d'un KAMBRIQ TFL™ / VEFL™ / VEFIL™",
-          "item3": "Documentation requise et vérifications",
-          "item4": "Accompagnement client et gestion administrative"
+          "name": "Parcours 2",
+          "title": "VOCABULAIRE DU FONCIER CAMEROUNAIS",
+          "description": "Comprendre les mots pour éviter les pièges - Former des agents capables de détecter quand un mot cache un risque",
+          "item1": "Comprendre le sens réel des 30 termes essentiels du foncier camerounais",
+          "item2": "Identifier les mots qui masquent un risque, même sans document",
+          "item3": "Distinguer occupation vs propriété, procédure vs preuve, discours coutumier vs réalité administrative",
+          "item4": "Comprendre qui a le droit de dire quoi dans une discussion foncière"
         },
         "chapter3": {
-          "name": "Chapitre 3",
-          "title": "Techniques de vente",
-          "description": "Développez vos compétences commerciales",
-          "item1": "Prospection et qualification des leads",
-          "item2": "Argumentation produit KAMBRIQ TFL™, VEFL™, VEFIL™",
-          "item3": "Gestion des objections et closing",
-          "item4": "Suivi client et fidélisation"
+          "name": "Parcours 3",
+          "title": "FONDAMENTAUX DU FONCIER CAMEROUNAIS",
+          "description": "Comprendre le système pour ne plus subir le système",
+          "item1": "Expliquer pourquoi le foncier camerounais est complexe (sans faire peur, sans jargon)",
+          "item2": "Distinguer réalité (occupation/usage) vs preuve (propriété formalisée)",
+          "item3": "Situer un terrain dans la carte des domaines et anticiper le niveau de risque",
+          "item4": "Comprendre la place centrale du TF et ses limites réelles"
         },
         "chapter4": {
-          "name": "Chapitre 4",
-          "title": "Utilisation de la plateforme",
-          "description": "Maîtrisez les outils KAMNET",
-          "item1": "Navigation dans le catalogue terrains",
-          "item2": "Gestion des prospects et pipeline",
-          "item3": "Système de commissions (PV, TPC)",
-          "item4": "Support réseau et collaboration"
+          "name": "Parcours 4",
+          "title": "ÉTHIQUE · CONFORMITÉ · MARQUE KAMBRIQ",
+          "description": "On ne vend pas du foncier sans rigueur morale - L'éthique est le cœur du modèle économique",
+          "item1": "Vendre LANDS sans sortir du cadre (discours + preuves + process)",
+          "item2": "Appliquer sans hésitation la Liste Rouge (argent / docs / prix / promesses / contournement)",
+          "item3": "Faire la différence entre informer vs conseiller juridiquement, rassurer vs promettre",
+          "item4": "Reconnaître les situations à risque et appliquer STOP → TRACE → ESCALADE"
         }
       },
       "exam": {
@@ -544,8 +503,7 @@
         "description": "Ce dont vous avez besoin pour commencer",
         "item1": "Motivation pour le secteur foncier et immobilier",
         "item2": "Connexion internet stable",
-        "item3": "Disponibilité de 5 à 10 heures par semaine",
-        "item4": "Aucun diplôme spécifique requis"
+        "item3": "Aucun diplôme spécifique requis"
       },
       "whyKbs": {
         "title": "Pourquoi se former ?",
