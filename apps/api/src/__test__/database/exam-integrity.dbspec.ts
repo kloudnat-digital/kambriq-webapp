@@ -66,10 +66,14 @@ describe('I21 - an exam is answered only on the questions it served', () => {
       `TRUNCATE "KbsExamAnswerSelection", "KbsExamAnswer", "KbsExam", "KbsExamQuestionAnswer",
                 "KbsExamQuestion", "KbsModule", "KbsCourse", "KbsCandidate", "KbsSettings" CASCADE`,
     );
-    await prisma.kbsSettings.create({ data: { examQuestionCount: SERVED } });
-
     const course = await prisma.kbsCourse.create({
       data: { title: `I21 course ${randomUUID()}`, description: 'I21', isPublished: true },
+    });
+    // I36 - the exam draws from the ACTIVE course, so the fixture has to name
+    // one. Before that scoping this row carried only a count, which is why the
+    // unfiltered draw could not be caught here.
+    await prisma.kbsSettings.create({
+      data: { examQuestionCount: SERVED, activeCourseId: course.id },
     });
     const mod = await prisma.kbsModule.create({
       data: { courseId: course.id, title: 'I21 module', description: 'I21', order: 1 },

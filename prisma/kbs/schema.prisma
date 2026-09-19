@@ -56,8 +56,38 @@ model KbsLesson {
 
   module             KbsModule               @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   lessonCompletions  KbsLessonCompletion[]
+  media              KbsLessonMedia[]
 
   @@unique([moduleId, order])
+}
+
+// A3 - one row per media slot the certification source leaves unfilled.
+//
+// The document marks where a video, an image or a document has still to be
+// produced. Each marker becomes a row here with a null `url`, which is what
+// makes a slot addressable: it can be listed, chosen and filled without anyone
+// re-reading the document or touching code.
+//
+// The earlier proposal was to carry the companion file in `KbsLesson.contentUrl`.
+// It could not work: the API signs `contentUrl` only for VIDEO/PDF lessons and
+// the web view does not read it for an HTML lesson either, so the file was
+// unreachable through both read paths.
+model KbsLessonMedia {
+  id        String   @id @default(uuid())
+  lessonId  String
+  // Values: LESSON_MEDIA_KINDS in libs/common/src/constants/kbs/lesson-media.ts.
+  // Named there and not restated here, so the list has one home.
+  kind      String
+  position  Int // order of this slot within its lesson, from 1
+  label     String // what the marker said
+  url       String? // S3 key or external URL - null until the file exists
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lesson KbsLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, position])
+  @@index([lessonId])
 }
 
 model KbsLessonCompletion {

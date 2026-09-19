@@ -38,13 +38,18 @@ import type {
   AdminModule,
   KbsLessonContentType,
 } from '@/types/kbs';
+import {
+  LESSON_CONTENT_TYPES,
+  LessonContentType,
+  isFileBackedContentType,
+} from '@kambriq/common/constants/kbs/lesson-content';
 
 interface Props {
   course: AdminCourseDetail | null;
   activeCourseId: string | null;
 }
 
-const CONTENT_TYPES: KbsLessonContentType[] = ['VIDEO', 'PDF', 'HTML', 'TEXT'];
+const CONTENT_TYPES: readonly KbsLessonContentType[] = LESSON_CONTENT_TYPES;
 
 const uploadToS3 = async (uploadUrl: string, file: File) => {
   const r = await fetch(uploadUrl, {
@@ -397,7 +402,7 @@ const LessonForm = ({
   const [order, setOrder] = useState(lesson?.order ?? nextOrder);
   const [duration, setDuration] = useState(lesson?.duration ?? 5);
   const [contentType, setContentType] = useState<KbsLessonContentType>(
-    lesson?.contentType ?? 'VIDEO',
+    lesson?.contentType ?? LessonContentType.VIDEO,
   );
   const [contentUrl, setContentUrl] = useState(lesson?.contentUrl ?? '');
   const [fileLabel, setFileLabel] = useState(() =>
@@ -484,7 +489,7 @@ const LessonForm = ({
           </select>
         </Field>
       </div>
-      {(contentType === 'VIDEO' || contentType === 'PDF') && (
+      {isFileBackedContentType(contentType) && (
         <Field>
           <FieldLabel>{t('contentUrl')}</FieldLabel>
           <div className="flex items-center gap-2">
@@ -508,7 +513,7 @@ const LessonForm = ({
           </div>
         </Field>
       )}
-      {(contentType === 'HTML' || contentType === 'TEXT') && (
+      {!isFileBackedContentType(contentType) && (
         <Field>
           <FieldLabel>{t('content')}</FieldLabel>
           <Textarea

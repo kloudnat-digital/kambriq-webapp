@@ -50,6 +50,7 @@ import {
   LandReservationStatus,
 } from '../libs/common/src/prisma/lands-client/client';
 import { RoleCode } from '../libs/common/src/types/roles.enum';
+import { LessonContentType } from '../libs/common/src/constants/kbs/lesson-content';
 import * as bcrypt from 'bcryptjs';
 
 // ---------------------------------------------------------------------------
@@ -359,7 +360,7 @@ async function seedKbs() {
     {
       moduleId: IDS.KBS_MODULE_1,
       title: 'Histoire et Mission de KAMBRIQ',
-      contentType: 'video',
+      contentType: LessonContentType.VIDEO,
       contentUrl: 'kbs/lessons/m1-l1.mp4',
       duration: 15,
       order: 1,
@@ -367,7 +368,7 @@ async function seedKbs() {
     {
       moduleId: IDS.KBS_MODULE_1,
       title: 'Catalogue des Parcelles et Labels Fonciers',
-      contentType: 'pdf',
+      contentType: LessonContentType.PDF,
       contentUrl: 'kbs/lessons/m1-l2.pdf',
       duration: 20,
       order: 2,
@@ -375,7 +376,7 @@ async function seedKbs() {
     {
       moduleId: IDS.KBS_MODULE_1,
       title: 'Comprendre les Titres Fonciers au Cameroun',
-      contentType: 'html',
+      contentType: LessonContentType.HTML,
       contentUrl: 'kbs/lessons/m1-l3.html',
       duration: 25,
       order: 3,
@@ -383,7 +384,7 @@ async function seedKbs() {
     {
       moduleId: IDS.KBS_MODULE_2,
       title: 'Identifier et Qualifier un Prospect',
-      contentType: 'video',
+      contentType: LessonContentType.VIDEO,
       contentUrl: 'kbs/lessons/m2-l1.mp4',
       duration: 20,
       order: 1,
@@ -391,7 +392,7 @@ async function seedKbs() {
     {
       moduleId: IDS.KBS_MODULE_2,
       title: 'Argumentaire de Vente et Gestion des Objections',
-      contentType: 'pdf',
+      contentType: LessonContentType.PDF,
       contentUrl: 'kbs/lessons/m2-l2.pdf',
       duration: 30,
       order: 2,
@@ -399,7 +400,7 @@ async function seedKbs() {
     {
       moduleId: IDS.KBS_MODULE_2,
       title: 'Processus de Réservation et Documentation',
-      contentType: 'html',
+      contentType: LessonContentType.HTML,
       contentUrl: 'kbs/lessons/m2-l3.html',
       duration: 20,
       order: 3,

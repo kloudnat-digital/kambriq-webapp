@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { useToastStore } from '@/store/toast.store';
 import { completeLesson } from '@/lib/actions/kbs';
+import { LessonContentType } from '@kambriq/common/constants/kbs/lesson-content';
 import type { LessonView } from '@/types/kbs';
 
 interface Props {
@@ -101,7 +102,7 @@ export const KbsLessonView = ({ lesson }: Props) => {
 };
 
 const LessonBody = ({ lesson }: { lesson: LessonView }) => {
-  if (lesson.contentType === 'VIDEO' && lesson.contentUrl) {
+  if (lesson.contentType === LessonContentType.VIDEO && lesson.contentUrl) {
     return (
       <div className="aspect-video w-full overflow-hidden rounded-md bg-black">
         <video
@@ -118,7 +119,7 @@ const LessonBody = ({ lesson }: { lesson: LessonView }) => {
     );
   }
 
-  if (lesson.contentType === 'PDF' && lesson.contentUrl) {
+  if (lesson.contentType === LessonContentType.PDF && lesson.contentUrl) {
     return (
       <iframe
         src={lesson.contentUrl}
@@ -128,7 +129,7 @@ const LessonBody = ({ lesson }: { lesson: LessonView }) => {
     );
   }
 
-  if (lesson.contentType === 'HTML' && lesson.content) {
+  if (lesson.contentType === LessonContentType.HTML && lesson.content) {
     return (
       <div
         className="prose prose-sm max-w-none"
@@ -138,7 +139,7 @@ const LessonBody = ({ lesson }: { lesson: LessonView }) => {
     );
   }
 
-  if (lesson.contentType === 'TEXT' && lesson.content) {
+  if (lesson.contentType === LessonContentType.TEXT && lesson.content) {
     return (
       <div className="prose prose-sm max-w-none text-gray-800">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.content}</ReactMarkdown>

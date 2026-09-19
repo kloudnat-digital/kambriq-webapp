@@ -26,6 +26,7 @@ import {
   StorageService,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
+import { isFileBackedContentType } from '@kambriq/common/constants/kbs/lesson-content';
 
 @Injectable()
 export class KbsCoursesService {
@@ -398,7 +399,7 @@ export class KbsCoursesService {
     }
 
     const contentUrl =
-      lesson.contentUrl && (lesson.contentType === 'VIDEO' || lesson.contentType === 'PDF')
+      lesson.contentUrl && isFileBackedContentType(lesson.contentType)
         ? await this.storage.getDownloadUrl(lesson.contentUrl)
         : null;
 
@@ -440,7 +441,7 @@ export class KbsCoursesService {
     const next = currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : null;
 
     const signedContentUrl = (lesson.contentUrl =
-      lesson.contentUrl && (lesson.contentType === 'VIDEO' || lesson.contentType === 'PDF')
+      lesson.contentUrl && isFileBackedContentType(lesson.contentType)
         ? await this.storage.getDownloadUrl(lesson.contentUrl)
         : null);
 

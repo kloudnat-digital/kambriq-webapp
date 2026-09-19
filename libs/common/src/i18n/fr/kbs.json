@@ -43,6 +43,7 @@
     "cooldownActive": "Nouvelle tentative disponible après le {date}",
     "trainingIncomplete": "Formation incomplète : {completed}/{total} modules terminés",
     "noQuestions": "Aucune question d'examen disponible. Veuillez contacter un administrateur.",
+    "noActiveCourse": "Aucun cours actif n'est configuré pour le moment. Contactez un administrateur.",
     "attemptsReset": "Tentatives d'examen réinitialisées. Le candidat peut repasser l'examen.",
     "notYetAvailable": "L'examen n'est pas encore disponible.",
     "startWindowExpired": "La fenêtre de démarrage de l'examen a expiré.",

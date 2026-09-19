@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import { Test, TestingModule } from '@nestjs/testing';
 import { KbsExamService } from '../../../kbs/exam/exam.service';
@@ -51,6 +46,7 @@ describe('KbsExamService', () => {
     it('returns eligible=true when all conditions are met', async () => {
       const candidate = buildCandidate({ status: 'EXAM_PENDING' });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
+      prisma.kbsSettings.findFirst.mockResolvedValue({ activeCourseId: 'course-1' });
       prisma.kbsExamQuestion.count.mockResolvedValue(20); // pool exists
       prisma.kbsExam.findFirst
         .mockResolvedValueOnce(null) // 1st call: no active exam
@@ -96,14 +92,37 @@ describe('KbsExamService', () => {
       expect(result.eligible).toBe(false);
     });
 
-    it('throws ServiceUnavailableException when question pool is empty', async () => {
+    /**
+     * I36 - this asserted a 503, and the requirement changed under it.
+     *
+     * Eligibility now ANSWERS the question instead of refusing to consider it:
+     * an empty pool is a reason the candidate is told, not an outage. The hard
+     * refusal moved to `startExam`, where a draw would otherwise come from
+     * nowhere, and is asserted there. Inverted rather than deleted, because
+     * deleting it would remove the only cover of an empty pool on this path.
+     */
+    it('answers not-eligible with a reason when the pool is empty, rather than a 503', async () => {
       const candidate = buildCandidate({ status: 'EXAM_PENDING' });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
+      prisma.kbsSettings.findFirst.mockResolvedValue({ activeCourseId: 'course-1' });
       prisma.kbsExamQuestion.count.mockResolvedValue(0);
 
-      await expect(service.checkEligibility(candidate.userId)).rejects.toThrow(
-        ServiceUnavailableException,
-      );
+      const result = await service.checkEligibility(candidate.userId);
+
+      expect(result.eligible).toBe(false);
+      expect(result.reason).toBe('kbs.exam.noQuestions');
+    });
+
+    /** And with no course configured at all, it still answers. */
+    it('answers not-eligible when no course is active', async () => {
+      const candidate = buildCandidate({ status: 'EXAM_PENDING' });
+      prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
+      prisma.kbsSettings.findFirst.mockResolvedValue(null);
+
+      const result = await service.checkEligibility(candidate.userId);
+
+      expect(result.eligible).toBe(false);
+      expect(result.reason).toBe('kbs.exam.noActiveCourse');
     });
   });
 
@@ -113,6 +132,7 @@ describe('KbsExamService', () => {
     it('creates a SCHEDULED exam for eligible candidate', async () => {
       const candidate = buildCandidate({ status: 'EXAM_PENDING' });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
+      prisma.kbsSettings.findFirst.mockResolvedValue({ activeCourseId: 'course-1' });
       prisma.kbsExamQuestion.count.mockResolvedValue(20);
       prisma.kbsExam.findFirst.mockResolvedValue(null);
       prisma.kbsExam.count.mockResolvedValue(0);
@@ -164,7 +184,10 @@ describe('KbsExamService', () => {
       });
       prisma.kbsExam.findUnique.mockResolvedValue(exam);
       prisma.kbsExamQuestion.count.mockResolvedValue(20);
-      prisma.kbsSettings.findFirst.mockResolvedValue({ examQuestionCount: 5 });
+      prisma.kbsSettings.findFirst.mockResolvedValue({
+        examQuestionCount: 5,
+        activeCourseId: 'course-1',
+      });
 
       // Questions pool
       const questions = Array.from({ length: 10 }, (_, i) => ({
@@ -211,7 +234,7 @@ describe('KbsExamService', () => {
         scheduledAt: new Date(Date.now() - 60_000),
       });
       prisma.kbsExam.findUnique.mockResolvedValue(exam);
-      prisma.kbsSettings.findFirst.mockResolvedValue(null); // falls back to the default
+      prisma.kbsSettings.findFirst.mockResolvedValue({ activeCourseId: 'course-1' }); // examQuestionCount falls back to the default
       prisma.kbsExamQuestion.count.mockResolvedValue(60);
 
       const questions = Array.from({ length: 60 }, (_, i) => ({
@@ -238,6 +261,65 @@ describe('KbsExamService', () => {
       );
     });
 
+    /**
+     * I36 - asserted on the ARGUMENTS, because the return value cannot show it.
+     *
+     * These mocks answer the same way whatever `where` they are handed, so a
+     * test reading only the served questions stays green with or without the
+     * course filter. What proves the scope is what was asked of the database.
+     * The database-backed proof is `exam-course-scope.dbspec.ts`, with two
+     * courses coexisting.
+     */
+    it('asks the database only for the active course, in both the count and the draw', async () => {
+      const candidate = buildCandidate({ status: 'EXAM_PENDING' });
+      prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
+
+      const exam = buildExam({
+        candidateId: candidate.id,
+        status: 'SCHEDULED',
+        scheduledAt: new Date(Date.now() - 60_000),
+      });
+      prisma.kbsExam.findUnique.mockResolvedValue(exam);
+      prisma.kbsSettings.findFirst.mockResolvedValue({
+        examQuestionCount: 20,
+        activeCourseId: 'course-1',
+      });
+      prisma.kbsExamQuestion.count.mockResolvedValue(60);
+      prisma.kbsExamQuestion.findMany.mockResolvedValue(
+        Array.from({ length: 60 }, (_, i) => ({
+          id: `eq${i}`,
+          text: `Question ${i}`,
+          type: 'SINGLE',
+          module: { id: 'mod1', title: 'Module 1' },
+          answers: [{ id: `ea${i}`, text: 'A' }],
+        })),
+      );
+      prisma.kbsExam.update.mockResolvedValue({});
+
+      await service.startExam(candidate.userId, exam.id);
+
+      const scoped = { where: { module: { courseId: 'course-1' } } };
+      expect(prisma.kbsExamQuestion.count).toHaveBeenCalledWith(expect.objectContaining(scoped));
+      expect(prisma.kbsExamQuestion.findMany).toHaveBeenCalledWith(expect.objectContaining(scoped));
+    });
+
+    /** No active course is not "every course": it refuses. */
+    it('refuses to start when no course is active, rather than drawing from all of them', async () => {
+      const candidate = buildCandidate({ status: 'EXAM_PENDING' });
+      prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
+      prisma.kbsExam.findUnique.mockResolvedValue(
+        buildExam({
+          candidateId: candidate.id,
+          status: 'SCHEDULED',
+          scheduledAt: new Date(Date.now() - 60_000),
+        }),
+      );
+      prisma.kbsSettings.findFirst.mockResolvedValue({ examQuestionCount: 20 });
+
+      await expect(service.startExam(candidate.userId, 'any')).rejects.toThrow(/aucun cours actif/);
+      expect(prisma.kbsExamQuestion.findMany).not.toHaveBeenCalled();
+    });
+
     it('refuses to start, loudly, when the pool is one question short', async () => {
       const candidate = buildCandidate({ status: 'EXAM_PENDING' });
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
@@ -248,7 +330,10 @@ describe('KbsExamService', () => {
         scheduledAt: new Date(Date.now() - 60_000),
       });
       prisma.kbsExam.findUnique.mockResolvedValue(exam);
-      prisma.kbsSettings.findFirst.mockResolvedValue({ examQuestionCount: 20 });
+      prisma.kbsSettings.findFirst.mockResolvedValue({
+        examQuestionCount: 20,
+        activeCourseId: 'course-1',
+      });
       prisma.kbsExamQuestion.count.mockResolvedValue(19);
 
       // The shortfall must name both numbers. A generic "no questions" message

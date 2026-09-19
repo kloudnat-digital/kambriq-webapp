@@ -1,3 +1,6 @@
+export * from './lesson-content';
+export * from './lesson-media';
+
 /**
  * Two thresholds, two meanings, decided by Visquis on 18 September 2026.
  *
