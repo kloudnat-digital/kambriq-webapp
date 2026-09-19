@@ -1977,8 +1977,8 @@
       },
       "awaiting": {
         "title": "Inscription en attente de validation",
-        "description": "Nous avons bien reçu votre candidature. Un administrateur va vérifier votre paiement (249 € TTC) et vos documents. Vous recevrez un e-mail dès que votre accès à la formation sera activé.",
-        "hint": "Vérifiez régulièrement votre boîte de réception, y compris les spams."
+        "description": "Nous avons bien reçu votre candidature. Un administrateur KAMBRIQ doit encore activer votre accès à la formation : c'est la dernière étape avant de commencer.",
+        "hint": "Rien ne vous est demandé pour l'instant. Revenez sur cette page pour voir si votre accès a été activé."
       },
       "enroll": {
         "pageTitle": "Inscription KBS",
@@ -2084,7 +2084,9 @@
         "failed": "Échoué",
         "score": "Score",
         "correctAnswers": "Bonnes réponses",
-        "viewResults": "Voir les résultats"
+        "viewResults": "Voir les résultats",
+        "gradingTitle": "Correction en cours",
+        "gradingText": "Votre examen a bien ete soumis. La correction prend quelques secondes ; cette page se met a jour toute seule."
       },
       "certificate": {
         "pageTitle": "Mon certificat KCA",
@@ -2135,6 +2137,12 @@
           "resetAttempts": "Réinitialiser les tentatives",
           "issueCertificate": "Émettre le certificat",
           "revokeCertificate": "Révoquer le certificat"
+        },
+        "pending": {
+          "title": "{n} candidat(s) en attente d'activation",
+          "oldest": "Le plus ancien attend depuis {days} jour(s).",
+          "none": "Aucun candidat en attente d'activation.",
+          "cta": "Voir la file"
         }
       },
       "course": {

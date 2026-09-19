@@ -1977,8 +1977,8 @@
       },
       "awaiting": {
         "title": "Enrollment awaiting validation",
-        "description": "We received your application. An admin will verify your payment (€249) and your documents. You'll receive an email once your training access is enabled.",
-        "hint": "Keep an eye on your inbox, including the spam folder."
+        "description": "We received your application. A KAMBRIQ admin still has to enable your access to the training: that is the last step before you can start.",
+        "hint": "Nothing is expected from you right now. Come back to this page to see whether your access has been enabled."
       },
       "enroll": {
         "pageTitle": "KBS enrollment",
@@ -2084,7 +2084,9 @@
         "failed": "Failed",
         "score": "Score",
         "correctAnswers": "Correct answers",
-        "viewResults": "View results"
+        "viewResults": "View results",
+        "gradingTitle": "Grading in progress",
+        "gradingText": "Your exam has been submitted. Grading takes a few seconds; this page updates itself."
       },
       "certificate": {
         "pageTitle": "My KCA certificate",
@@ -2135,6 +2137,12 @@
           "resetAttempts": "Reset attempts",
           "issueCertificate": "Issue certificate",
           "revokeCertificate": "Revoke certificate"
+        },
+        "pending": {
+          "title": "{n} candidate(s) awaiting activation",
+          "oldest": "The oldest has been waiting {days} day(s).",
+          "none": "No candidate is awaiting activation.",
+          "cta": "View the queue"
         }
       },
       "course": {
