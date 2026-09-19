@@ -476,6 +476,31 @@ export class KbsAdminController {
     return this.candidatesService.findAll(query, filter.status, filter.search);
   }
 
+  /**
+   * Declared BEFORE `candidates/:id`, and that order is load-bearing.
+   *
+   * Nest registers handlers in declaration order and Express answers with the
+   * first pattern that matches, so below the parameterised route this one is
+   * dead: `:id` matches the literal string "pending", the service looks up a
+   * candidate with that id, and the queue answers 404 "candidate not found" -
+   * a 404 that reads like a missing record rather than a routing defect.
+   * `admin-route-order.spec.ts` fails if these two ever swap.
+   */
+  @Get('candidates/pending')
+  @ApiOperation({
+    summary: '[Admin] The activation queue',
+    description:
+      'Candidates still at CANDIDATE, oldest first, with how many days each has waited and ' +
+      '`meta.oldestWaitingDays` for the backlog as a whole. I39: the activation route and the ' +
+      'screen both existed, and nothing counted the people waiting for somebody to use them.',
+  })
+  @ApiResponse({ status: 200, description: 'Pending candidates returned, oldest first.' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions.' })
+  async listPendingCandidates(@Query() query: PaginationQueryDto) {
+    return this.candidatesService.listPendingCandidates(query);
+  }
+
   @Get('candidates/:id')
   @ApiOperation({
     summary: 'Get candidate detail',

@@ -16,10 +16,12 @@ import {
   UpdateCandidateStatusDto,
 } from './dto/candidate.dto';
 import {
+  ageInDays,
   buildPaginatedResponse,
   CandidateStatus,
   DEFAULT_LANGUAGE,
   EmailService,
+  withOldestWaiting,
   DEFAULT_QUIZ_QUESTION_COUNT,
   MODULE_PASSING_SCORE,
   PaginationQuery,
@@ -542,6 +544,77 @@ export class KbsCandidatesService {
     });
 
     return buildPaginatedResponse(data, total, page, limit);
+  }
+
+  /**
+   * The activation queue: who is waiting to be let in, and how long they have waited.
+   *
+   * I39. The act of activation was never missing - `updateStatus` has a full
+   * state machine, `adminUpdateCandidateStatus` calls it, and the candidate
+   * detail screen puts it under a button. What was missing is any reason for an
+   * administrator to go and look: `/admin/kbs` is a redirect, and nothing
+   * anywhere counted the people stuck at CANDIDATE or said how long they had
+   * been stuck.
+   *
+   * That is A10 returning in another module - a reviewer route and a reviewer
+   * role that both existed while the queue did not, so nothing had ever been
+   * reviewed. **A count answers "how many"; it does not answer "how long has
+   * somebody been waiting", which is the question a backlog exists to answer.**
+   *
+   * Aged on `enrolledAt`, which the model already carries: unlike A10, no column
+   * had to be added to make the wait measurable.
+   */
+  async listPendingCandidates(query: PaginationQuery) {
+    const { page, limit } = query;
+    const where = { status: CandidateStatus.CANDIDATE };
+
+    const [candidates, total, oldest] = await this.prisma.$transaction([
+      this.prisma.kbsCandidate.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        // Oldest first, deliberately: newest-first hides the person who has been
+        // waiting longest, and they are the only row that really matters.
+        orderBy: { enrolledAt: 'asc' },
+      }),
+      this.prisma.kbsCandidate.count({ where }),
+      this.prisma.kbsCandidate.findFirst({
+        where,
+        orderBy: { enrolledAt: 'asc' },
+        select: { enrolledAt: true },
+      }),
+    ]);
+
+    // Names and addresses live in core. A queue of opaque ids is a list nobody
+    // can act on, which is most of what was wrong with not having one.
+    const users = await this.userService.findManyByIds(
+      candidates.map((c: { userId: string }) => c.userId),
+    );
+    const userById = new Map(users.map((u) => [u.id, u]));
+    const now = Date.now();
+
+    const response = buildPaginatedResponse(
+      candidates.map(
+        (c: { id: string; userId: string; sponsorCode: string | null; enrolledAt: Date }) => {
+          const u = userById.get(c.userId);
+          return {
+            id: c.id,
+            userId: c.userId,
+            firstName: u?.firstName ?? null,
+            lastName: u?.lastName ?? null,
+            email: u?.email ?? null,
+            sponsorCode: c.sponsorCode,
+            enrolledAt: c.enrolledAt,
+            waitingDays: ageInDays(c.enrolledAt, now),
+          };
+        },
+      ),
+      total,
+      page,
+      limit,
+    );
+
+    return withOldestWaiting(response, oldest?.enrolledAt ?? null, now);
   }
 
   async findById(candidateId: string) {

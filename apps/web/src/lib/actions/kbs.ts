@@ -28,6 +28,7 @@ import type {
   MyCandidate,
   MyCertificate,
   OverviewPayload,
+  PendingCandidateRow,
   PresignedUpload,
   QuizResult,
   QuizView,
@@ -267,6 +268,18 @@ export const adminGetCandidates = createAction(
     );
   },
 );
+
+/**
+ * I39 - the activation queue: who is waiting, and how long.
+ *
+ * The activation itself was never missing. Nothing pointed at the people
+ * waiting for it, which is why they waited.
+ */
+export const adminGetPendingCandidates = createAction(async (page = 1, limit = 20) => {
+  return serverApi.get<
+    PaginatedResponse<PendingCandidateRow> & { meta: { oldestWaitingDays: number | null } }
+  >(`/kbs/admin/candidates/pending?page=${page}&limit=${limit}`);
+});
 
 export const adminGetCandidate = createAction(async (id: string) => {
   return serverApi.get<AdminCandidateDetail>(`/kbs/admin/candidates/${id}`);

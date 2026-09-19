@@ -245,6 +245,25 @@ export type AdminCandidateRow = {
   idVerificationStatus: string;
 };
 
+/**
+ * I39 - a row of the activation queue.
+ *
+ * Not `AdminCandidateRow`: that one describes a candidate in any state, and
+ * this one only exists for somebody still at CANDIDATE. `waitingDays` is the
+ * field the queue exists for - a count says how many are stuck, only an age
+ * says how long somebody has been stuck.
+ */
+export type PendingCandidateRow = {
+  id: string;
+  userId: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  sponsorCode: string | null;
+  enrolledAt: string;
+  waitingDays: number;
+};
+
 export type AdminCandidateDetail = AdminCandidateRow & {
   phone: string | null;
   cvUrl: string | null;

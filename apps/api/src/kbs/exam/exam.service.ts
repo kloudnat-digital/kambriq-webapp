@@ -409,7 +409,21 @@ export class KbsExamService {
       throw new ForbiddenException(this.t('kbs.exam.notYours'));
     }
 
-    if (![ExamStatus.PASSED, ExamStatus.FAILED].includes(exam.status as ExamStatus)) {
+    /**
+     * I40 - SUBMITTED is not a fault, it is the healthy transient state.
+     *
+     * Grading runs on a queue, so between submitting and being graded an exam
+     * sits at SUBMITTED for a few seconds. Answering 400 for that made the web
+     * call `notFound()`, and a candidate who had just sat a certification exam
+     * was shown a 404. Grading stays asynchronous; what changes is that the
+     * service reports the state instead of calling it an error, so the screen
+     * can say "grading in progress" and wait.
+     *
+     * The real refusals stay refusals: an exam that was never sat has no
+     * results, and answering "still grading" for it would be its own lie.
+     */
+    const graded = [ExamStatus.PASSED, ExamStatus.FAILED].includes(exam.status as ExamStatus);
+    if (!graded && exam.status !== ExamStatus.SUBMITTED) {
       throw new BadRequestException(this.t('kbs.exam.resultsNotReady'));
     }
 
@@ -443,12 +457,20 @@ export class KbsExamService {
       status: exam.status,
       startedAt: exam.startedAt,
       submittedAt: exam.submittedAt,
-      breakdown: Array.from(moduleScores.values()).map((m) => ({
-        module: m.title,
-        correct: m.correct,
-        total: m.total,
-        percentage: m.total > 0 ? Math.round((m.correct / m.total) * 100) : 0,
-      })),
+      /**
+       * Empty until grading has run, for the same reason the score is null.
+       * Before grading, `questionCorrect` is null on every answer, so every
+       * module would read "0 correct of N" - a verdict, and a false one, about
+       * somebody's certification.
+       */
+      breakdown: graded
+        ? Array.from(moduleScores.values()).map((m) => ({
+            module: m.title,
+            correct: m.correct,
+            total: m.total,
+            percentage: m.total > 0 ? Math.round((m.correct / m.total) * 100) : 0,
+          }))
+        : [],
     };
   }
 

@@ -88,6 +88,12 @@ export const mockKbsPrisma = () => ({
     updateMany: fn(),
     update: fn(),
     count: fn(),
+    // I39, and the same shape again: the real delegate has `findFirst`, this
+    // mock did not, so the activation queue's "oldest waiting" query died with
+    // `findFirst is not a function` rather than with a wrong answer. A mock that
+    // is narrower than the client it stands for does not make a test strict; it
+    // makes the test unable to run the code.
+    findFirst: fn(),
   },
   kbsCandidateProgress: {
     findUnique: fn(),
