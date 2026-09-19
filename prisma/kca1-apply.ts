@@ -30,13 +30,17 @@
 
 import {
   ORPHAN_ORDER_BASE,
+  decideQuestionLoad,
+  describeQuestionDecision,
   matchLessons,
   orphanOrder,
   summarise,
   type ExistingLesson,
   type LessonMatch,
   type MatchOutcome,
+  type QuestionLoadDecision,
   type SourceLesson,
+  type SourceQuestion,
 } from './seed-data/kca1-sync';
 
 /**
@@ -121,6 +125,102 @@ export const applyLessons = async (
 
   return { parcours, matches };
 };
+
+/**
+ * The slice of a question delegate these writes need, declared structurally for
+ * the same reason `LessonWriter` is: a `prisma/` script imports nothing
+ * generated. `KbsQuestion` and `KbsExamQuestion` both satisfy it, which is what
+ * lets one function write both copies.
+ */
+export type QuestionWriter = {
+  findMany(args: {
+    where: { moduleId: string };
+    select: { id: true; text: true };
+  }): Promise<Array<{ id: string; text: string }>>;
+  create(args: { data: Record<string, unknown> }): Promise<{ id: string }>;
+};
+
+export type QuestionApplyResult = {
+  parcours: string;
+  decision: QuestionLoadDecision;
+  created: { quiz: number; quizAnswers: number; exam: number; examAnswers: number };
+};
+
+/**
+ * The only question type KCA1 carries. Every source question has exactly one
+ * correct answer among four, which is what `SINGLE` means to `submitQuiz` and
+ * to `gradeExam`; the other spelling of this value is the DTO's
+ * `z.enum(['SINGLE', 'MULTIPLE'])`, and there is no shared constant to import.
+ */
+const SINGLE_ANSWER = 'SINGLE';
+
+/**
+ * Writes the eighty questions twice, because the schema holds them twice.
+ *
+ * `KbsQuestion` feeds the module quiz and `KbsExamQuestion` feeds the exam, and
+ * decision 2.1 says both are drawn from the SAME eighty for V0. Writing only
+ * the first copy passes every quiz test and leaves I36's course-scoped exam
+ * draw looking at an empty pool - a candidate eligible for an exam that answers
+ * 503.
+ *
+ * The answers ride in as a nested create, so a question and its four answers
+ * arrive in one statement: a question that exists with no correct answer is one
+ * nobody can pass, and I21 is the record of where that leads.
+ */
+export const applyQuestions = async (
+  quiz: QuestionWriter,
+  exam: QuestionWriter,
+  args: { moduleId: string; parcours: string; source: SourceQuestion[] },
+): Promise<QuestionApplyResult> => {
+  const { moduleId, parcours, source } = args;
+
+  const [existingQuiz, existingExam] = await Promise.all([
+    quiz.findMany({ where: { moduleId }, select: { id: true, text: true } }),
+    exam.findMany({ where: { moduleId }, select: { id: true, text: true } }),
+  ]);
+
+  const decision = decideQuestionLoad({
+    existingQuiz: existingQuiz.length,
+    existingExam: existingExam.length,
+    sourceQuestions: source.length,
+  });
+
+  const created = { quiz: 0, quizAnswers: 0, exam: 0, examAnswers: 0 };
+
+  if (decision.outcome === 'left-untouched') {
+    return { parcours, decision, created };
+  }
+
+  for (const question of source) {
+    const data = {
+      moduleId,
+      text: question.text,
+      type: SINGLE_ANSWER,
+      answers: {
+        create: question.answers.map((answer) => ({
+          text: answer.text,
+          isCorrect: answer.isCorrect,
+        })),
+      },
+    };
+
+    await quiz.create({ data });
+    created.quiz += 1;
+    created.quizAnswers += question.answers.length;
+
+    await exam.create({ data });
+    created.exam += 1;
+    created.examAnswers += question.answers.length;
+  }
+
+  return { parcours, decision, created };
+};
+
+/** The question half of the run report, one line per parcours. */
+export const formatQuestionReport = (results: QuestionApplyResult[]): string =>
+  results
+    .map((result) => `${result.parcours}: ${describeQuestionDecision(result.decision)}`)
+    .join('\n');
 
 const OUTCOME_ORDER: MatchOutcome[] = [
   'created',

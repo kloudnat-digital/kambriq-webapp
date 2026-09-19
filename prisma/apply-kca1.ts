@@ -19,11 +19,16 @@
  * ---------------------------------------------------------------------------
  * What this does NOT do yet, said rather than left to be discovered
  * ---------------------------------------------------------------------------
- * It applies LESSONS. It does not replay the 80 questions: `KbsQuestion` has no
- * stable key either, so matching them is the same two-signal problem over
- * question text, and doing half of it quietly would be worse than not doing it.
- * The questions are seeded once by the course switch; replaying them is its own
- * piece of work.
+ * It applies LESSONS on every run, and it creates the QUESTIONS once. A first
+ * load writes the eighty questions twice - `KbsQuestion` for the module quizzes
+ * and `KbsExamQuestion` for the exam, which is what decision 2.1 means by "the
+ * exam draws from the same eighty" in a schema that holds two tables. A later
+ * load counts what is there, reports it, and writes nothing: `KbsQuestion` has
+ * no stable key, so matching an edited question is the same two-signal problem
+ * over question text, except that here the signal and the edit are the same
+ * string. Doing half of it quietly would move a candidate's answers onto a
+ * different question. Replaying questions is its own piece of work, and until
+ * it exists the run says so rather than staying silent.
  *
  * It also does not touch `KbsSettings.activeCourseId`. Switching the course
  * over is step 4, deliberately after this, so that a load can be run and read
@@ -35,8 +40,15 @@ import 'dotenv/config';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient as KbsClient } from '../libs/common/src/prisma/kbs-client/client';
-import { KCA1_CONTENT_TYPE, KCA1_PARCOURS } from './seed-data/kca1';
-import { applyLessons, formatReport, type ApplyResult } from './kca1-apply';
+import { KCA1_CONTENT_TYPE, KCA1_PARCOURS, KCA1_QUESTIONS } from './seed-data/kca1';
+import {
+  applyLessons,
+  applyQuestions,
+  formatQuestionReport,
+  formatReport,
+  type ApplyResult,
+  type QuestionApplyResult,
+} from './kca1-apply';
 
 /** The course this loader owns. Matched by title, created if absent. */
 const COURSE_TITLE = 'KCA 1 - Fondations';
@@ -69,6 +81,7 @@ const main = async () => {
     console.log(`course  : ${course.id} ${course.title}`);
 
     const results: ApplyResult[] = [];
+    const questionResults: QuestionApplyResult[] = [];
 
     for (const parcours of KCA1_PARCOURS) {
       const existing = await prisma.kbsModule.findFirst({
@@ -105,11 +118,39 @@ const main = async () => {
           contentType: KCA1_CONTENT_TYPE,
         }),
       );
+
+      // A parcours with no questions would let `applyQuestions` decide
+      // "created" and then create nothing - a pool that reports success by
+      // saying nothing, and an exam draw that finds an empty course. The
+      // generated module is asserted at 20 per parcours; this refuses rather
+      // than discovers.
+      const source = KCA1_QUESTIONS.filter((question) => question.parcours === parcours.code);
+      if (source.length === 0) {
+        throw new Error(
+          `REFUSED - ${parcours.code} carries no questions in the generated course. ` +
+            `Re-run prisma/load-kca1.ts against the source before applying.`,
+        );
+      }
+
+      questionResults.push(
+        await applyQuestions(prisma.kbsQuestion, prisma.kbsExamQuestion, {
+          moduleId: mod.id,
+          parcours: parcours.code,
+          source: source.map((question) => ({
+            text: question.text,
+            answers: question.answers,
+          })),
+        }),
+      );
     }
 
     console.log('\nKCA1 apply report');
     console.log('=================\n');
     console.log(formatReport(results));
+
+    console.log('\nQuestions');
+    console.log('---------\n');
+    console.log(formatQuestionReport(questionResults));
 
     const absent = results.flatMap((r) =>
       r.matches.filter((m) => m.outcome === 'absent-from-source'),

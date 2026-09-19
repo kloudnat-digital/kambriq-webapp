@@ -1514,6 +1514,47 @@ mutation is the one that matters, because the plain "takes the last entry" case
 also passes a leftmost implementation on a one-element chain - so the spoofing
 case is a separate test rather than a second tail on the first.
 
+### A second row of something turns every unfiltered count into a defect
+
+From the KCA1 switch. For as long as `KbsCourse` held one row, every count in
+KBS was accidentally correct: `kbsModule.count()` meant "the modules of the
+course" because there was no other course to count. Loading KCA1 beside the
+demonstration course made six modules exist, and three separate counts became
+wrong in the same instant without a line being edited - the exam pool and draw
+(`I36`), eligibility, and `overallProgress` on `GET /kbs/me`.
+
+The one that mattered refused people: a candidate who had passed all four KCA1
+parcours was told `Formation incomplete : 4/6 modules termines` and could never
+sit the exam. **Training worked, certification was unreachable, and nothing
+looked broken** - the arithmetic was internally honest, as in the quiz
+denominator and the coverage percentage before it.
+
+**And scoping one side of a ratio is worse than scoping neither.** Eligibility
+compared `kbsCandidateProgress.count()` against `kbsModule.count()`. Filter only
+the denominator and the active course has 4 modules while the numerator still
+counts every passed row anywhere - so two KCA1 modules plus two demonstration
+ones make 4 of 4, and somebody sits a certification exam having done half the
+course. The unfixed bug refuses a candidate; the half fix certifies one. A
+ratio's two sides are one change, never two, and they get one test each because
+they fail in opposite directions.
+
+**The rule: when a table that was effectively a singleton gains a second row,
+grep every `count()` and `findMany()` against the tables hanging off it before
+the switch, not after.** `checkAndTransitionToExamPending` already had the right
+shape the whole time, which is the other half of the lesson - the correct
+version existing elsewhere in the codebase is not what makes the wrong one
+correct.
+
+### An active course that is not published navigates, and serves nothing
+
+Also from the switch, and it is one `UPDATE` from being invisible.
+`getMyOverview` reads the active course by id and does not care whether it is
+published; `findCourseModules` and `findLessonById` both require
+`isPublished`. Point `activeCourseId` at a draft course and a candidate gets a
+complete-looking dashboard - four parcours, correct lesson counts, the first one
+open - where **every lesson answers 404**. The switch is therefore two writes,
+and the second is not tidying.
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope

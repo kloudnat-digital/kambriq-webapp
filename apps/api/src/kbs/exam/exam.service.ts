@@ -856,10 +856,42 @@ export class KbsExamService {
     }
 
     if (!isRenewal) {
-      // Check all modules completed
-      const totalModules = await this.prisma.kbsModule.count();
+      /**
+       * Both sides count the ACTIVE course, and both matter.
+       *
+       * I36 scoped the exam draw and named this line beside it. The KCA1 switch
+       * is what made it bite: dev holds six modules - four KCA1 parcours and two
+       * demonstration ones - so a candidate who had passed all four KCA1
+       * quizzes was told "Formation incomplete : 4/6 modules termines" and
+       * could never sit the exam. Training worked; certification was
+       * unreachable; nothing looked broken.
+       *
+       * Scoping only the denominator would be worse than leaving both. With a
+       * total of 4 and an unfiltered numerator, two KCA1 modules plus two
+       * demonstration ones also make 4, and that candidate walks into a KCA1
+       * exam having passed half of KCA1. One bug refuses somebody; that one
+       * certifies them.
+       *
+       * This is the shape `checkAndTransitionToExamPending` already uses, which
+       * is why the two now agree about what "finished" means.
+       */
+      const settings = await this.prisma.kbsSettings.findFirst();
+      const activeCourseId = settings?.activeCourseId;
+      if (!activeCourseId) {
+        return {
+          ...base,
+          eligible: false,
+          reason: this.t('kbs.exam.noActiveCourse'),
+          nextAttemptAt: null,
+          activeExamId: null,
+        };
+      }
+
+      const totalModules = await this.prisma.kbsModule.count({
+        where: { courseId: activeCourseId },
+      });
       const completedModules = await this.prisma.kbsCandidateProgress.count({
-        where: { candidateId: candidate.id, passed: true },
+        where: { candidateId: candidate.id, passed: true, module: { courseId: activeCourseId } },
       });
       if (completedModules < totalModules) {
         return {

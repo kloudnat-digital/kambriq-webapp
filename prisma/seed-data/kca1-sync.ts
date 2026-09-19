@@ -179,6 +179,87 @@ export const matchLessons = (source: SourceLesson[], existing: ExistingLesson[])
 /** The order an orphan is parked at, given how many the parcours already has. */
 export const orphanOrder = (index: number): number => ORPHAN_ORDER_BASE + index + 1;
 
+/** A question as the source carries it, after the A2 redistribution. */
+export type SourceQuestion = {
+  text: string;
+  answers: { text: string; isCorrect: boolean }[];
+};
+
+export type QuestionLoadOutcome = 'created' | 'left-untouched';
+
+export type QuestionLoadDecision = {
+  outcome: QuestionLoadOutcome;
+  existingQuiz: number;
+  existingExam: number;
+  sourceQuestions: number;
+};
+
+/**
+ * What a load does with a parcours' question pool - and what it deliberately
+ * does NOT do.
+ *
+ * The lessons half of a replay is implemented: a lesson has two matching
+ * signals that survive a real revision, its normalised title and its module
+ * number. A QUESTION has neither. Its text is the only thing identifying it,
+ * and editing a question is exactly the revision that would need matching, so
+ * the signal and the change are the same string. Matching on it would move a
+ * candidate's `KbsExamAnswer` onto a different question, quietly, for the
+ * people who had already sat the exam.
+ *
+ * So the rule is narrow on purpose: a FIRST load writes the pool, and any load
+ * over a pool that already holds rows writes NOTHING and reports what it found.
+ * Not because the pool was checked and approved - nothing here checks it - but
+ * because replaying questions is unimplemented work, and the report has to say
+ * that rather than imply the opposite by staying quiet.
+ */
+export const decideQuestionLoad = (args: {
+  existingQuiz: number;
+  existingExam: number;
+  sourceQuestions: number;
+}): QuestionLoadDecision => {
+  const { existingQuiz, existingExam, sourceQuestions } = args;
+
+  return {
+    outcome: existingQuiz === 0 && existingExam === 0 ? 'created' : 'left-untouched',
+    existingQuiz,
+    existingExam,
+    sourceQuestions,
+  };
+};
+
+/**
+ * The decision as a sentence Visquis can act on.
+ *
+ * It never says the pool is correct, because nothing in this file reads a
+ * single question. "Left untouched" and "verified" are different claims, and a
+ * report that blurs them teaches somebody to trust a check that was never run.
+ */
+export const describeQuestionDecision = (decision: QuestionLoadDecision): string => {
+  const { outcome, existingQuiz, existingExam, sourceQuestions } = decision;
+
+  if (outcome === 'created') {
+    return (
+      `created ${sourceQuestions} quiz questions and ${sourceQuestions} exam questions ` +
+      `(${sourceQuestions * 4} answers on each side) - the module held none`
+    );
+  }
+
+  // A half-written pool is a real state: a first load interrupted between the
+  // two copies. Topping it up silently is how a candidate ends up examined on
+  // twenty questions and drilled on none, so the asymmetry is named and left
+  // for a person to settle.
+  const asymmetry =
+    existingQuiz === existingExam
+      ? ''
+      : ` The two copies disagree - quiz ${existingQuiz}, exam ${existingExam} - so this pool is` +
+        ` incomplete, and completing it is not a decision a load takes on its own.`;
+
+  return (
+    `left untouched: quiz ${existingQuiz}, exam ${existingExam} already in the database, ` +
+    `replay not implemented.${asymmetry}`
+  );
+};
+
 /** A count per outcome, so the report says what happened rather than how many rows. */
 export const summarise = (matches: LessonMatch[]): Record<MatchOutcome, number> => {
   const counts: Record<MatchOutcome, number> = {
