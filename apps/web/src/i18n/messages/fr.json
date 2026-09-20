@@ -220,12 +220,12 @@
         "sponsorship": {
           "name": "Parrainage",
           "title": "Parrainage KAMNET",
-          "description": "Si vous êtes recommandé par un Agent KAMNET existant, vous bénéficiez d'un accès prioritaire avec un code parrain."
+          "description": "Si un Agent KAMNET vous a recommandé, vous pouvez renseigner son code parrain lors de votre candidature. Il est enregistré avec votre dossier."
         },
         "freeApplication": {
           "name": "Candidature libre",
           "title": "Candidature libre",
-          "description": "Vous pouvez aussi candidater librement en remplissant le formulaire d'admission. Votre dossier sera étudié par notre équipe."
+          "description": "Vous pouvez aussi candidater sans parrain. La candidature se fait depuis votre compte KAMBRIQ : créez-le, puis remplissez le formulaire. Votre dossier est étudié par notre équipe."
         },
         "pricing": {
           "label": "Tarif de la formation",
@@ -512,10 +512,6 @@
           "title": "Rejoindre le réseau KAMNET",
           "description": "Devenez Agent KAMNET certifié et accédez à notre catalogue exclusif de terrains vérifiés."
         },
-        "income": {
-          "title": "Revenus complémentaires",
-          "description": "Générez des commissions attractives sur chaque vente réalisée via le réseau."
-        },
         "expertise": {
           "title": "Expertise reconnue",
           "description": "Certificat KCA valable 2 ans, attestant de vos compétences en foncier camerounais."
@@ -549,18 +545,10 @@
     "kamnet": {
       "hero": {
         "eyebrow": "Réseau d'Agents KAMNET",
-        "title": "Gagnez en aidant votre communauté",
-        "subtitle": "Gagnez des commissions sur chaque transaction foncière camerounaise et accédez au catalogue exclusif de terrains vérifiés.",
+        "title": "Le réseau des agents certifiés KAMBRIQ",
+        "subtitle": "Les agents KAMNET sont certifiés par KAMBRIQ Business School et accompagnent les acheteurs à chaque étape. On rejoint le réseau après la certification KCA.",
         "cta": "Postuler à KAMNET",
         "cta2": "Nous contacter"
-      },
-      "commissions": {
-        "title": "Structure des commissions",
-        "subtitle": "Deux types de commissions, versées directement par KAMBRIQ.",
-        "saleLabel": "Sur vente",
-        "saleDetail": "3% de la valeur de vente - versés à J+15 après validation de la transaction",
-        "reservationLabel": "Sur réservation",
-        "reservationDetail": "1% de la valeur de vente - versés à la confirmation de la réservation"
       },
       "badge": "Premium",
       "title": "KAMNET",
@@ -595,7 +583,7 @@
         },
         "step7": {
           "title": "Évolution vers un statut de Manager",
-          "description": "Progressez dans votre carrière : Agent Confirmé (+5 ventes), Manager (+10 filleuls +10 ventes)"
+          "description": "Progressez dans votre carrière : Agent Confirmé (+5 ventes), Manager (+10 ventes)"
         }
       },
       "whyAgent": {
@@ -604,10 +592,6 @@
         "exclusiveAccess": {
           "title": "Accès exclusif aux produits KAMBRIQ LANDS",
           "description": "Distribuez les terrains KAMBRIQ TFL™, VEFL™ et VEFIL™ en exclusivité et accédez aux futurs produits KAMBRIQ."
-        },
-        "commissions": {
-          "title": "Commissions attractives (PV, TPC)",
-          "description": "Système de commissionnement à plusieurs niveaux avec Points Valeur et Taux Personnel de Commissionnement avantageux."
         },
         "training": {
           "title": "Formation certifiante KCA (via KBS)",

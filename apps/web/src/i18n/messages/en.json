@@ -220,12 +220,12 @@
         "sponsorship": {
           "name": "Sponsorship",
           "title": "KAMNET sponsorship",
-          "description": "If you are recommended by an existing KAMNET Agent, you benefit from priority access with a sponsor code."
+          "description": "If an existing KAMNET Agent recommended you, you can enter their sponsor code when you apply. It is recorded with your application."
         },
         "freeApplication": {
           "name": "Free Application",
           "title": "Free application",
-          "description": "You may also apply freely by filling out the admission form. Your file will be reviewed by our team."
+          "description": "You can also apply without a sponsor. Applications are made from your KAMBRIQ account: create one, then complete the form. Your file is reviewed by our team."
         },
         "pricing": {
           "label": "Training fee",
@@ -512,10 +512,6 @@
           "title": "Join KAMNET",
           "description": "Become a certified KAMNET Agent and access our exclusive verified land catalogue."
         },
-        "income": {
-          "title": "Additional income",
-          "description": "Generate attractive commissions on every sale made through the network."
-        },
         "expertise": {
           "title": "Recognised expertise",
           "description": "KCA certificate, valid 2 years, attesting your Cameroonian land expertise."
@@ -549,18 +545,10 @@
     "kamnet": {
       "hero": {
         "eyebrow": "KAMNET Agent Network",
-        "title": "Earn while helping your community",
-        "subtitle": "Earn commissions on every Cameroonian land transaction and access the exclusive verified catalogue.",
+        "title": "The network of KAMBRIQ certified agents",
+        "subtitle": "KAMNET agents are certified by KAMBRIQ Business School and support buyers at every step. You join the network after obtaining the KCA certification.",
         "cta": "Apply to KAMNET",
         "cta2": "Contact us"
-      },
-      "commissions": {
-        "title": "Commission structure",
-        "subtitle": "Two commission types, paid directly by KAMBRIQ.",
-        "saleLabel": "On sale",
-        "saleDetail": "3% of sale value - paid at D+15 after transaction validation",
-        "reservationLabel": "On reservation",
-        "reservationDetail": "1% of sale value - paid upon reservation confirmation"
       },
       "badge": "Premium",
       "title": "KAMNET",
@@ -595,7 +583,7 @@
         },
         "step7": {
           "title": "Progression to Manager",
-          "description": "Advance in your career: Confirmed Agent (+5 sales), Manager (+10 referrals +10 sales)"
+          "description": "Advance in your career: Confirmed Agent (+5 sales), Manager (+10 sales)"
         }
       },
       "whyAgent": {
@@ -604,10 +592,6 @@
         "exclusiveAccess": {
           "title": "Exclusive access to KAMBRIQ LANDS",
           "description": "Distribute KAMBRIQ TFL™, VEFL™ and VEFIL™ land exclusively and access future KAMBRIQ products."
-        },
-        "commissions": {
-          "title": "Attractive commissions (PV, TPC)",
-          "description": "Multi-level commission system with advantageous Points Valeur and personal commission rate."
         },
         "training": {
           "title": "KCA certified training (via KBS)",
