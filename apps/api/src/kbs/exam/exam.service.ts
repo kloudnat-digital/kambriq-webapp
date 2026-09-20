@@ -30,6 +30,7 @@ import {
 import { KbsPrismaService } from '../prisma/kbs-prisma.service';
 import { NEWEST_FIRST } from '../certificates/current-certificate';
 import { UsersService } from '../../core/users/users.service';
+import { readActiveCourse } from '../settings/active-course';
 import type { Prisma } from '@kambriq/common/prisma/kbs-client/client';
 
 type KbsTransaction = Prisma.TransactionClient;
@@ -172,7 +173,7 @@ export class KbsExamService {
 
     await this.ensureQuestionPoolAvailable();
 
-    const settings = await this.prisma.kbsSettings.findFirst();
+    const settings = await readActiveCourse(this.prisma);
     const questionCount = settings?.examQuestionCount ?? DEFAULT_EXAM_QUESTION_COUNT;
 
     // I36 - scoped to the active course. Unfiltered, this drew from every exam
@@ -897,7 +898,7 @@ export class KbsExamService {
        * This is the shape `checkAndTransitionToExamPending` already uses, which
        * is why the two now agree about what "finished" means.
        */
-      const settings = await this.prisma.kbsSettings.findFirst();
+      const settings = await readActiveCourse(this.prisma);
       const activeCourseId = settings?.activeCourseId;
       if (!activeCourseId) {
         return {
@@ -982,7 +983,7 @@ export class KbsExamService {
    * its stated length or it does not run.
    */
   private async ensureQuestionPoolAvailable() {
-    const settings = await this.prisma.kbsSettings.findFirst();
+    const settings = await readActiveCourse(this.prisma);
     const required = settings?.examQuestionCount ?? DEFAULT_EXAM_QUESTION_COUNT;
     const poolSize = await this.prisma.kbsExamQuestion.count({
       where: { module: { courseId: this.activeCourseIdOrThrow(settings) } },
@@ -1003,7 +1004,7 @@ export class KbsExamService {
    * the two paths cannot disagree about what "enough" means.
    */
   private async examPoolShortfall(): Promise<string | null> {
-    const settings = await this.prisma.kbsSettings.findFirst();
+    const settings = await readActiveCourse(this.prisma);
     const activeCourseId = settings?.activeCourseId;
     if (!activeCourseId) {
       return this.t('kbs.exam.noActiveCourse');

@@ -265,9 +265,15 @@ describe('KbsCoursesService', () => {
     it('refuses when the module pool is below quizQuestionCount', async () => {
       prisma.kbsCandidate.findUnique.mockResolvedValue(buildCandidate({ status: 'IN_TRAINING' }));
       prisma.kbsModule.findUnique.mockResolvedValue(
-        buildModule({ id: 'mod1', order: 1, title: 'Module 1' }),
+        buildModule({ id: 'mod1', order: 1, title: 'Module 1', courseId: 'c1' }),
       );
-      prisma.kbsSettings.findFirst.mockResolvedValue({ quizQuestionCount: 10 });
+      // I38 - the mock carries a course now. Without one, this fixture could
+      // never have caught a module served from outside the candidate's course:
+      // the discriminating data simply was not in it.
+      prisma.kbsSettings.findFirst.mockResolvedValue({
+        quizQuestionCount: 10,
+        activeCourseId: 'c1',
+      });
       prisma.kbsCandidateProgress.findUnique.mockResolvedValue({ attempts: 0 });
       prisma.kbsQuestion.findMany.mockResolvedValue(
         Array.from({ length: 9 }, (_, i) => buildQuestion({ id: `q${i}`, answers: [] })),
@@ -281,9 +287,15 @@ describe('KbsCoursesService', () => {
     it('returns shuffled questions without correct answers exposed', async () => {
       prisma.kbsCandidate.findUnique.mockResolvedValue(buildCandidate({ status: 'IN_TRAINING' }));
       prisma.kbsModule.findUnique.mockResolvedValue(
-        buildModule({ id: 'mod1', order: 1, title: 'Module 1' }),
+        buildModule({ id: 'mod1', order: 1, title: 'Module 1', courseId: 'c1' }),
       );
-      prisma.kbsSettings.findFirst.mockResolvedValue({ quizQuestionCount: 10 });
+      // I38 - the mock carries a course now. Without one, this fixture could
+      // never have caught a module served from outside the candidate's course:
+      // the discriminating data simply was not in it.
+      prisma.kbsSettings.findFirst.mockResolvedValue({
+        quizQuestionCount: 10,
+        activeCourseId: 'c1',
+      });
       prisma.kbsCandidateProgress.findUnique.mockResolvedValue({ attempts: 0 });
       const questions = Array.from({ length: 30 }, (_, i) =>
         buildQuestion({

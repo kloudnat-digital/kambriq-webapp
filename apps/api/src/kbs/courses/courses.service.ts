@@ -27,6 +27,7 @@ import {
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 import { isFileBackedContentType } from '@kambriq/common/constants/kbs/lesson-content';
+import { assertInActiveCourse, readActiveCourse } from '../settings/active-course';
 
 @Injectable()
 export class KbsCoursesService {
@@ -209,7 +210,18 @@ export class KbsCoursesService {
     // I21 - no settings row answered 500. The fallbacks are the ones the quiz
     // itself enforces (`submitQuiz`, `findQuestionsForQuiz`): this screen said
     // 5 attempts while the server allowed any number.
-    const settings = await this.prisma.kbsSettings.findFirst();
+    const settings = await readActiveCourse(this.prisma);
+
+    // I38 - a read, so `allow` on absence: with no settings row this screen
+    // must still answer with those defaults rather than start refusing, which
+    // is the behaviour I21 established and `kbs-robustness.spec.ts` pins.
+    assertInActiveCourse(
+      mod.courseId,
+      settings?.activeCourseId,
+      () =>
+        new NotFoundException(this.t('kbs.module.notFound', DEFAULT_LANGUAGE, { id: moduleId })),
+      'allow',
+    );
     const quizQuestionCount = settings?.quizQuestionCount ?? DEFAULT_QUIZ_QUESTION_COUNT;
     const quizMaxAttempts = settings?.quizMaxAttempts ?? 0;
     const cooldownMinutes = settings?.quizCooldownMinutes ?? 0;
@@ -398,6 +410,15 @@ export class KbsCoursesService {
       throw new NotFoundException(this.t('kbs.lesson.notFound', undefined, { id }));
     }
 
+    // I38 - published is not the same question as "part of your course".
+    const settingsForLesson = await readActiveCourse(this.prisma);
+    assertInActiveCourse(
+      lesson.module.courseId,
+      settingsForLesson?.activeCourseId,
+      () => new NotFoundException(this.t('kbs.lesson.notFound', undefined, { id })),
+      'allow',
+    );
+
     const contentUrl =
       lesson.contentUrl && isFileBackedContentType(lesson.contentType)
         ? await this.storage.getDownloadUrl(lesson.contentUrl)
@@ -417,6 +438,7 @@ export class KbsCoursesService {
             id: true,
             order: true,
             title: true,
+            courseId: true,
             lessons: {
               select: { id: true, order: true, title: true },
               orderBy: { order: 'asc' },
@@ -427,6 +449,17 @@ export class KbsCoursesService {
     });
 
     if (!lesson) throw new NotFoundException(this.t('kbs.lesson.notFound', undefined, { id }));
+
+    // I38 - this path was WEAKER than findLessonById: no course filter and no
+    // isPublished check either, while it signs and serves the lesson content.
+    // The brief named five holes; this is a sixth, in the same family.
+    const viewSettings = await readActiveCourse(this.prisma);
+    assertInActiveCourse(
+      lesson.module.courseId,
+      viewSettings?.activeCourseId,
+      () => new NotFoundException(this.t('kbs.lesson.notFound', undefined, { id })),
+      'allow',
+    );
 
     const completion = await this.prisma.kbsLessonCompletion.findUnique({
       where: {
@@ -502,14 +535,23 @@ export class KbsCoursesService {
     const [mod, settings] = await Promise.all([
       this.prisma.kbsModule.findUnique({
         where: { id: moduleId },
-        select: { id: true, order: true, title: true },
+        select: { id: true, order: true, title: true, courseId: true },
       }),
-      this.prisma.kbsSettings.findFirst(),
+      readActiveCourse(this.prisma),
     ]);
 
     if (!mod) {
       throw new NotFoundException(this.t('kbs.module.notFound', undefined, { id: moduleId }));
     }
+
+    // I38 - the module must belong to the course the candidate is enrolled in.
+    // The draw below is scoped by moduleId, so the pool was never the problem:
+    // the PERIMETER was, and a foreign module id was served like any other.
+    assertInActiveCourse(
+      mod.courseId,
+      settings?.activeCourseId,
+      () => new NotFoundException(this.t('kbs.module.notFound', undefined, { id: moduleId })),
+    );
 
     const progress = await this.prisma.kbsCandidateProgress.findUnique({
       where: {
@@ -655,11 +697,22 @@ export class KbsCoursesService {
 
     const lesson = await this.prisma.kbsLesson.findUnique({
       where: { id: lessonId },
-      select: { id: true, moduleId: true },
+      select: { id: true, moduleId: true, module: { select: { courseId: true } } },
     });
     if (!lesson) {
       throw new NotFoundException(this.t('kbs.lesson.notFound', undefined, { id: lessonId }));
     }
+
+    // I38 - a WRITER, so `refuse`: this upserts a KbsLessonCompletion keyed on
+    // an id the caller supplies. Banking a completion against a course nobody
+    // is studying is data damage, not a display defect, which is why the
+    // absence of a settings row refuses here and merely degrades on the reads.
+    const completionSettings = await readActiveCourse(this.prisma);
+    assertInActiveCourse(
+      lesson.module.courseId,
+      completionSettings?.activeCourseId,
+      () => new NotFoundException(this.t('kbs.lesson.notFound', undefined, { id: lessonId })),
+    );
 
     await this.prisma.kbsLessonCompletion.upsert({
       where: { candidateId_lessonId: { candidateId: candidate.id, lessonId } },

@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import { KbsPrismaService } from '../prisma/kbs-prisma.service';
 import { isActive, NEWEST_FIRST } from './current-certificate';
 import { UsersService } from '../../core/users/users.service';
+import { readActiveCourse } from '../settings/active-course';
 import { IssueCertificateDto, RevokeCertificateDto } from './dto/certificate.dto';
 import {
   buildPaginatedResponse,
@@ -163,7 +164,7 @@ export class KbsCertificatesService {
 
     const [user, settings] = await Promise.all([
       this.usersService.findById(candidate.userId),
-      this.prisma.kbsSettings.findFirst({ select: { activeCourseId: true } }),
+      readActiveCourse(this.prisma),
     ]);
 
     const modulesTotal = settings?.activeCourseId
