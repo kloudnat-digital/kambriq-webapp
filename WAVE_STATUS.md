@@ -216,3 +216,117 @@ being added. **Visquis chose the role-free tier.**
 ### Copy invented
 
 None.
+
+---
+
+## Step 3 - P9: the KAMNET arbitrage in code
+
+**PR #158** - `fix/p9-kamnet-arbitrage` -> `fix/i17-candidate-route-roles`
+**No run exists** - stacked PR, see the note at the top. Gate run locally:
+api 886/886 (73 suites, 2 new), web 348/348, test:db 109/109, typecheck api 0,
+typecheck web 0, lint 6/6, prettier clean. Suites re-run after formatting.
+
+### Proved red - three assertions, each watched
+
+| assertion                           | red against develop                        |
+| ----------------------------------- | ------------------------------------------ |
+| sponsor chain levels present        | `[1, 2, 3]` where `[1]` was expected       |
+| `getMyNetwork(_, 3)` nesting        | a nested tree where one level was expected |
+| promote on 10 sales and 0 referrals | `Number of calls: 0` - update never called |
+
+Two fixture decisions carry those assertions. The depth fixture is **four deep
+in both directions**, so an answer of one level proves the CLAMP and not the
+shape of the data - a shallow fixture agrees with every possible limit and
+discriminates between none. The promotion fixture has **zero** referrals,
+because ten-sales-and-ten-referrals is promoted under the old rule and the new
+one alike, so a test built that way cannot tell them apart.
+
+The depth spec also carries an explicit fixture assertion, because without it
+every assertion below it would pass against a one-level fixture.
+
+### Changed
+
+`KAMNET_MAX_SPONSORSHIP_DEPTH` 3 -> 1, with a comment saying what it now means
+and why, so the next reader does not "restore" it. `MANAGER_REFERRALS` removed;
+MANAGER is ten completed sales. `_count: { referrals: true }` removed from
+`checkPromotion` - a count loaded for a condition that no longer exists is a
+query nobody can explain later. `findById` keeps its own count: that is the
+profile's `referralCount`, and referrals still exist and still matter.
+
+### Every comment corrected
+
+A constant changed while comments keep describing the old value is how the next
+reader gets it wrong. `N2`, `N3` and `level 3` swept across `apps` and `libs`:
+
+- `constants/kamnet/index.ts` - the constant's own `// N1, N2, N3`
+- `network.service.ts` - class docstring, the depth table on `getMyNetwork`, the
+  sponsor-chain walk comment
+- `kamnet.module.ts` - "N1-N3 depth"
+- `kamnet-agent.controller.ts` - the network route description, the `depth`
+  `ApiQuery` description, the sponsor-chain description
+- `commissions.service.ts` - the level scheme
+- `kamnet-admin.controller.ts` - "levels 0 (DA) through 3 (N3)"
+- `types/kamnet.ts` - `NetworkNode` recursion note and the commission level doc
+- `lib/actions/kamnet.ts` - the clamp comment
+- `agent/network/page.tsx` - the tier/depth prose
+
+**Two UX-specification quotations were left exactly as written** and marked
+superseded instead (`network-content.tsx`, `page.spec.tsx`). Editing a citation
+to match a later decision misrepresents the document it cites.
+
+### A hardcoded 3 that the constant never reached
+
+`DEPTH_FOR_TIER` in `agent/network/page.tsx` held a literal `3`. When the
+constant moved, it did not: the page went on asking for a depth the action
+silently clamped, so page and server disagreed and nothing reported it. It now
+reads the constant. That literal is also exactly why one of the three inverted
+tests did NOT go red when the constant changed - it was agreeing with the page
+rather than with the platform.
+
+### Three tests inverted, not deleted
+
+`kamnet.spec.ts` x2 and `page.spec.tsx` x1. Each asserts the **literal 1**, not
+`KAMNET_MAX_SPONSORSHIP_DEPTH`: an expectation computed from the same constant
+the code reads passes for every value of it, including one nobody decided.
+
+### Premises checked
+
+| Premise                                                                                                 | Held                                                                       |
+| ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| The constant is read in four places (`network.service.ts` 48, 62, 124; `web/lib/actions/kamnet.ts` 185) | Yes                                                                        |
+| No commission logic reads it                                                                            | Yes                                                                        |
+| Seeded commissions are level 0 and 1 only                                                               | Yes - and the dev kamnet database holds only `0` (3 rows) and `1` (2 rows) |
+| No code path writes level 2 or 3                                                                        | Yes - nothing is stranded                                                  |
+| `MANAGER_REFERRALS` has exactly one reader (`agents.service.ts:193`)                                    | Yes                                                                        |
+
+### Reported, not fixed
+
+- **I32 is untouched and still open.** `getMyNetwork` still never reads the
+  caller's tier; the rule lives in the page. The depth change shrinks what that
+  gap can expose, because everyone is clamped to N1 anyway. **A narrowed blast
+  radius is not a fix**, and the day the depth rises the hole is the size it
+  always was.
+- The depth DTOs still `.max(3)` and the `ApiQuery` still lists `[1, 2, 3]`, so
+  a caller may ask for 3 and be clamped rather than refused. Narrowing
+  validation would turn an existing clamp into a 400 for any client still
+  sending 3, and that is its own decision.
+- `KamnetCommission.level` remains an `Int` that accepts 2 and 3, and the admin
+  create-commission endpoint still does too, though nothing produces them.
+
+### THE GAP BETWEEN STEP 3 AND STEP 4 - live while it lasts
+
+Required by the wave brief, and true right now:
+
+**`products.kamnet.agentJourney.step7.description` still reads "Manager (+10
+filleuls +10 ventes)" / "Manager (+10 referrals +10 sales)" on the public site.**
+P9 has just removed the referral condition from the code. If #158 merges before
+step 4 lands, the site states a tier rule the platform no longer applies.
+
+The same page also still publishes `products.kamnet.commissions.saleDetail` -
+"3% de la valeur de vente - versés à J+15" - a rate, a base and a payment
+deadline that nothing in the platform computes or pays. That is P21, and it is
+step 4's subject rather than a consequence of this step.
+
+### Copy invented
+
+None. This step changed no user-facing string.
