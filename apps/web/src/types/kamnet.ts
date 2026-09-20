@@ -44,7 +44,9 @@ export interface NetworkAgent {
 
 /**
  * A node of the sponsorship tree. Recursive, and the depth is bounded by the
- * server at `KAMNET_MAX_SPONSORSHIP_DEPTH`, so the recursion terminates at N3.
+ * server at `KAMNET_MAX_SPONSORSHIP_DEPTH` - 1 since P9 - so in practice the
+ * recursion terminates at N1 and `referrals` on a child is empty. The type
+ * stays recursive because the bound is a business rule, not a shape.
  */
 export interface NetworkNode {
   agent: NetworkAgent;
@@ -145,7 +147,12 @@ export interface Commission {
   agentId: string;
   landId: string;
   reservationId: string;
-  /** 0 = direct agent, 1 = N1, 2 = N2, 3 = N3. */
+  /**
+   * 0 = the agent who made the sale, 1 = their direct sponsor.
+   *
+   * 2 and 3 belonged to the four-level scheme P9 ended on 20 September 2026.
+   * No row was ever written at either, and nothing produces them now.
+   */
   level: number;
   pv: number;
   tpc: number;

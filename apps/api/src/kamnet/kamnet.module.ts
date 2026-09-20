@@ -18,7 +18,7 @@ import { KamnetAdminController } from './controllers/kamnet-admin.controller';
  * - Agent profiles (status management, sponsorship tree)
  * - Leads (prospect tracking for agents)
  * - Commissions (MVP: manual storage, v2: auto-calculation)
- * - Network (sponsorship tree queries, N1-N3 depth)
+ * - Network (sponsorship tree queries, N1 depth since P9)
  *
  */
 

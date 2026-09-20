@@ -18,13 +18,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import {
-  CurrentUser,
-  PaginationQueryDto,
-  RequestUser,
-  RoleCode,
-  Roles,
-} from '@kambriq/common';
+import { CurrentUser, PaginationQueryDto, RequestUser, RoleCode, Roles } from '@kambriq/common';
 import {
   SubmitApplicationDto,
   UpdateAgentProfileDto,
@@ -65,10 +59,7 @@ export class KamnetAgentController {
     description: 'Invalid or expired KCA certificate.',
   })
   @ApiResponse({ status: 409, description: 'Application already exists.' })
-  async submitApplication(
-    @CurrentUser() user: RequestUser,
-    @Body() dto: SubmitApplicationDto,
-  ) {
+  async submitApplication(@CurrentUser() user: RequestUser, @Body() dto: SubmitApplicationDto) {
     return this.applicationsService.submit(user.id, dto);
   }
 
@@ -85,8 +76,7 @@ export class KamnetAgentController {
   @Roles(RoleCode.AGENT)
   @ApiOperation({
     summary: 'Get my agent profile',
-    description:
-      'Returns agent profile enriched with Core user info (name, email, phone).',
+    description: 'Returns agent profile enriched with Core user info (name, email, phone).',
   })
   @ApiResponse({ status: 200, description: 'Agent profile returned.' })
   @ApiResponse({ status: 404, description: 'Agent profile not found.' })
@@ -98,10 +88,7 @@ export class KamnetAgentController {
   @Roles(RoleCode.AGENT)
   @ApiOperation({ summary: 'Update my agent profile (bio, country, city)' })
   @ApiResponse({ status: 200, description: 'Profile updated.' })
-  async updateMyProfile(
-    @CurrentUser() user: RequestUser,
-    @Body() dto: UpdateAgentProfileDto,
-  ) {
+  async updateMyProfile(@CurrentUser() user: RequestUser, @Body() dto: UpdateAgentProfileDto) {
     return this.agentsService.updateMyProfile(user.id, dto);
   }
 
@@ -119,10 +106,7 @@ export class KamnetAgentController {
   @Roles(RoleCode.AGENT)
   @ApiOperation({ summary: 'Create a new lead/prospect' })
   @ApiResponse({ status: 201, description: 'Lead created.' })
-  async createLead(
-    @CurrentUser() user: RequestUser,
-    @Body() dto: CreateLeadDto,
-  ) {
+  async createLead(@CurrentUser() user: RequestUser, @Body() dto: CreateLeadDto) {
     const agent = await this.agentsService.findByUserId(user.id);
     return this.leadsService.create(agent.id, dto);
   }
@@ -132,8 +116,18 @@ export class KamnetAgentController {
   @ApiOperation({ summary: 'List my leads' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
-  @ApiQuery({ name: 'status', required: false, enum: ['NEW', 'CONTACTED', 'QUALIFIED', 'CONVERTED', 'LOST'], description: 'Filter by lead status' })
-  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search by client name or email' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['NEW', 'CONTACTED', 'QUALIFIED', 'CONVERTED', 'LOST'],
+    description: 'Filter by lead status',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search by client name or email',
+  })
   async getMyLeads(
     @CurrentUser() user: RequestUser,
     @Query() pagination: PaginationQueryDto,
@@ -170,10 +164,7 @@ export class KamnetAgentController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a lead' })
   @ApiParam({ name: 'id', description: 'Lead ID' })
-  async deleteLead(
-    @CurrentUser() user: RequestUser,
-    @Param('id') leadId: string,
-  ) {
+  async deleteLead(@CurrentUser() user: RequestUser, @Param('id') leadId: string) {
     const agent = await this.agentsService.findByUserId(user.id);
     return this.leadsService.delete(leadId, agent.id);
   }
@@ -192,18 +183,19 @@ export class KamnetAgentController {
   @ApiResponse({ status: 404, description: 'The caller has no KAMNET agent record.' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
-  @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'VALIDATED', 'PAID'], description: 'Filter by commission status' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['PENDING', 'VALIDATED', 'PAID'],
+    description: 'Filter by commission status',
+  })
   async getMyCommissions(
     @CurrentUser() user: RequestUser,
     @Query() pagination: PaginationQueryDto,
     @Query() filters: CommissionFilterDto,
   ) {
     const agent = await this.agentsService.findByUserId(user.id);
-    return this.commissionsService.findMyCommissions(
-      agent.id,
-      pagination,
-      filters,
-    );
+    return this.commissionsService.findMyCommissions(agent.id, pagination, filters);
   }
 
   @Get('commissions/summary')
@@ -222,13 +214,18 @@ export class KamnetAgentController {
   @Roles(RoleCode.AGENT)
   @ApiOperation({
     summary: 'Get my sponsorship network',
-    description: 'Returns referrals up to N3 depth. Use ?depth=1|2|3.',
+    description:
+      'Returns direct referrals (N1). Since P9 the tree is walked one step, so a larger ?depth is accepted and clamped rather than refused.',
   })
-  @ApiQuery({ name: 'depth', required: false, type: Number, enum: [1, 2, 3], description: 'Tree depth: 1=N1 only, 2=N1+N2, 3=N1+N2+N3. Defaults to 1.' })
-  async getMyNetwork(
-    @CurrentUser() user: RequestUser,
-    @Query() query: NetworkTreeQueryDto,
-  ) {
+  @ApiQuery({
+    name: 'depth',
+    required: false,
+    type: Number,
+    enum: [1, 2, 3],
+    description:
+      'Accepted for compatibility and clamped to KAMNET_MAX_SPONSORSHIP_DEPTH, which is 1 since P9. Any value returns N1 only. Defaults to 1.',
+  })
+  async getMyNetwork(@CurrentUser() user: RequestUser, @Query() query: NetworkTreeQueryDto) {
     return this.networkService.getMyNetwork(user.id, query.depth);
   }
 
@@ -237,7 +234,7 @@ export class KamnetAgentController {
   @ApiOperation({
     summary: 'Get my sponsor chain',
     description:
-      'Walk up the tree: who sponsored me, who sponsored them, up to N3.',
+      'Walk up the tree: who sponsored me. Since P9 the chain stops at the direct sponsor.',
   })
   async getMySponsorChain(@CurrentUser() user: RequestUser) {
     return this.networkService.getMySponsorChain(user.id);

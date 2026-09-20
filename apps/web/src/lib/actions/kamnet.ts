@@ -171,6 +171,9 @@ export const getCommissionSummary = createAction(async () => {
  * day the clamp moves this module starts asking for something it cannot render.
  * Two independent clamps on the same constant cost nothing.
  *
+ * Since P9 that constant is 1, so every request resolves to N1 whatever the
+ * caller asks for.
+ *
  * Note what this function does NOT do: it does not decide which depth a tier is
  * entitled to. `GET /kamnet/network` never reads the caller's tier, so that
  * rule lives nowhere on the server today and the page applies it. That is a

@@ -158,15 +158,15 @@ export class KamnetAgentsService {
 
   // ----- Auto Promotion Check ----- //
   /**
-   * Called after a sale is recorded. Check if agent qualifies
-   * for a higher status based on sales and referrals thresholds
+   * Called after a sale is recorded. Check if the agent qualifies for a higher
+   * tier on completed sales alone - P9 removed the referral requirement.
    */
   async checkPromotion(agentId: string) {
+    // No `_count: { referrals: true }`: it was loaded for the referral
+    // threshold P9 removed, and a count fetched for a condition that no longer
+    // exists is a query nobody can explain later.
     const agent = await this.prisma.kamnetAgent.findUnique({
       where: { id: agentId },
-      include: {
-        _count: { select: { referrals: true } },
-      },
     });
 
     if (!agent || agent.suspendedAt) {
@@ -186,11 +186,11 @@ export class KamnetAgentsService {
       newTier = KamnetAgentTier.CONFIRMED;
     }
 
-    // CONFIRMED -> MANAGER: 10+ completed sales + 10+ referrals
+    // CONFIRMED -> MANAGER: 10 completed sales. P9 dropped the referral
+    // requirement - selling is what earns the tier, recruiting is not.
     if (
       agent.tier === KamnetAgentTier.CONFIRMED &&
-      agent.salesCount >= KAMNET_PROMOTION_THRESHOLDS.MANAGER_SALES &&
-      agent._count.referrals >= KAMNET_PROMOTION_THRESHOLDS.MANAGER_REFERRALS
+      agent.salesCount >= KAMNET_PROMOTION_THRESHOLDS.MANAGER_SALES
     ) {
       newTier = KamnetAgentTier.MANAGER;
     }
