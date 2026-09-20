@@ -81,28 +81,52 @@ describe('seed identifiers are valid UUIDs by the API’s own rule', () => {
 });
 
 /**
- * The seed must configure the active course.
+ * The seed must configure the active course, and must not choose it twice.
  *
  * `checkAndTransitionToExamPending` reads `kbsSettings.activeCourseId` first and
  * returns when it is null, and `me/overview` answers `course: null,
  * modulesTotal: 0` for the same reason. The seed created the settings row with
  * `update: {}` and never set the field, so on dev a candidate passed every
  * module, stayed IN_TRAINING, and was told to "finish all the modules" they had
- * just finished.
+ * just finished. That much is unchanged and still has to hold.
  *
- * `update` has to set it as well as `create`: any environment seeded before this
- * already has the settings row, so a create-only fix would leave it null exactly
- * where the defect was observed.
+ * ---------------------------------------------------------------------------
+ * Why this test was INVERTED rather than updated (I42)
+ * ---------------------------------------------------------------------------
+ * It used to read `sets activeCourseId on create and on update`, and asserted
+ * the id appeared in the upsert exactly TWICE. That assertion was accurate
+ * about the code and wrong about the requirement: it was green for exactly as
+ * long as the defect existed and went red the day somebody fixed it.
+ *
+ * The defect is that the active course is a CHOICE. An administrator sets it
+ * through `PATCH /kbs/settings` - the KCA1 switch was that - and a seed writing
+ * the id on every run reverted the switch silently, on a green run, leaving
+ * every candidate on the wrong course. Repairing a NULL and overruling a choice
+ * were one line, so the fix separates them and this test had to stop requiring
+ * the half that was wrong.
+ *
+ * What a text guard can honestly pin is the WIRING: that the seed still
+ * configures the course, and that the unconditional write is gone. The rule
+ * itself - repair only where NULL, leave any named course alone - is behaviour,
+ * and it is proved against real Postgres in `kbs-settings-seed.dbspec.ts`, on
+ * both halves, because a fix that never writes and a fix that always writes are
+ * each half right.
  */
 describe('seed configures the active course', () => {
-  it('sets activeCourseId on create and on update', () => {
-    const block = SEED.slice(SEED.indexOf('kbsSettings.upsert'));
-    const upsert = block.slice(0, block.indexOf('});') + 3);
+  it('configures it through the shared helper, with the seeded course', () => {
+    const call = SEED.slice(SEED.indexOf('seedKbsSettings('));
+    const args = call.slice(0, call.indexOf('});') + 3);
 
-    expect(upsert).toContain('activeCourseId: IDS.KBS_COURSE');
-    // Both branches, not just the one that runs on an empty database.
-    expect(upsert.match(/activeCourseId: IDS\.KBS_COURSE/g)).toHaveLength(2);
-    expect(upsert).not.toMatch(/update:\s*\{\s*\}/);
+    expect(args).toContain('activeCourseId: IDS.KBS_COURSE');
+  });
+
+  /**
+   * The unconditional write is what reverted the switch. If it comes back
+   * inline, this fails naming the file rather than waiting for somebody to
+   * notice candidates on the wrong course.
+   */
+  it('no longer writes the active course unconditionally', () => {
+    expect(SEED).not.toContain('kbsSettings.upsert');
   });
 });
 
