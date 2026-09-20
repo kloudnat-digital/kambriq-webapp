@@ -4,7 +4,7 @@ import { KbsCandidatesService } from '../candidates/candidates.service';
 import { KbsExamService } from '../exam/exam.service';
 import { KbsCertificatesService } from '../certificates/certificates.service';
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
-import { CurrentUser, RequestUser } from '@kambriq/common';
+import { CurrentUser, RequestUser, RoleCode, Roles } from '@kambriq/common';
 import { CvUploadUrlDto, EnrollDto, SubmitQuizDto } from '../candidates/dto/candidate.dto';
 import { RescheduleExamDto, SaveAnswerDto, SubmitExamDto } from '../exam/dto/exam.dto';
 
@@ -19,6 +19,11 @@ export class KbsCandidateController {
     private readonly certificateService: KbsCertificatesService,
   ) {}
 
+  // I17 - NO role, deliberately. This route is what GRANTS CANDIDATE_KBS
+  // (candidates.service.ts:90), so a caller cannot already hold it. A role here,
+  // or a class-level one, locks out every NEW candidate while every enrolled one
+  // keeps working - the platform looks healthy and is broken for the population
+  // being added.
   @Post('enroll')
   @ApiOperation({
     summary: 'Enroll in the KBS training program',
@@ -39,6 +44,9 @@ export class KbsCandidateController {
     return this.candidatesService.enroll(user.id, dto);
   }
 
+  // I17 - NO role, deliberately. The CV is uploaded BEFORE enrolling: its fileUrl
+  // is sent in the body of POST /kbs/enroll, so this necessarily precedes the
+  // grant of CANDIDATE_KBS.
   @Post('cv/upload-url')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -52,6 +60,12 @@ export class KbsCandidateController {
     return this.candidatesService.getCvUploadUrl(user.id, dto);
   }
 
+  // I17 - NO role, deliberately. This is the "am I enrolled?" probe. The enrolment
+  // page calls it BEFORE any candidate exists, and it answers 404 when there is
+  // none. A role here turns that 404 into a 403, and the web's `nullOn404` reads
+  // only 404 as "not enrolled" - so a 403 is rethrown and the page that ENROLS
+  // people errors instead of showing the form. Same outage as a class-level role,
+  // reached through a different door.
   @Get('me')
   @ApiOperation({
     summary: 'Get my KBS candidate profile',
@@ -66,6 +80,7 @@ export class KbsCandidateController {
   }
 
   @Get('me/overview')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @ApiOperation({
     summary: 'Get my full KBS training path (aggregated dashboard view)',
     description:
@@ -82,6 +97,7 @@ export class KbsCandidateController {
   }
 
   @Get('courses')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @ApiOperation({
     summary: 'List all published courses',
     description: 'Returns all KBS courses that are published and available to candidates.',
@@ -93,6 +109,7 @@ export class KbsCandidateController {
   }
 
   @Get('courses/:courseId/modules')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @ApiOperation({
     summary: 'Get modules for a course with personal progress',
     description:
@@ -115,6 +132,7 @@ export class KbsCandidateController {
   }
 
   @Get('lesson/:lessonId')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @ApiOperation({
     summary: 'Get lesson content',
     description: 'Returns the full lesson including content URL (video, PDF, etc.) and metadata.',
@@ -132,6 +150,7 @@ export class KbsCandidateController {
   }
 
   @Get('lessons/:lessonId/view')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @ApiOperation({
     summary: 'Get lesson viewer payload (aggregated)',
     description:
@@ -146,6 +165,7 @@ export class KbsCandidateController {
   }
 
   @Get('modules/:moduleId/detail')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @ApiOperation({
     summary: 'Get module detail (aggregated view for module viewer)',
     description:
@@ -160,6 +180,7 @@ export class KbsCandidateController {
   }
 
   @Post('lesson/:lessonId/complete')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Mark a lesson as completed',
@@ -175,6 +196,7 @@ export class KbsCandidateController {
   }
 
   @Get('modules/:moduleId/quiz')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @ApiOperation({
     summary: 'Get the quiz for a module',
     description:
@@ -192,6 +214,7 @@ export class KbsCandidateController {
   }
 
   @Post('modules/:moduleId/quiz')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Submit answers for a module quiz',
@@ -218,6 +241,7 @@ export class KbsCandidateController {
   }
 
   @Get('exam/eligibility')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @ApiOperation({
     summary: 'Check final exam eligibility',
     description:
@@ -234,6 +258,7 @@ export class KbsCandidateController {
   }
 
   @Post('exam/schedule')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @ApiOperation({
     summary: 'Schedule the final exam',
     description:
@@ -253,6 +278,7 @@ export class KbsCandidateController {
   }
 
   @Patch('exam/:examId/reschedule')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @ApiOperation({
     summary: 'Reschedule a scheduled exam',
     description:
@@ -276,6 +302,7 @@ export class KbsCandidateController {
   }
 
   @Post('exam/:examId/start')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Start an exam session',
@@ -299,6 +326,7 @@ export class KbsCandidateController {
   }
 
   @Post('exam/:examId/answer')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Auto-save a single answer during an exam',
@@ -324,6 +352,7 @@ export class KbsCandidateController {
   }
 
   @Post('exam/:examId/submit')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Submit the exam for grading',
@@ -354,6 +383,7 @@ export class KbsCandidateController {
   // NOTE: exam/history must be defined before exam/:examId/results to prevent
   // "history" being captured as the :examId parameter.
   @Get('exam/history')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @ApiOperation({
     summary: 'Get exam attempt history',
     description:
@@ -366,6 +396,7 @@ export class KbsCandidateController {
   }
 
   @Get('exam/:examId/results')
+  @Roles(RoleCode.CANDIDATE_KBS)
   @ApiOperation({
     summary: 'Get exam results',
     description:
@@ -387,6 +418,10 @@ export class KbsCandidateController {
     return this.examService.getExamResult(user.id, examId);
   }
 
+  // I17 - NO role, deliberately. The same probe shape as GET /kbs/me: it answers
+  // 404 for somebody not enrolled and `data: null` when no certificate has been
+  // issued, and the certificate page renders that emptiness. A role would turn
+  // both of those answers into a 403 the web treats as a crash.
   @Get('certificate/me')
   @ApiOperation({
     summary: 'Get my KCA certificate',
