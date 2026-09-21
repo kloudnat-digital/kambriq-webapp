@@ -312,12 +312,22 @@ describe('kamnet actions: network', () => {
     referrals: [],
   };
 
-  it('asks for the network at the depth it was given', async () => {
+  it('clamps a request for a deeper tree to the one level sponsorship reaches', async () => {
+    /**
+     * INVERTED by P9, not deleted. It read "asks for the network at the depth
+     * it was given" and expected `depth=3` - true of the code and, after the 20
+     * September arbitrage, wrong about the requirement.
+     *
+     * Asserted as the LITERAL 1 rather than as `KAMNET_MAX_SPONSORSHIP_DEPTH`:
+     * computing the expectation from the same constant the code reads makes a
+     * test that passes for every value of it, including one nobody decided. The
+     * literal means moving the depth turns this red and has to be argued for.
+     */
     get.mockResolvedValue(tree as never);
 
     await getMyNetwork(3);
 
-    expect(get).toHaveBeenCalledWith('/kamnet/network?depth=3');
+    expect(get).toHaveBeenCalledWith('/kamnet/network?depth=1');
   });
 
   it('defaults to depth 1, which is the API default and the Junior rule', async () => {
@@ -328,15 +338,16 @@ describe('kamnet actions: network', () => {
     expect(get).toHaveBeenCalledWith('/kamnet/network?depth=1');
   });
 
-  it('refuses to ask for a depth beyond N3 rather than letting the server clamp it', async () => {
+  it('refuses to ask for more than sponsorship reaches, rather than letting the server clamp it', async () => {
     // The API clamps with Math.min(depth, KAMNET_MAX_SPONSORSHIP_DEPTH). Relying
     // on that would make this module's contract depend on a server-side detail;
-    // asking for 3 when told 9 keeps the two honest independently.
+    // asking for 1 when told 9 keeps the two honest independently. The bound
+    // moved from 3 to 1 with P9; that it is enforced HERE as well did not.
     get.mockResolvedValue(tree as never);
 
     await getMyNetwork(9);
 
-    expect(get).toHaveBeenCalledWith('/kamnet/network?depth=3');
+    expect(get).toHaveBeenCalledWith('/kamnet/network?depth=1');
   });
 
   it('answers null when the caller has no agent record', async () => {

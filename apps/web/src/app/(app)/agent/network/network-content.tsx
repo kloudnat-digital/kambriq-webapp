@@ -18,6 +18,12 @@ import type { NetworkNode, SponsorChain } from '@/types/kamnet';
  * aggregate, because an aggregate over one level is the count of cards already
  * on screen.
  *
+ * P9 (20 September 2026) SUPERSEDES the depth half of that quotation: every
+ * tier now sees N1, because sponsorship stops at the direct sponsor. The quote
+ * is left as written rather than edited - it is a citation of a specification,
+ * and rewriting it would misrepresent what that document says. The statistics
+ * half still holds: only a MANAGER sees the aggregate.
+ *
  * Synchronous, taking its labels as props. See the note in `network-empty.tsx`:
  * an async child cannot be resolved when the parent's output is rendered
  * directly, which silently emptied the DOM in tests while the browser was fine.

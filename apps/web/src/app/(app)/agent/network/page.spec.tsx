@@ -37,6 +37,12 @@ const sponsors = getMySponsors as jest.MockedFunction<typeof getMySponsors>;
  * Note CONFIRMED sees N1 only, like JUNIOR. The brief names only Junior and
  * Manager and is silent on CONFIRMED, which is a real tier - so the
  * specification decides it and the PR says so.
+ *
+ * P9 (20 September 2026) SUPERSEDES the depth half of that quotation: every
+ * tier asks for N1, because sponsorship now stops at the direct sponsor. The
+ * quotation is left exactly as the specification writes it - editing a citation
+ * to match a later decision misrepresents the document it cites. Only the
+ * statistics half still separates a MANAGER from the rest.
  */
 
 const INVENTED = [
@@ -203,12 +209,23 @@ describe('/agent/network - depth and statistics follow the tier', () => {
     expect(network).toHaveBeenCalledWith(1);
   });
 
-  it('asks for N1 to N3 when the agent is MANAGER', async () => {
+  it('asks for N1 even when the agent is MANAGER, since P9', async () => {
+    /**
+     * INVERTED by P9, not deleted. It read "asks for N1 to N3 when the agent is
+     * MANAGER" and expected 3 - accurate about the code and, after the 20
+     * September arbitrage, wrong about the requirement.
+     *
+     * It is also the test that did NOT fail when the constant moved, because
+     * `DEPTH_FOR_TIER` held a hardcoded 3 that never read it. The page asked for
+     * a depth the action silently clamped, and this assertion agreed with the
+     * page rather than with the platform. That is why the literal 1 is asserted
+     * here too: a depth change must turn this red.
+     */
     answers('MANAGER', []);
 
     await renderPage();
 
-    expect(network).toHaveBeenCalledWith(3);
+    expect(network).toHaveBeenCalledWith(1);
   });
 
   it('shows network statistics to a MANAGER', async () => {
@@ -221,7 +238,11 @@ describe('/agent/network - depth and statistics follow the tier', () => {
 
     const stats = container.querySelector('[data-network-stats]');
     expect(stats).toBeInTheDocument();
-    // Three agents across two levels: two at N1, one at N2.
+    // Three agents across two levels: two at N1, one at N2. This fixture is
+    // handed to the component directly, so it still exercises nested rendering
+    // - but since P9 the API no longer returns a second level, so no live
+    // response has this shape. Kept deliberately: the component's ability to
+    // render depth outlives the business rule that currently forbids it.
     expect(stats).toHaveTextContent('3');
   });
 
