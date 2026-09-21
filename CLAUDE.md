@@ -1555,6 +1555,41 @@ complete-looking dashboard - four parcours, correct lesson counts, the first one
 open - where **every lesson answers 404**. The switch is therefore two writes,
 and the second is not tidying.
 
+### A constant is changed by its name; it is encoded by its value
+
+From P9, and it cost a red `develop`.
+
+`KAMNET_MAX_SPONSORSHIP_DEPTH` went from 3 to 1. The sweep that followed
+searched `N2`, `N3`, `level 3` and `terminates` across `apps` and `libs`,
+corrected nine comments and inverted three web tests. It missed
+`kamnet-network-isolation.spec.ts`, which encodes the old value **numerically** -
+`network(eric, 3)` - and describes its effect **in prose**: "Eric sponsors three
+directly, one of whom sponsors Amina: four below him." Neither string contains
+the constant's name, `N3`, or the digit in any form the sweep looked for.
+
+The merge went green and `develop` turned red on the push:
+
+```
+● does not put Eric's referrals in Sylvie's network
+  Array [ "AGT-2025-0002", "AGT-2025-0003", -"AGT-2025-0004", "AGT-2025-0005" ]
+```
+
+`AGT-2025-0004` is Amina, at N2 - exactly the level the constant had removed.
+The platform was right and the test was stale.
+
+**When you change a constant, sweep for three things, not one:** its NAME, the
+LITERALS that encode its value at call sites, and the PROSE that describes its
+effect. The first is a grep; the last two need reading. Every argument passed to
+a function whose behaviour that constant governs is a place the old value may be
+written down as a bare number.
+
+**And the reason this one reached `develop`: the delivery journeys are SKIPPED on
+pull requests and run only on the push after a merge.** So a stale journey
+assertion cannot be caught by any PR gate, however green. For a change that
+alters what an endpoint returns, the journeys are not a safety net before the
+merge - they are the first execution after it. Run the affected journey against
+dev by hand before merging, the way the repair for this one was proved.
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope
