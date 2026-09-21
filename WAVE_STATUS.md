@@ -330,3 +330,129 @@ step 4's subject rather than a consequence of this step.
 ### Copy invented
 
 None. This step changed no user-facing string.
+
+---
+
+## Step 4 - P21 + P20: the public site stops promising what does not exist
+
+**PR #159** - `fix/p21-p20-site-honesty` -> `fix/p9-kamnet-arbitrage`
+**No run exists** - stacked PR, see the note at the top. Gate run locally:
+web 357/357 (21 suites, 1 new), api 886/886, test:db 109/109, typecheck api 0,
+typecheck web 0, lint 6/6, prettier clean. Suites re-run after formatting.
+
+**This step closes the gap step 3 opened.** Merged in order, the site is never
+left stating the tier rule the code stopped applying.
+
+### Proved red, in three stages
+
+**One.** The pin failed on six assertions with the copy in place, naming the
+offenders: `commissions.saleDetail` and `.reservationDetail` for a rate quoted
+as remuneration (both languages), `saleDetail` again for the `J+15` / `D+15`
+deadline, and ten (fr) / eleven (en) keys for the earning promise.
+
+**Two - the pin was NARROWED, because it flagged two honest strings.** Both are
+the shape this repository keeps relearning: the copy that explains a thing is
+the first casualty of a sweep that bans the word.
+
+- `products.kbs.modulesDetail.items[3].lectures[3].title` = "Argent &
+  commissions - Pourquoi l'agent ne touche jamais l'argent". A KCA1 LESSON
+  TITLE, teaching the opposite of a promise. Banning it would delete curriculum.
+- `products.kbs.hero.certificateBadge` (en) = "Earn your KCA certificate". That
+  earns a certificate, not an income.
+
+The pattern now matches phrases that promise money to an agent, and the loaded
+syllabus is excluded by name with its reason.
+
+**Three - proved by mutation.** Reinstating one removed string trips THREE
+assertions: the rate ban, the delay ban, and the fr/en parity check, because the
+key came back in one language only.
+
+### Why the ban is narrow
+
+Eight honest public strings carry a percentage - "100% en ligne", "Score minimal
+: 80 %", "évite 80% des erreurs terrain", "plus de 95% du territoire", and four
+"Acompte ... 5%" lines. **The buyer's 5% deposit is real, implemented and
+charged.** A guard that refuses it is deleted by the first person it blocks, so
+what is banned is a percentage WITH remuneration wording, plus any `J+n`/`D+n`
+delay - a pattern that occurred exactly once in the whole file, in the string
+being deleted. `app` and `landsAdmin` are excluded: `landsAdmin.form.pv` is
+literally "coefficient de commission", and once C14 settles a grid the agent's
+own space will legitimately carry rates.
+
+### Every key removed, both files in lockstep
+
+- `products.kamnet.commissions` - the whole block (`title`, `subtitle`,
+  `saleLabel`, `saleDetail`, `reservationLabel`, `reservationDetail`)
+- `products.kamnet.whyAgent.commissions` - `title`, `description`
+- `products.kbs.whyKbs.income` - `title`, `description`
+
+### Every key rewritten, both files
+
+| key                                                  | why                                                                         |
+| ---------------------------------------------------- | --------------------------------------------------------------------------- |
+| `products.kamnet.hero.title`                         | the earning promise; replaced around the agent's role and the certification |
+| `products.kamnet.hero.subtitle`                      | promised commissions AND the exclusive catalogue; both go                   |
+| `products.kamnet.agentJourney.step7.description`     | "+10 filleuls" - the condition step 3 removed from the code                 |
+| `products.kbs.admission.sponsorship.description`     | claimed "accès prioritaire avec un code parrain"                            |
+| `products.kbs.admission.freeApplication.description` | read as open to anyone; the form is behind the login wall                   |
+
+### Premises checked
+
+| Premise                                                                                 | Held                                                                                                                                                                                                                                                    |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `products.kamnet.commissions` publishes a rate, a base and a deadline in both languages | Yes, verbatim as the brief quotes it                                                                                                                                                                                                                    |
+| `POST kamnet/applications` carries `@Roles(RoleCode.KCA_CERTIFIED)`                     | Yes - `kamnet-agent.controller.ts:49-50`. You qualify into KAMNET after the certificate                                                                                                                                                                 |
+| The sponsor code grants no priority                                                     | Yes - stored at `candidates.service.ts:84` and echoed back at five read sites; nothing orders, prioritises or gates on it                                                                                                                               |
+| The admission form sits behind the login wall                                           | Yes - `admission.tsx:52` links to `/kbs/enroll`, and `/kbs` is in `PROTECTED_PREFIXES`                                                                                                                                                                  |
+| "Read P20's row in the tracker"                                                         | **Partly.** There is no P20 row in `registre-chantiers.md`. P20, P21 and C14 live in the dated 2026-09-20 entry of `ops_kambriq_base-comprehension_v01.md`. The three promises were read there and confirmed against the code rather than reconstructed |
+
+### Copy invented - FOR VISQUIS TO APPROVE
+
+Two strings, in both languages. Everything else was a removal or a factual
+correction.
+
+- `products.kamnet.hero.title`
+  - fr: "Le réseau des agents certifiés KAMBRIQ"
+  - en: "The network of KAMBRIQ certified agents"
+- `products.kamnet.hero.subtitle`
+  - fr: "Les agents KAMNET sont certifiés par KAMBRIQ Business School et
+    accompagnent les acheteurs à chaque étape. On rejoint le réseau après la
+    certification KCA."
+  - en: "KAMNET agents are certified by KAMBRIQ Business School and support
+    buyers at every step. You join the network after obtaining the KCA
+    certification."
+
+Written around the chain the code already enforces - candidate, KBS, certified,
+then agent application - and never around what an agent earns.
+
+The four corrected strings (step7, sponsorship, freeApplication) are factual
+rather than editorial, but they are still words on a public page and are listed
+above for the same reason.
+
+### Reported, not fixed
+
+- **Two dead components deleted**, which goes beyond "copy only" and is a
+  judgement call: `commissions-model.tsx` rendered the schedule and
+  `kamnet-hero.tsx` the old hero. Neither symbol appeared outside its own file,
+  and the live page mounts `Hero`, `WhyKambriqAgent`, `WhyKamnetAgent`. A
+  component that still renders a deleted commission schedule is how it comes
+  back. **Worth knowing: the schedule therefore had no mounted renderer** - it
+  shipped in the message bundle rather than on a rendered page.
+- **The login wall on `/kbs/enroll` is P5's** and is untouched. `routes.ts` says
+  so in as many words. The copy was corrected to match reality instead.
+- `whyKbs.network.description` and `whyAgent.exclusiveAccess.description` still
+  promise the exclusive catalogue. That is **P10**; the brief said not to
+  overcorrect.
+- `apps/web/src/app/kamnet/apply/page.tsx` is a hardcoded French form with no API
+  wiring behind it - placeholder inputs and a local `STATUS_CONFIG`. Not this
+  subject, and named here so it is not mistaken for working.
+
+### A mistake I made and caught
+
+Reverting the mutation with `git checkout -- fr.json` reset that file to HEAD
+and silently **wiped all four of my fr.json edits**, while `en.json` kept its
+own - the exact fr/en lockstep defect this brief exists to prevent, self-
+inflicted. It was caught by reading the working-tree listing rather than
+assuming the revert did what it was aimed at, and the edits were re-applied with
+a parity assertion. A mutation should be undone by re-applying the edit, not by
+checking the file out.

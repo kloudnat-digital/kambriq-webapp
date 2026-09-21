@@ -1,9 +1,8 @@
-import { ChartNoAxesCombined, GraduationCap, Headset, ShoppingBag } from 'lucide-react';
+import { GraduationCap, Headset, ShoppingBag } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
 const FEATURE_KEYS = [
   { id: 'exclusiveAccess', Icon: ShoppingBag },
-  { id: 'commissions', Icon: ChartNoAxesCombined },
   { id: 'training', Icon: GraduationCap },
   { id: 'followUp', Icon: Headset },
   { id: 'career', Icon: Headset },

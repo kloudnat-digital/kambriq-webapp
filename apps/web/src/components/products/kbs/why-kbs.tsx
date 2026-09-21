@@ -1,7 +1,7 @@
 import SectionCard from '@/components/section/card';
 import SectionCardContainer from '@/components/section/card/container';
 import SectionHeader from '@/components/section/header';
-import { ChartSpline, Headset, HeartHandshake, Waypoints } from 'lucide-react';
+import { Headset, HeartHandshake, Waypoints } from 'lucide-react';
 import React from 'react';
 import { getTranslations } from 'next-intl/server';
 
@@ -9,7 +9,6 @@ const WhyKBS = async () => {
   const t = await getTranslations('products.kbs.whyKbs');
   const features = [
     { Icon: Waypoints, titleKey: 'network.title', descKey: 'network.description' },
-    { Icon: ChartSpline, titleKey: 'income.title', descKey: 'income.description' },
     { Icon: HeartHandshake, titleKey: 'expertise.title', descKey: 'expertise.description' },
     { Icon: Headset, titleKey: 'support.title', descKey: 'support.description' },
   ] as const;
