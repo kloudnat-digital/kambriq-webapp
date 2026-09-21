@@ -173,7 +173,13 @@ describe('KbsCandidatesService', () => {
         buildModule({ id: 'mod1', order: 1, course: { id: 'c1' } }),
       );
       prisma.kbsModule.findMany.mockResolvedValue([]); // no prerequisites
-      prisma.kbsSettings.findFirst.mockResolvedValue({ quizQuestionCount: QUIZ_LENGTH });
+      // I38 - the settings mock carries the module's own course. Without it
+      // this fixture had no course context at all, which is why none of these
+      // tests could ever have caught a quiz submitted against a foreign module.
+      prisma.kbsSettings.findFirst.mockResolvedValue({
+        quizQuestionCount: QUIZ_LENGTH,
+        activeCourseId: 'c1',
+      });
       prisma.kbsQuestion.findMany.mockResolvedValue(pool);
       prisma.kbsCandidateProgress.upsert.mockResolvedValue({});
       prisma.kbsCandidateProgress.count.mockResolvedValue(0);
@@ -235,28 +241,39 @@ describe('KbsCandidatesService', () => {
      * answered "finish all the modules" to somebody who had finished all the
      * modules. Nothing was logged and nothing failed.
      */
-    it('logs loudly when no active course is configured, instead of stranding the candidate', async () => {
+    /**
+     * I38 - INVERTED, deliberately, and this is a behaviour change.
+     *
+     * This asserted that with no active course the submission still SUCCEEDED
+     * and the stranding was merely logged. That was the right assertion while
+     * `submitQuiz` had no perimeter: the alternative then was silence. It is
+     * the wrong assertion now, because "no active course" means nothing is in
+     * scope, and accepting a passed row against a course that does not exist is
+     * the very write this subject exists to stop.
+     *
+     * The log it pinned is not lost: `checkAndTransitionToExamPending` still
+     * carries it, for the case where a course IS configured and the transition
+     * cannot run. What changes is that a write is no longer accepted first.
+     */
+    it('refuses a submission when no active course is configured, rather than banking it', async () => {
       arrangeQuiz();
       prisma.kbsSettings.findFirst.mockResolvedValue({
         quizQuestionCount: QUIZ_LENGTH,
         activeCourseId: null,
       });
-      const logged = jest.spyOn(service['logger'], 'error').mockImplementation(() => undefined);
 
-      const result = await service.submitQuiz('u1', 'mod1', quizDto);
-
-      expect(result.passed).toBe(true);
-      expect(logged).toHaveBeenCalledWith(
-        expect.stringContaining('no active course is configured'),
-        expect.objectContaining({ candidateId: expect.any(String) }),
-      );
+      await expect(service.submitQuiz('u1', 'mod1', quizDto)).rejects.toThrow(NotFoundException);
+      expect(prisma.kbsCandidateProgress.upsert).not.toHaveBeenCalled();
     });
 
     it('transitions to EXAM_PENDING once every module of the active course is passed', async () => {
       arrangeQuiz();
+      // I38 - 'c1', matching the module arrangeQuiz builds. This said
+      // 'course-1' against a module in 'c1': an inconsistency the code could
+      // not see before the perimeter guard existed.
       prisma.kbsSettings.findFirst.mockResolvedValue({
         quizQuestionCount: QUIZ_LENGTH,
-        activeCourseId: 'course-1',
+        activeCourseId: 'c1',
       });
       prisma.kbsModule.count.mockResolvedValue(2);
       prisma.kbsCandidateProgress.count.mockResolvedValue(2);
@@ -294,6 +311,15 @@ describe('KbsCandidatesService', () => {
       prisma.kbsModule.findUnique.mockResolvedValue(
         buildModule({ order: 2, course: { id: 'c1' } }),
       );
+      // I38 - the module is INSIDE the active course here on purpose. Without
+      // this the perimeter guard would refuse first and the test would pass for
+      // the wrong reason, proving nothing about prerequisites. It is also the
+      // evidence that the prerequisite check is NOT made redundant by the
+      // guard: same course, still refused, because the earlier module is unpassed.
+      prisma.kbsSettings.findFirst.mockResolvedValue({
+        quizQuestionCount: QUIZ_LENGTH,
+        activeCourseId: 'c1',
+      });
       // Module order=1 exists as a prerequisite
       prisma.kbsModule.findMany.mockResolvedValue([{ id: 'mod_prev' }]);
       prisma.kbsCandidateProgress.count.mockResolvedValue(0); // not completed

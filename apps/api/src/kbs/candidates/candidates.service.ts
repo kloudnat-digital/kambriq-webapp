@@ -31,6 +31,7 @@ import {
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 import { CorePrismaService } from '../../core/prisma/core-prisma.service';
+import { assertInActiveCourse, readActiveCourse } from '../settings/active-course';
 
 @Injectable()
 export class KbsCandidatesService {
@@ -176,8 +177,10 @@ export class KbsCandidatesService {
       throw new ForbiddenException(this.t('kbs.enrollment.awaitingVerification'));
     }
 
-    // I21 - no settings row is "no active course", not a 500.
-    const settings = await this.prisma.kbsSettings.findFirst();
+    // I21 - no settings row is "no active course", not a 500. I38 - read
+    // through the one reader; the empty-overview branch below IS this call
+    // site's absence behaviour, stated rather than inherited.
+    const settings = await readActiveCourse(this.prisma);
     const activeCourseId = settings?.activeCourseId ?? null;
 
     if (!activeCourseId) {
@@ -347,6 +350,20 @@ export class KbsCandidatesService {
     if (!mod)
       throw new NotFoundException(this.t('kbs.module.notFound', undefined, { id: moduleId }));
 
+    // I38 - a WRITER, so `refuse`. This upserts KbsCandidateProgress keyed on a
+    // moduleId the caller supplies, so before the guard a candidate could pass
+    // a demonstration module id and bank a passed row against a course that is
+    // not their training. The prerequisite check below is a DIFFERENT question
+    // and is not made redundant by this one: it asks whether the earlier
+    // modules of this course were passed, which still matters once the course
+    // is known to be the right one.
+    const activeSettings = await readActiveCourse(this.prisma);
+    assertInActiveCourse(
+      mod.course.id,
+      activeSettings?.activeCourseId,
+      () => new NotFoundException(this.t('kbs.module.notFound', undefined, { id: moduleId })),
+    );
+
     // Check prerequisite: previous modules must be completed (ordered by order)
     const previousModules = await this.prisma.kbsModule.findMany({
       where: {
@@ -371,7 +388,9 @@ export class KbsCandidatesService {
     }
 
     // Enforce quiz attempt limit (quizMaxAttempts = 0 means unlimited)
-    const settings = await this.prisma.kbsSettings.findFirst();
+    // I38 - the row was already read for the guard above; reading it twice was
+    // both a second query and the last inline read this subject exists to end.
+    const settings = activeSettings;
     const quizMaxAttempts = settings?.quizMaxAttempts ?? 0;
     if (quizMaxAttempts > 0) {
       const existingProgress = await this.prisma.kbsCandidateProgress.findUnique({
@@ -791,7 +810,10 @@ export class KbsCandidatesService {
   }
 
   private async checkAndTransitionToExamPending(candidateId: string) {
-    const settings = await this.prisma.kbsSettings.findFirst();
+    // I38 - one reader. The log-and-return below is this call site's absence
+    // behaviour, and it stays: the candidate is stranded and somebody has to
+    // be told.
+    const settings = await readActiveCourse(this.prisma);
     const activeCourseId = settings?.activeCourseId;
     if (!activeCourseId) {
       // Returning quietly here strands the candidate: they have passed every
