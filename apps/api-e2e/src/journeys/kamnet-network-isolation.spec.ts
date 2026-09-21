@@ -44,6 +44,18 @@ import { API, call, login } from './support';
  * So Eric's N1 is three agents and Sylvie's is exactly one, and Sylvie appears
  * inside Eric's tree while Eric appears nowhere inside hers. A leak in either
  * direction changes a count.
+ *
+ * ---------------------------------------------------------------------------
+ * P9: the seed is still two deep, the ANSWER is not
+ * ---------------------------------------------------------------------------
+ * The tree above still describes the seeded data - Amina really is below Sylvie.
+ * What changed on 20 September is what a network QUERY returns:
+ * `KAMNET_MAX_SPONSORSHIP_DEPTH` went from 3 to 1, so `getMyNetwork` clamps every
+ * request to the direct sponsor and Amina is no longer inside Eric's answer.
+ *
+ * That asymmetry is what makes the clamp testable at all: the data goes two
+ * deep and the answer goes one deep, so an answer of one level proves the CLAMP
+ * rather than a shallow fixture.
  */
 
 const ERIC = 'eric.mbou@kambriq.com';
@@ -62,6 +74,18 @@ const codesIn = (node: Node | null): string[] =>
     .slice(1) // drop the root, which is the caller themselves
     .map((n) => n.agent.agentCode)
     .sort();
+
+/**
+ * How many levels of referrals hang below the root.
+ *
+ * 0 = the caller alone, 1 = direct referrals and nothing under them. Used
+ * instead of a count because the rule P9 decided is about DEPTH, and a count
+ * can match for the wrong reason when the tree changes shape.
+ */
+const levelsBelow = (node: Node | null): number =>
+  !node || node.referrals.length === 0
+    ? 0
+    : 1 + Math.max(...node.referrals.map((child) => levelsBelow(child)));
 
 const network = async (token: string, depth: number): Promise<Node | null> => {
   const res = await call('GET', `/kamnet/network?depth=${depth}`, { token });
@@ -104,7 +128,7 @@ beforeAll(async () => {
 
 describe('two agents, two networks', () => {
   it('gives each agent a tree rooted on themselves', async () => {
-    const [e, s] = await Promise.all([network(eric, 3), network(sylvie, 3)]);
+    const [e, s] = await Promise.all([network(eric, 1), network(sylvie, 1)]);
 
     expect(e?.agent.agentCode).toBe('AGT-2025-0001');
     expect(s?.agent.agentCode).toBe('AGT-2025-0002');
@@ -113,32 +137,40 @@ describe('two agents, two networks', () => {
   });
 
   it("does not put Eric's referrals in Sylvie's network", async () => {
-    const [e, s] = await Promise.all([network(eric, 3), network(sylvie, 3)]);
+    const [e, s] = await Promise.all([network(eric, 1), network(sylvie, 1)]);
 
     const ericsCodes = codesIn(e);
-    const sylviesCodes = codesIn(s);
+    const sylviesCode = codesIn(s);
 
-    // Eric sponsors three directly, one of whom sponsors Amina: four below him.
-    expect(ericsCodes).toEqual([
-      'AGT-2025-0002',
-      'AGT-2025-0003',
-      'AGT-2025-0004',
-      'AGT-2025-0005',
-    ]);
-    // Sylvie sponsors exactly one.
-    expect(sylviesCodes).toEqual(['AGT-2025-0004']);
+    /**
+     * Eric sponsors three directly. Amina is NOT here: she is Sylvie's referral,
+     * at N2, and since P9 a network answer stops at the direct sponsor.
+     *
+     * This assertion used to expect four codes including Amina's, under the
+     * comment "four below him". It was accurate about the four-level scheme and
+     * wrong about the requirement the moment that scheme was withdrawn - and it
+     * is what turned `develop` red after P9 merged.
+     */
+    expect(ericsCodes).toEqual(['AGT-2025-0002', 'AGT-2025-0003', 'AGT-2025-0005']);
+    // Amina is one level further down, and that level is no longer returned.
+    expect(ericsCodes).not.toContain('AGT-2025-0004');
+
+    // Sylvie sponsors exactly one, and Amina is her DIRECT referral, so the
+    // clamp does not hide her here. The same person, reachable from one tree
+    // and not the other, is what isolation means.
+    expect(sylviesCode).toEqual(['AGT-2025-0004']);
 
     // Boris and Paul are Eric's, and must appear in no answer of Sylvie's.
-    expect(sylviesCodes).not.toContain('AGT-2025-0003');
-    expect(sylviesCodes).not.toContain('AGT-2025-0005');
+    expect(sylviesCode).not.toContain('AGT-2025-0003');
+    expect(sylviesCode).not.toContain('AGT-2025-0005');
     // And Eric himself is above her, never inside her tree.
-    expect(sylviesCodes).not.toContain('AGT-2025-0001');
+    expect(sylviesCode).not.toContain('AGT-2025-0001');
   });
 
   it('leaks no email address across the two answers', async () => {
     // The stronger form of the same property: not "the codes differ" but "no
     // row belonging to one agent's subtree is reachable from the other's".
-    const s = await network(sylvie, 3);
+    const s = await network(sylvie, 1);
     const emails = flatten(s)
       .slice(1)
       .map((n) => n.agent.user.email);
@@ -147,22 +179,46 @@ describe('two agents, two networks', () => {
     expect(emails).toEqual(['amina.fall@kambriq.com']);
   });
 
-  it('answers a depth of 3 for a JUNIOR, which is why the tier rule is not a boundary', async () => {
+  it('clamps a request for depth 3 to one level, whatever the caller tier', async () => {
     /**
-     * Sylvie is JUNIOR. UX specification 2.3 says a JUNIOR sees N1 only, and
-     * the web applies that by asking for depth 1. The API does not: `getMyNetwork`
-     * reads `depth` from the query and never looks at the caller's tier.
+     * REWRITTEN by P9, because it had started passing for the wrong reason.
      *
-     * This test asserts the CURRENT behaviour rather than the intended rule, so
-     * that the gap is recorded rather than implied, and so that whoever closes
-     * it on the server sees a test change and knows why. Isolation - whose rows
-     * you can reach - is enforced. Depth - how far down your own tree you may
-     * look - is not.
+     * It read "answers a depth of 3 for a JUNIOR, which is why the tier rule is
+     * not a boundary", and it was I32's live evidence: a JUNIOR asking for 3
+     * received N1 to N3, proving the server never reads the caller's tier. With
+     * the depth clamped to 1 for everybody it still passed - and proved nothing,
+     * because a JUNIOR now receives N1 whether the tier is read or not. A test
+     * that passes vacuously is worse than one that is red.
+     *
+     * **ERIC, not Sylvie.** Sylvie's subtree is one level deep in the seed, so
+     * "stops at N1" would hold for her under any clamp at all. Eric's data goes
+     * two deep - Sylvie, then Amina - so a depth-3 request answering one level
+     * discriminates between the old scheme and the new one.
+     *
+     * Asserted on the LEVELS present rather than a count: a count matches for
+     * the wrong reason the day the tree changes shape.
      */
-    const s = await network(sylvie, 3);
+    const [e, s] = await Promise.all([network(eric, 3), network(sylvie, 3)]);
 
-    expect(s?.agent.tier).toBe('JUNIOR');
+    // The fixture really is deeper than the answer: Amina is reachable as
+    // Sylvie's own direct referral, one level below the level Eric is served.
     expect(codesIn(s)).toEqual(['AGT-2025-0004']);
+
+    // Both tiers, one rule.
+    expect(e?.agent.tier).toBe('CONFIRMED');
+    expect(s?.agent.tier).toBe('JUNIOR');
+
+    // One level of referrals, and nothing below it - for either caller.
+    expect(levelsBelow(e)).toBe(1);
+    expect(levelsBelow(s)).toBe(1);
+    expect((e?.referrals ?? []).every((child) => child.referrals.length === 0)).toBe(true);
+
+    /**
+     * I32 IS NOT CLOSED BY THIS. `getMyNetwork` still never reads the caller's
+     * tier; the rule still lives in the page. What changed is that the gap is no
+     * longer OBSERVABLE from outside, because everyone is clamped to N1. The day
+     * `KAMNET_MAX_SPONSORSHIP_DEPTH` rises, the hole is the size it always was.
+     */
   });
 
   /**
