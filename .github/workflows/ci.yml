@@ -2,8 +2,8 @@ name: CI
 
 # ------------------------------------------------------------------------------
 # Responsibilities:
-#   1. Run quality checks (lint / typecheck / test) in parallel on every push
-#      and PR targeting develop or main.
+#   1. Run quality checks (lint / typecheck / test) in parallel on every pull
+#      request, whatever its base branch, and on pushes to develop or main.
 #   2. Build and push API + Web Docker images to ECR on develop pushes only
 #      (after all quality checks pass).
 #   3. Trigger the deploy-dev workflow automatically once both images are ready.
@@ -14,8 +14,13 @@ name: CI
 on:
   push:
     branches: [main, develop]
+  # A38: no `branches` here, deliberately. This filters on the BASE branch, and
+  # with [main, develop] a pull request stacked on a feature branch matched no
+  # trigger at all - no checks ran and GitHub called it mergeable, because
+  # nothing was missing. Four PRs merged that way on 20 September. Every
+  # expensive job below is gated on push-to-develop, not on this filter, so
+  # widening it cannot build, push, deploy or run a journey.
   pull_request:
-    branches: [main, develop]
 
 # ------------------------------------------------------------------------------
 # CONCURRENCY - and the one job that must never be cancelled
