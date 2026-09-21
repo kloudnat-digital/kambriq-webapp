@@ -8,6 +8,7 @@ import {
 } from './seed-data/kbs-questions';
 import { restoredParcelStatus } from './seed-data/parcel-status';
 import { SEED_ROLES, seedRoleId } from './seed-data/roles';
+import { describeKbsSettings, seedKbsSettings } from './kbs-settings-apply';
 /**
  * Kambriq - Database seed script
  *
@@ -417,25 +418,35 @@ async function seedKbs() {
   }
 
   // Settings (singleton)
+  //
+  // Two rules live here, and welding them into one `update` clause is I42.
+  //
   // `activeCourseId` is not decoration. `checkAndTransitionToExamPending` reads
   // it first and returns early when it is null, so a candidate who has passed
   // every module stays IN_TRAINING for ever with nothing logged, and
   // `me/overview` answers `course: null, modulesTotal: 0` to somebody who has
-  // just completed six lessons. Both were observed on dev before this line.
+  // just completed six lessons. Both were observed on dev before this line. A
+  // row carrying NULL therefore has to be REPAIRED, and `update: {}` never
+  // would - a seeded fixture is restorative, not merely idempotent.
   //
-  // `update` sets it too: the settings row already exists on any environment
-  // seeded before this, and `update: {}` would have left it null there.
-  await kbs.kbsSettings.upsert({
-    where: { id: 1 },
-    create: {
-      id: 1,
-      examQuestionCount: 20,
-      quizQuestionCount: 10,
-      quizMaxAttempts: 0,
-      activeCourseId: IDS.KBS_COURSE,
-    },
-    update: { activeCourseId: IDS.KBS_COURSE },
+  // But the active course is also a CHOICE. An administrator makes it through
+  // `PATCH /kbs/settings`, and the KCA1 switch was exactly that choice. Writing
+  // the id on every run made each seed an act of policy that silently reverted
+  // it: green run, populated row, and every candidate served the wrong course.
+  //
+  // So the repair happens only where the id is NULL, and a row that names a
+  // course is left alone whichever course it names. That condition is a `where`
+  // clause rather than an `if`, and both halves are proved against real
+  // Postgres in `kbs-settings-seed.dbspec.ts` - because a fix that never writes
+  // and a fix that always writes are each half right, and only the pair of
+  // assertions tells them apart.
+  const kbsSettings = await seedKbsSettings(kbs.kbsSettings, {
+    activeCourseId: IDS.KBS_COURSE,
+    examQuestionCount: 20,
+    quizQuestionCount: 10,
+    quizMaxAttempts: 0,
   });
+  console.log(`  ✓ ${describeKbsSettings(kbsSettings)}`);
 
   // -------------------------------------------------------------------------
   // Question pools: quiz (KbsQuestion) and exam (KbsExamQuestion)
