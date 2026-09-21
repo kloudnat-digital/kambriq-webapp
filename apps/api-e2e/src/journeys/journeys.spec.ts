@@ -208,6 +208,33 @@ describe('journey 3 - a candidate trains, passes the exam, and is certified', ()
     await call('POST', '/auth/verify-email', { body: { token } });
     candidateToken = await login(email);
 
+    /**
+     * I17 - the candidate surface carries a role, and the pre-candidate surface
+     * does not.
+     *
+     * This session holds exactly CLIENT: `auth.service.ts:120` grants that and
+     * nothing else on registration, and this user has not enrolled yet. Before
+     * I17 every route below answered for them, because `RolesGuard` returns
+     * true when a route declares no roles - so an agent, a client, or anybody
+     * who registered and never enrolled reached the whole training surface.
+     */
+    const guardedBefore = await call('GET', '/kbs/exam/history', { token: candidateToken });
+    expect(guardedBefore.status).toBe(403);
+
+    /**
+     * And the two routes that CANNOT carry a role still answer, because they
+     * are what a person uses before the role exists. Asserted as "not refused
+     * by the guard" rather than on a status code: the subject here is
+     * authorization, and pinning a 200 would make this fail for an unrelated
+     * change to the upload DTO.
+     */
+    const cvUrl = await call('POST', '/kbs/cv/upload-url', {
+      token: candidateToken,
+      body: { filename: 'cv.txt', contentType: 'text/plain' },
+    });
+    expect(cvUrl.status).not.toBe(403);
+    expect(cvUrl.status).not.toBe(401);
+
     const url = await call('POST', '/users/me/id-document/upload-url', {
       token: candidateToken,
       body: { filename: 'cni.txt', contentType: 'text/plain' },
@@ -229,6 +256,22 @@ describe('journey 3 - a candidate trains, passes the exam, and is certified', ()
     });
     expect(enrol.status).toBe(201);
     candidateId = enrol.json<{ data: { id: string } }>().data.id;
+
+    /**
+     * The assertion that matters, and the reason `POST /kbs/enroll` may not
+     * carry a role.
+     *
+     * Same token, no re-login: `candidateToken` is the string minted before
+     * enrolling. It reaches a guarded route now only because `jwt.strategy.ts`
+     * re-reads `user.userRoles` from the database on every request rather than
+     * trusting the roles frozen into the token at login.
+     *
+     * If that ever changes, this line fails - and it is the single change that
+     * would turn I17 into an outage, because every new candidate would be
+     * refused their own training until they logged out and back in.
+     */
+    const guardedAfter = await call('GET', '/kbs/exam/history', { token: candidateToken });
+    expect(guardedAfter.status).not.toBe(403);
 
     const promote = await call('PATCH', `/kbs/admin/candidates/${candidateId}/status`, {
       token: admin,
