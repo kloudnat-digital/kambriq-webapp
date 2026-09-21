@@ -456,3 +456,98 @@ inflicted. It was caught by reading the working-tree listing rather than
 assuming the revert did what it was aimed at, and the edits were re-applied with
 a parity assertion. A mutation should be undone by re-applying the edit, not by
 checking the file out.
+
+---
+
+## A38 - CI runs on every pull request, whatever its base
+
+**PR #161** - `fix/a38-ci-gates-every-pr` -> `develop`. Gate run **35645150062**,
+conclusion **success** (CI Gate, Commitlint, Quality, What changed; build,
+deploy, e2e and journeys skipped as normal on a PR). Not merged: merging is
+Visquis's act.
+
+### The five `if:` lines I read, quoted, with their line numbers
+
+All on `.github/workflows/ci.yml` as this PR leaves it:
+
+```
+285:    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'   # build-api
+398:    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'   # build-web
+499:    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'   # deploy-dev
+526:    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'   # journeys
+553:    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'   # e2e
+```
+
+The brief named the last only as "the job at ~548"; it is **e2e**, declared at
+548 with its condition at 553. Line numbers shifted +5 from the brief's estimates
+because the widened trigger carries a six-line comment.
+
+Since every expensive job is gated on push-to-develop rather than on the
+trigger's filter, widening cannot build, push to ECR, deploy, or run the
+journeys or e2e. What it adds on a PR to any base is `changes`, `commitlint`,
+`quality`, `test-db` and `gate` - and `quality` is conditioned on
+`needs.changes.outputs.code == 'true'` (line 153), `test-db` on that plus
+`db == 'true'` (line 237).
+
+### What the shape test asserts, and both mutations
+
+`apps/api/src/__test__/conventions/ci-runs-on-every-pull-request.spec.ts`, run by
+`Quality` via `nx test api`, alongside its 22 siblings. Four assertions:
+
+1. it is reading the workflow it thinks it is (vacuity guard);
+2. `pull_request` carries no `branches` restriction;
+3. `push` still restricts to `[main, develop]`;
+4. each of the five expensive jobs still carries its push-and-develop condition.
+
+**Watched red before the fix:** 1 failed, 7 passed - the failure being assertion
+2 alone, `Expected pattern: not /^\s*branches:/m`.
+
+**Both mutations watched failing, each alone:**
+
+| mutation                             | result                                                                     |
+| ------------------------------------ | -------------------------------------------------------------------------- |
+| put `branches: [main, develop]` back | assertion 2 fails; 1 failed / 7 passed                                     |
+| remove the `journeys` job's `if:`    | `journeys still runs only on a push to develop` fails; 1 failed / 7 passed |
+
+It parses text, not YAML: neither `js-yaml` nor `yaml` is a dependency, and
+`image-carries-seed-deps.spec.ts` and `env-vars-declared.spec.ts` already read
+build files as text.
+
+**The behavioural half is an observation, not a test.** Nothing automated covers
+GitHub's own dispatch, and it can only be seen after this merges.
+
+### #156 to #159: gated only by local runs, or not?
+
+The brief asked for this explicitly, and the accurate answer differs from the
+one I first wrote - I corrected the commit message and the PR body after checking
+the API rather than my own notes.
+
+| PR   | head merged | base at merge | pull_request runs on that head             |
+| ---- | ----------- | ------------- | ------------------------------------------ |
+| #155 | `7fa8123`   | develop       | 35509437289 success                        |
+| #156 | `cdb4e2b`   | develop       | 35620911896 success                        |
+| #157 | `79a7324`   | develop       | 35623641088 cancelled, 35623641855 success |
+| #158 | `fd61be4`   | develop       | 35626085692 success                        |
+| #159 | `78a0cf8`   | develop       | 35642046441 success                        |
+
+**All four were re-targeted, and all four were gated.** None merged on local runs
+alone. What is true is the defect stated from the other side: while stacked,
+their original heads carried nothing at all, and still do -
+
+```
+7cc8f53  total runs ever: 0
+d4ef20e  total runs ever: 0
+5bea3ca  total runs ever: 0
+a2cecef  total runs ever: 0
+```
+
+The re-targeting is what gave them CI. Without it they would have merged with no
+checks, and GitHub would have called each one mergeable.
+
+### Reported, not fixed
+
+`ci.yml` is deliberately left un-prettier-formatted. Checked **in place** - the
+only way the config resolves correctly - develop's own copy is equally
+non-conforming, yml sits outside the lint-staged globs, and `--write` rewrites 27
+lines across eleven hunks of quote style in jobs this subject never touches, and
+drops a line at end of file. The diff here is exactly two hunks.
