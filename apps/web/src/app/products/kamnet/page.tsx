@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import QuickActions from '@/components/floating/quick-actions';
 import Footer from '@/components/layout/footer';
 import Navbar from '@/components/layout/navbar';
+import DirectorySection from '@/components/products/kamnet/directory-section';
 import Hero from '@/components/products/kamnet/hero';
 import WhyKambriqAgent from '@/components/products/kamnet/why-kabriq-agent';
 import WhyKamnetAgent from '@/components/products/kamnet/why-kamnet-agent';
@@ -20,6 +21,7 @@ export default function KamnetPage() {
         <Hero />
         <WhyKambriqAgent />
         <WhyKamnetAgent />
+        <DirectorySection />
       </main>
       <Footer />
       <QuickActions />

@@ -605,6 +605,27 @@
           "title": "Opportunité professionnelle stable",
           "description": "Construisez une carrière durable dans l'immobilier foncier avec un modèle économique éprouvé."
         }
+      },
+      "directory": {
+        "eyebrow": "Annuaire public",
+        "title": "Les agents certifiés KAMBRIQ",
+        "subtitle": "Chaque agent présent ici a passé la certification KCA et la détient toujours en cours de validité. Son numéro KCA renvoie au vérificateur, qui le confirme auprès du registre.",
+        "kcaLabel": "Numéro KCA",
+        "certifiedSince": "Certifié depuis le {date}",
+        "verifyLink": "Vérifier ce numéro",
+        "emptyTitle": "Aucun agent n'est encore publié",
+        "emptyMessage": "L'annuaire est ouvert et aucun agent n'a encore demandé à y figurer. La publication se fait sur demande de l'agent : elle n'est jamais automatique.",
+        "unavailableTitle": "Annuaire momentanément indisponible",
+        "unavailableMessage": "Nous ne pouvons pas lire le registre en ce moment. Cette page ne dit ni qu'il y a des agents certifiés, ni qu'il n'y en a pas : réessayez dans quelques minutes.",
+        "lookupTitle": "Vérifier un numéro KCA",
+        "lookupHint": "Saisissez ou collez un numéro KCA pour le confirmer auprès du registre.",
+        "lookupLabel": "Numéro KCA",
+        "lookupPlaceholder": "KCA-20250101-0001",
+        "lookupCta": "Vérifier",
+        "lookupInvalid": "Saisissez un numéro KCA, par exemple KCA-20250101-0001.",
+        "sectionTitle": "Annuaire public des agents certifiés",
+        "sectionDescription": "Un acheteur n'a rien à consulter avant de s'engager : la preuve repose entière sur l'agent. L'annuaire rend l'agent identifiable et sa certification vérifiable auprès du registre.",
+        "sectionCta": "Consulter l'annuaire"
       }
     },
     "title": "Nos produits et services",
@@ -689,6 +710,7 @@
     "verify": "KAMBRIQ VERIFY™",
     "kamnet": "KAMNET",
     "kbs": "KAMBRIQ Business School",
+    "annuaire": "Annuaire des agents",
     "support": "Support",
     "about": "À propos",
     "contact": "Contact",
@@ -1341,6 +1363,10 @@
       "title": "KAMNET - Réseau d'agents fonciers certifiés KAMBRIQ",
       "description": "KAMNET est le réseau d'agents certifiés KAMBRIQ. Formés par KBS, ils accompagnent la diaspora dans ses projets fonciers au Cameroun."
     },
+    "annuaire": {
+      "title": "Annuaire des agents certifiés KAMBRIQ - Cameroun",
+      "description": "Les agents KAMBRIQ certifiés KCA qui ont accepté de figurer publiquement : prénom, nom, ville, pays et numéro de certification. Chaque numéro se vérifie auprès du registre."
+    },
     "about": {
       "title": "À propos - KAMBRIQ",
       "description": "KAMBRIQ est un conseil en stratégie foncière qui accompagne la diaspora camerounaise dans ses projets d'acquisition de terrains. Méthode, vérification, accompagnement."
@@ -1734,6 +1760,22 @@
     "profile": {
       "pageTitle": "Mon profil",
       "subtitle": "Gérez vos informations personnelles et préférences."
+    },
+    "agentProfile": {
+      "pageTitle": "Mon profil agent",
+      "pageSubtitle": "Votre présence dans l'annuaire public des agents certifiés.",
+      "listingTitle": "Annuaire public",
+      "listingLabel": "Apparaître dans l'annuaire des agents certifiés",
+      "listingPublished": "Ce qui est publié : votre prénom, votre nom, votre ville, votre pays, votre photo de profil si vous en avez une, votre numéro KCA et sa date de délivrance. Rien d'autre - ni vos ventes, ni vos filleuls, ni votre parrain, ni votre niveau, ni votre e-mail, ni votre téléphone.",
+      "listingWithdraw": "Vous pouvez retirer votre accord à tout moment. Le retrait prend effet immédiatement : votre fiche disparaît de l'annuaire dès la lecture suivante.",
+      "listingOn": "Vous figurez dans l'annuaire depuis le {date}.",
+      "listingOff": "Vous ne figurez pas dans l'annuaire.",
+      "listingRequires": "Votre certification KCA doit être en cours de validité pour que votre fiche apparaisse.",
+      "savedOn": "Vous figurez désormais dans l'annuaire public.",
+      "savedOff": "Votre fiche a été retirée de l'annuaire public.",
+      "saveFailed": "Votre choix n'a pas été enregistré. Rien n'a changé : réessayez.",
+      "emptyTitle": "Vous n'êtes pas agent KAMNET",
+      "emptyMessage": "Cette page est réservée aux agents certifiés. Si vous avez déposé une candidature, elle doit d'abord être approuvée."
     },
     "account": {
       "title": "Mon compte",

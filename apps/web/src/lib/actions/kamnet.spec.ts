@@ -23,9 +23,11 @@ jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }));
 // winston's console transport schedules with setImmediate, which jsdom lacks.
 jest.mock('@/lib/logger', () => ({ logger: { error: jest.fn() } }));
 
-import { ApiError, serverApi } from '@/lib/api/server';
+import { api, ApiError, serverApi } from '@/lib/api/server';
 import {
   createLead,
+  getPublicAgentDirectory,
+  setMyPublicListing,
   deleteLead,
   getAgentProfile,
   getCommissionSummary,
@@ -384,5 +386,101 @@ describe('kamnet actions: network', () => {
     get.mockRejectedValue(new ApiError('Not found', 404));
 
     await expect(getMySponsors()).resolves.toEqual({ success: true, data: null });
+  });
+});
+
+/**
+ * P11 - the directory read, and the agent's switch.
+ *
+ * The directory is the only KAMNET action that goes through `api` rather than
+ * `serverApi`, and that is asserted rather than assumed: `serverApi` redirects a
+ * caller with an expired session to a login page, which would turn a public
+ * page into a members' area for anybody whose cookie had gone stale.
+ */
+describe('kamnet actions: the public directory (P11)', () => {
+  const anonymousGet = api.get as jest.MockedFunction<typeof api.get>;
+
+  beforeEach(() => jest.clearAllMocks());
+
+  const ENTRY = {
+    firstName: 'Amina',
+    lastName: 'Nkolo',
+    city: 'Douala',
+    country: 'CM',
+    avatarUrl: null,
+    kcaNumber: 'KCA-20250101-0001',
+    certifiedSince: '2025-01-01T00:00:00.000Z',
+  };
+
+  it('reads the directory anonymously, from kamnet/public/agents', async () => {
+    anonymousGet.mockResolvedValue([ENTRY]);
+
+    await expect(getPublicAgentDirectory()).resolves.toEqual({ success: true, data: [ENTRY] });
+    expect(anonymousGet).toHaveBeenCalledWith('/kamnet/public/agents');
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  /**
+   * The distinction this action exists to preserve.
+   *
+   * `[]` is "nobody has consented yet" - the ordinary state on the day this
+   * ships. `null` is "we could not ask". A page that rendered the second as the
+   * first would tell a buyer there are no certified agents during an outage,
+   * which is false about the business.
+   */
+  it('answers [] for an empty register, which is not the same as null', async () => {
+    anonymousGet.mockResolvedValue([]);
+
+    const res = await getPublicAgentDirectory();
+
+    expect(res).toEqual({ success: true, data: [] });
+    expect(res.success && res.data).not.toBeNull();
+  });
+
+  it.each([
+    ['the API is unreachable', () => anonymousGet.mockRejectedValue(new TypeError('fetch failed'))],
+    ['the API answers 500', () => anonymousGet.mockRejectedValue(new ApiError('boom', 500))],
+    ['the API is throttling', () => anonymousGet.mockRejectedValue(new ApiError('slow down', 429))],
+    ['the answer is not a list', () => anonymousGet.mockResolvedValue('<html>')],
+  ])('answers null when %s, never an empty directory', async (_case, arrange) => {
+    arrange();
+
+    await expect(getPublicAgentDirectory()).resolves.toEqual({ success: true, data: null });
+  });
+});
+
+describe('kamnet actions: the agent consents to be listed (P11)', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it.each([true, false])(
+    'sends listed=%s to PATCH kamnet/agents/me/public-listing',
+    async (listed) => {
+      patch.mockResolvedValue({
+        publicListingConsentAt: listed ? '2026-09-22T00:00:00.000Z' : null,
+      });
+
+      const res = await setMyPublicListing(listed);
+
+      expect(res).toEqual({
+        success: true,
+        data: { publicListingConsentAt: listed ? '2026-09-22T00:00:00.000Z' : null },
+      });
+      expect(patch).toHaveBeenCalledWith('/kamnet/agents/me/public-listing', { listed });
+    },
+  );
+
+  /**
+   * A mutation reports a refusal rather than throwing it - `kbs.ts`'s shape,
+   * mirrored deliberately. The control above it keeps the box where it was and
+   * says so; it cannot do that if the action rejects.
+   */
+  it('reports a refusal as a failure envelope, so the control can stay put', async () => {
+    patch.mockRejectedValue(new ApiError('A suspended agent cannot be listed.', 403));
+
+    await expect(setMyPublicListing(true)).resolves.toEqual({
+      success: false,
+      error: 'A suspended agent cannot be listed.',
+      status: 403,
+    });
   });
 });

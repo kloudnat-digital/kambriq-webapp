@@ -551,3 +551,136 @@ only way the config resolves correctly - develop's own copy is equally
 non-conforming, yml sits outside the lint-staged globs, and `--write` rewrites 27
 lines across eleven hunks of quote style in jobs this subject never touches, and
 drops a line at end of file. The diff here is exactly two hunks.
+
+---
+
+## P11 - the public directory of certified agents
+
+PR #162, branch `feat/p11-public-agent-directory`, claimed under the interim
+protocol with zero open pull requests at the time - no overlap on
+`apps/web/src/i18n/messages/`, no Prisma schema conflict.
+
+### Copy to approve - FOR VISQUIS
+
+**Every string below is mine, not his.** 36 keys, fr and en, invented to the
+brief's instruction: "factual, about certification and accompaniment". He writes
+the voice; this is the most factual version I could write while the pages waited.
+
+Two requirements were fixed by the 22 September instruction and are met here
+rather than left to taste: the consent text states **exactly** what is published
+and that withdrawal is immediate, and the empty directory reads as _not yet
+published_, never as broken.
+
+#### `products.kamnet.directory` - the public page
+
+| key                  | fr                                                                                                                                                                                  | en                                                                                                                                                                                                 |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `eyebrow`            | Annuaire public                                                                                                                                                                     | Public directory                                                                                                                                                                                   |
+| `title`              | Les agents certifiés KAMBRIQ                                                                                                                                                        | KAMBRIQ certified agents                                                                                                                                                                           |
+| `subtitle`           | Chaque agent présent ici a passé la certification KCA et la détient toujours en cours de validité. Son numéro KCA renvoie au vérificateur, qui le confirme auprès du registre.      | Every agent listed here passed the KCA certification and still holds it in force. Their KCA number links to the verifier, which confirms it against the register.                                  |
+| `kcaLabel`           | Numéro KCA                                                                                                                                                                          | KCA number                                                                                                                                                                                         |
+| `certifiedSince`     | Certifié depuis le {date}                                                                                                                                                           | Certified since {date}                                                                                                                                                                             |
+| `verifyLink`         | Vérifier ce numéro                                                                                                                                                                  | Verify this number                                                                                                                                                                                 |
+| `emptyTitle`         | Aucun agent n'est encore publié                                                                                                                                                     | No agent is published yet                                                                                                                                                                          |
+| `emptyMessage`       | L'annuaire est ouvert et aucun agent n'a encore demandé à y figurer. La publication se fait sur demande de l'agent : elle n'est jamais automatique.                                 | The directory is open and no agent has asked to appear in it yet. Publication happens at the agent's own request: it is never automatic.                                                           |
+| `unavailableTitle`   | Annuaire momentanément indisponible                                                                                                                                                 | Directory momentarily unavailable                                                                                                                                                                  |
+| `unavailableMessage` | Nous ne pouvons pas lire le registre en ce moment. Cette page ne dit ni qu'il y a des agents certifiés, ni qu'il n'y en a pas : réessayez dans quelques minutes.                    | We cannot read the register right now. This page says neither that there are certified agents nor that there are none: try again in a few minutes.                                                 |
+| `lookupTitle`        | Vérifier un numéro KCA                                                                                                                                                              | Verify a KCA number                                                                                                                                                                                |
+| `lookupHint`         | Saisissez ou collez un numéro KCA pour le confirmer auprès du registre.                                                                                                             | Type or paste a KCA number to confirm it against the register.                                                                                                                                     |
+| `lookupLabel`        | Numéro KCA                                                                                                                                                                          | KCA number                                                                                                                                                                                         |
+| `lookupPlaceholder`  | KCA-20250101-0001                                                                                                                                                                   | KCA-20250101-0001                                                                                                                                                                                  |
+| `lookupCta`          | Vérifier                                                                                                                                                                            | Verify                                                                                                                                                                                             |
+| `lookupInvalid`      | Saisissez un numéro KCA, par exemple KCA-20250101-0001.                                                                                                                             | Enter a KCA number, for example KCA-20250101-0001.                                                                                                                                                 |
+| `sectionTitle`       | Annuaire public des agents certifiés                                                                                                                                                | Public directory of certified agents                                                                                                                                                               |
+| `sectionDescription` | Un acheteur n'a rien à consulter avant de s'engager : la preuve repose entière sur l'agent. L'annuaire rend l'agent identifiable et sa certification vérifiable auprès du registre. | A buyer has nothing to look at before committing: the whole burden of proof falls on the agent. The directory makes the agent identifiable and their certification checkable against the register. |
+| `sectionCta`         | Consulter l'annuaire                                                                                                                                                                | Open the directory                                                                                                                                                                                 |
+
+#### `app.agentProfile` - the agent's consent screen
+
+| key                | fr                                                                                                                                                                                                                                                                                 | en                                                                                                                                                                                                                                                                       |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pageTitle`        | Mon profil agent                                                                                                                                                                                                                                                                   | My agent profile                                                                                                                                                                                                                                                         |
+| `pageSubtitle`     | Votre présence dans l'annuaire public des agents certifiés.                                                                                                                                                                                                                        | Your presence in the public directory of certified agents.                                                                                                                                                                                                               |
+| `listingTitle`     | Annuaire public                                                                                                                                                                                                                                                                    | Public directory                                                                                                                                                                                                                                                         |
+| `listingLabel`     | Apparaître dans l'annuaire des agents certifiés                                                                                                                                                                                                                                    | Appear in the directory of certified agents                                                                                                                                                                                                                              |
+| `listingPublished` | Ce qui est publié : votre prénom, votre nom, votre ville, votre pays, votre photo de profil si vous en avez une, votre numéro KCA et sa date de délivrance. Rien d'autre - ni vos ventes, ni vos filleuls, ni votre parrain, ni votre niveau, ni votre e-mail, ni votre téléphone. | What is published: your first name, your last name, your city, your country, your profile photo if you have one, your KCA number and its issue date. Nothing else - not your sales, not your referrals, not your sponsor, not your tier, not your email, not your phone. |
+| `listingWithdraw`  | Vous pouvez retirer votre accord à tout moment. Le retrait prend effet immédiatement : votre fiche disparaît de l'annuaire dès la lecture suivante.                                                                                                                                | You can withdraw your consent at any time. Withdrawal takes effect immediately: your entry disappears from the directory on the next read.                                                                                                                               |
+| `listingOn`        | Vous figurez dans l'annuaire depuis le {date}.                                                                                                                                                                                                                                     | You have appeared in the directory since {date}.                                                                                                                                                                                                                         |
+| `listingOff`       | Vous ne figurez pas dans l'annuaire.                                                                                                                                                                                                                                               | You do not appear in the directory.                                                                                                                                                                                                                                      |
+| `listingRequires`  | Votre certification KCA doit être en cours de validité pour que votre fiche apparaisse.                                                                                                                                                                                            | Your KCA certification must be in force for your entry to appear.                                                                                                                                                                                                        |
+| `savedOn`          | Vous figurez désormais dans l'annuaire public.                                                                                                                                                                                                                                     | You now appear in the public directory.                                                                                                                                                                                                                                  |
+| `savedOff`         | Votre fiche a été retirée de l'annuaire public.                                                                                                                                                                                                                                    | Your entry has been removed from the public directory.                                                                                                                                                                                                                   |
+| `saveFailed`       | Votre choix n'a pas été enregistré. Rien n'a changé : réessayez.                                                                                                                                                                                                                   | Your choice was not saved. Nothing changed: please try again.                                                                                                                                                                                                            |
+| `emptyTitle`       | Vous n'êtes pas agent KAMNET                                                                                                                                                                                                                                                       | You are not a KAMNET agent                                                                                                                                                                                                                                               |
+| `emptyMessage`     | Cette page est réservée aux agents certifiés. Si vous avez déposé une candidature, elle doit d'abord être approuvée.                                                                                                                                                               | This page is for certified agents. If you have submitted an application, it has to be approved first.                                                                                                                                                                    |
+
+#### `metadata.annuaire` and `footer.annuaire`
+
+| key                             | fr                                                                                                                                                                           | en                                                                                                                                                                                |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `metadata.annuaire.title`       | Annuaire des agents certifiés KAMBRIQ - Cameroun                                                                                                                             | Directory of KAMBRIQ certified agents - Cameroon                                                                                                                                  |
+| `metadata.annuaire.description` | Les agents KAMBRIQ certifiés KCA qui ont accepté de figurer publiquement : prénom, nom, ville, pays et numéro de certification. Chaque numéro se vérifie auprès du registre. | The KAMBRIQ KCA-certified agents who agreed to appear publicly: first name, last name, city, country and certification number. Every number can be verified against the register. |
+| `footer.annuaire`               | Annuaire des agents                                                                                                                                                          | Agent directory                                                                                                                                                                   |
+
+Inserted into both catalogues in one pass, by line number, descending, so the
+anchors could not drift between files: **1606 key paths in each, none unique to
+either side.** The P21 pin passes 9/9 over the new copy - no percentage with
+remuneration wording, no `J+n`, no earning promise - which is what nesting the
+directory under `products.kamnet` buys, since that namespace is already swept.
+
+### The second addition: the verifier is throttled now, not documented as open
+
+`GET /kbs/public/verify/:kcaNumber` answered anonymously with no rate limit, and
+`kamnet-public.controller.ts` recorded that in a comment. On a public repository
+that is an open weakness with a signpost beside it, and the numbers are
+guessable by the service's own admission - `KCA-YYYYMMDD-XXXX`, a date and four
+hex characters, 65,536 per issue date.
+
+It carries `@Throttle({ default: { limit: 30, ttl: 60_000 } })` now, the comment
+describes a guard rather than a gap, and
+`public-routes-are-throttled.spec.ts` keeps it: a public route either throttles
+or is named in an exemption list with its reason.
+
+Proved by mutation rather than by a first green: removing the decorator fails 2,
+adding the route to the exemption list fails 2 (the named assertion refuses the
+escape hatch, the stale-exemption check catches it), restored byte-identical and
+34/34. `route-guards` and `contract-guard-parity` stayed green throughout.
+
+### Reported, not fixed
+
+- **The avatar is an S3 key, not a URL.** `UserProfile.avatarUrl`'s own schema
+  comment says so. The API carries the field, as the subject requires, but the
+  page renders **initials**: putting a key in an `img` src would produce a broken
+  image on a public page for every agent who has one. Resolving a key to a URL
+  needs a presigner or a CDN path and is not P11's.
+- **Five `auth` routes are public and unthrottled**: `refresh`, `logout`,
+  `verify-email`, `reset-password`, `reactivate`. They are listed in the new
+  spec's exemption list as **inherited and not examined under P11**. They take a
+  token or a secret in the body, so a caller without one gets nothing - an
+  argument, not a measurement. Listing them is not a finding that they are safe.
+- **`(app)/profile` and `(app)/agent/dashboard` are both `PlaceholderPage`**
+  stubs. The subject asked for the consent control "on their profile screen" and
+  there was no profile screen. Visquis chose a minimal real `/agent/profile`
+  carrying only the control; the rest of an agent's profile is its own subject.
+- **`PublicAgentProfile` is a misnomer** in `apps/web/src/types/kamnet.ts`: it
+  types the authenticated `/kamnet/agents/:id` view behind `@Roles(AGENT)` and
+  carries `salesCount`, `referralCount` and `tier`. Renamed nothing - its
+  callers and tests use it - but `CertifiedAgentListing` sits beside it with the
+  distinction written down, because reaching for the wrong one publishes exactly
+  what the P9 arbitrage removed.
+- **I16 withdrawn.** An earlier revision of PR #162 reported the two
+  `/kamnet/commissions` routes as missing `@Roles`. They are deliberate and
+  documented: suspending an agent removes `AGENT`, which would have hidden
+  commissions already earned, so ownership via `findByUserId` is the guard. My
+  error, corrected in the PR body.
+
+### A mistake I made and caught
+
+**The first dbspec run was green, not red.** I wrote `toPublicDirectoryEntry`
+before the test that proves it, so the brief's "red first, for each" never
+happened and no red was ever observed against `develop`. Six mutations supply
+the evidence instead - the sharpest being the mirror pair, where reading expiry
+but not revocation fails the revoked fixture and reading revocation but not
+expiry fails the expired one, which is what proves the two certificate fixtures
+fail through **different fields**. That is the recorded defect where `revokedAt`
+was stored and ignored, and a single combined fixture would have passed over it.

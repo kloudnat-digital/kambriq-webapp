@@ -1,0 +1,95 @@
+import { UserRound } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
+
+import { getMyAgentProfile } from '@/lib/actions/kamnet';
+import { PublicListingControl } from './public-listing-control';
+
+/**
+ * Consent is read on every request. A cached "listed" served after a
+ * withdrawal would be the page contradicting the promise the control makes.
+ */
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata() {
+  const t = await getTranslations('app.agentProfile');
+  return { title: t('pageTitle') };
+}
+
+/**
+ * `/agent/profile` - P11's home for the agent's directory consent.
+ *
+ * ---------------------------------------------------------------------------
+ * Why this route exists at all
+ * ---------------------------------------------------------------------------
+ * The subject asked for the control "on their profile screen", and there was no
+ * profile screen: `(app)/profile` and `(app)/agent/dashboard` are both
+ * `PlaceholderPage` - an "under construction" card listing features that do not
+ * exist. Bolting a live switch onto one of those would put a working control
+ * inside a page that announces itself as unbuilt, which is worse than either.
+ * Visquis chose a minimal real screen carrying only the consent control, on
+ * 22 September; the rest of an agent's profile remains its own subject.
+ *
+ * No routing change was needed. `/agent` is already in `PROTECTED_PREFIXES` and
+ * in `ROLE_GATES` as `[AGENT, ADMIN_GLOBAL]`, so the middleware guards this the
+ * moment the file exists, and `middleware-matcher.spec.ts` walks `src/app` and
+ * checks exactly that rather than trusting a remembered list.
+ *
+ * ---------------------------------------------------------------------------
+ * The empty state is also the failure state, deliberately
+ * ---------------------------------------------------------------------------
+ * `getMyAgentProfile` answers `null` for "the caller has no KAMNET agent
+ * record", which is the ordinary state for everybody who is not an agent, and
+ * the page says so in words rather than rendering a control that would 404 on
+ * use. A failed read lands here too: `network-empty.tsx` records why that is
+ * right - the page never fills the gap with something invented.
+ *
+ * Translations are fetched once here and the control takes its own, because it
+ * is a client component and `next-intl`'s provider is already in the layout.
+ */
+export default async function AgentProfilePage() {
+  const t = await getTranslations('app.agentProfile');
+
+  const res = await getMyAgentProfile();
+  const profile = res.success ? res.data : null;
+
+  return (
+    <div className="p-6 lg:p-8">
+      <div className="mx-auto max-w-2xl space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">{t('pageTitle')}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t('pageSubtitle')}</p>
+        </div>
+
+        {profile ? (
+          <PublicListingControl
+            listedSince={profile.publicListingConsentAt}
+            suspended={profile.suspendedAt !== null}
+          />
+        ) : (
+          <NotAnAgent title={t('emptyTitle')} message={t('emptyMessage')} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Synchronous, and it takes its strings as props.
+ *
+ * `network-empty.tsx` carries the reason: an async child cannot be resolved by
+ * React when a parent's output is rendered directly in a test, so an async
+ * version leaves its `data-` node out of the DOM while the page looks correct
+ * in a browser.
+ */
+const NotAnAgent = ({ title, message }: { title: string; message: string }) => (
+  <div
+    data-agent-profile="empty"
+    className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card py-20 text-center"
+  >
+    <div className="mb-6 flex size-20 items-center justify-center rounded-2xl bg-primary-500/10">
+      <UserRound className="size-10 text-primary-500" />
+    </div>
+    <h2 className="mb-3 text-xl font-semibold text-foreground">{title}</h2>
+    <p className="max-w-md px-6 text-sm text-muted-foreground">{message}</p>
+  </div>
+);
