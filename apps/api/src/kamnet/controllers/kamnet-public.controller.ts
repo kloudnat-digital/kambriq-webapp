@@ -24,14 +24,18 @@ export class KamnetPublicController {
   constructor(private readonly agentsService: KamnetAgentsService) {}
 
   /**
-   * Throttled explicitly. `kbs-public.controller.ts` - the other anonymous
-   * route in this API - carries no throttle at all, and that is the gap this
-   * one does not repeat.
+   * Throttled explicitly, as every anonymous read in this API now is.
    *
    * 30 a minute, not the 3 that `contact` and `newsletter` use: those are
    * writes that send mail, and this is a read of a page a visitor may
-   * legitimately reload. The global `ThrottlerBehindProxyGuard` keys on the
+   * legitimately reload. `kbs/public/verify/:kcaNumber` carries the same shape
+   * for the same reason. The global `ThrottlerBehindProxyGuard` keys on the
    * forwarded address, so the ALB does not make every visitor one caller.
+   *
+   * `public-routes-are-throttled.spec.ts` is what keeps it that way: a public
+   * route either carries a `@Throttle` or is named in that file's exemption
+   * list with a reason, so the next anonymous route added without either fails
+   * in CI rather than in production.
    *
    * ---------------------------------------------------------------------------
    * The decorators below must stay contiguous
