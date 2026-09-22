@@ -130,7 +130,10 @@ describe('/products/kamnet/annuaire through the BFF', () => {
       'href',
       '/verify-certificate/KCA-20250101-0001',
     );
-    expect(get).toHaveBeenCalledWith('/kamnet/public/agents');
+    // The `no-store` pin, asserted end to end: this spec runs the real action
+    // and the real mapper, so it proves the option survives the whole path and
+    // not merely that the action was written with it.
+    expect(get).toHaveBeenCalledWith('/kamnet/public/agents', { cache: 'no-store' });
   });
 
   /**

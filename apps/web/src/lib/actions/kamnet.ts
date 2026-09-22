@@ -225,7 +225,21 @@ export const getMySponsors = createAction(async () => {
 export const getPublicAgentDirectory = createAction(
   async (): Promise<CertifiedAgentListing[] | null> => {
     try {
-      const body = await api.get<unknown>('/kamnet/public/agents');
+      // `cache: 'no-store'` is the promise, made explicit.
+      //
+      // Withdrawal takes effect immediately, and until this option was here
+      // that rested entirely on Next 16 happening to default `fetch` to
+      // uncached. Nothing in this repository pinned it, so a framework default
+      // - or one wrapper adding `next: { revalidate }` upstream - could have
+      // served a withdrawn agent for the length of a TTL.
+      //
+      // Pinned HERE rather than in `baseFetch`: an explicit `no-store` opts its
+      // route into dynamic rendering in Next 16, so moving it into the shared
+      // helper would change the rendering mode of every static page,
+      // `generateMetadata` and sitemap that reaches it. This page is already
+      // `force-dynamic`, so the option changes nothing about how it renders -
+      // it only removes the dependence on a default.
+      const body = await api.get<unknown>('/kamnet/public/agents', { cache: 'no-store' });
       if (!Array.isArray(body)) {
         logger.error('PublicAgentDirectoryUnexpectedShape', { received: typeof body });
         return null;

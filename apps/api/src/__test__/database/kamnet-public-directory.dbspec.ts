@@ -137,7 +137,36 @@ describe('P11 - the public directory lists only agents who may be listed', () =>
    * wrong nullability, or a timestamp Postgres rounded, would otherwise be
    * invisible to this test.
    */
-  const entryFor = async (fixture: Fixture): Promise<PublicDirectoryEntry | null> => {
+  /**
+   * The newest certificate of a candidate, in the shape the service hands the
+   * projection - owner included.
+   *
+   * `KbsCertificate` carries `candidateId`, not `userId`, so the owner is read
+   * through the relation exactly as `findNewestCertificateFacts` reads it.
+   */
+  const certificateOf = async (candidateId: string) => {
+    const row = await kbs.prisma.kbsCertificate.findFirst({
+      where: { candidateId },
+      orderBy: [{ issueDate: 'desc' }, { createdAt: 'desc' }],
+      select: {
+        kcaNumber: true,
+        issueDate: true,
+        validUntil: true,
+        revokedAt: true,
+        candidate: { select: { userId: true } },
+      },
+    });
+
+    if (!row) return null;
+    const { candidate, ...facts } = row;
+    return { ownerUserId: candidate.userId, ...facts };
+  };
+
+  const entryFor = async (
+    fixture: Fixture,
+    /** Whose certificate to pair with this agent. Defaults to their own. */
+    certificateFrom: Fixture = fixture,
+  ): Promise<PublicDirectoryEntry | null> => {
     const agent = await kamnet.prisma.kamnetAgent.findUniqueOrThrow({
       where: { id: fixture.agentId },
       select: { userId: true, publicListingConsentAt: true, suspendedAt: true },
@@ -152,11 +181,7 @@ describe('P11 - the public directory lists only agents who may be listed', () =>
         profile: { select: { city: true, country: true, avatarUrl: true } },
       },
     });
-    const certificate = await kbs.prisma.kbsCertificate.findFirst({
-      where: { candidateId: fixture.candidateId },
-      orderBy: [{ issueDate: 'desc' }, { createdAt: 'desc' }],
-      select: { kcaNumber: true, issueDate: true, validUntil: true, revokedAt: true },
-    });
+    const certificate = await certificateOf(certificateFrom.candidateId);
 
     return toPublicDirectoryEntry(agent, user, certificate);
   };
@@ -250,19 +275,59 @@ describe('P11 - the public directory lists only agents who may be listed', () =>
 
   // ----- beyond the brief, and reported as such -----
 
-  it('excludes an agent whose account was deactivated or soft-deleted', async () => {
+  it('excludes an agent whose account was deactivated', async () => {
     const deactivated = await createFixture({ consented: true });
+
     await core.prisma.user.update({
       where: { id: deactivated.userId },
       data: { isActive: false },
     });
-    expect(await entryFor(deactivated)).toBeNull();
 
+    expect(await entryFor(deactivated)).toBeNull();
+  });
+
+  /**
+   * Separate from the deactivation test on purpose. The two were one `it` until
+   * Visquis's review of 22 September: a single test reports only its FIRST
+   * failure, so a mutation that broke soft-delete alone would have been masked
+   * by the deactivation assertion passing above it. Two tests, two mutations.
+   */
+  it('excludes an agent whose account was soft-deleted', async () => {
     const deleted = await createFixture({ consented: true });
+
     await core.prisma.user.update({
       where: { id: deleted.userId },
       data: { deletedAt: new Date() },
     });
+
     expect(await entryFor(deleted)).toBeNull();
+  });
+
+  // ----- the certificate has to be THIS agent's ----- //
+
+  /**
+   * Finding 1 of the 22 September review, proved.
+   *
+   * `toPublicDirectoryEntry` takes the agent and the certificate as separate
+   * arguments, and the link between `KamnetAgent.userId` and
+   * `KbsCandidate.userId` crosses two databases with no foreign key to enforce
+   * it. Before the ownership check, a mismatched pair was published without
+   * complaint: this fixture pairs a consented agent with ANOTHER consented
+   * agent's valid certificate, and every other condition is met, so the only
+   * thing that can refuse it is the pairing itself.
+   *
+   * `toCertificateVerdict` has guarded the equivalent case since September with
+   * `answer.kcaNumber !== requested`; this is the same rule, one surface over.
+   */
+  it("refuses an entry built from another agent's certificate", async () => {
+    const agentA = await createFixture({ consented: true });
+    const agentB = await createFixture({ consented: true });
+
+    // Both are listable on their own - otherwise this would pass for the wrong
+    // reason, refusing on a condition that has nothing to do with ownership.
+    expect(await entryFor(agentA)).not.toBeNull();
+    expect(await entryFor(agentB)).not.toBeNull();
+
+    expect(await entryFor(agentA, agentB)).toBeNull();
   });
 });

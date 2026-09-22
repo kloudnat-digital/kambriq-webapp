@@ -811,6 +811,7 @@ export class KbsCandidatesService {
    * truth, and revocation is read directly from it.
    */
   async findNewestCertificateFacts(userId: string): Promise<{
+    ownerUserId: string;
     kcaNumber: string;
     issueDate: Date;
     validUntil: Date;
@@ -819,6 +820,7 @@ export class KbsCandidatesService {
     const candidate = await this.prisma.kbsCandidate.findUnique({
       where: { userId },
       select: {
+        userId: true,
         certificates: {
           ...NEWEST_FIRST,
           take: 1,
@@ -832,7 +834,21 @@ export class KbsCandidatesService {
       },
     });
 
-    return candidate?.certificates[0] ?? null;
+    const certificate = candidate?.certificates[0];
+    if (!candidate || !certificate) return null;
+
+    /**
+     * The owner travels WITH the facts, so the caller can prove the pairing.
+     *
+     * `toPublicDirectoryEntry` receives an agent and a certificate as separate
+     * arguments and publishes a name beside a number. Until this field existed
+     * it had no way to check the two described the same person: the link
+     * between `KamnetAgent.userId` and `KbsCandidate.userId` crosses two
+     * databases and there is no foreign key to enforce it - convention, not
+     * constraint. A projection that trusts its arguments is one bad row away
+     * from publishing one person's certificate under another's name.
+     */
+    return { ownerUserId: candidate.userId, ...certificate };
   }
 
   async findByUserId(userId: string) {

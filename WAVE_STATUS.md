@@ -679,6 +679,80 @@ adding the route to the exemption list fails 2 (the named assertion refuses the
 escape hatch, the stale-exemption check catches it), restored byte-identical and
 34/34. `route-guards` and `contract-guard-parity` stayed green throughout.
 
+### Four fixes from the 22 September self-review, before merge
+
+Visquis's decision on the review posted to #162: fix findings 1 and 2, the stale
+`PUBLIC_SURFACE` comment and the shared account-state test here. Findings 6 and 7
+become **A41** (throttle the five anonymous auth routes) and **P22** (batch the
+certificate read, bound the directory). Neither started.
+
+**1. The certificate must provably belong to the agent.**
+`toPublicDirectoryEntry` took the agent and the certificate as separate
+arguments and never checked they described the same person - the link between
+`KamnetAgent.userId` and `KbsCandidate.userId` crosses two databases with no
+foreign key, so it rested on the caller being right.
+`findNewestCertificateFacts` now carries `ownerUserId` out with the facts, and
+the projection refuses unless it matches - the rule `toCertificateVerdict`
+already applies when it refuses a verdict about a number other than the one
+that was asked about.
+
+**Red first, and observed this time.** The fixture pairs agent A with agent B's
+valid certificate, both listable on their own so nothing else can refuse the
+pair. Against the unfixed code: `1 failed, 9 passed`, and the failure was the
+assertion rather than a compile error -
+
+```
+Received: {"kcaNumber": "KCA-P11-c7a4976c", "firstName": "Amina", "city": "Douala", ...}
+```
+
+agent B's number, published under agent A's name. With the check: 10/10.
+
+**2. "Withdrawal is immediate" is pinned, on the directory read only.**
+`api.get` takes an additive `init`, and only `getPublicAgentDirectory` passes
+`{ cache: 'no-store' }`. It is **not** in `baseFetch`: in Next 16 an explicit
+`no-store` opts its ROUTE into dynamic rendering, so the shared helper would
+change the rendering mode of every statically rendered page, `generateMetadata`,
+sitemap and `generateStaticParams` that reaches it - or fail the build. Proving
+that harmless would mean diffing the whole route table between develop and this
+branch; pinning one read costs nothing and proves itself. The directory page is
+already `force-dynamic`, so the option changes nothing about how that route
+renders - it removes the dependence on a framework default nobody had pinned.
+
+**`serverApi` reads are NOT covered by this.** `authedFetch` delegates to
+`baseFetch` but passes no `init`, so the agent's own consent read through
+`getMyAgentProfile` is unpinned. It does not need to be: every `serverApi` call
+carries a per-session `Authorization` header and `/agent/profile` is
+`force-dynamic`, so there is nothing shareable to cache. Stated rather than
+implied.
+
+Two tests fail if the option is removed - a unit assertion on the call in
+`kamnet.spec.ts`, and the end-to-end one in `page-through-the-bff.spec.tsx`,
+which runs the real action and the real mapper.
+
+**3. The `PUBLIC_SURFACE` comment rewritten.** It still read "unlike
+`kbs-public` it is throttled explicitly" after `45681ce` throttled `kbs-public`
+in this same PR - a comment left standing by the very commit that falsified it.
+
+**4. The account-state refusal split in two.** Deactivated and soft-deleted were
+one `it`, and a single test reports only its first failure. Each is now proven
+by its own mutation, and the three mutations kill **different** tests, which is
+the evidence the split was worth making:
+
+| mutation                                        | the one test that failed                                |
+| ----------------------------------------------- | ------------------------------------------------------- |
+| drop `certificate.ownerUserId !== agent.userId` | refuses an entry built from another agent's certificate |
+| drop `!user.isActive`                           | excludes an agent whose account was deactivated         |
+| drop `user.deletedAt !== null`                  | excludes an agent whose account was soft-deleted        |
+
+File restored byte-identical after each, 10/10 green.
+
+Gate, re-run after prettier: api **75 suites / 899 tests**, web **25 / 396**,
+dbspec **10/10**, `tsc` clean on web and on both api projects, eslint clean at
+`--max-warnings=0`. One casualty of the pin was a stale assertion of my own:
+`page-through-the-bff.spec.tsx` asserted a one-argument call, and
+`toHaveBeenCalledWith` matches the whole argument list, so it failed until it was
+updated - which made it a stronger test, pinning the option end to end.
+
 ### Reported, not fixed
 
 - **The avatar is an S3 key, not a URL.** `UserProfile.avatarUrl`'s own schema

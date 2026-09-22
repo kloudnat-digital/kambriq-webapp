@@ -65,6 +65,13 @@ export type DirectoryUser = {
  * place, against `isActive` - so the facts arrive whole.
  */
 export type DirectoryCertificate = {
+  /**
+   * The `userId` of the candidate this certificate belongs to.
+   *
+   * Carried so the projection can PROVE the certificate is the agent's rather
+   * than assume it. See the ownership check in `toPublicDirectoryEntry`.
+   */
+  readonly ownerUserId: string;
   readonly kcaNumber: string;
   readonly issueDate: Date;
   readonly validUntil: Date;
@@ -131,6 +138,25 @@ export const toPublicDirectoryEntry = (
   if (user.deletedAt !== null) return null;
 
   if (certificate === null) return null;
+
+  /**
+   * The certificate has to be THIS agent's.
+   *
+   * Added after the 22 September review. The agent and the certificate arrive
+   * as separate arguments, fetched separately, and the link between
+   * `KamnetAgent.userId` and `KbsCandidate.userId` crosses two databases with
+   * no foreign key to enforce it - convention, not constraint. Without this
+   * line a mismatched pair published one person's KCA number under another
+   * person's name, which `kamnet-public-directory.dbspec.ts` demonstrated
+   * before the check existed.
+   *
+   * `toCertificateVerdict` guards the equivalent case with
+   * `answer.kcaNumber !== requested`: never give a verdict about a certificate
+   * other than the one that was asked about. This is that rule, one surface
+   * over, and the caller's correctness is no longer load-bearing.
+   */
+  if (certificate.ownerUserId !== agent.userId) return null;
+
   if (!isActive(certificate, now)) return null;
 
   return {

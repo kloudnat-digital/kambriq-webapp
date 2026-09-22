@@ -416,8 +416,32 @@ describe('kamnet actions: the public directory (P11)', () => {
     anonymousGet.mockResolvedValue([ENTRY]);
 
     await expect(getPublicAgentDirectory()).resolves.toEqual({ success: true, data: [ENTRY] });
-    expect(anonymousGet).toHaveBeenCalledWith('/kamnet/public/agents');
+    expect(anonymousGet).toHaveBeenCalledWith('/kamnet/public/agents', { cache: 'no-store' });
     expect(get).not.toHaveBeenCalled();
+  });
+
+  /**
+   * The pin, asserted on its own so a failure names it.
+   *
+   * "Withdrawal is immediate" rested on Next 16 defaulting `fetch` to uncached,
+   * which nothing in this repository pinned - finding 4 of the 22 September
+   * review. Removing the option from the action makes THIS test fail rather
+   * than leaving the promise resting on a framework default again.
+   *
+   * Deliberately not pinned in `baseFetch`: an explicit `no-store` opts its
+   * route into dynamic rendering in Next 16, so the shared helper would change
+   * the rendering mode of every static page and `generateMetadata` that reaches
+   * it. `serverApi` reads are therefore NOT covered by this - they do not need
+   * to be, since every one carries a per-session `Authorization` header and
+   * `/agent/profile` is `force-dynamic`.
+   */
+  it('pins no-store on the directory read, so a withdrawal cannot be served stale', async () => {
+    anonymousGet.mockResolvedValue([]);
+
+    await getPublicAgentDirectory();
+
+    const [, init] = anonymousGet.mock.calls[0];
+    expect(init).toEqual({ cache: 'no-store' });
   });
 
   /**
