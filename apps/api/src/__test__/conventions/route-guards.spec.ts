@@ -81,6 +81,13 @@ const PUBLIC_SURFACE: Record<string, number> = {
   // can address.
   'core/contact/contact.controller.ts': 1,
   'health/health.controller.ts': 3,
+  // P11: the public directory of certified agents, one route. A buyer deciding
+  // whether to trust an agent has no account and is the person this exists for,
+  // so it answers without a token - and unlike `kbs-public` it is throttled
+  // explicitly (30/minute, a read a visitor may reload, not a write that sends
+  // mail). What it may publish is decided by `toPublicDirectoryEntry`, not by
+  // this route: consent, no suspension, and a certificate that stands.
+  'kamnet/controllers/kamnet-public.controller.ts': 1,
   'kbs/controllers/kbs-public.controller.ts': 1,
   'newsletter/newsletter.controller.ts': 1,
 };

@@ -792,6 +792,49 @@ export class KbsCandidatesService {
     return (await this.findActiveCertificate(userId)) !== null;
   }
 
+  /**
+   * P11 - the newest certificate's facts, unreduced, for the public directory.
+   *
+   * `findActiveCertificate` answers "is this person certified" and collapses
+   * revoked, expired and absent into one `null`. The directory needs the issue
+   * date - the "certified since" it publishes - and it needs the decision to be
+   * taken in ONE place, `toPublicDirectoryEntry`, against the shared `isActive`
+   * predicate. So the facts arrive whole and this method judges nothing.
+   *
+   * **Deliberately not gated on the candidate's status.** `revokeCertificate`
+   * resets the status to EXAM_PENDING as well as setting `revokedAt`, so a
+   * status gate here would return `null` for a revoked certificate and the
+   * directory could not tell "revoked" from "never certified". The exclusion
+   * would then pass because of a side effect in another service rather than
+   * because of the fact itself - which is the defect
+   * `findActiveCertificate`'s own docstring records. The certificate is the
+   * truth, and revocation is read directly from it.
+   */
+  async findNewestCertificateFacts(userId: string): Promise<{
+    kcaNumber: string;
+    issueDate: Date;
+    validUntil: Date;
+    revokedAt: Date | null;
+  } | null> {
+    const candidate = await this.prisma.kbsCandidate.findUnique({
+      where: { userId },
+      select: {
+        certificates: {
+          ...NEWEST_FIRST,
+          take: 1,
+          select: {
+            kcaNumber: true,
+            issueDate: true,
+            validUntil: true,
+            revokedAt: true,
+          },
+        },
+      },
+    });
+
+    return candidate?.certificates[0] ?? null;
+  }
+
   async findByUserId(userId: string) {
     return await this.prisma.kbsCandidate.findUnique({
       where: { userId },

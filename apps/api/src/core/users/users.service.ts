@@ -256,6 +256,39 @@ export class UsersService {
     });
   }
 
+  /**
+   * P11 - the core half of a public directory entry, for many agents at once.
+   *
+   * Three reasons this is not `findById` in a loop:
+   *
+   *   - `findById` returns `UserResponse`, which has **no `deletedAt`**, so the
+   *     one exclusion nobody would forgive - publishing the name of somebody
+   *     who deleted their account - cannot be made from it at all;
+   *   - `findByIdOrThrow` includes `userRoles` and its `role` join on every
+   *     call, so a directory of fifty agents would be fifty role-joined
+   *     queries to render seven fields;
+   *   - it throws `NotFoundException` for a missing row, and a missing core row
+   *     is an ordinary reason not to list an agent, not a fault.
+   *
+   * `email` and `phone` are deliberately absent, though `findManyByIds` above
+   * returns both. This feeds an anonymous page, and a projection that carries a
+   * field is one careless spread away from publishing it.
+   */
+  async findDirectoryUsers(ids: string[]) {
+    if (ids.length === 0) return [];
+    return this.prisma.user.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        isActive: true,
+        deletedAt: true,
+        profile: { select: { city: true, country: true, avatarUrl: true } },
+      },
+    });
+  }
+
   // ----- Admin: Update user (active status, roles) -------
   /**
    * The system must never be left without a super admin.
