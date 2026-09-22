@@ -74,6 +74,20 @@ model KamnetAgent {
   suspendedAt   DateTime?
   suspendedBy    String?
 
+  /// P11 - when this agent agreed to appear in the public directory.
+  ///
+  /// Null means not listed, and null is the default for every row that already
+  /// exists: nobody becomes published because a migration ran. Withdrawing
+  /// consent writes null again, and the entry is gone from the next read.
+  ///
+  /// A nullable timestamp rather than a boolean, because "since when" is the
+  /// fact a consent record has to be able to answer and a boolean cannot.
+  ///
+  /// Publishing a real person's name, face and city is not a rendering
+  /// decision, so it is recorded here rather than inferred from a role, a tier
+  /// or the existence of a certificate.
+  publicListingConsentAt DateTime?
+
   // Relations
   commissions  KamnetCommission[]
   leads        KamnetLead[]
