@@ -673,6 +673,32 @@ escape hatch, the stale-exemption check catches it), restored byte-identical and
   documented: suspending an agent removes `AGENT`, which would have hidden
   commissions already earned, so ownership via `findByUserId` is the guard. My
   error, corrected in the PR body.
+- **The `*.dbspec.ts` tier is flaky when run whole, and it is not P11's.** Run
+  as `pnpm test:db` rather than filtered, four or five KBS/exam suites fail -
+  `exam-integrity`, `exam-course-scope`, `exam-eligibility-course-scope`,
+  `kbs-quiz-course-scope`, sometimes `kca1-questions` or `kca1-replay`. Traced
+  rather than assumed, because my own suite is the first in this tier to open
+  three databases and was the obvious suspect:
+
+  | measurement                                                          | result                                        |
+  | -------------------------------------------------------------------- | --------------------------------------------- |
+  | full tier on this branch                                             | 4 suites / 24 tests failed                    |
+  | full tier **without** `kamnet-public-directory`                      | **5** suites / 18 failed - worse without mine |
+  | full tier on clean `origin/develop` @ `4d722d8`                      | **4 suites / 18 failed - the same suites**    |
+  | each failing suite run **alone**                                     | passes (`kca1-questions` 8/8)                 |
+  | all four databases dropped and recreated (`KAMBRIQ_DB_TEST_RESET=1`) | still fails, different subset again           |
+  | `kamnet-public-directory.dbspec.ts`                                  | passed in **every** run                       |
+  | CI Database suite on #162                                            | **passed**, 1m17s                             |
+
+  So: pre-existing on develop, not caused by this branch, not caused by my
+  suite, and not stale local data. The failing set moves between runs and every
+  suite passes in isolation, which is order- or timing-dependent interference
+  between suites sharing one Postgres. The failure text points the same way -
+  `Received length: 0`, `Received: undefined`, and setup assertions like "has
+  two courses in the database, with pools that discriminate" failing before the
+  behaviour under test is reached. CI is green because each run gets its own
+  container. A tier that only fails when run whole is a tier nobody runs whole;
+  it deserves a subject of its own.
 
 ### A mistake I made and caught
 
