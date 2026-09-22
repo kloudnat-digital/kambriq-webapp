@@ -609,7 +609,7 @@
       "directory": {
         "eyebrow": "Public directory",
         "title": "KAMBRIQ certified agents",
-        "subtitle": "Every agent listed here passed the KCA certification and still holds it in force. Their KCA number links to the verifier, which confirms it against the register.",
+        "subtitle": "Every agent listed here obtained the KCA certification and still holds it in force. Their KCA number links to the verifier, which confirms it against the register.",
         "kcaLabel": "KCA number",
         "certifiedSince": "Certified since {date}",
         "verifyLink": "Verify this number",
@@ -624,7 +624,7 @@
         "lookupCta": "Verify",
         "lookupInvalid": "Enter a KCA number, for example KCA-20250101-0001.",
         "sectionTitle": "Public directory of certified agents",
-        "sectionDescription": "A buyer has nothing to look at before committing: the whole burden of proof falls on the agent. The directory makes the agent identifiable and their certification checkable against the register.",
+        "sectionDescription": "Before you commit, check who you are dealing with: every listed agent is identifiable and their certification can be checked against the register.",
         "sectionCta": "Open the directory"
       }
     },
@@ -1767,7 +1767,7 @@
       "listingTitle": "Public directory",
       "listingLabel": "Appear in the directory of certified agents",
       "listingPublished": "What is published: your first name, your last name, your city, your country, your profile photo if you have one, your KCA number and its issue date. Nothing else - not your sales, not your referrals, not your sponsor, not your tier, not your email, not your phone.",
-      "listingWithdraw": "You can withdraw your consent at any time. Withdrawal takes effect immediately: your entry disappears from the directory on the next read.",
+      "listingWithdraw": "You can withdraw your consent at any time. Withdrawal takes effect immediately: your entry disappears from the directory straight away.",
       "listingOn": "You have appeared in the directory since {date}.",
       "listingOff": "You do not appear in the directory.",
       "listingRequires": "Your KCA certification must be in force for your entry to appear.",
@@ -1775,7 +1775,9 @@
       "savedOff": "Your entry has been removed from the public directory.",
       "saveFailed": "Your choice was not saved. Nothing changed: please try again.",
       "emptyTitle": "You are not a KAMNET agent",
-      "emptyMessage": "This page is for certified agents. If you have submitted an application, it has to be approved first."
+      "emptyMessage": "This page is for certified agents. If you have submitted an application, it has to be approved first.",
+      "unavailableTitle": "Profile momentarily unavailable",
+      "unavailableMessage": "We cannot read your profile right now. Nothing has changed: try again in a few minutes."
     },
     "account": {
       "title": "My account",
