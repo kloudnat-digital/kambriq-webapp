@@ -817,3 +817,71 @@ but not revocation fails the revoked fixture and reading revocation but not
 expiry fails the expired one, which is what proves the two certificate fixtures
 fail through **different fields**. That is the recorded defect where `revokedAt`
 was stored and ignored, and a single combined fixture would have passed over it.
+
+## P11 merged - #162, 23 September
+
+Squash-merged as **`2522278`** (`feat(kamnet): the public directory of certified
+agents (#162)`) by the Claude Code session, under Visquis's account and under the
+bounded authorization in `CLAUDE_CODE_AUTH_merge-162.md`, which covered this PR
+only and ended with the merge and a green `develop`.
+
+**The independent review was skipped deliberately, not forgotten.** #162 had been
+green since 22 September and Ulrich had not reviewed it. He was told three times,
+the last on the day of the merge, that it would go in without him. The only review
+on record is `visquis-miaffossa` COMMENTED, written by the session that wrote the
+code. It is not an approval and it is not independent.
+
+Checked through the API immediately before the merge:
+
+| check             | value                                                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| head              | `a9930ce`, the last commit pushed                                                                                                           |
+| gate on that head | run `35693075609` `success`: Commitlint, What changed, Database suite, Quality, CI Gate green; image and deploy jobs skipped as on every PR |
+| mergeable         | `true`, `mergeable_state: clean`                                                                                                            |
+| reviews           | one COMMENTED, none requesting changes                                                                                                      |
+| diff              | 34 files, all P11's; `AGENTS.md` absent                                                                                                     |
+| `origin/develop`  | `4d722d8`, unmoved, and the PR's merge base                                                                                                 |
+
+The merge call was pinned to `sha=a9930ce`. `merge-on-red-develop` was not used.
+
+**`develop` after the merge:** push run **`35870416761`** `success`. Quality,
+Database suite, both image builds, Deploy to dev, E2E Tests (dev) and **Delivery
+journeys (dev)** all passed. Commitlint and CI Gate were skipped, as on every push.
+
+**Dev, after the deploy:**
+
+| request                            | answer                                                                                    |
+| ---------------------------------- | ----------------------------------------------------------------------------------------- |
+| `GET /api/v1/health/version`       | `imageTag: sha-2522278`, `gitRef: develop`                                                |
+| `GET /api/v1/kamnet/public/agents` | **200** `{"success":true,"data":[]}`                                                      |
+| `GET /products/kamnet/annuaire`    | **200**, h1 "Les agents certifiés KAMBRIQ", empty state "Aucun agent n'est encore publié" |
+
+Empty is the correct state: no agent has consented, and the null default held
+through the migration. **Nothing appears until an agent ticks the consent box on
+`/agent/profile`**, so the agents have to be told.
+
+**Follow-ups from the review, open:** **A41** (throttle the five anonymous auth
+routes, whose exemption list is now public) and **P22** (the directory makes one
+query per agent, unbounded).
+
+## A40 - the image optimizer names its hosts
+
+The A40 triage found one critical that an anonymous visitor can reach on dev: the
+optimizer fetched any URL whose host matched `**.amazonaws.com` and handed the bytes
+to `sharp`. The full entry, with the proof, is **A40** in
+`docs/ops/registre-chantiers.md`. In short:
+
+- `remotePatterns` and the CSP `img-src` both come from
+  `apps/web/src/lib/security/image-hosts.ts`: `images.unsplash.com` (still loaded
+  by the home hero and the KBS page) and the media bucket from
+  `MEDIA_BUCKET_HOST`, read at `next build`;
+- dev's bucket is `kambriq-media-dev.s3.eu-central-1.amazonaws.com`. Presigned URLs,
+  no CloudFront. The entry allows any path and any query on that one host;
+- unset variable: bucket URLs are refused, never widened. Malformed: the build fails;
+- no dependency was bumped. `next` 16.3 with `sharp` 0.35 is A42.
+
+**Pending, after the merge, on dev:** the triage's request
+(`/_next/image?url=https://s3.amazonaws.com/&w=64&q=75`, which answered 400 "The
+requested resource isn't a valid image", i.e. fetched) must answer 400 `"url"
+parameter is not allowed`, and a genuine bucket image must still be served.
+Requires `vars.MEDIA_BUCKET_HOST` on the `dev` environment first.

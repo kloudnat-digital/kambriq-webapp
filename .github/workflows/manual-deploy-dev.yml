@@ -139,6 +139,7 @@ jobs:
           build-args: |
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
+            MEDIA_BUCKET_HOST=${{ vars.MEDIA_BUCKET_HOST }}
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
 

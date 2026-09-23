@@ -453,6 +453,7 @@ jobs:
           build-args: |
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
+            MEDIA_BUCKET_HOST=${{ vars.MEDIA_BUCKET_HOST }}
             GIT_SHA=${{ github.sha }}
             GIT_REF=${{ github.ref_name }}
             BUILD_TIME=${{ env.BUILD_TIME }}

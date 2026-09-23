@@ -28,6 +28,11 @@ COPY libs ./libs/
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_MAPBOX_TOKEN
+# A40. The media bucket the image optimizer may fetch from, as a hostname
+# (kambriq-media-<env>.s3.<region>.amazonaws.com). Read by next.config.ts at
+# build time, because a standalone build freezes `images` into its manifest.
+# Unset: the optimizer refuses bucket URLs - it never falls back to a wildcard.
+ARG MEDIA_BUCKET_HOST
 
 RUN cd apps/web && NEXT_TELEMETRY_DISABLED=1 ../../node_modules/.bin/next build
 
