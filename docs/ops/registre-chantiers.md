@@ -1117,6 +1117,62 @@ quality job for `nx run api:test-db`.
 
 ---
 
+### P2 - the newsletter form, held to L1's discipline - `EN COURS`
+
+**Cost impact: None.** No new resource. The consent is stored as attributes on
+the SES contact that already holds the subscription.
+
+`L1-contact` is this chantier's first half: the contact form. P2 stood at 95 %
+for one reason, the **newsletter form had none of it**. That was checked against
+the code before anything changed, and every claim held:
+
+- no consent box and no privacy link;
+- a resolver with one hard-coded English sentence on a French site;
+- an action that turned every failure into another English sentence;
+- a server that checked only the address.
+
+Measured: the address field's accessible name was **`""`**, because it had a
+placeholder and no label, and `computeAccessibleName` does not count a
+placeholder.
+
+Now the same shape as L1, not a better one:
+
+- the resolver carries the rules as catalogue keys (`footer.newsletter.validation`);
+- each message is visible under its field, tied by `aria-describedby`, with
+  `aria-invalid` set;
+- consent is an explicit box linking the privacy policy and the RGPD page, using
+  the consent sentence already in the catalogues;
+- the API refuses a subscription without a literal `true` consent at the DTO,
+  and again in the service (`NewsletterConsentRequiredError`), before SES is
+  called;
+- the consent time is the server's clock. It is stored on the SES contact as
+  `AttributesData` (`consentGivenAt`, `consentPolicyPath`, `locale`), and none
+  of it is accepted from the wire;
+- a refusal is said in a `role="alert"` region and the address stays in the
+  field. A 409 is named with the catalogue's "already subscribed" sentence.
+
+After: accessible name **`"Adresse email"`** (an `sr-only` label; the footer's
+heading already says what the field is for).
+
+**Proof.** Red first: 13 web tests failed and the controller seam failed. The
+DTO and service specs failed to compile against the old code, which is not a
+red, so their behavioural reds are the mutations. Eighteen mutations, each
+observed failing on its own, one per expectation:
+
+- DTO: consent optional; consent as `'true'` or `1`; a wire timestamp let through;
+- service: consent guard removed; timestamp not the server's; locale not stored;
+- controller: policy path dropped;
+- web: resolver consent optional; action always succeeding; each `aria-describedby`
+  and `aria-invalid`; the label detached; the English sentence restored in the
+  resolver; the 409 unnamed; the locale hard-coded; the RGPD link redirected.
+
+`fr` and `en` keys are pinned in lockstep by a test.
+
+**Pending, named:** a subscription through the deployed form on dev, reading the
+SES contact's attributes back.
+
+---
+
 ### L2-contact - the daily digest, so silence is impossible - `PROUVE LOCALEMENT`
 
 **Cost impact: None.** A job name on `QUEUES.CORE`, handled by the

@@ -724,6 +724,7 @@
       "title": "Newsletter",
       "description": "Every week, a focus on Cameroonian land law and the market.",
       "placeholder": "Your email address",
+      "emailLabel": "Email address",
       "submit": "Subscribe",
       "consent": {
         "text": "I agree that my personal data is processed in accordance with the",
@@ -741,7 +742,9 @@
       },
       "errors": {
         "title": "Error",
-        "alreadySubscribed": "This email address is already subscribed to our newsletter."
+        "alreadySubscribed": "This email address is already subscribed to our newsletter.",
+        "submitFailed": "The subscription did not go through. Your address is kept above: try again in a moment.",
+        "submitRefused": "The subscription did not go through: {reason}"
       }
     },
     "copyright": "KAMBRIQ. All rights reserved.",
