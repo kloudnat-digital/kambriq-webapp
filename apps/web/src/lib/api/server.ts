@@ -63,7 +63,18 @@ const baseFetch = async <T>(
 //   const lands = await api.get<Land[]>('/lands/public')
 
 export const api = {
-  get: <T>(path: string) => baseFetch<T>(path, { method: 'GET' }),
+  /**
+   * `init` is additive and almost always omitted.
+   *
+   * It exists so a single caller can pin `cache: 'no-store'` without changing
+   * `baseFetch` for everybody. That distinction matters in Next 16: an explicit
+   * `no-store` opts its ROUTE into dynamic rendering, so putting it in
+   * `baseFetch` would change the rendering mode of every statically rendered
+   * page, `generateMetadata`, sitemap or `generateStaticParams` that reaches
+   * it - or fail the build. Here it changes one read on a route that is
+   * already `force-dynamic`.
+   */
+  get: <T>(path: string, init?: RequestInit) => baseFetch<T>(path, { method: 'GET', ...init }),
 
   post: <T>(path: string, data?: unknown) =>
     baseFetch<T>(path, { method: 'POST', body: data ? JSON.stringify(data) : undefined }),

@@ -2,9 +2,11 @@
 
 import { revalidatePath } from 'next/cache';
 import { KAMNET_MAX_SPONSORSHIP_DEPTH } from '@kambriq/common/constants/kamnet';
-import { ApiError, serverApi } from '@/lib/api/server';
+import { api, ApiError, serverApi } from '@/lib/api/server';
+import { logger } from '@/lib/logger';
 import { createAction, ServerActionError } from './create-action';
 import type {
+  CertifiedAgentListing,
   Commission,
   CommissionFilters,
   CommissionSummary,
@@ -191,4 +193,96 @@ export const getMyNetwork = createAction(async (depth?: number) => {
 
 export const getMySponsors = createAction(async () => {
   return nullOn404(() => serverApi.get<SponsorChain>('/kamnet/network/sponsors'));
+});
+
+// ==== Public: the directory of certified agents (P11) ====
+
+/**
+ * `GET /kamnet/public/agents`, read by a visitor with no account.
+ *
+ * Through `api`, not `serverApi`. The reader is anonymous by definition - that
+ * is who the directory exists for - and `serverApi` redirects a caller with an
+ * expired session to a login page instead of answering, which would turn a
+ * public page into a members' area for anybody whose cookie had gone stale.
+ *
+ * ---------------------------------------------------------------------------
+ * `[]` and `null` are different answers and must stay different
+ * ---------------------------------------------------------------------------
+ * An empty array means **nobody has consented yet**, which is the ordinary
+ * state on the day this ships and which the page says in words. `null` means
+ * **the register could not be read**. Collapsing the second into the first
+ * would make an outage render as "no certified agents", which is a false
+ * statement about the business to the exact visitor the directory is meant to
+ * reassure.
+ *
+ * `toCertificateVerdict` draws the same line with `unavailable`, for the same
+ * reason, and `verify-certificate`'s page tests are mostly about that case.
+ *
+ * The shape is checked before it is trusted: an API that answered with
+ * something that is not an array - an error envelope, an HTML error page - is
+ * `null`, not an empty directory.
+ */
+export const getPublicAgentDirectory = createAction(
+  async (): Promise<CertifiedAgentListing[] | null> => {
+    try {
+      // `cache: 'no-store'` is the promise, made explicit.
+      //
+      // Withdrawal takes effect immediately, and until this option was here
+      // that rested entirely on Next 16 happening to default `fetch` to
+      // uncached. Nothing in this repository pinned it, so a framework default
+      // - or one wrapper adding `next: { revalidate }` upstream - could have
+      // served a withdrawn agent for the length of a TTL.
+      //
+      // Pinned HERE rather than in `baseFetch`: an explicit `no-store` opts its
+      // route into dynamic rendering in Next 16, so moving it into the shared
+      // helper would change the rendering mode of every static page,
+      // `generateMetadata` and sitemap that reaches it. This page is already
+      // `force-dynamic`, so the option changes nothing about how it renders -
+      // it only removes the dependence on a default.
+      const body = await api.get<unknown>('/kamnet/public/agents', { cache: 'no-store' });
+      if (!Array.isArray(body)) {
+        logger.error('PublicAgentDirectoryUnexpectedShape', { received: typeof body });
+        return null;
+      }
+      return body as CertifiedAgentListing[];
+    } catch (error) {
+      logger.error('PublicAgentDirectoryUnavailable', {
+        status: error instanceof ApiError ? error.status : undefined,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    }
+  },
+);
+
+/**
+ * `PATCH /kamnet/agents/me/public-listing` - the agent's own decision.
+ *
+ * `listed` is a REQUIRED positional argument, not an optional one with a
+ * default. A default parameter makes `createAction`'s `Args` generic infer as
+ * `[]`, so the body cannot see the argument and `tsc` refuses it - the same
+ * reason `getMyNetwork` above takes `depth?: number` and clamps inside rather
+ * than defaulting in the signature.
+ *
+ * Both paths are revalidated because one write changes two pages: the agent's
+ * own screen, so the control shows what they just chose, and the public
+ * directory, because a withdrawal has to be visible where it matters. The
+ * server also deletes the cached agent row, so this is the second of two
+ * independent defences against a stale "listed".
+ */
+export const setMyPublicListing = createAction(async (listed: boolean) => {
+  try {
+    const result = await serverApi.patch<{ publicListingConsentAt: string | null }>(
+      '/kamnet/agents/me/public-listing',
+      { listed },
+    );
+
+    revalidatePath('/agent/profile');
+    revalidatePath('/products/kamnet/annuaire');
+
+    return result;
+  } catch (error) {
+    if (error instanceof ApiError) throw new ServerActionError(error.message, error.status);
+    throw error;
+  }
 });

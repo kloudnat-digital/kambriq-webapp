@@ -18,6 +18,7 @@ import {
 import { KamnetPrismaService } from '../prisma/kamnet-prisma.service';
 import { UsersService } from '../../core/users/users.service';
 import { KbsCandidatesService } from '../../kbs/candidates/candidates.service';
+import { toPublicDirectoryEntry, type PublicDirectoryEntry } from './public-listing';
 import { AgentFilterDto, UpdateAgentProfileDto, UpdateAgentStatusDto } from '../dto/kamnet.dto';
 
 @Injectable()
@@ -133,6 +134,101 @@ export class KamnetAgentsService {
       },
       createdAt: agent.createdAt.toISOString(),
     };
+  }
+
+  // ----- P11: the public directory ----- //
+
+  /**
+   * Every agent who may appear in the public directory, in the shape a
+   * stranger is shown.
+   *
+   * ---------------------------------------------------------------------------
+   * The WHERE is an optimisation; the rule is `toPublicDirectoryEntry`
+   * ---------------------------------------------------------------------------
+   * Narrowing on consent and suspension in the database keeps the core and kbs
+   * round-trips down, but the decision is taken again in the projection for
+   * every row that survives. Two places that must agree would be a defect; a
+   * filter that can only ever be *stricter* than the rule it precedes is not.
+   * `kamnet-public-directory.dbspec.ts` proves the rule without this WHERE at
+   * all, which is why the rule is the thing under test.
+   *
+   * ---------------------------------------------------------------------------
+   * Read straight from Prisma, never through `findByUserId`
+   * ---------------------------------------------------------------------------
+   * `findByUserId` caches the agent row in Redis for 60 seconds and is
+   * invalidated on suspend and reactivate only. Reading consent through it
+   * would leave a withdrawn agent listed for up to a minute, and P11 requires
+   * withdrawal to take effect immediately. `setPublicListingConsent` below
+   * deletes the same key anyway, so the two defences do not depend on each
+   * other.
+   */
+  async listPublicDirectory(): Promise<PublicDirectoryEntry[]> {
+    const agents = await this.prisma.kamnetAgent.findMany({
+      where: { publicListingConsentAt: { not: null }, suspendedAt: null },
+      select: { userId: true, publicListingConsentAt: true, suspendedAt: true },
+      orderBy: { publicListingConsentAt: 'asc' },
+    });
+
+    if (agents.length === 0) return [];
+
+    // One query for every name, rather than one per agent: see
+    // `UsersService.findDirectoryUsers` for why `findById` is wrong here.
+    const users = await this.usersService.findDirectoryUsers(agents.map((a) => a.userId));
+    const byUserId = new Map(users.map((user) => [user.id, user]));
+
+    const entries = await Promise.all(
+      agents.map(async (agent) => {
+        const certificate = await this.candidatesService.findNewestCertificateFacts(agent.userId);
+        return toPublicDirectoryEntry(agent, byUserId.get(agent.userId) ?? null, certificate);
+      }),
+    );
+
+    return entries.filter((entry): entry is PublicDirectoryEntry => entry !== null);
+  }
+
+  /**
+   * The agent's own decision to be listed, or to stop being listed.
+   *
+   * Set from the agent's private space and nowhere else. It is deliberately NOT
+   * a field on `updateAgentProfileDto`: that schema is a bag of optional
+   * presentational fields - bio, name, phone, city - and a permission to
+   * publish somebody's identity does not belong in a partial update where it
+   * can be carried along by accident. It is also the reason this returns the
+   * timestamp rather than the whole profile: a caller should see exactly what
+   * it changed.
+   *
+   * Withdrawal deletes the Redis agent row as suspend and reactivate do, so the
+   * next read of any agent-scoped endpoint sees the new value rather than a
+   * cached one.
+   */
+  async setPublicListingConsent(userId: string, consented: boolean) {
+    const agent = await this.findByIdOrThrowByUserId(userId);
+
+    if (agent.suspendedAt && consented) {
+      throw new ForbiddenException(this.t('kamnet.agent.suspended'));
+    }
+
+    const updated = await this.prisma.kamnetAgent.update({
+      where: { id: agent.id },
+      data: { publicListingConsentAt: consented ? new Date() : null },
+      select: { publicListingConsentAt: true },
+    });
+
+    await this.redis.del(KamnetAgentsService.agentCacheKey(userId));
+
+    this.logger.log('Agent public listing consent %o', {
+      userId,
+      listed: updated.publicListingConsentAt !== null,
+    });
+
+    return { publicListingConsentAt: updated.publicListingConsentAt };
+  }
+
+  /** The agent row for a user, uncached, or a 404. */
+  private async findByIdOrThrowByUserId(userId: string) {
+    const agent = await this.prisma.kamnetAgent.findUnique({ where: { userId } });
+    if (!agent) throw new NotFoundException(this.t('kamnet.agent.notFound'));
+    return agent;
   }
 
   // ----- Get Agent by User ID ----- //

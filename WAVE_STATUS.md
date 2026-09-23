@@ -551,3 +551,269 @@ only way the config resolves correctly - develop's own copy is equally
 non-conforming, yml sits outside the lint-staged globs, and `--write` rewrites 27
 lines across eleven hunks of quote style in jobs this subject never touches, and
 drops a line at end of file. The diff here is exactly two hunks.
+
+---
+
+## P11 - the public directory of certified agents
+
+PR #162, branch `feat/p11-public-agent-directory`, claimed under the interim
+protocol with zero open pull requests at the time - no overlap on
+`apps/web/src/i18n/messages/`, no Prisma schema conflict.
+
+### Copy approved by Visquis on 22 September
+
+**Approved with four changes, applied here and listed below.** The tables that
+follow carry the APPROVED text, not my drafts.
+
+| #   | key                                                        | what changed, and why                                                                                                                                                                                                                                         |
+| --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `products.kamnet.directory.sectionDescription`             | Rewritten. Mine was the brief's internal rationale turned into public copy, and it opened by telling the buyer they had nothing to look at. The approved line addresses the buyer directly and says what to do.                                               |
+| 2   | `app.agentProfile.unavailableTitle` / `unavailableMessage` | **New keys, and a behaviour change.** `emptyTitle` was shown both when the caller is not an agent and when the read failed, so a real agent was told they were not one whenever the API was down. Split into two states; see "A defect Visquis caught" below. |
+| 3   | `app.agentProfile.listingWithdraw`                         | "disparaît de l'annuaire dès la lecture suivante" becomes "disparaît aussitôt de l'annuaire". The mechanism was leaking into a promise made to a person. "à tout moment" and "immédiatement" are unchanged, and the two tests pinning them still pass.        |
+| 4   | `products.kamnet.directory.subtitle`                       | "a passé la certification KCA" becomes "a obtenu la certification KCA" (en: "passed" becomes "obtained").                                                                                                                                                     |
+
+**Every string below is mine, not his.** 36 keys, fr and en, invented to the
+brief's instruction: "factual, about certification and accompaniment". He writes
+the voice; this is the most factual version I could write while the pages waited.
+
+Two requirements were fixed by the 22 September instruction and are met here
+rather than left to taste: the consent text states **exactly** what is published
+and that withdrawal is immediate, and the empty directory reads as _not yet
+published_, never as broken.
+
+#### `products.kamnet.directory` - the public page
+
+| key                  | fr                                                                                                                                                                              | en                                                                                                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `eyebrow`            | Annuaire public                                                                                                                                                                 | Public directory                                                                                                                                                    |
+| `title`              | Les agents certifiés KAMBRIQ                                                                                                                                                    | KAMBRIQ certified agents                                                                                                                                            |
+| `subtitle`           | Chaque agent présent ici a obtenu la certification KCA et la détient toujours en cours de validité. Son numéro KCA renvoie au vérificateur, qui le confirme auprès du registre. | Every agent listed here obtained the KCA certification and still holds it in force. Their KCA number links to the verifier, which confirms it against the register. |
+| `kcaLabel`           | Numéro KCA                                                                                                                                                                      | KCA number                                                                                                                                                          |
+| `certifiedSince`     | Certifié depuis le {date}                                                                                                                                                       | Certified since {date}                                                                                                                                              |
+| `verifyLink`         | Vérifier ce numéro                                                                                                                                                              | Verify this number                                                                                                                                                  |
+| `emptyTitle`         | Aucun agent n'est encore publié                                                                                                                                                 | No agent is published yet                                                                                                                                           |
+| `emptyMessage`       | L'annuaire est ouvert et aucun agent n'a encore demandé à y figurer. La publication se fait sur demande de l'agent : elle n'est jamais automatique.                             | The directory is open and no agent has asked to appear in it yet. Publication happens at the agent's own request: it is never automatic.                            |
+| `unavailableTitle`   | Annuaire momentanément indisponible                                                                                                                                             | Directory momentarily unavailable                                                                                                                                   |
+| `unavailableMessage` | Nous ne pouvons pas lire le registre en ce moment. Cette page ne dit ni qu'il y a des agents certifiés, ni qu'il n'y en a pas : réessayez dans quelques minutes.                | We cannot read the register right now. This page says neither that there are certified agents nor that there are none: try again in a few minutes.                  |
+| `lookupTitle`        | Vérifier un numéro KCA                                                                                                                                                          | Verify a KCA number                                                                                                                                                 |
+| `lookupHint`         | Saisissez ou collez un numéro KCA pour le confirmer auprès du registre.                                                                                                         | Type or paste a KCA number to confirm it against the register.                                                                                                      |
+| `lookupLabel`        | Numéro KCA                                                                                                                                                                      | KCA number                                                                                                                                                          |
+| `lookupPlaceholder`  | KCA-20250101-0001                                                                                                                                                               | KCA-20250101-0001                                                                                                                                                   |
+| `lookupCta`          | Vérifier                                                                                                                                                                        | Verify                                                                                                                                                              |
+| `lookupInvalid`      | Saisissez un numéro KCA, par exemple KCA-20250101-0001.                                                                                                                         | Enter a KCA number, for example KCA-20250101-0001.                                                                                                                  |
+| `sectionTitle`       | Annuaire public des agents certifiés                                                                                                                                            | Public directory of certified agents                                                                                                                                |
+| `sectionDescription` | Avant de vous engager, vérifiez à qui vous parlez : chaque agent listé est identifiable et sa certification se vérifie auprès du registre.                                      | Before you commit, check who you are dealing with: every listed agent is identifiable and their certification can be checked against the register.                  |
+| `sectionCta`         | Consulter l'annuaire                                                                                                                                                            | Open the directory                                                                                                                                                  |
+
+#### `app.agentProfile` - the agent's consent screen
+
+| key                  | fr                                                                                                                                                                                                                                                                                 | en                                                                                                                                                                                                                                                                       |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pageTitle`          | Mon profil agent                                                                                                                                                                                                                                                                   | My agent profile                                                                                                                                                                                                                                                         |
+| `pageSubtitle`       | Votre présence dans l'annuaire public des agents certifiés.                                                                                                                                                                                                                        | Your presence in the public directory of certified agents.                                                                                                                                                                                                               |
+| `listingTitle`       | Annuaire public                                                                                                                                                                                                                                                                    | Public directory                                                                                                                                                                                                                                                         |
+| `listingLabel`       | Apparaître dans l'annuaire des agents certifiés                                                                                                                                                                                                                                    | Appear in the directory of certified agents                                                                                                                                                                                                                              |
+| `listingPublished`   | Ce qui est publié : votre prénom, votre nom, votre ville, votre pays, votre photo de profil si vous en avez une, votre numéro KCA et sa date de délivrance. Rien d'autre - ni vos ventes, ni vos filleuls, ni votre parrain, ni votre niveau, ni votre e-mail, ni votre téléphone. | What is published: your first name, your last name, your city, your country, your profile photo if you have one, your KCA number and its issue date. Nothing else - not your sales, not your referrals, not your sponsor, not your tier, not your email, not your phone. |
+| `listingWithdraw`    | Vous pouvez retirer votre accord à tout moment. Le retrait prend effet immédiatement : votre fiche disparaît aussitôt de l'annuaire.                                                                                                                                               | You can withdraw your consent at any time. Withdrawal takes effect immediately: your entry disappears from the directory straight away.                                                                                                                                  |
+| `listingOn`          | Vous figurez dans l'annuaire depuis le {date}.                                                                                                                                                                                                                                     | You have appeared in the directory since {date}.                                                                                                                                                                                                                         |
+| `listingOff`         | Vous ne figurez pas dans l'annuaire.                                                                                                                                                                                                                                               | You do not appear in the directory.                                                                                                                                                                                                                                      |
+| `listingRequires`    | Votre certification KCA doit être en cours de validité pour que votre fiche apparaisse.                                                                                                                                                                                            | Your KCA certification must be in force for your entry to appear.                                                                                                                                                                                                        |
+| `savedOn`            | Vous figurez désormais dans l'annuaire public.                                                                                                                                                                                                                                     | You now appear in the public directory.                                                                                                                                                                                                                                  |
+| `savedOff`           | Votre fiche a été retirée de l'annuaire public.                                                                                                                                                                                                                                    | Your entry has been removed from the public directory.                                                                                                                                                                                                                   |
+| `saveFailed`         | Votre choix n'a pas été enregistré. Rien n'a changé : réessayez.                                                                                                                                                                                                                   | Your choice was not saved. Nothing changed: please try again.                                                                                                                                                                                                            |
+| `emptyTitle`         | Vous n'êtes pas agent KAMNET                                                                                                                                                                                                                                                       | You are not a KAMNET agent                                                                                                                                                                                                                                               |
+| `emptyMessage`       | Cette page est réservée aux agents certifiés. Si vous avez déposé une candidature, elle doit d'abord être approuvée.                                                                                                                                                               | This page is for certified agents. If you have submitted an application, it has to be approved first.                                                                                                                                                                    |
+| `unavailableTitle`   | Profil momentanément indisponible                                                                                                                                                                                                                                                  | Profile momentarily unavailable                                                                                                                                                                                                                                          |
+| `unavailableMessage` | Nous ne pouvons pas lire votre profil en ce moment. Rien n'a changé : réessayez dans quelques minutes.                                                                                                                                                                             | We cannot read your profile right now. Nothing has changed: try again in a few minutes.                                                                                                                                                                                  |
+
+**A defect Visquis caught, and what it now costs to reintroduce.** `emptyTitle`
+was rendered both when the caller has no agent record and when the read failed,
+so a real agent opening `/agent/profile` during an outage was told they were not
+an agent - a false statement about them, made at the moment we could not check.
+
+The page now forks three ways. The action `nullOn404`s a 404 and rethrows
+everything else, and `createAction` rethrows anything that is not a
+`ServerActionError`, so a 500 or an unreachable API arrives as a **rejected
+promise** rather than a failure envelope - which is why the call is wrapped in
+`.catch(() => null)`, the shape `/verify-certificate` already uses. Both "it
+threw" and "it answered `success: false`" mean unavailable, and the consent
+control renders in neither: a control that cannot read the current consent
+cannot honestly offer to change it.
+
+The test that asserted the old behaviour is **inverted, not deleted** - it was
+accurate about the code and wrong about the requirement, the same shape as
+`seed-ids.spec.ts` defending the seed defect. Three tests now cover it, and the
+one that matters asserts on the WORDS rather than a `data-` attribute, because
+the defect was the sentence: `expect(container).not.toHaveTextContent(/pas agent
+KAMNET/)` for both a failure envelope and a rejection.
+
+#### `metadata.annuaire` and `footer.annuaire`
+
+| key                             | fr                                                                                                                                                                           | en                                                                                                                                                                                |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `metadata.annuaire.title`       | Annuaire des agents certifiés KAMBRIQ - Cameroun                                                                                                                             | Directory of KAMBRIQ certified agents - Cameroon                                                                                                                                  |
+| `metadata.annuaire.description` | Les agents KAMBRIQ certifiés KCA qui ont accepté de figurer publiquement : prénom, nom, ville, pays et numéro de certification. Chaque numéro se vérifie auprès du registre. | The KAMBRIQ KCA-certified agents who agreed to appear publicly: first name, last name, city, country and certification number. Every number can be verified against the register. |
+| `footer.annuaire`               | Annuaire des agents                                                                                                                                                          | Agent directory                                                                                                                                                                   |
+
+Inserted into both catalogues in one pass, by line number, descending, so the
+anchors could not drift between files: **1606 key paths in each, none unique to
+either side.** The P21 pin passes 9/9 over the new copy - no percentage with
+remuneration wording, no `J+n`, no earning promise - which is what nesting the
+directory under `products.kamnet` buys, since that namespace is already swept.
+
+### The second addition: the verifier is throttled now, not documented as open
+
+`GET /kbs/public/verify/:kcaNumber` answered anonymously with no rate limit, and
+`kamnet-public.controller.ts` recorded that in a comment. On a public repository
+that is an open weakness with a signpost beside it, and the numbers are
+guessable by the service's own admission - `KCA-YYYYMMDD-XXXX`, a date and four
+hex characters, 65,536 per issue date.
+
+It carries `@Throttle({ default: { limit: 30, ttl: 60_000 } })` now, the comment
+describes a guard rather than a gap, and
+`public-routes-are-throttled.spec.ts` keeps it: a public route either throttles
+or is named in an exemption list with its reason.
+
+Proved by mutation rather than by a first green: removing the decorator fails 2,
+adding the route to the exemption list fails 2 (the named assertion refuses the
+escape hatch, the stale-exemption check catches it), restored byte-identical and
+34/34. `route-guards` and `contract-guard-parity` stayed green throughout.
+
+### Four fixes from the 22 September self-review, before merge
+
+Visquis's decision on the review posted to #162: fix findings 1 and 2, the stale
+`PUBLIC_SURFACE` comment and the shared account-state test here. Findings 6 and 7
+become **A41** (throttle the five anonymous auth routes) and **P22** (batch the
+certificate read, bound the directory). Neither started.
+
+**1. The certificate must provably belong to the agent.**
+`toPublicDirectoryEntry` took the agent and the certificate as separate
+arguments and never checked they described the same person - the link between
+`KamnetAgent.userId` and `KbsCandidate.userId` crosses two databases with no
+foreign key, so it rested on the caller being right.
+`findNewestCertificateFacts` now carries `ownerUserId` out with the facts, and
+the projection refuses unless it matches - the rule `toCertificateVerdict`
+already applies when it refuses a verdict about a number other than the one
+that was asked about.
+
+**Red first, and observed this time.** The fixture pairs agent A with agent B's
+valid certificate, both listable on their own so nothing else can refuse the
+pair. Against the unfixed code: `1 failed, 9 passed`, and the failure was the
+assertion rather than a compile error -
+
+```
+Received: {"kcaNumber": "KCA-P11-c7a4976c", "firstName": "Amina", "city": "Douala", ...}
+```
+
+agent B's number, published under agent A's name. With the check: 10/10.
+
+**2. "Withdrawal is immediate" is pinned, on the directory read only.**
+`api.get` takes an additive `init`, and only `getPublicAgentDirectory` passes
+`{ cache: 'no-store' }`. It is **not** in `baseFetch`: in Next 16 an explicit
+`no-store` opts its ROUTE into dynamic rendering, so the shared helper would
+change the rendering mode of every statically rendered page, `generateMetadata`,
+sitemap and `generateStaticParams` that reaches it - or fail the build. Proving
+that harmless would mean diffing the whole route table between develop and this
+branch; pinning one read costs nothing and proves itself. The directory page is
+already `force-dynamic`, so the option changes nothing about how that route
+renders - it removes the dependence on a framework default nobody had pinned.
+
+**`serverApi` reads are NOT covered by this.** `authedFetch` delegates to
+`baseFetch` but passes no `init`, so the agent's own consent read through
+`getMyAgentProfile` is unpinned. It does not need to be: every `serverApi` call
+carries a per-session `Authorization` header and `/agent/profile` is
+`force-dynamic`, so there is nothing shareable to cache. Stated rather than
+implied.
+
+Two tests fail if the option is removed - a unit assertion on the call in
+`kamnet.spec.ts`, and the end-to-end one in `page-through-the-bff.spec.tsx`,
+which runs the real action and the real mapper.
+
+**3. The `PUBLIC_SURFACE` comment rewritten.** It still read "unlike
+`kbs-public` it is throttled explicitly" after `45681ce` throttled `kbs-public`
+in this same PR - a comment left standing by the very commit that falsified it.
+
+**4. The account-state refusal split in two.** Deactivated and soft-deleted were
+one `it`, and a single test reports only its first failure. Each is now proven
+by its own mutation, and the three mutations kill **different** tests, which is
+the evidence the split was worth making:
+
+| mutation                                        | the one test that failed                                |
+| ----------------------------------------------- | ------------------------------------------------------- |
+| drop `certificate.ownerUserId !== agent.userId` | refuses an entry built from another agent's certificate |
+| drop `!user.isActive`                           | excludes an agent whose account was deactivated         |
+| drop `user.deletedAt !== null`                  | excludes an agent whose account was soft-deleted        |
+
+File restored byte-identical after each, 10/10 green.
+
+Gate, re-run after prettier: api **75 suites / 899 tests**, web **25 / 396**,
+dbspec **10/10**, `tsc` clean on web and on both api projects, eslint clean at
+`--max-warnings=0`. One casualty of the pin was a stale assertion of my own:
+`page-through-the-bff.spec.tsx` asserted a one-argument call, and
+`toHaveBeenCalledWith` matches the whole argument list, so it failed until it was
+updated - which made it a stronger test, pinning the option end to end.
+
+### Reported, not fixed
+
+- **The avatar is an S3 key, not a URL.** `UserProfile.avatarUrl`'s own schema
+  comment says so. The API carries the field, as the subject requires, but the
+  page renders **initials**: putting a key in an `img` src would produce a broken
+  image on a public page for every agent who has one. Resolving a key to a URL
+  needs a presigner or a CDN path and is not P11's.
+- **Five `auth` routes are public and unthrottled**: `refresh`, `logout`,
+  `verify-email`, `reset-password`, `reactivate`. They are listed in the new
+  spec's exemption list as **inherited and not examined under P11**. They take a
+  token or a secret in the body, so a caller without one gets nothing - an
+  argument, not a measurement. Listing them is not a finding that they are safe.
+- **`(app)/profile` and `(app)/agent/dashboard` are both `PlaceholderPage`**
+  stubs. The subject asked for the consent control "on their profile screen" and
+  there was no profile screen. Visquis chose a minimal real `/agent/profile`
+  carrying only the control; the rest of an agent's profile is its own subject.
+- **`PublicAgentProfile` is a misnomer** in `apps/web/src/types/kamnet.ts`: it
+  types the authenticated `/kamnet/agents/:id` view behind `@Roles(AGENT)` and
+  carries `salesCount`, `referralCount` and `tier`. Renamed nothing - its
+  callers and tests use it - but `CertifiedAgentListing` sits beside it with the
+  distinction written down, because reaching for the wrong one publishes exactly
+  what the P9 arbitrage removed.
+- **I16 withdrawn.** An earlier revision of PR #162 reported the two
+  `/kamnet/commissions` routes as missing `@Roles`. They are deliberate and
+  documented: suspending an agent removes `AGENT`, which would have hidden
+  commissions already earned, so ownership via `findByUserId` is the guard. My
+  error, corrected in the PR body.
+- **The `*.dbspec.ts` tier is flaky when run whole, and it is not P11's.** Run
+  as `pnpm test:db` rather than filtered, four or five KBS/exam suites fail -
+  `exam-integrity`, `exam-course-scope`, `exam-eligibility-course-scope`,
+  `kbs-quiz-course-scope`, sometimes `kca1-questions` or `kca1-replay`. Traced
+  rather than assumed, because my own suite is the first in this tier to open
+  three databases and was the obvious suspect:
+
+  | measurement                                                          | result                                        |
+  | -------------------------------------------------------------------- | --------------------------------------------- |
+  | full tier on this branch                                             | 4 suites / 24 tests failed                    |
+  | full tier **without** `kamnet-public-directory`                      | **5** suites / 18 failed - worse without mine |
+  | full tier on clean `origin/develop` @ `4d722d8`                      | **4 suites / 18 failed - the same suites**    |
+  | each failing suite run **alone**                                     | passes (`kca1-questions` 8/8)                 |
+  | all four databases dropped and recreated (`KAMBRIQ_DB_TEST_RESET=1`) | still fails, different subset again           |
+  | `kamnet-public-directory.dbspec.ts`                                  | passed in **every** run                       |
+  | CI Database suite on #162                                            | **passed**, 1m17s                             |
+
+  So: pre-existing on develop, not caused by this branch, not caused by my
+  suite, and not stale local data. The failing set moves between runs and every
+  suite passes in isolation, which is order- or timing-dependent interference
+  between suites sharing one Postgres. The failure text points the same way -
+  `Received length: 0`, `Received: undefined`, and setup assertions like "has
+  two courses in the database, with pools that discriminate" failing before the
+  behaviour under test is reached. CI is green because each run gets its own
+  container. A tier that only fails when run whole is a tier nobody runs whole;
+  it deserves a subject of its own.
+
+### A mistake I made and caught
+
+**The first dbspec run was green, not red.** I wrote `toPublicDirectoryEntry`
+before the test that proves it, so the brief's "red first, for each" never
+happened and no red was ever observed against `develop`. Six mutations supply
+the evidence instead - the sharpest being the mirror pair, where reading expiry
+but not revocation fails the revoked fixture and reading revocation but not
+expiry fails the expired one, which is what proves the two certificate fixtures
+fail through **different fields**. That is the recorded defect where `revokedAt`
+was stored and ignored, and a single combined fixture would have passed over it.

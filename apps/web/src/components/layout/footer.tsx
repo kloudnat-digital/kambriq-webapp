@@ -34,6 +34,7 @@ const Footer: FC = async () => {
                   { href: '/products/lands', label: t('lands') },
                   { href: '/products/verify', label: t('verify') },
                   { href: '/products/kamnet', label: t('kamnet') },
+                  { href: '/products/kamnet/annuaire', label: t('annuaire') },
                   { href: '/products/kbs', label: t('kbs') },
                 ]}
               />

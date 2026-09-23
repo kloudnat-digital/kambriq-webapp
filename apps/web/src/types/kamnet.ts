@@ -73,6 +73,16 @@ export interface MyAgentProfile {
   salesCount: number;
   sponsorId: string | null;
   suspendedAt: string | null;
+  /**
+   * P11 - when this agent consented to appear in the public directory, or null.
+   *
+   * It reaches the client because `getMyProfile` spreads the agent row, and it
+   * is the agent's own data, so there is nothing here they may not see. Reading
+   * it for the consent control's current state is safe for a second reason:
+   * `setPublicListingConsent` deletes the cached agent row, so the next read of
+   * this endpoint cannot be a "listed" from before a withdrawal.
+   */
+  publicListingConsentAt: string | null;
   createdAt: string;
   updatedAt: string;
   user: {
@@ -87,7 +97,16 @@ export interface MyAgentProfile {
   };
 }
 
-/** `GET /kamnet/agents/:id` - another agent's public profile. */
+/**
+ * `GET /kamnet/agents/:id` - another AGENT's view of an agent.
+ *
+ * The name is a misnomer and is kept only because `getAgentProfile` and its
+ * tests already use it: this route sits behind `@Roles(AGENT)` on a controller
+ * carrying `@ApiBearerAuth`, so "public" here means "not private to the holder",
+ * never "readable by a stranger". It carries `salesCount`, `referralCount` and
+ * `tier` - the ranking and recruitment metrics the P9 arbitrage removed from
+ * the public site. See `CertifiedAgentListing` below for the one a visitor sees.
+ */
 export interface PublicAgentProfile {
   id: string;
   bio: string | null;
@@ -95,6 +114,29 @@ export interface PublicAgentProfile {
   agentCode: string;
   salesCount: number;
   referralCount: number;
+}
+
+/**
+ * `GET /kamnet/public/agents` - P11's directory entry, as a stranger sees it.
+ *
+ * Seven fields, and the list is the contract. No sales, no referrals, no
+ * sponsor, no tier, no agent code, no email, no phone, no bio. The API decides
+ * this in `toPublicDirectoryEntry`; this type is the shape that arrives, not a
+ * second opinion about it.
+ *
+ * `kcaNumber` is what a reader checks against `/verify-certificate/<number>`,
+ * and it is the certificate's number rather than the agent row's copy - since
+ * I15 a renewal issues a new one and nothing updates that copy.
+ */
+export interface CertifiedAgentListing {
+  firstName: string;
+  lastName: string;
+  city: string | null;
+  country: string | null;
+  avatarUrl: string | null;
+  kcaNumber: string;
+  /** The issue date of the certificate that stands, as an ISO string. */
+  certifiedSince: string;
 }
 
 /** A prospect, as `KamnetLead` is returned. */
