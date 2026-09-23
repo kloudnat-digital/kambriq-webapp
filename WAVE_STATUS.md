@@ -959,3 +959,21 @@ That throwaway contact stays in the account's shared list until somebody removes
 it.
 
 Both register entries have moved to `PROUVE`.
+
+## P4 - the API sends X-Robots-Tag, closing wave 2/3
+
+Branched from `origin/develop` at `581f99d`. Claimed as draft **#165**; no open
+PR overlapped. The premise was re-measured on dev before any change: the header
+was on `/` and `/legal/privacy`, and absent on `/api/v1/health/version` (200),
+`/api/v1/kamnet/public/agents` (200), `/api/v1/no-such-route` (404) and
+`/api/v1/users/me` (401).
+
+The rule (`APP_ENV`, never `NODE_ENV`, absent means noindex) moved to
+`libs/common`. The web re-exports it, pinned by an identity test, and the API
+applies it through Express middleware registered before routing, so 404s and
+401s carry it too. Red first on the `main.ts` pins, then nine mutations, each
+observed failing on its own. Detail under **P4, second half** in the register.
+
+**Pending:** after the merge, on dev, by request, the header on at least three
+API routes including a 404. P4 stays below 100 % until D13 (access
+authentication) lands.

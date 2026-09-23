@@ -136,6 +136,12 @@ export {
   CorrelationIdMiddleware,
   CORRELATION_ID_HEADER,
 } from './middleware/correlation-id.middleware';
+export {
+  isIndexableEnvironment,
+  NOINDEX_HEADER,
+  PRODUCTION_APP_ENV,
+  robotsHeaderMiddleware,
+} from './middleware/robots-header.middleware';
 
 // ----- Interceptors -----
 export { TransformResponseInterceptor } from './interceptors/transform-response.interceptor';

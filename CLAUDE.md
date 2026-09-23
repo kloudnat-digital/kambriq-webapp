@@ -1277,6 +1277,25 @@ itself is visible in Search Console within a day and fixed by one variable, and
 a dev that forgot is indexed under the brand name, invisible until somebody
 searches, and weeks to unpick.
 
+### A header set by an interceptor misses every response that matters most
+
+From P4's second half. Dev was noindex on every page and indexable on its
+API: nothing on the API set `X-Robots-Tag`. The obvious place to add it is an
+interceptor, and that would have missed exactly the two responses a crawler
+meets most on an API: **an interceptor runs only for a matched handler**, so a
+404 for an unknown route and a 401 from a guard go out without it.
+
+**A header that must be on every response is Express middleware, registered
+before routing.** `robotsHeaderMiddleware()` sits right after helmet in
+`main.ts`, and `api-sends-robots-header.spec.ts` sees it on a 200, a 404 and a
+401 over real HTTP.
+
+**And one hostname answers one way.** The rule moved to `libs/common`, and the
+web re-exports the same function, pinned by identity, not by agreement. Its
+import is relative, because the loader that compiles `next.config.ts` cannot
+resolve the `@kambriq/common` alias. Anything `next.config.ts` imports must not
+use it.
+
 ### A guard written before anything can use it
 
 `callbackUrl` is written in four places in this app and **read in none**:

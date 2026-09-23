@@ -40,21 +40,23 @@
  * an explicit setting, never an inference from absent configuration - pointed
  * the safe way round.
  */
-export const NOINDEX_HEADER = 'noindex, nofollow';
-
-/** The one value that means "this deployment is the public site". */
-export const PRODUCTION_APP_ENV = 'production';
-
 /**
- * True when this deployment may be indexed.
- *
- * Reads `APP_ENV` and nothing else - deliberately not `NODE_ENV`, not the
- * hostname, not `NEXT_PUBLIC_APP_URL`. Deriving it from a URL would be an
- * inference from a value that exists for another purpose, which is how the
- * next person ends up debugging why the marketing site vanished from Google.
+ * The rule itself lives in `libs/common` since P4's second half: the API sets
+ * the same header from the same function, so dev.kambriq.com cannot be noindex
+ * on its pages and indexable on its API. Re-exported here so every existing
+ * reader of this file keeps working.
  */
-export const isIndexableEnvironment = (env: NodeJS.ProcessEnv = process.env): boolean =>
-  env.APP_ENV?.trim().toLowerCase() === PRODUCTION_APP_ENV;
+// A relative path, not the `@kambriq/common` alias: `next.config.ts` imports
+// this file, and the loader that compiles the config does not resolve the alias
+// from here (measured: "Cannot find module '../../libs/common/...'").
+// eslint-disable-next-line @nx/enforce-module-boundaries -- next.config.ts cannot resolve the alias; this is the one shared rule both apps must read
+import {
+  isIndexableEnvironment,
+  NOINDEX_HEADER,
+  PRODUCTION_APP_ENV,
+} from '../../../../../libs/common/src/middleware/robots-header.middleware';
+
+export { isIndexableEnvironment, NOINDEX_HEADER, PRODUCTION_APP_ENV };
 
 /**
  * The headers to add for this deployment: the `noindex` pair everywhere except

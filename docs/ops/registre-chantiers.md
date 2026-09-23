@@ -227,7 +227,7 @@ listed here first.
 | `G5`              | `PROUVE LOCALEMENT` | a correction entered from the back-office screen: three movements, total 500 000 over four lines, original line unchanged. Correction carries its own reason and author                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `G11` follow-up 3 | `PROUVE`            | the controller never forwarded `paidBy`: a DEPO keyed on the screen was refused by the service. Fixed and pinned here                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `P3`              | `PROUVE LOCALEMENT` | the auth middleware was a global net: every unknown URL redirected to /login and nothing could 404. Positive matcher, real 404 page, route table proved unchanged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `P4`              | `PROUVE LOCALEMENT` | X-Robots-Tag noindex outside production, on the existing headers() block. Reads APP_ENV: NODE_ENV is 'production' on every environment and cannot tell them apart                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `P4`              | `PROUVE LOCALEMENT` | X-Robots-Tag noindex outside production, on the existing headers() block. Reads APP_ENV: NODE_ENV is 'production' on every environment and cannot tell them apart. Second half (API responses): EN COURS, see below                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `P5`              | `A FAIRE`           | public product pages link at /kamnet/apply and /kbs/enroll, both behind the login wall. Kept protected by P3 deliberately: widening is a product change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | rename            | `A DECIDER`         | `L1-contact`/`L2-contact` -> `P1`/`P2` was asked for in P3's brief; those ids exist only on PR #98's branch, which the same brief puts out of scope. Not done - see PR                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `A19`             | `PROUVE`            | develop linted 1 project of 6 for seven months: the workflow promised "the full set", `pnpm run lint` was `nx lint api`. Widened to `nx run-many -t lint --all`; manifest corrected; proved in both directions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -1418,6 +1418,66 @@ the Playwright spec run against a local server (16 passed). **No CI run has
 confirmed any of it** - the Actions quota is exhausted and jobs do not start.
 CI still has to run the three unit suites and the e2e suite on a clean runner,
 and build the web image with the new page.
+
+---
+
+## P4, second half - the API carries the header too - `EN COURS`
+
+**Cost impact: None.**
+
+P4 was capped at 90 % for a reason measured on dev: `X-Robots-Tag: noindex,
+nofollow` was on the home page, a legal page, two protected routes, a 404, the
+login page and a static asset, and **absent on `/api/v1/health/version`**. So
+"every route" was false on the same hostname.
+
+Re-measured on 23 September before anything changed (`sha-581f99d`):
+
+- `/` and `/legal/privacy` carry the header;
+- `/api/v1/health/version` (200), `/api/v1/kamnet/public/agents` (200),
+  `/api/v1/no-such-route` (404) and `/api/v1/users/me` (401) carry nothing.
+
+**One rule, not two.** `isIndexableEnvironment` and `NOINDEX_HEADER` moved to
+`libs/common/src/middleware/robots-header.middleware.ts`.
+`apps/web/src/lib/seo/robots.ts` re-exports them, and a test asserts the web's
+function **is** the shared one, not a copy that agrees. It is still `APP_ENV`,
+never `NODE_ENV`, and absent means noindex. Dev sets no `APP_ENV` on either
+container, so both answer noindex with no infra change. prd must set
+`APP_ENV=production` on **both**, and that is the existing ADR-005 follow-up.
+
+**Express middleware, not an interceptor.** An interceptor runs only for a
+matched handler, so a 404 for an unknown route and a 401 from a guard would
+leave without the header. `robotsHeaderMiddleware()` is registered in `main.ts`
+right after helmet, before the global prefix. The environment is read once, at
+startup.
+
+The web import is relative, with a scoped
+`eslint-disable-next-line @nx/enforce-module-boundaries`. `next.config.ts` imports
+`robots.ts`, and the config loader cannot resolve the `@kambriq/common` alias:
+measured, "Cannot find module '../../libs/common/...'". `next build` with and
+without `APP_ENV=production` still gives `["noindex, nofollow"]` and `[]` in the
+routes manifest.
+
+**Proof so far.** The `main.ts` pins were red first, against the unregistered
+app. An HTTP test boots a Nest app with the middleware registered as `main.ts`
+does and sees the header on a 200, a 404 and a 401. Nine mutations, each
+observed failing on its own:
+
+- registration removed;
+- registered after the prefix;
+- a `NODE_ENV` fallback;
+- the header sent in production;
+- `next()` forgotten;
+- the decision taken per request;
+- `APP_ENV` not normalised;
+- the web keeping its own copy;
+- the header never set.
+
+**Pending, named - the only proof that counts here:** after the merge, on dev, by
+request, the header on at least three API routes, one of them a 404.
+
+**What P4 cannot reach before D13.** Dev answers 200 to anonymous callers, with
+no access authentication. That half belongs to D13, and P4 stays below 100 %
+until D13 lands.
 
 ---
 
