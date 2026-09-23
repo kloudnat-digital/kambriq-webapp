@@ -1296,6 +1296,28 @@ import is relative, because the loader that compiles `next.config.ts` cannot
 resolve the `@kambriq/common` alias. Anything `next.config.ts` imports must not
 use it.
 
+### A server that calls on a visitor's behalf is one visitor to everything downstream
+
+From `A45`. A2 fixed the rate limiter to key on the last `X-Forwarded-For` hop,
+and that was right for a browser calling the API. But nearly every call here is
+made by the Next server, through the same public ALB, so the last hop is the web
+task's own address. Every visitor's login, registration, contact request and
+newsletter subscription spent **one bucket for the whole site**, while a caller
+hitting the API directly kept a bucket of its own. Nothing failed, and the limits
+only looked like they worked because traffic was low.
+
+The web could not be recognised by its connection, which is always the ALB, or
+by its address, which was new at every deploy (four in one day). So it
+**vouches** for the visitor, with a secret only it and the API hold, and the API
+believes the claim with that secret and never otherwise. A forwarded address
+believed from anybody is worse than none, because a caller could then choose
+its own bucket.
+
+**Before proposing any limit, find out who the caller is**, by reading the
+request log for a marked request rather than reasoning about the topology. And
+the header you add must never reach a log line: the request logger records
+headers verbatim.
+
 ### A guard written before anything can use it
 
 `callbackUrl` is written in four places in this app and **read in none**:

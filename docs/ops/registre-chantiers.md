@@ -4142,6 +4142,103 @@ avatar uploader `PUT`s to a presigned S3 URL from the browser.
 
 ---
 
+### A45 - the API counts rate limits per visitor, not per web task - `EN COURS`
+
+**Cost impact: None.** One standard SSM parameter, which is free, once the
+infra half described below is applied.
+
+**Measured on dev before anything changed (23 September, `sha-f0e8819`), from
+the API's own request log and marked requests:**
+
+- the API's TCP peer is always the ALB (`10.0.1.x`), never the caller;
+- a direct call arrives as `x-forwarded-for: <caller>`, one hop, and the guard
+  picks the caller;
+- a forged header arrives as `forged, <caller>` and
+  `forged1, forged2, <caller>`: the ALB **appends** and never replaces, so the
+  guard's last hop cannot be chosen by the caller;
+- a call the web server makes for a visitor arrives as `x-forwarded-for:
+3.71.109.x`, one hop - the web task's public IP, matched against its ENI - with
+  `user-agent: node`. Nothing identifies the visitor;
+- the web task's address changes at **every deploy**: four different addresses
+  on 23 September (`18.197.188.x`, `18.184.213.x`, `3.70.216.x`, `3.71.109.x`).
+  The CI runners that run the journeys also send `user-agent: node`, from Azure
+  addresses.
+
+So every limit on a route the web calls - login and register 10/min,
+forgot-password and resend-verification 5, contact and newsletter 3, and the
+global 100 - was counted once for the whole site. Someone calling the API
+directly kept a bucket of their own.
+
+**Why not the brief's shape.** "Accept the claim only when the connection comes
+from the web service" cannot be checked. The connection is always the ALB, and
+the web's address is new at every deploy. The web and the API share no secret
+today: the web has `AUTH_SECRET` and `JWT_EXPIRES_IN`, and the API has four
+database URLs and `JWT_SECRET`.
+
+**The rule.** The web vouches for the visitor:
+
+- it sends `x-kambriq-visitor-ip`, the last `X-Forwarded-For` hop of the
+  incoming request, which the same ALB appended;
+- it proves it is the web with `x-kambriq-caller-secret` (`WEB_CALLER_SECRET`).
+
+The API believes the address only when that secret matches (constant-time, over
+SHA-256 digests) and the value is a single IP address. Anything else falls back
+to the old rule unchanged: no secret configured, none sent, a wrong or repeated
+one, or a value that is not an address. The secret is shorter than 32
+characters? Startup fails. It is unset? One warning at startup, and today's
+behaviour. The secret header is redacted from the request log.
+
+**Found, not fixed - a new subject.** The API's request log carries every
+request's `Authorization: Bearer` value (304 characters, users' access tokens)
+into CloudWatch. `pinoHttp` had no `redact` at all. Only this subject's own
+header is redacted here.
+
+**Proof so far:**
+
+- `rate-limit-per-visitor.spec.ts` runs over real HTTP through the real guard,
+  with the requests shaped as the ALB delivers them. Red first: visitor B was
+  refused (`Expected 200, Received 429`) after visitor A exhausted the web's
+  shared bucket. Now visitor A's third call is 429 and visitor B is 200. Forged
+  claims, with no secret or a wrong one, still count against the caller.
+- `caller-identity.spec.ts` covers one rule per test, and runs the redaction
+  through `pino-http` with the app's own paths.
+- `visitor-headers.spec.ts` covers the web helper, and pins that all four
+  NextAuth fetches and the API client carry the headers.
+- Eighteen mutations, each observed failing on its own:
+  - API: a claim believed without the secret (which also turned the two HTTP
+    forgery tests red); believed when no secret is configured; a longer wrong
+    secret; a non-address; a repeated secret; the first hop instead of the last;
+    the guard ignoring the vouched visitor; a short secret; redaction
+    unregistered; redaction aimed at the wrong header; IPv6 refused;
+  - web: the first incoming hop; headers sent without a secret; an error
+    escaping outside a request; a non-address; IPv6 dropped; the refresh fetch
+    and the API client each forgetting the headers.
+
+`next build` passes. Its eight "Dynamic server usage" messages are identical, on
+the same seven routes, in builds made before this change.
+
+**The infra half - proposed, not applied.** One `random_password` of 48
+characters written to a SecureString, `/kambriq/dev/shared/WEB_CALLER_SECRET`,
+and referenced as a `secret` named `WEB_CALLER_SECRET` in both the web and the
+API task definitions. Same pattern as A30's database password. Until it exists
+the code is inert and counts exactly as before, so the merge order is free.
+
+**Known limit, named.** A call NextAuth makes outside a request scope (a token
+refresh triggered while `proxy.ts` runs, if `headers()` is unavailable there)
+sends no claim and still counts against the web task. Where a person is known -
+refresh and logout carry a refresh token - a per-account key is the better
+answer, and it belongs to A41.
+
+**Pending, named:** after the merge and the infra half, on dev:
+
+- two visitors counted separately;
+- a forged claim ignored;
+- login, registration, password reset and email verification exercised end to
+  end;
+- the journeys green.
+
+---
+
 ## Proven
 
 | ID    | Chantier                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Closed by                              | Proof                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Cost                                                                |
