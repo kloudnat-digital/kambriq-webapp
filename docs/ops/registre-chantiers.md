@@ -4215,7 +4215,7 @@ redacted here.
 `next build` passes. Its eight "Dynamic server usage" messages are identical, on
 the same seven routes, in builds made before this change.
 
-**The infra half - proposed, not applied.** One `random_password` of 48
+**The infra half - kambriq-infra #65, open, not applied.** One `random_password` of 48
 characters written to a SecureString, `/kambriq/dev/shared/WEB_CALLER_SECRET`,
 and referenced as a `secret` named `WEB_CALLER_SECRET` in both the web and the
 API task definitions. Same pattern as A30's database password. Until it exists
