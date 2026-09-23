@@ -81,9 +81,7 @@ describe('NewsletterService: subscribe', () => {
     await expect(service.subscribe('alice@example.com')).rejects.toBeInstanceOf(ConflictException);
   });
 
-  // There is deliberately no degraded path. A subscription that cannot be
-  // stored must not resolve as though it were: that silent success is exactly
-  // what this change removes.
+  // Subscriptions that fail to store must not succeed silently.
   it('propagates AccessDenied rather than resolving quietly', async () => {
     mockSend.mockRejectedValueOnce(
       named('AccessDeniedException', 'not authorized to perform ses:CreateContact'),

@@ -11,32 +11,17 @@ import { PAYMENT_CHANNELS } from '@kambriq/common/payments/payment-channels';
 import type { PaymentReceipt } from '@/types/payments';
 
 /**
- * Records one encaissement, with its proof - or one correction of one.
+ * Renders a form to record a payment receipt or correct an existing one.
  *
- * **This form cannot validate a payment.** It calls `recordReceipt` and
- * nothing else; validating is a separate action on a separate control, because
- * recording what arrived and agreeing that it settles the payment are two acts.
+ * This form is responsible exclusively for recording receipts via `recordReceipt`.
+ * It does not validate payments.
  *
- * The proof is uploaded first, to a presigned PUT, and only its key is sent
- * with the receipt. A receipt cannot be submitted without one - the button
- * stays disabled until a file has uploaded, the API refuses a blank
- * `evidenceUrl`, and the database `CHECK` refuses it after that.
+ * It handles uploading the proof document to an S3 presigned URL first, then
+ * submits the resulting key along with the receipt details. A proof file is required.
  *
- * ---------------------------------------------------------------------------
- * G5 - a correction, from this screen
- * ---------------------------------------------------------------------------
- * "Une correction s'ajoute au journal, elle ne remplace pas une ligne, et elle
- * porte sa propre raison et son propre auteur." Until this form carried
- * `correctsId`, that sentence was true only for a caller writing JSON by hand:
- * an operator who keyed 3 000 000 twice had no way to say so.
- *
- * So: pick the line being corrected from the ledger, enter the signed amount
- * that puts it right (negative to take money back off the total, positive to
- * add what was under-keyed), and say why. The reason is required for a
- * correction and the API refuses one without it. The author is whoever is
- * signed in, written by the API as `recordedBy`. **Nothing here edits the
- * original line**; it stays on the ledger, and the database refuses an UPDATE
- * on it whoever asks.
+ * For corrections: A negative amount reduces the total, and a positive amount adds to it.
+ * Corrections require selecting an existing ledger line and providing a reason.
+ * Corrections are appended as new entries; existing lines are never mutated.
  */
 export const RecordReceiptForm = ({
   paymentId,
@@ -119,8 +104,7 @@ export const RecordReceiptForm = ({
           Enregistrer un encaissement ne valide pas le paiement. La validation est un acte distinct.
         </p>
 
-        {/* Offered only once there is a line to correct. A correction points
-            at a line by choosing it, never by typing an id. */}
+        {/* Shown only when there is an existing line to correct. The target line is selected visually. */}
         {receipts.length > 0 && (
           <ReceiptPicker
             receipts={receipts}
@@ -155,8 +139,7 @@ export const RecordReceiptForm = ({
               value={channel}
               onChange={(e) => setChannel(e.target.value)}
             >
-              {/* From the registry, so the six here and the six the API accepts
-                  cannot drift. `HIST` is not selectable and so is not offered. */}
+              {/* Options are restricted to the API registry subset. 'HIST' is excluded. */}
               {selectableChannels.map((c) => (
                 <option key={c.code} value={c.code}>
                   {c.code} — {c.label}
@@ -202,9 +185,7 @@ export const RecordReceiptForm = ({
           </label>
         </div>
 
-        {/* Shown only where the payer is routinely somebody else. Asking for
-            it on every channel would have people retype the client's own name
-            until they stopped reading the field. */}
+        {/* Rendered only for channels that support third-party payers. */}
         {PAYMENT_CHANNELS[channel as keyof typeof PAYMENT_CHANNELS]?.payerMayDiffer && (
           <label className="block text-sm">
             <span className="mb-1 block text-gray-600">Versé par (obligatoire)</span>

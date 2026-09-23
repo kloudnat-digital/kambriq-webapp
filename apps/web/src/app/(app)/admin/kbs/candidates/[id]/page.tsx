@@ -11,7 +11,6 @@ export default async function AdminKbsCandidateDetailPage({ params }: Props) {
   const res = await adminGetCandidate(id);
   if (!res.success || !res.data) notFound();
 
-  console.log(res.data);
   return (
     <div className="mx-auto max-w-5xl p-6 lg:p-8">
       <CandidateDetailContent candidate={res.data} />

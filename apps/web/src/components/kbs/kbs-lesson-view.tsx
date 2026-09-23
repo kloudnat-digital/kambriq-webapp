@@ -133,7 +133,7 @@ const LessonBody = ({ lesson }: { lesson: LessonView }) => {
     return (
       <div
         className="prose prose-sm max-w-none"
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: KBS-authored content
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: Trusting KBS-authored HTML content.
         dangerouslySetInnerHTML={{ __html: lesson.content }}
       />
     );

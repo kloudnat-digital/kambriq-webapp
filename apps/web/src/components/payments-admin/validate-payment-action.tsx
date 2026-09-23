@@ -10,22 +10,18 @@ import { validatePayment } from '@/lib/actions/payments';
 import type { PaymentReceipt } from '@/types/payments';
 
 /**
- * Validating a payment, and saying what it commits before it is pressed.
+ * Renders a control for payment validation.
  *
- * Validation is the act that commits money: everything downstream - the sale,
- * the commission, the title - rests on it. So the control states the amount
- * received, the amount still outstanding, and that the act is recorded against
- * the person pressing it. A reason is required, and the button stays disabled
- * without one.
+ * Validation commits money, which serves as a prerequisite for downstream operations
+ * like sale, commission, and title processes. The control displays the received
+ * amount, the outstanding amount, and links the action to the executing user.
+ * A reason is required for validation.
  *
- * **And the receipt it rests on is required** - G7's "sur quelle preuve". The
- * operator picks the encaissement that completes the amount from the ledger
- * above; the API refuses a validation that names none, or one that names a
- * line from another payment. Until this control sent it, every `VALIDE` row on
- * every environment had `evidenceReceiptId` NULL.
+ * A validation requires a supporting receipt to establish proof of payment.
+ * The user selects an existing receipt from the ledger. The API rejects
+ * validations that lack a valid receipt reference or reference an external payment's receipt.
  *
- * This is a **different action** from recording. It calls `validatePayment` and
- * nothing else.
+ * This action specifically calls `validatePayment` and is strictly separate from receipt recording.
  */
 export const ValidatePaymentAction = ({
   paymentId,
@@ -48,12 +44,8 @@ export const ValidatePaymentAction = ({
   const [evidenceReceiptId, setEvidenceReceiptId] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  // `BigInt(0)` rather than the `0n` literal: the web inherits target es2015
-  // from the base tsconfig, which rejects BigInt literals, and Next rewrites
-  // this file on dev start so a target override there would not survive. The
-  // comparison is still exact - the amount is never parsed into a Number,
-  // because a monetary value in a JavaScript number is the Float defect G1
-  // removed from the schema.
+  // Uses `BigInt(0)` to prevent compile errors from `0n` literals in an ES2015 target.
+  // Performs an exact comparison to avoid floating point precision issues.
   const stillOwed = BigInt(outstanding) > BigInt(0);
 
   const submit = () => {

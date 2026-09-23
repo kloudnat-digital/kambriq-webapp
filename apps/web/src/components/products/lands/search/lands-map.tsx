@@ -25,9 +25,8 @@ const CITY_COORDS: Record<string, [number, number]> = {
   Ebolowa: [11.1519, 2.9003],
 };
 
-// Brand colours. Mapbox markers are built imperatively and styled through
-// `style.cssText`, so a Tailwind class cannot reach them - see the comment at
-// the marker below. The values come from the one module allowed to spell them.
+// Define brand colors directly. Mapbox markers are manipulated imperatively
+// using inline styles, bypassing standard Tailwind utilities.
 const PRIMARY = BRAND_TEAL;
 const PRIMARY_DARK = BRAND_TEAL_DARK;
 

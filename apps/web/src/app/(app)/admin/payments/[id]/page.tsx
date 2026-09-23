@@ -13,9 +13,8 @@ export default async function AdminPaymentDetailPage({
   const { id } = await params;
   const [payment, session] = await Promise.all([getPayment(id), auth()]);
 
-  // Validating is ADMIN_GLOBAL: it is the act that commits money. Recording is
-  // ADMIN_LANDS. The screen reflects the same split the API enforces, so a
-  // lands admin is not offered a control the API would refuse.
+  // Validation is restricted to ADMIN_GLOBAL, while recording is restricted to ADMIN_LANDS.
+  // The UI reflects this access control parity with the API.
   const canValidate = (session?.user?.roles ?? []).includes(RoleCode.ADMIN_GLOBAL);
 
   return <PaymentDetailContent payment={payment} canValidate={canValidate} />;

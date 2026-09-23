@@ -1,10 +1,6 @@
 /**
- * What a token is for.
- *
- * Both tokens were signed from one payload with one secret and carried nothing
- * to tell them apart, so a refresh token was accepted as a bearer token by
- * every route - for its full 30 days, and past a logout, because revoking a
- * refresh token only removes the database row the refresh path reads.
+ * Differentiates token purpose to ensure distinct authorization flows
+ * for access and refresh operations.
  */
 export type TokenType = 'access' | 'refresh';
 

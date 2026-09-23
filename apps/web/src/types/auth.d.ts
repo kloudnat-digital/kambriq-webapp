@@ -1,6 +1,6 @@
 /**
- * Structured signal thrown by authorize() when the API returns requiresReactivation: true.
- * The account was soft-deleted but is still within the grace period reactivation window.
+ * Signal emitted by authorize() indicating an account requires reactivation.
+ * Triggered when a user attempts to log in during the soft-deletion grace period.
  */
 declare type ReactivationSignal = {
   code: 'REACTIVATION_REQUIRED';

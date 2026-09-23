@@ -33,9 +33,8 @@ import {
  * 3. On approval -> KamnetAgent record is created
  *
  * Cross-module interactions:
- * - Asks KbsCandidatesService whether the applicant is certified (I15: their own
- *   active certificate decides, at submission and again at approval)
- * - Calls UsersService to grant AGENT role and look up user info
+ * - Queries KbsCandidatesService to verify the applicant's active certification.
+ * - Calls UsersService to grant the AGENT role and retrieve user information.
  */
 
 @Injectable()
@@ -69,11 +68,7 @@ export class KamnetApplicationsService {
     }
 
     /**
-     * I15 - the question is whether THIS person is certified, answered by their
-     * own certificate. This used to verify the number the caller typed, so any
-     * valid number passed - somebody else's included - and was stored as the
-     * applicant's. The key was also misspelt (`invalidKCA`), so the refusal
-     * showed the raw key instead of the message.
+     * Verifies that the applicant holds an active certificate matching the provided KCA number.
      */
     const certificate = await this.candidatesService.findActiveCertificate(userId);
     if (!certificate || certificate.kcaNumber !== dto.kcaNumber) {
@@ -144,13 +139,10 @@ export class KamnetApplicationsService {
     }
 
     if (application.status !== KamnetApplicationStatus.PENDING) {
-      // `notPending`: `alreadyReviewed` does not exist in kamnet.json, so this
-      // refusal used to show its raw key.
       throw new ConflictException(this.t('kamnet.application.notPending'));
     }
 
-    // I15 - a certificate revoked or expired since submission makes nobody an
-    // agent. Checked before anything is written, so a refusal leaves no trace.
+    // Ensure the applicant's certification is still active before approval.
     if (
       dto.status === KamnetApplicationStatus.APPROVED &&
       !(await this.candidatesService.isUserCertified(application.userId))
@@ -193,10 +185,8 @@ export class KamnetApplicationsService {
         },
       });
 
-      // I16 - CLIENT in its own right first. AGENT implies CLIENT, and an
-      // inherited role is not a held one: when suspension or revocation removes
-      // AGENT, a CLIENT that only came with it would cut the agent off from their
-      // own purchases.
+      // Grant CLIENT role independently before AGENT role to ensure access
+      // to personal purchases is maintained even if AGENT status is revoked.
       await this.usersService.addRole(application.userId, RoleCode.CLIENT, adminUserId);
       await this.usersService.addRole(application.userId, RoleCode.AGENT, adminUserId);
 

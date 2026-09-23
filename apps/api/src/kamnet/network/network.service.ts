@@ -11,16 +11,11 @@ import {
 /**
  * Handles sponsorship tree queries for agents.
  *
- * The tree is self-referencing: each agent can have a sponsor and multiple
- * referrals. Since P9 (20 September 2026) it is walked exactly one step -
- * `KAMNET_MAX_SPONSORSHIP_DEPTH` is 1 - because a sale pays the agent who made
- * it and their direct sponsor, and nobody beyond.
+ * The self-referencing tree consists of agents with sponsors and referrals.
+ * Sponsorship depth is currently clamped to KAMNET_MAX_SPONSORSHIP_DEPTH (1).
  *
- * - Agent view: "My network" = my direct referrals (N1).
- * - Admin view: the same tree from a chosen root, under the same clamp.
- *
- * A caller may still ASK for more; the request is clamped rather than refused,
- * so an older client does not start receiving errors.
+ * - Agent view: Direct referrals only (N1).
+ * - Admin view: Tree from a given root, subject to the same depth clamp.
  */
 
 @Injectable()
@@ -36,13 +31,6 @@ export class KamnetNetworkService {
   // ----- Get My Network ----- //
   /**
    * Returns the agent's referrals, clamped to KAMNET_MAX_SPONSORSHIP_DEPTH.
-   *
-   * Since P9 that clamp is 1, so any requested depth answers with the direct
-   * referrals (N1) and no further nesting. The parameter is kept because the
-   * clamp is a business rule that has already changed once - not because the
-   * caller currently has a choice.
-   *
-   * "Who did I recruit?"
    */
   async getMyNetwork(userId: string, depth = 1) {
     const agent = await this.prisma.kamnetAgent.findUnique({
@@ -105,8 +93,7 @@ export class KamnetNetworkService {
 
   // ----- My Sponsor Chain ----- //
   /**
-   * Walk up the tree: who sponsored me → who sponsored them → etc.
-   * "Who recruited me, and who recruited them?"
+   * Retrieves the hierarchy of sponsors for a given agent.
    */
   async getMySponsorChain(userId: string) {
     const agent = await this.prisma.kamnetAgent.findUnique({
@@ -128,7 +115,7 @@ export class KamnetNetworkService {
     let current = agent.sponsor;
     let level = 1;
 
-    // Walk up exactly as far as sponsorship reaches - one step since P9.
+    // Traverse up to the maximum sponsorship depth
     while (current && level <= KAMNET_MAX_SPONSORSHIP_DEPTH) {
       const user = await this.usersService.findById(current.userId);
       chain.push({

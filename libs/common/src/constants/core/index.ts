@@ -19,17 +19,8 @@ export enum IdVerificationStatus {
 }
 
 /**
- * L1 - what an inbound contact request is about.
- *
- * Mirrors `ContactSubject` in `prisma/core/schema.prisma`. Written here rather
- * than imported from the generated client for the reason the payment enums are:
- * the **web** imports this file, and the generated Prisma client cannot cross
- * into a browser bundle. `contact-subjects.spec.ts` compares the two lists
- * member by member, so an enum extended in one place and not the other fails.
- *
- * The screen labels are not derived from these codes - `'KBS'.toLowerCase()` is
- * not "Formation KBS". They live in the web i18n catalogues, keyed by the
- * lower-cased code.
+ * Subject categories for inbound contact requests.
+ * Duplicated here (mirrors Prisma schema) to allow importing into web bundles.
  */
 export enum ContactSubject {
   LANDS = 'LANDS',
@@ -47,7 +38,7 @@ export enum ContactRequestStatus {
   CLOSED = 'CLOSED',
 }
 
-/** The order the six are offered in, so the form and any listing agree. */
+/** Defines the display order for contact subjects in UI listings. */
 export const CONTACT_SUBJECTS: readonly ContactSubject[] = [
   ContactSubject.LANDS,
   ContactSubject.VERIFY,

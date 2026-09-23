@@ -20,9 +20,7 @@ export class KbsPublicController {
     description: 'KCA certificate number (format: KCA-YYYYMMDD-XXXX)',
     example: 'KCA-20240115-0042',
   })
-  // One response, deliberately. An unknown number is an answer, not an error:
-  // it returns 200 with status UNKNOWN. This used to declare a 404 the service
-  // has never sent.
+  // Unrecognized KCA numbers return a 200 OK with an UNKNOWN status, rather than a 404.
   @ApiResponse({
     status: 200,
     description:

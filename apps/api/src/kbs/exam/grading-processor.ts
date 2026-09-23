@@ -107,14 +107,9 @@ export class KbsGradingProcessor extends WorkerHost {
     const lang = user.language || 'fr';
 
     if (result.passed) {
-      // The KCA_CERTIFIED role is NOT granted here.
-      //
-      // It used to be, on the strength of the score alone. That role gates the
-      // KAMNET agent routes (`@Roles(RoleCode.KCA_CERTIFIED)`), so passing an
-      // exam made somebody an agent before any certificate existed and before
-      // any human had approved it. An authorisation must not precede the
-      // credential it represents. `issueCertificate` grants it, in the same act
-      // that creates the document and records who issued it.
+      // Note: The KCA_CERTIFIED role is not granted during grading.
+      // It is granted only when the certificate is formally issued via `issueCertificate`,
+      // ensuring authorization follows credential creation.
       await this.emailService.send({
         to: user.email,
         template: 'examPassed',

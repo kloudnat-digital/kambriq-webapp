@@ -5,11 +5,10 @@ import { useRouter } from 'next/navigation';
 import { reviewIdentity } from '@/lib/actions/payments';
 
 /**
- * Approve or reject one identity, having looked at the document.
+ * Renders a control to approve or reject a submitted identity document.
  *
- * A rejection requires a reason, which the API enforces and the client is told.
- * "Verified" is the word that releases bank coordinates to this person, so the
- * control says so rather than reading as filing.
+ * Approving an identity unlocks the ability to send bank coordinates to the client.
+ * Rejecting an identity requires a valid reason, which is enforced by the API.
  */
 export const IdentityReviewAction = ({ userId }: { userId: string }) => {
   const router = useRouter();
@@ -26,8 +25,7 @@ export const IdentityReviewAction = ({ userId }: { userId: string }) => {
       ...(status === 'rejected' ? { rejectionReason: reason } : {}),
     });
     setBusy(false);
-    // Says what was refused and why. A control that goes quiet on refusal is
-    // the silent mechanism A10-A12 exist to remove.
+    // Renders the error message if the review action fails.
     if (!res.success) setError(res.error ?? 'La décision a été refusée.');
     else router.push('/admin/identities');
   };

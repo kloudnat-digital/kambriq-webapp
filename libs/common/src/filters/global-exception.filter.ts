@@ -47,11 +47,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       error,
       timestamp: new Date().toISOString(),
       path: request.url,
-      // No stack, ever, whatever NODE_ENV says. The stack is logged (see the
-      // logger.error above), so the diagnostic already has a home; serving it to
-      // an unauthenticated caller adds nothing. Gating on NODE_ENV made a single
-      // misconfigured variable in prd an information leak, and a rule that
-      // cannot misfire is worth more than the convenience it removes.
+      // Omit the stack trace from the response to prevent information leakage.
+      // The stack trace is logged securely on the server instead.
     };
 
     response.status(status).json(body);

@@ -40,17 +40,9 @@ export class KamnetProcessor extends WorkerHost {
     const user = await this.usersService.findById(agentUserId).catch(() => null);
 
     /**
-     * This is money, and a resolved promise marks the job completed.
-     *
-     * Logging an error and returning `null` left the sale recorded, the job
-     * green, and the agent's commission never created. Nothing anywhere held a
-     * count of sales that produced no commission, so the only way to find it
-     * would be an agent noticing they had not been paid. Throwing puts the job
-     * on the failed set with its payload intact, where it can be counted and
-     * replayed once the cause is fixed.
-     *
-     * A sale whose agent cannot be resolved is not a sale to skip. It is a sale
-     * somebody has to look at.
+     * Throws an error to fail the job if the user cannot be resolved.
+     * This prevents silent failures and allows the job to be replayed,
+     * ensuring commissions are not lost.
      */
     if (!user) {
       throw new Error(
@@ -75,9 +67,7 @@ export class KamnetProcessor extends WorkerHost {
         return { skipped: true, reason: 'admin' };
       }
 
-      // Same reasoning: the user exists and is not an admin, so a KAMNET agent
-      // row should exist and does not. The commission cannot be attributed, and
-      // silence would be the only symptom.
+      // Fail the job if the non-admin user lacks a KAMNET agent record.
       throw new Error(
         `Sale completed but no KAMNET agent row exists for the seller (agentUserId=${agentUserId}, reservationId=${reservationId})`,
       );

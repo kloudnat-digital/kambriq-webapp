@@ -149,7 +149,7 @@ export class KamnetAdminController {
   @ApiOperation({
     summary: 'Create a commission record',
     description:
-      'Manually creates a commission entry for a completed sale. Since P9 sponsorship pays level 0 (the selling agent) and level 1 (their direct sponsor); 2 and 3 are still accepted by this endpoint but nothing produces them. Automated calculation is planned for v2.',
+      'Manually creates a commission entry for a completed sale. Supports levels 0 and 1. Automated calculation is planned for v2.',
   })
   @ApiResponse({ status: 201, description: 'Commission record created.' })
   async createCommission(@Body() dto: CreateCommissionDto) {

@@ -6,42 +6,20 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient as CoreClient } from '../libs/common/src/prisma/core-client/client';
 
 /**
- * C4c - the orphans that already exist.
+ * Cleans up orphaned user objects in S3 where the user no longer exists in the database.
  *
- * ---------------------------------------------------------------------------
- * Why a one-off script and not a migration
- * ---------------------------------------------------------------------------
- * The fix in `cleanup.processor.ts` stops new orphans being made. It cannot
- * touch the ones already there: the accounts are gone, so nothing in the
- * database points at those prefixes any more. The only way back to them is
- * from the bucket side - list what is under `users/`, ask the database whether
- * each owner still exists, and remove the prefixes whose owner does not.
- *
- * ---------------------------------------------------------------------------
- * It reports before it deletes, and it is safe to run twice
- * ---------------------------------------------------------------------------
- * **Dry run is the default.** `--apply` is required to delete anything, so the
- * first run of a script that removes people's files is always a list somebody
- * can read. A second run finds nothing left to do and says so; a run
- * interrupted half way leaves the remainder for the next one, because the
- * decision is taken per prefix from current state rather than from a plan made
- * at the start.
- *
- * ---------------------------------------------------------------------------
- * The direction that would be a disaster
- * ---------------------------------------------------------------------------
- * A sweep that deletes everything passes every "did the orphan go" check and
- * destroys live users' documents. So:
- *
- * - a prefix is deleted **only** when the database says that id is absent;
- * - an id that does not parse as a UUID is **skipped**, never deleted, because
- *   an unrecognised shape is something this script does not understand rather
- *   than something it may remove;
- * - if the database lookup fails, the run aborts before deleting anything.
+ * Behavior and safety mechanisms:
+ * - Operates from the bucket side, listing all `users/` prefixes and querying the database
+ *   to determine if the corresponding user account still exists.
+ * - Deletes are executed strictly for prefixes whose owner ID is absent from the database.
+ * - Non-UUID folder names are skipped to prevent unintended data loss.
+ * - Database lookup failures halt execution immediately.
+ * - Dry run is the default mode. The `--apply` flag is explicitly required to execute deletions.
+ * - The script is idempotent and resumes processing accurately if interrupted.
  *
  * Usage:
- *   npx tsx prisma/sweep-orphaned-user-objects.ts            # report only
- *   npx tsx prisma/sweep-orphaned-user-objects.ts --apply    # delete
+ *   npx tsx prisma/sweep-orphaned-user-objects.ts            # Dry run report
+ *   npx tsx prisma/sweep-orphaned-user-objects.ts --apply    # Execute deletions
  */
 
 const BUCKET = process.env['AWS_S3_BUCKET'] ?? '';
@@ -52,7 +30,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const s3 = new S3Client({ region: REGION });
 
-/** Every `users/<id>/` prefix that currently holds at least one object. */
+/** Retrieves all `users/<id>/` prefixes containing at least one object. */
 const listUserPrefixes = async (): Promise<Map<string, string[]>> => {
   const byOwner = new Map<string, string[]>();
   let token: string | undefined;
@@ -87,7 +65,7 @@ const main = async () => {
     const malformed = owners.filter((o) => !UUID.test(o));
     const candidates = owners.filter((o) => UUID.test(o));
 
-    // One query. If it throws, nothing below runs and nothing is deleted.
+    // Validate existence in a single query; failure safely aborts execution.
     const alive = await prisma.user.findMany({
       where: { id: { in: candidates } },
       select: { id: true },

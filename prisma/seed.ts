@@ -111,7 +111,9 @@ const IDS = {
   LAND_3: '00000000-0000-4000-8000-e00000000013',
   LAND_4: '00000000-0000-4000-8000-e00000000014',
   LAND_5: '00000000-0000-4000-8000-e00000000015',
+  // Seed reservations for LAND_3 (RESERVED) and LAND_5 (SOLD) to satisfy foreign key constraints for related KAMNET commissions.
   LAND_RESERVATION_SEEDED: '00000000-0000-4000-8000-e00000000031',
+  LAND_RESERVATION_SOLD: '00000000-0000-4000-8000-e00000000032',
   LAND_6: '00000000-0000-4000-8000-e00000000016',
   LAND_7: '00000000-0000-4000-8000-e00000000017',
   LAND_8: '00000000-0000-4000-8000-e00000000018',
@@ -258,6 +260,37 @@ async function seedCore() {
     },
   ];
 
+  /**
+   * The user upsert keys on EMAIL and every other module keys on the ID.
+   * This check ensures that seeded emails map exactly to expected IDs before writing.
+   * If a user exists with a different ID, fixtures across databases (KBS, KAMNET, Lands)
+   * would dangle since there are no cross-database foreign keys.
+   */
+  const seededEmails = users.map((u) => u.email);
+  const existing = await core.user.findMany({
+    where: { email: { in: seededEmails } },
+    select: { id: true, email: true },
+  });
+  const byEmail = new Map(existing.map((u) => [u.email, u.id]));
+
+  const displaced = users.filter((u) => {
+    const live = byEmail.get(u.email);
+    return live !== undefined && live !== u.id;
+  });
+
+  if (displaced.length > 0) {
+    throw new Error(
+      `Core seed precondition failed: ${displaced.length} seeded account(s) exist at their ` +
+        `address under a different id, so every fixture keyed on the seeded id would dangle ` +
+        `(there are no foreign keys between the four databases):\n` +
+        displaced
+          .map((u) => `  ${u.email}: database has ${byEmail.get(u.email)}, seed expects ${u.id}`)
+          .join('\n') +
+        `\nThis is what a database seeded before the ids became RFC-4122 valid looks like. ` +
+        `Reset it with \`pnpm run db:reset\`.`,
+    );
+  }
+
   for (const { id, country, ...rest } of users) {
     await core.user.upsert({
       where: { email: rest.email },
@@ -283,9 +316,7 @@ async function seedCore() {
     [IDS.USER_ADMIN_KBS, IDS.ROLE_ADMIN_KBS],
     [IDS.USER_ADMIN_KAMNET, IDS.ROLE_ADMIN_KAMNET],
     [IDS.USER_ADMIN_LANDS, IDS.ROLE_ADMIN_LANDS],
-    // I16 - every agent holds CLIENT in its own right, not only through AGENT:
-    // suspension and revocation remove AGENT, and must not take the agent's own
-    // purchases with it. An inherited role is not a held role.
+    // Assign the CLIENT role directly so that agents retain it if their AGENT role is suspended or revoked.
     [IDS.USER_ERIC, IDS.ROLE_CLIENT],
     [IDS.USER_ERIC, IDS.ROLE_KCA_CERTIFIED],
     [IDS.USER_ERIC, IDS.ROLE_AGENT],
@@ -418,28 +449,7 @@ async function seedKbs() {
   }
 
   // Settings (singleton)
-  //
-  // Two rules live here, and welding them into one `update` clause is I42.
-  //
-  // `activeCourseId` is not decoration. `checkAndTransitionToExamPending` reads
-  // it first and returns early when it is null, so a candidate who has passed
-  // every module stays IN_TRAINING for ever with nothing logged, and
-  // `me/overview` answers `course: null, modulesTotal: 0` to somebody who has
-  // just completed six lessons. Both were observed on dev before this line. A
-  // row carrying NULL therefore has to be REPAIRED, and `update: {}` never
-  // would - a seeded fixture is restorative, not merely idempotent.
-  //
-  // But the active course is also a CHOICE. An administrator makes it through
-  // `PATCH /kbs/settings`, and the KCA1 switch was exactly that choice. Writing
-  // the id on every run made each seed an act of policy that silently reverted
-  // it: green run, populated row, and every candidate served the wrong course.
-  //
-  // So the repair happens only where the id is NULL, and a row that names a
-  // course is left alone whichever course it names. That condition is a `where`
-  // clause rather than an `if`, and both halves are proved against real
-  // Postgres in `kbs-settings-seed.dbspec.ts` - because a fix that never writes
-  // and a fix that always writes are each half right, and only the pair of
-  // assertions tells them apart.
+  // We only update the activeCourseId if it is currently null to avoid overwriting runtime administrator configuration.
   const kbsSettings = await seedKbsSettings(kbs.kbsSettings, {
     activeCourseId: IDS.KBS_COURSE,
     examQuestionCount: 20,
@@ -754,7 +764,18 @@ async function seedKamnet() {
     });
   }
 
-  // Commissions (for Eric's 6 sales - seeding 5 for variety)
+  /**
+   * Two sales, each with its direct agent and that agent's sponsor.
+   *
+   * `KamnetCommission.reservationId` is NOT NULL and identifies the
+   * reservation the sale came from. KAMNET and LANDS are separate databases,
+   * so the reference carries no foreign key and a dangling value is not
+   * refused by anything. `main()` checks the references resolve, once both
+   * modules are seeded.
+   *
+   * There is no commission for LAND_1: it is seeded AVAILABLE, so no sale and
+   * no reservation exist to attribute one to.
+   */
   const commissions: Array<{
     agentId: string;
     landId: string;
@@ -768,7 +789,7 @@ async function seedKamnet() {
     {
       agentId: IDS.AGENT_ERIC,
       landId: IDS.LAND_5,
-      reservationId: '00000000-0000-4000-8000-f00000000001',
+      reservationId: IDS.LAND_RESERVATION_SOLD,
       level: 0,
       pv: 1.0,
       tpc: 0.05,
@@ -778,7 +799,7 @@ async function seedKamnet() {
     {
       agentId: IDS.AGENT_ERIC,
       landId: IDS.LAND_3,
-      reservationId: '00000000-0000-4000-8000-f00000000002',
+      reservationId: IDS.LAND_RESERVATION_SEEDED,
       level: 0,
       pv: 1.0,
       tpc: 0.05,
@@ -788,7 +809,7 @@ async function seedKamnet() {
     {
       agentId: IDS.AGENT_SYLVIE,
       landId: IDS.LAND_5,
-      reservationId: '00000000-0000-4000-8000-f00000000001',
+      reservationId: IDS.LAND_RESERVATION_SOLD,
       level: 1,
       pv: 1.0,
       tpc: 0.02,
@@ -798,22 +819,12 @@ async function seedKamnet() {
     {
       agentId: IDS.AGENT_BORIS,
       landId: IDS.LAND_3,
-      reservationId: '00000000-0000-4000-8000-f00000000002',
+      reservationId: IDS.LAND_RESERVATION_SEEDED,
       level: 1,
       pv: 1.0,
       tpc: 0.02,
       amount: 300000,
       status: KamnetCommissionStatus.VALIDATED,
-    },
-    {
-      agentId: IDS.AGENT_ERIC,
-      landId: IDS.LAND_1,
-      reservationId: '00000000-0000-4000-8000-f00000000003',
-      level: 0,
-      pv: 1.0,
-      tpc: 0.05,
-      amount: 400000,
-      status: KamnetCommissionStatus.PENDING,
     },
   ];
 
@@ -826,7 +837,7 @@ async function seedKamnet() {
     });
   }
 
-  console.log('  ✓ Kamnet seeded (5 agents, 5 applications, 5 leads, 5 commissions)');
+  console.log('  ✓ Kamnet seeded (5 agents, 5 applications, 5 leads, 4 commissions)');
 }
 
 // ---------------------------------------------------------------------------
@@ -1321,10 +1332,18 @@ async function seedLands() {
    * mechanism that reports success by saying nothing; failing on it would make
    * one local payment block every future seed run.
    */
+  /**
+   * Both seeded reservations are excluded from the clear, not just the first.
+   *
+   * A seeded reservation left in the set is deleted and recreated on every
+   * run, and is reported as an anomaly once it carries a payment.
+   */
+  const seededReservationIds = [IDS.LAND_RESERVATION_SEEDED, IDS.LAND_RESERVATION_SOLD];
+
   const reservationsToClear = await lands.landReservation.findMany({
     where: {
       landId: { in: seededParcelIds },
-      id: { not: IDS.LAND_RESERVATION_SEEDED },
+      id: { notIn: seededReservationIds },
     },
     select: {
       id: true,
@@ -1424,6 +1443,35 @@ async function seedLands() {
   });
 
   /**
+   * Reservation for LAND_5 (Buea Town Centre) - the sale that made it SOLD.
+   *
+   * Two KAMNET commissions reference it. LAND_5 is seeded SOLD, so a completed
+   * reservation on it matches the parcel's status and changes no AVAILABLE
+   * count. It carries no payment, so it is excluded from the clear by id
+   * rather than kept by the payment rule.
+   */
+  await lands.landReservation.upsert({
+    where: { id: IDS.LAND_RESERVATION_SOLD },
+    create: {
+      id: IDS.LAND_RESERVATION_SOLD,
+      landId: IDS.LAND_5,
+      agentUserId: IDS.USER_ERIC,
+      clientName: 'Mireille Ngo Bassong',
+      clientEmail: 'mireille.ngobassong@email.com',
+      clientPhone: '+237 699 000 002',
+      status: LandReservationStatus.CONFIRMED,
+      downPaymentAmount: 450000,
+      downPaymentConfirmed: true,
+      confirmedBy: IDS.USER_ADMIN_LANDS,
+      confirmedAt: new Date('2025-01-20'),
+    },
+    update: {
+      status: LandReservationStatus.CONFIRMED,
+      downPaymentConfirmed: true,
+    },
+  });
+
+  /**
    * The seed checks its own postcondition instead of announcing one.
    *
    * The first version of the restorative fix printed nothing for lands and
@@ -1475,7 +1523,51 @@ async function seedLands() {
   }
 
   console.log(
-    `  ✓ Lands seeded (3 labels, ${parcels.length} parcels, ${actualAvailable} available, 1 reservation)`,
+    `  ✓ Lands seeded (3 labels, ${parcels.length} parcels, ${actualAvailable} available, ` +
+      `${seededReservationIds.length} reservations)`,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Cross-module postconditions
+// ---------------------------------------------------------------------------
+
+/**
+ * Every commission names a reservation that exists.
+ *
+ * KAMNET and LANDS are separate databases, so `KamnetCommission.reservationId`
+ * is a reference by convention: no foreign key refuses a dangling value and no
+ * read path dereferences it.
+ *
+ * It runs after both modules rather than inside `seedKamnet`, because the
+ * reservations it checks are written by `seedLands`. It throws: a seed that
+ * warns about a broken reference and exits 0 reports success for work it did
+ * not do.
+ */
+async function assertCommissionsNameRealReservations() {
+  const commissions = await kamnet.kamnetCommission.findMany({
+    select: { id: true, reservationId: true, agentId: true },
+  });
+  if (commissions.length === 0) return;
+
+  const referenced = [...new Set(commissions.map((c) => c.reservationId))];
+  const found = await lands.landReservation.findMany({
+    where: { id: { in: referenced } },
+    select: { id: true },
+  });
+  const live = new Set(found.map((r) => r.id));
+
+  const dangling = commissions.filter((c) => !live.has(c.reservationId));
+  if (dangling.length > 0) {
+    throw new Error(
+      `Seed postcondition failed: ${dangling.length} commission(s) name a reservation that does ` +
+        `not exist, so they record sales that never happened: ` +
+        `${dangling.map((c) => `${c.id} -> ${c.reservationId}`).join(', ')}.`,
+    );
+  }
+
+  console.log(
+    `  ✓ ${commissions.length} commission(s) resolve to ${live.size} real reservation(s).`,
   );
 }
 
@@ -1495,6 +1587,8 @@ async function main() {
     await seedKbs();
     await seedKamnet();
     await seedLands();
+
+    await assertCommissionsNameRealReservations();
 
     console.log('\n✅ Seed complete.\n');
     console.log('  Accounts (password: Test1234!):');

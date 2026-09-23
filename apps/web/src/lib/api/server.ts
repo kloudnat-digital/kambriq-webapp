@@ -42,25 +42,24 @@ const baseFetch = async <T>(
     throw new ApiError(body?.message ?? `API error ${res.status} - ${path}`, res.status);
   }
 
-  // 204 No Content - nothing to parse
+  // Handle 204 No Content
   if (res.status === 204) return undefined as T;
 
-  // NestJS wraps responses: { success: true, data: T }
-  // Paginated responses are { success, data, meta }  interceptor passes them through unchanged.
-  // Preserve the full body when meta is present so callers can read pagination info.
+  // Extract payload from NestJS standard response wrapper ({ success, data, meta }).
+  // Retain the full response body for paginated endpoints to expose metadata.
   const body = await res.json();
   if (body?.meta) return body as T;
   return (body?.data ?? body) as T;
 };
 
-// Public API
-//
-// For server actions and server components calling public (unauthenticated)
-// endpoints - auth, registration, password reset, etc.
-//
-// Usage:
-//   await api.post('/auth/forgot-password', { email })
-//   const lands = await api.get<Land[]>('/lands/public')
+/**
+ * Public API client for server actions and server components.
+ * Intended for unauthenticated endpoints (e.g., authentication, registration).
+ *
+ * @example
+ * await api.post('/auth/forgot-password', { email })
+ * const lands = await api.get<Land[]>('/lands/public')
+ */
 
 export const api = {
   get: <T>(path: string) => baseFetch<T>(path, { method: 'GET' }),
@@ -77,18 +76,18 @@ export const api = {
   delete: <T>(path: string) => baseFetch<T>(path, { method: 'DELETE' }),
 };
 
-// Authenticated API
-//
-// For server components and server actions that need the current user's
-// access token attached automatically.
-//
-// Usage:
-//   const user = await serverApi.get<User>('/users/me')
-//   await serverApi.patch('/users/me', { firstName: 'Jean' })
+/**
+ * Authenticated API client for server actions and server components.
+ * Automatically attaches the current user's access token to requests.
+ *
+ * @example
+ * const user = await serverApi.get<User>('/users/me')
+ * await serverApi.patch('/users/me', { firstName: 'Jean' })
+ */
 
 const getSession = cache(auth);
 
-/** Sends the caller to the login screen, keeping the page they were on. */
+/** Redirects the user to the login page while preserving their original destination. */
 const redirectToLogin = async (): Promise<never> => {
   const referer = (await headers()).get('referer');
   let callbackUrl = '/';
@@ -116,10 +115,8 @@ const authedFetch = async <T>(path: string, options?: RequestInit): Promise<T> =
   try {
     return await baseFetch<T>(path, options, header);
   } catch (error) {
-    // The session cannot always know its token is dead. `jwt()` only attempts a
-    // refresh once the token's own clock says it expired, so a token the API
-    // refuses for any other reason leaves `session.error` unset and every call
-    // failing into the error overlay. A 401 is the API saying so directly.
+    // Handle scenarios where the access token is invalid but has not yet expired locally.
+    // A 401 response indicates API rejection, necessitating a login redirect.
     if (error instanceof ApiError && error.status === 401) {
       await redirectToLogin();
     }

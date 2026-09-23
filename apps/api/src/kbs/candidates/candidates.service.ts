@@ -106,31 +106,57 @@ export class KbsCandidatesService {
   }
 
   // ----- Candidate Profile & Progress --------------------
+  /**
+   * The candidate's profile, counted against the active course only.
+   *
+   * Several courses coexist, so the denominator, the numerator and the module
+   * list must all filter on `activeCourseId`. They are derived from one value
+   * here because scoping only the denominator is worse than scoping neither:
+   * the numerator would still count modules passed in another course, and the
+   * ratio would report a finished course to a candidate who is halfway.
+   *
+   * With no active course configured (I38) the profile returns the candidate's
+   * identity and certificate with zero progress, matching `getMyOverview`.
+   */
   async getMyProfile(userId: string) {
-    const candidate = await this.prisma.kbsCandidate.findUnique({
-      where: { userId },
-      include: {
-        progress: {
-          include: {
-            module: { select: { id: true, title: true, order: true } },
+    const [candidate, settings] = await Promise.all([
+      this.prisma.kbsCandidate.findUnique({
+        where: { userId },
+        include: {
+          progress: {
+            include: {
+              // `courseId` is what the scoping below reads. Without it the
+              // filter has nothing to compare and this is an unscoped list.
+              module: { select: { id: true, title: true, order: true, courseId: true } },
+            },
+            orderBy: { module: { order: 'asc' } },
           },
-          orderBy: { module: { order: 'asc' } },
+          certificates: {
+            ...NEWEST_FIRST,
+            take: 1,
+            select: { kcaNumber: true, issueDate: true, validUntil: true },
+          },
         },
-        certificates: {
-          ...NEWEST_FIRST,
-          take: 1,
-          select: { kcaNumber: true, issueDate: true, validUntil: true },
-        },
-      },
-    });
+      }),
+      readActiveCourse(this.prisma),
+    ]);
 
     if (!candidate) {
       throw new NotFoundException(this.t('kbs.enrollment.notEnrolled'));
     }
 
-    // Calculate overall progress
-    const totalModules = await this.prisma.kbsModule.count();
-    const completedModules = candidate.progress.filter((p) => p.passed).length;
+    const activeCourseId = settings?.activeCourseId ?? null;
+
+    // The single filter the numerator and the module list are both built from,
+    // so the two cannot drift apart into a half fix.
+    const courseProgress = activeCourseId
+      ? candidate.progress.filter((p) => p.module.courseId === activeCourseId)
+      : [];
+
+    const totalModules = activeCourseId
+      ? await this.prisma.kbsModule.count({ where: { courseId: activeCourseId } })
+      : 0;
+    const completedModules = courseProgress.filter((p) => p.passed).length;
     const progressPercent =
       totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0;
 
@@ -146,7 +172,7 @@ export class KbsCandidatesService {
         total: totalModules,
         percent: progressPercent,
       },
-      modules: candidate.progress.map((p) => ({
+      modules: courseProgress.map((p) => ({
         moduleId: p.moduleId,
         moduleTitle: p.module.title,
         moduleOrder: p.module.order,

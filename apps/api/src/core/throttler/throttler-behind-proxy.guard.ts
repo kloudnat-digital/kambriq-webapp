@@ -2,21 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
 /**
- * A2 - throttle by the real client, not by the load balancer.
- *
- * The tasks receive every request from the ALB, so Express's `req.ip` is the
- * ALB's address for all of them. The default ThrottlerGuard keys on `req.ip`,
- * which meant one throttle bucket for the ENTIRE deployment: the auth limit of
- * 10/60s was 10 across every client at once, not 10 per client. In production
- * that is a shared quota one user can exhaust for everyone; in CI it is the 429
- * collision, where the delivery-journey and e2e jobs run against dev at the same
- * time and trip the shared bucket.
- *
- * The ALB appends the connecting client's address to X-Forwarded-For, so the
- * LAST entry is the client IP the ALB actually saw - not the leftmost, which a
- * client can send and therefore spoof to change its own bucket. With one proxy
- * (dev is ALB-only, no CDN) the last entry is the client. If a CDN is ever put
- * in front, this offset has to move one to the left; until then, last is right.
+ * Custom ThrottlerGuard to correctly identify the client IP behind a load balancer.
+ * Extracts the client IP from the last entry in the X-Forwarded-For header to ensure
+ * rate limiting is applied per client rather than globally for the entire deployment.
  */
 @Injectable()
 export class ThrottlerBehindProxyGuard extends ThrottlerGuard {

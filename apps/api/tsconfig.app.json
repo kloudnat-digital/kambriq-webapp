@@ -1,6 +1,15 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    // `tsconfig.base.json` sets no `strict`; `apps/web` and `libs/common` each
+    // set it locally. Without it here, every `T | undefined` collapses to `T`
+    // and optional DTO properties are dereferenceable, so the compiler accepts
+    // request-body fields that need not be present.
+    //
+    // Set here rather than in the base config: the spec configs carry 20
+    // errors between them, almost all mock signature variance, and are a
+    // separate piece of work.
+    "strict": true,
     "outDir": "../../dist/out-tsc",
     "module": "commonjs",
     "types": ["node"],

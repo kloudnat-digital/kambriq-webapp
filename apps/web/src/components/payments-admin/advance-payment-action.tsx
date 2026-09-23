@@ -13,23 +13,14 @@ import { ReceiptPicker } from './receipt-picker';
 import type { PaymentReceipt } from '@/types/payments';
 
 /**
- * Moves the payment one legal step.
+ * Renders a control to transition the payment to its next legal state.
  *
- * **The steps offered come from the transition table itself**, not from a list
- * typed here. A screen with its own idea of what is legal disagrees with the
- * state machine the first time either changes, and the operator is the one who
- * finds out - by pressing a button that returns an error.
+ * Available transitions are defined by the state machine's transition table.
+ * Excludes terminal states (REJETE, EXPIRE, ANNULE) and the VALIDE state, which
+ * is handled by a separate dedicated control.
  *
- * `VALIDE` is excluded because it has its own control, which states what it
- * commits before it commits it. The terminal exits (rejeté, expiré, annulé) are
- * excluded too: ending a payment is not "advancing" it and does not belong
- * behind the same button as bookkeeping.
- *
- * **A step into `EVIDENCED_STATES` names the receipt it rests on** (G7). The
- * picker appears only when one of the offered steps needs it, and that step's
- * button stays disabled until a line is chosen - the same set the API's guard
- * reads, so the screen cannot offer a step the API will refuse for lack of
- * evidence. The other steps send nothing and the audit row says NULL.
+ * Transitions into evidenced states require selecting a supporting receipt.
+ * The API enforces this requirement.
  */
 export const AdvancePaymentAction = ({
   paymentId,
@@ -65,8 +56,7 @@ export const AdvancePaymentAction = ({
       evidenceReceiptId: needsEvidence ? evidenceReceiptId : undefined,
     });
     setBusy(false);
-    // Says which step was refused and why. A control that goes quiet on refusal
-    // is the silent mechanism A10-A12 exist to remove.
+    // Displays the error if the transition request fails.
     if (!res.success) setError(res.error ?? `Le passage à ${to} a été refusé.`);
     else {
       setReason('');

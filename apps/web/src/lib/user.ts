@@ -1,9 +1,8 @@
 import { RoleCode } from '@/lib/roles';
 
 /**
- * Returns a translation key under `app.nav.role.*` for the highest-priority
- * role the user holds. Resolve via `useTranslations('app.nav')` or
- * `getTranslations('app.nav')` at the call site.
+ * Determines the translation key corresponding to the user's highest-priority role.
+ * Intended to be resolved using `app.nav` namespace translators.
  */
 export const getRoleLabelKey = (codes: string[]): string => {
   if (codes.includes('ROOT')) return 'role.root';

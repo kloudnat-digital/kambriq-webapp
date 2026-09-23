@@ -1,13 +1,7 @@
 /**
- * The authenticated API client, and what it does when the API refuses a token.
- *
- * `authedFetch` redirected to login only when the session already carried
- * `RefreshTokenError`, which `jwt()` sets only when it attempts a refresh - and
- * it attempts one only once the access token's own clock says it expired. A
- * token the API refuses for any other reason therefore left the session looking
- * healthy and every call failing into the error overlay.
- *
- * The file had no spec of its own, so nothing proved the redirect at all.
+ * Tests for the authenticated API client, specifically handling token rejection.
+ * Validates that `authedFetch` triggers a redirect to the login page when the API
+ * rejects a token (e.g., HTTP 401), regardless of local expiration status.
  */
 const redirectMock = jest.fn((url: string) => {
   throw new Error(`NEXT_REDIRECT:${url}`);
@@ -58,8 +52,7 @@ describe('the authenticated client sends a refused caller to login', () => {
   });
 
   it('does not redirect on 403, which is a refusal the caller must see', async () => {
-    // A permission refusal is a correct answer to the question that was asked.
-    // Turning it into a login redirect would hide a working guard.
+    // Ensure HTTP 403 Forbidden is propagated to the caller and does not trigger a redirect.
     answers(403, { message: 'Forbidden' });
 
     await expect(serverApi.get('/lands/admin/payments')).rejects.toBeInstanceOf(ApiError);

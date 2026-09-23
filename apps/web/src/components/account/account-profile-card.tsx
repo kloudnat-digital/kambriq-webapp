@@ -61,8 +61,6 @@ export const AccountProfileCard = ({ me }: AccountProfileCardProps) => {
     createToast({ status: 'success', title: t('saveSuccess') });
   };
 
-  console.log(me);
-
   return (
     <Card>
       <CardHeader>

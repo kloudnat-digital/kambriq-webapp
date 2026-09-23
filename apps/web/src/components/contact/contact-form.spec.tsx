@@ -15,6 +15,30 @@ const submit = submitContactRequestAction as jest.MockedFunction<typeof submitCo
 /** Every toast raised during a test, so "no success toast" is checkable. */
 const toasts = () => useToastStore.getState().toasts;
 
+/**
+ * `delay: null` removes the inter-keystroke delay `userEvent` inserts.
+ *
+ * With it, `user.type` waits between characters, each of which re-renders a
+ * controlled input through react-hook-form. Under load the typing does not
+ * complete before submit, so the email is validated partial and invalid, and
+ * react-hook-form focuses the first invalid field - the email, not the
+ * subject. None of these tests is about typing cadence.
+ */
+const setupUser = () => userEvent.setup({ delay: null });
+
+/**
+ * The message is pasted rather than typed.
+ *
+ * `user.type` sends one keystroke per character, each re-rendering a
+ * controlled input. For a 240-character message at three call sites that is
+ * most of this suite's runtime, and enough to exceed the 5000 ms per-test
+ * budget when the four projects run together. A paste is a single event.
+ */
+const pasteMessage = async (user: ReturnType<typeof userEvent.setup>) => {
+  await user.click(screen.getByLabelText(/^Message/));
+  await user.paste(MESSAGE);
+};
+
 const MESSAGE =
   'Bonjour, je cherche une parcelle titree dans le Littoral pour un projet familial. ' +
   'Nous avons un budget arrete et nous souhaitons acheter avant la fin de l annee. ' +
@@ -39,8 +63,16 @@ describe('the contact form', () => {
   const fillEverythingElse = async (user: ReturnType<typeof userEvent.setup>) => {
     await user.type(screen.getByLabelText(/Nom complet/), 'Amina Nkolo');
     await user.type(screen.getByLabelText(/^Email/), 'prospect@example.test');
-    await user.type(screen.getByLabelText(/^Message/), MESSAGE);
+    await pasteMessage(user);
     await user.click(screen.getByRole('checkbox'));
+
+    /**
+     * The precondition the subject tests rest on, checked where it is created.
+     *
+     * A truncated email makes those tests fail on focus or on a timeout,
+     * neither of which names the field that was actually wrong.
+     */
+    expect(screen.getByLabelText(/^Email/)).toHaveValue('prospect@example.test');
   };
 
   const chooseSubject = async (user: ReturnType<typeof userEvent.setup>, label: RegExp) => {
@@ -70,7 +102,7 @@ describe('the contact form', () => {
   // ----- THE SUBJECT, VISIBLY VALIDATED ----- //
 
   it('a submission with no subject shows a visible error and does not submit', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     render(<ContactForm />);
 
     await fillEverythingElse(user);
@@ -86,7 +118,7 @@ describe('the contact form', () => {
   });
 
   it('the error is tied to the trigger, which is marked invalid and given focus', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     render(<ContactForm />);
 
     await fillEverythingElse(user);
@@ -127,12 +159,12 @@ describe('the contact form', () => {
   // ----- CONSENT, AUTOCOMPLETE, PLACEHOLDER ----- //
 
   it('requires consent, and links the privacy policy', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     render(<ContactForm />);
 
     await user.type(screen.getByLabelText(/Nom complet/), 'Amina Nkolo');
     await user.type(screen.getByLabelText(/^Email/), 'prospect@example.test');
-    await user.type(screen.getByLabelText(/^Message/), MESSAGE);
+    await pasteMessage(user);
     await chooseSubject(user, /Terrains/);
     // consent deliberately left unticked
     await user.click(screen.getByRole('button', { name: /Envoyer le message/ }));
@@ -165,7 +197,7 @@ describe('the contact form', () => {
   // ----- SUCCESS ----- //
 
   it('sends what was typed, and shows the toast only after the server confirmed', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     render(<ContactForm />);
 
     await fillEverythingElse(user);
@@ -197,12 +229,12 @@ describe('the contact form', () => {
 
   it('sends the locale of the page, so the acknowledgement is in it', async () => {
     setTestLocale('en');
-    const user = userEvent.setup();
+    const user = setupUser();
     render(<ContactForm />);
 
     await user.type(screen.getByLabelText(/Full name/), 'Amina Nkolo');
     await user.type(screen.getByLabelText(/^Email/), 'prospect@example.test');
-    await user.type(screen.getByLabelText(/^Message/), MESSAGE);
+    await pasteMessage(user);
     await user.click(screen.getByRole('checkbox'));
     await chooseSubject(user, /Land/);
     await user.click(screen.getByRole('button', { name: /Send message/ }));
@@ -216,7 +248,7 @@ describe('the contact form', () => {
   describe('when the server action fails', () => {
     it('shows no success toast and keeps every value the prospect typed', async () => {
       submit.mockResolvedValue({ success: false, retryable: true });
-      const user = userEvent.setup();
+      const user = setupUser();
       render(<ContactForm />);
 
       await fillEverythingElse(user);
@@ -238,7 +270,7 @@ describe('the contact form', () => {
 
     it('announces the failure in a role="alert" region', async () => {
       submit.mockResolvedValue({ success: false, retryable: true });
-      const user = userEvent.setup();
+      const user = setupUser();
       render(<ContactForm />);
 
       await fillEverythingElse(user);
@@ -256,7 +288,7 @@ describe('the contact form', () => {
         error: 'Too many requests',
         retryable: false,
       });
-      const user = userEvent.setup();
+      const user = setupUser();
       render(<ContactForm />);
 
       await fillEverythingElse(user);

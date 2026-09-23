@@ -1,6 +1,6 @@
 import * as z from 'zod';
 
-// A8. International, not Cameroon-only - the clients are the diaspora.
+// Matches international phone numbers.
 export const PHONE_REGEX = /^\+?[0-9 ().-]{6,20}$/;
 
 export const PHONE_ERROR =

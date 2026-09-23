@@ -4,29 +4,16 @@ import { NetworkNodeCard } from './network-node';
 import type { NetworkNode, SponsorChain } from '@/types/kamnet';
 
 /**
- * The tree, and - for a MANAGER only - the statistics over it.
+ * Renders the network tree and computed statistics.
  *
- * The statistics are COMPUTED from the tree that was returned, never declared.
- * The previous version of this screen hard-coded `value={6}` for "agents in my
- * network", `6` for regions and `2` for experts, against six agents that did
- * not exist. Numbers that do not come from the data are the same defect as the
- * agents, one step further along.
+ * Statistics are calculated recursively from the returned network tree data.
+ * The statistics panel is restricted to `MANAGER` tier agents, as lower tiers
+ * (JUNIOR, CONFIRMED) only have visibility into their direct (N1) referrals,
+ * making aggregate statistics redundant.
  *
- * Why only a MANAGER sees them: UX specification section 2.3, verbatim -
- * "Junior : filleuls N1 uniquement. Confirme : filleuls N1. Manager : filleuls
- * N1+N2+N3 + stats reseau globales." A JUNIOR and a CONFIRMED see N1 and no
- * aggregate, because an aggregate over one level is the count of cards already
- * on screen.
- *
- * P9 (20 September 2026) SUPERSEDES the depth half of that quotation: every
- * tier now sees N1, because sponsorship stops at the direct sponsor. The quote
- * is left as written rather than edited - it is a citation of a specification,
- * and rewriting it would misrepresent what that document says. The statistics
- * half still holds: only a MANAGER sees the aggregate.
- *
- * Synchronous, taking its labels as props. See the note in `network-empty.tsx`:
- * an async child cannot be resolved when the parent's output is rendered
- * directly, which silently emptied the DOM in tests while the browser was fine.
+ * Note: To ensure compatibility with test environments, this component is
+ * fully synchronous and receives localized labels as props instead of using async
+ * translation fetching directly.
  */
 
 export interface NetworkLabels {
@@ -110,15 +97,9 @@ export const NetworkContent = ({
 };
 
 /**
- * A local tile rather than the shared `StatCard`.
- *
- * `StatCard` carries five non-system colour classes of its own (`gray-500`,
- * `gray-50`, `gray-900`, `gray-400`, `white`) and is also used by
- * `/admin/verify`. Editing it would fix this screen's rendered output and
- * silently change another one outside this PR; reusing it would leave this
- * screen emitting `gray-*` after the page file itself was cleaned. So the tile
- * is local and tokenised, and `StatCard`'s five are reported as a finding with
- * their consumers named rather than quietly half-fixed.
+ * Internal stat tile component.
+ * Implements a localized semantic token-based design to avoid
+ * dependencies on external UI components and hardcoded non-system color classes.
  */
 const StatTile = ({
   label,

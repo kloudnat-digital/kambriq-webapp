@@ -9,21 +9,10 @@ interface Props {
 }
 
 /**
- * I39 - the backlog, said out loud where an administrator already goes.
+ * Renders a banner indicating the number of pending candidates in the queue.
  *
- * The act of activation was never missing: `PATCH /kbs/admin/candidates/:id/status`
- * has a full state machine and the candidate detail screen puts it under a
- * button. What was missing was any reason to go and look. A candidate enrolled,
- * sat at CANDIDATE, saw "awaiting validation" on every KBS screen, and nothing
- * anywhere counted them or said how long they had been there.
- *
- * That is A10's identity queue in another module - a reviewer route and a
- * reviewer role that both existed while 59 documents sat unreviewed, because
- * the queue did not exist.
- *
- * **A count answers "how many". The age answers "how long has somebody been
- * waiting", which is the question a backlog exists to answer**, so both are
- * here and the age is the one in bold.
+ * Provides visibility into the candidate activation backlog, displaying both
+ * the total count and the age of the oldest pending request to prioritize reviews.
  */
 export const PendingCandidatesBanner = async ({ total, oldestWaitingDays }: Props) => {
   const t = await getTranslations('app.adminKbs.candidates.pending');

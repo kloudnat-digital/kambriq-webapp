@@ -19,11 +19,8 @@ export class KbsCandidateController {
     private readonly certificateService: KbsCertificatesService,
   ) {}
 
-  // I17 - NO role, deliberately. This route is what GRANTS CANDIDATE_KBS
-  // (candidates.service.ts:90), so a caller cannot already hold it. A role here,
-  // or a class-level one, locks out every NEW candidate while every enrolled one
-  // keeps working - the platform looks healthy and is broken for the population
-  // being added.
+  // No role is required here because this route grants the CANDIDATE_KBS role.
+  // Adding a role requirement would prevent new candidates from enrolling.
   @Post('enroll')
   @ApiOperation({
     summary: 'Enroll in the KBS training program',
@@ -44,9 +41,8 @@ export class KbsCandidateController {
     return this.candidatesService.enroll(user.id, dto);
   }
 
-  // I17 - NO role, deliberately. The CV is uploaded BEFORE enrolling: its fileUrl
-  // is sent in the body of POST /kbs/enroll, so this necessarily precedes the
-  // grant of CANDIDATE_KBS.
+  // No role is required here because the CV is uploaded before enrollment,
+  // preceding the grant of the CANDIDATE_KBS role.
   @Post('cv/upload-url')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -60,12 +56,8 @@ export class KbsCandidateController {
     return this.candidatesService.getCvUploadUrl(user.id, dto);
   }
 
-  // I17 - NO role, deliberately. This is the "am I enrolled?" probe. The enrolment
-  // page calls it BEFORE any candidate exists, and it answers 404 when there is
-  // none. A role here turns that 404 into a 403, and the web's `nullOn404` reads
-  // only 404 as "not enrolled" - so a 403 is rethrown and the page that ENROLS
-  // people errors instead of showing the form. Same outage as a class-level role,
-  // reached through a different door.
+  // No role is required here to allow non-enrolled users to check their status.
+  // A 403 response would disrupt the frontend's handling of the 404 enrollment check.
   @Get('me')
   @ApiOperation({
     summary: 'Get my KBS candidate profile',
@@ -418,10 +410,8 @@ export class KbsCandidateController {
     return this.examService.getExamResult(user.id, examId);
   }
 
-  // I17 - NO role, deliberately. The same probe shape as GET /kbs/me: it answers
-  // 404 for somebody not enrolled and `data: null` when no certificate has been
-  // issued, and the certificate page renders that emptiness. A role would turn
-  // both of those answers into a 403 the web treats as a crash.
+  // No role is required here to allow non-enrolled users to check their certificate status.
+  // A 403 response would disrupt the frontend's handling of missing certificates.
   @Get('certificate/me')
   @ApiOperation({
     summary: 'Get my KCA certificate',

@@ -1,15 +1,8 @@
 import { http, HttpResponse } from 'msw';
 
 /**
- * MSW request handlers - define mock API responses here.
- *
- * How it works:
- *   - `http.get/post/patch/delete(url, resolver)` intercepts matching requests
- *   - The resolver receives the request and returns an HttpResponse
- *   - These handlers are used in Jest tests (via server.ts) so tests never
- *     hit the real backend
- *
- * Add handlers for each backend endpoint as you build features.
+ * Mock Service Worker (MSW) request handlers.
+ * Defines simulated API responses to prevent tests from hitting real backend endpoints.
  */
 export const handlers = [
   // ── Auth ────────────────────────────────────────────────────────

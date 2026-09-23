@@ -35,9 +35,10 @@ export default async function IdentityReviewPage({ params }: { params: Promise<{
           <ul className="space-y-3">
             {documents.map((url, i) => (
               <li key={url}>
-                {/* Signed at read time by the API. Opened rather than embedded:
-                    an identity document is not something to render inline in a
-                    page that may be screenshotted or printed by accident. */}
+                {/*
+                  Signed at read time by the API.
+                  Opened in a new tab to prevent inline rendering of sensitive identity documents.
+                */}
                 <a
                   href={url}
                   target="_blank"

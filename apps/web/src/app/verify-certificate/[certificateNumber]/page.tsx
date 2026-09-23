@@ -8,18 +8,15 @@ import { verifyCertificate } from '@/lib/actions/kbs';
 import type { CertificateVerdict } from '@/lib/certificate-verdict';
 import { formatDate } from '@/lib/kbs';
 
-// A verdict is read from the register on every request. A cached "valid" served
-// after a revocation is the stale positive this page must never give.
+// Fetches the verdict from the register on every request to prevent serving stale "valid" results after a revocation.
 export const dynamic = 'force-dynamic';
 
 const UNAVAILABLE: CertificateVerdict = { kind: 'unavailable' };
 
 /**
- * The public answer to "is this KCA certificate genuine?".
- *
- * It rendered a hard-coded certificate for any number until September 2026.
- * It now asks the register, and says yes only when the register says yes about
- * this number - see `lib/certificate-verdict.ts` for the rule.
+ * Public verification page for KCA certificates.
+ * Queries the certificate register and validates authenticity.
+ * See `lib/certificate-verdict.ts` for validation rules.
  */
 export default async function VerifyCertificatePage({
   params,

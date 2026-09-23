@@ -1,41 +1,23 @@
 /**
- * KCA1 replay - run the committed course against a database, and report.
+ * Applies the generated KCA1 course data against the target database and generates a report.
  *
- * Run it:
+ * Execution:
  *   pnpm tsx --tsconfig tsconfig.base.json prisma/apply-kca1.ts
  *
- * `load-kca1.ts` parses the Drive source and writes `seed-data/kca1.ts`. This
- * applies that committed module to whatever `DATABASE_URL_KBS` points at, and
- * prints what it created, updated, left alone, moved, renamed and could not
- * match. Two scripts because they run in different places: parsing needs the
- * Drive and happens on Visquis's machine; applying needs a database and may
- * happen anywhere.
+ * This script consumes the output of `load-kca1.ts` (located at `seed-data/kca1.ts`)
+ * and applies it to the database specified by `DATABASE_URL_KBS`. The process logs
+ * detailed outcomes for created, updated, unchanged, moved, renamed, and unmatched entities.
  *
- * The report is the point as much as the write. Visquis edits the document and
- * has to be able to read the consequences of his own edit - "3 updated" does not
- * tell him whether the lesson he cared about was among them, so every lesson is
- * named.
- *
- * ---------------------------------------------------------------------------
- * What this does NOT do yet, said rather than left to be discovered
- * ---------------------------------------------------------------------------
- * It applies LESSONS on every run, and it creates the QUESTIONS once. A first
- * load writes the eighty questions twice - `KbsQuestion` for the module quizzes
- * and `KbsExamQuestion` for the exam, which is what decision 2.1 means by "the
- * exam draws from the same eighty" in a schema that holds two tables. A later
- * load counts what is there, reports it, and writes nothing: `KbsQuestion` has
- * no stable key, so matching an edited question is the same two-signal problem
- * over question text, except that here the signal and the edit are the same
- * string. Doing half of it quietly would move a candidate's answers onto a
- * different question. Replaying questions is its own piece of work, and until
- * it exists the run says so rather than staying silent.
- *
- * It also does not touch `KbsSettings.activeCourseId`. Switching the course
- * over is step 4, deliberately after this, so that a load can be run and read
- * before anybody is pointed at its result.
+ * Limitations and behavior:
+ * - Lessons are applied on every execution.
+ * - Questions are created only once. Subsequent executions will count existing questions
+ *   and report them without applying modifications, as questions currently lack a stable
+ *   identifier for safe upserts.
+ * - This script does not update `KbsSettings.activeCourseId`. Course activation
+ *   must be performed as a separate, subsequent step.
  */
 
-/* eslint-disable @nx/enforce-module-boundaries -- a prisma/ script, outside any nx project, like seed.ts */
+/* eslint-disable @nx/enforce-module-boundaries -- Prisma script, located outside NX projects. */
 import 'dotenv/config';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -50,7 +32,7 @@ import {
   type QuestionApplyResult,
 } from './kca1-apply';
 
-/** The course this loader owns. Matched by title, created if absent. */
+/** The course managed by this loader. It is matched by title and created if it does not exist. */
 const COURSE_TITLE = 'KCA 1 - Fondations';
 
 const main = async () => {
@@ -74,7 +56,7 @@ const main = async () => {
           description: 'Parcours 0, 1, 2 et 5 - comprendre, aligner, proteger.',
           language: 'fr',
           isPublished: false,
-          // Decision 4: no global total. The duration shown is per module.
+          // The duration is calculated per module; there is no global duration total.
           duration: null,
         },
       }));
@@ -119,11 +101,8 @@ const main = async () => {
         }),
       );
 
-      // A parcours with no questions would let `applyQuestions` decide
-      // "created" and then create nothing - a pool that reports success by
-      // saying nothing, and an exam draw that finds an empty course. The
-      // generated module is asserted at 20 per parcours; this refuses rather
-      // than discovers.
+      // Ensure that every parcours contains questions to prevent creating modules
+      // with empty question pools for exams.
       const source = KCA1_QUESTIONS.filter((question) => question.parcours === parcours.code);
       if (source.length === 0) {
         throw new Error(

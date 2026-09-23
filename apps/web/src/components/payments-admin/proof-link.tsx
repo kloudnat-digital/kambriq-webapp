@@ -4,18 +4,10 @@ import { useState } from 'react';
 import { getProofDownloadUrl } from '@/lib/actions/payments';
 
 /**
- * Opens the proof behind one ledger line.
+ * Renders a link to access the proof associated with a specific ledger entry.
  *
- * The object is private in S3. There is no public URL to link to, so the link
- * has to ask the API for a short-lived signed one at the moment it is clicked -
- * a URL minted at render time would be stale by the time anybody used it, and
- * caching signed URLs in a page is how a private object becomes a shared one.
- *
- * This exists because the endpoint did. `getProofDownloadUrl` was written,
- * tested, and called by nothing: the ledger printed the S3 key as grey text and
- * a person auditing a payment could read the name of a document they could not
- * open. That is A10 in miniature - an API the product cannot reach - and the
- * whole reason the screen is inside this chantier.
+ * Fetches a short-lived signed URL for a private S3 object on demand to prevent
+ * access issues and avoid caching signed URLs in the DOM.
  */
 export const ProofLink = ({ paymentId, receiptId }: { paymentId: string; receiptId: string }) => {
   const [state, setState] = useState<'idle' | 'loading' | 'error'>('idle');
@@ -24,8 +16,7 @@ export const ProofLink = ({ paymentId, receiptId }: { paymentId: string; receipt
     setState('loading');
     const res = await getProofDownloadUrl({ paymentId, receiptId });
     if (!res.success) {
-      // Says what failed. A link that quietly does nothing is the silent
-      // mechanism A10-A12 exist to remove.
+      // Sets an error state if the URL request fails.
       setState('error');
       return;
     }

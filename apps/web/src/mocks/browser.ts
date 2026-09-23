@@ -2,11 +2,7 @@ import { setupWorker } from 'msw/browser';
 import { handlers } from './handlers';
 
 /**
- * MSW browser worker - for intercepting requests in the browser.
- * Used during local development when you want to mock APIs without a backend.
- *
- * To enable: call worker.start() in your app entry point (e.g. layout.tsx)
- * and add the service worker file to /public:
- *   npx msw init public/
+ * Mock Service Worker (MSW) setup for browser environments.
+ * Intercepts outgoing client-side requests for local development without a backend.
  */
 export const worker = setupWorker(...handlers);

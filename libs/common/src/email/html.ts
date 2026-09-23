@@ -1,22 +1,10 @@
 import escapeHtmlEntities from 'escape-html';
 
 /**
- * HTML construction for email bodies, with escaping that cannot be forgotten.
+ * HTML construction for email bodies, with automatic escaping for safety.
  *
- * The templates used to interpolate values straight into markup. The public
- * contact form accepts 5000 unauthenticated characters, so a message body
- * containing `</p><a href="...">` rendered a live anchor in the mail that lands
- * in `contact@`. Escaping each site by hand fixes the sites that exist today and
- * nothing about the next template somebody writes.
- *
- * So the escape happens in the interpolation itself: `html` escapes every value
- * it is given unless that value is already `SafeHtml`, and `SafeHtml` is
- * produced only by the three functions below.
- *
- * The escaping itself is `escape-html`, which Express already pulls into this
- * tree and which has been unchanged since 2015. What is local is the contract
- * around it - the brand that lets `tsc` tell markup from a value, which is the
- * part no library can supply for this codebase's own template type.
+ * Interpolates template strings. All values are automatically escaped using `escape-html`
+ * unless they are already wrapped in `SafeHtml`.
  */
 
 /** Markup that is safe to emit, so `html` passes it through unescaped. */
@@ -33,11 +21,8 @@ export const escapeHtml = (value: string | number): SafeHtml =>
   new SafeHtml(escapeHtmlEntities(String(value)));
 
 /**
- * Marks markup the code itself wrote as safe to emit.
- *
- * The one escape hatch, and the only thing that makes the rest of this module
- * bypassable. It takes the reason as an argument so every call site states at
- * the call site why the markup is trusted.
+ * Bypasses escaping to mark known-safe markup as safe to emit.
+ * Requires an explicit reason argument to ensure justification at the call site.
  */
 export const trustedMarkup = (markup: string, reason: string): SafeHtml => {
   if (!reason) {
@@ -50,16 +35,9 @@ export const trustedMarkup = (markup: string, reason: string): SafeHtml => {
 const ALLOWED_SCHEMES: ReadonlySet<string> = new Set(['http:', 'https:', 'mailto:', 'tel:']);
 
 /**
- * Renders a value as a URL for an `href`.
- *
- * Escaping alone would not stop `javascript:` - it contains none of the five
- * escaped characters - so the scheme is checked first, against an allow-list,
- * using the WHATWG parser in Node rather than a pattern.
- *
- * A refusal throws. The sanitiser libraries substitute `about:blank` instead,
- * which would ship an email whose action link silently goes nowhere - a
- * mechanism reporting success by saying nothing, which is the failure this
- * repository spends the most effort refusing.
+ * Validates and escapes a URL for use in an `href` attribute.
+ * Only absolute URLs with schemes present in ALLOWED_SCHEMES are permitted.
+ * Throws an error on invalid or disallowed URLs to prevent potentially malicious links (e.g. `javascript:`).
  */
 export const safeUrl = (value: string | number): SafeHtml => {
   const raw = String(value);
@@ -101,13 +79,8 @@ export const html = (strings: TemplateStringsArray, ...values: Interpolated[]): 
   );
 
 /**
- * A paragraph that renders a value's own line breaks.
- *
- * Built as one string rather than as markup inside a template, because the
- * block is `white-space: pre-wrap` - so any indentation a formatter puts around
- * the interpolation is rendered as part of the text. Prettier formats the
- * contents of an `html` tag and did exactly that, giving every contact message
- * a leading blank line and ten spaces before its first word.
+ * Generates an escaped paragraph that preserves line breaks via `white-space: pre-wrap`.
+ * Implemented without a template literal to prevent external code formatters from introducing unintended leading spaces.
  */
 export const preservedTextBlock = (value: string | number): SafeHtml =>
   trustedMarkup(

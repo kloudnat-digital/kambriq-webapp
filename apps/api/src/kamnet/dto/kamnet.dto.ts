@@ -76,7 +76,8 @@ export class ApplicationFilterDto extends createZodDto(applicationFilterSchema) 
 export const createCommissionSchema = z.object({
   agentId: z.uuid(),
   landId: z.uuid(),
-  reservationId: z.uuid().optional(),
+  // Required. References the source reservation.
+  reservationId: z.uuid(),
   level: z.number().int().min(0).max(3).default(0),
   pv: z.number().min(0).max(2), // Point Valeur Coefficient
   tpc: z.number().min(0).max(1), //Commission rate (0.05 = 5%)

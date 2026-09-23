@@ -1,3 +1,6 @@
+/**
+ * Constants representing geographical regions in Cameroon.
+ */
 export const CAMEROON_REGIONS = [
   'Adamaoua',
   'Centre',

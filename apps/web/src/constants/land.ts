@@ -1,3 +1,6 @@
+/**
+ * Constants defining land statuses, reservation flows, and style mappings.
+ */
 import type { LandLabelCode, LandReservationStatus, LandStatus } from '@/types/lands';
 
 export type StatusOption = { value: string; label: string };

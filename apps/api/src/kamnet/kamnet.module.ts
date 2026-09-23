@@ -12,20 +12,16 @@ import { KamnetAgentController } from './controllers/kamnet-agent.controller';
 import { KamnetAdminController } from './controllers/kamnet-admin.controller';
 
 /**
- *
  * The KAMNET module manages the certified agent network:
  * - Applications (KCA-certified users apply to become agents)
  * - Agent profiles (status management, sponsorship tree)
  * - Leads (prospect tracking for agents)
- * - Commissions (MVP: manual storage, v2: auto-calculation)
- * - Network (sponsorship tree queries, N1 depth since P9)
- *
+ * - Commissions (manual tracking for MVP)
+ * - Network (sponsorship tree queries, limited to N1 depth)
  */
 
 @Module({
-  // KbsModule, not the former `KbsCertificatesModule`: KAMNET asks
-  // `KbsCandidatesService.isUserCertified` (I15), and the light module built a
-  // second KbsPrismaService - a second connection pool - of its own.
+  // Import KbsModule to access KbsCandidatesService for certification checks.
   imports: [CoreModule, KbsModule],
   providers: [
     KamnetPrismaService,

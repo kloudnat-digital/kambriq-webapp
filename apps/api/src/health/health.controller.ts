@@ -111,10 +111,8 @@ export class HealthController {
       await this.corePrisma.$queryRawUnsafe('SELECT 1');
       return { status: 'ok' };
     } catch (error) {
-      // This answered 200 with `{ status: 'error' }`, and both readers are
-      // `curl -f`, which only fails on 4xx and above - so the container health
-      // check and the deploy gate read a database outage as ready. The status
-      // code is the whole signal here; the body is read by nobody.
+      // Throws ServiceUnavailableException so readiness probes (like curl -f)
+      // receive a 503 status code when the core database is unreachable.
       this.logger.error('Readiness check failed: core database unreachable', error);
       throw new ServiceUnavailableException({ status: 'error' });
     }
@@ -143,14 +141,8 @@ export class HealthController {
   @ApiOperation({
     summary: '[Admin] Per-queue job counts',
     description:
-      'waiting, active, completed, failed, delayed and paused, for every queue. ' +
-      '**Authenticated**, unlike the three health routes above, which are public: this exposes ' +
-      'operational ' +
-      'internals, and the companion route exposes failed payloads which carry personal data. ' +
-      'A18: `S9` proved an unknown job lands on the failed set rather than vanishing, but that ' +
-      'proof was taken locally - on dev the sets live in ElastiCache inside the VPC and nothing ' +
-      'could see them. A failure nobody can observe is a silent failure whatever the code ' +
-      'guarantees.',
+      'Returns counts for waiting, active, completed, failed, delayed, and paused jobs for every queue. ' +
+      'This route is authenticated because it exposes operational internals and sensitive payloads.',
   })
   @ApiResponse({ status: 200, description: 'Counts returned, one entry per queue.' })
   @ApiResponse({ status: 403, description: 'Insufficient permissions. Requires ADMIN_GLOBAL.' })
@@ -164,9 +156,8 @@ export class HealthController {
   @ApiOperation({
     summary: '[Admin] Failed jobs of one queue, with their payloads',
     description:
-      'Newest first, with `data` intact, `failedReason` and `attemptsMade`. A count says ' +
-      'something failed; the payload says what, for whom, and whether it can be replayed. ' +
-      '`removeOnFailed: 200` already retains them - this reads them back.',
+      'Returns failed jobs (newest first) with their intact data, failedReason, and attemptsMade. ' +
+      'This allows administrators to inspect what failed and whether it can be replayed.',
   })
   @ApiParam({ name: 'name', description: 'Queue name: kbs, core, kamnet or notifications' })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })

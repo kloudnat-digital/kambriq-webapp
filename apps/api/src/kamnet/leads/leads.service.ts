@@ -46,28 +46,8 @@ export class KamnetLeadsService {
 
   // ----- Update Lead ----- //
   /**
-   * I33 - the write is NOT conditional on the status having moved.
-   *
-   * It used to be: the whole block below sat inside
-   * `if (dto.status && dto.status !== lead.status)`, so a PATCH carrying only
-   * `notes`, `clientPhone`, `clientEmail`, `clientName` or `source` performed
-   * no write, threw nothing, returned `undefined`, and the caller received a
-   * success. A PATCH that also carried a legal status change wrote every field
-   * correctly - which made it intermittent, and so worse than a defect that
-   * always fails.
-   *
-   * The transition check stays inside that condition, because it is a rule
-   * about a status CHANGE. `commissions.service.updateStatus` is the shape this
-   * now matches: validate, throw, then write unconditionally.
-   *
-   * `convertedAt` is stamped only when the lead actually BECOMES converted.
-   * Before, that was true by accident - an already-converted lead failed the
-   * outer condition, so nothing was written and nothing re-stamped. With the
-   * write lifted out, `dto.status === CONVERTED` alone would re-stamp it on
-   * every later edit, so the transition is named explicitly. The observable
-   * behaviour is preserved; the mechanism that preserves it is new. The date a
-   * lead converted is a fact about when that happened, and an edit afterwards
-   * is not a second conversion.
+   * Updates lead attributes unconditionally. Validates status transitions
+   * and explicitly stamps `convertedAt` only upon a valid conversion transition.
    */
   async update(leadId: string, agentId: string, dto: UpdateLeadDto) {
     const lead = await this.findByIdAndOwner(leadId, agentId);
@@ -105,7 +85,6 @@ export class KamnetLeadsService {
       },
     });
 
-    // A lead DTO carries clientName, clientEmail and clientPhone.
     this.logger.log('Lead updated %o', { leadId, changed: changedKeys(dto) });
     return updated;
   }

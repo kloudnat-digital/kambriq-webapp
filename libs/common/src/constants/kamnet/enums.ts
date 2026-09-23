@@ -1,45 +1,8 @@
 /**
- * The KAMNET enums, hand-written so the web can import them.
- *
- * ---------------------------------------------------------------------------
- * Why these are not imported from the generated Prisma client
- * ---------------------------------------------------------------------------
- * They were, until this file existed, and it broke `develop`.
- *
- * `constants/kamnet/index.ts` re-exported them from
- * `../../prisma/kamnet-client/enums`. That path is a GENERATED client: it is
- * gitignored (`.gitignore`: `libs/common/src/prisma/*`, zero tracked files) and
- * produced by `postinstall`. `docker/Dockerfile.web` installs with
- * `--ignore-scripts`, so `postinstall` never runs there, and it copies no
- * `prisma/` directory and issues no `prisma generate`. `Dockerfile.api` does
- * both, which is why the API image built and the web image did not:
- *
- *   ./libs/common/src/constants/kamnet/index.ts:1:1
- *   Module not found: Can't resolve '../../prisma/kamnet-client/enums'
- *
- * Every local gate passed - `typecheck:web`, `lint:web`, 300 unit tests, and
- * CI's `Quality` job - because the generated client exists in all of those
- * environments. The image is the one place it does not. **A green local run
- * says nothing about a tree the image does not carry.**
- *
- * ---------------------------------------------------------------------------
- * This is the established pattern here, not a workaround
- * ---------------------------------------------------------------------------
- * `ContactSubject` in `constants/core` says it in as many words: "Written here
- * rather than imported from the generated client for the reason the payment
- * enums are: the web imports this file, and the generated Prisma client cannot
- * cross into a browser bundle." `PaymentState` in `payments/payment-state.ts`
- * mirrors `prisma/lands/schema.prisma` the same way.
- *
- * The cost of a hand copy is drift, and drift is what a test is for:
- * `kamnet-enums-mirror-the-schema.spec.ts` parses each `enum X { ... }` block
- * out of `prisma/kamnet/schema.prisma` and compares it member by member, in
- * both directions, exactly as `contact-subjects.spec.ts` does for its three
- * copies. A member added to one side and not the other fails there.
- *
- * Declared as `const` objects with a companion type rather than `enum`, which
- * is what the generated client did, so every existing
- * `KamnetAgentTier.CONFIRMED` call site keeps compiling unchanged.
+ * Manually defined enums matching the Kamnet Prisma schema.
+ * Extracted from the generated Prisma client to allow usage in web environments
+ * where Prisma generation is excluded. Ensured consistent with the database schema
+ * via unit tests.
  */
 
 /** Mirrors `enum KamnetAgentTier` in `prisma/kamnet/schema.prisma`. */

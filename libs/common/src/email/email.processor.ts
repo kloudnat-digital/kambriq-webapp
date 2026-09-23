@@ -36,10 +36,7 @@ export class EmailProcessor extends WorkerHost {
       return;
     }
 
-    // No explicit credentials. The default provider chain resolves the ECS task
-    // role on Fargate and the developer profile locally. Passing static keys was
-    // the bug: they are never set in the task definition, so the client was
-    // never built and every send silently became a console log.
+    // Relies on the default AWS credential provider chain (ECS task role on Fargate or local profile).
     this.sesClient = new SESv2Client({ region });
     this.logger.log('SES transport active %o', {
       region,
@@ -69,8 +66,7 @@ export class EmailProcessor extends WorkerHost {
       return { delivered: false, transport: 'console', to, subject };
     }
 
-    // Any SES failure rethrows below, so the BullMQ job fails and retries
-    // rather than completing while having delivered nothing.
+    // Rethrow SES failures to trigger BullMQ job retries.
     try {
       const result = await this.sesClient.send(
         new SendEmailCommand({
@@ -85,15 +81,12 @@ export class EmailProcessor extends WorkerHost {
         }),
       );
 
-      // The MessageId goes in the message string, not a metadata object.
-      // nestjs-pino treats Logger.log's second argument as the *context*, so
-      // `logger.log('Email sent', { messageId })` silently dropped it and the
-      // only record of a send was an unattributable "Email sent" line.
+      // Interpolate metadata directly into the log string to prevent nestjs-pino from interpreting it as context.
       this.logger.log(`Email sent to ${to} messageId=${result.MessageId} subject="${subject}"`);
       return { delivered: true, messageId: result.MessageId, to, subject };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      // Same reason as above: interpolate, do not pass an object.
+      // Interpolate error details into the log string.
       this.logger.error(`Failed to send email to ${to} subject="${subject}" error=${message}`);
       throw error;
     }

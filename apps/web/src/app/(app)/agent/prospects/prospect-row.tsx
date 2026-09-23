@@ -14,38 +14,18 @@ import { toneFor, transitionsFrom } from './lead-status';
 import type { Lead } from '@/types/kamnet';
 
 /**
- * One prospect, its status, the moves it may make, and its edit and delete
- * controls.
+ * Renders a single prospect row, including status transitions and management controls.
  *
- * ---------------------------------------------------------------------------
- * Why only some moves are offered
- * ---------------------------------------------------------------------------
- * `transitionsFrom` reads `KAMNET_VALID_LEAD_TRANSITIONS`, the same table
- * `leads.service.update` enforces. A button the server would refuse with a 400
- * is worse than no button: the agent learns the screen lies. `CONVERTED` has an
- * empty list, so a converted prospect is offered no move at all, and a status
- * outside the five is offered none either.
+ * Status transitions are filtered based on `KAMNET_VALID_LEAD_TRANSITIONS` to ensure
+ * UI parity with API constraints (e.g., `CONVERTED` prospects cannot transition further).
  *
- * This is presentation, not a guard. The server decides; the screen simply does
- * not offer what it would refuse.
- *
- * ---------------------------------------------------------------------------
- * A limitation of the endpoint, visible here
- * ---------------------------------------------------------------------------
- * `leads.service.update` nests its entire write inside
- * `if (dto.status && dto.status !== lead.status)`. An edit that does not change
- * the status therefore writes nothing and returns `undefined`, while answering
- * success. The edit form below is built on the endpoint as it is; the defect is
- * reported as its own subject rather than fixed here, because this step must
- * not touch the API.
+ * Note: The API's `leads.service.update` only processes writes if the status changes.
+ * This component's edit form works around this endpoint behavior without altering the API.
  */
 
 /**
- * The five the catalogue carries a label for.
- *
- * Declared above the component on purpose: `const` is not hoisted, so a
- * reference from the render body to a declaration further down the file is a
- * temporal-dead-zone error at module evaluation, not a style question.
+ * Supported lead statuses with localized labels.
+ * Declared here to ensure initialization before use within the component.
  */
 const LABELLED = ['NEW', 'CONTACTED', 'QUALIFIED', 'CONVERTED', 'LOST'];
 
@@ -103,8 +83,7 @@ export const ProspectRow = ({ lead }: { lead: Lead }) => {
               toneFor(lead.status),
             )}
           >
-            {/* A status outside the five renders its raw value rather than an
-                empty pill, so an operator sees that something is wrong. */}
+            {/* Renders the raw status string if it falls outside the predefined valid states. */}
             {LABELLED.includes(lead.status) ? t(`status.${lead.status}` as never) : lead.status}
           </span>
         </td>

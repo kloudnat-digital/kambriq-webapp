@@ -154,11 +154,7 @@ export class UserController {
   }
 
   @Patch(':id/id-document/review')
-  // v03 section 8: "Verifier l'identite du client - Administrateur terrains ou
-  // global". A10 built this for ADMIN_GLOBAL alone, which put the only two
-  // people who can verify an identity at the far end of the escalation path -
-  // and G12 puts that verification on the path of the money. A queue only a
-  // super admin can clear is a queue that does not get cleared.
+  // Restrict access to administrators authorized to verify identity documents.
   @Roles(RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -235,15 +231,14 @@ export class UserController {
   }
 
   @Get('id-documents/pending')
-  // Same widening, same reason: whoever may verify must be able to see the queue.
+  // Ensure queue visibility for all administrators who have identity verification rights.
   @Roles(RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL)
   @ApiOperation({
     summary: '[Admin] The identity-review queue',
     description:
-      'Identity documents awaiting review, oldest first, with how many days each has waited ' +
-      'and `meta.oldestWaitingDays` for the backlog as a whole. ' +
-      'A10: the reviewer route and the reviewer role both existed and this queue did not, so ' +
-      'nothing had ever been reviewed and nothing counted the backlog. Requires ADMIN_GLOBAL.',
+      'Identity documents awaiting review, oldest first. ' +
+      'Includes individual waiting times and overall oldest document metrics. ' +
+      'Requires ADMIN_LANDS or ADMIN_GLOBAL.',
   })
   @ApiResponse({ status: 200, description: 'Pending documents returned, oldest first.' })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token.' })
@@ -253,19 +248,13 @@ export class UserController {
   }
 
   @Get('id-documents/:id')
-  // v03 section 8 puts identity verification on ADMIN_LANDS as well as global.
-  // Verifying means looking at the document, so the reviewer needs to read it -
-  // but **not** the whole user record. `GET :id` returns roles and the full
-  // account; this returns the person, their contact, and their signed document
-  // links, and nothing else. Least privilege, because widening the general read
-  // would have handed every lands admin the user table to get at two photographs.
+  // Provide only necessary identity details (including pre-signed document URLs) to reviewers.
+  // Enforces least privilege to avoid exposing the full user account.
   @Roles(RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL)
   @ApiOperation({
     summary: '[Admin] One identity under review, with its documents',
     description:
-      'The person, their contact details, and short-lived signed links to the documents they ' +
-      'submitted. A review screen that cannot show the document turns "verified" into a click, ' +
-      'which is worse than no review because it produces a record saying somebody checked.',
+      'Retrieve a user and pre-signed links to their submitted identity documents for review.',
   })
   @ApiParam({ name: 'id', description: 'User ID (UUID)' })
   @ApiResponse({ status: 200, description: 'Identity under review returned.' })

@@ -31,27 +31,14 @@ import { ProspectFormResolver, type ProspectFormSchema } from '@/validations/sch
 import type { Lead } from '@/types/kamnet';
 
 /**
- * Create or edit a prospect.
+ * Form for creating or editing a prospect.
  *
- * ---------------------------------------------------------------------------
- * The source field is not `required`
- * ---------------------------------------------------------------------------
- * `L1` established why, and it cost a day: a `required` attribute on a Radix
- * `Select` renders a native `<select required>` at 1x1 pixels, `aria-hidden`,
- * behind the visible trigger. Native constraint validation then blocks the
- * submit for a control the browser can neither focus nor annotate - no message,
- * no highlight, and the handler never runs. The button does nothing, silently.
+ * Note: The `source` field omits the native `required` attribute.
+ * Radix UI's `Select` renders a hidden native `<select>` which can cause silent
+ * validation failures (blocking submit without showing an error) if `required` is present.
+ * Validation is instead handled via Zod and `aria-invalid` bindings.
  *
- * So the rule lives in the resolver, the message renders under the trigger tied
- * by `aria-describedby`, `aria-invalid` marks it, and the trigger carries an
- * accessible name through `aria-labelledby` - a `<label for>` does not name a
- * `<button role="combobox">`.
- *
- * ---------------------------------------------------------------------------
- * Nothing is reset on failure
- * ---------------------------------------------------------------------------
- * An agent who typed a client's details and got a refusal keeps what they
- * typed, for the same reason the contact form keeps a prospect's message.
+ * Form state is preserved on submission failure to prevent data loss.
  */
 
 interface Props {
@@ -99,9 +86,8 @@ export const ProspectForm = ({ mode, lead, onClose }: Props) => {
 
   const onSubmit = (values: ProspectFormSchema) =>
     startTransition(async () => {
-      // `mode === 'edit'` guarantees a lead, but the type does not say so, and a
-      // non-null assertion would be the compiler agreeing with a claim nothing
-      // checks. Narrowed instead, so the impossible branch is visible.
+      // Explicitly check for `lead` to satisfy type constraints, as `mode === 'edit'`
+      // logically guarantees its presence but the type system does not enforce it.
       if (mode === 'edit' && !lead) {
         createToast({ status: 'error', title: t('failed') });
         return;

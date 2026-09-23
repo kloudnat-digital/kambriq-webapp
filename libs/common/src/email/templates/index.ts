@@ -1,11 +1,9 @@
 /**
- * KAMBRIQ Email Templates
- * Each function returns { subject, html }
+ * Email templates for KAMBRIQ.
+ * Each template returns an object containing the compiled subject and HTML body.
  *
- * Bodies are built with the `html` tag, which escapes every interpolated value
- * that is not already `SafeHtml`. A plain template literal here would emit its
- * arguments as markup, which is how the contact form came to inject a live
- * anchor into the mail that lands in `contact@`.
+ * The HTML bodies must be constructed using the `html` tag function, which automatically
+ * escapes interpolated values unless they are explicitly wrapped in `SafeHtml`.
  */
 
 import { I18nService } from 'nestjs-i18n';
@@ -19,10 +17,8 @@ const escapeArgs = (args?: TemplateArgs): TemplateArgs | undefined =>
   args && Object.fromEntries(Object.entries(args).map(([k, v]) => [k, escapeHtml(v).toString()]));
 
 /**
- * Translates for an HTML context.
- *
- * The catalogue carries markup of its own - `Raison : <strong>{reason}</strong>` -
- * so its text is trusted while the arguments interpolated into it are not.
+ * Translates a key for an HTML context.
+ * The translated string is considered trusted markup, while any interpolated arguments are escaped.
  */
 const t = (i18n: I18nService, key: string, lang: string, args?: TemplateArgs): SafeHtml =>
   trustedMarkup(
@@ -140,12 +136,8 @@ type TemplateFn = (
 ) => { subject: string; html: SafeHtml };
 
 /**
- * The reference, set out to survive being copied by hand.
- *
- * Monospaced, large, on its own line, with the rule stated underneath. This is
- * the single most important thing in the message: money that arrives without it
- * cannot be matched to a payment, and the person making the transfer is the only
- * one who can put it there.
+ * Renders the payment reference in a highly visible monospaced block.
+ * Ensures clarity for manual copying during offline transfers.
  */
 const referenceBlock = (i18n: I18nService, lang: string, args: TemplateArgs): SafeHtml => html`
   <p class="muted" style="margin-bottom:4px;">
@@ -163,18 +155,8 @@ const referenceBlock = (i18n: I18nService, lang: string, args: TemplateArgs): Sa
 `;
 
 /**
- * There is no channel block, and that is the point.
- *
- * v03 section 4d: *"Les coordonnees s'affichent sur l'espace du client, derriere
- * son authentification ; l'email n'est qu'une notification qui dit qu'elles sont
- * disponibles et ne les contient pas."*
- *
- * Until 7 September this file had a `channelBlock` that rendered the bank
- * account, the mobile money number and the notary's address into every
- * instruction **and** every reminder - to anyone who clicked. It is deleted
- * rather than left unused, because an unused renderer of bank details is one
- * import away from being used again. `no-coordinates-in-email.spec.ts` fails if
- * any channel detail can reach an outbound body.
+ * Note: Payment channel coordinates (bank accounts, mobile money numbers, etc.)
+ * must not be transmitted via email. Users must authenticate to the portal to retrieve them.
  */
 
 const defineTemplates = <T extends Record<string, TemplateFn>>(t: T) => t;
@@ -197,27 +179,8 @@ const templates = defineTemplates({
   }),
 
   /**
-   * G3 - the payment instruction.
-   *
-   * Written for the person who will read it, not for the person who wrote it.
-   * The client is in the diaspora, the money has to arrive in Cameroon, and
-   * they will forward this to whoever makes the transfer for them. So: no
-   * links to click, no login required, nothing that only makes sense to
-   * somebody who was in the conversation. Everything needed to pay is in the
-   * body.
-   *
-   * The reference is repeated in a monospaced block on its own line, large,
-   * because it will be copied by hand onto a transfer slip. The rule about the
-   * motif is stated as a rule, not as a hint: a payment without the reference
-   * cannot be matched, and the client is the only person who can prevent that.
-   */
-  /**
-   * "Your payment details are ready" - and not what they are.
-   *
-   * Carries the reference (which is not a coordinate: it is the client's own
-   * identifier, useless to anybody else), the amount, the channel's **label**,
-   * and a link to the page where the coordinates actually live. Nothing that
-   * could be transferred out of a mailbox and used.
+   * Notification that payment instructions are available.
+   * Excludes sensitive payment coordinates; provides a secure link to the portal instead.
    */
   paymentInstructionsAvailable: (i18n, lang, args) => ({
     subject: subjectText(i18n, 'email.paymentInstructionsAvailable.subject', lang, args),
@@ -614,14 +577,8 @@ const templates = defineTemplates({
         <p>${t(i18n, 'email.clientPortalAccess.landInfo', lang, args)}</p>
         ${
           /**
-           * The agent line renders only when there is a name to put in it.
-           *
-           * This field carried `agentUserId` with the comment "will be enriched in
-           * the controller", and the enrichment never happened: the client was
-           * emailed "Votre agent KAMNET : 00000000-0000-4000-8000-b00000000005".
-           * An internal identifier in front of a customer is a leak and an
-           * embarrassment at the same time. If the name cannot be reached, the
-           * line does not belong in the email.
+           * Conditionally renders the agent's name.
+           * Validated elsewhere to ensure it is not an internal identifier.
            */
           args['agentName']
             ? html`<p>${t(i18n, 'email.clientPortalAccess.agent', lang, args)}</p>`
@@ -746,15 +703,8 @@ const templates = defineTemplates({
   }),
 
   /**
-   * L1 - the acknowledgement the prospect gets.
-   *
-   * Sent in the language of the page they filled in, which is stored on the
-   * row rather than guessed later: a prospect who wrote in French is answered
-   * in French, by a person, weeks later, without anybody having to work it out.
-   *
-   * It quotes their own message back. That is not padding - it is the only
-   * copy they will have of what they sent, and it is what lets them tell "they
-   * received it" from "they received something".
+   * Acknowledgment email for prospective contact requests.
+   * Replicates the user's original message to confirm receipt.
    */
   contactRequestReceived: (i18n, lang, args) => ({
     subject: subjectText(i18n, 'email.contactRequestReceived.subject', lang),
@@ -789,12 +739,8 @@ const templates = defineTemplates({
   }),
 
   /**
-   * L1 - what the back office gets when a request arrives.
-   *
-   * Everything needed to answer without opening the back office: who, how to
-   * reach them, what they asked, and when they consented. The reply-to is the
-   * prospect's own address, in the body rather than as a header, because the
-   * sending identity is a verified SES one and must stay that way.
+   * Notification to the back office for a new contact request.
+   * Includes the prospect's details and message for immediate follow-up.
    */
   contactRequestNotification: (i18n, lang, args) => ({
     subject: subjectText(i18n, 'email.contactRequestNotification.subject', lang, args),

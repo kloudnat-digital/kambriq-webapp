@@ -5,14 +5,9 @@ import { KamnetProcessor } from '../../kamnet/processors/kamnet.processor';
 import { KAMNET_JOBS, RoleCode } from '@kambriq/common';
 
 /**
- * The commission path had no tests at all.
- *
- * `handleSaleCompleted` is the only thing that turns a completed sale into an
- * agent's commission, and every failure inside it logged and returned `null`.
- * A resolved promise marks a BullMQ job completed, so the sale was recorded, the
- * job was green, and the commission was never created. Nothing held a count of
- * sales that produced no commission, so the only symptom available to anybody
- * was an agent noticing they had not been paid.
+ * Tests for KamnetProcessor.
+ * Ensures completed sales reliably produce agent commissions or fail observably,
+ * preventing silently lost commissions.
  */
 const makeJob = (name: string, data: unknown) => ({ name, data }) as unknown as Job;
 
@@ -88,10 +83,8 @@ describe('KamnetProcessor', () => {
 
   describe('a sale completed by an admin', () => {
     /**
-     * The one legitimate skip: an admin closing a sale has no commission to
-     * track. It stays a resolved job, and says why in its result rather than
-     * returning a bare null - the difference between "nothing to do" and
-     * "something went wrong and I am not telling you".
+     * Legitimate skip: an admin closing a sale has no commission to track.
+     * The job completes with an explicit reason rather than a bare null.
      */
     it('completes with an explicit skip reason instead of failing', async () => {
       usersService.findById.mockResolvedValue({ id: 'user-1', roles: [RoleCode.ADMIN_GLOBAL] });

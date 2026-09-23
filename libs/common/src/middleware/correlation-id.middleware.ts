@@ -1,27 +1,16 @@
 /**
  * Correlation ID Middleware
  *
- * Ensures every request carries a unique trace identifier throughout its
- * entire lifecycle - from the incoming HTTP request to every log line it
- * produces, and back to the client in the response headers.
+ * Ensures every request carries a unique trace identifier throughout its lifecycle.
  *
- * How it works:
- *   1. If the client (frontend, or upstream service) already
- *      sent an `x-correlation-id` header, we reuse it - this allows a
- *      chain of services to share the same ID across multiple hops.
- *   2. If no ID is present, we generate a fresh UUID for this request.
- *   3. The ID is written back onto req.headers so it is available to any
- *      downstream service calls made during the request.
- *   4. The ID is set on the response so the caller can log it on their side
- *      and correlate their traces with ours.
+ * Behavior:
+ * 1. Reuses the existing `x-correlation-id` header if provided by the client or upstream service.
+ * 2. Generates a new UUID if the header is absent.
+ * 3. Attaches the correlation ID to the request headers for downstream services.
+ * 4. Appends the correlation ID to the response headers for caller correlation.
  *
- * Pino picks it up via the `customProps` hook in AppModule and attaches it
- * as a structured field on every log line emitted for that request - making
- * it trivial to find every trace of a specific request in production logs.
- *
- * Example: a bug report says "my payment failed at 14:32".
- * You grep logs for `correlationId: "abc-123"` and instantly see the full
- * call chain: guard → service → DB query → queue job, all in order.
+ * This identifier is integrated with the logging system (e.g., Pino) to provide structured tracing
+ * across the request's execution path.
  */
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';

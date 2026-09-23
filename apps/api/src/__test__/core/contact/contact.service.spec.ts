@@ -215,7 +215,11 @@ describe('L1 - ContactService', () => {
 
       await service.submit(input());
 
-      expect(logged.join('\n')).toMatch(/CONTACT_INBOX_EMAIL is not set/);
+      // The VARIABLE, not the sentence around it. This test is named for its
+      // requirement - at error level, naming the variable - and the spy above
+      // already enforces the level. Pinning the English made a comment sweep
+      // that reworded "is not set" to "is unset" read as a broken guard.
+      expect(logged.join('\n')).toMatch(/CONTACT_INBOX_EMAIL/);
     });
 
     it('there is no fallback to EMAIL_FROM - a guessed address is a lead nobody reads', async () => {

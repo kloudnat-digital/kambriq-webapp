@@ -5,25 +5,16 @@ import type {
 } from '@kambriq/common/constants/kamnet';
 
 /**
- * The shapes `GET /kamnet/*` actually answers with.
- *
- * Typed from the services rather than from the Prisma models, because the two
- * differ: `network.service.ts` enriches every node with Core user fields, and
- * `agents.service.ts` adds a `referralCount` that exists on no table. A type
- * copied from the schema would typecheck and be wrong at runtime - the "type
- * that lies" defect this repository already paid for, where a declared `.data`
- * the runtime had stripped made `nx typecheck web` agree with a page that threw
- * on open.
- *
- * The enums are imported, never re-declared. A re-spelled union is the same
- * defect as a role code written as a bare string.
+ * Response types for `GET /kamnet/*` endpoints.
+ * These types are derived from the service layer rather than Prisma models to account
+ * for additional enriched fields (e.g., core user details and computed metrics).
  */
 
 export type KamnetTier = KamnetAgentTier;
 export type LeadSource = KamnetLeadSource;
 export type LeadStatus = KamnetLeadStatus;
 
-/** Core user fields `network.service.enrichAgent` attaches to every node. */
+/** Core user details attached to each agent node. */
 export interface NetworkUser {
   firstName: string | null;
   lastName: string | null;
@@ -32,7 +23,7 @@ export interface NetworkUser {
   city: string | null;
 }
 
-/** One agent inside a sponsorship tree, as `enrichAgent` returns it. */
+/** Represents an agent within a sponsorship tree. */
 export interface NetworkAgent {
   id: string;
   agentCode: string;
@@ -43,26 +34,21 @@ export interface NetworkAgent {
 }
 
 /**
- * A node of the sponsorship tree. Recursive, and the depth is bounded by the
- * server at `KAMNET_MAX_SPONSORSHIP_DEPTH` - 1 since P9 - so in practice the
- * recursion terminates at N1 and `referrals` on a child is empty. The type
- * stays recursive because the bound is a business rule, not a shape.
+ * Represents a recursive node in the sponsorship tree.
+ * The depth is structurally unbounded but practically limited by server-side business rules.
  */
 export interface NetworkNode {
   agent: NetworkAgent;
   referrals: NetworkNode[];
 }
 
-/** `GET /kamnet/network/sponsors` - walking UP the tree instead of down. */
+/** Represents the upward sponsorship chain for an agent. */
 export interface SponsorChain {
   agent: { id: string; agentCode: string };
   chain: Array<{ id: string; agentCode: string; level: number; name?: string }>;
 }
 
-/**
- * `GET /kamnet/agents/me`. The agent record plus the Core user, flattened the
- * way `getMyProfile` flattens it.
- */
+/** Flattened representation of the current agent's profile and user details. */
 export interface MyAgentProfile {
   id: string;
   userId: string;
@@ -87,7 +73,7 @@ export interface MyAgentProfile {
   };
 }
 
-/** `GET /kamnet/agents/:id` - another agent's public profile. */
+/** Public profile details of a Kamnet agent. */
 export interface PublicAgentProfile {
   id: string;
   bio: string | null;
@@ -97,7 +83,7 @@ export interface PublicAgentProfile {
   referralCount: number;
 }
 
-/** A prospect, as `KamnetLead` is returned. */
+/** Represents a prospective client (lead). */
 export interface Lead {
   id: string;
   agentId: string;
@@ -141,17 +127,16 @@ export interface UpdateAgentProfileInput {
   country?: string;
 }
 
-/** A commission line. `amount` is XAF, which has no minor unit. */
+/** Represents an agent commission. The `amount` is in XAF. */
 export interface Commission {
   id: string;
   agentId: string;
   landId: string;
   reservationId: string;
   /**
-   * 0 = the agent who made the sale, 1 = their direct sponsor.
-   *
-   * 2 and 3 belonged to the four-level scheme P9 ended on 20 September 2026.
-   * No row was ever written at either, and nothing produces them now.
+   * Represents the commission level:
+   * 0 = The agent who finalized the sale.
+   * 1 = The direct sponsor of the agent.
    */
   level: number;
   pv: number;

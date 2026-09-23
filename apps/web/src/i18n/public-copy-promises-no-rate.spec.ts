@@ -2,39 +2,12 @@ import fr from './messages/fr.json';
 import en from './messages/en.json';
 
 /**
- * P21 - the public site may not publish a rate, a base or a payment deadline.
+ * Tests enforcing that public-facing pages do not inadvertently publish commitment
+ * terms such as specific commission rates, bases, or payment deadlines.
  *
- * `products.kamnet.commissions` announced, in both languages, "3% de la valeur
- * de vente - versés à J+15 après validation de la transaction". A rate, a base
- * and a deadline together are a commitment, and no such rate exists anywhere in
- * the platform: C14 establishes that the 5% figure lives in three seed literals
- * and a comment, and the grid has never been settled. The site promised agents
- * money that nothing computes and nothing pays.
- *
- * ---------------------------------------------------------------------------
- * Why this bans a rate IN CONTEXT rather than every percentage
- * ---------------------------------------------------------------------------
- * A test that forbids `%` on public pages fires on eight honest strings: "100%
- * en ligne", "Score minimal : 80 %", "évite 80% des erreurs terrain", "plus de
- * 95% du territoire", and four "Acompte ... 5%" lines. That last one matters
- * most - the buyer's 5% deposit is real, implemented and charged - so a guard
- * that refuses it would be deleted by the first person it blocked, which is the
- * fate of every guard that cries wolf.
- *
- * What is banned is a percentage that appears WITH remuneration wording - a
- * commission, a sale value, something being paid out - and any J+n / D+n
- * payment delay at all. That second pattern occurs exactly once in the entire
- * message file, in the string this subject exists to delete.
- *
- * ---------------------------------------------------------------------------
- * Why the namespaces are listed rather than derived
- * ---------------------------------------------------------------------------
- * `app` is the authenticated product and `landsAdmin` is the back office; both
- * legitimately carry figures, and `landsAdmin.form.pv` is literally called
- * "coefficient de commission". Once C14 settles a real grid, the agent's own
- * space will carry rates too. A guard that forbade them everywhere would be
- * removed the day it blocked that work, so the public surface is named
- * explicitly and stays auditable.
+ * Verifies that explicit earning promises and 'J+n' payment delays are absent
+ * from public namespaces, while allowing percentages in other legitimate contexts
+ * (e.g. deposit amounts).
  */
 type Json = Record<string, unknown>;
 
@@ -90,42 +63,24 @@ const LOCALES: ReadonlyArray<readonly [string, unknown]> = [
   ['en', en],
 ];
 
-/** A percentage, written either way. */
+/** Regex matching percentage values. */
 const RATE = /\d+(?:[.,]\d+)?\s*%|\d+\s*(?:pour cent|percent)\b/i;
 
-/** Wording that turns a number into somebody's remuneration. */
+/** Regex matching keywords indicating remuneration. */
 const REMUNERATION =
   /commission|r[ée]mun[ée]ration|remuneration|vers[ée]s?\b|\bpaid\b|payout|valeur de vente|sale value|taux (?:personnel|de commission)/i;
 
-/** "versés à J+15" / "paid at D+15" - a promise about when money arrives. */
+/** Regex matching promised payment delays (e.g. J+15). */
 const PAYMENT_DELAY = /\b[JD]\s*\+\s*\d+\b/;
 
 /**
- * The earning promise itself, which the 20 September arbitrage removes.
- *
- * NARROWED after watching the first run. `/commission|earn/` flagged two honest
- * strings, and both are the shape this repository keeps relearning - the copy
- * that explains a thing is the first casualty of a sweep that bans the word:
- *
- *   - "Argent & commissions - Pourquoi l'agent ne touche jamais l'argent" is a
- *     KCA1 LESSON TITLE, teaching that the agent never handles the money. It
- *     says the opposite of a promise, and banning it would delete real
- *     curriculum;
- *   - "Earn your KCA certificate" earns a certificate, not an income.
- *
- * So this matches phrases that promise MONEY TO THE AGENT, not the words
- * "commission" or "earn" wherever they appear.
+ * Regex matching specific phrases that promise earnings to an agent.
+ * Specifically excludes generic educational mentions of "commission" or "earn".
  */
 const EARNING_PROMISE =
   /gagnez|earn while|earn (?:commissions?|money|income)|\bearnings\b|commissions? attractives?|attractive commissions?|g[ée]n[ée]rez[^.]*commission|generate[^.]*commission|revenus compl[ée]mentaires|additional income|syst[èe]me de commissionnement|multi-level commission|structure des commissions|commission structure|commissions?[^.]*vers[ée]|commission[^.]*\bpaid\b/i;
 
-/**
- * The loaded KCA1 syllabus, excluded from the earning sweep.
- *
- * `modulesDetail` is course content injected from Visquis's source document -
- * lesson titles, goals and durations. It describes what is taught, including
- * how money works, and it is not a promise made to a visitor.
- */
+/** KCA1 syllabus namespace, excluded from earning promises checks. */
 const SYLLABUS = 'products.kbs.modulesDetail';
 
 const offenders = (entries: Array<[string, string]>, predicate: (v: string) => boolean) =>

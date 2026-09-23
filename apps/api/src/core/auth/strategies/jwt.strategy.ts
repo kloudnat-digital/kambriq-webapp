@@ -26,10 +26,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload): Promise<RequestUser> {
     const lang = payload.lang || 'fr';
 
-    // Both tokens are signed with one secret, so the signature alone does not
-    // say which one arrived. Refusing here, before the user is read, is what
-    // keeps a 30-day refresh token from working as a bearer token on every
-    // route. A token minted before the claim existed has no type and is refused.
+    // Validate the token type to prevent refresh tokens from being used as access tokens.
     if (payload.type !== 'access') {
       throw new UnauthorizedException(this.t('auth.jwt.invalidTokenType', lang));
     }

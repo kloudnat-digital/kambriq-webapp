@@ -3,23 +3,10 @@ import { RESET_TOKEN_EXPIRY_HOURS, VerificationTokenType } from '../constants/co
 import { EMAIL_TOKEN_EXPIRY_HOURS } from '../constants/email';
 
 /**
- * Issuing a verification token, in one place, because two places would drift.
- *
- * This was a private method on `AuthService`. `prisma/bootstrap-admins.ts` needs
- * the same thing and cannot import it: the production image carries
- * `dist/apps/api` bundled, not `apps/api/src` as source, so nothing under
- * `apps/api/src` is reachable from a script that runs under `tsx`.
- *
- * The alternative was to re-implement it in the script. That is the shape this
- * project keeps meeting from the other side - **two ways of doing one thing, and
- * a fix applied to one of them.** The day somebody starts hashing the token at
- * rest, or shortens the expiry, or stops invalidating the previous one, only one
- * caller would learn about it, and the other would keep working until it
- * silently did not.
- *
- * The store is typed structurally rather than as a Prisma client, so this module
- * imports nothing from `@prisma/client` and can be handed the core client, a
- * transaction client, or a fake.
+ * Defines a structurally typed store interface for verification tokens.
+ * This abstraction allows token issuance to be reused across different execution
+ * contexts (e.g., the main API runtime and standalone bootstrap scripts) without
+ * coupling to a specific Prisma client instance.
  */
 export type VerificationTokenStore = {
   verificationToken: {
@@ -40,11 +27,8 @@ export const verificationTokenExpiryHours = (type: VerificationTokenType): numbe
     : EMAIL_TOKEN_EXPIRY_HOURS;
 
 /**
- * Invalidates every unused token of the same type, then issues one.
- *
- * The invalidation is not tidiness. Two live tokens of one type means a link a
- * person was told to ignore still works, and it is the reason a mis-aimed test
- * run could not leave a usable second token behind.
+ * Invalidates all existing unused tokens of the specified type for the given user,
+ * then issues and returns a new verification token.
  */
 export async function issueVerificationToken(
   store: VerificationTokenStore,

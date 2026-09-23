@@ -2,22 +2,11 @@ export * from './lesson-content';
 export * from './lesson-media';
 
 /**
- * Two thresholds, two meanings, decided by Visquis on 18 September 2026.
+ * Passing thresholds for different assessment types.
  *
- * The certification document governs what is promised to the candidate, so the
- * EXAM threshold is that promise and it went from 75 to 80. The module quizzes
- * stay at 70 because they are drilling, and drilling is allowed to be easier
- * than the examination it prepares for.
- *
- * They are deliberately not one constant. The day somebody decides the quizzes
- * should also be 80, that is a decision to record here - not a tidy-up that
- * collapses two different promises into one number.
- *
- * `KbsExam.passingScore` is stamped from `EXAM_PASSING_SCORE` at schedule time
- * and `gradeExam` judges on the stored column, never on this constant. So a
- * change here governs exams scheduled from now on and moves no past verdict.
- * Pinned in `libs/common/src/__test__/constants/kbs-passing-scores.spec.ts`,
- * which is the first test either constant has ever had.
+ * Note: `EXAM_PASSING_SCORE` applies to newly scheduled exams. The grading logic
+ * relies on the snapshot `passingScore` stored on the exam record itself,
+ * ensuring past results remain unaffected by future threshold changes.
  */
 export const MODULE_PASSING_SCORE = 70 as const;
 export const EXAM_PASSING_SCORE = 80 as const;
@@ -25,19 +14,9 @@ export const DEFAULT_EXAM_QUESTION_COUNT = 20 as const;
 export const DEFAULT_QUIZ_QUESTION_COUNT = 10 as const;
 
 /**
- * One status, one meaning.
- *
- * `CERTIFIED` used to be set by grading, so a candidate was certified the moment
- * they passed - before any certificate existed, and before any human had stood
- * behind it. `GET /kbs/certificate/me` answered `{"data":null}` to somebody the
- * API called certified, and `isCertified()` already carried a patch for it:
- * "if no certificate has been issued yet the status alone is not enough".
- * A status that needs a second check to be believed is not a status.
- *
- * `EXAM_PASSED` is what passing an exam earns. `CERTIFIED` is what issuing a
- * certificate confers. Issuance stays a deliberate admin act - the model has an
- * `issuedBy` column and a revoke path with a mandatory reason, which is what a
- * document somebody stands behind looks like.
+ * Represents the lifecycle stages of a candidate.
+ * Note: `CERTIFIED` requires an explicit administrative action to issue a certificate,
+ * whereas `EXAM_PASSED` is granted automatically upon successful grading.
  */
 export const enum CandidateStatus {
   CANDIDATE = 'CANDIDATE',
@@ -51,8 +30,7 @@ export const STATUS_TRANSITIONS: Record<string, string[]> = {
   [CandidateStatus.CANDIDATE]: [CandidateStatus.IN_TRAINING],
   [CandidateStatus.IN_TRAINING]: [CandidateStatus.EXAM_PENDING],
   [CandidateStatus.EXAM_PENDING]: [CandidateStatus.EXAM_PASSED, CandidateStatus.FAILED],
-  // I15 - nothing: CERTIFIED is reached only by issuing the certificate
-  // (`KbsCertificatesService.issueCertificate`), never by a status change.
+  // CERTIFIED is reached only via explicit certificate issuance, not via a generic status transition.
   [CandidateStatus.EXAM_PASSED]: [],
   [CandidateStatus.FAILED]: [CandidateStatus.EXAM_PENDING],
   [CandidateStatus.CERTIFIED]: [],

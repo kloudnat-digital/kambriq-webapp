@@ -2036,3 +2036,105 @@ The four states, and what each demands of you:
 
 And every entry states its cost impact. `None` is a valid answer and must be
 written down — a resource with no stated cost is not finished.
+
+### A config file can make every type in a project a lie
+
+`tsconfig.base.json` sets neither `strict` nor `strictNullChecks`. `apps/web`
+and `libs/common` each set it locally; `apps/api` did not, so the entire API
+compiled with them off. Every `T | undefined` collapsed to `T`, and every
+optional property was dereferenceable without a check.
+
+What that looked like: `dto.bio.length` typechecked on a DTO whose Zod schema
+declares `bio: z.string().max(2000).optional()`. The compiler agreed that a
+field the request body need not carry was always present - for every request
+body the API accepts.
+
+Turning it on cost **one** error across the whole shipped tree, in
+`queue-health.service.ts`, and it was real: `'failed' in r` narrowed nothing,
+because TypeScript had widened both branches of the union to carry each other's
+keys as `undefined`. So the setting had been absent for no measured reason.
+
+This is the "a type that lies" entry arriving through configuration rather than
+through an annotation, and it is worse in that form: an annotation is visible at
+the call site, and a compiler flag is visible nowhere. **Check what the compiler
+is actually being asked to check before trusting what it accepts.**
+`api-compiles-strict.spec.ts` pins it, because removing the line resolves any
+strict error and nothing else would report it.
+
+### `pnpm run lint` does not lint the repository
+
+It is `nx run-many -t lint --all`, which covers the **six nx projects**. The
+root `prisma/` directory belongs to none of them, so nothing under it is ever
+linted by that command: not `seed.ts`, not `bootstrap-admins.ts`, not the KCA1
+loaders.
+
+`lint-staged` does reach them, because it runs eslint on staged paths from the
+repository root. So a rule can pass `pnpm run lint` and fail the pre-commit
+hook, which is how a `no-console` rule added in `A19`'s own shape came to break
+seven command-line scripts after a clean lint run.
+
+**Two scopes, and the script name names neither.** When adding or widening an
+eslint rule, check it against both: `nx run-many -t lint --all` and an eslint
+run from the root over the paths the hook would stage. And when a gate gains an
+exemption, prove it still refuses what it is for - this one was re-checked by
+reintroducing a `console.log` into a web component and watching it fail while
+`prisma/` stayed clean.
+
+A related trap sits next to it: a bare `npx eslint .` reports **138 000**
+problems, because the root config ignores only `**/dist` and `**/out-tsc`, and
+`apps/web/.next/` is neither. That number is build output and says nothing
+about the source.
+
+### An upsert key that differs from the key everything else uses
+
+`prisma/seed.ts` upserts users on **email** and every other module keys on the
+**id**. An account already at a seeded address keeps its own id, the seed's
+`IDS.USER_*` constant is never written, and KBS candidates, KAMNET agents and
+land reservations carry that id as a plain string in **separate databases**
+where no foreign key can refuse a dangling one.
+
+It surfaced as a bare `UserProfile_userId_fkey` violation, and that was the
+lucky case: core is the one module with a foreign key to catch it. Keyed the
+same way as the rest, the seed would have completed and attached three modules'
+fixtures to a user id that does not exist.
+
+The precondition now throws before anything is written, naming each account.
+**When two writers key the same row differently, one of them is writing
+somewhere the other cannot see** - and across databases, nothing tells you.
+
+### A test can depend on typing cadence without saying so
+
+`contact-form.spec.tsx` failed once in ten runs. The symptom was `toHaveFocus`
+pointing at the **email** input, which carried `aria-invalid="true"`: the
+240-character message typed one keystroke at a time had not finished, the email
+was validated partial and invalid, and react-hook-form correctly focused the
+first invalid field.
+
+**Raising the timeout would have been the wrong repair** and would have looked
+like the right one: the slow run would finish and the focus assertion would
+still fail, at a higher number. The cause was cost, so the cost went - `delay:
+null` and a paste instead of 240 keystrokes. Alone that saved 0.2 s; under the
+four-project run it was the difference between six timeouts and none.
+
+Two things beside it, both measured:
+
+- **the first measurement was invalid and said so**. Ten runs failed ten times,
+  on an Nx native binding error from a Node switch, not on the spec. A run that
+  fails for a reason you introduced is not evidence about the code.
+- **`nx run-many` oversubscribes the machine**: three projects in parallel, each
+  with jest's default worker count. `--parallel=1` measured _faster_ (55 s, 55 s,
+  49 s against 63 s) and deterministic, so `test` and `test:cov` now carry it.
+  Parallelism that thrashes is slower than none.
+
+## 9. Code Comments and Documentation Tone
+
+**The goal is strict, concise, and professional technical documentation.**
+
+When writing or rewriting comments across the codebase, adhere to these rules:
+
+1. **Be Technical and Direct**: Focus strictly on the technical behavior, domain logic, constraints, and intent. Explain _what_ the code does and _why_ it does it technically.
+2. **Remove Fluff and History**: Never write conversational stories, personal anecdotes, or lengthy histories about _how_ a bug was discovered or _which_ developer made a decision (e.g., "Visquis arbitrated this in September", "Due to a bug in Next.js...", "This is here because we used to...").
+3. **Keep it Concise**: Distill long-winded paragraphs into succinct summaries. If it can be said in one sentence, don't use three.
+4. **Professional English and Punctuation**: Write in good, formal English. Use standard punctuation marks and formatting. Avoid emotional language, complaints, or casual asides.
+5. **No Useless Comments**: Skip commenting if the code is self-explanatory (e.g., simple DTOs). Do not add noise. Add comments only where they clarify complex logic, business rules, or non-obvious architecture.
+6. **Use Correct Tools**: Use `///` for Prisma schemas, `/** */` for JSDoc/TSDoc on classes/functions, and `//` for inline logic explanations.

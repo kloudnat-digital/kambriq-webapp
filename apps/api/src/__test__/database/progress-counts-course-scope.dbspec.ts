@@ -4,13 +4,21 @@ import { Test } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bullmq';
 import { I18nService } from 'nestjs-i18n';
 import { QUEUES } from '@kambriq/common/constants/queue';
+import { EmailService, StorageService } from '@kambriq/common';
 import { KbsExamService } from '../../kbs/exam/exam.service';
+import { KbsCandidatesService } from '../../kbs/candidates/candidates.service';
 import { KbsPrismaService } from '../../kbs/prisma/kbs-prisma.service';
+import { CorePrismaService } from '../../core/prisma/core-prisma.service';
 import { UsersService } from '../../core/users/users.service';
 import { openKbsTestDatabase, type KbsTestDatabase } from './kbs-test-db';
 
 /**
- * Eligibility counts the modules of the ACTIVE course, on both sides.
+ * Every progress ratio counts the modules of the active course, on both sides.
+ *
+ * Two readers ask the same question and are pinned here against one fixture:
+ * `KbsExamService.checkEligibility`, which decides whether a candidate may sit
+ * the exam, and `KbsCandidatesService.getMyProfile`, which `GET /kbs/me`
+ * returns to the candidate's dashboard.
  *
  * I36 scoped the exam DRAW to the active course and named this line as the one
  * left unfixed beside it. The KCA1 switch is what made it bite: on dev the
@@ -36,7 +44,7 @@ import { openKbsTestDatabase, type KbsTestDatabase } from './kbs-test-db';
  * TWO COURSES COEXIST HERE ON PURPOSE, with DIFFERENT module counts, so neither
  * assertion can pass by the two numbers happening to be equal.
  */
-describe('eligibility counts the active course only', () => {
+describe('progress is counted against the active course only', () => {
   const ACTIVE_MODULES = 4;
   const OTHER_MODULES = 2;
   const EXAM_POOL = 20;
@@ -44,6 +52,7 @@ describe('eligibility counts the active course only', () => {
   let db: KbsTestDatabase;
   let prisma: KbsPrismaService;
   let service: KbsExamService;
+  let candidates: KbsCandidatesService;
 
   const finisherUserId = randomUUID();
   const halfFinisherUserId = randomUUID();
@@ -57,13 +66,18 @@ describe('eligibility counts the active course only', () => {
     const module = await Test.createTestingModule({
       providers: [
         KbsExamService,
+        KbsCandidatesService,
         { provide: KbsPrismaService, useValue: prisma },
         { provide: getQueueToken(QUEUES.KBS), useValue: { add: jest.fn() } },
         { provide: I18nService, useValue: { translate: (key: string) => key } },
-        { provide: UsersService, useValue: {} },
+        { provide: UsersService, useValue: { addRole: jest.fn() } },
+        { provide: CorePrismaService, useValue: {} },
+        { provide: StorageService, useValue: {} },
+        { provide: EmailService, useValue: { send: jest.fn() } },
       ],
     }).compile();
     service = module.get(KbsExamService);
+    candidates = module.get(KbsCandidatesService);
 
     await prisma.$executeRawUnsafe(
       `TRUNCATE "KbsExamAnswerSelection", "KbsExamAnswer", "KbsExam", "KbsExamQuestionAnswer",
@@ -183,5 +197,48 @@ describe('eligibility counts the active course only', () => {
 
     expect(eligibility.eligible).toBe(false);
     expect(eligibility.reason).toBe('kbs.exam.trainingIncomplete');
+  });
+
+  /**
+   * `GET /kbs/me` - the progress the candidate reads.
+   *
+   * The same two candidates discriminate in both directions, so the fixture is
+   * reused. `overallProgress` is asserted whole: a compound `toEqual` reports
+   * every field that moved, where separate expectations stop at the first.
+   */
+  describe('the profile the candidate reads', () => {
+    /** The denominator: unscoped, this candidate reads 4 of 6 rather than 4 of 4. */
+    it('reports a finished active course as finished', async () => {
+      const profile = await candidates.getMyProfile(finisherUserId);
+
+      expect(profile.overallProgress).toEqual({
+        completed: ACTIVE_MODULES,
+        total: ACTIVE_MODULES,
+        percent: 100,
+      });
+    });
+
+    /**
+     * The numerator, and the half fix specifically: scoping the denominator
+     * alone makes this candidate read 4 of 4 having passed half the course.
+     */
+    it('does not count modules passed in another course', async () => {
+      const profile = await candidates.getMyProfile(halfFinisherUserId);
+
+      expect(profile.overallProgress).toEqual({
+        completed: 2,
+        total: ACTIVE_MODULES,
+        percent: 50,
+      });
+    });
+
+    /** The module list uses the same filter, so it cannot drift from the ratio. */
+    it('lists the active course modules and no others', async () => {
+      const profile = await candidates.getMyProfile(halfFinisherUserId);
+
+      expect(profile.modules.map((m) => m.moduleId).sort()).toEqual(
+        activeModuleIds.slice(0, 2).sort(),
+      );
+    });
   });
 });

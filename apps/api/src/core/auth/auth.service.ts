@@ -67,13 +67,8 @@ export class AuthService {
     }
 
     /**
-     * I19 - the role is looked up BEFORE anything is created, and its absence
-     * stops registration.
-     *
-     * This used to create the user first and skip the assignment when the row
-     * was missing: the account existed, the verification email went out, the
-     * token carried no role, and the log said "User registered". A missing
-     * CLIENT row is a broken database, not a user to create quietly.
+     * Verify the default client role exists before creating the user.
+     * A missing CLIENT role indicates a malformed database and halts registration.
      */
     const clientRole = await this.prisma.role.findUnique({
       where: { code: RoleCode.CLIENT },
@@ -183,12 +178,8 @@ export class AuthService {
     }
 
     /**
-     * A bootstrapped account exists before anybody has chosen a password.
-     *
-     * The message stays the generic one on purpose - "this account has no
-     * password" is an account-enumeration oracle, and the route is public. The
-     * log line is where the distinction lives, so the case is visible to us
-     * without being visible to a caller.
+     * Handle accounts created without passwords.
+     * Use a generic error message to prevent account enumeration, but log the specific case.
      */
     if (!user.passwordHash) {
       this.logger.log('Login refused: no password has ever been set on this account %o', {
@@ -261,9 +252,7 @@ export class AuthService {
       throw new InvalidRefreshTokenException(this.t('auth.token.invalidRefresh'));
     }
 
-    // The other direction of the same hole: an access token must not mint a new
-    // pair. A token issued before this claim existed carries no type and is
-    // refused, which signs every session out once on deploy.
+    // Validate token type to ensure access tokens cannot be used to mint new pairs.
     if (claims.type !== 'refresh') {
       throw new InvalidRefreshTokenException(this.t('auth.token.invalidRefresh'));
     }
@@ -295,9 +284,8 @@ export class AuthService {
 
     const roles = storedToken.user.userRoles.map((ur) => ur.role.code);
 
-    // Infer "remember me" from the original token's duration.
-    // Short tokens (24h) were session-only; long tokens (30d) were remembered.
-    // 2 days is a safe threshold - well above 24h, well below 30d.
+    // Infer the "remember me" flag from the original token's duration.
+    // A threshold of 2 days differentiates session tokens (24h) from persistent tokens (e.g. 30d).
     const durationMs = storedToken.expiresAt.getTime() - storedToken.createdAt.getTime();
     const wasRemembered = durationMs > 2 * 86_400_000;
 
@@ -322,8 +310,7 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
 
-    // The refresh-token hash is an authentication artefact and is deliberately
-    // not logged; the userId is enough to trace a logout.
+    // Log the logout action using the userId; avoid logging the authentication token hash.
     this.logger.log('User logged out');
   }
 
@@ -458,18 +445,8 @@ export class AuthService {
     const passwordHash = await hashPassword(newPassword);
 
     /**
-     * Consuming this token proves control of the mailbox, so the address is
-     * verified.
-     *
-     * A client invited by a land reservation received a set-password link,
-     * used it, got a 204 — and could not log in, because `emailVerified` was
-     * still false and login refuses an unverified address. They had proved
-     * ownership of that mailbox by the only means the system has, and were told
-     * to go and prove it again with a link they were never sent.
-     *
-     * It is the same evidence `verify-email` accepts: a secret delivered to that
-     * address and returned. Requiring it twice is not extra safety, it is a dead
-     * end — and the dead end was silent, because every step before it succeeded.
+     * Set emailVerified to true on password reset.
+     * Consuming a password reset token proves control of the mailbox.
      */
     await this.prisma.$transaction([
       this.prisma.user.update({
@@ -577,14 +554,12 @@ export class AuthService {
 
     const accessExpiration = this.config.get<StringValue>('JWT_ACCESS_EXPIRATION', '15m');
 
-    // rememberMe: true  → long-lived token from config (e.g. 30d), persistent cookie
-    // rememberMe: false → short-lived (24h), session cookie deleted when browser closes
+    // Remembered sessions use a long-lived expiration; otherwise, default to 24h.
     const refreshExpiration: StringValue = rememberMe
       ? this.config.get<StringValue>('JWT_REFRESH_EXPIRATION', '30d')
       : '24h';
 
-    // The two differ by their `type` claim and by nothing else, which is what
-    // stops a refresh token being presented as a bearer token.
+    // Differentiate token types via the `type` claim to prevent misuse of refresh tokens.
     const accessToken = this.jwtService.sign({ ...payload, type: 'access' } satisfies JwtPayload, {
       expiresIn: accessExpiration,
     });
@@ -637,14 +612,8 @@ export class AuthService {
   }
 
   /**
-   * Delegates to `issueVerificationToken` in `libs/common`.
-   *
-   * The body used to live here. `prisma/bootstrap-admins.ts` needs to issue the
-   * same token and cannot import anything under `apps/api/src` - the production
-   * image carries `dist/apps/api` bundled, not this tree as source. Rather than
-   * a second implementation in the script, there is one implementation and two
-   * callers. **Two ways of minting one token is how the two drift**, and the
-   * drift would be invisible until a link stopped working.
+   * Delegates token creation to `issueVerificationToken` in `libs/common`
+   * to ensure consistency across the API and admin bootstrapping scripts.
    */
   private async createVerificationToken(
     userId: string,

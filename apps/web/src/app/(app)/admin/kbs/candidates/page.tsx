@@ -16,11 +16,8 @@ export default async function AdminKbsCandidatesPage({ searchParams }: Props) {
   const sp = await searchParams;
 
   /**
-   * I39 - the backlog is read alongside the list, not instead of it.
-   *
-   * This is the screen an administrator already lands on: `/admin/kbs` is a
-   * bare redirect here. Putting the count and the age at the top is what turns
-   * an activation control that already existed into one somebody knows to use.
+   * Fetches pending candidates alongside the main candidate list.
+   * This provides immediate visibility into the backlog upon navigation.
    */
   const [res, pending] = await Promise.all([
     adminGetCandidates({

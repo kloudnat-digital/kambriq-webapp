@@ -26,8 +26,7 @@ export interface EmailJobPayload {
  *  })
  */
 /**
- * What `sendUpdate` did. A caller that ignores this is choosing to, which is
- * different from not being told.
+ * Indicates the result of sending an update email.
  */
 export type EmailOutcome =
   | { status: 'queued' }
@@ -40,16 +39,8 @@ export class EmailService {
   constructor(@InjectQueue(QUEUES.NOTIFICATIONS) private readonly notifQueue: Queue) {}
 
   /**
-   * An interpolation argument that stringifies to `[object Promise]` or
-   * `[object Object]` is always a defect, never content. It is what a missing
-   * `await` looks like by the time it reaches a template: the send succeeds,
-   * SES delivers, the user receives the mail, and the link in it is dead. That
-   * failure is invisible from every side except the recipient's.
-   *
-   * `${await f()}` and `${f()}` differ by five characters and nothing in the
-   * type system separates them - both produce a `string`. So the check is here,
-   * at the one place every template argument passes through, and it throws
-   * rather than warns: an auth email with a dead link is worse than no email.
+   * Validates that no interpolation arguments are unresolved Promises or objects.
+   * Prevents emails from sending with improperly stringified values like "[object Promise]".
    */
   private assertNoUnresolvedArgs(payload: EmailJobPayload): void {
     for (const [key, value] of Object.entries(payload.args)) {
@@ -63,18 +54,8 @@ export class EmailService {
   }
 
   /**
-   * A field called `…Name` must not carry an identifier.
-   *
-   * `clientPortalAccess` was sent with `agentName: agentUserId` and the comment
-   * "will be enriched in the controller". It never was, so clients received
-   * **"Votre agent KAMNET : 00000000-0000-4000-8000-b00000000005"** — a UUID
-   * where a person's name belongs. A leak and an embarrassment in one line.
-   *
-   * The check lives here for the same reason the `[object …]` one does: this is
-   * the single place every template argument passes through, so it covers
-   * templates nobody has written yet. It is deliberately narrow — only fields
-   * whose name ends in `Name`, only values shaped like a UUID. No human is
-   * called `00000000-0000-4000-8000-b00000000005`.
+   * Validates that fields ending in `Name` do not contain UUIDs.
+   * Prevents the accidental exposure of internal identifiers to users.
    */
   private assertNoIdentifiersInNames(payload: EmailJobPayload): void {
     const UUID_SHAPED = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -110,28 +91,10 @@ export class EmailService {
   }
 
   /**
-   * Sends an informational update, honouring the recipient's opt-out - and
-   * telling the caller which of the two things it did.
+   * Sends an informational update email, honoring the recipient's opt-out preferences.
+   * Returns an EmailOutcome indicating whether the email was queued or suppressed.
    *
-   * **Two defects were here, and the second is the one that mattered.**
-   *
-   * The preference itself is legitimate. The signature was not: this returned
-   * the same `Promise<void>` whether it queued a message or dropped it, logged
-   * the drop at `debug`, and `UserProfile.emailNotifications` **defaults to
-   * `false`** - so the skip was the normal path and no caller could tell. On dev
-   * every one of the 70 users that has a profile row has it `false`, and the log
-   * carries real suppressions of `examPassed`, `certificateIssued`,
-   * `reservationCreated` and `reservationCancelled`.
-   *
-   * Now it returns an `EmailOutcome`, so a suppression is a value the caller
-   * receives rather than a silence it cannot distinguish from a send.
-   *
-   * And it **throws** on a transactional template. The old docstring said
-   * *"NEVER use this for auth, security, compliance or onboarding emails"* and
-   * twelve of the fifteen messages routed through it did exactly that, because
-   * a comment refuses nothing. `SUPPRESSIBLE_TEMPLATES` is an allow-list, so a
-   * template nobody classified is transactional and cannot be suppressed by
-   * accident.
+   * Throws an error if used with transactional templates, which should never be suppressed.
    */
   async sendUpdate(
     payload: EmailJobPayload,

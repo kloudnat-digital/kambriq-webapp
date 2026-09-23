@@ -31,22 +31,9 @@ export const buildPaginationMeta = (total: number, page: number, limit: number):
 };
 
 /**
- * `T` may not be a Promise.
- *
- * `buildPaginatedResponse<T>(data: T[])` accepted anything, so a list of
- * unawaited Promises bound `T = Promise<UserResponse>` and compiled cleanly.
- * `GET /users` then served `{"success":true,"data":[{},{},{}],"meta":{"total":14}}`
- * — 200, correct envelope, correct pagination, no data, because
- * `JSON.stringify` renders a Promise as `{}`.
- *
- * The type system had every opportunity and inferred its way past it: an
- * unconstrained generic will happily be a Promise. This constraint closes that
- * at **every paginated endpoint at once**, which is where lists live and where
- * this class of defect surfaces, and it fails in `tsc` rather than in a test —
- * so it is caught before the code runs at all.
- *
- * It is the same shape of fix as banning bare role-code literals: make the
- * wrong thing unwriteable rather than correcting one instance of it.
+ * Constraint type that prevents `T` from being a Promise.
+ * Ensures paginated endpoints do not accidentally return unawaited Promises,
+ * which serialize to empty objects in JSON responses.
  */
 type NotPromise<T> = T extends Promise<unknown> ? never : T;
 

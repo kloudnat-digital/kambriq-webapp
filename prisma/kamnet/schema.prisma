@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client"
   output   = "../../libs/common/src/prisma/kamnet-client"
@@ -8,24 +7,28 @@ datasource db {
   provider = "postgresql"
 }
 
+/// Represents the classification tier of a KAMNET agent.
 enum KamnetAgentTier {
   JUNIOR
   CONFIRMED
   MANAGER
 }
 
+/// The approval status of a KAMNET application.
 enum KamnetApplicationStatus {
   PENDING
   APPROVED
   REJECTED
 }
 
+/// The lifecycle status of a commission.
 enum KamnetCommissionStatus {
   PENDING
   VALIDATED
   PAID
 }
 
+/// The acquisition source of a KAMNET lead.
 enum KamnetLeadSource {
   SOCIAL_MEDIA
   REFERRAL
@@ -33,6 +36,7 @@ enum KamnetLeadSource {
   OTHER
 }
 
+/// The current stage of a KAMNET lead in the sales pipeline.
 enum KamnetLeadStatus {
   NEW
   CONTACTED
@@ -41,6 +45,7 @@ enum KamnetLeadStatus {
   LOST
 }
 
+/// The processing status of a KAMNET reservation.
 enum KamnetReservationStatus {
   PENDING
   CONFIRMED
@@ -48,23 +53,27 @@ enum KamnetReservationStatus {
   CANCELLED
 }
 
-// ----- KAMNET Module ----- //
-/**
-* Agent created when an admin approves a KAMNET application
-* userId links to Core.User
-* Sponsorship is a self-referencing tree (parent <-> children)
-*/
+/// KAMNET module for agent, commission, and lead management.
+
+/// Represents an active KAMNET agent.
+/// This record is created upon approval of a KamnetApplication.
+/// Agents form a self-referencing hierarchy through sponsorship.
 model KamnetAgent {
   id            String            @id @default(uuid())
   userId        String            @unique
-  kcaNumber     String            // KCA certificate from KBS
-  agentCode     String            @unique // Unique public agent code (e.g. AGT-2025-0001)
+  /// The KCA certificate identifier from the KBS module.
+  kcaNumber     String
+  /// Unique public identifier for the agent (e.g., AGT-2025-0001).
+  agentCode     String            @unique
+  /// Optional biographical information about the agent.
   bio           String?
+  /// The current performance tier of the agent.
   tier        KamnetAgentTier @default(JUNIOR)
-  salesCount    Int               @default(0) // Total number of successful sales (for ranking and rewards)
+  /// The total number of successful sales, used for ranking and reward calculations.
+  salesCount    Int               @default(0)
 
-  // Sponsorship tree
-  sponsorId    String?   // References the sponsoring agent (nullable for top-level agents)
+  /// The ID of the sponsoring agent. Nullable for top-level agents.
+  sponsorId    String?
   sponsor      KamnetAgent?    @relation("SponsorshipTree", fields: [sponsorId], references: [id])
   referrals    KamnetAgent[]   @relation("SponsorshipTree")
 
@@ -74,7 +83,6 @@ model KamnetAgent {
   suspendedAt   DateTime?
   suspendedBy    String?
 
-  // Relations
   commissions  KamnetCommission[]
   leads        KamnetLead[]
 
@@ -82,21 +90,25 @@ model KamnetAgent {
   @@index([sponsorId])
 }
 
-// ----- KAMNET Application ----- //
-/**
-* A KCA certified user submits this to join KAMNET.
-* Admin approves -> KAMNET record is created.
-*/
+/// Represents an application submitted by a KCA certified user to join KAMNET.
+/// Approved applications result in the creation of a KamnetAgent record.
 model KamnetApplication {
   id          String                  @id @default(uuid())
   userId      String
-  kcaNumber   String                  // Must match a valid KBS certificate
-  sponsorCode String?                 // agent code of sponsor (optional)
-  motivation  String?                 // Why they want to join KAMNET
+  /// The applicant's KBS certificate identifier.
+  kcaNumber   String
+  /// The agent code of the sponsor, if applicable.
+  sponsorCode String?
+  /// The applicant's stated motivation for joining KAMNET.
+  motivation  String?
+  /// The current status of the application.
   status      KamnetApplicationStatus @default(PENDING)
-  reviewedBy  String?                 // admin userId who reviewed the application
-  reviewNote  String?                 // optional admin note from the reviewer (especially if rejected)
-  reviewedAt  DateTime?               // when the application was reviewed
+  /// The ID of the administrator who reviewed the application.
+  reviewedBy  String?
+  /// Additional notes provided by the reviewer, typically used for rejections.
+  reviewNote  String?
+  /// The timestamp when the review was completed.
+  reviewedAt  DateTime?
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt
 
@@ -104,21 +116,23 @@ model KamnetApplication {
   @@index([status])
 }
 
-// ----- Commission Trace ----- //
-/**
-* Stores comission records per sale.
-* In MVP, these are created manually by admins.
-* Auto calculation comes in V2
-*/
+/// Tracks commission records for sales.
+/// Initially managed manually by administrators, with automated calculation planned for future iterations.
 model KamnetCommission {
   id            String                  @id @default(uuid())
   agentId       String
-  landId        String                  // Reference to LANDS module
-  reservationId String                  // Reference to reservation that triggered the sale
-  level         Int                     @default(0) // 0 = DA (Direct Agent), 1 = N1, 2 = N2, 3 = N3
-  pv            Float                   // Point Valeur (product value coefficient, 02 - 1.2)
-  tpc           Float                   // Taux Part Commission (commission rate, e.g. 0.05 = 5%)
-  amount        Float                   // Calculated commission amount in XAF
+  /// The external reference to the property in the LANDS module.
+  landId        String
+  /// The external reference to the reservation that triggered the commission.
+  reservationId String
+  /// The hierarchical level of the agent receiving the commission (e.g., 0 for Direct Agent, 1 for N1).
+  level         Int                     @default(0)
+  /// The product value coefficient (Point Valeur).
+  pv            Float
+  /// The commission rate applied (Taux Part Commission).
+  tpc           Float
+  /// The calculated commission amount in the local currency (XAF).
+  amount        Float
   status        KamnetCommissionStatus  @default(PENDING)
   paidAt        DateTime?
   createdAt     DateTime                @default(now())
@@ -130,10 +144,7 @@ model KamnetCommission {
   @@index([status])
 }
 
-// ----- Lead Tracking ----- //
-/**
-* Agents track their prospects before a reservation is made.
-*/
+/// Represents a prospective client tracked by a KAMNET agent prior to a formal reservation.
 model KamnetLead {
   id          String                  @id @default(uuid())
   agentId     String

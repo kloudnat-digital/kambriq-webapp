@@ -7,18 +7,14 @@ export const hashPassword = async (password: string): Promise<string> => {
 };
 
 /**
- * `hash` is nullable because `User.passwordHash` is.
+ * Securely compares a plaintext password against a hash.
  *
- * A bootstrapped account, and a client created by a land reservation, both exist
- * before anybody has chosen a password. No password can match "no password", so
- * this answers `false` - explicitly, at the top, rather than by handing `null`
- * to bcrypt and trusting what it does with it. `bcryptjs.compare` is not
- * documented for a null hash, and "it returned false when I tried it" is a
- * statement about one version of one library.
+ * Safely handles null, undefined, or empty hashes that may occur
+ * on uninitialized or pending accounts, explicitly returning false.
  *
- * The empty string is folded in for the same reason: `passwordHash: ''` was the
- * old sentinel for "must reset", and any row written before the column became
- * nullable still carries it.
+ * @param password - The plaintext password to evaluate.
+ * @param hash - The bcrypt hash to verify against.
+ * @returns A boolean indicating whether the password matches the hash.
  */
 export const comparePassword = async (
   password: string,

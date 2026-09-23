@@ -1,15 +1,10 @@
 /**
- * KBS question bank — real content, not filler.
+ * KBS question bank containing real domain content.
  *
- * Two properties matter beyond the text itself:
- *
- * 1. The correct answer is NOT always in the same position. An earlier draft had
- *    `isCorrect: index === 0` throughout, which meant a candidate picking the
- *    first option always certified, and a grading bug that always marked the
- *    first option correct would have been undetectable by any test written
- *    against this data. `correct` is an explicit index per question.
- * 2. Distractors are plausible rather than obviously wrong, so a tester
- *    reviewing the platform is judging KBS, not judging filler.
+ * Requirements:
+ * 1. The correct answer index must vary per question to prevent trivial test passes
+ *    and to properly validate grading logic.
+ * 2. Distractor options must be plausible to ensure accurate testing of the platform.
  */
 
 export type SeedQuestion = {
@@ -1223,25 +1218,14 @@ export const MODULE_2_EXAM: SeedQuestion[] = [
 ];
 
 /**
- * Deterministic placement of the correct answer.
+ * Deterministically places the correct answer position.
  *
- * The authored data always lists answers in a fixed order with `correct` naming
- * the right one. The seed rotates that array so the correct answer lands at a
- * position derived from the question's global index, never from Math.random():
- * the seed must be reproducible, and a random position would make two runs
- * differ.
+ * Reorders the authored array to place the correct answer according to an
+ * 8-element repeating cycle derived from the global question index.
+ * This guarantees seed reproducibility (no random values) while distributing
+ * correct answers evenly across all four positions (0-3).
  *
- * An earlier draft used `isCorrect: index === 0` for every question, which made
- * the seed unable to detect the bug it exists to detect: a grader that always
- * marks the first option correct would have passed every test written against
- * that data. A test that cannot fail is worse than no test.
- *
- * Trade accepted deliberately: a determined tester could learn this pattern.
- * On a dev seed that is worth less than reproducibility, and it is recorded in
- * the register so nobody rediscovers it as a finding.
- *
- * 8-element cycle, each position twice, no two adjacent alike. 120 questions is
- * 15 whole cycles, so the distribution is exactly 30 per position.
+ * Ensures tests can effectively validate grading logic against diverse data.
  */
 export const POSITION_CYCLE = [0, 1, 2, 3, 2, 3, 0, 1] as const;
 

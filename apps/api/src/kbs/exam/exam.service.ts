@@ -176,9 +176,7 @@ export class KbsExamService {
     const settings = await readActiveCourse(this.prisma);
     const questionCount = settings?.examQuestionCount ?? DEFAULT_EXAM_QUESTION_COUNT;
 
-    // I36 - scoped to the active course. Unfiltered, this drew from every exam
-    // question in the database, so a second course meant a candidate could be
-    // examined on a course they never studied.
+    // Scope questions strictly to the active course to ensure candidates are only tested on the material they studied.
     const allQuestions = await this.prisma.kbsExamQuestion.findMany({
       where: { module: { courseId: this.activeCourseIdOrThrow(settings) } },
       include: {
@@ -656,8 +654,7 @@ export class KbsExamService {
     }
 
     const totalQuestions = exam.totalQuestions || exam.examAnswers.length;
-    // I21 - capped as a second barrier. With answers accepted only on served
-    // questions it never fires; a barrier that never fires is the point.
+    // Cap score at 100 as a failsafe against incorrectly accepted answers.
     const score =
       totalQuestions > 0 ? Math.min(100, Math.round((correctCount / totalQuestions) * 100)) : 0;
     const passed = score >= exam.passingScore;
@@ -670,8 +667,7 @@ export class KbsExamService {
       },
     });
 
-    // Passing earns EXAM_PASSED. `certifiedAt` belongs to issuance, not to a
-    // score: it is the date on the document, and there is no document yet.
+    // Update candidate status based on exam outcome. `certifiedAt` is updated during certificate issuance.
     await this.prisma.kbsCandidate.update({
       where: { id: exam.candidateId },
       data: {
