@@ -1209,6 +1209,10 @@ after : computeAccessibleName(trigger) === "Sujet *"
 **Measure the accessible name, do not infer it from the markup.** The DOM had a
 label next to the control the whole time.
 
+**A placeholder is not a name either.** From `P2`: the newsletter's address field
+had a placeholder and no label, and `computeAccessibleName` returned `""`. It
+looked labelled to anybody who can see, which is why it survived.
+
 ### A mutation that cannot fail because the test mocks the thing being mutated
 
 From `L1`, and it is the sharpest thing that chantier found. The server action

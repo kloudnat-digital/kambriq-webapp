@@ -885,3 +885,31 @@ to `sharp`. The full entry, with the proof, is **A40** in
 requested resource isn't a valid image", i.e. fetched) must answer 400 `"url"
 parameter is not allowed`, and a genuine bucket image must still be served.
 Requires `vars.MEDIA_BUCKET_HOST` on the `dev` environment first.
+
+## P2 - the newsletter form, closing wave 1/3
+
+Branched from `origin/develop` at `239d13e` (after #163). Claimed as draft
+**#164** before any code was written; no open PR overlapped.
+
+The remainder named in P2's note, **the newsletter form had none of the
+contact form's discipline**, was checked against the code and held. The
+address field's accessible name measured `""`.
+
+It now has the contact form's shape:
+
+- a resolver with catalogue keys;
+- visible errors tied to their field;
+- an explicit consent box with its privacy and RGPD links;
+- a server that refuses without a literal `true` consent, at the DTO and again
+  in the service;
+- a consent time from the server's clock, stored with the policy path and
+  locale on the SES contact;
+- fr and en in lockstep.
+
+The address field's accessible name is now `"Adresse email"`.
+
+Red first, then eighteen mutations, each observed failing on its own. Detail
+under **P2** in `docs/ops/registre-chantiers.md`.
+
+**Pending:** a real subscription through the form on dev after the merge, with
+the SES contact's attributes read back.

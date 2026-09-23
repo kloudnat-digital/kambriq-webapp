@@ -12,7 +12,11 @@ jest.mock('@aws-sdk/client-sesv2', () => ({
 }));
 
 import { SESv2Client, CreateContactCommand } from '@aws-sdk/client-sesv2';
-import { NewsletterService } from '../../newsletter/newsletter.service';
+import {
+  NewsletterConsentRequiredError,
+  NewsletterService,
+  type SubscribeNewsletterInput,
+} from '../../newsletter/newsletter.service';
 
 const SESv2ClientMock = SESv2Client as unknown as jest.Mock;
 const CreateContactCommandMock = CreateContactCommand as unknown as jest.Mock;
@@ -23,6 +27,22 @@ const makeService = (values: Record<string, string> = {}) =>
   } as unknown as ConfigService);
 
 const named = (name: string, message = name) => Object.assign(new Error(message), { name });
+
+/** A subscription as the controller hands it over. */
+const subscription = (email: string, over: Partial<SubscribeNewsletterInput> = {}) =>
+  ({
+    email,
+    locale: 'fr',
+    consent: true,
+    consentPolicyPath: '/legal/privacy',
+    ...over,
+  }) as SubscribeNewsletterInput;
+
+/** The attributes stored on the SES contact, parsed back from the command. */
+const storedAttributes = () =>
+  JSON.parse(
+    (CreateContactCommandMock.mock.calls[0][0] as { AttributesData: string }).AttributesData,
+  ) as Record<string, unknown>;
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -57,18 +77,20 @@ describe('NewsletterService: subscribe', () => {
   it('adds the contact to the configured list', async () => {
     const service = makeService({ AWS_SES_CONTACT_LIST_NAME: 'kambriq-newsletter' });
 
-    await service.subscribe('alice@example.com');
+    await service.subscribe(subscription('alice@example.com'));
 
-    expect(CreateContactCommandMock).toHaveBeenCalledWith({
-      ContactListName: 'kambriq-newsletter',
-      EmailAddress: 'alice@example.com',
-    });
+    expect(CreateContactCommandMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ContactListName: 'kambriq-newsletter',
+        EmailAddress: 'alice@example.com',
+      }),
+    );
     expect(mockSend).toHaveBeenCalledTimes(1);
   });
 
   it('defaults to the contact list Terraform owns', async () => {
     const service = makeService({});
-    await service.subscribe('bob@example.com');
+    await service.subscribe(subscription('bob@example.com'));
 
     const input = CreateContactCommandMock.mock.calls[0][0] as Record<string, unknown>;
     expect(input['ContactListName']).toBe('kambriq-newsletter');
@@ -78,7 +100,9 @@ describe('NewsletterService: subscribe', () => {
     mockSend.mockRejectedValueOnce(named('AlreadyExistsException'));
     const service = makeService({});
 
-    await expect(service.subscribe('alice@example.com')).rejects.toBeInstanceOf(ConflictException);
+    await expect(service.subscribe(subscription('alice@example.com'))).rejects.toBeInstanceOf(
+      ConflictException,
+    );
   });
 
   // There is deliberately no degraded path. A subscription that cannot be
@@ -90,7 +114,7 @@ describe('NewsletterService: subscribe', () => {
     );
     const service = makeService({});
 
-    await expect(service.subscribe('alice@example.com')).rejects.toThrow(
+    await expect(service.subscribe(subscription('alice@example.com'))).rejects.toThrow(
       'not authorized to perform ses:CreateContact',
     );
   });
@@ -99,6 +123,38 @@ describe('NewsletterService: subscribe', () => {
     mockSend.mockRejectedValueOnce(named('ThrottlingException', 'slow down'));
     const service = makeService({});
 
-    await expect(service.subscribe('alice@example.com')).rejects.toThrow('slow down');
+    await expect(service.subscribe(subscription('alice@example.com'))).rejects.toThrow('slow down');
+  });
+});
+
+describe('NewsletterService: consent (P2)', () => {
+  it('refuses a subscription without consent, and sends nothing to SES', async () => {
+    const service = makeService({});
+
+    await expect(
+      service.subscribe(subscription('alice@example.com', { consent: false as unknown as true })),
+    ).rejects.toBeInstanceOf(NewsletterConsentRequiredError);
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+
+  it("stamps the consent with the server's clock, never a caller's", async () => {
+    jest.useFakeTimers({ now: new Date('2026-09-23T10:15:30.000Z') });
+    try {
+      const service = makeService({});
+      await service.subscribe(subscription('alice@example.com'));
+    } finally {
+      jest.useRealTimers();
+    }
+
+    expect(storedAttributes()['consentGivenAt']).toBe('2026-09-23T10:15:30.000Z');
+  });
+
+  it('stores the policy the consent pointed at, and the language of the page', async () => {
+    const service = makeService({});
+    await service.subscribe(subscription('alice@example.com', { locale: 'en' }));
+
+    expect(storedAttributes()).toEqual(
+      expect.objectContaining({ consentPolicyPath: '/legal/privacy', locale: 'en' }),
+    );
   });
 });

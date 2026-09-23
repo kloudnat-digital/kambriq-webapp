@@ -724,6 +724,7 @@
       "title": "Newsletter",
       "description": "Recevez chaque semaine un éclairage sur le foncier camerounais.",
       "placeholder": "Votre adresse email",
+      "emailLabel": "Adresse email",
       "submit": "S'abonner",
       "consent": {
         "text": "J'accepte que mes données personnelles soient traitées conformément à la",
@@ -741,7 +742,9 @@
       },
       "errors": {
         "title": "Erreur",
-        "alreadySubscribed": "Cette adresse email est déjà inscrite à notre newsletter."
+        "alreadySubscribed": "Cette adresse email est déjà inscrite à notre newsletter.",
+        "submitFailed": "L'inscription n'a pas pu aboutir. Votre adresse est conservée ci-dessus : réessayez dans un instant.",
+        "submitRefused": "L'inscription n'a pas pu aboutir : {reason}"
       }
     },
     "copyright": "KAMBRIQ. Tous droits réservés.",
