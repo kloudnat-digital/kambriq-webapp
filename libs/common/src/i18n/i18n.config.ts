@@ -16,11 +16,7 @@ export class UserLanguageResolver implements I18nResolver {
     // 2. Check 'Accept-Language' header
     const acceptLang = request.headers?.['accept-language'];
     if (acceptLang) {
-      const lang = acceptLang
-        .split(',')[0]
-        ?.split('-')[0]
-        ?.trim()
-        .toLowerCase();
+      const lang = acceptLang.split(',')[0]?.split('-')[0]?.trim().toLowerCase();
       if (SUPPORTED_LANGUAGES.includes(lang as SupportedLanguage)) {
         return lang;
       }

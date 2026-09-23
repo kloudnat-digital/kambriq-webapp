@@ -3,7 +3,6 @@
 import { Globe, MessageCircleQuestionMark } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import type { FC } from 'react';
 import { useState, useTransition } from 'react';
 
 import { setLocale } from '@/lib/actions/locale';
@@ -30,7 +29,7 @@ const WHATSAPP_QUESTIONS = [
   'other',
 ] as const;
 
-const QuickActions: FC = () => {
+function QuickActions() {
   const t = useTranslations('quickActions');
   const router = useRouter();
   const [showDialog, setShowDialog] = useState(false);
@@ -116,6 +115,6 @@ const QuickActions: FC = () => {
       </Dialog>
     </>
   );
-};
+}
 
 export default QuickActions;

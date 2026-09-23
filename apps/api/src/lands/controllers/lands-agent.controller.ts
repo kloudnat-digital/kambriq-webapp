@@ -126,8 +126,8 @@ export class LandsAgentController {
   @Get('reservations/:id')
   @ApiOperation({ summary: 'Get reservation detail' })
   @ApiParam({ name: 'id', description: 'Reservation ID' })
-  async getReservation(@Param('id') id: string) {
-    return this.reservationsService.findOne(id);
+  async getReservation(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return this.reservationsService.findOneForAgent(user.id, id);
   }
 
   @Post('reservations/:id/cancel')

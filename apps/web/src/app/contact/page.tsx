@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 
 import Navbar from '@/components/layout/navbar';
@@ -12,8 +11,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('title'), description: t('description') };
 }
 
-const ContactHero = () => {
-  const t = useTranslations('contact.hero');
+const ContactHero = async () => {
+  const t = await getTranslations('contact.hero');
   return (
     <section className="bg-gradient-to-b from-gray-900 to-gray-800 px-6 py-20 text-white sm:px-8">
       <div className="mx-auto max-w-2xl text-center">

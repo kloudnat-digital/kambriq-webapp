@@ -15,7 +15,13 @@ import {
 } from '../../utils';
 import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import { comparePassword, EmailService, RoleCode, VerificationTokenType } from '@kambriq/common';
+import {
+  comparePassword,
+  EmailService,
+  InvalidRefreshTokenException,
+  RoleCode,
+  VerificationTokenType,
+} from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 import { ConfigService } from '@nestjs/config';
 import { AuthResponse } from '../../../core/auth/dto/auth.dto';
@@ -289,6 +295,28 @@ describe('AuthService', () => {
   // ----- REFRESH TOKENS ----- //
 
   describe('refreshTokens', () => {
+    it('refuses an access token, which is signed with the same secret', async () => {
+      // The other direction of the missing type claim: without it an access
+      // token verifies here and mints a fresh 30-day pair.
+      jwt.verify.mockReturnValue({ sub: 'user-1', email: 'test@test.com', type: 'access' });
+
+      await expect(service.refreshTokens('an-access-token')).rejects.toBeInstanceOf(
+        InvalidRefreshTokenException,
+      );
+      expect(prisma.refreshToken.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('refuses a token minted before the claim existed', async () => {
+      jwt.verify.mockReturnValue({ sub: 'user-1', email: 'test@test.com' });
+
+      await expect(service.refreshTokens('an-old-token')).rejects.toBeInstanceOf(
+        InvalidRefreshTokenException,
+      );
+      // Without this the test also passes under a deny-list that names only
+      // 'access', because an absent type is not 'access' either.
+      expect(prisma.refreshToken.findFirst).not.toHaveBeenCalled();
+    });
+
     it('rotates refresh token and issues new pair', async () => {
       const stored = buildRefreshToken();
       prisma.refreshToken.findFirst.mockResolvedValue(stored);

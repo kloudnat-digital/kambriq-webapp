@@ -1,5 +1,5 @@
 import { Public, RoleCode, Roles } from '@kambriq/common';
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Logger, Param, Query, ServiceUnavailableException } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -23,6 +23,8 @@ import { QueueHealthService } from './queue-health.service';
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
+  private readonly logger = new Logger(HealthController.name);
+
   constructor(
     private health: HealthCheckService,
     private memory: MemoryHealthIndicator,
@@ -108,8 +110,13 @@ export class HealthController {
     try {
       await this.corePrisma.$queryRawUnsafe('SELECT 1');
       return { status: 'ok' };
-    } catch {
-      return { status: 'error' };
+    } catch (error) {
+      // This answered 200 with `{ status: 'error' }`, and both readers are
+      // `curl -f`, which only fails on 4xx and above - so the container health
+      // check and the deploy gate read a database outage as ready. The status
+      // code is the whole signal here; the body is read by nobody.
+      this.logger.error('Readiness check failed: core database unreachable', error);
+      throw new ServiceUnavailableException({ status: 'error' });
     }
   }
 

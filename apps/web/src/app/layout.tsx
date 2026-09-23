@@ -82,8 +82,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} suppressHydrationWarning className={cn(jetbrainsMono.variable, 'h-full')}>
       <head>
-        <link rel="preconnect" href="https://api.fontshare.com" />
+        <link key="fontshare-preconnect" rel="preconnect" href="https://api.fontshare.com" />
         <link
+          key="fontshare-stylesheet"
           rel="stylesheet"
           href="https://api.fontshare.com/css?f%5B%5D=switzer@400,500,600,700,800&display=swap"
         />

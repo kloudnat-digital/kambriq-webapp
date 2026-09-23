@@ -36,9 +36,6 @@ describe('CorrelationIdMiddleware', () => {
     middleware.use(req, res, next);
 
     expect(req.headers[CORRELATION_ID_HEADER]).toBe(existingId);
-    expect(res.setHeader).toHaveBeenCalledWith(
-      CORRELATION_ID_HEADER,
-      existingId,
-    );
+    expect(res.setHeader).toHaveBeenCalledWith(CORRELATION_ID_HEADER, existingId);
   });
 });

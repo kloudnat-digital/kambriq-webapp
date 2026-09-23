@@ -1,4 +1,4 @@
-import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 
 const MILESTONES = [
   { year: '2019', color: 'bg-primary-500' },
@@ -6,8 +6,8 @@ const MILESTONES = [
   { year: '2025', color: 'bg-accent-500' },
 ];
 
-export const AboutTimeline = () => {
-  const t = useTranslations('about.timeline');
+export const AboutTimeline = async () => {
+  const t = await getTranslations('about.timeline');
   return (
     <section className="bg-gray-50 px-6 py-20 sm:px-8">
       <div className="mx-auto max-w-4xl">

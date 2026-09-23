@@ -1,3 +1,5 @@
+'use client';
+
 import { formatBytes } from '@/lib/utils';
 import type { LandMediaFile, MediaFile } from '@/types/lands';
 import { ImageIcon, PlayCircle, UploadCloud, X } from 'lucide-react';

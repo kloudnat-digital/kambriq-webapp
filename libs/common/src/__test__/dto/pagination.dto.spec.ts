@@ -1,7 +1,4 @@
-import {
-  buildPaginatedResponse,
-  buildPaginationMeta,
-} from '../../dto/pagination.dto';
+import { buildPaginatedResponse, buildPaginationMeta } from '../../dto/pagination.dto';
 
 describe('Pagination utilities', () => {
   describe('buildPaginationMeta', () => {

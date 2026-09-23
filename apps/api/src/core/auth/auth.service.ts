@@ -254,9 +254,17 @@ export class AuthService {
 
   // ----- Refresh Token ------------------------------------------
   async refreshTokens(refreshToken: string): Promise<TokenResponse> {
+    let claims: JwtPayload;
     try {
-      this.jwtService.verify(refreshToken);
+      claims = this.jwtService.verify<JwtPayload>(refreshToken);
     } catch {
+      throw new InvalidRefreshTokenException(this.t('auth.token.invalidRefresh'));
+    }
+
+    // The other direction of the same hole: an access token must not mint a new
+    // pair. A token issued before this claim existed carries no type and is
+    // refused, which signs every session out once on deploy.
+    if (claims.type !== 'refresh') {
       throw new InvalidRefreshTokenException(this.t('auth.token.invalidRefresh'));
     }
 
@@ -565,12 +573,7 @@ export class AuthService {
     lang: string,
     rememberMe = false,
   ): Promise<TokenResponse> {
-    const payload: JwtPayload = {
-      sub: userId,
-      email,
-      roles,
-      lang,
-    };
+    const payload = { sub: userId, email, roles, lang };
 
     const accessExpiration = this.config.get<StringValue>('JWT_ACCESS_EXPIRATION', '15m');
 
@@ -580,12 +583,15 @@ export class AuthService {
       ? this.config.get<StringValue>('JWT_REFRESH_EXPIRATION', '30d')
       : '24h';
 
-    const accessToken = this.jwtService.sign(payload, {
+    // The two differ by their `type` claim and by nothing else, which is what
+    // stops a refresh token being presented as a bearer token.
+    const accessToken = this.jwtService.sign({ ...payload, type: 'access' } satisfies JwtPayload, {
       expiresIn: accessExpiration,
     });
-    const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: refreshExpiration,
-    });
+    const refreshToken = this.jwtService.sign(
+      { ...payload, type: 'refresh' } satisfies JwtPayload,
+      { expiresIn: refreshExpiration },
+    );
 
     const accessExpiresAt = new Date(Date.now() + this.parseExpiry(accessExpiration));
     const expiresAt = new Date(Date.now() + this.parseExpiry(refreshExpiration));

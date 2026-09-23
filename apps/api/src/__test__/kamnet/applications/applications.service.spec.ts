@@ -99,7 +99,9 @@ describe('KamnetApplicationsService - the certificate decides', () => {
       await service.submit('u1', { kcaNumber: OWN });
 
       expect(prisma.kamnetApplication.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ userId: 'u1', kcaNumber: OWN }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ userId: 'u1', kcaNumber: OWN }),
+        }),
       );
     });
   });

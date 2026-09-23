@@ -1,9 +1,4 @@
-import {
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost,
-  HttpStatus,
-} from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpStatus } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { ZodValidationException } from 'nestjs-zod';
 import { ZodError } from 'zod';
@@ -17,8 +12,7 @@ export class ZodExceptionFilter implements ExceptionFilter {
 
     const zodErrorUnknown = exception.getZodError();
 
-    const zodError =
-      zodErrorUnknown instanceof ZodError ? zodErrorUnknown : new ZodError([]);
+    const zodError = zodErrorUnknown instanceof ZodError ? zodErrorUnknown : new ZodError([]);
 
     const details = zodError.issues.map((issue) => ({
       field: issue.path.join('.'),

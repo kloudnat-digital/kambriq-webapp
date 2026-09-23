@@ -13,10 +13,7 @@ describe('RolesService', () => {
     prisma = mockCorePrisma();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        RolesService,
-        { provide: CorePrismaService, useValue: prisma },
-      ],
+      providers: [RolesService, { provide: CorePrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get(RolesService);

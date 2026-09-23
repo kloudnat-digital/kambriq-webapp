@@ -41,7 +41,11 @@ describe('I15 renewal', () => {
     validUntil: new Date(Date.now() - 70 * day),
     revokedAt: null as Date | null,
   };
-  const revoked = { ...expired, validUntil: new Date(Date.now() + 300 * day), revokedAt: new Date() };
+  const revoked = {
+    ...expired,
+    validUntil: new Date(Date.now() + 300 * day),
+    revokedAt: new Date(),
+  };
   const active = {
     id: 'cert-new',
     kcaNumber: 'KCA-20260915-NEW1',
@@ -158,9 +162,12 @@ describe('I15 renewal', () => {
       );
     });
 
-    it("the expiry sweep does not withdraw the role from a holder whose new certificate stands", async () => {
+    it('the expiry sweep does not withdraw the role from a holder whose new certificate stands', async () => {
       kbs.kbsCertificate.findMany.mockResolvedValue([
-        { kcaNumber: expired.kcaNumber, candidate: { userId: 'u1', certificates: [active, expired] } },
+        {
+          kcaNumber: expired.kcaNumber,
+          candidate: { userId: 'u1', certificates: [active, expired] },
+        },
       ]);
 
       expect(await certificates.withdrawExpiredCertifications()).toBe(0);

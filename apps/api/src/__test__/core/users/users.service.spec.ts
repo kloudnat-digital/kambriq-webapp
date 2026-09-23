@@ -270,9 +270,9 @@ describe('UsersService', () => {
       prisma.user.findUnique.mockResolvedValue(buildUserWithRoles(['CLIENT', 'KCA_CERTIFIED']));
       prisma.role.findMany.mockResolvedValue([buildRole('CLIENT')]);
 
-      await expect(
-        service.adminUpdate('u1', { roleCodes: ['CLIENT'] }, 'admin-1'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.adminUpdate('u1', { roleCodes: ['CLIENT'] }, 'admin-1')).rejects.toThrow(
+        BadRequestException,
+      );
       expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 

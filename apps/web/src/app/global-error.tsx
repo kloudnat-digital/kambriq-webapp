@@ -21,6 +21,7 @@ export default function GlobalError({
 }) {
   return (
     <html lang="fr">
+      <head></head>
       <body style={{ margin: 0, fontFamily: 'sans-serif' }}>
         <div
           style={{

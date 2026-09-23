@@ -340,7 +340,11 @@ export const mockEmailService = () => ({
 
 export const mockJwtService = () => ({
   sign: jest.fn(() => 'jwt-access-token'),
-  verify: jest.fn(() => ({ sub: 'user-1', email: 'test@test.com' })),
+  // `verify` is only reached by the refresh path, so the default carries the
+  // type that path requires. A test about the wrong type overrides it.
+  verify: jest.fn(
+    (): Record<string, unknown> => ({ sub: 'user-1', email: 'test@test.com', type: 'refresh' }),
+  ),
 });
 
 // ----- ConfigService ------ //

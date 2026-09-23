@@ -429,8 +429,16 @@ export class LandReservationsService {
     return { message: this.t('lands.reservation.cancelled') };
   }
 
-  // ----- Get Reservation Detail ----- //
-  async findOne(reservationId: string) {
+  /**
+   * One reservation, as its own agent sees it.
+   *
+   * This was `findOne(reservationId)` and took no owner, while its only caller
+   * was the agent route - so any agent could read any client's identity
+   * documents by id. `findByAgent` scopes the list and `cancel` enforces
+   * ownership on the same relationship; the detail route was the one reader that
+   * did neither.
+   */
+  async findOneForAgent(agentUserId: string, reservationId: string) {
     const reservation = await this.prisma.landReservation.findUnique({
       where: { id: reservationId },
       include: {
@@ -445,6 +453,12 @@ export class LandReservationsService {
 
     if (!reservation) {
       throw new NotFoundException(this.t('lands.reservation.notFound'));
+    }
+
+    // Refused before the presigning below, which is the step that would hand out
+    // readable links to the documents.
+    if (reservation.agentUserId !== agentUserId) {
+      throw new ForbiddenException(this.t('lands.reservation.notOwner'));
     }
 
     // Generate presigned download URLs for client-uploaded documents.

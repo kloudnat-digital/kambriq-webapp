@@ -88,26 +88,43 @@ export const api = {
 
 const getSession = cache(auth);
 
+/** Sends the caller to the login screen, keeping the page they were on. */
+const redirectToLogin = async (): Promise<never> => {
+  const referer = (await headers()).get('referer');
+  let callbackUrl = '/';
+  if (referer) {
+    try {
+      const url = new URL(referer);
+      const path = url.pathname + url.search;
+      if (!path.startsWith('/login')) {
+        callbackUrl = path;
+      }
+    } catch {
+      // ignore malformed referer
+    }
+  }
+  redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+};
+
 const authedFetch = async <T>(path: string, options?: RequestInit): Promise<T> => {
   const session = await getSession();
   if (session?.error === 'RefreshTokenError') {
-    const referer = (await headers()).get('referer');
-    let callbackUrl = '/';
-    if (referer) {
-      try {
-        const url = new URL(referer);
-        const path = url.pathname + url.search;
-        if (!path.startsWith('/login')) {
-          callbackUrl = path;
-        }
-      } catch {
-        // ignore malformed referer
-      }
-    }
-    redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+    await redirectToLogin();
   }
   const header = session?.accessToken ? `Bearer ${session.accessToken}` : undefined;
-  return baseFetch<T>(path, options, header);
+
+  try {
+    return await baseFetch<T>(path, options, header);
+  } catch (error) {
+    // The session cannot always know its token is dead. `jwt()` only attempts a
+    // refresh once the token's own clock says it expired, so a token the API
+    // refuses for any other reason leaves `session.error` unset and every call
+    // failing into the error overlay. A 401 is the API saying so directly.
+    if (error instanceof ApiError && error.status === 401) {
+      await redirectToLogin();
+    }
+    throw error;
+  }
 };
 
 export const serverApi = {

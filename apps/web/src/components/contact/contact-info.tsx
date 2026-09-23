@@ -1,8 +1,8 @@
 import { Mail, MessageCircle, Clock } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 
-export const ContactInfo = () => {
-  const t = useTranslations('contact.info');
+export const ContactInfo = async () => {
+  const t = await getTranslations('contact.info');
   const items = [
     {
       icon: Mail,

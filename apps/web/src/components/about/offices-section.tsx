@@ -1,6 +1,6 @@
 import { MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 
 const OFFICES = [
   { city: 'Yaoundé', country: 'Cameroun', active: true },
@@ -9,8 +9,8 @@ const OFFICES = [
   { city: 'Montreal', country: 'Canada', active: false },
 ];
 
-export const OfficesSection = () => {
-  const t = useTranslations('about.offices');
+export const OfficesSection = async () => {
+  const t = await getTranslations('about.offices');
   return (
     <section className="bg-gray-50 px-6 py-20 sm:px-8">
       <div className="mx-auto max-w-5xl">
