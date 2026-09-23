@@ -3937,6 +3937,64 @@ before prd sends anything, independently of cost.
 
 ---
 
+### A40 - the image optimizer fetched from any `*.amazonaws.com` host - `EN COURS`
+
+**Cost impact: None.** One build argument and one GitHub variable, no resource.
+
+The A40 triage (`AUDIT_a40-dependabot.md`, 23 September) classified 111
+critical and high Dependabot alerts by what the images actually ship. Exactly one
+critical was reachable by an anonymous visitor: GHSA-2xp9 (Next.js image
+optimizer, RCE through AVIF), with the two `sharp`/libheif advisories behind it.
+The web image runs `NODE_ENV=production` on every environment, so the optimizer
+is on, and `images.remotePatterns` allowed `**.amazonaws.com` - which matches any
+S3 bucket, including one anybody can create. Shown on dev with two benign URLs:
+`s3.amazonaws.com` passed the allowlist and was fetched, `example.org` was
+refused.
+
+The wildcard was never a requirement. Its own comment said _"update with the
+actual bucket hostname when configured"_ - a comment refuses nothing.
+
+**The fix, without a dependency bump.** `src/lib/security/image-hosts.ts` is the
+one list: `images.unsplash.com` (the home hero and the KBS page still load it)
+and the media bucket, read from `MEDIA_BUCKET_HOST` at `next build`. The bucket
+is `kambriq-media-<env>` in `eu-central-1` (terraform `modules/s3-media`, SSM
+`/kambriq/dev/api/AWS_S3_BUCKET` compared without printing), with no CloudFront
+in front. `next.config.ts` takes `remotePatterns` and the CSP `img-src` from that
+list, so the two cannot drift. Unset variable: the bucket is refused, never
+replaced by a wildcard. A malformed value fails the build.
+
+What the bucket entry allows, stated plainly: any path and any query on that one
+host, over https, on the default port. It has to accept any query, because
+avatar and land URLs are presigned and every signature differs.
+
+**Proof so far.** `image-hosts.spec.ts`, 25 tests. Red first against the old
+config (the two `next.config.ts` tests), then green. Seventeen mutations, each
+observed failing on its own, among them the brief's own (`**.amazonaws.com` back
+in `next.config.ts`), a wildcard in the list, a fallback-open on a missing
+variable, a loosened validation, a dropped port rule, drift between CSP and
+patterns, and each of the three build-arg sites removed. The optimizer's own
+matcher (`hasRemoteMatch`) accepts a URL presigned by the API's SDK with the API's
+options, and refuses another bucket, `s3.amazonaws.com`, CloudFront and an
+explicit port. `next build` with and without the variable produced exactly the
+expected `remotePatterns` and `img-src`. The built standalone server, run
+locally, answered the triage's request with `"url" parameter is not allowed`.
+
+**Pending, named:** after the merge, on dev, the triage request must answer
+`"url" parameter is not allowed` and a genuine bucket image must still be served,
+both with their status codes. Requires `vars.MEDIA_BUCKET_HOST` on the `dev`
+environment before the merge; without it the build is safe and bucket images are
+refused.
+
+**Not fixed here, and why A42 exists.** Naming the hosts removes the anonymous
+way in. `sharp` and the optimizer are unchanged, so an image in our own bucket,
+which any signed-in user can upload an avatar to, still reaches the same
+library.
+
+**Observed, not changed:** the CSP `connect-src` names no S3 host, while the
+avatar uploader `PUT`s to a presigned S3 URL from the browser.
+
+---
+
 ## Proven
 
 | ID    | Chantier                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Closed by                              | Proof                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Cost                                                                |

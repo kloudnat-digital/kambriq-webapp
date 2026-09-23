@@ -863,3 +863,25 @@ through the migration. **Nothing appears until an agent ticks the consent box on
 **Follow-ups from the review, open:** **A41** (throttle the five anonymous auth
 routes, whose exemption list is now public) and **P22** (the directory makes one
 query per agent, unbounded).
+
+## A40 - the image optimizer names its hosts
+
+The A40 triage found one critical that an anonymous visitor can reach on dev: the
+optimizer fetched any URL whose host matched `**.amazonaws.com` and handed the bytes
+to `sharp`. The full entry, with the proof, is **A40** in
+`docs/ops/registre-chantiers.md`. In short:
+
+- `remotePatterns` and the CSP `img-src` both come from
+  `apps/web/src/lib/security/image-hosts.ts`: `images.unsplash.com` (still loaded
+  by the home hero and the KBS page) and the media bucket from
+  `MEDIA_BUCKET_HOST`, read at `next build`;
+- dev's bucket is `kambriq-media-dev.s3.eu-central-1.amazonaws.com`. Presigned URLs,
+  no CloudFront. The entry allows any path and any query on that one host;
+- unset variable: bucket URLs are refused, never widened. Malformed: the build fails;
+- no dependency was bumped. `next` 16.3 with `sharp` 0.35 is A42.
+
+**Pending, after the merge, on dev:** the triage's request
+(`/_next/image?url=https://s3.amazonaws.com/&w=64&q=75`, which answered 400 "The
+requested resource isn't a valid image", i.e. fetched) must answer 400 `"url"
+parameter is not allowed`, and a genuine bucket image must still be served.
+Requires `vars.MEDIA_BUCKET_HOST` on the `dev` environment first.

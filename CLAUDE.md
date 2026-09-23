@@ -1590,6 +1590,32 @@ alters what an endpoint returns, the journeys are not a safety net before the
 merge - they are the first execution after it. Run the affected journey against
 dev by hand before merging, the way the repair for this one was proved.
 
+### A wildcard in an allowlist trusts whoever can register a name under it
+
+From `A40`. `images.remotePatterns` allowed `**.amazonaws.com`, read as "our S3".
+It meant every S3 bucket in the world, and anybody can create one. The optimizer
+at `/_next/image` is anonymous and hands what it fetches to `sharp`, so the
+wildcard let a stranger choose the bytes our server decodes. That was the one
+reachable critical out of 111 critical and high alerts.
+
+Nothing about it looked wrong. The comment beside it even said _"update with the
+actual bucket hostname when configured"_: a placeholder that shipped, with a
+comment to say so, and a comment refuses nothing.
+
+**A host in an allowlist is literal, and the list has one home.**
+`src/lib/security/image-hosts.ts` feeds both `remotePatterns` and the CSP
+`img-src`. A host that differs per environment comes from a build variable, and
+when the variable is missing the host is refused, never widened.
+`image-hosts.spec.ts` fails on a wildcard, on a host written into
+`next.config.ts`, and on a build that stops receiving the variable.
+
+Two properties of Next.js make this easy to get wrong:
+
+- a standalone build freezes `images` and `headers()` at `next build`, so the
+  variable must reach the Docker build, not the container;
+- a pattern with no `search` matches every query string. Presigned URLs need
+  that, and it is a statement about what the entry allows, not a detail.
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope
