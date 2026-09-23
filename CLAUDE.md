@@ -1315,8 +1315,8 @@ its own bucket.
 
 **Before proposing any limit, find out who the caller is**, by reading the
 request log for a marked request rather than reasoning about the topology. And
-the header you add must never reach a log line: the request logger records
-headers verbatim.
+a header that carries a secret must be redacted from the request log in the
+same change that adds it.
 
 ### A guard written before anything can use it
 

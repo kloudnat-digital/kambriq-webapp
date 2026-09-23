@@ -1004,8 +1004,7 @@ chooses those.
 **Infra half proposed, not applied:** a `WEB_CALLER_SECRET` SecureString in both
 task definitions. The code is inert until it exists.
 
-**Found:** the API's request log writes every `Authorization: Bearer` value into
-CloudWatch. That is a new subject, not fixed here.
+**Found, and opened as its own subject:** **A46**, open. Not fixed here.
 
 **Pending:** after the merge and the infra half, the per-visitor counting and the
 login, registration, reset and verification paths, end to end on dev.

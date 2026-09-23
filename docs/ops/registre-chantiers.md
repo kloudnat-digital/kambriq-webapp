@@ -4188,10 +4188,8 @@ one, or a value that is not an address. The secret is shorter than 32
 characters? Startup fails. It is unset? One warning at startup, and today's
 behaviour. The secret header is redacted from the request log.
 
-**Found, not fixed - a new subject.** The API's request log carries every
-request's `Authorization: Bearer` value (304 characters, users' access tokens)
-into CloudWatch. `pinoHttp` had no `redact` at all. Only this subject's own
-header is redacted here.
+**Found, not fixed - opened as A46, open.** Only this subject's own header is
+redacted here.
 
 **Proof so far:**
 
