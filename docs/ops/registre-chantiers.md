@@ -1117,7 +1117,7 @@ quality job for `nx run api:test-db`.
 
 ---
 
-### P2 - the newsletter form, held to L1's discipline - `EN COURS`
+### P2 - the newsletter form, held to L1's discipline - `PROUVE`
 
 **Cost impact: None.** No new resource. The consent is stored as attributes on
 the SES contact that already holds the subscription.
@@ -1168,8 +1168,21 @@ observed failing on its own, one per expectation:
 
 `fr` and `en` keys are pinned in lockstep by a test.
 
-**Pending, named:** a subscription through the deployed form on dev, reading the
-SES contact's attributes back.
+**Proven on dev, 23 September, on `sha-581f99d`** (develop run `35886840188`
+green, journeys included):
+
+- the footer's address field carries its label, `"Adresse email"`, read from the
+  deployed DOM;
+- one subscription through the form in a real browser, to a throwaway
+  `kambriq-p2-proof-20260923163245@maildrop.cc`, answered "Inscription réussie !"
+  and reset the field;
+- read back with `aws sesv2 get-contact` on `kambriq-newsletter`: `AttributesData`
+  holds `consentGivenAt: 2026-09-23T16:33:20.881Z` - 39 ms before SES's own
+  `CreatedTimestamp`, 16:33:20.920Z, so the server's clock -
+  `consentPolicyPath: /legal/privacy` and `locale: fr`.
+
+The contact list is shared by the account, so that throwaway contact stays in
+it until somebody removes it.
 
 ---
 
@@ -3993,7 +4006,7 @@ before prd sends anything, independently of cost.
 
 ---
 
-### A40 - the image optimizer fetched from any `*.amazonaws.com` host - `EN COURS`
+### A40 - the image optimizer fetched from any `*.amazonaws.com` host - `PROUVE`
 
 **Cost impact: None.** One build argument and one GitHub variable, no resource.
 
@@ -4035,11 +4048,29 @@ explicit port. `next build` with and without the variable produced exactly the
 expected `remotePatterns` and `img-src`. The built standalone server, run
 locally, answered the triage's request with `"url" parameter is not allowed`.
 
-**Pending, named:** after the merge, on dev, the triage request must answer
-`"url" parameter is not allowed` and a genuine bucket image must still be served,
-both with their status codes. Requires `vars.MEDIA_BUCKET_HOST` on the `dev`
-environment before the merge; without it the build is safe and bucket images are
-refused.
+**Proven on dev, 23 September, on `sha-581f99d`**, built with
+`MEDIA_BUCKET_HOST=kambriq-media-dev.s3.eu-central-1.amazonaws.com` (read from the
+build log's `--build-arg`):
+
+- the triage's request, `/_next/image?url=https://s3.amazonaws.com/&w=64&q=75`,
+  answers **400 `"url" parameter is not allowed`**, and so does another bucket in
+  the same region;
+- two genuine bucket images - a land photo and an avatar, presigned locally with
+  the API's SDK and options - come back through `/_next/image` as **200
+  `image/jpeg`**, resized to 256 px;
+- the CSP `img-src` on dev names `https://kambriq-media-dev.s3.eu-central-1.amazonaws.com`;
+- under that enforced CSP, on a dev page in a real browser, the presigned avatar
+  **loaded** (2048x1365, no violation) while an image from another bucket was
+  **blocked** with an `img-src` violation.
+
+**A regression on the way, recorded because it was mine.** #163 merged before the
+variable existed, and dev ran `sha-239d13e`, from its deploy until the next one, refusing its own
+bucket: land photos through the optimizer, and avatars too, because the CSP stopped
+naming the bucket. The PR had warned only about the land photos. Setting the
+variable and the next deploy (`sha-581f99d`) cleared both.
+
+**Not observed:** the avatar on the account screen itself, which needs a signed-in
+session. What was observed is the same URL shape under the same enforced policy.
 
 **Not fixed here, and why A42 exists.** Naming the hosts removes the anonymous
 way in. `sharp` and the optimizer are unchanged, so an image in our own bucket,

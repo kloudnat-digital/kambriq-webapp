@@ -913,3 +913,49 @@ under **P2** in `docs/ops/registre-chantiers.md`.
 
 **Pending:** a real subscription through the form on dev after the merge, with
 the SES contact's attributes read back.
+
+## A40 and P2 - proven on dev
+
+Read on dev after #164 merged as `581f99d` and develop run `35886840188`
+concluded green, journeys included. Dev serves `sha-581f99d`. Its web image was
+built with `MEDIA_BUCKET_HOST=kambriq-media-dev.s3.eu-central-1.amazonaws.com`,
+as the build log's `--build-arg` shows.
+
+**A40**
+
+| check                                                                                        | result                                                          |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| triage request `/_next/image?url=https://s3.amazonaws.com/&w=64&q=75`                        | **400** `"url" parameter is not allowed`                        |
+| another bucket, same region                                                                  | **400** `"url" parameter is not allowed`                        |
+| genuine land photo, presigned, through `/_next/image` (w=256)                                | **200** `image/jpeg`, 256x171                                   |
+| genuine avatar, presigned, through `/_next/image` (w=256)                                    | **200** `image/jpeg`, 256x171                                   |
+| CSP `img-src` on dev                                                                         | names `https://kambriq-media-dev.s3.eu-central-1.amazonaws.com` |
+| presigned avatar as a plain `<img>` on a dev page, in a real browser, under the enforced CSP | **loaded**, 2048x1365, no violation                             |
+| control: `<img>` from another bucket, same page                                              | **blocked**, `img-src` violation                                |
+
+The URLs were presigned locally with the API's SDK and client options, under a
+read-only identity. Only avatar and land keys were listed; the KYC prefix was not
+touched.
+
+**Not observed:** the avatar on the account screen itself, which needs a
+signed-in session.
+
+**The regression, recorded.** #163 merged before `MEDIA_BUCKET_HOST` existed, so
+`sha-239d13e` refused its own bucket. That broke land photos through the
+optimizer, and avatars too, because the CSP stopped naming the bucket. #163's
+description warned only about the land photos. Setting the variable and the
+`581f99d` deploy cleared both.
+
+**P2**
+
+| check                                                                                          | result                                                                                     |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| address field label on dev                                                                     | `"Adresse email"`                                                                          |
+| one subscription through the form, real browser, `kambriq-p2-proof-20260923163245@maildrop.cc` | "Inscription réussie !", field reset                                                       |
+| `aws sesv2 get-contact`, list `kambriq-newsletter`                                             | `consentGivenAt 2026-09-23T16:33:20.881Z`, `consentPolicyPath /legal/privacy`, `locale fr` |
+| SES `CreatedTimestamp`                                                                         | `16:33:20.920Z`, 39 ms after the consent stamp: the server's clock                         |
+
+That throwaway contact stays in the account's shared list until somebody removes
+it.
+
+Both register entries have moved to `PROUVE`.
