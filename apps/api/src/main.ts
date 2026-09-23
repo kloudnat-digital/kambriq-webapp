@@ -7,6 +7,7 @@ import { AppModule } from './app/app.module';
 import {
   GlobalExceptionFilter,
   PrismaExceptionFilter,
+  robotsHeaderMiddleware,
   TransformResponseInterceptor,
   ZodExceptionFilter,
 } from '@kambriq/common';
@@ -21,6 +22,12 @@ async function bootstrap() {
 
   // ----- Security ----------
   app.use(helmet());
+
+  // ----- Indexing (P4) ------
+  // X-Robots-Tag: noindex outside production, from APP_ENV - the same rule the
+  // web applies, so the whole hostname answers one way. Middleware, before
+  // routing, so a 404 and a 401 carry it too; an interceptor would miss both.
+  app.use(robotsHeaderMiddleware());
 
   // ----- Cookie Parser -----
   // Parses Cookie header and populates req.cookies so NestJS can read httpOnly tokens

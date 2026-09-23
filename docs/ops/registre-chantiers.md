@@ -227,7 +227,7 @@ listed here first.
 | `G5`              | `PROUVE LOCALEMENT` | a correction entered from the back-office screen: three movements, total 500 000 over four lines, original line unchanged. Correction carries its own reason and author                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `G11` follow-up 3 | `PROUVE`            | the controller never forwarded `paidBy`: a DEPO keyed on the screen was refused by the service. Fixed and pinned here                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `P3`              | `PROUVE LOCALEMENT` | the auth middleware was a global net: every unknown URL redirected to /login and nothing could 404. Positive matcher, real 404 page, route table proved unchanged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `P4`              | `PROUVE LOCALEMENT` | X-Robots-Tag noindex outside production, on the existing headers() block. Reads APP_ENV: NODE_ENV is 'production' on every environment and cannot tell them apart                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `P4`              | `PROUVE LOCALEMENT` | X-Robots-Tag noindex outside production, on the existing headers() block. Reads APP_ENV: NODE_ENV is 'production' on every environment and cannot tell them apart. Second half (API responses): EN COURS, see below                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `P5`              | `A FAIRE`           | public product pages link at /kamnet/apply and /kbs/enroll, both behind the login wall. Kept protected by P3 deliberately: widening is a product change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | rename            | `A DECIDER`         | `L1-contact`/`L2-contact` -> `P1`/`P2` was asked for in P3's brief; those ids exist only on PR #98's branch, which the same brief puts out of scope. Not done - see PR                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `A19`             | `PROUVE`            | develop linted 1 project of 6 for seven months: the workflow promised "the full set", `pnpm run lint` was `nx lint api`. Widened to `nx run-many -t lint --all`; manifest corrected; proved in both directions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -1117,7 +1117,7 @@ quality job for `nx run api:test-db`.
 
 ---
 
-### P2 - the newsletter form, held to L1's discipline - `EN COURS`
+### P2 - the newsletter form, held to L1's discipline - `PROUVE`
 
 **Cost impact: None.** No new resource. The consent is stored as attributes on
 the SES contact that already holds the subscription.
@@ -1168,8 +1168,21 @@ observed failing on its own, one per expectation:
 
 `fr` and `en` keys are pinned in lockstep by a test.
 
-**Pending, named:** a subscription through the deployed form on dev, reading the
-SES contact's attributes back.
+**Proven on dev, 23 September, on `sha-581f99d`** (develop run `35886840188`
+green, journeys included):
+
+- the footer's address field carries its label, `"Adresse email"`, read from the
+  deployed DOM;
+- one subscription through the form in a real browser, to a throwaway
+  `kambriq-p2-proof-20260923163245@maildrop.cc`, answered "Inscription réussie !"
+  and reset the field;
+- read back with `aws sesv2 get-contact` on `kambriq-newsletter`: `AttributesData`
+  holds `consentGivenAt: 2026-09-23T16:33:20.881Z` - 39 ms before SES's own
+  `CreatedTimestamp`, 16:33:20.920Z, so the server's clock -
+  `consentPolicyPath: /legal/privacy` and `locale: fr`.
+
+The contact list is shared by the account, so that throwaway contact stays in
+it until somebody removes it.
 
 ---
 
@@ -1405,6 +1418,66 @@ the Playwright spec run against a local server (16 passed). **No CI run has
 confirmed any of it** - the Actions quota is exhausted and jobs do not start.
 CI still has to run the three unit suites and the e2e suite on a clean runner,
 and build the web image with the new page.
+
+---
+
+## P4, second half - the API carries the header too - `EN COURS`
+
+**Cost impact: None.**
+
+P4 was capped at 90 % for a reason measured on dev: `X-Robots-Tag: noindex,
+nofollow` was on the home page, a legal page, two protected routes, a 404, the
+login page and a static asset, and **absent on `/api/v1/health/version`**. So
+"every route" was false on the same hostname.
+
+Re-measured on 23 September before anything changed (`sha-581f99d`):
+
+- `/` and `/legal/privacy` carry the header;
+- `/api/v1/health/version` (200), `/api/v1/kamnet/public/agents` (200),
+  `/api/v1/no-such-route` (404) and `/api/v1/users/me` (401) carry nothing.
+
+**One rule, not two.** `isIndexableEnvironment` and `NOINDEX_HEADER` moved to
+`libs/common/src/middleware/robots-header.middleware.ts`.
+`apps/web/src/lib/seo/robots.ts` re-exports them, and a test asserts the web's
+function **is** the shared one, not a copy that agrees. It is still `APP_ENV`,
+never `NODE_ENV`, and absent means noindex. Dev sets no `APP_ENV` on either
+container, so both answer noindex with no infra change. prd must set
+`APP_ENV=production` on **both**, and that is the existing ADR-005 follow-up.
+
+**Express middleware, not an interceptor.** An interceptor runs only for a
+matched handler, so a 404 for an unknown route and a 401 from a guard would
+leave without the header. `robotsHeaderMiddleware()` is registered in `main.ts`
+right after helmet, before the global prefix. The environment is read once, at
+startup.
+
+The web import is relative, with a scoped
+`eslint-disable-next-line @nx/enforce-module-boundaries`. `next.config.ts` imports
+`robots.ts`, and the config loader cannot resolve the `@kambriq/common` alias:
+measured, "Cannot find module '../../libs/common/...'". `next build` with and
+without `APP_ENV=production` still gives `["noindex, nofollow"]` and `[]` in the
+routes manifest.
+
+**Proof so far.** The `main.ts` pins were red first, against the unregistered
+app. An HTTP test boots a Nest app with the middleware registered as `main.ts`
+does and sees the header on a 200, a 404 and a 401. Nine mutations, each
+observed failing on its own:
+
+- registration removed;
+- registered after the prefix;
+- a `NODE_ENV` fallback;
+- the header sent in production;
+- `next()` forgotten;
+- the decision taken per request;
+- `APP_ENV` not normalised;
+- the web keeping its own copy;
+- the header never set.
+
+**Pending, named - the only proof that counts here:** after the merge, on dev, by
+request, the header on at least three API routes, one of them a 404.
+
+**What P4 cannot reach before D13.** Dev answers 200 to anonymous callers, with
+no access authentication. That half belongs to D13, and P4 stays below 100 %
+until D13 lands.
 
 ---
 
@@ -3993,7 +4066,7 @@ before prd sends anything, independently of cost.
 
 ---
 
-### A40 - the image optimizer fetched from any `*.amazonaws.com` host - `EN COURS`
+### A40 - the image optimizer fetched from any `*.amazonaws.com` host - `PROUVE`
 
 **Cost impact: None.** One build argument and one GitHub variable, no resource.
 
@@ -4035,11 +4108,29 @@ explicit port. `next build` with and without the variable produced exactly the
 expected `remotePatterns` and `img-src`. The built standalone server, run
 locally, answered the triage's request with `"url" parameter is not allowed`.
 
-**Pending, named:** after the merge, on dev, the triage request must answer
-`"url" parameter is not allowed` and a genuine bucket image must still be served,
-both with their status codes. Requires `vars.MEDIA_BUCKET_HOST` on the `dev`
-environment before the merge; without it the build is safe and bucket images are
-refused.
+**Proven on dev, 23 September, on `sha-581f99d`**, built with
+`MEDIA_BUCKET_HOST=kambriq-media-dev.s3.eu-central-1.amazonaws.com` (read from the
+build log's `--build-arg`):
+
+- the triage's request, `/_next/image?url=https://s3.amazonaws.com/&w=64&q=75`,
+  answers **400 `"url" parameter is not allowed`**, and so does another bucket in
+  the same region;
+- two genuine bucket images - a land photo and an avatar, presigned locally with
+  the API's SDK and options - come back through `/_next/image` as **200
+  `image/jpeg`**, resized to 256 px;
+- the CSP `img-src` on dev names `https://kambriq-media-dev.s3.eu-central-1.amazonaws.com`;
+- under that enforced CSP, on a dev page in a real browser, the presigned avatar
+  **loaded** (2048x1365, no violation) while an image from another bucket was
+  **blocked** with an `img-src` violation.
+
+**A regression on the way, recorded because it was mine.** #163 merged before the
+variable existed, and dev ran `sha-239d13e`, from its deploy until the next one, refusing its own
+bucket: land photos through the optimizer, and avatars too, because the CSP stopped
+naming the bucket. The PR had warned only about the land photos. Setting the
+variable and the next deploy (`sha-581f99d`) cleared both.
+
+**Not observed:** the avatar on the account screen itself, which needs a signed-in
+session. What was observed is the same URL shape under the same enforced policy.
 
 **Not fixed here, and why A42 exists.** Naming the hosts removes the anonymous
 way in. `sharp` and the optimizer are unchanged, so an image in our own bucket,
