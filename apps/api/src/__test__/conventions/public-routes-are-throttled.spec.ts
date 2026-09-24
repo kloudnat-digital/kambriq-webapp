@@ -29,8 +29,8 @@ import { join, relative } from 'node:path';
  * ---------------------------------------------------------------------------
  * "Every public route must be throttled" is false here, and a test that
  * asserted it would have been deleted by the first person it blocked - the fate
- * of every guard that cries wolf. Eight public routes legitimately carry no
- * throttle, or carry none for reasons nobody has examined. Both kinds are named
+ * of every guard that cries wolf. Three public routes legitimately carry no
+ * throttle: the health checks. Both kinds are named
  * below with which they are, the same shape as
  * `ROLE_FREE_CANDIDATE_ROUTES` in `route-guards.spec.ts`.
  */
@@ -109,22 +109,14 @@ const publicRoutes = (file: string): PublicRoute[] => {
  * by ECS. A rate limit there would make the load balancer's own checks fail and
  * pull healthy tasks out of service - the limiter would be the outage.
  *
- * **Inherited and NOT examined under P11.** The five `auth` routes below take a
- * token or a secret in the body, so a caller without one gets nothing, and that
- * is the argument for leaving them. It is an argument, not a measurement: P11
- * did not test how each behaves under a flood, and listing them here is not a
- * finding that they are safe. They are reported in the pull request so the
- * decision is somebody's rather than nobody's.
+ * The five `auth` routes P11 listed here as "inherited and not examined" -
+ * refresh, logout, verify-email, reset-password, reactivate - carry their own
+ * limits since A41, chosen per route against a measurement of how they are
+ * really called (`auth-anonymous-routes-throttled.spec.ts`). Only the health
+ * checks remain, and they remain on purpose.
  */
 const UNTHROTTLED_BY_DECISION: Record<string, readonly string[]> = {
   'health/health.controller.ts': ['GET', 'GET ready', 'GET version'],
-  'core/auth/auth.controller.ts': [
-    'POST refresh',
-    'POST logout',
-    'POST verify-email',
-    'POST reset-password',
-    'POST reactivate',
-  ],
 };
 
 const key = (r: PublicRoute) => `${r.file} :: ${r.route}`;

@@ -1043,3 +1043,39 @@ attempts in the logs. No real person's account was touched.
 
 **Observed, not A45's:** every `POST /auth/refresh` on dev answers 400, before
 A45 as after it. A new subject.
+
+## P4 - proven on dev
+
+Read on dev at 19:38 UTC on 23 September, after #165 merged as `f0e8819` and
+develop run `35908835479` concluded green, journeys included. Dev serves
+`sha-f0e8819`.
+
+| request                        | status  | X-Robots-Tag        |
+| ------------------------------ | ------- | ------------------- |
+| `/api/v1/health/version`       | 200     | `noindex, nofollow` |
+| `/api/v1/kamnet/public/agents` | 200     | `noindex, nofollow` |
+| `/api/v1/no-such-route`        | **404** | `noindex, nofollow` |
+| `/api/v1/users/me`             | **401** | `noindex, nofollow` |
+| `/`                            | 200     | `noindex, nofollow` |
+| `/legal/privacy`               | 200     | `noindex, nofollow` |
+
+On `sha-581f99d`, the same four API requests carried nothing. The register entry
+**P4, second half** is now `PROUVE`.
+
+**P4 stays below 100 % until D13 lands.** Dev still answers 200 to anonymous
+callers, with no access authentication, and that half is D13's.
+
+## A41 - the five anonymous auth routes are throttled
+
+On `fix/a41-throttle-auth-routes` (#166), rebased onto `develop` at `75fcf55`.
+It also carries the P4 proof record from 23 September, now resolved against the
+A45 sections.
+
+Limits are chosen per route from a 7-day measurement of real per-caller peaks,
+taken from the API's request log: refresh 30, logout 10, verify-email 10,
+reset-password 10, reactivate 5. The table and reasons are under **A41** in the
+register. The P11 pin keeps only the health checks. Red first, then eight
+mutations.
+
+**Pending:** the develop run's journeys after the merge, and one 429 past a new
+limit on dev.

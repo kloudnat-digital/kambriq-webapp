@@ -227,7 +227,7 @@ listed here first.
 | `G5`              | `PROUVE LOCALEMENT` | a correction entered from the back-office screen: three movements, total 500 000 over four lines, original line unchanged. Correction carries its own reason and author                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `G11` follow-up 3 | `PROUVE`            | the controller never forwarded `paidBy`: a DEPO keyed on the screen was refused by the service. Fixed and pinned here                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `P3`              | `PROUVE LOCALEMENT` | the auth middleware was a global net: every unknown URL redirected to /login and nothing could 404. Positive matcher, real 404 page, route table proved unchanged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `P4`              | `PROUVE LOCALEMENT` | X-Robots-Tag noindex outside production, on the existing headers() block. Reads APP_ENV: NODE_ENV is 'production' on every environment and cannot tell them apart. Second half (API responses): EN COURS, see below                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `P4`              | `PROUVE LOCALEMENT` | X-Robots-Tag noindex outside production, on the existing headers() block. Reads APP_ENV: NODE_ENV is 'production' on every environment and cannot tell them apart. Second half (API responses): PROUVE on dev 23/09; P4 stays below 100 % until D13                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `P5`              | `A FAIRE`           | public product pages link at /kamnet/apply and /kbs/enroll, both behind the login wall. Kept protected by P3 deliberately: widening is a product change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | rename            | `A DECIDER`         | `L1-contact`/`L2-contact` -> `P1`/`P2` was asked for in P3's brief; those ids exist only on PR #98's branch, which the same brief puts out of scope. Not done - see PR                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `A19`             | `PROUVE`            | develop linted 1 project of 6 for seven months: the workflow promised "the full set", `pnpm run lint` was `nx lint api`. Widened to `nx run-many -t lint --all`; manifest corrected; proved in both directions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -1421,7 +1421,7 @@ and build the web image with the new page.
 
 ---
 
-## P4, second half - the API carries the header too - `EN COURS`
+## P4, second half - the API carries the header too - `PROUVE`
 
 **Cost impact: None.**
 
@@ -1472,8 +1472,18 @@ observed failing on its own:
 - the web keeping its own copy;
 - the header never set.
 
-**Pending, named - the only proof that counts here:** after the merge, on dev, by
-request, the header on at least three API routes, one of them a 404.
+**Proven on dev, 23 September 19:38 UTC, on `sha-f0e8819`** (develop run
+`35908835479` green, journeys included), by request:
+
+| request                        | status | X-Robots-Tag                    |
+| ------------------------------ | ------ | ------------------------------- |
+| `/api/v1/health/version`       | 200    | `noindex, nofollow`             |
+| `/api/v1/kamnet/public/agents` | 200    | `noindex, nofollow`             |
+| `/api/v1/no-such-route`        | 404    | `noindex, nofollow`             |
+| `/api/v1/users/me`             | 401    | `noindex, nofollow`             |
+| `/`, `/legal/privacy`          | 200    | `noindex, nofollow` (unchanged) |
+
+The same four API requests carried nothing on `sha-581f99d` that afternoon.
 
 **What P4 cannot reach before D13.** Dev answers 200 to anonymous callers, with
 no access authentication. That half belongs to D13, and P4 stays below 100 %
@@ -4255,6 +4265,54 @@ page while the proofs ran, carried the visitor claim too.
 **Observed, not A45's, opened as a subject.** Every `POST /auth/refresh` on dev
 answered 400: 7 of 7 in the 16 hours before A45 deployed, and 27 of 27 after.
 No refresh succeeded in that window.
+
+---
+
+### A41 - the five anonymous auth routes get a rate limit each - `EN COURS`
+
+**Cost impact: None.**
+
+P11 listed `refresh`, `logout`, `verify-email`, `reset-password` and
+`reactivate` as exempt, "inherited and not examined". They could not be examined
+honestly before A45: every call the web makes for a visitor counted against the
+web task's own address, so a limit here would have been a limit on the whole
+site. A45 is proven on dev, so limits now count per visitor. Only the global
+default of 100 a minute applied to these routes until now.
+
+**Measured before choosing**, per caller - the vouched visitor, otherwise the
+last hop, the same key the guard uses - over the API's request log (7-day
+retention, 17-24 September):
+
+| route            | calls | callers | peak per caller / 60 s | limit / 60 s | why                                                                                   |
+| ---------------- | ----- | ------- | ---------------------- | ------------ | ------------------------------------------------------------------------------------- |
+| `refresh`        | 91    | 6       | 15                     | **30**       | NextAuth refreshes in bursts. Too low logs people out mid-session, so double the peak |
+| `logout`         | 0     | 0       | 0                      | 10           | one per sign-out; the house auth value                                                |
+| `verify-email`   | 123   | 48      | 3                      | 10           | a journeys run verifies three users from one runner; a double click is 2              |
+| `reset-password` | 73    | 25      | 3                      | 10           | journey 5 sets, resets and replays; the 64-character token cannot be guessed          |
+| `reactivate`     | 0     | 0       | 0                      | **5**        | it checks a password and issues tokens, like login; five tries, as `forgot-password`  |
+
+Every caller is the Next server, apart from the journeys and one browser on
+`verify-email`. The web client and the journeys were read to confirm it.
+
+**Proof so far.** `auth-anonymous-routes-throttled.spec.ts` reads each
+handler's `@Throttle` metadata. It was red first: five routes read `undefined`.
+The P11 pin no longer exempts them. Eight mutations, each observed failing on its
+own: each of the five decorators removed, which fails its own test and the P11
+sweep; the refresh limit changed; the TTL changed; a stale exemption put back.
+
+**Caught on the way.** A comment between `@Public()` and `@Throttle` hid
+`@Public()` from the P11 sweep: its parser strips comments and stops at the
+blank line they leave. All five routes vanished from the public list, which
+would have made the throttle assertion vacuous. The route-count floor caught
+it, and the comments now sit above the decorator stack. This is the trap P11
+already recorded.
+
+**Pending, named:** after the merge, the develop run's journeys green against
+the new limits, and on dev a request past one new limit answered 429.
+
+**Observed, not A41's, a new subject:** every `POST /auth/refresh` on dev answers
+400, before A45 as after it. That is why NextAuth retries it in bursts. When
+refresh works again, the measured peak will fall, and 30 will be generous.
 
 ---
 
