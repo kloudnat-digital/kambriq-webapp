@@ -4142,7 +4142,7 @@ avatar uploader `PUT`s to a presigned S3 URL from the browser.
 
 ---
 
-### A45 - the API counts rate limits per visitor, not per web task - `EN COURS`
+### A45 - the API counts rate limits per visitor, not per web task - `PROUVE`
 
 **Cost impact: None.** One standard SSM parameter, which is free, once the
 infra half described below is applied.
@@ -4227,13 +4227,34 @@ sends no claim and still counts against the web task. Where a person is known -
 refresh and logout carry a refresh token - a per-account key is the better
 answer, and it belongs to A41.
 
-**Pending, named:** after the merge and the infra half, on dev:
+**Proven on dev, 24 September, on `sha-43ef4ab`**, API `:205` and web `:159`,
+both carrying `WEB_CALLER_SECRET` (kambriq-infra #65, applied by run
+`35955366789`). The API's startup logged the missing-secret warning once before
+the secret existed (04:23) and not after it (04:34).
 
-- two visitors counted separately;
-- a forged claim ignored;
-- login, registration, password reset and email verification exercised end to
-  end;
-- the journeys green.
+- **Per visitor.** Two visitors went through the same web task (`3.76.44.x`):
+  mine (`90.25.230.x`) and the E2E runner (`20.168.103.x`). From 04:49:15 to
+  04:49:55 their `/auth/login` counters fell independently, in the same seconds:
+  mine from 9 to 1, the runner's from 9 to 6. Mine had been held at 429 from
+  04:48:52 to 04:49:08, and the runner's first call at 04:49:15 found a full
+  bucket.
+- **A forged claim ignored.** Thirty-two direct calls to the certificate
+  verifier (limit 30), each claiming a different visitor with a wrong secret,
+  gave 30 x 200 then 429, 429: everything counted against the caller.
+- **The four paths, end to end, in a real browser, with a throwaway maildrop
+  account.** Register `POST /auth` 201. The emailed link: `verify-email` 200.
+  `forgot-password` 204, then the emailed link: `reset-password` 204. `login`
+  200 with the new password, landing on `/mylands`. Each call reached the API
+  through the web task, carrying the visitor, with the secret logged as
+  `[redacted]`.
+- The journeys and E2E ran green on the develop run after the secret existed.
+
+**The known limit did not show.** NextAuth's refresh calls, triggered by the
+page while the proofs ran, carried the visitor claim too.
+
+**Observed, not A45's, opened as a subject.** Every `POST /auth/refresh` on dev
+answered 400: 7 of 7 in the 16 hours before A45 deployed, and 27 of 27 after.
+No refresh succeeded in that window.
 
 ---
 
