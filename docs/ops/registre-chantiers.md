@@ -4322,6 +4322,27 @@ refresh works again, the measured peak will fall, and 30 will be generous.
 
 ---
 
+### A46 - log hygiene - `EN COURS`
+
+**Cost impact: None.**
+
+Opened by A45. The request logger now writes no token, password or credential
+header. `request-log-redaction.ts` owns the paths it never writes, and
+`app.module.ts` registers them.
+
+**Proof so far.** `request-log-redaction.spec.ts` sends a real request through
+`pino-http`, configured with the app's own paths, and reads back the line
+written - the bytes CloudWatch receives. It was red first against the paths as
+they stood. Five mutations, each observed failing on its own: each of the four
+paths removed, and the registration in `app.module.ts` removed.
+
+**Pending, named:** after the merge, a full login journey on dev, then a search of
+CloudWatch for credential-shaped content written after the deploy. Content
+written before it expires with the log group's 7-day retention. Deleting it is
+not something this subject does.
+
+---
+
 ## Proven
 
 | ID    | Chantier                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Closed by                              | Proof                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Cost                                                                |
