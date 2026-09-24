@@ -1079,3 +1079,19 @@ mutations.
 
 **Pending:** the develop run's journeys after the merge, and one 429 past a new
 limit on dev.
+
+## A41 - proven on dev, and merged under the standing authorization
+
+#166 was squash-merged as `66d7ee8`: gate green on attempt 2, after develop's own
+run for `75fcf55` finished; mergeable; no review requesting changes. Develop run
+`35959233220` was green, deploy, E2E and journeys included. During that run the
+five routes saw no 429. On dev, `reactivate` for an address with no account
+answered 404 x5, then 429, 429. The register entry **A41** is now `PROUVE`.
+
+## A46 - log hygiene
+
+Claimed as draft **#169** from `develop` at `66d7ee8`. Red first through the real
+request logger, then five mutations. Details under **A46** in the register.
+
+**Pending:** after the merge, a full login journey on dev and a CloudWatch search
+of what was written after the deploy.

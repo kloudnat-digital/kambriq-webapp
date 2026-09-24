@@ -107,6 +107,6 @@ describe('A45 - the secret never reaches a log line', () => {
 
   it('is registered on the request logger in app.module.ts', () => {
     const module = readFileSync(join(__dirname, '../../../app/app.module.ts'), 'utf8');
-    expect(module).toMatch(/redact:\s*\{\s*paths:\s*REDACTED_REQUEST_HEADERS/);
+    expect(module).toMatch(/redact:\s*\{\s*paths:\s*REQUEST_LOG_REDACT_PATHS/);
   });
 });

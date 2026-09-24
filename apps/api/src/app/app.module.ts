@@ -16,7 +16,7 @@ import { AcceptLanguageResolver, HeaderResolver, I18nModule } from 'nestjs-i18n'
 import { LoggerModule } from 'nestjs-pino';
 import { IncomingMessage } from 'http';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { REDACTED_REQUEST_HEADERS } from '../core/throttler/caller-identity';
+import { REQUEST_LOG_REDACT_PATHS } from '../core/logging/request-log-redaction';
 import { ThrottlerBehindProxyGuard } from '../core/throttler/throttler-behind-proxy.guard';
 import { CoreModule } from '../core/core.module';
 import { HealthModule } from '../health/health.module';
@@ -53,8 +53,8 @@ import { NewsletterModule } from '../newsletter/newsletter.module';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         pinoHttp: {
-          // A45. The caller secret must never reach a log line.
-          redact: { paths: REDACTED_REQUEST_HEADERS, censor: '[redacted]' },
+          // A45, A46. See request-log-redaction.ts.
+          redact: { paths: REQUEST_LOG_REDACT_PATHS, censor: '[redacted]' },
           level: config.get('NODE_ENV') === 'production' ? 'info' : 'debug',
           transport:
             config.get('NODE_ENV') !== 'production'
