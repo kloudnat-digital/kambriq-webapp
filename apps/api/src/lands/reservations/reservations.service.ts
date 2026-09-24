@@ -22,6 +22,7 @@ import {
   LandReservationStatus,
   LandStatus,
   PaginationQuery,
+  PaymentState,
   QUEUES,
   SaleCompletedJobPayload,
   StorageService,
@@ -209,7 +210,27 @@ export class LandReservationsService {
     };
   }
 
-  // ----- Admin: Confirm Down Payment ----- //
+  // ----- Admin: Confirm Down Payment (Step 2) ----- //
+  /**
+   * Admin step 2: record that the acompte was received.
+   *
+   * **This step projects the payment ledger; it does not decide it.** G1 split
+   * recording money from agreeing that it settles a payment, and put every
+   * guarantee on `Payment`: an append-only ledger, one write path to the state,
+   * a transition that refuses without a named actor and a reason, and an
+   * evidence receipt drawn from that payment's own ledger. `LandReservation` is
+   * a different table, so a bare update here reached `CONFIRMED` with no
+   * amount, no currency, no receipt and no audit row, and the whole barrier was
+   * bypassed by one button.
+   *
+   * `assertAcompteIsValidated` closes that. The money is agreed in
+   * `PaymentsService.validate`, which is reserved to `ADMIN_GLOBAL`; this step
+   * follows.
+   *
+   * `confirmedBy` and `confirmedAt` still record who advanced the reservation,
+   * which is a different fact from who validated the payment. They were
+   * conflated while this was the only record; they are not now.
+   */
   async confirmDownPayment(reservationId: string, adminUserId: string) {
     const reservation = await this.findByIdOrThrow(reservationId);
 
@@ -220,6 +241,8 @@ export class LandReservationsService {
     if (reservation.downPaymentConfirmed) {
       throw new ConflictException(this.t('lands.reservation.alreadyActive'));
     }
+
+    await this.assertAcompteIsValidated(reservationId);
 
     const updated = await this.prisma.landReservation.update({
       where: { id: reservationId },
@@ -248,6 +271,36 @@ export class LandReservationsService {
     });
 
     return updated;
+  }
+
+  /**
+   * The reservation carries a payment the ledger calls settled.
+   *
+   * `VALIDE` is the only state that means the acompte arrived and was agreed to
+   * settle the payment: it is reached through `transition`, which demands a
+   * named actor, a reason, and a receipt on that payment's own ledger.
+   * `PARTIELLEMENT_RECU` is deliberately not accepted - part of the acompte is
+   * not the acompte.
+   *
+   * The refusal lists every payment on the reservation with its state, because
+   * the operator's next action differs completely between "no payment exists",
+   * "the client has not paid yet" and "money arrived and nobody validated it".
+   */
+  private async assertAcompteIsValidated(reservationId: string): Promise<void> {
+    const payments = await this.prisma.payment.findMany({
+      where: { reservationId },
+      select: { reference: true, state: true },
+    });
+
+    if (payments.some((payment) => payment.state === PaymentState.VALIDE)) return;
+
+    throw new ForbiddenException(
+      this.t('lands.reservation.acompteNotValidated', 'fr', {
+        payments: payments.length
+          ? payments.map((p) => `${p.reference ?? '?'} (${p.state})`).join(', ')
+          : '-',
+      }),
+    );
   }
 
   // ----- Admin: Mark Client Documents Received (Step 3) ----- //
@@ -287,6 +340,20 @@ export class LandReservationsService {
   }
 
   // ----- Admin: Confirm Remaining Payment (Step 4) ----- //
+  /**
+   * Admin step 4: record that the balance was received.
+   *
+   * **Not gated on the ledger, and that is a gap rather than a decision.**
+   * Nothing creates a payment for the balance: `requestPaymentForReservation`
+   * only ever creates the acompte, and `VALIDE` is not in `REPLACEABLE_STATES`,
+   * so once the acompte settles no second payment can be created against the
+   * reservation. Requiring a validated payment here would block step 4 with
+   * nothing able to unblock it.
+   *
+   * So this step still records the balance on the reservation alone, with no
+   * amount and no receipt - the defect `confirmDownPayment` no longer has. The
+   * register carries it as open.
+   */
   async confirmRemainingPayment(reservationId: string, adminUserId: string) {
     const reservation = await this.findByIdOrThrow(reservationId);
 

@@ -282,6 +282,8 @@ export const mockLandsPrisma = () => {
     landReservation: {
       findUnique: fn(),
       findMany: fn(),
+      /** The admin step controls write here; a missing method fails as a shape error. */
+      update: fn(),
     },
     /**
      * Both call shapes, because the service uses both.

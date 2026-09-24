@@ -41,6 +41,7 @@
     "cancelled": "Reservation cancelled - land is available again",
     "alreadyActive": "This reservation already has a confirmed down payment",
     "notPending": "Only pending reservations can be confirmed",
+    "acompteNotValidated": "The acompte has not been validated, so this step cannot record that it was. Payments on this reservation: {payments}. Record the encaissement and validate the payment from the back office: this step follows the ledger, it does not settle money.",
     "notConfirmed": "Only confirmed reservations can progress",
     "stepAlreadyDone": "This step has already been recorded",
     "previousStepRequired": "The previous step must be completed first",

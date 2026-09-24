@@ -1590,6 +1590,93 @@ alters what an endpoint returns, the journeys are not a safety net before the
 merge - they are the first execution after it. Run the affected journey against
 dev by hand before merging, the way the repair for this one was proved.
 
+### A barrier guards a table, and the same fact was recorded in two of them
+
+From wave 4. `G1` split recording money from agreeing that it settles a payment
+and put every guarantee on `Payment`: an append-only ledger, one write path to
+the state, `assertTransitionIsDeliberate`, `assertTransitionIsEvidenced`, a
+receipt drawn from that payment's own ledger. All of it real, all of it proved.
+
+**`LandReservation.downPaymentConfirmed` is the same fact in a different table**,
+and `confirmDownPayment` set it, with `status: CONFIRMED`, in one bare
+`landReservation.update`: no amount, no currency, no receipt, no evidence, no
+audit row. One admin button walked past the whole barrier, and `complete()`
+requires `CONFIRMED`, so the agent's KAMNET commission was downstream of a
+checkbox.
+
+**The past tense is what hid it.** `payments.service.ts` says, in its class
+docstring: _"The old `confirmDownPayment` did both in one `update`, which is how
+a payment becomes settled because somebody typed an amount."_ `G1` wrote that
+about the code it was replacing, and nobody checked that the replacement had
+reached the reservation. **A comment refuses nothing, and a comment in the past
+tense about live code is worse than one that says nothing: it reads as evidence
+the work was done.** Three chantiers were built on top of that sentence.
+
+**The repair is `I15`'s rule at one boundary further out.** There, a role that
+projects a record is written only by the service that owns the record. Here, a
+reservation step that projects the ledger asks it rather than answering for it:
+the step refuses unless the reservation carries a payment in `VALIDE`, which is
+the only state meaning the money arrived **and** somebody with the authority to
+commit agreed it settled the payment.
+
+**The general rule: when you put a guarantee on a table, grep for the other
+places that record the same fact.** A second column in a second table is not a
+denormalisation, it is a second door, and it has none of the first one's locks.
+The two questions are separate and both have to be asked: _what does this
+barrier protect_, and _what else claims to know the same thing_.
+
+And the half that was refused, because a partial fix here would have been worse
+than none: **step 4, the balance, has no ledger at all.** Nothing creates a
+payment for it, so gating it identically would block the step with nothing able
+to unblock it. It is left ungated, the reason is written at the method, and the
+gap is a row in the register - rather than a guard that looks complete and
+refuses everybody.
+
+### A second record is worse than no record, because one of them is believed
+
+From the wave 3 fold. Between 18 and 23 September the work of PRs #155 to #162
+was written into a `WAVE_STATUS.md` at the repository root rather than into
+`docs/ops/registre-chantiers.md`. Both files were maintained, by different
+people, and they disagreed: the register still read _"Last closed: Friday 4
+September"_ and carried no mention of `I38`, `I42`, `I17`, `P9`, `P20`, `P21`,
+`A38` or `P11`.
+
+**The file every session is told to load was the stale one.** A reader who
+followed the instructions in this brief got the wrong answer, and got it with
+the confidence the instruction lends. That is the difference between a missing
+record and a second one: a gap makes you go and look, and a stale record answers.
+
+**And nothing reports it, because a stale record is shaped exactly like a
+current one.** Rule 4 of this file and rule 1 of the register both say the
+register is updated in the same commit as the work. Both were written before
+either was enforced by anything, and a rule with no mechanism is
+[a prose guarantee](#a-prose-guarantee-is-a-claim-and-the-system-is-not-obliged-to-keep-it).
+
+Three further defects were sitting in that document and none had been noticed,
+which is the measure of how much it was actually read:
+
+- **the `## Open` table existed twice**, back to back, each copy carrying rows
+  the other lacked, and different people were editing different copies. A
+  develop commit updated a `P4` row that existed only in the second;
+- **`H1`'s entry had lost its heading**, so a `PROUVE` chantier's body hung off
+  the end of that table and `### H1` matched nothing;
+- **the states table declared four states while the document used eight.**
+  `PROUVE LOCALEMENT` was carried by fourteen entries and defined nowhere, so
+  whether it meant "nearly done" or "not deployed" was a guess, and it is the
+  state most likely to be read as finished.
+
+**What closes it:** `register-is-the-record.spec.ts`. One Open table, no
+chantier listed twice, no state the document has not declared, every open
+chantier either carrying an entry or named in an inventory that is pinned in
+both directions, and no second file in the repository shaped like a record of
+work. Six of its seven assertions were each watched failing alone.
+
+**The general rule: a record is a single file, or it is not a record.** When
+work needs a longer working note than an entry, the note is archived where it
+cannot be mistaken for the record, says in as many words that it is not the
+record, and is frozen. Kept for how something was proved; never read for what is
+true now.
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope
