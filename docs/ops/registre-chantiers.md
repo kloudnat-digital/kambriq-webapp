@@ -4268,7 +4268,7 @@ No refresh succeeded in that window.
 
 ---
 
-### A41 - the five anonymous auth routes get a rate limit each - `EN COURS`
+### A41 - the five anonymous auth routes get a rate limit each - `PROUVE`
 
 **Cost impact: None.**
 
@@ -4307,8 +4307,14 @@ would have made the throttle assertion vacuous. The route-count floor caught
 it, and the comments now sit above the decorator stack. This is the trap P11
 already recorded.
 
-**Pending, named:** after the merge, the develop run's journeys green against
-the new limits, and on dev a request past one new limit answered 429.
+**Proven on dev, 24 September, on `sha-66d7ee8`** (#166, develop run `35959233220`
+green, journeys and E2E included):
+
+- during that run the five routes answered `verify-email` 200 x5,
+  `reset-password` 204 x2 and one 400 (journey 5's deliberate replay of a used
+  token), with no 429 on any of them;
+- `reactivate` for an address with no account, seven times in a row: 404 x5,
+  then 429, 429 - the new limit of 5, counted per caller.
 
 **Observed, not A41's, a new subject:** every `POST /auth/refresh` on dev answers
 400, before A45 as after it. That is why NextAuth retries it in bursts. When
