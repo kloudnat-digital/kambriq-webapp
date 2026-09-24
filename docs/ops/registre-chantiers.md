@@ -4322,7 +4322,7 @@ refresh works again, the measured peak will fall, and 30 will be generous.
 
 ---
 
-### A46 - log hygiene - `EN COURS`
+### A46 - log hygiene - `PROUVE`
 
 **Cost impact: None.**
 
@@ -4336,10 +4336,18 @@ written - the bytes CloudWatch receives. It was red first against the paths as
 they stood. Five mutations, each observed failing on its own: each of the four
 paths removed, and the registration in `app.module.ts` removed.
 
-**Pending, named:** after the merge, a full login journey on dev, then a search of
-CloudWatch for credential-shaped content written after the deploy. Content
-written before it expires with the log group's 7-day retention. Deleting it is
-not something this subject does.
+**Proven on dev, 24 September, on `sha-df4d523`** (#169, develop run
+`35961004092`). The develop run's E2E suite, a real user logging in through the
+web, and the delivery journeys, covering registration, verification, login and
+reset, ran against the new build. Then everything the API wrote after its new
+task started at 05:49:38 UTC was searched in CloudWatch: 2 001 lines, and no
+credential-shaped content. The credential headers appear only as `[redacted]`,
+which also shows the requests are still logged. The same search over the hour
+before the deploy did not come back clean, and that is what gives the clean
+result meaning. The web's log group: nothing.
+
+Lines written before the deploy expire with the log group's 7-day retention.
+Deleting them is a decision for Visquis, not for this subject.
 
 ---
 

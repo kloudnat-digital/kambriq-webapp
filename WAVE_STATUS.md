@@ -1095,3 +1095,15 @@ request logger, then five mutations. Details under **A46** in the register.
 
 **Pending:** after the merge, a full login journey on dev and a CloudWatch search
 of what was written after the deploy.
+
+## A46 - proven on dev, under the standing authorization
+
+#169 squash-merged as `df4d523` (gate green, mergeable, no review requesting
+changes). Develop run `35961004092` green, E2E and journeys included. The
+CloudWatch search after the new API task started (05:49:38) found no
+credential-shaped content in 2 001 lines. The same search over the hour before
+did not come back clean, and served as the control. The register entry **A46** is
+now `PROUVE`.
+
+Older lines are left to the 7-day retention. Deleting them was not done: that
+is reserved to Visquis by the authorization.
