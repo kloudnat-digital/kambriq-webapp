@@ -1064,3 +1064,18 @@ On `sha-581f99d`, the same four API requests carried nothing. The register entry
 
 **P4 stays below 100 % until D13 lands.** Dev still answers 200 to anonymous
 callers, with no access authentication, and that half is D13's.
+
+## A41 - the five anonymous auth routes are throttled
+
+On `fix/a41-throttle-auth-routes` (#166), rebased onto `develop` at `75fcf55`.
+It also carries the P4 proof record from 23 September, now resolved against the
+A45 sections.
+
+Limits are chosen per route from a 7-day measurement of real per-caller peaks,
+taken from the API's request log: refresh 30, logout 10, verify-email 10,
+reset-password 10, reactivate 5. The table and reasons are under **A41** in the
+register. The P11 pin keeps only the health checks. Red first, then eight
+mutations.
+
+**Pending:** the develop run's journeys after the merge, and one 429 past a new
+limit on dev.

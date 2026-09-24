@@ -4268,6 +4268,54 @@ No refresh succeeded in that window.
 
 ---
 
+### A41 - the five anonymous auth routes get a rate limit each - `EN COURS`
+
+**Cost impact: None.**
+
+P11 listed `refresh`, `logout`, `verify-email`, `reset-password` and
+`reactivate` as exempt, "inherited and not examined". They could not be examined
+honestly before A45: every call the web makes for a visitor counted against the
+web task's own address, so a limit here would have been a limit on the whole
+site. A45 is proven on dev, so limits now count per visitor. Only the global
+default of 100 a minute applied to these routes until now.
+
+**Measured before choosing**, per caller - the vouched visitor, otherwise the
+last hop, the same key the guard uses - over the API's request log (7-day
+retention, 17-24 September):
+
+| route            | calls | callers | peak per caller / 60 s | limit / 60 s | why                                                                                   |
+| ---------------- | ----- | ------- | ---------------------- | ------------ | ------------------------------------------------------------------------------------- |
+| `refresh`        | 91    | 6       | 15                     | **30**       | NextAuth refreshes in bursts. Too low logs people out mid-session, so double the peak |
+| `logout`         | 0     | 0       | 0                      | 10           | one per sign-out; the house auth value                                                |
+| `verify-email`   | 123   | 48      | 3                      | 10           | a journeys run verifies three users from one runner; a double click is 2              |
+| `reset-password` | 73    | 25      | 3                      | 10           | journey 5 sets, resets and replays; the 64-character token cannot be guessed          |
+| `reactivate`     | 0     | 0       | 0                      | **5**        | it checks a password and issues tokens, like login; five tries, as `forgot-password`  |
+
+Every caller is the Next server, apart from the journeys and one browser on
+`verify-email`. The web client and the journeys were read to confirm it.
+
+**Proof so far.** `auth-anonymous-routes-throttled.spec.ts` reads each
+handler's `@Throttle` metadata. It was red first: five routes read `undefined`.
+The P11 pin no longer exempts them. Eight mutations, each observed failing on its
+own: each of the five decorators removed, which fails its own test and the P11
+sweep; the refresh limit changed; the TTL changed; a stale exemption put back.
+
+**Caught on the way.** A comment between `@Public()` and `@Throttle` hid
+`@Public()` from the P11 sweep: its parser strips comments and stops at the
+blank line they leave. All five routes vanished from the public list, which
+would have made the throttle assertion vacuous. The route-count floor caught
+it, and the comments now sit above the decorator stack. This is the trap P11
+already recorded.
+
+**Pending, named:** after the merge, the develop run's journeys green against
+the new limits, and on dev a request past one new limit answered 429.
+
+**Observed, not A41's, a new subject:** every `POST /auth/refresh` on dev answers
+400, before A45 as after it. That is why NextAuth retries it in bursts. When
+refresh works again, the measured peak will fall, and 30 will be generous.
+
+---
+
 ## Proven
 
 | ID    | Chantier                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Closed by                              | Proof                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Cost                                                                |
