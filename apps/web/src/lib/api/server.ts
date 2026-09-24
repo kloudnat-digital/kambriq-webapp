@@ -2,6 +2,7 @@ import { cache } from 'react';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
+import { visitorHeaders } from './visitor-headers';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 if (!API_URL && process.env.NODE_ENV === 'production') {
@@ -30,6 +31,8 @@ const baseFetch = async <T>(
     headers: {
       'Content-Type': 'application/json',
       ...(authHeader ? { Authorization: authHeader } : {}),
+      // A45: which visitor this call is for, vouched for by the web.
+      ...(await visitorHeaders()),
       ...options?.headers,
     },
   });

@@ -977,3 +977,34 @@ observed failing on its own. Detail under **P4, second half** in the register.
 **Pending:** after the merge, on dev, by request, the header on at least three
 API routes including a 404. P4 stays below 100 % until D13 (access
 authentication) lands.
+
+## A45 - rate limits count per visitor
+
+Claimed as draft **#167** from `origin/develop` at `f0e8819`. The only other open
+PR was my own #166, which carries only the P4 record and can merge on its own.
+
+**Re-measured on dev before anything changed**, with marked requests read back
+from the API's request log:
+
+| request                                                 | TCP peer       | x-forwarded-for at the API                | guard picks                |
+| ------------------------------------------------------- | -------------- | ----------------------------------------- | -------------------------- |
+| direct call                                             | ALB `10.0.1.x` | `92.184.140.x`                            | `92.184.140.x`             |
+| direct, forged `X-Forwarded-For: 203.0.113.7`           | ALB            | `203.0.113.x, 92.184.140.x`               | `92.184.140.x`             |
+| direct, forged two hops                                 | ALB            | `203.0.113.x, 198.51.100.x, 92.184.140.x` | `92.184.140.x`             |
+| web server, for a visitor (`/products/kamnet/annuaire`) | ALB            | `3.71.109.x`, `user-agent: node`          | `3.71.109.x`, the web task |
+
+The web task's address was new at each of the four deploys that day. Nothing in
+the request identified the visitor.
+
+The web now vouches for the visitor with a secret only it and the API hold. The
+API believes the claim only with that secret, and otherwise keeps today's rule.
+Red first over real HTTP, then eighteen mutations. No limit value changed; A41
+chooses those.
+
+**Infra half proposed, not applied:** a `WEB_CALLER_SECRET` SecureString in both
+task definitions. The code is inert until it exists.
+
+**Found, and opened as its own subject:** **A46**, open. Not fixed here.
+
+**Pending:** after the merge and the infra half, the per-visitor counting and the
+login, registration, reset and verification paths, end to end on dev.
