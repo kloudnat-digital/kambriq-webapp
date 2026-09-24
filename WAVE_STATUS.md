@@ -1008,3 +1008,38 @@ task definitions. The code is inert until it exists.
 
 **Pending:** after the merge and the infra half, the per-visitor counting and the
 login, registration, reset and verification paths, end to end on dev.
+
+## A45 - proven on dev, under the standing authorization of 24 September
+
+`CLAUDE_CODE_AUTH_standing-dev.md`. Every act below was taken under it.
+
+**Acts, in order (UTC, 24 September):**
+
+1. Re-planned kambriq-infra `develop` (`54e9ec1`) locally, read-only
+   (Terraform 1.12.0, `-lock=false`), before anything else: `Plan: 4 to add, 0
+to change, 2 to destroy`, the same four resources as the plan reported on #65.
+2. Triggered `terraform-apply.yml` for `dev` at 04:22. Run `35955366789`
+   succeeded: `Apply complete! Resources: 4 added, 0 changed, 2 destroyed.` The
+   SSM parameter `/kambriq/dev/shared/WEB_CALLER_SECRET` exists, as a
+   SecureString, version 1. Its value was never read.
+3. The develop deploy of `43ef4ab` was already in flight. It registered the
+   API's `:203` before the apply, so it carried no secret, while the web's
+   `:158` came after the apply and did. Re-ran that run's deploy job at 04:31:
+   API `:205` and web `:159` now both carry `WEB_CALLER_SECRET`, on image
+   `sha-43ef4ab`. The API's missing-secret warning fired once at the 04:23 start
+   and not at the 04:34 start. E2E and journeys green.
+4. Proofs on dev:
+   - failed logins to a throwaway address, over about 8 minutes, to hold my own
+     login bucket over its limit;
+   - one re-run of the E2E job, as a second visitor;
+   - 32 forged-claim calls to the public certificate verifier;
+   - a throwaway account `kambriq-a45-e2e-0924045131@maildrop.cc`, registered,
+     verified, reset and logged in through the web.
+
+   Results are under **A45** in the register, now `PROUVE`.
+
+**Left on dev by these proofs:** that one client account, and the failed-login
+attempts in the logs. No real person's account was touched.
+
+**Observed, not A45's:** every `POST /auth/refresh` on dev answers 400, before
+A45 as after it. A new subject.
