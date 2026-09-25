@@ -136,26 +136,38 @@ test('switching language keeps the visitor on the same page', async ({ page }) =
   await page.goto('/fr/plan');
 
   /**
-   * The TanStack Query devtools are hidden, and only in this test.
+   * A51 - activated from the keyboard, with no style injected.
    *
-   * `<Providers>` renders them when `NODE_ENV === 'development'`, which is what
-   * this suite runs against, and their fixed launcher overlaps the floating
-   * language control: Playwright reported the click intercepted by
-   * `.tsqd-parent-container`. Hiding it is honest here because the devtools do
-   * not ship - the production bundle has no such element - and force-clicking
-   * through an overlay would paper over a real one the day it appears.
+   * The first version hid the TanStack Query devtools with `page.addStyleTag`
+   * before each click, because their launcher overlapped the switcher. Two
+   * things were wrong with that:
+   *
+   * - the devtools render only under `next dev`. CI runs this suite against the
+   *   deployed dev site, whose image is a production build, so there was nothing
+   *   to hide;
+   * - in Firefox the injection itself failed about one run in five - "blocked a
+   *   JavaScript eval (script-src)": the page's CSP has no `'unsafe-eval'` - and
+   *   the job's retry turned it green. Measured locally against dev: 2 failures
+   *   in 10 runs, both inside `addStyleTag`.
+   *
+   * Pressing Enter on the focused switcher is what a keyboard user does, and a
+   * key press is not intercepted by an element drawn over the button, so the
+   * same test holds against `next dev` too.
    */
-  await page.addStyleTag({ content: '.tsqd-parent-container { display: none !important; }' });
+  const switchTo = async (currentLabel: string) => {
+    const button = page.getByRole('button', { name: currentLabel });
+    await button.focus();
+    await button.press('Enter');
+  };
 
-  await page.getByRole('button', { name: 'Changer de langue' }).click();
+  await switchTo('Changer de langue');
   await page.waitForURL(/\/en\/plan/);
 
   expect(new URL(page.url()).pathname).toBe('/en/plan');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 
   // And back, so a one-way switch cannot pass.
-  await page.addStyleTag({ content: '.tsqd-parent-container { display: none !important; }' });
-  await page.getByRole('button', { name: 'Change language' }).click();
+  await switchTo('Change language');
   await page.waitForURL(/\/fr\/plan/);
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
 });

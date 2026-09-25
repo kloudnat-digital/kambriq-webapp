@@ -221,9 +221,10 @@ listed here first.
 | Audit 2026-09-23, wave 3      | `PROUVE`            | the wave of #155 to #162 folded in, the Open table de-duplicated, the states declared, `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Audit 2026-09-23, wave 4      | `EN COURS`          | the acompte step reads the payment ledger instead of answering for it. Unmerged; pending proof is one acompte carried end to end on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `confirmRemainingPayment`     | `A FAIRE`           | step 4 records the balance on the reservation alone: nothing creates a payment for it, so it cannot be gated the way the acompte now is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `A51`                         | `EN COURS`          | the Firefox language-switch E2E test failed inside its own style injection, blocked by the CSP; rewritten to switch from the keyboard with no injection, 10/10 in Firefox against dev. Pending: develop's E2E green with no re-run                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `J11`                         | `PROUVE`            | the typeface's stylesheet and font hosts reach `style-src` and `font-src` from the same module as the image hosts, and the layout links it from there; proven on dev at `sha-87b1d13`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `A48`                         | `PROUVE`            | every API behaviour decision reads `APP_ENV` through `libs/common/src/config/app-env.ts`; SQL is logged only where `APP_ENV=local`; a guard refuses a new `NODE_ENV` read; proven on dev at `sha-3425132`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `A49`                         | `EN COURS`          | an identity document is a key in its owner's `id-documents` folder, refused otherwise, through the A44 rule now shared in `core/users/storage-keys.ts`. Pending: the journeys green on dev and a foreign address refused there                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `A49`                         | `PROUVE`            | an identity document is a key in its owner's `id-documents` folder, refused otherwise, through the A44 rule now shared in `core/users/storage-keys.ts`; proven on dev at `sha-23a2b97`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `P27`                         | `PROUVE`            | KAMBRIQ LANDS™, KAMBRIQ VERIFY™ and KAMNET™ carry the mark everywhere on the website, KBS does not; a guard watches every namespace and every MDX file; proven on dev at `sha-e059503`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `A44`                         | `PROUVE`            | an avatar is a key in the caller's own storage folder, refused otherwise on both write paths; `connect-src` names the bucket so the browser may upload; proven on dev at `sha-689bd2e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `A43`                         | `PROUVE`            | Swagger is served only where `APP_ENV=local` is declared, never from `NODE_ENV`; the local start scripts declare it; proven on dev at `sha-7ec907b`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -5858,12 +5859,19 @@ against develop. Four mutations each failed their own test: `style-src` without
 the host, the font host written into `next.config.ts`, the layout linking its
 own URL, and the wrong file host.
 
-### A49 - an identity document is a key in its owner's storage, nothing else - `EN COURS`
+### A49 - an identity document is a key in its owner's storage, nothing else - `PROUVE`
 
 **Cost impact: None.**
 
-**Pending:** develop's journeys green after the deploy (journey 2 attaches a
-real document through this path), and a foreign address refused on dev.
+**Proven on dev** at `sha-23a2b97` (#187), 25 September:
+
+- develop run `36188370177`: delivery journeys and E2E green. Journey 2 uploads a
+  real document and attaches it through `PATCH /users/me/id-document`, so a
+  legitimate key still passes;
+- `PATCH /users/me/id-document` with `https://evil.example/cni.png`, signed in as
+  the seeded agent: **400**, "Les pièces d'identité doivent être envoyées depuis
+  votre compte, avec le bouton de téléversement." It is refused before anything
+  is read or written.
 
 **The premise, corrected first: it was mine.** A44's entry said identity
 documents "are stored as full `https://` URLs". Measured properly on dev on 25
@@ -5903,6 +5911,39 @@ test, proof that the rule is shared), and only the first document checked.
 **Found, not fixed:** the KBS candidate's `cvUrl` has the same defect, with
 `z.string().min(1, 'Must be a valid URL')` stored unchanged. It is the next field
 for this rule, and not this brief's.
+
+### A51 - the language-switch E2E test depended on a style injection that the CSP refuses - `EN COURS`
+
+**Cost impact: None.**
+
+**Pending:** develop's own E2E job green after the merge, **with no re-run**.
+
+**The cause, named.** `locale-routing.spec.ts` › "switching language keeps the
+visitor on the same page" called `page.addStyleTag` before each click, to hide
+the TanStack Query devtools' launcher. In Firefox that call itself failed:
+"Content-Security-Policy: The page's settings blocked a JavaScript eval
+(script-src) … (Missing 'unsafe-eval')". The page's CSP rightly has no
+`'unsafe-eval'`. It failed on develop runs `36163313789` and `36184349270`, and the
+first went green only through a re-run.
+
+**Its premise was false as well.** The comment said the devtools render because
+the suite runs against a `development` build. CI runs it against the deployed
+dev site, and the web image is a production build on every environment (A48
+lists the web's `NODE_ENV` gates). So on dev there was nothing to hide, and the
+only thing the injection did was fail.
+
+**The rewrite.** No injection. The switcher is focused and activated with
+Enter, which is what a keyboard user does. A key press is not intercepted by an
+element drawn over the button, so the same test also holds against `next dev`,
+where the launcher does exist.
+
+**Measured, against dev, retries forced to 0** (`CI=1`, `--repeat-each=10`):
+
+- before: **2 failed of 10** in Firefox, both inside `addStyleTag`;
+- after: **20 passed of 20**, ten in Chromium and ten in Firefox.
+
+Playwright's Firefox build was installed locally for this, the same install CI
+runs.
 
 ---
 
