@@ -6,13 +6,13 @@
 jest.mock('next/server', () => ({
   NextResponse: { next: () => ({ kind: 'next' }), redirect: () => ({ kind: 'redirect' }) },
 }));
-jest.mock('./auth', () => ({ auth: (handler: unknown) => handler }));
+jest.mock('./auth', () => ({ authForProxy: (handler: unknown) => handler }));
 
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { config } from './proxy';
-import { isPublic, PROTECTED_PREFIXES, REDIRECT_WHEN_AUTHED } from './routes';
+import { isPublic, PROTECTED_PREFIXES } from './routes';
 
 /**
  * P3 - **every route the app serves, and whether the middleware still guards
@@ -74,6 +74,13 @@ const compile = (pattern: string): RegExp | null => {
   if (/:[A-Za-z]+\*$/.test(pattern)) {
     const base = pattern.replace(/\/:[A-Za-z]+\*$/, '');
     return new RegExp(`^${base}(?:/.*)?$`);
+  }
+  // A47. One trailing dynamic segment - `/verify-certificate/:certificateNumber`
+  // - is exactly one path segment, no more. Any other use of `:` stays
+  // unmodellable.
+  if (/^[^:(]*\/:[A-Za-z]+$/.test(pattern)) {
+    const base = pattern.replace(/\/:[A-Za-z]+$/, '');
+    return new RegExp(`^${base}/[^/]+$`);
   }
   if (pattern.includes(':') || pattern.includes('(')) return null;
   return new RegExp(`^${pattern}$`);
@@ -168,9 +175,31 @@ describe('P3 - the middleware matcher covers every protected route', () => {
     }
   });
 
-  it('public pages are not intercepted, except the three that redirect a signed-in user', () => {
-    const intercepted = ROUTES.filter((r) => isPublic(r)).filter((r) => isMatched(concrete(r)));
-    expect(intercepted.sort()).toEqual([...REDIRECT_WHEN_AUTHED].sort());
+  /**
+   * A47. This assertion used to read "public pages are not intercepted, except
+   * the three that redirect a signed-in user" - it pinned RUNNING and GATING as
+   * one thing, which is the conflation P3 itself was about. The root layout
+   * reads the session on every page, and only the proxy can write a refreshed
+   * cookie back, so the proxy now RUNS on every public page. It still GATES
+   * none of them: `isPublic` is what the proxy asks before redirecting, and
+   * proxy.spec.ts walks the same pages through the real decision.
+   */
+  it('every public page runs through the proxy, so a refresh it needs is written back', () => {
+    const publicPages = ROUTES.filter((r) => isPublic(r));
+    expect(publicPages.length).toBeGreaterThan(20);
+    expect(publicPages.filter((r) => !isMatched(concrete(r)))).toEqual([]);
+  });
+
+  it('lists exactly the public pages on disk, one by one, never a public prefix', () => {
+    const publicLiterals = (config.matcher as string[])
+      .filter((m) => isPublic(m.split('/:')[0] || '/'))
+      .map((m) => m.replace(/\/:[A-Za-z]+$/, '/[x]'))
+      .sort();
+    const publicPages = ROUTES.filter((r) => isPublic(r))
+      .map((r) => r.replace(/\[[^\]]+\]/g, '[x]'))
+      .sort();
+    expect(publicLiterals).toEqual(publicPages);
+    expect((config.matcher as string[]).filter((m) => isPublic(m) && m.endsWith('*'))).toEqual([]);
   });
 
   it('the matcher literals and PROTECTED_PREFIXES say the same thing', () => {
@@ -180,7 +209,7 @@ describe('P3 - the middleware matcher covers every protected route', () => {
      * that drift, so this is the thing that stops them.
      */
     const fromMatcher = [...new Set((config.matcher as string[]).map((m) => m.split('/:')[0]))]
-      .filter((p) => !REDIRECT_WHEN_AUTHED.includes(p))
+      .filter((p) => !isPublic(p))
       .sort();
     expect(fromMatcher).toEqual([...PROTECTED_PREFIXES].sort());
   });

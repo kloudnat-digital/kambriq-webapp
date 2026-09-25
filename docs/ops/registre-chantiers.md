@@ -4453,6 +4453,72 @@ token, so 30 is generous rather than wrong, and it is left alone.
 #171 stays merged: it removes the 409 and the page-side bursts, and the
 sign-out is no worse than before it.
 
+**Second half (#173) - refresh only where the cookie can be written.**
+
+The runtime claim, measured on the build rather than taken on trust. The brief
+said the proxy runs in the Edge runtime, in a separate isolate. **It does not:**
+
+- `middleware-manifest.json` declares no Edge function (`middleware: []`);
+- the proxy is `server/middleware.js`, CommonJS, loaded through
+  `require("./chunks/[turbopack]_runtime.js")`, requiring `node:async_hooks`;
+- it runs in the Node runtime, in the same process as the pages.
+
+**What is true** is that it has its own Turbopack runtime context: the refresh
+code is bundled into two chunks, one for the proxy and one for SSR. So there are
+two module instances and two maps - which is why #171's map never reached the
+proxy.
+
+The brief's direction holds either way: only the proxy writes the cookie, so the
+refresh belongs there. The same process means `globalThis` can hand the proxy's
+exchange to the page render of the SAME request, which still reads the old
+cookie. That is a handoff within one request, not a store: the browser's cookie
+is rewritten.
+
+**The change:**
+
+- **Matcher.** The proxy RUNS on every public page, listed one page at a time
+  (23, one of them dynamic), never as a prefix. It GATES exactly what it gated
+  before: `proxy.ts`'s decision is unchanged. An unknown URL is still not matched
+  and still 404s, and P3's assertion to that effect is unchanged.
+- **P3's pin.** "Public pages are not intercepted, except three" pinned running
+  and gating as one thing. It is now "every public page runs through the proxy",
+  plus "the matcher lists exactly the public pages on disk, never a public
+  prefix". `proxy.spec.ts` walks every public literal through the real decision:
+  anonymous, signed in and stale all pass.
+- **Two NextAuth instances over one cookie.** The proxy, the `/api/auth`
+  handlers and `signIn`/`signOut` refresh. The `auth()` that pages and actions
+  import uses `pageAuthConfig`, whose `jwt` never calls `/auth/refresh`: it takes
+  what the proxy obtained, or a refusal it recorded, and otherwise leaves the
+  session as it found it.
+- **The exchange map lives on `globalThis`.**
+
+**Proof so far:**
+
+- `auth-page-read-only.spec.ts`, red first: a page render called refresh (1,
+  expected 0), and a second module instance saw nothing.
+- Seven mutations, each observed failing on its own:
+  - pages reading with the refreshing jwt;
+  - the store back in module scope;
+  - `auth.ts` giving pages the refreshing instance;
+  - the proxy wrapped in the read-only one;
+  - a public page dropped from the matcher;
+  - a public prefix instead of pages, which also trips P3's unknown-URL test;
+  - a recorded refusal ignored by a page. That one survived until its test was
+    written, and was then seen failing.
+- A local standalone build: `/about`, `/legal/privacy` and
+  `/verify-certificate/…` answer 200; `/zzz-does-not-exist` and
+  `/legal/does-not-exist` answer **404**; `/mylands` redirects to login.
+  `X-Robots-Tag` is on every one.
+
+**Cost baseline on dev before the change** (anonymous time to first byte, 15
+requests each): `/legal/privacy` median 76 ms, p90 158; `/about` 97 / 180;
+`/products/lands` 103 / 180.
+
+**Pending, named - the only proof that counts:** after the merge, sign in, let
+the access token fall due, browse two public pages, open a protected one. The
+person stays signed in, and the API log shows no refresh refused. The same
+latency measured after the merge.
+
 ---
 
 ## Proven

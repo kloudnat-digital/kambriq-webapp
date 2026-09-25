@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from './auth';
+import { authForProxy as auth } from './auth';
 import {
   AUTH_ROUTES,
   getDefaultRoute,
@@ -96,6 +96,34 @@ export const config = {
     '/',
     '/login',
     '/register',
+
+    // A47. Public pages the proxy RUNS on but never gates. The root layout reads
+    // the session on every page, and only the proxy can write a refreshed
+    // session cookie back; a page outside this list refreshed where nothing
+    // could save it, and browsing two of them signed the person out. Listed
+    // one page at a time, never as a prefix, so an unknown URL is still not
+    // matched and still 404s (P3). Keep in step with the public pages on disk -
+    // middleware-matcher.spec.ts fails when they differ.
+    '/about',
+    '/blog',
+    '/contact',
+    '/faq',
+    '/forgot-password',
+    '/legal/mentions',
+    '/legal/privacy',
+    '/legal/rgpd',
+    '/legal/terms',
+    '/methode',
+    '/plan',
+    '/products/kamnet',
+    '/products/kamnet/annuaire',
+    '/products/kbs',
+    '/products/lands',
+    '/products/verify',
+    '/reactivate',
+    '/reset-password',
+    '/verify-certificate/:certificateNumber',
+    '/verify-email',
 
     // Protected. Keep in step with PROTECTED_PREFIXES in routes.ts.
     '/account',

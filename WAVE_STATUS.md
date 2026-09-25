@@ -1160,3 +1160,13 @@ evidence.
 
 **P10 was not started.** It stopped on a false premise, recorded in the session
 report: its claim and release steps rely on `docs/suivi/`, which does not exist.
+
+## A47, second half - refresh only where the cookie can be written (#173)
+
+#172 merged at Visquis's instruction (`6bc6294`). The two-runtime claim was
+**measured**: the proxy runs in the Node runtime, in the same process as the
+pages, but in its own Turbopack module context, so there were two maps. The
+change and its proof are under **A47** in the register.
+
+Cost baseline taken on dev before the merge (`sha-6bc6294`, anonymous time to
+first byte, n=15): `/legal/privacy` 76 ms median, `/about` 97, `/products/lands` 103.
