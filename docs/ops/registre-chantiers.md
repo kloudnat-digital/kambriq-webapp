@@ -273,7 +273,7 @@ listed here first.
 | envelope BigInt                | `PROUVE`            | `jsonSafe` walked plain objects only, so a BigInt inside a class instance was a **500**, reproduced at 200-vs-500. It now walks any object without its own `toJSON`; a Date is pinned so the fix cannot eat every `createdAt`. Three mutations, one assertion each                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `sort` as a column             | `PROUVE`            | `paginationQuerySchema` accepts any string and 12 sites spread it into `orderBy`, so a client typo was a 500. `sortField` refuses with a 400 naming the allowed set; no caller anywhere passes `sort`, so nothing working stops working. A sweep fails on a 13th site written the old way                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | Audit 2026-09-23, unwaved      | `PROUVE`            | **Closed by other work, found 28 September.** `/admin/verify` (I44) and `/kamnet/apply` (P5, #193) are no longer mocks; the Mapbox build `ARG` reaches both web builds since #252 (`ci.yml`, `manual-deploy-dev.yml`, pinned by `build-vars-reach-the-image.spec.ts`); the placeholder company details (`Capital social : XXX XXX XAF`, `N° RCCM : XX / XXX / XX`) left the site with the mdx in #252 and survive only in `initial-content.ndjson`, which no environment loads. The legal-mentions document written in the Studio needs the real ones                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| register                       | `A FAIRE`           | one row has no `###` entry: `P10`, whose entry is in #174 (held for the LANDS copy). Twenty-one were written on 26 September. The list is pinned in `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| register                       | `PROUVE`            | every open chantier has an entry: `P10`'s, the last, is written with #174. The list in `register-is-the-record.spec.ts` is empty and pinned at zero                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 ### H1 - `ADMIN_GLOBAL` is the super admin, and there is no second one - `PROUVE`
 
@@ -7251,7 +7251,7 @@ The register's `## Proven` section says a wider collision is already live:
 _"Eleven ids mean two different things depending on which half of the document
 you are reading"_. It chose not to rename, and it states the ambiguity instead.
 
-### register - rows with no entry - `A FAIRE`
+### register - rows with no entry - `PROUVE`
 
 **Cost impact: None.**
 
@@ -7261,10 +7261,8 @@ missing in `NO_ENTRY_YET`. **On 26 September twenty-one were written**, from
 the row, the frozen wave note (`docs/ops/waves/2026-09-20-wave.md`), CLAUDE.md
 and the commits on develop - facts with their source named, nothing inferred.
 
-**One remains: `P10`**, whose entry is written in #174, which Visquis holds open
-for the LANDS page copy. Writing it here as well would put two `### P10`
-headings in the file the day #174 merges. The inventory goes to zero with
-#174.
+**The last one, `P10`, is written with #174**, and the inventory is empty:
+`NO_ENTRY_YET` is pinned at zero.
 
 ### rename - L1-contact and L2-contact to P1 and P2 - `A DECIDER`
 
@@ -7279,6 +7277,122 @@ The `P3` entry, under "Follow-ups", repeats it: the IDs exist only on
 _"Named rather than resolved; see the PR body for the command"_. The register's
 `## Proven` section calls `rename` _"the related open decision"_ to the id
 collision. See contradiction 5: those IDs are now on develop.
+
+### P10 - the LANDS page is for the buyer - `EN COURS`
+
+**Cost impact: None.** Copy, one server component, tests.
+
+**Pending:** Visquis's approval of the copy below, then review and merge, then a
+read of the deployed `/fr/products/lands` and `/en/products/lands` on dev. #174
+is kept green and open until then: merging it would put unapproved copy on dev.
+
+`/products/lands` promised a catalogue it never shows and told a buyer what the
+AGENT gets: "Avantages Agent KAMNET" on each of the three labels,
+"Commission rapide" on TFL. Both break a standing decision: no parcel on a public page
+(`docs/base/regles-produit.md`) and no agent remuneration on the public site
+(P9, decision 1).
+
+**What changed, fr and en together:**
+
+- `landTypes.agentAdvantages` and the three `advantages.agent` keys are deleted,
+  with their `features` entries in `land-types.tsx`, in the same commit;
+- `whyBuyAtKambriq.legalSecurity.description` no longer says "catalogue";
+- `landsHero.title` promises the method and the accompaniment, not goods;
+- `quickActions.questions.kamnetAgent` no longer says "gagner des commissions" -
+  the widened pin found it, on every public page;
+- a new section after "Comment acheter", `landsDossier` /
+  `selection-dossier.tsx`, lists the seven rubriques of a selection dossier,
+  taken from sections 1 to 7 of the land file template. Headings only.
+  Sections 8 and 9 and the owner's identity document never appear.
+
+**Every line of new copy is for Visquis to approve**, all mine, none of it his voice:
+
+| Key                                         | fr                                                                                                                        | en                                                                                                    |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `landsHero.title`                           | Une méthode vérifiée, un label clair, un agent certifié à vos côtés                                                       | A verified method, a clear label, a certified agent at your side                                      |
+| `whyBuyAtKambriq.legalSecurity.description` | Chaque terrain qu'un agent vous présente a passé les 7 contrôles KAMBRIQ VERIFY™ et porte un label clair.                | Every land an agent presents to you has passed KAMBRIQ VERIFY™'s 7 checks and carries a clear label. |
+| `quickActions.questions.kamnetAgent`        | Comment rejoindre le réseau KAMNET™ ?                                                                                    | How to join the KAMNET™ network?                                                                     |
+| `landsDossier.title` / `.subtitle`          | Ce que votre agent vous remet / Pour chaque terrain de votre sélection, un dossier en sept rubriques.                     | What your agent hands you / For each land in your selection, a file in seven sections.                |
+| `landsDossier.items`                        | the seven rubriques of the brief's table, capitalised; rubriques 6 and 7 have no detail line because the table gives none | my translation of the same                                                                            |
+
+**Why P21's pin missed "Commission rapide", precisely.** The brief guessed that
+`landTypes` was not on its namespace list. It was on it. Three things let the
+string through:
+
+1. the rate and deadline sweeps read every listed namespace, but they need a
+   figure (`%`, a base) or `J+n`, and "Commission rapide" carries neither;
+2. the earning sweep, the only one about words, read `products.kamnet` and
+   `products.kbs` only;
+3. and even there, `EARNING_PROMISE` matched promise PHRASES, deliberately not
+   the bare word "commission".
+
+**The pin now covers the class.** Every namespace is covered unless it is
+declared private in `PRIVATE_NAMESPACES`, each with its reason (`app`, the
+authenticated product; `landsAdmin`, the back office). A new public namespace is
+covered by default. A vocabulary pattern (commission, remuneration, gagnez,
+revenus, earn, income) runs beside the phrase pattern on every covered key. Two
+honest strings are allowed by key, each with a one-line reason, and an
+allowlist entry that stops matching fails the suite.
+
+**Proof, all watched red before green:**
+
+- against develop, the widened pin failed on `landTypes.tfl.advantages.agent`
+  and `quickActions.questions.kamnetAgent`, fr and en;
+- the page test failed on "catalogue", on the agent's advantages and on the
+  missing dossier, over the real render;
+- "Commission rapide" put back in `fr.json` only: the vocabulary test fails
+  (and the fr/en parity test beside it);
+- a fresh namespace `zzFresh` carrying "gagnez", pin untouched: fails;
+- keys and JSX of the agent advantages put back: the page test fails, fr and en;
+- the dossier removed, then moved after "Pourquoi acheter", then given an eighth
+  item, then "Déclarations du partenaire" in place of a rubrique: each fails its
+  own test;
+- "catalogue" put back: fails;
+- "500 m²", "2 ha", "4 500 000 FCFA", "12 000 €", "TF n° 1234", "KBQ-" in the
+  dossier: each fails the no-parcel test.
+
+**Two defects in my own test, found by those mutations:**
+
+- **the first render was empty.** The page's sections are async server
+  components, and Testing Library renders nothing for an async component nested
+  in a tree. "Promises no catalogue" PASSED against copy that said
+  "catalogue". The test now awaits each section and renders it, and a first
+  test asserts the render holds the page's real text before any "does not
+  contain" is believed;
+- **"500 m²" and "12 000 €" passed the no-parcel test.** `\b` after `²` or `€`
+  never matches, because neither is a word character, and `textContent` glued
+  the price to the next heading ("€Pourquoi"). The page is now read one text
+  node per line, and those two units take no boundary.
+
+`test-utils/next-intl-mock.tsx` gains `t.raw`, loud on a miss like `t`. The
+public namespaces now come from `i18n/watched-namespaces.ts`, the helper P27
+introduced for this pin, instead of a list kept in the spec.
+
+**Rebased on 25 September (evening) onto develop after #176.** The first version
+of #174 recorded its work in a `WAVE_STATUS.md`, which the repository has
+retired, and targeted `app/products/lands`, which now lives under `[locale]`. It
+was rebuilt from develop rather than replayed: same copy, with the `™` P27 added
+since, same component, the pin ported onto Ulrich's rewrite of it, and the page
+test given the navigation mock the locale-aware links now need. Re-proved on the
+new base: the page test and the pin fail against develop's page and copy (10
+failures), "Commission rapide" put back fails the pin, and a fresh namespace
+carrying "gagnez" fails it without touching it.
+
+**The KBS and agent pages' exclusive-catalogue promises**
+(`whyKbs.network.description`, `whyAgent.exclusiveAccess`) were replaced in #200
+with the copy Visquis validated on 26 September, separately from this PR so they
+were not held by it, and pinned by `agent-copy-promises-no-exclusive-catalogue.spec.ts`.
+
+**Rebased on 27 September onto develop after #232.** #232 rebuilt the guard
+inverted on develop - every namespace watched unless declared exempt with a
+reason - and removed "Commission rapide" and "gagner des commissions" by
+deletion. On `public-copy-promises-no-rate.spec.ts` develop's version is kept
+whole: the pin described above, which this branch carried, is superseded, and
+restoring it would bring back a guard that reads a list. What this PR still
+brings is the copy, the dossier section, the page test, `t.raw` in the intl
+mock, and the `register` inventory at zero. `P21` follow-up keeps develop's
+`PROUVE`. The branch's copy strings are read by develop's guard on the rebased
+tree.
 
 ---
 
