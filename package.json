@@ -4,8 +4,8 @@
   "license": "MIT",
   "scripts": {
     "----- API -----": "",
-    "start": "npx nx serve api",
-    "start:dev": "npx nx serve api",
+    "start": "APP_ENV=${APP_ENV:-local} npx nx serve api",
+    "start:dev": "APP_ENV=${APP_ENV:-local} npx nx serve api",
     "start:prod": "node dist/apps/api/main.js",
     "build": "npx nx build api",
     "----- WEB -----": "",

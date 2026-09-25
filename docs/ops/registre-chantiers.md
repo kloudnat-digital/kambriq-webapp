@@ -223,6 +223,7 @@ listed here first.
 | `confirmRemainingPayment`     | `A FAIRE`           | step 4 records the balance on the reservation alone: nothing creates a payment for it, so it cannot be gated the way the acompte now is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `P27`                         | `PROUVE`            | KAMBRIQ LANDS™, KAMBRIQ VERIFY™ and KAMNET™ carry the mark everywhere on the website, KBS does not; a guard watches every namespace and every MDX file; proven on dev at `sha-e059503`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `A44`                         | `EN COURS`          | an avatar is a key in the caller's own storage folder, refused otherwise on both write paths; `connect-src` names the bucket so the browser may upload. Pending: an avatar uploaded end to end on dev in a real browser                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `A43`                         | `EN COURS`          | Swagger is served only where `APP_ENV=local` is declared, never from `NODE_ENV`; the local start scripts declare it. Pending: the anonymous request to the docs on dev, after deploy                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `P24`                         | `PROUVE`            | the land title number is shaped `TF <number>/<department>` and validated by shape in the web form and the API; invented formats replaced; proven on dev at `sha-85c8966`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `P25`                         | `PROUVE`            | the verify price table was the only MDX element outside the component map; two consent sentences were split into columns by a flex label; proven on dev at `sha-828c509`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `I43`                         | `PROUVE`            | ten signed-in screens promised 38 unbuilt features in hardcoded French; the promise is removed and a guard reads every `.tsx`; proven on dev at `sha-383828e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -5590,6 +5591,59 @@ so nothing was changed.
 - identity-document addresses are stored as full `https://` URLs (seen in the
   admin user list), whereas the upload route issues keys. That is not A44's
   field.
+
+### A43 - the API's documentation is served only where it is declared local - `EN COURS`
+
+**Cost impact: None.**
+
+**Pending:** the anonymous request to the documentation on dev, after deploy.
+
+**The premise, verified.** `main.ts` mounted Swagger whenever
+`NODE_ENV !== 'production'`, and the dev API runs with `NODE_ENV=development`.
+Measured anonymously on dev on 25 September, before the change:
+
+- `GET /api/v1/docs`: **200**, the Swagger page;
+- `GET /api/v1/docs-json`: **200**, 145 286 bytes, **145 paths**, the whole API
+  with its schemas and examples.
+
+**Decided: not served on an open environment**, rather than served behind
+authentication. The API's JWT travels in a header, which a browser opening
+`/docs` never sends, so an authenticated docs page would have taken Swagger away
+from every developer.
+
+**The signal is `APP_ENV`, as for the robots header, and the default is the
+opposite one.** `APP_ENV` is set nowhere today: not in `kambriq-infra`, not in
+the workflows, not in the API image. So dev and a laptop both have it absent,
+and both have `NODE_ENV=development`. Absence therefore cannot mean "serve", or
+dev would still serve. `servesApiDocs` in `libs/common/src/config/api-docs.ts`
+answers yes only for an explicit `local`. `pnpm start` and `start:dev` declare it
+with `APP_ENV=${APP_ENV:-local}`, which a developer can still override, and
+`.env.example` documents it. No deployed image runs those scripts
+(`start:prod` does not declare it). An environment that forgot to declare
+itself serves nothing, which is the safe direction to be wrong in.
+
+**Proof so far, all watched red before green.** Against develop, the `main.ts`
+and start-script pins failed. Four mutations each failed their own test:
+absence meaning open, an exact-spelling-only match, `main.ts` back on
+`NODE_ENV`, and the start script no longer declaring `local`. The first version
+of the `main.ts` pin banned the word `NODE_ENV` and so failed on the comment
+explaining why it is not read. It now bans reading it.
+
+**Other places that gate on `NODE_ENV` when they mean the environment - named,
+not fixed, as the brief asks:**
+
+- `app/app.module.ts`: the pino log level (`debug` unless `production`) and its
+  pretty-printing: dev logs at debug level;
+- `core`, `kbs`, `kamnet` and `lands` `*-prisma.service.ts`: Prisma query
+  logging when `development`, **so dev logs every SQL query**;
+- `health/build-info.ts`: `env` in `/api/v1/health/version` reports `NODE_ENV`,
+  so dev reports itself as `development`, which says how it was built, not
+  where it runs;
+- `libs/common/src/config/env.validation.ts`: `NODE_ENV` defaults to
+  `development` when unset.
+
+`kambriq-infra/kamtech-ws-context.md` still says Swagger is served "in
+non-production". That line is now stale and lives in the infra repository.
 
 ---
 
