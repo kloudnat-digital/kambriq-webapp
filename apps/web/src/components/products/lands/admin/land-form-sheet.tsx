@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import type { Land, LandLabel } from '@/types/lands';
 import { CreateLandFormResolver } from '@/validations/schema/lands';
+import { TITLE_NUMBER_EXAMPLE } from '@kambriq/common/lands/title-number';
 import type { CreateLandFormSchema } from '@/validations/schema/lands';
 import { createLandAction, updateLandAction } from '@/lib/actions/lands';
 import { CREATE_LAND_DEFAULTS } from '@/validations/schema/lands';
@@ -209,7 +210,9 @@ const LandFormSheet: FC<LandFormSheetProps> = ({
                   titleNumber: {
                     name: 'titleNumber',
                     label: t('form.titleNumber'),
-                    placeholder: 'TF/MFOUNDI/2024/0421',
+                    placeholder: t('form.titleNumberPlaceholder', {
+                      example: TITLE_NUMBER_EXAMPLE,
+                    }),
                   },
                 }}
                 labels={labels}

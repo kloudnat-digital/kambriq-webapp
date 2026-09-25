@@ -36,7 +36,7 @@ export const MOCK_LANDS: MockLand[] = [
     label: { code: 'TFL', name: 'Titre Foncier Loti' },
     isVerified: true,
     verifiedAt: '2024-11-15',
-    tfNumber: 'TF/MFOUNDI/2024/0421',
+    tfNumber: 'TF 421/WB',
     status: 'available',
     description:
       'Terrain plat situé à Dibamba, en bordure de route bitumée. Idéal pour un projet résidentiel ou commercial. Titre foncier définitif, vérifié et certifié par KAMBRIQ VERIFY™.',
@@ -62,7 +62,7 @@ export const MOCK_LANDS: MockLand[] = [
     label: { code: 'VEFL', name: 'Vente en État Futur de Lotissement' },
     isVerified: true,
     verifiedAt: '2025-01-08',
-    tfNumber: 'TF/CENTRE/2025/0089',
+    tfNumber: 'TF 89/MF',
     status: 'available',
     description:
       'Beau terrain à Bastos, quartier diplomatique et résidentiel de Yaoundé. Subdivision en cours avec titre foncier définitif garanti sous 12 mois. Environnement calme et sécurisé.',
@@ -112,7 +112,7 @@ export const MOCK_LANDS: MockLand[] = [
     label: { code: 'VEFL', name: 'Vente en État Futur de Lotissement' },
     isVerified: true,
     verifiedAt: '2025-02-20',
-    tfNumber: 'TF/SUD/2025/0034',
+    tfNumber: 'TF 34/OC',
     status: 'reserved',
     description:
       'Exceptionnel terrain en bord de mer à Kribi. Vue mer partielle, à quelques mètres de la plage. Idéal pour un projet touristique ou une villa de luxe. Titre foncier existant, lotissement en cours sous label KAMBRIQ VEFL™.',

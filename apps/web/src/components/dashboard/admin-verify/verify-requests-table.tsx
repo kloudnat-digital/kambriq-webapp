@@ -20,7 +20,7 @@ type VerifyRequest = {
 const MOCK: VerifyRequest[] = [
   {
     id: '1',
-    tfNumber: 'TF/MFOUNDI/2024/0421',
+    tfNumber: 'TF 421/MF',
     location: 'Yaoundé, Bastos',
     clientName: 'Jean Dupont',
     status: 'PENDING',
@@ -28,7 +28,7 @@ const MOCK: VerifyRequest[] = [
   },
   {
     id: '2',
-    tfNumber: 'TF/SUD/2025/0034',
+    tfNumber: 'TF 34/OC',
     location: 'Kribi, Bord de Mer',
     clientName: 'Alphonse Biya',
     status: 'IN_PROGRESS',
@@ -36,7 +36,7 @@ const MOCK: VerifyRequest[] = [
   },
   {
     id: '3',
-    tfNumber: 'TF/CENTRE/2025/0089',
+    tfNumber: 'TF 89/MF',
     location: 'Yaoundé, Ekounou',
     clientName: 'Sandra Njoh',
     status: 'COMPLETED',
@@ -44,7 +44,7 @@ const MOCK: VerifyRequest[] = [
   },
   {
     id: '4',
-    tfNumber: 'TF/LIT/2024/1123',
+    tfNumber: 'TF 1123/WB',
     location: 'Douala, Bonanjo',
     clientName: 'Roland Fouda',
     status: 'REJECTED',

@@ -150,3 +150,12 @@ export { TransformResponseInterceptor } from './interceptors/transform-response.
 export { GlobalExceptionFilter } from './filters/global-exception.filter';
 export { PrismaExceptionFilter } from './filters/prisma-exception.filter';
 export { ZodExceptionFilter } from './filters/zod-exception.filter';
+
+// ----- Lands (P24) -----
+export {
+  TITLE_NUMBER_EXAMPLE,
+  KNOWN_DEPARTMENT_CODES,
+  parseTitleNumber,
+  isUnlistedDepartment,
+} from './lands/title-number';
+export type { TitleNumber } from './lands/title-number';

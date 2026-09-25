@@ -867,6 +867,12 @@ async function seedLands() {
     isPublished: boolean;
     isVerified: boolean;
     verifiedAt?: Date;
+    /**
+     * Fictitious, in the Cameroonian shape `TF <number>/<department>` (P24).
+     * `WB` (Wouri B) is Visquis's code; `MF` Mfoundi, `FA` Fako, `MI` Mifi and
+     * `BE` Bénoué are inferred for Yaoundé, Buea, Bafoussam and Garoua and wait
+     * for his correction. No number is a real title.
+     */
     titleNumber: string | null;
     pv: number;
     ownerType: LandOwnerType;
@@ -888,7 +894,7 @@ async function seedLands() {
       isPublished: true,
       isVerified: true,
       verifiedAt: SEED_DATE,
-      titleNumber: 'TF-CM-LT-2025-001',
+      titleNumber: 'TF 1187/WB',
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
     },
@@ -908,7 +914,7 @@ async function seedLands() {
       isPublished: true,
       isVerified: true,
       verifiedAt: SEED_DATE,
-      titleNumber: 'TF-CM-CT-2025-002',
+      titleNumber: 'TF 2350/MF',
       pv: 1.1,
       ownerType: LandOwnerType.KAMBRIQ,
     },
@@ -928,7 +934,7 @@ async function seedLands() {
       isPublished: true,
       isVerified: true,
       verifiedAt: SEED_DATE,
-      titleNumber: 'TF-CM-LT-2025-003',
+      titleNumber: 'TF 3462/WB',
       pv: 1.2,
       ownerType: LandOwnerType.KAMBRIQ,
     },
@@ -967,7 +973,7 @@ async function seedLands() {
       isPublished: true,
       isVerified: true,
       verifiedAt: new Date('2024-12-01'),
-      titleNumber: 'TF-CM-SW-2025-004',
+      titleNumber: 'TF 518/FA',
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
     },
@@ -987,7 +993,7 @@ async function seedLands() {
       isPublished: true,
       isVerified: true,
       verifiedAt: SEED_DATE,
-      titleNumber: 'TF-CM-LT-2025-005',
+      titleNumber: 'TF 4803/WB',
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
     },
@@ -1064,7 +1070,7 @@ async function seedLands() {
       isPublished: true,
       isVerified: true,
       verifiedAt: SEED_DATE,
-      titleNumber: 'TF-CM-OU-2025-006',
+      titleNumber: 'TF 912/MI',
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
     },
@@ -1122,7 +1128,7 @@ async function seedLands() {
       isPublished: true,
       isVerified: true,
       verifiedAt: SEED_DATE,
-      titleNumber: 'TF-CM-NO-2025-007',
+      titleNumber: 'TF 2764/BE',
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
     },
@@ -1199,7 +1205,7 @@ async function seedLands() {
       isPublished: true,
       isVerified: true,
       verifiedAt: SEED_DATE,
-      titleNumber: 'TF-CM-CT-2025-008',
+      titleNumber: 'TF 6075/MF',
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
     },
@@ -1378,6 +1384,9 @@ async function seedLands() {
         isPublished: parcel.isPublished,
         price: parcel.price,
         labelId: parcel.labelId,
+        // P24: the titles were rewritten from an invented format; without this
+        // line dev would keep showing the old ones, because `create` runs once.
+        titleNumber: parcel.titleNumber,
       },
     });
   }
