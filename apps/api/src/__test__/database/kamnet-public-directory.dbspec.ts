@@ -287,10 +287,10 @@ describe('P11 - the public directory lists only agents who may be listed', () =>
   });
 
   /**
-   * Separate from the deactivation test on purpose. The two were one `it` until
-   * Visquis's review of 22 September: a single test reports only its FIRST
-   * failure, so a mutation that broke soft-delete alone would have been masked
-   * by the deactivation assertion passing above it. Two tests, two mutations.
+   * Separate from the deactivation test on purpose. A single `it` reports only
+   * its FIRST failure, so holding both assertions would let a mutation that
+   * broke soft-delete alone be masked by the deactivation assertion passing
+   * above it. Two tests, two mutations.
    */
   it('excludes an agent whose account was soft-deleted', async () => {
     const deleted = await createFixture({ consented: true });

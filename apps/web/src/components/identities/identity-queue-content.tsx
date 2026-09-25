@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { HumanDate } from '@/components/payments-admin/payment-money';
 
 type Row = {
@@ -12,16 +12,11 @@ type Row = {
 };
 
 /**
- * A14 - the identity review queue, on a screen at last.
+ * Renders the queue of pending identity review requests.
  *
- * The route and the reviewer role have existed since PR #83; nothing rendered
- * them, so 59 documents sat at `pending` and nothing had ever been reviewed.
- * The register carries that as a defect, and G12 turns it into a blocking one:
- * **an unverified client cannot be sent payment coordinates**, so a queue nobody
- * can clear is now a queue that stops money.
- *
- * Oldest first, with the wait in days, because "how many" was never the question
- * a backlog has to answer.
+ * Unverified clients are blocked from receiving payment coordinates.
+ * This queue allows reviewers to process pending identity documents.
+ * Requests are ordered by age, with the oldest requests explicitly highlighted.
  */
 export const IdentityQueueContent = ({
   rows,

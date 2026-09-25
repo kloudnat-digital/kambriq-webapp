@@ -1,28 +1,20 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 /**
- * I40 - what a candidate sees in the seconds after submitting.
+ * Renders a loading state for candidates immediately after exam submission.
  *
- * Grading runs on a queue, so an exam sits at SUBMITTED briefly before it has a
- * score. The page used to call `notFound()` on the API's refusal, so somebody
- * who had just sat a certification exam was shown a **404**. I met it myself
- * driving a real candidate through on dev.
+ * Exam grading is processed asynchronously via a queue. During this period,
+ * the exam remains in a SUBMITTED state without a score.
  *
- * Grading stays asynchronous on purpose: making it synchronous would put a
- * queue's work on the request path for every candidate, to save a few seconds
- * of waiting. So the screen waits instead, and says what it is waiting for.
- *
- * It polls by asking the SERVER component to re-render rather than by fetching
- * in the browser: the verdict, the score and the breakdown are all assembled
- * server-side, and `router.refresh()` is how the rest of this codebase asks for
- * fresh server data. When the exam has been graded the page renders the result
- * instead of this component, and the interval is torn down with it.
+ * The component periodically triggers a server-side re-render (`router.refresh()`)
+ * to poll for the final grade. Once grading completes, the parent page renders
+ * the final result component, unmounting this view.
  */
 const POLL_MS = 3000;
 

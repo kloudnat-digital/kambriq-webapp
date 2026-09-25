@@ -1,43 +1,16 @@
 /**
- * KCA1 replay - deciding what a second load means, with no IO.
+ * Resolves synchronization logic for a secondary KCA1 data load (no I/O side effects).
  *
- * Step 3, and the part that makes this a foundation rather than a script. The
- * content is injected repeatedly, whenever Visquis edits the source, so the
- * second run has to update a course that candidates are already working through
- * without destroying what they have done.
+ * A simple upsert-based script overwrites edits destructively. This sync
+ * handles incremental updates to a course actively taken by candidates.
  *
- * ---------------------------------------------------------------------------
- * Why `upsert(..., update: {})` cannot be extended to this
- * ---------------------------------------------------------------------------
- * Every KBS row in `prisma/seed.ts` is written that way: course, modules,
- * lessons, questions, answers, candidates, certificates. It means a re-run over
- * edited content changes NOTHING - "idempotent is not restorative", already in
- * CLAUDE.md from the parcel seed. For a course that is loaded once that is
- * merely useless; for one that is loaded repeatedly it is the whole feature
- * missing.
+ * Lesson identity mapping cannot rely on document order (e.g. `P0/M3`) because
+ * adding or deleting a lesson shifts subsequent keys, silently breaking student progress.
+ * Instead, matching relies on finding the database ID via:
+ * 1. Normalized title (resilient to reordering).
+ * 2. Module number (resilient to title changes).
  *
- * ---------------------------------------------------------------------------
- * Identity, and why the content key is not it
- * ---------------------------------------------------------------------------
- * Step 1 keyed a lesson `P0/M3`, from the `MODULE 3 -` heading, and claimed that
- * survived reordering. It does not. When a module is removed the document
- * RENUMBERS: P0's `MODULE 3` becomes `MODULE 2`, so the key names a different
- * lesson after the edit than before it. A matcher trusting that key would point a
- * candidate's completion at the wrong lesson - quietly, and only for the people
- * who had already done the work.
- *
- * So the stored identity is the database row's own id. It is written once and
- * never rewritten, which is what makes `KbsLessonCompletion.lessonId` keep
- * meaning the same thing across loads. The content key is only ever an input to
- * MATCHING, and matching uses two signals:
- *
- *   1. the normalised title within the parcours - survives renumbering;
- *   2. the module number - survives a retitle.
- *
- * Neither alone is enough, because the acceptance changes both: a title is
- * edited AND a lesson is removed in the same revision. Every match records
- * which signal carried it, so the report says what happened rather than only
- * what the totals were.
+ * Outcomes are tracked explicitly to report changes such as renamed or moved lessons.
  */
 
 /** A lesson as the source now describes it. */
@@ -80,17 +53,12 @@ export type LessonMatch = {
 };
 
 /**
- * Where a lesson the source no longer mentions is parked.
+ * Defines the sorting order offset for parking lessons removed from the source.
  *
- * It is NOT deleted. `KbsLessonCompletion.lesson` carries `onDelete: Cascade`,
- * so deleting a lesson destroys completions a candidate earned - work they did,
- * erased to tidy up a load. Decided with Visquis: keep the row, move it out of
- * the live ordering band, and report it.
- *
- * The renumbering is forced rather than cosmetic: `@@unique([moduleId, order])`
- * means an orphan still holding order 3 collides with whichever lesson
- * renumbers into 3, and the load would fail on a constraint instead of saying
- * what it found.
+ * Removed lessons are never deleted to preserve existing `KbsLessonCompletion`
+ * records for candidates who already completed them. They are moved to an
+ * orphaned range to avoid unique constraint collisions (moduleId + order) with
+ * reordered active lessons.
  */
 export const ORPHAN_ORDER_BASE = 1000;
 

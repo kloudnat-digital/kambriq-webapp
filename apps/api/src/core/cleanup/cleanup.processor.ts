@@ -19,14 +19,8 @@ export class CoreCleanupProcessor extends WorkerHost {
   }
 
   /**
-   * An unknown job name is a defect, not a no-op.
-   *
-   * A resolved promise marks a BullMQ job **completed**. Returning `null` for a
-   * name this processor does not recognise therefore reports success for work
-   * that was never done: rename a constant, deploy, and every job of that kind
-   * drains from the queue with a green tick and a `warn` nobody is reading.
-   * Throwing puts the job on the failed set, where it is countable and
-   * retryable.
+   * Processes core background jobs.
+   * Throws on unknown job names to ensure failures are correctly tracked by BullMQ.
    */
   async process(job: Job): Promise<unknown> {
     switch (job.name) {
@@ -35,16 +29,9 @@ export class CoreCleanupProcessor extends WorkerHost {
       case CORE_JOBS.PURGE_DELETED_USERS:
         return this.handlePurgeDeletedUsers();
       /**
-       * L2 - a case in this switch rather than a processor of its own.
-       *
-       * A second `@Processor(QUEUES.CORE)` would be a second worker on one
-       * queue, and BullMQ hands a job to exactly one of them - so whichever won
-       * a token-cleanup job would run its own switch, not find the name, and
-       * (before this file threw) discard it. That is precisely the defect G6
-       * introduced and `one-processor-per-queue.spec.ts` now forbids.
-       *
-       * It deliberately does not catch: `sendDailyDigest` throws when it has
-       * nowhere to send, and that belongs on the failed set.
+       * Handled here to avoid multiple `@Processor` decorators on the same queue,
+       * which would cause unpredictable job distribution. Unhandled exceptions are correctly
+       * propagated to the queue's failed set.
        */
       case CORE_JOBS.CONTACT_DIGEST:
         return this.contact.sendDailyDigest();
@@ -85,42 +72,16 @@ export class CoreCleanupProcessor extends WorkerHost {
   }
 
   /**
-   * C4c - hard-deletes accounts past their grace period, **and their files**.
+   * Purges soft-deleted users past their grace period.
    *
-   * ---------------------------------------------------------------------------
-   * What this used to do, and why the bucket filled with orphans
-   * ---------------------------------------------------------------------------
-   * One `deleteMany`. It erased the rows and touched S3 not at all, so every
-   * account it purged left its identity documents behind for ever - and
-   * `deleteMany` returns only a **count**, so the ids were gone the instant it
-   * ran and nothing could say afterwards which prefixes to clean.
+   * Deletion order is critical to prevent orphaned objects in S3:
+   * 1. Resolve user IDs to delete.
+   * 2. Delete the user's files from S3.
+   * 3. Delete the user record from the database.
    *
-   * That is how 79 documents came to sit under `users/` for accounts that no
-   * longer existed, including real ones. The log line said
-   * `purgedUsers: N`, which reads exactly like success.
-   *
-   * ---------------------------------------------------------------------------
-   * The order is the fix
-   * ---------------------------------------------------------------------------
-   * Select the ids first, then **per user: delete the objects, then the row.**
-   *
-   * If S3 refuses, the row is **not** deleted. Both halves stay, the pair stays
-   * consistent, and the next run retries. The alternative - delete the row
-   * anyway - is the shape that created this defect: it manufactures a fresh
-   * orphan at the exact moment something is already going wrong.
-   *
-   * The run then **throws** with a tally rather than returning a number that
-   * looks fine. A purge that half-worked must not complete green.
-   *
-   * ---------------------------------------------------------------------------
-   * Idempotence
-   * ---------------------------------------------------------------------------
-   * Safe to run twice. A second run matches no rows and does nothing; a run
-   * that failed on S3 for one user leaves that user selectable again, so the
-   * retry is the ordinary path rather than a repair procedure.
-   *
-   * The retention period itself is `C4b`, still with the lawyer. It changes
-   * `GRACE_PERIOD_DAYS` - when this runs - not what it must delete.
+   * If S3 deletion fails for a user, their database record is preserved to allow
+   * subsequent retries, maintaining data consistency. The process throws an error
+   * at the end if any deletions failed, ensuring partial success is flagged.
    */
   private async handlePurgeDeletedUsers() {
     const GRACE_PERIOD_DAYS = 30;

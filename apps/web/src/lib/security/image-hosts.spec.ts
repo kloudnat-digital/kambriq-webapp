@@ -1,3 +1,16 @@
+/**
+ * @jest-environment node
+ *
+ * A40's checks are file reads, config objects and an AWS presigned URL - not
+ * one line of this touches the DOM. Under the project's default jsdom
+ * environment the suite does not run at all: `@aws-sdk/client-s3` pulls in
+ * `@smithy/core`, which reads `TextDecoder` at module scope, and jsdom does
+ * not provide it. `ReferenceError: TextDecoder is not defined`, zero tests, and
+ * a suite that reports nothing reports no defect either.
+ *
+ * Found on the merge of 25 September and NOT caused by it: reverting the web
+ * jest config to develop's own left the failure unchanged.
+ */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';

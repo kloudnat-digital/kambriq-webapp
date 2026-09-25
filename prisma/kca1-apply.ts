@@ -1,31 +1,16 @@
 /**
- * KCA1 replay - the writes, and the order they have to happen in.
+ * Executes the database write operations for the KCA1 course replay.
  *
- * `seed-data/kca1-sync.ts` decides what a second load MEANS and touches no
- * database. This file performs it. The split is the same one the loader uses:
- * the decision is unit-tested without Postgres, and the writes are proved
- * against real Postgres and the real migrations in `kca1-replay.dbspec.ts`.
+ * Execution phases:
+ * The script processes writes in two phases to avoid `@@unique([moduleId, order])` constraint
+ * violations when reordering lessons.
+ * - Phase 1: existing rows are temporarily reassigned to an order far outside the standard range.
+ * - Phase 2: rows are assigned their final target order.
  *
- * ---------------------------------------------------------------------------
- * Why the writes are in two phases
- * ---------------------------------------------------------------------------
- * `KbsLesson` carries `@@unique([moduleId, order])`. A revision that removes a
- * lesson renumbers every lesson after it, so writing the new orders one row at
- * a time walks straight into that constraint: the row moving into order 2 hits
- * the row that has not yet moved out of it. The load would fail half-applied,
- * on a constraint, with no report.
- *
- * So every row that is staying is first parked at a temporary order far above
- * the live band, and only then given its final one. Two passes, no collision,
- * and the same technique parks the rows the source no longer mentions.
- *
- * ---------------------------------------------------------------------------
- * What is never done
- * ---------------------------------------------------------------------------
- * Nothing is deleted. `KbsLessonCompletion.lesson` cascades, so deleting a
- * lesson destroys completions a candidate earned. A lesson that leaves the
- * source keeps its row, keeps its completions, is parked out of the live band
- * and is named in the report as absent from the source.
+ * Deletions:
+ * To preserve associated `KbsLessonCompletion` records (which cascade on deletion), lessons
+ * removed from the source are parked outside the standard ordering band rather than deleted.
+ * These are logged as absent from the source in the execution report.
  */
 
 import {
@@ -44,17 +29,11 @@ import {
 } from './seed-data/kca1-sync';
 
 /**
- * The slice of a Prisma client these writes need.
+ * Structural definition of the Prisma client subset required by this script.
  *
- * Declared here, structurally, so this file imports nothing generated - the
- * generated client is gitignored and absent from the web image, and a prisma/
- * script that depended on it would repeat the break that took the web image
- * down. The database test passes the REAL `prisma.kbsLesson` against this type
- * with no cast, so the shape is checked by the compiler rather than assumed.
- *
- * Method syntax rather than arrow properties on purpose: TypeScript checks
- * method parameters bivariantly, which is what lets a hand-written structural
- * type accept a delegate whose own argument types are far more generic.
+ * Declared structurally to avoid importing the generated client, which is gitignored
+ * and excluded from the web image. Method syntax is used over arrow properties to
+ * leverage TypeScript's bivariant parameter checking for delegate compatibility.
  */
 export type LessonWriter = {
   findMany(args: {
@@ -70,7 +49,7 @@ export type ApplyResult = {
   matches: LessonMatch[];
 };
 
-/** Where staying rows are parked between the two phases. Above every live order. */
+/** Staging threshold used to park rows between ordering phases. */
 const STAGING_BASE = ORPHAN_ORDER_BASE * 2;
 
 export const applyLessons = async (
@@ -86,16 +65,12 @@ export const applyLessons = async (
 
   const matches = matchLessons(source, existing);
 
-  // Phase 1. Every row that already exists is parked above the live band, so
-  // the final orders below cannot collide with a row that has not moved yet.
-  // Without this the second load dies on @@unique([moduleId, order]), half
-  // applied, with no report of what it managed to do.
+  // Phase 1: Park existing rows above the live band to prevent `@@unique([moduleId, order])` collisions during reordering.
   for (const [index, row] of existing.entries()) {
     await lessons.update({ where: { id: row.id }, data: { order: STAGING_BASE + index + 1 } });
   }
 
-  // Phase 2. Final positions, and the rows the source no longer mentions are
-  // parked rather than deleted - the cascade on completions is why.
+  // Phase 2: Assign final positions. Unmatched source rows are parked rather than deleted to prevent completion cascade deletion.
   let orphans = 0;
   for (const match of matches) {
     if (match.source === null) {
@@ -127,10 +102,8 @@ export const applyLessons = async (
 };
 
 /**
- * The slice of a question delegate these writes need, declared structurally for
- * the same reason `LessonWriter` is: a `prisma/` script imports nothing
- * generated. `KbsQuestion` and `KbsExamQuestion` both satisfy it, which is what
- * lets one function write both copies.
+ * Structural definition of the question writer interface.
+ * Implemented by both `KbsQuestion` and `KbsExamQuestion` delegates.
  */
 export type QuestionWriter = {
   findMany(args: {
@@ -146,26 +119,12 @@ export type QuestionApplyResult = {
   created: { quiz: number; quizAnswers: number; exam: number; examAnswers: number };
 };
 
-/**
- * The only question type KCA1 carries. Every source question has exactly one
- * correct answer among four, which is what `SINGLE` means to `submitQuiz` and
- * to `gradeExam`; the other spelling of this value is the DTO's
- * `z.enum(['SINGLE', 'MULTIPLE'])`, and there is no shared constant to import.
- */
+/** Expected question type indicating a single correct answer. */
 const SINGLE_ANSWER = 'SINGLE';
 
 /**
- * Writes the eighty questions twice, because the schema holds them twice.
- *
- * `KbsQuestion` feeds the module quiz and `KbsExamQuestion` feeds the exam, and
- * decision 2.1 says both are drawn from the SAME eighty for V0. Writing only
- * the first copy passes every quiz test and leaves I36's course-scoped exam
- * draw looking at an empty pool - a candidate eligible for an exam that answers
- * 503.
- *
- * The answers ride in as a nested create, so a question and its four answers
- * arrive in one statement: a question that exists with no correct answer is one
- * nobody can pass, and I21 is the record of where that leads.
+ * Writes the specified questions to both the module quiz (`KbsQuestion`) and exam (`KbsExamQuestion`) pools.
+ * Nested creates are utilized to ensure atomic creation of a question and its corresponding answers.
  */
 export const applyQuestions = async (
   quiz: QuestionWriter,
@@ -216,7 +175,7 @@ export const applyQuestions = async (
   return { parcours, decision, created };
 };
 
-/** The question half of the run report, one line per parcours. */
+/** Formats the question execution summary report. */
 export const formatQuestionReport = (results: QuestionApplyResult[]): string =>
   results
     .map((result) => `${result.parcours}: ${describeQuestionDecision(result.decision)}`)
@@ -231,13 +190,7 @@ const OUTCOME_ORDER: MatchOutcome[] = [
   'absent-from-source',
 ];
 
-/**
- * Printed so Visquis can read the consequences of his own edit.
- *
- * Every lesson is named, not just counted: "3 updated" does not tell somebody
- * whether the one they cared about was among them, and "absent from the source"
- * is a decision he has to take per lesson rather than in aggregate.
- */
+/** Generates a detailed report of applied changes per lesson to facilitate review. */
 export const formatReport = (results: ApplyResult[]): string => {
   const lines: string[] = [];
 

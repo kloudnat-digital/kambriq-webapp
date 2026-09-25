@@ -12,30 +12,14 @@ import {
 } from '../payments/dto/payments.dto';
 
 /**
- * G4 - the back office for payments.
+ * Back-office controller for payment management.
  *
- * ---------------------------------------------------------------------------
- * Who may record, and who may validate
- * ---------------------------------------------------------------------------
- * **Recording is `ADMIN_LANDS`. Validating is `ADMIN_GLOBAL`.**
+ * Recording is restricted to `ADMIN_LANDS`, as it acts as unverified data entry
+ * appending to the ledger without committing state.
  *
- * Recording an encaissement is data entry: somebody reads a transfer receipt
- * and enters what it says. It is done often, by whoever handles the dossier,
- * and it commits nothing - the ledger grows, the payment does not move.
- *
- * Validating **commits money**. It says the platform agrees the payment is
- * settled, and everything downstream - the sale, the commission, the title -
- * rests on it. That is why it sits one role higher, and `ADMIN_GLOBAL` implies
- * `ADMIN_LANDS`, so a global admin can also record without a second grant.
- *
- * This is also what makes the deferred four-eyes rule cheap to add: with the
- * two acts already separated by role, the rule becomes a check on **identity**
- * within the validate path rather than a redesign. The seam is
- * `PaymentsService.assertFourEyesIfRequired`, called before the transition.
- *
- * The class-level `@Roles` is pinned by `route-guards.spec.ts`: deleting it
- * would downgrade this controller to "any authenticated user" without changing
- * a single response shape.
+ * Validation is restricted to `ADMIN_GLOBAL`. It commits the funds and
+ * authorizes downstream actions. Role separation enforces the four-eyes principle
+ * by ensuring the validator is distinct from the recorder.
  */
 @ApiTags('Payments (Admin)')
 @ApiBearerAuth()

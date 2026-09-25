@@ -187,19 +187,9 @@ export class KamnetAgentsService {
   }
 
   /**
-   * The agent's own decision to be listed, or to stop being listed.
-   *
-   * Set from the agent's private space and nowhere else. It is deliberately NOT
-   * a field on `updateAgentProfileDto`: that schema is a bag of optional
-   * presentational fields - bio, name, phone, city - and a permission to
-   * publish somebody's identity does not belong in a partial update where it
-   * can be carried along by accident. It is also the reason this returns the
-   * timestamp rather than the whole profile: a caller should see exactly what
-   * it changed.
-   *
-   * Withdrawal deletes the Redis agent row as suspend and reactivate do, so the
-   * next read of any agent-scoped endpoint sees the new value rather than a
-   * cached one.
+   * Manages explicit agent consent for public directory listing.
+   * Explicitly decoupled from standard profile updates to ensure deliberate action.
+   * Clears the Redis cache immediately upon withdrawal to enforce instantaneous delisting.
    */
   async setPublicListingConsent(userId: string, consented: boolean) {
     const agent = await this.findByIdOrThrowByUserId(userId);
@@ -254,13 +244,10 @@ export class KamnetAgentsService {
 
   // ----- Auto Promotion Check ----- //
   /**
-   * Called after a sale is recorded. Check if the agent qualifies for a higher
-   * tier on completed sales alone - P9 removed the referral requirement.
+   * Checks and processes agent tier promotion based on completed sales count.
+   * Triggered automatically after a successful sale record.
    */
   async checkPromotion(agentId: string) {
-    // No `_count: { referrals: true }`: it was loaded for the referral
-    // threshold P9 removed, and a count fetched for a condition that no longer
-    // exists is a query nobody can explain later.
     const agent = await this.prisma.kamnetAgent.findUnique({
       where: { id: agentId },
     });
@@ -282,8 +269,7 @@ export class KamnetAgentsService {
       newTier = KamnetAgentTier.CONFIRMED;
     }
 
-    // CONFIRMED -> MANAGER: 10 completed sales. P9 dropped the referral
-    // requirement - selling is what earns the tier, recruiting is not.
+    // CONFIRMED -> MANAGER: 10 completed sales
     if (
       agent.tier === KamnetAgentTier.CONFIRMED &&
       agent.salesCount >= KAMNET_PROMOTION_THRESHOLDS.MANAGER_SALES
@@ -357,18 +343,9 @@ export class KamnetAgentsService {
     });
 
     /**
-     * I16 - suspension removes the power to act, and keeps the account.
-     *
-     * Before this, suspension changed no role: the lands routes guard on AGENT
-     * and never read `suspendedAt`, so a suspended agent went on reserving land.
-     * Removing the role needs nothing new from lands - no second rule a module
-     * could forget to read. The record, the history and earned commissions stay:
-     * commissions are read by ownership of the record, not by the role.
-     *
-     * Only AGENT goes. Every agent holds CLIENT in their own right (the I16
-     * one-off on dev; approval grants it explicitly), so their own purchases
-     * stay open. Before that grant, CLIENT came only through AGENT and would
-     * have gone with it.
+     * Suspension revokes the AGENT role, restricting agent-specific actions.
+     * The CLIENT role is retained, maintaining access to personal purchases.
+     * Commission and history records remain accessible via ownership.
      */
     await this.usersService.removeRole(agent.userId, RoleCode.AGENT);
 
@@ -404,10 +381,7 @@ export class KamnetAgentsService {
       data: { suspendedAt: null, suspendedBy: null },
     });
 
-    // I16 - lifting the suspension returns AGENT, but only to somebody who is
-    // still certified (I15: the certificate is the truth). A certificate revoked
-    // or expired during the suspension removed AGENT on its own account, and
-    // lifting the suspension must not hand it back.
+    // Re-grant the AGENT role only if the user maintains an active certification.
     if (await this.candidatesService.isUserCertified(agent.userId)) {
       await this.usersService.addRole(agent.userId, RoleCode.AGENT, adminUserId);
     } else {

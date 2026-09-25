@@ -5,7 +5,7 @@ import { isIP } from 'node:net';
  * A45 - whose rate-limit bucket a request spends.
  *
  * ---------------------------------------------------------------------------
- * What was measured on dev before this was written (23 September)
+ * What the deployment does, measured on dev (23 September)
  * ---------------------------------------------------------------------------
  * - The API's TCP peer is ALWAYS the ALB (`10.0.x.x`), so the connection
  *   cannot say who the caller is.
@@ -76,6 +76,26 @@ export const vouchedVisitor = (headers: Headers, secret: string | null): string 
   if (!sent || !sameSecret(sent, secret)) return null;
   const visitor = single(headers?.[VISITOR_IP_HEADER]);
   return visitor && isIP(visitor) ? visitor : null;
+};
+
+/**
+ * Whether a caller sent a secret that does not match the one configured.
+ *
+ * `vouchedVisitor` collapses three different situations into `null`: nothing
+ * was sent, the API holds no secret, or what was sent is wrong. The first two
+ * are ordinary - a direct caller vouches for nobody, and an unset secret is a
+ * stated choice that the guard already warns about at startup.
+ *
+ * The third is a misconfiguration, and it is the one that looks exactly like
+ * working: the web believes it is vouching, the API quietly ignores it, and
+ * every visitor the web serves goes back to sharing one bucket. That is the A2
+ * defect returning with nothing to show for it. A rotation applied on one side
+ * only is how it happens.
+ */
+export const callerSecretMismatch = (headers: Headers, secret: string | null): boolean => {
+  if (!secret) return false;
+  const sent = single(headers?.[CALLER_SECRET_HEADER]);
+  return Boolean(sent) && !sameSecret(sent as string, secret);
 };
 
 /** The address the ALB saw: the last `X-Forwarded-For` entry (A2, A36). */

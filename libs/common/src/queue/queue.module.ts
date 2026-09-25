@@ -11,9 +11,7 @@ import { redisConnectionOptions } from '../redis/redis-connection';
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        // D20 - the five queues share this connection, so TLS and the AUTH
-        // token arrive here for all of them at once. Same helper as
-        // RedisService and the bootstrap task: one decision, three callers.
+        // Unified Redis connection shared across all BullMQ queues.
         connection: redisConnectionOptions((key) => config.get<string>(key)),
         defaultJobOptions: {
           removeOnComplete: 100, // Keep last 100 completed jobs

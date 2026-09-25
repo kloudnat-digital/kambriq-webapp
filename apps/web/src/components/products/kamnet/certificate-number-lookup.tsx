@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
@@ -10,30 +10,15 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 /**
- * P11 - the way into the verifier for somebody who has not been handed a link.
+ * Renders the manual entry field for certificate verification (P11).
  *
- * `/verify-certificate/[certificateNumber]` is a deep link and nothing else:
- * until now a visitor could only reach a verdict if somebody had already given
- * them the URL. The directory answers "which agents are certified"; this
- * answers "is THIS number real", for a number read off a card, a message or a
- * contract.
+ * Implements loose validation by design: accepts any non-empty input and delegates
+ * strict format validation to the server (`verifyCertificate`). This prevents the
+ * client from inadvertently rejecting legacy certificate formats.
  *
- * ---------------------------------------------------------------------------
- * It validates shape, and deliberately not much
- * ---------------------------------------------------------------------------
- * The only check here is that something was typed. A stricter pattern would
- * refuse numbers the register might hold - the format has changed once already
- * (`KCA-YYYYMMDD-XXXX` today) - and refusing a real certificate in the browser
- * is worse than asking the register and being told UNKNOWN. The register is the
- * authority; this field is a door, not a gate.
- *
- * ---------------------------------------------------------------------------
- * No name search, by decision
- * ---------------------------------------------------------------------------
- * The subject is explicit that the verifier must not be searchable by name: the
- * directory is the name lookup and the verifier confirms a number. Two narrow
- * surfaces beat one that leaks, and `verifyCertificate` returns no name at all
- * so that a guessed number identifies nobody.
+ * Exclusively searches by certificate number. Name-based search is deliberately
+ * restricted to the public directory to prevent unauthorized data enumeration
+ * via the verifier endpoint.
  */
 export const CertificateNumberLookup = ({ className }: { className?: string }) => {
   const t = useTranslations('products.kamnet.directory');

@@ -176,9 +176,7 @@ export class KbsExamService {
     const settings = await readActiveCourse(this.prisma);
     const questionCount = settings?.examQuestionCount ?? DEFAULT_EXAM_QUESTION_COUNT;
 
-    // I36 - scoped to the active course. Unfiltered, this drew from every exam
-    // question in the database, so a second course meant a candidate could be
-    // examined on a course they never studied.
+    // Scope questions strictly to the active course to ensure candidates are only tested on the material they studied.
     const allQuestions = await this.prisma.kbsExamQuestion.findMany({
       where: { module: { courseId: this.activeCourseIdOrThrow(settings) } },
       include: {
@@ -199,12 +197,8 @@ export class KbsExamService {
 
     const startedAt = new Date();
     /**
-     * I21 - the exam records WHICH questions it served, not only how many.
-     *
-     * One empty answer slot per served question, written in the same
-     * transaction as the start. `saveAnswer` and `submitExam` accept answers
-     * only on these slots. Before this, only `totalQuestions` was stored, any
-     * pool question could be answered, and an exam of 20 graded at 300.
+     * Pre-allocates answer slots for served questions during initialization.
+     * Restricts `saveAnswer` and `submitExam` to only allow answers for these predefined slots.
      */
     await this.prisma.$transaction([
       this.prisma.kbsExam.update({
@@ -263,7 +257,7 @@ export class KbsExamService {
     this.assertExamNotExpired(exam);
 
     return this.prisma.$transaction(async (tx) => {
-      // I21 - only a question this exam served, only with that question's answers.
+      // Restricts answer submission to pre-allocated question slots.
       const slot = await this.servedSlotOrThrow(tx, examId, dto.questionId, dto.answerIds);
       const saved = await tx.kbsExamAnswer.update({
         where: { id: slot.id },
@@ -288,13 +282,9 @@ export class KbsExamService {
     }
 
     /**
-     * I21 - a submission after the deadline writes nothing.
-     *
-     * Only `saveAnswer` checked the clock, so a late submit could write answers
-     * after time until the expiry job ran. Past the deadline plus a short grace
-     * for the network, the exam is closed on what was saved in time - atomically,
-     * only if it is still open, since the expiry job may have closed it first -
-     * graded, and the submission is refused.
+     * Enforces strict deadline validation on submission.
+     * Submissions exceeding the deadline (including network grace period) are rejected.
+     * The exam is atomically closed based on previously saved answers and subsequently graded.
      */
     const deadline = this.deadlineOf(exam);
     if (deadline && Date.now() > deadline.getTime() + KbsExamService.SUBMIT_GRACE_MS) {
@@ -347,8 +337,8 @@ export class KbsExamService {
   }
 
   /**
-   * I21 - an answer is accepted only on a question this exam served, and only
-   * with answer ids that belong to that question.
+   * Validates that the submitted answer corresponds to a served question
+   * and contains valid answer IDs for that question.
    */
   private async servedSlotOrThrow(
     tx: KbsTransaction,
@@ -656,8 +646,7 @@ export class KbsExamService {
     }
 
     const totalQuestions = exam.totalQuestions || exam.examAnswers.length;
-    // I21 - capped as a second barrier. With answers accepted only on served
-    // questions it never fires; a barrier that never fires is the point.
+    // Cap score at 100 as a failsafe against incorrectly accepted answers.
     const score =
       totalQuestions > 0 ? Math.min(100, Math.round((correctCount / totalQuestions) * 100)) : 0;
     const passed = score >= exam.passingScore;
@@ -670,8 +659,7 @@ export class KbsExamService {
       },
     });
 
-    // Passing earns EXAM_PASSED. `certifiedAt` belongs to issuance, not to a
-    // score: it is the date on the document, and there is no document yet.
+    // Update candidate status based on exam outcome. `certifiedAt` is updated during certificate issuance.
     await this.prisma.kbsCandidate.update({
       where: { id: exam.candidateId },
       data: {

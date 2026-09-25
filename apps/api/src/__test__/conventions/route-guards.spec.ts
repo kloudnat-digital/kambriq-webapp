@@ -11,7 +11,7 @@ import { join, relative } from 'node:path';
  * route silently. Nothing fails, nothing logs, and the route simply stops asking.
  *
  * So this pins the public surface as a list. Adding a `@Public()` route is then a
- * change to this file — a reviewed decision — rather than a line nobody sees.
+ * change to this file - a reviewed decision - rather than a line nobody sees.
  * It also pins the class-level `@Roles` on the admin controllers, because a
  * deleted `@Roles` line downgrades an admin controller to "any authenticated
  * user" without changing a single response shape.

@@ -11,8 +11,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly config: ConfigService) {}
 
   onModuleInit() {
-    // D20 - host, port, and (when configured) the AUTH token and TLS, from the
-    // one helper every Redis client in this repository uses.
+    // Initializes the Redis client using the unified connection configuration.
     this.client = new Redis({
       ...redisConnectionOptions((key) => this.config.get<string>(key)),
       lazyConnect: true,

@@ -42,9 +42,14 @@ const nextConfig: WithNxOptions = {
   // P4 joins this block rather than adding a second mechanism beside it. This
   // is already the only place the app sets response headers, it already matches
   // every path, and - measured - it already applies to 404 responses, which is
-  // exactly where a noindex header has to reach. A middleware header could not
-  // have done the same job after P3: the matcher now runs on protected prefixes
-  // only, so it never sees the public pages that most need the header.
+  // exactly where a noindex header has to reach.
+  //
+  // The proxy could not do the same job. Its matcher is a positive list, so it
+  // never sees a URL the site does not serve - and a 404 is exactly where the
+  // header matters most, because a 404 is what a crawler finds when it follows
+  // a stale link. (This said "the matcher runs on protected prefixes only",
+  // which stopped being true when locale routing widened it to the public
+  // paths; the conclusion was unchanged and the reason was not.)
   async headers() {
     return [
       {

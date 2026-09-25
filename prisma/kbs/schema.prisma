@@ -7,9 +7,7 @@ datasource db {
   provider = "postgresql"
 }
 
-// ----- KBS Module ----- //
-// Training, Exams, Certifications //
-
+/// KBS Module: Training, Exams, and Certifications
 model KbsCourse {
   id          String   @id @default(uuid())
   title       String   @unique
@@ -17,7 +15,8 @@ model KbsCourse {
   slug        String?
   language    String?  @default("fr")
   isPublished Boolean  @default(false)
-  duration    Int?     // estimated total duration in minutes
+  /// Estimated total duration in minutes.
+  duration    Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -35,8 +34,10 @@ model KbsModule {
 
   course        KbsCourse              @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lessons       KbsLesson[]
-  questions     KbsQuestion[]          // Module Quiz Questions
-  examQuestions KbsExamQuestion[]      // Exam Questions (categorized by module)
+  /// Quiz questions associated with the module.
+  questions     KbsQuestion[]
+  /// Exam questions categorized by this module.
+  examQuestions KbsExamQuestion[]
   progress      KbsCandidateProgress[]
 
   @@unique([courseId, order])
@@ -46,10 +47,14 @@ model KbsLesson {
   id          String   @id @default(uuid())
   moduleId    String
   title       String
-  contentType String   // video | pdf | html | text
-  contentUrl  String?   // S3 key or external URL - used for video/pdf
-  content     String?  @db.Text // inline body - used for html/text
-  duration    Int      // estimated duration in minutes
+  /// Content type format (e.g., video, pdf, html, text).
+  contentType String
+  /// S3 key or external URL for video and PDF lessons.
+  contentUrl  String?
+  /// Inline body content for HTML and text lessons.
+  content     String?  @db.Text
+  /// Estimated duration in minutes.
+  duration    Int
   order       Int
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -61,26 +66,20 @@ model KbsLesson {
   @@unique([moduleId, order])
 }
 
-// A3 - one row per media slot the certification source leaves unfilled.
-//
-// The document marks where a video, an image or a document has still to be
-// produced. Each marker becomes a row here with a null `url`, which is what
-// makes a slot addressable: it can be listed, chosen and filled without anyone
-// re-reading the document or touching code.
-//
-// The earlier proposal was to carry the companion file in `KbsLesson.contentUrl`.
-// It could not work: the API signs `contentUrl` only for VIDEO/PDF lessons and
-// the web view does not read it for an HTML lesson either, so the file was
-// unreachable through both read paths.
+/// Pending or fulfilled media slot within a lesson.
+/// Created with a null URL; updated upon media upload.
 model KbsLessonMedia {
   id        String   @id @default(uuid())
   lessonId  String
-  // Values: LESSON_MEDIA_KINDS in libs/common/src/constants/kbs/lesson-media.ts.
-  // Named there and not restated here, so the list has one home.
+  /// Media kind. Constrained by LESSON_MEDIA_KINDS in libs/common/src/constants/kbs/lesson-media.ts.
+  /// Omitted as a Prisma enum to prevent schema drift.
   kind      String
-  position  Int // order of this slot within its lesson, from 1
-  label     String // what the marker said
-  url       String? // S3 key or external URL - null until the file exists
+  /// Order of this media slot within the lesson, starting from 1.
+  position  Int
+  /// Descriptive label for the media slot.
+  label     String
+  /// S3 key or external URL. Null until the media file is uploaded.
+  url       String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -106,7 +105,8 @@ model KbsQuestion {
   id        String   @id @default(uuid())
   moduleId  String
   text      String
-  type      String   // SINGLE | MULTIPLE
+  /// Question type (SINGLE or MULTIPLE).
+  type      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -129,7 +129,8 @@ model KbsExamQuestion {
   id        String   @id @default(uuid())
   moduleId  String
   text      String
-  type      String   // SINGLE | MULTIPLE
+  /// Question type (SINGLE or MULTIPLE).
+  type      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -156,7 +157,8 @@ model KbsCandidate {
   sponsorCode        String?
   cvUrl              String?
   engagementAcceptedAt DateTime?
-  status             String    // CANDIDATE | IN_TRAINING | EXAM_PENDING | CERTIFIED | FAILED
+  /// Candidate lifecycle state (CANDIDATE, IN_TRAINING, EXAM_PENDING, CERTIFIED, FAILED).
+  status             String
   maxAttempts        Int       @default(3)
   retakeCooldownDays Int       @default(7)
   currentCycle       Int       @default(1)
@@ -168,8 +170,7 @@ model KbsCandidate {
   progress           KbsCandidateProgress[]
   lessonCompletions  KbsLessonCompletion[]
   exams              KbsExam[]
-  // I15 renewal: every certificate ever issued, the current one being the
-  // latest by issueDate. A renewal adds one; the old stays verifiable.
+  /// Historical log of issued certificates.
   certificates       KbsCertificate[]
 }
 
@@ -177,9 +178,11 @@ model KbsCandidateProgress {
   id          String    @id @default(uuid())
   candidateId String
   moduleId    String
-  score       Int?      // Quiz score percentage (0-100)
+  /// Quiz score percentage (0-100).
+  score       Int?
   passed      Boolean   @default(false)
-  attempts    Int       @default(0) // Total quiz submissions for this module
+  /// Total quiz submissions for this module.
+  attempts    Int       @default(0)
   completedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -194,9 +197,11 @@ model KbsExam {
   id              String    @id @default(uuid())
   candidateId     String
   attemptNumber   Int
-  score           Int?      // Exam score percentage (0-100)
+  /// Exam score percentage (0-100).
+  score           Int?
   passingScore    Int       @default(75)
-  status          String    @default("SCHEDULED") // SCHEDULED | IN_PROGRESS | SUBMITTED | PASSED | FAILED | CANCELLED
+  /// Exam lifecycle state (SCHEDULED, IN_PROGRESS, SUBMITTED, PASSED, FAILED, CANCELLED).
+  status          String    @default("SCHEDULED")
   cycle           Int       @default(1)
   durationMinutes Int       @default(60)
   totalQuestions  Int       @default(0)
@@ -219,7 +224,8 @@ model KbsExamAnswer {
   examId          String
   questionId      String
   flagged         Boolean   @default(false)
-  questionCorrect Boolean?  // null until graded
+  /// Indicates answer correctness. Null until graded.
+  questionCorrect Boolean?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   answeredAt      DateTime  @default(now())
@@ -235,7 +241,8 @@ model KbsExamAnswerSelection {
   id           String   @id @default(uuid())
   examAnswerId String
   answerId     String
-  wasCorrect   Boolean? // null until graded; snapshot of answer.isCorrect at grading time
+  /// Snapshot of answer correctness at grading time. Null until graded.
+  wasCorrect   Boolean?
 
   examAnswer KbsExamAnswer         @relation(fields: [examAnswerId], references: [id], onDelete: Cascade)
   answer     KbsExamQuestionAnswer @relation(fields: [answerId], references: [id])
@@ -243,7 +250,7 @@ model KbsExamAnswerSelection {
   @@unique([examAnswerId, answerId])
 }
 
-// Singleton row - admin updates via settings API
+/// KBS module global configuration singleton.
 model KbsSettings {
   id                Int      @id @default(autoincrement())
   activeCourseId    String?
@@ -256,15 +263,22 @@ model KbsSettings {
 
 model KbsCertificate {
   id          String    @id @default(uuid())
-  candidateId String    // not unique since I15 renewal: one row per issuance
-  kcaNumber   String    @unique // KCA-YYYYMMDD-XXXX
+  /// Associated candidate. Supports multiple records for renewals.
+  candidateId String
+  /// Unique certification number (e.g., KCA-YYYYMMDD-XXXX).
+  kcaNumber   String    @unique
   issueDate   DateTime  @default(now())
-  validUntil  DateTime  // 2 years from issue
+  /// Expiration date of the certificate.
+  validUntil  DateTime
   pdfUrl      String?
-  issuedBy    String?   // Admin userId
-  revokedAt   DateTime? // Set when certificate is revoked
-  revokedBy   String?   // Admin userId who revoked
-  revokeReason String?  // Reason for revocation
+  /// Identifier of the admin user who issued the certificate.
+  issuedBy    String?
+  /// Timestamp when the certificate was revoked.
+  revokedAt   DateTime?
+  /// Identifier of the admin user who revoked the certificate.
+  revokedBy   String?
+  /// Reason for revoking the certificate.
+  revokeReason String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

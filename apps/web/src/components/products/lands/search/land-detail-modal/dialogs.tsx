@@ -44,7 +44,7 @@ export function ProspectDialog({ open, onClose, land, t }: SubProps) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // TODO: wire to POST /lands/prospects
+    // TODO: Integrate with POST /lands/prospects endpoint.
     toast.success(t('modal.actions.prospect.success'));
     onClose();
     setName('');
@@ -114,7 +114,7 @@ export function ReservationDialog({ open, onClose, land, t }: SubProps) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // TODO: wire to POST /lands/reservations
+    // TODO: Integrate with POST /lands/reservations endpoint.
     toast.success(t('modal.actions.reservation.success'));
     onClose();
     setName('');
@@ -226,7 +226,7 @@ export function SupportDialog({ open, onClose, land, t }: SubProps) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // TODO: wire to POST /support/requests
+    // TODO: Integrate with POST /support/requests endpoint.
     toast.success(t('modal.actions.support.success'), {
       description: t('modal.actions.support.successDesc'),
     });

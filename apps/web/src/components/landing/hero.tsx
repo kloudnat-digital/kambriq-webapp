@@ -2,7 +2,7 @@
 
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import Autoplay from 'embla-carousel-autoplay';
 import { Button } from '@/components/ui/button';

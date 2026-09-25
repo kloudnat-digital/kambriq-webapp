@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { useState, useTransition } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,8 +24,8 @@ interface Props {
   candidate: AdminCandidateDetail;
 }
 
-// No CERTIFIED: a status change certifies nobody. "Issue certificate" below is
-// the one act that certifies, and the API now refuses the status (I15).
+// The 'CERTIFIED' status is excluded. Certification is handled exclusively
+// via the "Issue certificate" action, and the API rejects direct status updates to CERTIFIED.
 const STATUSES: KbsCandidateStatus[] = ['CANDIDATE', 'IN_TRAINING', 'EXAM_PENDING', 'FAILED'];
 
 export const CandidateDetailContent = ({ candidate }: Props) => {

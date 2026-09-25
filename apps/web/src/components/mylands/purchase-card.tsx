@@ -1,4 +1,6 @@
-import Link from 'next/link';
+'use client';
+
+import { Link } from '@/i18n/navigation';
 import { cn } from '@/lib/utils';
 import type { LandLabelCode, LandReservationStatus } from '@/types/lands';
 import { Badge } from '../ui/badge';

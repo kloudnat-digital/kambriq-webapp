@@ -1,19 +1,11 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@kambriq/common/prisma/lands-client/client';
 
 @Injectable()
-export class LandsPrismaService
-  extends PrismaClient
-  implements OnModuleInit, OnModuleDestroy
-{
+export class LandsPrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(LandsPrismaService.name);
   private pool: Pool;
 
@@ -22,10 +14,7 @@ export class LandsPrismaService
     const pool = new Pool({ connectionString });
     const adapter = new PrismaPg(pool);
     super({
-      log:
-        process.env.NODE_ENV === 'development'
-          ? ['query', 'error', 'warn', 'info']
-          : ['error'],
+      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn', 'info'] : ['error'],
       adapter,
     });
     this.pool = pool;

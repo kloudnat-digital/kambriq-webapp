@@ -19,7 +19,7 @@ interface FormState {
 
 const empty: FormState = { email: '', firstName: '', lastName: '', phone: '' };
 
-export const InviteForm = () => {
+export function InviteForm() {
   const t = useTranslations('app.invite');
   const [form, setForm] = useState<FormState>(empty);
   const [fieldErrors, setFieldErrors] = useState<Partial<FormState>>({});
@@ -151,4 +151,4 @@ export const InviteForm = () => {
       </button>
     </form>
   );
-};
+}

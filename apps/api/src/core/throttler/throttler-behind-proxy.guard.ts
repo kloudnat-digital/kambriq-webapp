@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { CALLER_SECRET_ENV, readCallerSecret, resolveTracker } from './caller-identity';
+import {
+  CALLER_SECRET_ENV,
+  callerSecretMismatch,
+  readCallerSecret,
+  resolveTracker,
+} from './caller-identity';
 
 /**
  * A2 - throttle by the real client, not by the load balancer.
@@ -43,7 +48,26 @@ export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
     return secret;
   }
 
+  /**
+   * Said once per process, not once per request.
+   *
+   * A wrong secret is wrong on every call, so logging each one would bury the
+   * line it matters in. Once is enough to tell somebody reading the logs that
+   * the two sides disagree.
+   */
+  private mismatchReported = false;
+
   protected async getTracker(req: Record<string, unknown>): Promise<string> {
+    if (
+      !this.mismatchReported &&
+      callerSecretMismatch(req['headers'] as never, this.callerSecret)
+    ) {
+      this.mismatchReported = true;
+      new Logger(ThrottlerBehindProxyGuard.name).warn(
+        `A caller sent ${CALLER_SECRET_ENV} and it does not match: the address it vouched for ` +
+          'is ignored and its visitors share one bucket. Check the secret on both sides.',
+      );
+    }
     return resolveTracker(req, this.callerSecret);
   }
 }

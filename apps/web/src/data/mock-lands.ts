@@ -1,3 +1,6 @@
+/**
+ * Mock data for land listings used in development and testing.
+ */
 export interface MockLand {
   id: string;
   title: string;

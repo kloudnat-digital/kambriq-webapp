@@ -2,15 +2,9 @@
 import { RoleCode } from '../../libs/common/src/types/roles.enum';
 
 /**
- * I19 - the role rows the seed writes: one per `RoleCode`, no fewer.
- *
- * The seed wrote 8 rows for an enum of 11. `addRole` refuses a code that has no
- * row, so STAFF_VERIFY, STAFF_VALUATION and PARTNER_GEO could be neither granted
- * nor held: the admin grant endpoint refused them, and the first route guarded
- * by one of them would have been reachable by nobody.
- *
- * The list lives here rather than inside `seed.ts` so a test can hold it against
- * the enum without running the seed (`seed-roles.spec.ts`).
+ * Role seed definitions.
+ * Provides exactly one row per RoleCode to ensure all roles can be granted.
+ * Kept separate from seed.ts for testing against the enum (seed-roles.spec.ts).
  */
 export interface SeedRole {
   id: string;
@@ -68,8 +62,7 @@ export const SEED_ROLES: SeedRole[] = [
     name: 'LANDS Administrator',
     description: 'Manages land inventory and reservations',
   },
-  // The three below guard no route and gate no screen yet. The rows exist so the
-  // roles can be granted, held and revoked like the others.
+  // Roles for planned or future modules. These can be granted, held, and revoked identically to core roles.
   {
     id: '00000000-0000-4000-8000-a00000000009',
     code: RoleCode.STAFF_VERIFY,

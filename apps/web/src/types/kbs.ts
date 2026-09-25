@@ -8,9 +8,8 @@ export type KbsCandidateStatus =
 import type { KbsLessonContentType } from '@kambriq/common/constants/kbs/lesson-content';
 
 /**
- * A4: the four values are declared once, in `libs/common`. Re-exported here so
- * the web's existing `@/types/kbs` imports keep working, and imported above so
- * this file can use the name itself.
+ * Re-exporting KbsLessonContentType from common library to maintain backwards compatibility
+ * with existing web imports.
  */
 export type { KbsLessonContentType };
 
@@ -246,12 +245,8 @@ export type AdminCandidateRow = {
 };
 
 /**
- * I39 - a row of the activation queue.
- *
- * Not `AdminCandidateRow`: that one describes a candidate in any state, and
- * this one only exists for somebody still at CANDIDATE. `waitingDays` is the
- * field the queue exists for - a count says how many are stuck, only an age
- * says how long somebody has been stuck.
+ * Represents a row in the activation queue for candidates who have not yet started.
+ * The `waitingDays` field indicates how long the candidate has been in the queue.
  */
 export type PendingCandidateRow = {
   id: string;

@@ -7,21 +7,24 @@ datasource db {
   provider = "postgresql"
 }
 
-// ----- CORE Module ----- //
-// Users, Roles, Permissions, Auth //
+/// Core module containing schemas for user management, role-based access control, and authentication.
 
+/// Represents a system user.
 model User {
+  /// Unique identifier for the user.
   id                String   @id @default(uuid())
+  /// The user's email address.
   email             String   @unique
-  /// Nullable: a bootstrapped account exists before anybody has chosen a
-  /// password. It is set by the ordinary reset flow, which is also what marks
-  /// the address verified. A null here means "no password has ever been set",
-  /// and login refuses it - see auth.service.ts.
+  /// Nullable. A null value indicates that no password has been set (e.g., for bootstrapped accounts).
+  /// The password is set during the standard password reset flow, which also marks the email as verified.
+  /// Login is refused if this field is null.
   passwordHash      String?
   firstName         String
   lastName          String
   phone             String?
+  /// Indicates if the user account is currently active.
   isActive          Boolean  @default(true)
+  /// Indicates if the user's email address has been verified.
   emailVerified     Boolean  @default(false)
   preferredLanguage String   @default("fr")
 
@@ -42,6 +45,7 @@ model User {
   verificationTokens VerificationToken[]
 }
 
+/// Represents a system role for access control.
 model Role {
   id          String   @id @default(uuid())
   code        String   @unique
@@ -52,6 +56,7 @@ model Role {
   userRoles UserRole[]
 }
 
+/// Associates users with roles.
 model UserRole {
   id        String   @id @default(uuid())
   userId    String
@@ -65,50 +70,35 @@ model UserRole {
   @@unique([userId, roleId])
 }
 
+/// Stores extended profile information and preferences for a user.
 model UserProfile {
   id        String   @id @default(uuid())
   userId    String   @unique
-  avatarUrl String?  // S3 key
+  /// URL or storage key for the user's avatar.
+  avatarUrl String?
   address   String?
   city      String?
   country   String?
 
-// Notification preferences
+  /// Indicates if the user receives email notifications.
   emailNotifications  Boolean @default(false)
-  /// DEPRECATED by A12, and kept so no stored value is lost.
-  ///
-  /// There is no WhatsApp sender in the API - not a disabled one, none at all -
-  /// so the preference was stored, echoed back, and read by nothing. Every
-  /// statement the API made about it was true and the exchange was false,
-  /// because offering a preference implies the capability behind it.
-  ///
-  /// Removed from the API surface and from the web rather than labelled "not yet
-  /// available": a disabled control still asks a person to form an intention the
-  /// system cannot honour, and stores it. When a sender exists, the preference
-  /// comes back and asks again, fresh.
+
+  /// DEPRECATED by A12. There is no WhatsApp sender in the API, so the
+  /// preference was removed from every surface; the column is retained so no
+  /// stored value is lost. Pinned by no-unbacked-preference.spec.ts.
   whatsappNotifications  Boolean @default(false)
 
-  /// The payment channel this client last said suited them.
-  ///
-  /// v03 section 4c: "un client qui a paye en OMO une fois le proposera par
-  /// defaut la fois suivante". A default for the next request, nothing more -
-  /// it binds no payment and the back office is never bound by it either.
-  ///
-  /// Stored as the channel **code** (`VIR`, `DEPO`, `OMO`, `MOMO`, `ESP`,
-  /// `NOTA`), a plain string because the enum lives in the lands database and
-  /// there are no cross-database types. `payment-channels.ts` is the authority;
-  /// `channel-code-consistency.spec.ts` fails if the two drift apart.
+  /// The user's last preferred payment channel.
+  /// Used as a default selection for subsequent transactions.
+  /// Stored as a string code (e.g., 'VIR', 'DEPO', 'OMO', 'MOMO', 'ESP', 'NOTA')
+  /// since the corresponding enum resides in the lands database.
   preferredPaymentChannel String?
 
-  // Identity verification
+  /// URLs to the identity documents submitted by the user.
   idDocumentUrls       String[]  @default([])
-  idVerificationStatus String    @default("none") // none | pending | verified | rejected
-  /// When the holder submitted, which is not when the row was last touched.
-  ///
-  /// Added by A10. Without it "how long has this been waiting" was
-  /// unanswerable: 59 documents sat at `pending` and nothing in the data said
-  /// for how long. A queue you cannot age is a queue nobody can be accountable
-  /// for.
+  /// The current status of identity verification ('none', 'pending', 'verified', 'rejected').
+  idVerificationStatus String    @default("none")
+  /// The timestamp when the identity documents were submitted.
   idSubmittedAt        DateTime?
   idVerifiedAt         DateTime?
   idVerifiedBy         String?
@@ -120,6 +110,7 @@ model UserProfile {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+/// Represents a refresh token for authentication.
 model RefreshToken {
   id        String    @id @default(uuid())
   userId    String
@@ -134,11 +125,13 @@ model RefreshToken {
   @@index([token])
 }
 
+/// Represents a verification token for actions such as email verification or password resets.
 model VerificationToken {
   id        String    @id @default(uuid())
   userId    String
   token     String    @unique
-  type      String    // email_verification | password_reset | email_change
+  /// The type of verification ('email_verification', 'password_reset', 'email_change').
+  type      String
   expiresAt DateTime
   createdAt DateTime  @default(now())
   usedAt    DateTime?
@@ -149,23 +142,7 @@ model VerificationToken {
   @@index([token])
 }
 
-// ---------------------------------------------------------------------------
-// L1 - the inbound contact request
-//
-// Every commercial CTA on the public site leads to /contact, so this table is
-// the first thing a prospect ever leaves behind. It lives in `core` rather than
-// in a domain schema because the request is module-agnostic: its subject can be
-// lands, VERIFY, KAMNET, KBS or a partnership, and it arrives from somebody who
-// has no account and belongs to no module yet.
-//
-// **Not `KamnetLead`.** That model is an agent's own prospect: `agentId` is
-// required and foreign-keyed to `KamnetAgent`. A public request has no agent,
-// and giving it a fabricated one to reuse the table would put a lead in an
-// agent's pipeline that the agent never spoke to.
-// ---------------------------------------------------------------------------
-
-/// What the prospect said their request is about. Mirrors the six options the
-/// contact form offers; the labels live in the web i18n catalogues.
+/// The subject of the contact request.
 enum ContactSubject {
   LANDS
   VERIFY
@@ -175,47 +152,37 @@ enum ContactSubject {
   OTHER
 }
 
-/// Where the request has got to in the back office.
+/// The processing status of the contact request.
 enum ContactRequestStatus {
   NEW
   IN_PROGRESS
   CLOSED
 }
 
+/// Represents a generic inbound contact request from the public site.
+/// This model is module-agnostic and captures inquiries before a user creates an account.
+/// It is distinct from domain-specific leads (e.g., KamnetLead) as it is not assigned to an agent by default.
 model ContactRequest {
   id String @id @default(uuid())
 
   name  String
   email String
-  /// Optional: the form asks for it and does not require it.
+  /// The user's phone number.
   phone String?
 
+  /// The category of the contact request.
   subject ContactSubject
+  /// The main content of the request.
   message String
 
-  /// The language the page was in when the request was made.
-  ///
-  /// Stored rather than derived from the address or the browser: the
-  /// acknowledgement goes out in it, and so does any human reply. A prospect
-  /// who wrote to us in French is answered in French, months later, without
-  /// anybody having to guess.
+  /// The locale of the application when the request was made. Used for localized communication.
   locale String @default("fr")
 
-  /// **When consent was given, which is the record that it was.**
-  ///
-  /// Non-nullable on purpose: a row cannot exist without it. The checkbox, the
-  /// DTO and the service each refuse a request without consent, and this column
-  /// is the one that cannot be talked round - a script or a console writing
-  /// straight to the table still has to supply a timestamp.
-  ///
-  /// The timestamp is the server's, not the browser's: a client-supplied
-  /// consent time is a claim, not a record.
+  /// The server-side timestamp when privacy policy consent was granted.
+  /// This is required for compliance and must always be recorded.
   consentGivenAt DateTime
 
-  /// The privacy policy path the consent text pointed at when it was ticked.
-  ///
-  /// Consent is to a document, and that document changes. Without this the row
-  /// says somebody agreed to something and cannot say to what.
+  /// The path or identifier of the specific privacy policy version the user consented to.
   consentPolicyPath String
 
   status ContactRequestStatus @default(NEW)
@@ -223,7 +190,7 @@ model ContactRequest {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  /// Read by the daily digest, which counts a 48-hour window.
+  /// Index for optimizing time-based queries.
   @@index([createdAt])
   @@index([status])
 }

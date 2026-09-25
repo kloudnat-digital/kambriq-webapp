@@ -14,7 +14,7 @@ import { join } from 'node:path';
  * Written as a test rather than left to review because the failure mode is
  * silent. A hex typed into a component renders correctly on the day it is
  * written and stops matching the system the day the system moves - which is
- * exactly what this change is. `apps/web/src/app/layout.tsx` already carried
+ * exactly what this change is. `apps/web/src/app/[locale]/layout.tsx` already carried
  * `#0D1B2A` before this PR: the right colour, in the wrong place, agreeing
  * with the new palette by accident.
  *
@@ -44,7 +44,7 @@ const FILES_THAT_MUST_CARRY_NO_HEX: readonly string[] = [
   'apps/web/src/components/products/lands/search/lands-map.tsx',
   'apps/web/src/components/lands/app/land-map.tsx',
   'apps/web/src/components/app-shell/sidebar.tsx',
-  'apps/web/src/app/layout.tsx',
+  'apps/web/src/app/[locale]/layout.tsx',
   'apps/web/src/app/global-error.tsx',
 ];
 

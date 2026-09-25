@@ -50,8 +50,9 @@ async function bootstrap() {
   // catch-all first, most specific last. Both `GlobalExceptionFilter` and
   // `PrismaExceptionFilter` are `@Catch()`; `PrismaExceptionFilter` delegates
   // to the global one for anything that is not a Prisma error, so the chain
-  // always terminates in a JSON envelope. It used to rethrow, and a rethrow
-  // from a filter escapes Nest entirely into Express's default error page.
+  // always terminates in a JSON envelope. It delegates rather than rethrows: a
+  // rethrow from a filter escapes Nest entirely into Express's default error
+  // page.
   app.useGlobalFilters(
     new GlobalExceptionFilter(), // Catch-all (last resort)
     new PrismaExceptionFilter(), // Prisma Errors → HTTP codes

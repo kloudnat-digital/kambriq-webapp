@@ -219,18 +219,8 @@ export class UsersService {
     ]);
 
     /**
-     * `Promise.all`, because `toUserResponse` is async.
-     *
-     * Without it `data` was an array of **pending Promises**, and
-     * `JSON.stringify` renders a Promise as `{}`. The endpoint answered
-     * `{"success":true,"data":[{},{},{}],"meta":{"total":14,…}}`: 200, correct
-     * envelope, correct pagination, and no data. Every signal healthy except the
-     * one carrying the answer.
-     *
-     * This is the same missing `await` as the verification email, which shipped
-     * `?token=[object Promise]` — the second time the same mistake has reached
-     * dev on a different surface. TypeScript cannot separate the two forms here
-     * either: `Promise<T>[]` is a perfectly good array.
+     * Await all toUserResponse promises before building the paginated response.
+     * Omitting Promise.all would serialize unresolved promises as empty objects.
      */
     const data = await Promise.all(users.map((user) => this.toUserResponse(user)));
     return buildPaginatedResponse(data, total, page, limit);
@@ -291,22 +281,9 @@ export class UsersService {
 
   // ----- Admin: Update user (active status, roles) -------
   /**
-   * The system must never be left without a super admin.
-   *
-   * There are three doors out of the top role and they do not look alike, which
-   * is the whole problem. Deletion is the obvious one. Revoking the role is the
-   * one people think of second. **Replacing the role set is the one that gets
-   * forgotten**, because `PATCH /users/:id` with a `roleCodes` list that simply
-   * omits `ADMIN_GLOBAL` reads as an edit, not as a removal - and it is the same
-   * outcome, arriving through a door nobody was watching.
-   *
-   * Blocking counts too. A blocked super admin cannot log in, so an account that
-   * still holds the role administers nothing; leaving that door open would make
-   * the guard true about the database and false about the system.
-   *
-   * "Last" is counted over holders who can actually act: active, not
-   * soft-deleted. A demotion is refused only when it would take that count to
-   * zero, so an ordinary demotion of one admin among several is untouched.
+   * Prevents actions that would leave the system without any active super admin.
+   * Checks for deletion, role revocation, and account blocking.
+   * "Active" implies the account is neither soft-deleted nor blocked.
    */
   private async assertNotLastSuperAdmin(userId: string, action: string): Promise<void> {
     const holdsIt = await this.hasRole(userId, SUPER_ADMIN_ROLE);
@@ -340,9 +317,7 @@ export class UsersService {
     adminId: string,
   ): Promise<UserResponse> {
     if (dto.roleCodes) {
-      // The replace door. A `roleCodes` list that omits the top role removes it
-      // just as surely as the revoke endpoint does, and looks nothing like a
-      // removal at the call site.
+      // Check if the bulk role replacement would remove the super admin role.
       if (!dto.roleCodes.includes(SUPER_ADMIN_ROLE)) {
         await this.assertNotLastSuperAdmin(userId, 'replacing the role set');
       }
@@ -361,8 +336,7 @@ export class UsersService {
         );
       }
 
-      // I15 - a role that follows a record may be carried through a replace
-      // unchanged, never added or dropped by one.
+      // Record-derived roles cannot be modified directly via bulk role replacement.
       const current = (await this.findByIdOrThrow(userId)).userRoles.map((ur) => ur.role.code);
       for (const code of RECORD_DERIVED_ROLES.keys()) {
         if (current.includes(code) !== dto.roleCodes.includes(code)) assertNotRecordDerived(code);
@@ -381,8 +355,7 @@ export class UsersService {
       });
     }
 
-    // Log which fields changed, never their values: the DTO can carry an email,
-    // a phone number, a name or a role change.
+    // Log changed fields only; exclude values to protect PII.
     this.logger.log('Admin updated user %o', { userId, changed: changedKeys(dto), adminId });
     return await this.toUserResponse(await this.findByIdOrThrow(userId));
   }
@@ -455,16 +428,9 @@ export class UsersService {
   }
 
   /**
-   * The identity-review queue: everything waiting, oldest first, with its age.
-   *
-   * A10. The reviewer route and the reviewer role both existed; **the queue did
-   * not.** `PATCH /users/:id/id-document/review` has never been called once, and
-   * the only way to find a pending document was to page through every user and
-   * look. 59 sat there, growing by one per deploy, and nothing counted them.
-   *
-   * Same principle as the payments en souffrance: nothing may sit indefinitely
-   * with nobody accountable. This is what makes the backlog answerable - a
-   * count, an age, and an oldest.
+   * Retrieves pending identity documents for review.
+   * Ordered oldest-first to prioritize users who have waited the longest.
+   * Includes metrics on the backlog size and age to ensure accountability.
    */
   async listPendingIdDocuments(query: PaginationQuery) {
     const { page, limit } = query;
@@ -475,9 +441,7 @@ export class UsersService {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        // Oldest first, deliberately: a queue sorted newest-first hides the
-        // thing that has been waiting longest, which is the only row that
-        // matters.
+        // Prioritize processing the oldest waiting reviews.
         orderBy: { idSubmittedAt: 'asc' },
         include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
       }),
@@ -506,20 +470,13 @@ export class UsersService {
       limit,
     );
 
-    // The age of the oldest, on the envelope. A count alone answers "how many";
-    // it does not answer "how long has somebody been waiting", which is the
-    // question a backlog has to be able to answer. Shared with the payment
-    // request and dunning queues since G6 - see `withOldestWaiting`.
+    // Include the age of the oldest pending review in the response metadata.
     return withOldestWaiting(response, oldest?.idSubmittedAt ?? null, now);
   }
 
   /**
-   * One person under identity review, with their documents readable.
-   *
-   * Deliberately narrower than `findOne`: name, contact, city, status and
-   * signed document links. No roles, no account flags, nothing a reviewer does
-   * not need in order to decide whether a photograph of an identity card
-   * belongs to the person named on the reservation.
+   * Fetches the identity document review data for a single user.
+   * Limited strictly to the fields necessary for a reviewer to verify identity.
    */
   async getIdentityForReview(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -545,8 +502,7 @@ export class UsersService {
 
     if (!user) throw new NotFoundException(this.t('user.notFound', 'en'));
 
-    // Signed here, in parallel: raw S3 keys cannot be opened, and a reviewer
-    // handed `id-docs/abc/passport.jpg` cannot look at the passport.
+    // Generate pre-signed S3 URLs so the reviewer can access the files.
     const idDocumentUrls = await Promise.all(
       (user.profile?.idDocumentUrls ?? []).map((key) => this.storage.getDownloadUrl(key)),
     );
@@ -628,22 +584,7 @@ export class UsersService {
   ): Promise<{ id: string; email: string; isNew: boolean }> {
     const normalizedEmail = email.trim().toLowerCase();
 
-    /**
-     * `RoleCode.CLIENT`, not `'client'`.
-     *
-     * This read `where: { code: 'client' }` while the stored code is `'CLIENT'`.
-     * Postgres comparison is case-sensitive, so the lookup returned `null` and
-     * the `if` below swallowed it: the client was created with **no roles at
-     * all**. `@Roles(RoleCode.CLIENT)` gates the whole client portal, so the
-     * reservation returned 201, the portal-access email sent, the job was green,
-     * and the only symptom was a person who could not get into the thing they
-     * had just been invited to.
-     *
-     * The missing role is now a failure rather than a silence. A client user
-     * without the client role is not a user worth keeping: the row would exist,
-     * the email would promise access, and the access would not be there. It is
-     * looked up first, so an existing user is refused for the same reason.
-     */
+    /** Ensure the client role exists before attempting to assign it. */
     const clientRole = await this.prisma.role.findUnique({
       where: { code: RoleCode.CLIENT },
     });
@@ -657,13 +598,7 @@ export class UsersService {
       where: { email: normalizedEmail },
     });
 
-    /**
-     * I19 - an existing account reserved as a client becomes a client.
-     *
-     * It used to come back unchanged. Unless it already held CLIENT, the person
-     * now owned a reservation the client portal would not show them. Granting
-     * is idempotent, so an account that already holds the role is untouched.
-     */
+    /** Ensure existing users are granted the client role idempotently. */
     if (existingUser) {
       const held = await this.prisma.userRole.findUnique({
         where: { userId_roleId: { userId: existingUser.id, roleId: clientRole.id } },
@@ -683,9 +618,7 @@ export class UsersService {
         firstName,
         lastName,
         phone,
-        // Null, not `''`. The column is nullable precisely so that "no password
-        // has ever been set" is a value the schema can hold, instead of a
-        // sentinel every reader has to recognise.
+        // Explicitly set passwordHash to null indicating no password has been configured yet.
         passwordHash: null,
       },
     });

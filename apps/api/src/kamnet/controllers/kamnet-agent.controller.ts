@@ -94,13 +94,7 @@ export class KamnetAgentController {
   }
 
   /**
-   * P11 - the agent decides whether they appear in the public directory.
-   *
-   * One route for both directions, because "listed" is one decision with two
-   * values and two endpoints could disagree about which is current. Withdrawal
-   * takes effect on the next read: the service deletes the cached agent row, so
-   * nothing serves a stale consent for the 60 seconds `findByUserId` would
-   * otherwise hold it.
+   * Sets the agent's explicit public directory visibility consent.
    */
   @Patch('agents/me/public-listing')
   @Roles(RoleCode.AGENT)
@@ -200,13 +194,8 @@ export class KamnetAgentController {
   }
 
   /**
-   * I16 - the two commission routes are read by ownership, not by role.
-   *
-   * They required AGENT, so suspending an agent - which now removes AGENT -
-   * would have hidden the commissions they earned. The data belongs to the
-   * KamnetAgent record, not to the agent's status: `findByUserId` resolves the
-   * caller's own record (404 for anybody without one) and the query is scoped to
-   * it. No role is needed and none is added.
+   * Commission routes are scoped by record ownership, not the AGENT role.
+   * This ensures that suspended agents can still access their earned commissions.
    */
   @Get('commissions')
   @ApiOperation({ summary: 'List my commission records' })
@@ -229,7 +218,7 @@ export class KamnetAgentController {
   }
 
   @Get('commissions/summary')
-  // Ownership, not role - see `getMyCommissions` (I16).
+  // Commission summary accessed by record ownership, not role.
   @ApiResponse({ status: 404, description: 'The caller has no KAMNET agent record.' })
   @ApiOperation({
     summary: 'Get my commission summary',
@@ -245,15 +234,14 @@ export class KamnetAgentController {
   @ApiOperation({
     summary: 'Get my sponsorship network',
     description:
-      'Returns direct referrals (N1). Since P9 the tree is walked one step, so a larger ?depth is accepted and clamped rather than refused.',
+      'Returns direct referrals (N1). The depth parameter is clamped to KAMNET_MAX_SPONSORSHIP_DEPTH.',
   })
   @ApiQuery({
     name: 'depth',
     required: false,
     type: Number,
     enum: [1, 2, 3],
-    description:
-      'Accepted for compatibility and clamped to KAMNET_MAX_SPONSORSHIP_DEPTH, which is 1 since P9. Any value returns N1 only. Defaults to 1.',
+    description: 'Query depth, clamped to KAMNET_MAX_SPONSORSHIP_DEPTH. Defaults to 1.',
   })
   async getMyNetwork(@CurrentUser() user: RequestUser, @Query() query: NetworkTreeQueryDto) {
     return this.networkService.getMyNetwork(user.id, query.depth);
@@ -263,8 +251,7 @@ export class KamnetAgentController {
   @Roles(RoleCode.AGENT)
   @ApiOperation({
     summary: 'Get my sponsor chain',
-    description:
-      'Walk up the tree: who sponsored me. Since P9 the chain stops at the direct sponsor.',
+    description: 'Returns the hierarchy of sponsors, clamped to KAMNET_MAX_SPONSORSHIP_DEPTH.',
   })
   async getMySponsorChain(@CurrentUser() user: RequestUser) {
     return this.networkService.getMySponsorChain(user.id);

@@ -11,17 +11,9 @@ import { UsersService } from '../../../core/users/users.service';
 import { buildUserResponse, mockEmailService, mockI18n, mockKbsPrisma } from '../../utils';
 
 /**
- * I16 - suspension removes the power to act, and keeps the account.
- *
- * Decided 15 September: suspending a KAMNET agent removes AGENT and lifting
- * the suspension returns it; certificate revocation removes it the same way.
- * The role is present or absent, so lands needs to learn nothing new - there is
- * no extra rule a module could forget to read. Before this, suspension and
- * revocation changed no role at all: a suspended agent kept reserving land.
- *
- * The order was the whole subject: AGENT carried CLIENT by inheritance, so every
- * agent was first given CLIENT in their own right (one-off on dev, 5 rows) and
- * approval now grants CLIENT explicitly - see the last test.
+ * Tests that the AGENT role strictly reflects the agent's suspension and certification status.
+ * Suspending an agent or revoking their certificate removes the AGENT role, preserving CLIENT access.
+ * Lifting a suspension restores the AGENT role only if the agent remains certified.
  */
 describe('I16 - the AGENT role follows the agent status', () => {
   const agent = { id: 'agent-1', userId: 'u-agent', suspendedAt: null as Date | null };
@@ -102,8 +94,7 @@ describe('I16 - the AGENT role follows the agent status', () => {
     kbs.kbsCandidate.findUnique.mockResolvedValue({
       id: 'cand-1',
       userId: agent.userId,
-      // Since the I15 renewal a candidate holds every certificate ever issued,
-      // newest first; revocation acts on the current one.
+      // Revocation targets the currently active certificate.
       certificates: [{ id: 'cert-1', kcaNumber: 'KCA-20250101-0001', revokedAt: null }],
     });
     kbs.kbsCertificate.update.mockResolvedValue({ id: 'cert-1' });

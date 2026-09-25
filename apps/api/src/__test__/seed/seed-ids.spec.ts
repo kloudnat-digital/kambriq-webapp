@@ -165,7 +165,9 @@ describe('the seed restores the fixtures it owns', () => {
     expect(landsBlock).toContain('lands.landReservation.deleteMany');
     // Only the seed's own parcels, and never the seeded reservation itself.
     expect(landsBlock).toContain('landId: { in: seededParcelIds }');
-    expect(landsBlock).toContain('id: { not: IDS.LAND_RESERVATION_SEEDED }');
+    // Both seeded reservations, not just the first: a second one added for the
+    // KAMNET commissions would otherwise be deleted and recreated every run.
+    expect(landsBlock).toContain('id: { notIn: seededReservationIds }');
   });
 
   /**

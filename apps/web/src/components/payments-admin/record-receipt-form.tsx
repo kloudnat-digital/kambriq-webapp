@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getProofUploadUrl, recordReceipt } from '@/lib/actions/payments';
@@ -11,32 +11,16 @@ import { PAYMENT_CHANNELS } from '@kambriq/common/payments/payment-channels';
 import type { PaymentReceipt } from '@/types/payments';
 
 /**
- * Records one encaissement, with its proof - or one correction of one.
+ * Form for recording new payment receipts or correcting existing ledger entries.
  *
- * **This form cannot validate a payment.** It calls `recordReceipt` and
- * nothing else; validating is a separate action on a separate control, because
- * recording what arrived and agreeing that it settles the payment are two acts.
+ * Exclusively invokes `recordReceipt` (receipt capture is strictly decoupled from payment validation).
+ * Orchestrates a two-step submission: uploads the required proof document via an S3 presigned URL,
+ * then submits the returned object key with the receipt payload.
  *
- * The proof is uploaded first, to a presigned PUT, and only its key is sent
- * with the receipt. A receipt cannot be submitted without one - the button
- * stays disabled until a file has uploaded, the API refuses a blank
- * `evidenceUrl`, and the database `CHECK` refuses it after that.
- *
- * ---------------------------------------------------------------------------
- * G5 - a correction, from this screen
- * ---------------------------------------------------------------------------
- * "Une correction s'ajoute au journal, elle ne remplace pas une ligne, et elle
- * porte sa propre raison et son propre auteur." Until this form carried
- * `correctsId`, that sentence was true only for a caller writing JSON by hand:
- * an operator who keyed 3 000 000 twice had no way to say so.
- *
- * So: pick the line being corrected from the ledger, enter the signed amount
- * that puts it right (negative to take money back off the total, positive to
- * add what was under-keyed), and say why. The reason is required for a
- * correction and the API refuses one without it. The author is whoever is
- * signed in, written by the API as `recordedBy`. **Nothing here edits the
- * original line**; it stays on the ledger, and the database refuses an UPDATE
- * on it whoever asks.
+ * Ledger immutability:
+ * - Existing lines are never mutated.
+ * - Corrections are appended as net-new entries referencing a prior receipt ID.
+ * - Requires a mandatory justification and accepts signed amounts (positive/negative).
  */
 export const RecordReceiptForm = ({
   paymentId,
@@ -45,7 +29,7 @@ export const RecordReceiptForm = ({
 }: {
   paymentId: string;
   currency: string;
-  /** The ledger as it stands, so a correction can point at a line on it. */
+  /** Current ledger receipts available for correction targeting. */
   receipts: PaymentReceipt[];
 }) => {
   const router = useRouter();
@@ -119,8 +103,7 @@ export const RecordReceiptForm = ({
           Enregistrer un encaissement ne valide pas le paiement. La validation est un acte distinct.
         </p>
 
-        {/* Offered only once there is a line to correct. A correction points
-            at a line by choosing it, never by typing an id. */}
+        {/* Shown only when there is an existing line to correct. The target line is selected visually. */}
         {receipts.length > 0 && (
           <ReceiptPicker
             receipts={receipts}
@@ -155,8 +138,7 @@ export const RecordReceiptForm = ({
               value={channel}
               onChange={(e) => setChannel(e.target.value)}
             >
-              {/* From the registry, so the six here and the six the API accepts
-                  cannot drift. `HIST` is not selectable and so is not offered. */}
+              {/* Options are restricted to the API registry subset. 'HIST' is excluded. */}
               {selectableChannels.map((c) => (
                 <option key={c.code} value={c.code}>
                   {c.code} — {c.label}
@@ -202,9 +184,7 @@ export const RecordReceiptForm = ({
           </label>
         </div>
 
-        {/* Shown only where the payer is routinely somebody else. Asking for
-            it on every channel would have people retype the client's own name
-            until they stopped reading the field. */}
+        {/* Rendered only for channels that support third-party payers. */}
         {PAYMENT_CHANNELS[channel as keyof typeof PAYMENT_CHANNELS]?.payerMayDiffer && (
           <label className="block text-sm">
             <span className="mb-1 block text-gray-600">Versé par (obligatoire)</span>

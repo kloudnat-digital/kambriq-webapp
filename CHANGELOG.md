@@ -5,18 +5,28 @@ This format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
 ### Added
- - Dev and prd deploy workflows with migration-only variants.
- - Local dev deploy script and deployment documentation.
+
+- Dev and prd deploy workflows with migration-only variants.
+- Local dev deploy script and deployment documentation.
+
 ### Changed
- - Package manager metadata pinned in `package.json`.
+
+- Package manager metadata pinned in `package.json`.
+
 ### Deprecated
+
 ### Removed
+
 ### Fixed
+
 ### Security
 
 ## [0.1.0] - 2026-02-22
+
 ### Added
+
 - Initial release.
 - NestJS API gateway with core and KBS domains.
 

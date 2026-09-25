@@ -19,7 +19,8 @@ import { headers } from 'next/headers';
  * **Returns nothing, rather than guessing,** when the secret is not configured,
  * when the call is not made while handling a request (`headers()` throws
  * outside a request scope), or when the address is not an address. The API
- * then counts the call exactly as it did before this existed.
+ * then counts the call under the caller's own address, as it does for any
+ * direct caller.
  */
 export const VISITOR_IP_HEADER = 'x-kambriq-visitor-ip';
 export const CALLER_SECRET_HEADER = 'x-kambriq-caller-secret';

@@ -32,7 +32,7 @@ export const LandMap = ({ latitude, longitude, title }: LandMapProps) => {
 
     // Marker dot
     const el = document.createElement('div');
-    // Built imperatively for Mapbox, so a Tailwind class cannot reach it.
+    // Styles are applied imperatively as Mapbox elements do not support Tailwind classes.
     el.style.cssText = `
       width: 14px; height: 14px;
       background: ${BRAND_TEAL};

@@ -23,13 +23,9 @@ export class AuthController {
   ) {}
 
   /**
-   * Returns the token fields that go in the response body.
-   *
-   * refreshToken IS included here because this endpoint is called server-to-server
-   * from next-auth's authorize() and jwt() callbacks - never from browser JS.
-   * next-auth encrypts it immediately into its own httpOnly session cookie.
-   *
-   * rememberMe is internal only and is always stripped.
+   * Formats the token response payload.
+   * Includes refreshToken for server-to-server interactions (e.g., next-auth).
+   * Strips the internal `rememberMe` flag.
    */
   private publicTokens(tokens: {
     accessToken: string;
@@ -88,9 +84,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Rotate tokens using the refresh token in the body',
-    description:
-      'Revokes the presented refresh token and issues a new pair. Called server-to-server ' +
-      'from next-auth jwt() callback.',
+    description: 'Revokes the provided refresh token and issues a new token pair for next-auth.',
   })
   @ApiResponse({ status: 200, description: 'Returns new access and refresh tokens.' })
   @ApiResponse({ status: 400, description: 'Refresh token missing, invalid, or expired.' })

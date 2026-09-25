@@ -6,15 +6,10 @@ import { ContactService } from './contact.service';
 import { SubmitContactRequestDto } from './contact.dto';
 
 /**
- * L1 - the public contact form's one route.
+ * Handles submissions from the public contact form.
  *
- * `@Public()` because a prospect has no account: that is the whole point of the
- * form. `route-guards.spec.ts` pins the public surface as a count per file, so
- * a second public route added here fails until somebody says it is deliberate.
- *
- * Throttled like the newsletter, and for the same reason: an unauthenticated
- * write endpoint is a mailbox anybody can address. Three a minute is generous
- * for a person and useless for a script.
+ * Marked `@Public()` to allow unauthenticated prospects.
+ * Throttled to 3 requests per minute to mitigate abuse of the unauthenticated write endpoint.
  */
 @ApiTags('Contact')
 @Controller('contact')
@@ -46,9 +41,7 @@ export class ContactController {
       message: dto.message,
       locale: dto.locale,
       consent: dto.consent,
-      // The policy the consent text pointed at. Fixed here rather than accepted
-      // from the caller: what somebody agreed to is a fact about our page, not
-      // a value the page gets to assert about itself.
+      // Consent policy path is fixed server-side to ensure accuracy of the agreement context.
       consentPolicyPath: '/legal/privacy',
     });
   }

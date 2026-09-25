@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/navigation';
+import { currentLocale } from '@/lib/locale';
 import { auth } from '@/auth';
 import { visitorHeaders } from './visitor-headers';
 
@@ -45,37 +46,28 @@ const baseFetch = async <T>(
     throw new ApiError(body?.message ?? `API error ${res.status} - ${path}`, res.status);
   }
 
-  // 204 No Content - nothing to parse
+  // Handle 204 No Content
   if (res.status === 204) return undefined as T;
 
-  // NestJS wraps responses: { success: true, data: T }
-  // Paginated responses are { success, data, meta }  interceptor passes them through unchanged.
-  // Preserve the full body when meta is present so callers can read pagination info.
+  // Unwraps NestJS response payload (`{ success, data, meta }`), retaining the full body when `meta` is present.
   const body = await res.json();
   if (body?.meta) return body as T;
   return (body?.data ?? body) as T;
 };
 
-// Public API
-//
-// For server actions and server components calling public (unauthenticated)
-// endpoints - auth, registration, password reset, etc.
-//
-// Usage:
-//   await api.post('/auth/forgot-password', { email })
-//   const lands = await api.get<Land[]>('/lands/public')
+/**
+ * Public API client for server actions and server components.
+ * Intended for unauthenticated endpoints (e.g., authentication, registration).
+ *
+ * @example
+ * await api.post('/auth/forgot-password', { email })
+ * const lands = await api.get<Land[]>('/lands/public')
+ */
 
 export const api = {
   /**
-   * `init` is additive and almost always omitted.
-   *
-   * It exists so a single caller can pin `cache: 'no-store'` without changing
-   * `baseFetch` for everybody. That distinction matters in Next 16: an explicit
-   * `no-store` opts its ROUTE into dynamic rendering, so putting it in
-   * `baseFetch` would change the rendering mode of every statically rendered
-   * page, `generateMetadata`, sitemap or `generateStaticParams` that reaches
-   * it - or fail the build. Here it changes one read on a route that is
-   * already `force-dynamic`.
+   * Accepts `init` options to permit caller-level cache configuration (e.g., `cache: 'no-store'`).
+   * This prevents global `baseFetch` modifications from inadvertently opting static routes into dynamic rendering.
    */
   get: <T>(path: string, init?: RequestInit) => baseFetch<T>(path, { method: 'GET', ...init }),
 
@@ -91,37 +83,54 @@ export const api = {
   delete: <T>(path: string) => baseFetch<T>(path, { method: 'DELETE' }),
 };
 
-// Authenticated API
-//
-// For server components and server actions that need the current user's
-// access token attached automatically.
-//
-// Usage:
-//   const user = await serverApi.get<User>('/users/me')
-//   await serverApi.patch('/users/me', { firstName: 'Jean' })
+/**
+ * Authenticated API client for server actions and server components.
+ * Automatically attaches the current user's access token to requests.
+ *
+ * @example
+ * const user = await serverApi.get<User>('/users/me')
+ * await serverApi.patch('/users/me', { firstName: 'Jean' })
+ */
 
 const getSession = cache(auth);
+
+/** Redirects the user to the login page while preserving their original destination. */
+const redirectToLogin = async (): Promise<never> => {
+  const referer = (await headers()).get('referer');
+  let callbackUrl = '/';
+  if (referer) {
+    try {
+      const url = new URL(referer);
+      const path = url.pathname + url.search;
+      if (!path.startsWith('/login')) {
+        callbackUrl = path;
+      }
+    } catch {
+      // ignore malformed referer
+    }
+  }
+  redirect({
+    href: { pathname: '/login', query: { callbackUrl } },
+    locale: await currentLocale(),
+  });
+};
 
 const authedFetch = async <T>(path: string, options?: RequestInit): Promise<T> => {
   const session = await getSession();
   if (session?.error === 'RefreshTokenError') {
-    const referer = (await headers()).get('referer');
-    let callbackUrl = '/';
-    if (referer) {
-      try {
-        const url = new URL(referer);
-        const path = url.pathname + url.search;
-        if (!path.startsWith('/login')) {
-          callbackUrl = path;
-        }
-      } catch {
-        // ignore malformed referer
-      }
-    }
-    redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+    await redirectToLogin();
   }
   const header = session?.accessToken ? `Bearer ${session.accessToken}` : undefined;
-  return baseFetch<T>(path, options, header);
+
+  try {
+    return await baseFetch<T>(path, options, header);
+  } catch (error) {
+    // Initiates login redirect on 401s, handling cases where the access token is locally valid but API-rejected.
+    if (error instanceof ApiError && error.status === 401) {
+      await redirectToLogin();
+    }
+    throw error;
+  }
 };
 
 export const serverApi = {

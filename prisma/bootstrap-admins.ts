@@ -1,65 +1,20 @@
 /**
- * Kambriq - super-admin bootstrap
+ * Bootstraps super-admin accounts required in all environments, including production.
  *
- * Run via:  pnpm run db:bootstrap
+ * Execution:
+ *   pnpm run db:bootstrap
  *
- * Creates the real administrator accounts that must exist in **every**
- * environment, including production. They have no password: each holder sets
- * their own through the ordinary reset flow, which is also what marks the
- * address verified (see `resetPassword` in `auth.service.ts`).
- *
- * ---------------------------------------------------------------------------
- * Why this is not in `prisma/seed.ts`
- * ---------------------------------------------------------------------------
- * The seed is test data. It is wiped by `db:reset`, it hands every account the
- * same password, and it exists to make a journey runnable. These two accounts
- * are real people who must survive every reset and exist in prd. Putting them in
- * the seed would mean either shipping fixtures to production or losing the
- * administrators every time somebody rebuilds dev.
- *
- * ---------------------------------------------------------------------------
- * Why the identities are not in this file
- * ---------------------------------------------------------------------------
- * They are a home address and two mobile numbers. A git repository is a poor
- * place for personal data and a worse one once the repository is shared, and
- * "where does personal data live" is a question that gets asked of this project
- * by name. So the file holds the **shape** - which parameters are read, and what
- * is done with them - and SSM holds the values.
- *
- * It also makes a typo an operation rather than a deployment: correcting an
- * address is `aws ssm put-parameter --overwrite` plus a re-run, not a commit, a
- * review, a build and a release.
- *
- * Parameters read, one per field, under `$BOOTSTRAP_SSM_PREFIX`:
- *
- *   <prefix>/<slot>/EMAIL
- *   <prefix>/<slot>/FIRST_NAME
- *   <prefix>/<slot>/LAST_NAME
- *   <prefix>/<slot>/PHONE
- *   <prefix>/<slot>/CITY
- *   <prefix>/<slot>/COUNTRY
- *
- * for each slot in ACCOUNT_SLOTS. The prefix sits under `/kambriq/{env}/api/`,
- * which the API task role already holds `ssm:GetParameter` on - no IAM change.
- *
- * **Every parameter is required.** A missing one aborts the whole run before
- * anything is written, and the error names every parameter that was missing
- * rather than the first. Skipping an account because its data was absent would
- * be a mechanism reporting success by saying nothing, and the thing it would
- * silently skip is an administrator.
- *
- * ---------------------------------------------------------------------------
- * Idempotence
- * ---------------------------------------------------------------------------
- * Keyed on email. A second run with unchanged parameters performs **no writes at
- * all** - not `update: {}`, which still touches `updatedAt`, but a comparison
- * that finds nothing to change and says so. Re-running never touches
- * `passwordHash`, `emailVerified` or `isActive`: by the second run the holder
- * may well have set a password, and reconciling that back to the parameter store
- * would lock them out of their own account.
- *
- * The run ends by re-reading what it wrote and checking it, rather than
- * announcing a postcondition it did not verify.
+ * Behavior and requirements:
+ * - Bootstrapped accounts are created without a password. The account holder sets
+ *   their password via the password reset flow, which also verifies the email.
+ * - Identity data (email, name, phone, etc.) is securely fetched from AWS SSM under
+ *   `$BOOTSTRAP_SSM_PREFIX`. Expected parameters: `EMAIL`, `FIRST_NAME`, `LAST_NAME`,
+ *   `PHONE`, `CITY`, `COUNTRY`.
+ * - All parameters are mandatory. Missing parameters abort execution prior to writes.
+ * - Idempotency: Execution relies on email as a primary key. Repeated executions with
+ *   unchanged SSM parameters perform no write operations. Passwords, `emailVerified`,
+ *   and `isActive` states are never modified to avoid disrupting existing users.
+ * - Post-execution verification ensures the created roles exist and are correctly assigned.
  */
 
 /* eslint-disable @nx/enforce-module-boundaries */
@@ -78,12 +33,8 @@ import { EmailService } from '../libs/common/src/email/email.service';
 import { Queue } from 'bullmq';
 
 /**
- * The two accounts, as opaque slot names.
- *
- * The count is here rather than discovered from SSM on purpose. A run that reads
- * whatever happens to be in the parameter store cannot tell "one account was
- * never configured" from "there is one account", which is the silent skip this
- * script exists not to do.
+ * Target account slot identifiers. The fixed array ensures both accounts are consistently expected,
+ * preventing silent failures if one configuration slot is missing from the parameter store.
  */
 const ACCOUNT_SLOTS = ['admin1', 'admin2'] as const;
 
@@ -92,7 +43,7 @@ const FIELDS = ['EMAIL', 'FIRST_NAME', 'LAST_NAME', 'PHONE', 'CITY', 'COUNTRY'] 
 type Field = (typeof FIELDS)[number];
 type Identity = Record<Field, string>;
 
-/** Written into `UserRole.grantedBy`, so the origin of the grant is on the row. */
+/** Records the origin of the role grant on the user role. */
 const GRANTED_BY = 'bootstrap';
 
 const REGION = process.env['AWS_REGION'] ?? 'eu-central-1';
@@ -102,12 +53,8 @@ const REGION = process.env['AWS_REGION'] ?? 'eu-central-1';
 // ---------------------------------------------------------------------------
 
 /**
- * Fetches the whole prefix in one call, then checks what came back against what
- * is required.
- *
- * `GetParametersByPath` rather than one `GetParameter` per field: a partial
- * answer is the point. It lets the run report every missing parameter at once,
- * instead of failing on the first, being fixed, and failing on the second.
+ * Retrieves the required SSM parameters for the specified prefix.
+ * Utilizes `GetParametersByPath` to fetch parameters comprehensively and effectively batch error reporting.
  */
 async function readIdentities(prefix: string): Promise<Record<string, Identity>> {
   const ssm = new SSMClient({ region: REGION });
@@ -148,9 +95,7 @@ async function readIdentities(prefix: string): Promise<Record<string, Identity>>
   }
 
   if (missing.length > 0 || blank.length > 0) {
-    // A blank parameter is listed separately because it is a different mistake:
-    // the parameter was created and never filled in, which reads as present to
-    // anything that only checks existence.
+    // Distinguish between missing and blank parameters for accurate error reporting.
     const lines = [
       `Bootstrap aborted. ${missing.length + blank.length} parameter(s) unusable under ${prefix}:`,
       ...missing.map((n) => `  MISSING  ${n}`),
@@ -177,22 +122,15 @@ const core = new CoreClient({
 type Outcome = 'created' | 'updated' | 'unchanged';
 
 /**
- * The fields this script owns and will reconcile with the parameter store.
- *
- * `passwordHash`, `emailVerified` and `isActive` are deliberately absent: they
- * belong to the account holder from the moment they first use the reset link,
- * and a bootstrap that reset them would undo a real person's password on the
- * next deployment.
+ * The fields managed by this script and reconciled with the parameter store.
+ * `passwordHash`, `emailVerified`, and `isActive` are excluded to prevent overwriting user-configured values.
  */
 function userFieldsFrom(identity: Identity) {
   return {
     firstName: identity.FIRST_NAME,
     lastName: identity.LAST_NAME,
-    // One `phone` column on `User`. A second number has nowhere to go and is
-    // NOT concatenated into this one: `+33 6 ... / +237 6 ...` is not a phone
-    // number, and everything downstream that treats it as one - a WhatsApp
-    // notification, an SMS, a click-to-call - would be handed something that
-    // cannot be dialled while looking populated.
+    // The `User` model supports a single phone number. Additional numbers are discarded
+    // to maintain a valid, dialable format for downstream services (e.g., SMS, WhatsApp).
     phone: identity.PHONE,
   };
 }
@@ -211,12 +149,7 @@ async function bootstrapAccount(slot: string, identity: Identity): Promise<Outco
     include: { profile: true, userRoles: { include: { role: true } } },
   });
 
-  /**
-   * The decision is `planBootstrap`, in `libs/common`, where it is covered by
-   * `bootstrap-plan.spec.ts` on every branch - including the one that grants the
-   * role to an account that already existed. This function does the writing; it
-   * does not decide any more.
-   */
+  /** Determines the bootstrap action via `planBootstrap`. */
   const plan = planBootstrap(
     existing && {
       firstName: existing.firstName,
@@ -236,9 +169,8 @@ async function bootstrapAccount(slot: string, identity: Identity): Promise<Outco
       data: {
         email,
         ...user,
-        // No password. The holder sets one through POST /auth/forgot-password
-        // followed by POST /auth/reset-password, which is also what flips
-        // emailVerified to true.
+        // The password is unset by default. The user establishes their password and
+        // verifies their email via the standard password reset flow.
         passwordHash: null,
         emailVerified: false,
         preferredLanguage: 'fr',
@@ -257,17 +189,9 @@ async function bootstrapAccount(slot: string, identity: Identity): Promise<Outco
   if (!existing) throw new Error(`plan said ${plan.action} but no row was read for ${email}`);
 
   /**
-   * The one thing a re-run still does, and the property it costs.
-   *
-   * H2 proved that a second run issues **no write at all**. That is no longer
-   * unconditionally true, and the change is deliberate: an account that was
-   * bootstrapped and never verified has nothing in its inbox, and a bootstrap
-   * that leaves an administrator with no way in has not finished its job. So a
-   * re-run re-sends - but only when the holder is unverified **and** has no live
-   * link outstanding.
-   *
-   * Once both accounts are verified this is permanently false and a re-run is a
-   * no-op again. It is self-limiting rather than every-deploy.
+   * Resend the verification email on subsequent runs only if the user remains
+   * unverified and possesses no active reset link. This ensures the account
+   * holder eventually receives a valid entry path without spamming.
    */
   if (await needsVerificationEmail(existing.id, existing.emailVerified)) {
     await sendVerificationEmail(existing.id, email, user.firstName);

@@ -1,67 +1,99 @@
 import { NextResponse } from 'next/server';
+import createMiddleware from 'next-intl/middleware';
 import { authForProxy as auth } from './auth';
+import { routing } from './i18n/routing';
 import {
   AUTH_ROUTES,
   getDefaultRoute,
-  isPublic,
+  isProtected,
+  localeOf,
   matchGate,
   REDIRECT_WHEN_AUTHED,
   safeCallbackUrl,
+  stripLocale,
+  withLocale,
 } from './routes';
+
+/**
+ * next-intl's locale negotiation, which produces the final response for every
+ * request this proxy does not answer itself.
+ *
+ * It redirects an unprefixed pathname to a prefixed one, records the choice in
+ * the `NEXT_LOCALE` cookie, and sets the `Link: <...>; rel="alternate"` headers
+ * that tell a crawler about the other language.
+ */
+const intl = createMiddleware(routing);
 
 export default auth((req) => {
   const { nextUrl, auth: session } = req;
-  const pathname = nextUrl.pathname;
+
+  /**
+   * A pathname with no locale is sent to the prefixed form before any
+   * authentication decision is taken.
+   *
+   * It keeps every branch below reasoning about one shape of URL, and it lets
+   * next-intl pick the locale from the cookie or `accept-language` rather than
+   * this file guessing one. The cost is one extra redirect on a hand-typed URL;
+   * every link the app renders is prefixed already.
+   */
+  if (!localeOf(nextUrl.pathname)) return intl(req);
+
+  const locale = localeOf(nextUrl.pathname) as string;
+  const pathname = stripLocale(nextUrl.pathname);
   const isAuthenticated = !!session?.user;
   const hasSessionError = session?.error === 'RefreshTokenError';
   const roles = session?.user?.roles ?? [];
 
-  // Refresh failed → redirect to login. NextAuth replaces the broken session on re-login.
-  // Skip if already on a public route (including /login) to avoid redirect loops:
-  // the session keeps its error flag until the user actually signs in again, so a
-  // naive redirect would bounce /login → /login → /login.
-  if (isAuthenticated && hasSessionError && !isPublic(pathname)) {
-    const loginUrl = new URL(AUTH_ROUTES.LOGIN, nextUrl.origin);
-    loginUrl.searchParams.set('callbackUrl', safeCallbackUrl(pathname));
+  const toLogin = () => {
+    const loginUrl = new URL(withLocale(AUTH_ROUTES.LOGIN, locale), nextUrl.origin);
+    loginUrl.searchParams.set('callbackUrl', safeCallbackUrl(nextUrl.pathname));
     return NextResponse.redirect(loginUrl);
-  }
+  };
 
-  // Authenticated user (with valid session) on landing/auth pages → redirect to their role home
+  const toHome = () =>
+    NextResponse.redirect(new URL(withLocale(getDefaultRoute(roles), locale), nextUrl.origin));
+
+  // Refresh failed. The session keeps its error flag until the user signs in
+  // again, so this is scoped to protected paths: applied to /login as well it
+  // would bounce login to itself.
+  if (isAuthenticated && hasSessionError && isProtected(pathname)) return toLogin();
+
+  // Authenticated user on the landing or auth pages goes to their role's home.
   if (isAuthenticated && !hasSessionError) {
     const shouldRedirect = REDIRECT_WHEN_AUTHED.some((p) =>
       p === '/' ? pathname === '/' : pathname.startsWith(p),
     );
-    if (shouldRedirect) {
-      return NextResponse.redirect(new URL(getDefaultRoute(roles), nextUrl.origin));
-    }
+    if (shouldRedirect) return toHome();
   }
 
-  if (!isAuthenticated && !isPublic(pathname)) {
-    const loginUrl = new URL(AUTH_ROUTES.LOGIN, nextUrl.origin);
-    loginUrl.searchParams.set('callbackUrl', safeCallbackUrl(pathname));
-    return NextResponse.redirect(loginUrl);
-  }
+  /**
+   * The authentication gate, asked positively.
+   *
+   * This was `!isPublic(pathname)`, which was safe only while the matcher
+   * excluded every URL the site does not serve. The matcher now has to see the
+   * public paths too, so negation here would send `/fr/pricing` and every typo
+   * to the login page - the P3 defect, reintroduced through i18n.
+   */
+  if (!isAuthenticated && isProtected(pathname)) return toLogin();
 
   if (isAuthenticated) {
     const gate = matchGate(pathname);
-    if (gate && !gate.roles.some((r) => roles.includes(r))) {
-      return NextResponse.redirect(new URL(getDefaultRoute(roles), nextUrl.origin));
-    }
+    if (gate && !gate.roles.some((r) => roles.includes(r))) return toHome();
   }
 
-  return NextResponse.next();
+  return intl(req);
 });
 
 /**
- * P3 - the middleware runs on protected prefixes, and on nothing else.
+ * The proxy runs on the URLs this site serves, and on nothing else.
  *
  * ---------------------------------------------------------------------------
  * What this replaced, and why the shape matters more than the list
  * ---------------------------------------------------------------------------
  * This used to be one **negative** pattern: everything except `api`, `_next`
- * and some static files. So the middleware ran on every URL the site does not
+ * and some static files. So the proxy ran on every URL the site does not
  * serve, found it was not in `PUBLIC_PATHS`, and redirected it to
- * `/login?callbackUrl=...`. Measured against the running app before the change:
+ * `/login?callbackUrl=...`. Measured against the running app before P3:
  *
  *   /zzz-does-not-exist  307 -> /login?callbackUrl=%2Fzzz-does-not-exist
  *   /pricing             307 -> /login?callbackUrl=%2Fpricing
@@ -73,67 +105,71 @@ export default auth((req) => {
  * grows silently with every new public page, and cannot answer "is this URL
  * protected" without running it. A positive one is a list a person can read.
  *
- * ---------------------------------------------------------------------------
- * The literals are here, and the truth is in routes.ts
- * ---------------------------------------------------------------------------
- * Next.js requires this array to be statically analysable, so it cannot be
- * built from `PROTECTED_PREFIXES` at module scope. Two copies would drift, so
- * `middleware-matcher.spec.ts` asserts this list against that one **and**
- * against the route files on disk. A protected page whose prefix is missing
- * from here fails the suite rather than being served to anonymous visitors.
+ * next-intl documents `'/((?!api|trpc|_next|_vercel|.*\\..*).*)'` for this file,
+ * which is that exact pattern. It is not used here.
  *
- * Each prefix is listed twice because `:path*` is zero-or-more and the bare
- * path is the one that matters most: `/admin` and `/admin/:path*`.
+ * ---------------------------------------------------------------------------
+ * The three locale entries, and the sixty unprefixed ones
+ * ---------------------------------------------------------------------------
+ * `/(fr|en)/:path*` covers every URL that declares a locale, which after this
+ * change is every URL the app links to. It is a catch-all in reach and still a
+ * positive statement: the dangerous direction - a protected page the proxy does
+ * not see - cannot happen under it, because a protected page is always
+ * locale-prefixed. Next compiles the alternation through path-to-regexp, so it
+ * discriminates: `/de/admin` and `/administration` do not match.
  *
- * `/`, `/login` and `/register` are matched although they are public. They are
- * `REDIRECT_WHEN_AUTHED`: a signed-in user is sent from them to their role's
- * home, which is not authentication but does happen here. Dropping them would
- * leave signed-in users looking at the marketing page.
+ * The unprefixed entries exist only so that a URL typed or bookmarked without a
+ * locale is redirected rather than answered with a 404. They are the public
+ * paths and the protected prefixes, each in bare and `/:path*` form. Nothing
+ * else is listed, so `/pricing` never reaches this file and Next answers it
+ * from `app/[locale]/not-found.tsx`.
+ *
+ * Being matched no longer implies being protected. That decision moved into the
+ * handler above and rests on `PROTECTED_PREFIXES`, and
+ * `middleware-matcher.spec.ts` holds both halves: the literals here against the
+ * lists in `routes.ts`, and the lists against the route files on disk.
  */
 export const config = {
   matcher: [
-    // Public, but the middleware sends a signed-in user onward from them.
+    // Every URL that declares a locale, plus the two roots.
     '/',
-    '/login',
-    '/register',
+    '/(fr|en)',
+    '/(fr|en)/:path*',
 
-    // A47. Public pages the proxy RUNS on but never gates. The root layout reads
-    // the session on every page, and only the proxy can write a refreshed
-    // session cookie back; a page outside this list refreshed where nothing
-    // could save it, and browsing two of them signed the person out. Listed
-    // one page at a time, never as a prefix, so an unknown URL is still not
-    // matched and still 404s (P3). Keep in step with the public pages on disk -
-    // middleware-matcher.spec.ts fails when they differ.
+    // Unprefixed forms, so they are redirected to a locale rather than 404ing.
+    // Keep in step with PUBLIC_PATHS and PROTECTED_PREFIXES in routes.ts.
+    //
+    // A47 requires the proxy to RUN on every public page: the root layout reads
+    // the session on every page, only the proxy can write a refreshed session
+    // cookie back, and a page the proxy never saw refreshed where nothing could
+    // save it - browsing two of them signed the person out. A47 met that by
+    // listing each public page here one at a time.
+    //
+    // Locale routing already meets it, and more completely: `/(fr|en)/:path*`
+    // above matches every locale-prefixed URL, which after wave 5 is every URL
+    // the app links to, and the entries below add the unprefixed forms. The
+    // one-page-at-a-time list was A47's way of keeping an unknown URL unmatched
+    // so it still 404s; here that property does not rest on the matcher at all
+    // but on the handler asking `isProtected()` positively, which is asserted
+    // by running the proxy rather than by reading the list.
     '/about',
-    '/blog',
-    '/contact',
-    '/faq',
-    '/forgot-password',
-    '/legal/mentions',
-    '/legal/privacy',
-    '/legal/rgpd',
-    '/legal/terms',
-    '/methode',
-    '/plan',
-    '/products/kamnet',
-    '/products/kamnet/annuaire',
-    '/products/kbs',
-    '/products/lands',
-    '/products/verify',
-    '/reactivate',
-    '/reset-password',
-    '/verify-certificate/:certificateNumber',
-    '/verify-email',
-
-    // Protected. Keep in step with PROTECTED_PREFIXES in routes.ts.
+    '/about/:path*',
     '/account',
     '/account/:path*',
     '/admin',
     '/admin/:path*',
     '/agent',
     '/agent/:path*',
+    '/blog',
+    '/blog/:path*',
     '/client',
     '/client/:path*',
+    '/contact',
+    '/contact/:path*',
+    '/faq',
+    '/faq/:path*',
+    '/forgot-password',
+    '/forgot-password/:path*',
     '/invite',
     '/invite/:path*',
     '/kamnet',
@@ -144,14 +180,34 @@ export const config = {
     '/land/:path*',
     '/lands',
     '/lands/:path*',
+    '/legal',
+    '/legal/:path*',
+    '/login',
+    '/login/:path*',
+    '/methode',
+    '/methode/:path*',
     '/mylands',
     '/mylands/:path*',
+    '/plan',
+    '/plan/:path*',
+    '/products',
+    '/products/:path*',
     '/profile',
     '/profile/:path*',
+    '/reactivate',
+    '/reactivate/:path*',
+    '/register',
+    '/register/:path*',
     '/reservations',
     '/reservations/:path*',
+    '/reset-password',
+    '/reset-password/:path*',
     '/settings',
     '/settings/:path*',
+    '/verify-certificate',
+    '/verify-certificate/:path*',
+    '/verify-email',
+    '/verify-email/:path*',
     '/welcome',
     '/welcome/:path*',
   ],

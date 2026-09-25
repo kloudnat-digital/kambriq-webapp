@@ -1,15 +1,7 @@
 /**
- * Build metadata baked into the image at docker build time.
- *
- * The values come from build args in docker/Dockerfile.api, which ci.yml fills
- * from the commit being built. They are therefore immutable properties of the
- * image itself: an image cannot report a tag it was not built as. That is what
- * makes them usable as a deployment gate - deploy-dev.yml polls the version
- * endpoint after each rollout and fails if the served imageTag is not the tag
- * it just deployed.
- *
- * Every field falls back to 'unknown' so a locally built or pre-versioning
- * image still answers instead of crashing.
+ * Build metadata injected during the Docker build process.
+ * These values are used to verify deployments and provide runtime environment context.
+ * Falls back to 'unknown' for local or unversioned builds.
  */
 export interface BuildInfo {
   /** Package version (release-please manages package.json). */

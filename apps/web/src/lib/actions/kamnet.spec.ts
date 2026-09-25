@@ -20,6 +20,14 @@ jest.mock('@/lib/api/server', () => {
   };
 });
 jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }));
+// The revalidated path is built with the request's locale, which is read from
+// the referer and then the locale cookie. Without this the resolution throws,
+// `revalidatePath` is never reached, and the assertion below reads
+// "Number of calls: 0" - which looks like the action not revalidating at all.
+jest.mock('next/headers', () => ({
+  headers: () => Promise.resolve(new Headers()),
+  cookies: () => Promise.resolve({ get: () => undefined }),
+}));
 // winston's console transport schedules with setImmediate, which jsdom lacks.
 jest.mock('@/lib/logger', () => ({ logger: { error: jest.fn() } }));
 
@@ -47,36 +55,14 @@ const patch = serverApi.patch as jest.MockedFunction<typeof serverApi.patch>;
 const del = serverApi.delete as jest.MockedFunction<typeof serverApi.delete>;
 
 /**
- * The KAMNET server-action layer, tested on its own.
+ * Validates the KAMNET server-action layer bindings.
  *
- * ---------------------------------------------------------------------------
- * Why this file exists before the layer it tests
- * ---------------------------------------------------------------------------
- * The KAMNET API has been complete for months and five agent screens were dead
- * because this one module did not exist. The risk in writing it is not that a
- * call fails loudly - it is that it succeeds while addressing the wrong route,
- * or unwraps the wrong shape, and the screen above it renders something
- * plausible. `contact.spec.ts` was written for the same reason: the component
- * tests mocked the action, so an action that always reported success left every
- * one of them green.
+ * Pins actions to precise methods and paths to ensure correct API consumption.
  *
- * So each action is pinned to its METHOD and PATH, not merely to "it resolved".
- *
- * ---------------------------------------------------------------------------
- * The unauthenticated path, and why it differs between reads and mutations
- * ---------------------------------------------------------------------------
- * This is `kbs.ts`'s behaviour, mirrored deliberately rather than improved.
- *
- * `createAction` converts a `ServerActionError` into `{ success: false }` and
- * RETHROWS everything else. An `ApiError` is everything else. So:
- *
- *   - a read (`serverApi.get` with no try/catch) REJECTS on 401
- *   - a mutation (wrapped, throwing `ServerActionError`) RESOLVES to
- *     `{ success: false, error, status: 400 }`
- *
- * Both are asserted below. If that asymmetry is ever considered wrong it is
- * wrong in `kbs.ts` too, and the fix belongs there and in every caller - not
- * silently in this module, which step 1 requires to follow `kbs.ts` exactly.
+ * Unauthenticated behaviors:
+ * - Reads (`serverApi.get`) reject on 401.
+ * - Mutations (`createAction`) resolve to `{ success: false, error, status: 400 }`.
+ * This aligns with existing patterns.
  */
 
 const unauthorised = () => new ApiError('Unauthorized', 401);
@@ -95,9 +81,7 @@ describe('kamnet actions: agent profile', () => {
   });
 
   it('answers null when the caller has no agent record, rather than throwing', async () => {
-    // The API documents 404 as "the caller has no KAMNET agent record". That is
-    // an answer, not a fault, and the page needs to tell the two apart - so the
-    // same `nullOn404` shape `kbs.ts` uses for `getMyCandidate`.
+    // Returns null for 404s (no agent record) to differentiate missing records from actual faults.
     get.mockRejectedValue(new ApiError('Not found', 404));
 
     await expect(getMyAgentProfile()).resolves.toEqual({ success: true, data: null });
@@ -214,8 +198,7 @@ describe('kamnet actions: leads', () => {
   });
 
   it('never reports success when the API did not confirm the write', async () => {
-    // The property, stated once rather than per status code. A prospect the
-    // agent believes is saved and is not is the defect this guards.
+    // Asserts fallback to `{ success: false }` for unhandled rejections to prevent false positive saves.
     for (const error of [
       new ApiError('Bad request', 400),
       new ApiError('Boom', 503),
@@ -234,7 +217,8 @@ describe('kamnet actions: leads', () => {
     await updateLead('l1', { status: 'CONTACTED' }, '/agent/prospects');
 
     expect(patch).toHaveBeenCalledWith('/kamnet/leads/l1', { status: 'CONTACTED' });
-    expect(revalidatePath).toHaveBeenCalledWith('/agent/prospects');
+    // Paths are prefixed to ensure cache invalidation matches locale-aware Next.js routing.
+    expect(revalidatePath).toHaveBeenCalledWith('/fr/agent/prospects');
   });
 
   it('does not revalidate when no path is given', async () => {
@@ -315,16 +299,7 @@ describe('kamnet actions: network', () => {
   };
 
   it('clamps a request for a deeper tree to the one level sponsorship reaches', async () => {
-    /**
-     * INVERTED by P9, not deleted. It read "asks for the network at the depth
-     * it was given" and expected `depth=3` - true of the code and, after the 20
-     * September arbitrage, wrong about the requirement.
-     *
-     * Asserted as the LITERAL 1 rather than as `KAMNET_MAX_SPONSORSHIP_DEPTH`:
-     * computing the expectation from the same constant the code reads makes a
-     * test that passes for every value of it, including one nobody decided. The
-     * literal means moving the depth turns this red and has to be argued for.
-     */
+    /** Enforces depth clamp to 1 using literal assertions to guard constants. */
     get.mockResolvedValue(tree as never);
 
     await getMyNetwork(3);
@@ -341,10 +316,7 @@ describe('kamnet actions: network', () => {
   });
 
   it('refuses to ask for more than sponsorship reaches, rather than letting the server clamp it', async () => {
-    // The API clamps with Math.min(depth, KAMNET_MAX_SPONSORSHIP_DEPTH). Relying
-    // on that would make this module's contract depend on a server-side detail;
-    // asking for 1 when told 9 keeps the two honest independently. The bound
-    // moved from 3 to 1 with P9; that it is enforced HERE as well did not.
+    // Enforces client-side depth clamping to prevent dependency on API truncation behavior.
     get.mockResolvedValue(tree as never);
 
     await getMyNetwork(9);
@@ -390,12 +362,10 @@ describe('kamnet actions: network', () => {
 });
 
 /**
- * P11 - the directory read, and the agent's switch.
+ * Agent directory public access and consent toggles.
  *
- * The directory is the only KAMNET action that goes through `api` rather than
- * `serverApi`, and that is asserted rather than assumed: `serverApi` redirects a
- * caller with an expired session to a login page, which would turn a public
- * page into a members' area for anybody whose cookie had gone stale.
+ * Assertions ensure public reads use `api` (unauthenticated) rather than `serverApi`,
+ * to prevent unauthorized responses from triggering global login redirects.
  */
 describe('kamnet actions: the public directory (P11)', () => {
   const anonymousGet = api.get as jest.MockedFunction<typeof api.get>;
@@ -421,19 +391,8 @@ describe('kamnet actions: the public directory (P11)', () => {
   });
 
   /**
-   * The pin, asserted on its own so a failure names it.
-   *
-   * "Withdrawal is immediate" rested on Next 16 defaulting `fetch` to uncached,
-   * which nothing in this repository pinned - finding 4 of the 22 September
-   * review. Removing the option from the action makes THIS test fail rather
-   * than leaving the promise resting on a framework default again.
-   *
-   * Deliberately not pinned in `baseFetch`: an explicit `no-store` opts its
-   * route into dynamic rendering in Next 16, so the shared helper would change
-   * the rendering mode of every static page and `generateMetadata` that reaches
-   * it. `serverApi` reads are therefore NOT covered by this - they do not need
-   * to be, since every one carries a per-session `Authorization` header and
-   * `/agent/profile` is `force-dynamic`.
+   * Enforces `no-store` on directory reads to ensure immediate agent withdrawal visibility.
+   * Guarded individually rather than globally in `baseFetch` to prevent opting all routes into dynamic rendering.
    */
   it('pins no-store on the directory read, so a withdrawal cannot be served stale', async () => {
     anonymousGet.mockResolvedValue([]);
@@ -444,14 +403,7 @@ describe('kamnet actions: the public directory (P11)', () => {
     expect(init).toEqual({ cache: 'no-store' });
   });
 
-  /**
-   * The distinction this action exists to preserve.
-   *
-   * `[]` is "nobody has consented yet" - the ordinary state on the day this
-   * ships. `null` is "we could not ask". A page that rendered the second as the
-   * first would tell a buyer there are no certified agents during an outage,
-   * which is false about the business.
-   */
+  /** Verifies empty arrays are preserved to distinguish valid empty states from fetch failures (`null`). */
   it('answers [] for an empty register, which is not the same as null', async () => {
     anonymousGet.mockResolvedValue([]);
 
@@ -493,11 +445,7 @@ describe('kamnet actions: the agent consents to be listed (P11)', () => {
     },
   );
 
-  /**
-   * A mutation reports a refusal rather than throwing it - `kbs.ts`'s shape,
-   * mirrored deliberately. The control above it keeps the box where it was and
-   * says so; it cannot do that if the action rejects.
-   */
+  /** Ensures mutation errors are resolved as failure envelopes to support client-side state recovery. */
   it('reports a refusal as a failure envelope, so the control can stay put', async () => {
     patch.mockRejectedValue(new ApiError('A suspended agent cannot be listed.', 403));
 

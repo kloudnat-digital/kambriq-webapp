@@ -36,4 +36,35 @@ const config = {
   ],
 };
 
-module.exports = createJestConfig(config);
+/**
+ * `next-intl` and its `use-intl` core are published as ESM only, so Jest has to
+ * transform them. `next/jest` ignores all of `node_modules` by default, which
+ * leaves `SyntaxError: Unexpected token 'export'` on the first import.
+ *
+ * next-intl documents `node_modules/(?!next-intl)/`, and that pattern does not
+ * work under pnpm. A real path here is
+ * `node_modules/.pnpm/next-intl@4.8.3_.../node_modules/next-intl/dist/...`, and
+ * the pattern is unanchored, so it matches at the FIRST `node_modules/` - the
+ * one followed by `.pnpm` - and the file is ignored after all. The failure is
+ * silent in the sense that it looks like a next-intl bug rather than a config
+ * one.
+ *
+ * This form asks whether the whole remaining path mentions one of the named
+ * packages, so it answers the same at every `node_modules/` in it.
+ *
+ * The list is the ESM dependency chain rather than next-intl alone, because
+ * each one surfaces only after the one above it is transformed: next-intl ->
+ * use-intl -> intl-messageformat -> @formatjs/*, plus @formatjs/intl-localematcher
+ * and icu-minify. A shorter list fails with the next package's name, which
+ * reads like that package being broken.
+ *
+ * The CSS-module entry is `next/jest`'s own default and is kept: replacing the
+ * array wholesale drops it.
+ */
+module.exports = async () => ({
+  ...(await createJestConfig(config)()),
+  transformIgnorePatterns: [
+    'node_modules/(?!.*(?:next-intl|use-intl|@formatjs|intl-messageformat|icu-minify|@schummar))',
+    '^.+\\.module\\.(css|sass|scss)$',
+  ],
+});

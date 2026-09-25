@@ -1,5 +1,5 @@
 /**
- * StorageService - Abstraction for file storage S3
+ * Abstraction for Amazon S3 file storage.
  */
 
 import {
@@ -28,18 +28,14 @@ export class StorageService {
     this.transport =
       this.config.get<string>('STORAGE_TRANSPORT', 's3') === 'disabled' ? 'disabled' : 's3';
 
-    // Disabling storage must be a choice, never an inference from absent
-    // configuration. The previous gate required AWS_ACCESS_KEY_ID and
-    // AWS_SECRET_ACCESS_KEY, which are not in the task definition and never
-    // have been, so on Fargate the client was never built and every upload and
-    // download silently returned an unusable URL with HTTP 200.
+    // Enforce explicit configuration to prevent silent failures on incomplete setup.
     if (this.transport === 'disabled') {
       this.s3 = null;
       this.logger.warn('STORAGE_TRANSPORT=disabled - S3 is off; storage calls will throw.');
       return;
     }
 
-    // Misconfiguration is fatal at startup rather than at the first upload.
+    // Validate required configuration parameters.
     if (!this.bucket || !this.region) {
       throw new Error(
         'StorageService: AWS_S3_BUCKET and AWS_S3_REGION are required when ' +
@@ -48,8 +44,7 @@ export class StorageService {
       );
     }
 
-    // No explicit credentials: the default provider chain resolves the ECS task
-    // role on Fargate and the developer profile locally.
+    // Relies on default credential chain (ECS task role or local profile).
     this.s3 = new S3Client({
       region: this.region,
       requestChecksumCalculation: 'WHEN_REQUIRED',
@@ -60,8 +55,8 @@ export class StorageService {
   }
 
   /**
-   * Fail loudly rather than returning a value the caller cannot distinguish
-   * from a working one.
+   * Ensures the S3 client is enabled before executing an operation.
+   * Throws an error if storage transport is disabled.
    */
   private assertEnabled(operation: string): S3Client {
     if (!this.s3) {
@@ -71,12 +66,12 @@ export class StorageService {
   }
 
   /**
-   * Generate a presigned URL for uploading a file to S3 (PUT)
-   * Frontend upload directly to s3 using this URL
-   * @param key  - The S3 object key (e.g. "kbs/content/module1/lesson.pdf")
-   * @param contentType - MIME type (e.g., 'image/jpeg', 'application/pdf')
-   * @param expiresInSec - TTL for the presigned URL in seconds (default: 1800s = 30min)
-   * @returns { uploadUrl: string; fileUrl: string }
+   * Generates a presigned URL for uploading a file to S3 (PUT).
+   *
+   * @param key - The S3 object key.
+   * @param contentType - The MIME type of the file.
+   * @param expiresInSec - TTL for the presigned URL in seconds.
+   * @returns An object containing the upload URL and the file URL.
    */
   async getUploadUrl(
     key: string,
@@ -99,10 +94,11 @@ export class StorageService {
   }
 
   /**
-   * Generate a presigned URL for downloading a file from S3 (GET)
-   * @param key - The S3 object key (e.g. "kbs/content/module1/lesson.pdf")
-   * @param expiresInSec - TTL for the presigned URL in seconds (default: 1800s = 30min)
-   * @returns A presigned URL for downloading the file
+   * Generates a presigned URL for downloading a file from S3 (GET).
+   *
+   * @param key - The S3 object key.
+   * @param expiresInSec - TTL for the presigned URL in seconds.
+   * @returns A presigned URL for downloading the file.
    */
   async getDownloadUrl(key: string, expiresInSec = 1800): Promise<string> {
     if (key.startsWith('http://') || key.startsWith('https://')) {
@@ -120,9 +116,9 @@ export class StorageService {
   }
 
   /**
-   * Delete an object from S3
-   * @param key - The S3 object key to delete (e.g. "kbs/content/module1/lesson.pdf")
-   * @returns void
+   * Deletes an object from S3.
+   *
+   * @param key - The S3 object key to delete.
    */
   async deleteObject(key: string): Promise<void> {
     const s3 = this.assertEnabled('delete an object');
@@ -138,13 +134,10 @@ export class StorageService {
   }
 
   /**
-   * Every key under one prefix, following pagination to the end.
+   * Lists all keys under a specified prefix, handling pagination automatically.
    *
-   * C4c. Paging matters more than it looks: `ListObjectsV2` returns at most
-   * 1000 keys per call, and a caller that reads the first page and stops
-   * deletes some of somebody's documents and leaves the rest - which is a
-   * worse state than not having tried, because the count it reports looks
-   * like success.
+   * @param prefix - The prefix to search for.
+   * @returns An array of S3 object keys.
    */
   async listKeys(prefix: string): Promise<string[]> {
     const s3 = this.assertEnabled('list objects');
@@ -167,15 +160,12 @@ export class StorageService {
   }
 
   /**
-   * Deletes every object under a prefix and returns how many went.
+   * Deletes all objects under a specified prefix.
+   * Throws an error if any deletion fails to prevent orphaned objects.
+   * Returns 0 for an empty prefix.
    *
-   * **Throws if any key could not be deleted.** The caller - the purge - uses
-   * that to decide whether to delete the database row, and a silent partial
-   * success there is exactly how an orphan is made: the row goes, some objects
-   * stay, and nothing anywhere records which.
-   *
-   * An empty prefix returns 0 rather than throwing, so the purge of a user who
-   * never uploaded anything is not a special case.
+   * @param prefix - The prefix to clear.
+   * @returns The number of deleted objects.
    */
   async deletePrefix(prefix: string): Promise<number> {
     const s3 = this.assertEnabled('delete a prefix');
@@ -195,9 +185,8 @@ export class StorageService {
       const errors = res.Errors ?? [];
       if (errors.length > 0) {
         throw new Error(
-          `Refusing to report success: ${errors.length} of ${batch.length} objects under ` +
-            `"${prefix}" could not be deleted (${errors[0]?.Code}: ${errors[0]?.Message}). ` +
-            `Nothing downstream may treat this prefix as cleared.`,
+          `Failed to delete ${errors.length} of ${batch.length} objects under ` +
+            `"${prefix}" (${errors[0]?.Code}: ${errors[0]?.Message}).`,
         );
       }
       deleted += res.Deleted?.length ?? 0;

@@ -1,12 +1,11 @@
 'use client';
 
 import { Globe, MessageCircleQuestionMark } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from '@/i18n/navigation';
+import type { Locale } from '@/i18n/routing';
 import { useLocale, useTranslations } from 'next-intl';
-import type { FC } from 'react';
 import { useState, useTransition } from 'react';
 
-import { setLocale } from '@/lib/actions/locale';
 import { siteConfig } from '@/config/site.config';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,13 +29,14 @@ const WHATSAPP_QUESTIONS = [
   'other',
 ] as const;
 
-const QuickActions: FC = () => {
+function QuickActions() {
   const t = useTranslations('quickActions');
   const router = useRouter();
+  const pathname = usePathname();
   const [showDialog, setShowDialog] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const currentLocale = useLocale() as 'fr' | 'en';
+  const currentLocale = useLocale() as Locale;
 
   const openWhatsApp = (message?: string) => {
     const { number, message: defaultMsg } = siteConfig.contact.whatsapp;
@@ -46,11 +46,18 @@ const QuickActions: FC = () => {
     setShowDialog(false);
   };
 
+  /**
+   * Switching language is a navigation, not a stored preference.
+   *
+   * It replaces the current URL with its counterpart under the other locale,
+   * so the address bar, the rendered language and what a crawler would index
+   * all agree. Writing a cookie and refreshing, which is what this did, left
+   * one URL serving two languages.
+   */
   const handleLocaleToggle = () => {
-    const next = currentLocale === 'fr' ? 'en' : 'fr';
-    startTransition(async () => {
-      await setLocale(next);
-      router.refresh();
+    const next: Locale = currentLocale === 'fr' ? 'en' : 'fr';
+    startTransition(() => {
+      router.replace(pathname, { locale: next });
     });
   };
 
@@ -116,6 +123,6 @@ const QuickActions: FC = () => {
       </Dialog>
     </>
   );
-};
+}
 
 export default QuickActions;

@@ -14,20 +14,12 @@ import {
 } from '@kambriq/common';
 
 /**
- * In MVP, commission records are created manually by admins.
- * Auto-calculation from sales comes in v2
- *
  * Commission levels:
- * - Level 0: DA (Direct Agent) -> the agent who made the sale
- * - Level 1: N1 sponsor -> their direct sponsor
+ * - Level 0: Direct Agent (DA) - The agent who made the sale.
+ * - Level 1: Direct Sponsor (N1) - The direct sponsor of the DA.
  *
- * P9 (20 September 2026) ended sponsorship at level 1. Levels 2 and 3 existed
- * in this scheme and no row was ever written at either - checked on dev before
- * the decision - so nothing is stranded by the change.
- *
- * REPORTED, not fixed: `level` is still an Int and the admin create-commission
- * DTO still accepts 2 and 3. Narrowing that is a validation change with its own
- * blast radius, and it is not this subject's decision.
+ * Note: Commissions are currently manually created by admins.
+ * Support for levels beyond 1 is deprecated.
  */
 @Injectable()
 export class KamnetCommissionsService {
@@ -51,8 +43,8 @@ export class KamnetCommissionsService {
     const commission = await this.prisma.kamnetCommission.create({
       data: {
         agentId: dto.agentId,
-        landId: dto.landId as string,
-        reservationId: dto.reservationId as string,
+        landId: dto.landId,
+        reservationId: dto.reservationId,
         level: dto.level,
         pv: dto.pv,
         tpc: dto.tpc,

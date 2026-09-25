@@ -1,5 +1,5 @@
 import { Linkedin } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 
 const TEAM = [
   { key: 'ceo', avatar: 'CE', gradient: 'from-primary-500 to-primary-700' },
@@ -7,8 +7,8 @@ const TEAM = [
   { key: 'coo', avatar: 'CO', gradient: 'from-accent-500 to-accent-700' },
 ];
 
-export const TeamSection = () => {
-  const t = useTranslations('about.team');
+export const TeamSection = async () => {
+  const t = await getTranslations('about.team');
   return (
     <section className="px-6 py-20 sm:px-8">
       <div className="mx-auto max-w-5xl">

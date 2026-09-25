@@ -1,50 +1,26 @@
-// ----- Queue names - One queue per domain concern -----
+// Domain queues.
 export const QUEUES = {
   KBS: 'kbs',
   CORE: 'core',
   KAMNET: 'kamnet',
   NOTIFICATIONS: 'notifications',
-  /**
-   * G6's dunning sweep. **Its own queue, and that is not tidiness.**
-   *
-   * BullMQ allows one `@Processor` per queue name. Putting the sweep on
-   * `notifications` added a second processor beside `EmailProcessor`, and
-   * whichever won a given job kept it - so the dunning processor, which returns
-   * `undefined` for anything that is not the sweep, **silently consumed and
-   * discarded a reminder email**. One email sent, queue drained, `failed` set
-   * empty, nothing logged.
-   *
-   * Found by running it end to end and counting the messages that arrived, not
-   * by reading the code. A chantier whose whole subject is "nothing may fail
-   * silently" had introduced exactly that.
-   */
+  /** Dunning sweep queue. Isolated to satisfy BullMQ's processor-based routing. */
   DUNNING: 'dunning',
 } as const;
 
-// ----- Job names - specific operations within queues -----
+// Queue operations.
 export const KBS_JOBS = {
   GRADE_EXAM: 'kbs.grade-exam',
   AUTO_TRANSITION_STATUS: 'kbs.auto-transition-status',
   EXPIRE_EXAM: 'kbs.expire-exam',
-  /** I15 - daily: KCA_CERTIFIED is withdrawn from holders whose certificate has expired. */
+  /** Daily revocation of KCA_CERTIFIED status upon certificate expiration. */
   WITHDRAW_EXPIRED_CERTIFICATIONS: 'kbs.withdraw-expired-certifications',
 } as const;
 
 export const CORE_JOBS = {
   CLEANUP_EXPIRED_TOKENS: 'core.cleanup-expired-tokens',
   PURGE_DELETED_USERS: 'core.purge-deleted-users',
-  /**
-   * L2 - the daily contact-request digest.
-   *
-   * **On `QUEUES.CORE`, deliberately, and handled by the processor that is
-   * already there.** A new `@Processor(QUEUES.CORE)` class would be a second
-   * worker on one queue, and BullMQ gives a job to exactly one of them - which
-   * is how G6's dunning processor silently ate a payment reminder. So this is a
-   * new job *name* in `CoreCleanupProcessor`'s switch, not a new processor, and
-   * `one-processor-per-queue.spec.ts` is what keeps it that way.
-   *
-   * No new infrastructure: the queue, the Redis and the scheduler all exist.
-   */
+  /** Daily contact-request digest. */
   CONTACT_DIGEST: 'core.contact-digest',
 } as const;
 
@@ -53,14 +29,7 @@ export const NOTIFICATIONS_JOBS = {
 } as const;
 
 export const DUNNING_JOBS = {
-  /**
-   * `G6`'s daily sweep: reminders that are due, then expiries at term.
-   *
-   * A BullMQ repeatable job rather than a `@nestjs/schedule` cron, and that is
-   * the point of the chantier: a repeatable job that throws lands on the
-   * queue's `failed` set with its payload, where `A18`'s endpoint can read it.
-   * A `@Cron` that throws writes a log line nobody is watching.
-   */
+  /** Daily sweep for reminders and expiries (BullMQ repeatable). */
   SWEEP: 'dunning.sweep',
 } as const;
 
@@ -68,8 +37,7 @@ export const KAMNET_JOBS = {
   SALE_COMPLETED: 'kamnet.sale-completed',
 } as const;
 
-// TODO: No LandsProcessor exists yet. These job names are reserved for a future
-// lands notification/sync queue worker (v2).
+// Reserved for future lands notification/sync worker.
 export const LAND_JOBS = {
   NOTIFY_CLIENT_PORTAL: 'land.notify-client-portal',
   SYNC_RESERVATION_STATUS: 'land.sync-reservation-status',

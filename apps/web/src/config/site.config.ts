@@ -1,3 +1,6 @@
+/**
+ * Global site configuration settings.
+ */
 export const siteConfig = {
   name: 'KAMBRIQ',
   description:

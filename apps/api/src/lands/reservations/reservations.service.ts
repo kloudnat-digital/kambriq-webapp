@@ -22,6 +22,7 @@ import {
   LandReservationStatus,
   LandStatus,
   PaginationQuery,
+  PaymentState,
   QUEUES,
   SaleCompletedJobPayload,
   StorageService,
@@ -148,13 +149,8 @@ export class LandReservationsService {
     });
 
     // 7. Send client portal access email
-    //
-    // The agent is resolved BEFORE this email, not four lines after it. The
-    // `agentName` argument used to carry `agentUserId` with the comment "will be
-    // enriched in the controller"; it never was, and the client received
-    // "Votre agent KAMNET : 00000000-0000-4000-8000-b00000000005". The lookup
-    // that produces the real name was already happening immediately below, for
-    // the agent's own notification.
+    // Resolves the agent's name prior to sending the email to ensure the client
+    // receives the correct human-readable name instead of the raw UUID.
     const agentUser = await this.usersService.findById(agentUserId);
     const agentName = [agentUser.firstName, agentUser.lastName].filter(Boolean).join(' ').trim();
 
@@ -209,7 +205,17 @@ export class LandReservationsService {
     };
   }
 
-  // ----- Admin: Confirm Down Payment ----- //
+  // ----- Admin: Confirm Down Payment (Step 2) ----- //
+  /**
+   * Admin step 2: record that the down payment (acompte) was received.
+   *
+   * This step is a downstream projection of the payment ledger. It relies on
+   * `assertAcompteIsValidated` to ensure the payment has been formally validated
+   * by `ADMIN_GLOBAL` in `PaymentsService` prior to advancing the reservation state.
+   *
+   * The fields `confirmedBy` and `confirmedAt` record the actor who advanced
+   * the reservation, which is distinctly tracked separately from the payment validation.
+   */
   async confirmDownPayment(reservationId: string, adminUserId: string) {
     const reservation = await this.findByIdOrThrow(reservationId);
 
@@ -220,6 +226,8 @@ export class LandReservationsService {
     if (reservation.downPaymentConfirmed) {
       throw new ConflictException(this.t('lands.reservation.alreadyActive'));
     }
+
+    await this.assertAcompteIsValidated(reservationId);
 
     const updated = await this.prisma.landReservation.update({
       where: { id: reservationId },
@@ -248,6 +256,28 @@ export class LandReservationsService {
     });
 
     return updated;
+  }
+
+  /**
+   * Validates that at least one payment associated with the reservation has reached `VALIDE` state.
+   * `PARTIELLEMENT_RECU` is insufficient to satisfy the down payment requirement.
+   * Errors include detailed state of existing payments to guide operator action.
+   */
+  private async assertAcompteIsValidated(reservationId: string): Promise<void> {
+    const payments = await this.prisma.payment.findMany({
+      where: { reservationId },
+      select: { reference: true, state: true },
+    });
+
+    if (payments.some((payment) => payment.state === PaymentState.VALIDE)) return;
+
+    throw new ForbiddenException(
+      this.t('lands.reservation.acompteNotValidated', 'fr', {
+        payments: payments.length
+          ? payments.map((p) => `${p.reference ?? '?'} (${p.state})`).join(', ')
+          : '-',
+      }),
+    );
   }
 
   // ----- Admin: Mark Client Documents Received (Step 3) ----- //
@@ -287,6 +317,13 @@ export class LandReservationsService {
   }
 
   // ----- Admin: Confirm Remaining Payment (Step 4) ----- //
+  /**
+   * Admin step 4: record that the balance was received.
+   *
+   * Currently updates the reservation state independently of the payment ledger.
+   * This is a known architectural gap, as secondary balance payments are not yet modeled
+   * in the `Payment` ledger.
+   */
   async confirmRemainingPayment(reservationId: string, adminUserId: string) {
     const reservation = await this.findByIdOrThrow(reservationId);
 
@@ -429,8 +466,11 @@ export class LandReservationsService {
     return { message: this.t('lands.reservation.cancelled') };
   }
 
-  // ----- Get Reservation Detail ----- //
-  async findOne(reservationId: string) {
+  /**
+   * Retrieves a specific reservation with agent ownership enforcement.
+   * Prevents unauthorized access to client identity documents by scoping to the requesting agent.
+   */
+  async findOneForAgent(agentUserId: string, reservationId: string) {
     const reservation = await this.prisma.landReservation.findUnique({
       where: { id: reservationId },
       include: {
@@ -445,6 +485,12 @@ export class LandReservationsService {
 
     if (!reservation) {
       throw new NotFoundException(this.t('lands.reservation.notFound'));
+    }
+
+    // Refused before the presigning below, which is the step that would hand out
+    // readable links to the documents.
+    if (reservation.agentUserId !== agentUserId) {
+      throw new ForbiddenException(this.t('lands.reservation.notOwner'));
     }
 
     // Generate presigned download URLs for client-uploaded documents.
@@ -914,18 +960,9 @@ export class LandReservationsService {
   }
 
   /**
-   * The client's language, defaulting to French.
-   *
-   * `A7/W2` recorded that a failed lookup and a client with no stated language
-   * come out of here identically. That is now true of the language only:
-   * `resolveClientPrefs`, which had the same shape and decided whether an email
-   * was sent at all, is gone with `A11` - no caller needs it, because a
-   * preference no longer suppresses a transactional message.
-   *
-   * The remaining conflation is deliberate and small: a wrong language is a
-   * legible email in the wrong language, not a missing one. The `catch` is kept
-   * so a core lookup failure cannot stop a lands notification, and the failure
-   * is visible in the core logs.
+   * Resolves the client's language preference, defaulting to French upon lookup failure.
+   * A resilient lookup is intentionally maintained to ensure transactional emails are always
+   * dispatched even if the core preference lookup fails.
    */
   private async resolveClientLang(clientUserId: string | null): Promise<string> {
     if (!clientUserId) return 'fr';

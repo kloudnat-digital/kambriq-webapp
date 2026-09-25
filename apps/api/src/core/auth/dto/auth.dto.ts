@@ -74,8 +74,8 @@ export const accountReactivationSchema = z.object({
 export class AccountReactivationDto extends createZodDto(accountReactivationSchema) {}
 
 // ----- Token Response -----
-// refreshToken and rememberMe are internal - the controller sets the cookie and
-// strips both fields before sending the response to the client.
+// The refreshToken and rememberMe fields are handled internally by the controller
+// for cookie configuration and are omitted from the client response.
 export class TokenResponse {
   declare accessToken: string;
   declare refreshToken: string;

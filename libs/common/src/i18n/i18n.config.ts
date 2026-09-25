@@ -8,25 +8,21 @@ export class UserLanguageResolver implements I18nResolver {
   resolve(context: ExecutionContext): string | undefined {
     const request = context.switchToHttp().getRequest();
 
-    // 1. Check user from JWT (set by JwtStrategy)
+    // Extract from JWT payload.
     if (request.user?.lang) {
       return request.user.lang;
     }
 
-    // 2. Check 'Accept-Language' header
+    // Fallback to Accept-Language header.
     const acceptLang = request.headers?.['accept-language'];
     if (acceptLang) {
-      const lang = acceptLang
-        .split(',')[0]
-        ?.split('-')[0]
-        ?.trim()
-        .toLowerCase();
+      const lang = acceptLang.split(',')[0]?.split('-')[0]?.trim().toLowerCase();
       if (SUPPORTED_LANGUAGES.includes(lang as SupportedLanguage)) {
         return lang;
       }
     }
 
-    return undefined; // fallback to default language
+    return undefined; // Fallback to default language.
   }
 }
 

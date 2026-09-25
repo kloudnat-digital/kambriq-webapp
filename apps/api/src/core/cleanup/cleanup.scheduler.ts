@@ -48,12 +48,8 @@ export class CleanupScheduler implements OnModuleInit {
   }
 
   /**
-   * L2 - the daily contact digest.
-   *
-   * On the queue that already exists, handled by the processor that already
-   * owns it. **No second `@Processor(QUEUES.CORE)`**: BullMQ gives a job to one
-   * worker, and a second one on the same queue is how G6 silently ate a payment
-   * reminder. No new queue either - nothing here provisions infrastructure.
+   * Schedules the daily contact digest.
+   * Uses the existing core queue and its single processor to prevent race conditions.
    */
   private async scheduleContactDigest() {
     const pattern = this.config.get<string>('CONTACT_DIGEST_CRON', '0 7 * * *');
@@ -62,17 +58,11 @@ export class CleanupScheduler implements OnModuleInit {
       CORE_JOBS.CONTACT_DIGEST,
       {},
       {
-        // A fixed id, so a restart re-registers the same schedule rather than
-        // accumulating one more digest per deploy.
+        // Assign a fixed jobId to prevent duplicate schedules on restart.
         jobId: 'contact-digest-cron',
         repeat: { pattern },
         removeOnComplete: 10,
-        /**
-         * Larger than `removeOnComplete`, like the dunning sweep's. A digest
-         * that succeeded is a heartbeat and one is as good as another; a digest
-         * that failed is the record that nobody was told what came in, and it
-         * is what `/health/queues/failed` exists to surface.
-         */
+        /** Keep more failed jobs than completed jobs to preserve error history for health checks. */
         removeOnFail: 200,
       },
     );

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { usePathname } from 'next/navigation';
+import { usePathname } from '@/i18n/navigation';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -60,8 +60,6 @@ export const AccountProfileCard = ({ me }: AccountProfileCardProps) => {
     }
     createToast({ status: 'success', title: t('saveSuccess') });
   };
-
-  console.log(me);
 
   return (
     <Card>

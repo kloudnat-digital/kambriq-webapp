@@ -1,8 +1,8 @@
 'use client';
 
 import { useTransition } from 'react';
-import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { Link } from '@/i18n/navigation';
+import { useRouter, usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { AlertTriangle, CheckCircle2, ClipboardCheck, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';

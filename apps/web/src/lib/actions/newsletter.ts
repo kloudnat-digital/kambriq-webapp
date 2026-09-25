@@ -6,10 +6,10 @@ import { api, ApiError } from '@/lib/api/server';
  * P2 - the newsletter form's server action.
  *
  * Same shape as `submitContactRequestAction`: a discriminated result the screen
- * renders, never a thrown error reaching the page. It used to swallow every
- * failure into one fixed English sentence; now it passes the API's answer
- * through and says whether pressing again could help, and the form chooses the
- * words from its catalogue. `status` is carried so an already-subscribed
+ * renders, never a thrown error reaching the page. It passes the API's answer
+ * through rather than collapsing every failure into one fixed sentence, and
+ * says whether pressing again could help; the form chooses the words from its
+ * catalogue. `status` is carried so an already-subscribed
  * address (409) can be named rather than reported as a failure.
  */
 export type SubscribeNewsletterResult =

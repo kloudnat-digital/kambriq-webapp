@@ -96,35 +96,90 @@ describe('KbsCandidatesService', () => {
   // ----- GET MY PROFILE ----- //
 
   describe('getMyProfile', () => {
-    it('returns profile with progress summary', async () => {
-      const candidate = buildCandidate({
+    /**
+     * Two courses in the fixture, because one cannot discriminate.
+     *
+     * The mock answers the `where` it is handed. A mock returning a fixed
+     * count makes the scoped and unscoped calls indistinguishable, so neither
+     * side of the ratio can be observed.
+     *
+     * The database-backed proof is in `progress-counts-course-scope.dbspec.ts`;
+     * these pin the shape on pull requests, where no database runs.
+     */
+    const ACTIVE = 'course-active';
+    const OTHER = 'course-other';
+
+    /** Answers the filter given: 3 modules in the active course, 5 across both. */
+    const countByCourse = ({ where }: { where?: { courseId?: string } } = {}) =>
+      Promise.resolve(where?.courseId === ACTIVE ? 3 : 5);
+
+    /** One pass and one failure in the active course, one pass in the other. */
+    const twoCourseCandidate = () =>
+      buildCandidate({
         progress: [
           {
             moduleId: 'm1',
             passed: true,
             score: 80,
             completedAt: new Date(),
-            module: { id: 'm1', title: 'Mod 1', order: 1 },
+            module: { id: 'm1', title: 'Mod 1', order: 1, courseId: ACTIVE },
           },
           {
             moduleId: 'm2',
             passed: false,
             score: 50,
             completedAt: null,
-            module: { id: 'm2', title: 'Mod 2', order: 2 },
+            module: { id: 'm2', title: 'Mod 2', order: 2, courseId: ACTIVE },
+          },
+          {
+            moduleId: 'x1',
+            passed: true,
+            score: 90,
+            completedAt: new Date(),
+            module: { id: 'x1', title: 'Demonstration 1', order: 1, courseId: OTHER },
           },
         ],
         certificates: [],
       });
+
+    const arrangeProfile = (activeCourseId: string | null) => {
+      const candidate = twoCourseCandidate();
       prisma.kbsCandidate.findUnique.mockResolvedValue(candidate);
-      prisma.kbsModule.count.mockResolvedValue(3);
+      prisma.kbsSettings.findFirst.mockResolvedValue(
+        activeCourseId === null ? null : { activeCourseId },
+      );
+      prisma.kbsModule.count.mockImplementation(countByCourse);
+      return candidate;
+    };
+
+    it('counts the active course on both sides of the ratio', async () => {
+      const candidate = arrangeProfile(ACTIVE);
 
       const result = await service.getMyProfile(candidate.userId);
 
-      expect(result.overallProgress.completed).toBe(1);
-      expect(result.overallProgress.total).toBe(3);
-      expect(result.overallProgress.percent).toBe(33); // 1/3
-      expect(result.modules).toHaveLength(2);
+      // 1 of 3. Unscoped on either side this reads 2 of 3, 1 of 5 or 2 of 5,
+      // none of which is progress through the active course.
+      expect(result.overallProgress).toEqual({ completed: 1, total: 3, percent: 33 });
+    });
+
+    it('lists the active course modules and no others', async () => {
+      const candidate = arrangeProfile(ACTIVE);
+
+      const result = await service.getMyProfile(candidate.userId);
+
+      expect(result.modules.map((m) => m.moduleId)).toEqual(['m1', 'm2']);
+    });
+
+    /** I38 - absence behaviour, matching `getMyOverview`: a state, not a 500. */
+    it('reports no course progress when no course is active', async () => {
+      const candidate = arrangeProfile(null);
+
+      const result = await service.getMyProfile(candidate.userId);
+
+      expect({ overall: result.overallProgress, modules: result.modules }).toEqual({
+        overall: { completed: 0, total: 0, percent: 0 },
+        modules: [],
+      });
     });
 
     it('throws NotFoundException if not enrolled', async () => {

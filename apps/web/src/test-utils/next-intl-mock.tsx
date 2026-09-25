@@ -1,36 +1,12 @@
 /**
- * `next-intl`, replaced for tests - but **not** its messages.
+ * Mock implementation of `next-intl` for Jest tests.
+ * Maintains actual translation catalogs (en/fr) to ensure realistic test coverage
+ * while bypassing ESM-related transpilation issues in Jest.
+ * Missing keys will throw an error to prevent silent translation failures.
  *
- * ---------------------------------------------------------------------------
- * Why a mock at all
- * ---------------------------------------------------------------------------
- * `next-intl` ships ESM from `node_modules`, and `next/jest` builds its
- * `transformIgnorePatterns` from `transpilePackages` in `next.config.ts`.
- * Custom patterns are only ever **appended**, and Jest ignores a file when any
- * pattern matches, so appending cannot un-ignore `/node_modules/`. The two real
- * options were to add `next-intl` to `transpilePackages` - changing how the
- * production bundle is built, for a test - or to replace the module here.
- *
- * `test-setup.ts` predicted this exact moment about MSW: *"That test will also
- * need the transform sorted, which is the right moment to pay for it."* This is
- * the cheaper half of that bill: the plumbing is replaced, the payload is not.
- *
- * ---------------------------------------------------------------------------
- * What is mocked, and what deliberately is not
- * ---------------------------------------------------------------------------
- * **The catalogues are the real ones.** `fr.json` and `en.json` are plain JSON
- * and import fine, so a test that asserts a visible error message asserts the
- * French string that ships. A mock returning the key would let a component pass
- * its tests while rendering `contact.form.subjectRequired` to a prospect.
- *
- * Missing keys **throw**. A translation function that returns the key on a miss
- * is a mechanism reporting success by saying nothing: the test goes green and
- * the page shows a dotted path.
- *
- * Usage, at the top of a test file:
- *
- *   jest.mock('next-intl', () => require('@/test-utils/next-intl-mock'));
- *   import { setTestLocale } from '@/test-utils/next-intl-mock';
+ * @example
+ * jest.mock('next-intl', () => require('@/test-utils/next-intl-mock'));
+ * import { setTestLocale } from '@/test-utils/next-intl-mock';
  */
 import type { ReactNode } from 'react';
 import en from '@/i18n/messages/en.json';
@@ -62,19 +38,16 @@ const interpolate = (template: string, args?: Record<string, string | number>): 
     : template;
 
 /**
- * The translator itself, as a plain function.
- *
- * Separated from `useTranslations` so that `getTranslations` can return the
- * same thing without calling a hook: a hook invoked from a function that is
- * neither a component nor a hook is a `react-hooks/rules-of-hooks` error, and
- * silencing that rule to make a mock compile would blunt it everywhere else.
+ * Core translation resolver decoupled from React context.
+ * Enables both `useTranslations` (client hooks) and `getTranslations` (async server API)
+ * to share resolution logic without violating React hook constraints.
  */
 const makeTranslator = (namespace?: string) => {
   const prefix = namespace ? `${namespace}.` : '';
   const translate = (key: string, args?: Record<string, string | number>): string => {
     const value = resolve(`${prefix}${key}`);
     if (typeof value !== 'string') {
-      // Loud on purpose. See the note above.
+      // Fails fast to prevent silent translation omissions from masking rendering regressions.
       throw new Error(
         `Missing ${locale} translation for "${prefix}${key}". The component would have ` +
           `rendered the key itself to a user.`,
@@ -94,17 +67,11 @@ const makeFormatter = () => ({
 export const useTranslations = (namespace?: string) => makeTranslator(namespace);
 
 /**
- * `getTranslations` from `next-intl/server`, for async server components.
+ * Mock implementation of `getTranslations` from `next-intl/server`.
+ * Provides identical behavior to the hook variant, but is correctly marked async.
  *
- * Same catalogue, same loudness on a miss, same interpolation - the only
- * difference is that it is awaited. A server component cannot use the hook, so
- * without this a page that calls `getTranslations` cannot be rendered under
- * Jest at all: `next-intl/server` is ESM and fails with
- * `SyntaxError: Unexpected token 'export'` before any assertion runs.
- *
- * Usage differs from the hook, because the two live in different modules:
- *
- *   jest.mock('next-intl/server', () => require('@/test-utils/next-intl-mock'));
+ * @example
+ * jest.mock('next-intl/server', () => require('@/test-utils/next-intl-mock'));
  */
 export const getTranslations = async (namespace?: string) => makeTranslator(namespace);
 

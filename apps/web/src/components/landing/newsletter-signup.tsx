@@ -2,7 +2,7 @@
 
 import { useId, useState } from 'react';
 import type { ComponentPropsWithoutRef, FC } from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocale, useTranslations } from 'next-intl';

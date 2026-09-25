@@ -856,18 +856,9 @@ export class PaymentsService {
     }
 
     /**
-     * G5 - a correction "porte sa propre raison et son propre auteur" (v03 §7).
-     *
-     * The author is `recordedBy`, written below like any other line. The
-     * reason is the note, and for a correction it is required: a signed line
-     * that points at another and says nothing about why is a number somebody
-     * changed. The line it corrects must be on this payment's ledger - a
-     * correction of a line on another sale is a mistake this refuses rather
-     * than records.
-     *
-     * The correction **appends**. Nothing here touches the original row, and
-     * the database refuses it if anything tries (`PaymentReceipt_append_only`,
-     * exercised in `append-only.dbspec.ts`).
+     * Processes payment ledger corrections with mandatory audit trails.
+     * Enforces append-only semantics; corrections create new entries detailing
+     * the author, reason, and target entry, without modifying historical data.
      */
     if (input.correctsId !== undefined) {
       if ((input.note ?? '').trim() === '') {
@@ -916,12 +907,8 @@ export class PaymentsService {
   }
 
   /**
-   * The back-office list: every payment with its state, reference and what is
-   * still owed.
-   *
-   * The outstanding balance is `amountDue - sum(receipts)`, computed here from
-   * the ledger. **There is no stored balance to read**, and adding one would be
-   * the defect G1 exists to prevent.
+   * Retrieves payment ledgers computing outstanding balances dynamically.
+   * Eliminates stored state for balances to prevent drift against ledger entries.
    */
   async listForBackOffice(query: PaginationQuery) {
     const { page, limit } = query;
@@ -1094,14 +1081,9 @@ export class PaymentsService {
   }
 
   /**
-   * Validates a payment. **A separate act from recording, by a named person.**
-   *
-   * G1 built the separation; here it meets a real user for the first time.
-   * Recording a receipt never validates - the back office enters what arrived,
-   * and somebody with the authority to commit says that it settles the payment.
-   *
-   * The reason is required and is recorded on the transition, with the receipt
-   * it rests on where there is one.
+   * Commits a payment validation.
+   * Structurally separates the act of recording a receipt from validating it.
+   * Captures explicit actor and rationale for the transition.
    */
   async validate(
     paymentId: string,
@@ -1180,26 +1162,9 @@ export class PaymentsService {
    *   boundary by itself - and here the boundary commits money.
    */
   /**
-   * Moves a payment one legal step, as a named act with a reason.
-   *
-   * **Why this exists as its own call.** The path from
-   * INSTRUCTIONS_ENVOYEES to VALIDE is five states, and only the last one is
-   * `validate`. Without this the back office could record money against a
-   * payment and never move it: the screen offered "Valider le paiement" from
-   * INSTRUCTIONS_ENVOYEES, the state machine refused it - correctly - and the
-   * payment was stuck with 8 000 000 XAF in its ledger and nowhere to go. The
-   * transition table was right; nothing could drive it.
-   *
-   * It stays separate from `recordReceipt` for the reason G1 exists: recording
-   * money and agreeing what it means are two acts. This one moves state and
-   * touches no money.
-   *
-   * **Who may do it is derived, not listed.** A state in `COMMITTING_STATES` is
-   * one that commits money, and only ADMIN_GLOBAL may reach those. The rest is
-   * back-office bookkeeping and ADMIN_LANDS may do it. Deriving the rule from
-   * the same set the guard uses means a state added to `COMMITTING_STATES`
-   * tomorrow is protected here on the same day - a second hand-written list of
-   * "the dangerous ones" would not be.
+   * Advances payment state through the legal state machine.
+   * Enforces role-based permissions dynamically: `COMMITTING_STATES` are gated
+   * to `ADMIN_GLOBAL`, while standard state transitions allow `ADMIN_LANDS`.
    */
   async transitionAsAdmin(
     paymentId: string,
@@ -1287,29 +1252,9 @@ export class PaymentsService {
   }
 
   /**
-   * G12 - the identification gate. **The only place bank details leave the
-   * system, so it is the place that checks who is asking.**
-   *
-   * v03 section 4d: *"Le client est identifie. Une piece d'identite verifiee,
-   * pas seulement deposee. Tant que la verification n'a pas eu lieu, la demande
-   * reste en attente et le paiement reste en INITIE."*
-   *
-   * **Verified, not submitted.** `pending` means a document is sitting in a
-   * queue; it says nothing about whether anybody looked at it. The file de revue
-   * des pieces stops being administrative hygiene and goes on the path of the
-   * money.
-   *
-   * ---------------------------------------------------------------------------
-   * Why here and not in the controller
-   * ---------------------------------------------------------------------------
-   * `transition` is the single choke point through which every state change
-   * passes - the send route, the back-office step control, and anything written
-   * later. A check in a controller guards one door; this guards the corridor.
-   *
-   * **Only `INITIE -> INSTRUCTIONS_ENVOYEES` is gated.** The exits are not: a
-   * request from somebody who never completed their identification must still be
-   * refusable, expirable and cancellable, or an unverified client's payment
-   * would be stuck forever and the dunning queue could never clear it.
+   * Enforces client identity verification before dispatching bank details.
+   * Prevents funds from transitioning from `INITIE` to `INSTRUCTIONS_ENVOYEES`
+   * unless the client has successfully cleared the identification review process.
    */
   private async assertClientIsIdentified(
     reservationId: string,
@@ -1347,16 +1292,8 @@ export class PaymentsService {
   }
 
   /**
-   * G7 - "sur quelle preuve": the receipt a transition names must be this
-   * payment's.
-   *
-   * `assertTransitionIsEvidenced` decides *whether* a receipt is required and
-   * knows nothing about the database. This decides whether the one named is
-   * real: it exists, and it sits on the ledger of the payment being moved. An
-   * audit row pointing at somebody else's encaissement would answer "on what
-   * basis" with a document about a different sale, which is worse than NULL.
-   *
-   * Checked before the transaction, so a refused transition writes nothing.
+   * Validates that an evidence receipt explicitly belongs to the payment in question.
+   * Guards against cross-payment referencing in audit rows prior to state transitions.
    */
   private async assertReceiptBelongsTo(
     paymentId: string,

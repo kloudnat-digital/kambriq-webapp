@@ -18,8 +18,6 @@ export function MyLandsContent() {
     queryFn: () => getMyPurchases().then(unwrap),
   });
 
-  console.log(data);
-
   const payload = data as PaginatedResponse<ClientPurchase> | null;
   const purchases = payload?.data ?? [];
 

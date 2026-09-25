@@ -7,21 +7,8 @@ export class PrismaExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(PrismaExceptionFilter.name);
 
   /**
-   * Not a fallback for tidiness - the chain does not work without it.
-   *
-   * This filter is `@Catch()`, so Nest selects it for *every* exception, and it
-   * is registered after `GlobalExceptionFilter`, so it wins. It used to
-   * `throw exception` for anything non-Prisma. A throw from inside a filter is
-   * not "pass it along": it escapes Nest's exception layer into Express's
-   * default error handler, which answers with an HTML page carrying the full
-   * stack trace.
-   *
-   * Live consequence on dev, until this line: every 401, 403, 404 and 500
-   * returned `text/html` with `/app/node_modules/.pnpm/...` paths and the
-   * pinned version of every framework package, and none of them carried the
-   * `{ success: false, ... }` envelope. Only validation errors looked right,
-   * because `ZodExceptionFilter` is `@Catch(ZodValidationException)` and
-   * handles its own. `GlobalExceptionFilter` never executed once.
+   * Delegates non-Prisma exceptions to the global fallback filter.
+   * Prevents bypassing NestJS exception layer and leaking stack traces via Express.
    */
   private readonly fallback = new GlobalExceptionFilter();
 
@@ -44,9 +31,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
 
     this.logger.warn('Prisma Error %o', {
       code: prismaError.code,
-      // Path only, never the query string. Query strings carry search terms and
-      // password-reset tokens; the diagnostic value is in the path. The Prisma
-      // message is kept deliberately: it names columns, not values.
+      // Log path without query string to prevent sensitive token leakage. Preserves schema-safe Prisma messages.
       path: request.url.split('?')[0],
       message,
       status,

@@ -36,10 +36,8 @@ export class NewsletterService {
       'kambriq-newsletter',
     );
 
-    // No explicit credentials: the default provider chain resolves the ECS task
-    // role on Fargate and the developer profile locally. The previous static-key
-    // gate meant the client was never built in any deployed environment, so
-    // subscribe() resolved successfully while storing nothing.
+    // Uses the default AWS provider chain. This resolves to the ECS task role
+    // on Fargate and the developer profile locally.
     this.sesClient = new SESv2Client({ region });
   }
 
@@ -75,8 +73,7 @@ export class NewsletterService {
       if (error instanceof Error && error.name === 'AlreadyExistsException') {
         throw new ConflictException('This email is already subscribed.');
       }
-      // Anything else propagates. There is deliberately no degraded path: a
-      // subscription that cannot be stored must not look like one that was.
+      // Propagates other errors. A subscription that fails to store must throw.
       throw error;
     }
   }

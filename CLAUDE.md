@@ -1664,6 +1664,93 @@ alters what an endpoint returns, the journeys are not a safety net before the
 merge - they are the first execution after it. Run the affected journey against
 dev by hand before merging, the way the repair for this one was proved.
 
+### A barrier guards a table, and the same fact was recorded in two of them
+
+From wave 4. `G1` split recording money from agreeing that it settles a payment
+and put every guarantee on `Payment`: an append-only ledger, one write path to
+the state, `assertTransitionIsDeliberate`, `assertTransitionIsEvidenced`, a
+receipt drawn from that payment's own ledger. All of it real, all of it proved.
+
+**`LandReservation.downPaymentConfirmed` is the same fact in a different table**,
+and `confirmDownPayment` set it, with `status: CONFIRMED`, in one bare
+`landReservation.update`: no amount, no currency, no receipt, no evidence, no
+audit row. One admin button walked past the whole barrier, and `complete()`
+requires `CONFIRMED`, so the agent's KAMNET commission was downstream of a
+checkbox.
+
+**The past tense is what hid it.** `payments.service.ts` says, in its class
+docstring: _"The old `confirmDownPayment` did both in one `update`, which is how
+a payment becomes settled because somebody typed an amount."_ `G1` wrote that
+about the code it was replacing, and nobody checked that the replacement had
+reached the reservation. **A comment refuses nothing, and a comment in the past
+tense about live code is worse than one that says nothing: it reads as evidence
+the work was done.** Three chantiers were built on top of that sentence.
+
+**The repair is `I15`'s rule at one boundary further out.** There, a role that
+projects a record is written only by the service that owns the record. Here, a
+reservation step that projects the ledger asks it rather than answering for it:
+the step refuses unless the reservation carries a payment in `VALIDE`, which is
+the only state meaning the money arrived **and** somebody with the authority to
+commit agreed it settled the payment.
+
+**The general rule: when you put a guarantee on a table, grep for the other
+places that record the same fact.** A second column in a second table is not a
+denormalisation, it is a second door, and it has none of the first one's locks.
+The two questions are separate and both have to be asked: _what does this
+barrier protect_, and _what else claims to know the same thing_.
+
+And the half that was refused, because a partial fix here would have been worse
+than none: **step 4, the balance, has no ledger at all.** Nothing creates a
+payment for it, so gating it identically would block the step with nothing able
+to unblock it. It is left ungated, the reason is written at the method, and the
+gap is a row in the register - rather than a guard that looks complete and
+refuses everybody.
+
+### A second record is worse than no record, because one of them is believed
+
+From the wave 3 fold. Between 18 and 23 September the work of PRs #155 to #162
+was written into a `WAVE_STATUS.md` at the repository root rather than into
+`docs/ops/registre-chantiers.md`. Both files were maintained, by different
+people, and they disagreed: the register still read _"Last closed: Friday 4
+September"_ and carried no mention of `I38`, `I42`, `I17`, `P9`, `P20`, `P21`,
+`A38` or `P11`.
+
+**The file every session is told to load was the stale one.** A reader who
+followed the instructions in this brief got the wrong answer, and got it with
+the confidence the instruction lends. That is the difference between a missing
+record and a second one: a gap makes you go and look, and a stale record answers.
+
+**And nothing reports it, because a stale record is shaped exactly like a
+current one.** Rule 4 of this file and rule 1 of the register both say the
+register is updated in the same commit as the work. Both were written before
+either was enforced by anything, and a rule with no mechanism is
+[a prose guarantee](#a-prose-guarantee-is-a-claim-and-the-system-is-not-obliged-to-keep-it).
+
+Three further defects were sitting in that document and none had been noticed,
+which is the measure of how much it was actually read:
+
+- **the `## Open` table existed twice**, back to back, each copy carrying rows
+  the other lacked, and different people were editing different copies. A
+  develop commit updated a `P4` row that existed only in the second;
+- **`H1`'s entry had lost its heading**, so a `PROUVE` chantier's body hung off
+  the end of that table and `### H1` matched nothing;
+- **the states table declared four states while the document used eight.**
+  `PROUVE LOCALEMENT` was carried by fourteen entries and defined nowhere, so
+  whether it meant "nearly done" or "not deployed" was a guess, and it is the
+  state most likely to be read as finished.
+
+**What closes it:** `register-is-the-record.spec.ts`. One Open table, no
+chantier listed twice, no state the document has not declared, every open
+chantier either carrying an entry or named in an inventory that is pinned in
+both directions, and no second file in the repository shaped like a record of
+work. Six of its seven assertions were each watched failing alone.
+
+**The general rule: a record is a single file, or it is not a record.** When
+work needs a longer working note than an entry, the note is archived where it
+cannot be mistaken for the record, says in as many words that it is not the
+record, and is frozen. Kept for how something was proved; never read for what is
+true now.
+
 ### A wildcard in an allowlist trusts whoever can register a name under it
 
 From `A40`. `images.remotePatterns` allowed `**.amazonaws.com`, read as "our S3".
@@ -1967,6 +2054,40 @@ hours: `migrate diff` has no `--from-url` and requires `--config`;
 request-body fields; PostgreSQL does not. All 47 seeded ids were rejected by the
 API until the version nibble became `4` and the variant `8`.
 
+### Every URL carries its locale, and the gate is asked positively
+
+`localePrefix: 'always'`, configured once in `apps/web/src/i18n/routing.ts`.
+Every page lives under `app/[locale]/`, which is also the **root layout** - there
+is deliberately no `app/layout.tsx`, because two files rendering `<html>` is
+invalid and the locale has to be readable where `lang` is set.
+
+**Navigation goes through `@/i18n/navigation`.** `next/link` and
+`next/navigation`'s `useRouter`, `usePathname` and `redirect` know nothing about
+the prefix, so they produce URLs that resolve to nothing.
+`no-unlocalised-navigation.spec.ts` bans them, and bans a hardcoded `/fr` in an
+href first - the outcome before the mechanism. `notFound` and `useSearchParams`
+stay on `next/navigation`: they carry no pathname, so no locale can be lost
+through them.
+
+**Two differences bite at the call site.** `usePathname` returns the path
+**without** the prefix, so comparisons against route constants work unchanged.
+`redirect` requires an explicit `locale` - `getLocale()` in a Server Component,
+`currentLocale()` from `lib/locale.ts` anywhere else, because a Server Action
+carries no `[locale]` segment and `getLocale()` would quietly answer with the
+default.
+
+**The proxy asks `isProtected()`, never `!isPublic()`.** The matcher has to see
+the public paths in order to redirect an unprefixed URL to a locale, so being
+matched no longer implies being protected. Negation under that wider matcher is
+`P3` reintroduced: every typo becomes a members' area. The partition is the
+guard - `middleware-matcher.spec.ts` fails when a route on disk is neither
+public nor covered by `PROTECTED_PREFIXES`, and names it.
+
+**The matcher stays a positive list**, in three locale entries plus the public
+and protected prefixes unprefixed. next-intl documents a negative lookahead for
+this file and it is not used; the refusal is written at the matcher, because
+somebody will read those docs.
+
 ### `PUBLIC_PATHS` matches on prefix
 
 `isPublic` matches `p` or `p + '/'`, so `/legal` is what makes `/legal/privacy`,
@@ -2136,3 +2257,357 @@ The four states, and what each demands of you:
 
 And every entry states its cost impact. `None` is a valid answer and must be
 written down — a resource with no stated cost is not finished.
+
+### A config file can make every type in a project a lie
+
+`tsconfig.base.json` sets neither `strict` nor `strictNullChecks`. `apps/web`
+and `libs/common` each set it locally; `apps/api` did not, so the entire API
+compiled with them off. Every `T | undefined` collapsed to `T`, and every
+optional property was dereferenceable without a check.
+
+What that looked like: `dto.bio.length` typechecked on a DTO whose Zod schema
+declares `bio: z.string().max(2000).optional()`. The compiler agreed that a
+field the request body need not carry was always present - for every request
+body the API accepts.
+
+Turning it on cost **one** error across the whole shipped tree, in
+`queue-health.service.ts`, and it was real: `'failed' in r` narrowed nothing,
+because TypeScript had widened both branches of the union to carry each other's
+keys as `undefined`. So the setting had been absent for no measured reason.
+
+This is the "a type that lies" entry arriving through configuration rather than
+through an annotation, and it is worse in that form: an annotation is visible at
+the call site, and a compiler flag is visible nowhere. **Check what the compiler
+is actually being asked to check before trusting what it accepts.**
+`api-compiles-strict.spec.ts` pins it, because removing the line resolves any
+strict error and nothing else would report it.
+
+### `pnpm run lint` does not lint the repository
+
+It is `nx run-many -t lint --all`, which covers the **six nx projects**. The
+root `prisma/` directory belongs to none of them, so nothing under it is ever
+linted by that command: not `seed.ts`, not `bootstrap-admins.ts`, not the KCA1
+loaders.
+
+`lint-staged` does reach them, because it runs eslint on staged paths from the
+repository root. So a rule can pass `pnpm run lint` and fail the pre-commit
+hook, which is how a `no-console` rule added in `A19`'s own shape came to break
+seven command-line scripts after a clean lint run.
+
+**Two scopes, and the script name names neither.** When adding or widening an
+eslint rule, check it against both: `nx run-many -t lint --all` and an eslint
+run from the root over the paths the hook would stage. And when a gate gains an
+exemption, prove it still refuses what it is for - this one was re-checked by
+reintroducing a `console.log` into a web component and watching it fail while
+`prisma/` stayed clean.
+
+A related trap sits next to it: a bare `npx eslint .` reports **138 000**
+problems, because the root config ignores only `**/dist` and `**/out-tsc`, and
+`apps/web/.next/` is neither. That number is build output and says nothing
+about the source.
+
+### An upsert key that differs from the key everything else uses
+
+`prisma/seed.ts` upserts users on **email** and every other module keys on the
+**id**. An account already at a seeded address keeps its own id, the seed's
+`IDS.USER_*` constant is never written, and KBS candidates, KAMNET agents and
+land reservations carry that id as a plain string in **separate databases**
+where no foreign key can refuse a dangling one.
+
+It surfaced as a bare `UserProfile_userId_fkey` violation, and that was the
+lucky case: core is the one module with a foreign key to catch it. Keyed the
+same way as the rest, the seed would have completed and attached three modules'
+fixtures to a user id that does not exist.
+
+The precondition now throws before anything is written, naming each account.
+**When two writers key the same row differently, one of them is writing
+somewhere the other cannot see** - and across databases, nothing tells you.
+
+### A test can depend on typing cadence without saying so
+
+`contact-form.spec.tsx` failed once in ten runs. The symptom was `toHaveFocus`
+pointing at the **email** input, which carried `aria-invalid="true"`: the
+240-character message typed one keystroke at a time had not finished, the email
+was validated partial and invalid, and react-hook-form correctly focused the
+first invalid field.
+
+**Raising the timeout would have been the wrong repair** and would have looked
+like the right one: the slow run would finish and the focus assertion would
+still fail, at a higher number. The cause was cost, so the cost went - `delay:
+null` and a paste instead of 240 keystrokes. Alone that saved 0.2 s; under the
+four-project run it was the difference between six timeouts and none.
+
+Two things beside it, both measured:
+
+- **the first measurement was invalid and said so**. Ten runs failed ten times,
+  on an Nx native binding error from a Node switch, not on the spec. A run that
+  fails for a reason you introduced is not evidence about the code.
+- **`nx run-many` oversubscribes the machine**: three projects in parallel, each
+  with jest's default worker count. `--parallel=1` measured _faster_ (55 s, 55 s,
+  49 s against 63 s) and deterministic, so `test` and `test:cov` now carry it.
+  Parallelism that thrashes is slower than none.
+
+### A library's documented default can be the defect you already removed
+
+From wave 5. next-intl's own documentation gives this for `proxy.ts`:
+
+```
+matcher: '/((?!api|trpc|_next|_vercel|.*\..*).*)'
+```
+
+That is the **exact** negative pattern `P3` deleted, and the defect it removed:
+the proxy runs on every URL the site does not serve, finds it is not public, and
+sends it to a login page. Following the documentation would have reintroduced a
+catalogued defect, in a file whose own comment explains why it must not exist.
+
+The positive list survives the locale move, and that was established before
+anything was written by compiling candidates through **Next's own parser**
+(`next/dist/lib/try-to-parse-path`, which `getMiddlewareMatchers` calls):
+
+```
+/(fr|en)/admin/:path*  ->  ^(?:\/(fr|en))\/admin(?:\/(...))?[\/#\?]?$
+true /fr/admin   true /en/admin   false /de/admin
+true /admin      false /pricing   false /administration
+```
+
+**A documented default is a claim about the general case, and this repository is
+a particular case with its reasons written down.** Read the local reason before
+adopting the recommendation, and when you refuse one, say in the file that you
+refused it and why - otherwise the next person reads the docs, sees a mismatch,
+and "fixes" it.
+
+### The framework ships a tester for its own matcher, and its docs name it wrong
+
+Also wave 5. `middleware-matcher.spec.ts` carried a hand-written `compile()`: a
+small regex translator for the two matcher shapes the repo used, which returned
+`null` for anything else. It was careful, it named its own limits, and it was
+still **a second implementation of somebody else's parser** - and a wrong model
+reports a protected route as covered.
+
+Next exports `unstable_doesMiddlewareMatch` from
+`next/experimental/testing/server`, which answers with the code that decides at
+runtime. It needs `@jest-environment node`, because it constructs a real
+`Request` and jsdom has none.
+
+**And the documentation for 16.3.6 calls it `unstable_doesProxyMatch`.** That
+name appears in exactly one place in the installed package - the bundled copy of
+that same documentation page - and in no shipped JavaScript. The docs were read
+first, the package second, and only the second is what runs.
+
+**Read the docs for the intent and the shipped `.d.ts` for the signature.** A
+doc page will not tell you a default is a negative matcher; a type will not tell
+you what the thing is for. Neither is optional, and where they disagree the
+package wins.
+
+### Moving the root layout under a dynamic segment removes the boundary above it
+
+From wave 5, found by a browser test and invisible to 432 unit tests.
+
+`app/layout.tsx` was deleted and `app/[locale]/layout.tsx` became the root
+layout - which Next documents for internationalisation. `/fr/zzz-does-not-exist`
+then answered **404 with Next's built-in page**, not the one `P3` built with
+links back into the site.
+
+Two separate causes, and the first hid the second:
+
+- `not-found.tsx` is a **boundary**, and something has to trigger it. An
+  unmatched URL under a matched dynamic segment triggers nothing, so it falls
+  through to the built-in page. `[locale]/[...rest]/page.tsx` calling
+  `notFound()` is what closes it.
+- A `notFound()` thrown **from the root layout** has no boundary above it. So an
+  unconfigured first segment still gets the built-in page, and closing that needs
+  `experimental.globalNotFound`, which is off by default. It is left open, with
+  the difference pinned in both directions so it is a known bound.
+
+**The status code was 404 throughout, which is why nothing reported it.** The
+assertion the suite already had - and the right one - is about the status; the
+page is a second property, and it needed a test of its own.
+
+### A path that crosses a boundary unprefixed invalidates nothing
+
+From wave 5. Client components read their path from next-intl's `usePathname`,
+which returns it **without** the locale - `/account`, never `/fr/account` - and
+passed it to a server action that called `revalidatePath(path)`.
+
+`revalidatePath` matches on the **route file structure**, so an unprefixed path
+matched nothing once every page moved under `[locale]`. Nothing reports it: the
+mutation still succeeds, the action still returns `{success: true}`, and the
+screen simply goes on showing the old value. Forty call sites, one silent class
+of staleness.
+
+Fixed in one place rather than forty - `revalidateLocalisedPath` puts the
+request's locale back - and the spec that caught it now expects
+`/fr/agent/prospects`. **When a value is produced in one layer and consumed in
+another, ask what the consumer matches it against**, not what the producer meant.
+
+### An async helper that answers with a default where it cannot know
+
+Also wave 5, and it was one line from shipping. `getLocale()` resolves the locale
+from the rendered `[locale]` segment. **A Server Action is a POST handled outside
+that render**, so nothing populates it - and it does not fail. It returns the
+default locale.
+
+So `redirect({href: '/login', locale: await getLocale()})` inside a server action
+would have sent every English visitor into French, correctly typed, with a green
+suite. next-intl's own documentation says it in one line - _"the locale is not
+picked up automatically"_ - on a page about something else.
+
+`lib/locale.ts` reads the `referer` first, because on a Server Action that is the
+page the visitor submitted from, and falls back to the locale cookie. **A helper
+that cannot know the answer and returns a plausible one is the "reports success
+by saying nothing" family, wearing a return value instead of a silence.**
+
+### Control flow thrown as an error, and logged as a failure
+
+From wave 5, found by reading a build that exited 0. `next build` printed
+**sixteen** `UnhandledServerActionError` lines, from the application's own
+logger, for routes doing exactly the right thing.
+
+Next signals redirects, `notFound()` and a bail-out to dynamic rendering by
+**throwing**, with the reason in `error.digest`. `createAction` recognised
+`NEXT_REDIRECT` and only that, so the other two were logged at `error` and
+rethrown. The digests were read from the shipped package rather than remembered:
+`NEXT_REDIRECT`, `NEXT_HTTP_ERROR_FALLBACK` (which carries `notFound`,
+`forbidden` and `unauthorized`) and `DYNAMIC_SERVER_USAGE`.
+
+**The cost is not the noise.** It is that a real unhandled error in that log is
+indistinguishable from normal operation - the same shape as
+[a barrier that fires correctly still has to be reported correctly](#a-barrier-that-fires-correctly-still-has-to-be-reported-correctly),
+one layer down. 16 lines to 0, proved by rebuilding.
+
+### TypeScript will not narrow through a `never` it was handed indirectly
+
+`redirect` from next-intl **is** declared as returning `never`, and it does - it
+delegates to Next's `redirect`, which throws. But it arrives as
+`export const { redirect } = createNavigation(routing)`, a binding destructured
+from a call, and TypeScript narrows control flow through a `never`-returning call
+only when the callee's declaration carries an **explicit type annotation**.
+
+The compiler therefore reported `'candidate' is possibly 'null'` at six call
+sites and `A function returning 'never' cannot have a reachable end point` at a
+seventh - seven errors describing the same missing annotation, none of them
+naming it. One line fixes all seven:
+
+```ts
+export const redirect: typeof navigation.redirect = navigation.redirect;
+```
+
+**When several unrelated call sites break at once, suspect the declaration they
+share**, not each of them.
+
+### A transform allowlist copied from npm does not work under pnpm
+
+next-intl is ESM-only, and its documentation gives
+`transformIgnorePatterns: ['node_modules/(?!next-intl)/']`. Under pnpm a real
+path is
+`node_modules/.pnpm/next-intl@4.8.3_.../node_modules/next-intl/dist/...`, and the
+pattern is **unanchored** - so it matches at the first `node_modules/`, the one
+followed by `.pnpm`, and the file is ignored after all. The failure reads as
+next-intl being broken.
+
+`node_modules/(?!.*(?:next-intl|use-intl|@formatjs|intl-messageformat|icu-minify|@schummar))`
+asks whether the whole remaining path mentions one of them, so it answers the
+same at every `node_modules/` in it. **And the list is the dependency chain, not
+the package you imported**: each one surfaces only once the one above it is
+transformed, and a short list fails with the next package's name.
+
+### A merge can move a file to a path that stopped existing, and nothing reports it
+
+From the develop merge of 25 September, and it is the sharpest thing that merge
+found.
+
+Wave 5 moved every page under `app/[locale]/`. Develop, meanwhile, added six new
+files at the old paths - `app/(app)/agent/profile/` and
+`app/products/kamnet/annuaire/`. Git merged them **cleanly**: they are new files
+on one side and the other side never touched them, so there is no conflict to
+raise. The suite stayed green.
+
+**What made it invisible is that the URL is the same.** Both route walkers -
+`middleware-matcher.spec.ts` and `routes-have-pages.spec.ts` - strip `[locale]`
+when computing a URL, precisely so the lists in `routes.ts` can be written
+without it. A page at `app/(app)/agent/profile/page.tsx` therefore computes
+`/agent/profile`, exactly as one under `[locale]` does, and both walkers were
+satisfied. The page would have rendered outside the only root layout the app
+has: no `<html>`, no locale, no provider.
+
+`no-unlocalised-navigation.spec.ts` now asserts the **placement** as well as the
+navigation: every `page.tsx` and `route.ts` lives under `[locale]`, bar a named
+list of files Next requires at the app root. It found three more offenders the
+same minute - `newsletter-signup.tsx`, `directory-section.tsx` and
+`certificate-number-lookup.tsx`, all importing `next/link` or `next/navigation`.
+
+**The general rule: after a merge that follows a large move, ask what the other
+branch created while the move was happening.** A conflict is raised when two
+sides edit the same path. Nothing is raised when one side edits a path the other
+side deleted out from under it, and nothing is raised at all when one side
+simply adds a file where a directory used to mean something.
+
+### A suite that cannot run reports no defect, and looks like a suite that passes
+
+Also from that merge. `image-hosts.spec.ts` - A40's guard against a wildcard in
+the image allowlist, the one reachable critical out of 111 alerts - failed with
+`ReferenceError: TextDecoder is not defined` and ran **zero** of its 25 tests.
+It imports `@aws-sdk/client-s3`, which reaches `@smithy/core`, which reads
+`TextDecoder` at module scope; jsdom does not provide it and the project's
+default environment is jsdom.
+
+**It was red on develop, not broken by the merge**, and that was established
+rather than assumed: reverting the web jest config to develop's own left the
+failure unchanged. Not one line of the spec touches the DOM, so
+`@jest-environment node` is the whole fix, and 25 assertions began running.
+
+This is [a check that never runs](#a-check-that-never-runs-looks-exactly-like-a-check-that-passes)
+arriving through the test environment rather than through a script. **`Tests: 0
+total` beside a red suite is not a failing test - it is a missing one**, and a
+summary line that counts suites rather than assertions reads the two alike.
+
+### A comment rewrite can delete the reason and keep the sentence
+
+The uncomfortable one, and it is about our own work. Wave 2 rewrote comments
+repository-wide under section 9 - be technical, be concise, remove the stories.
+On four files the merge showed what that cost, because develop still had the
+originals:
+
+- `throttler-behind-proxy.guard.ts` became _"Custom ThrottlerGuard to correctly
+  identify the client IP behind a load balancer"_, losing **why the last
+  `X-Forwarded-For` entry** and the note that a CDN would move the offset;
+- `robots.ts` lost the entire reason `NODE_ENV` cannot make the decision - which
+  is the defect P4 existed to prevent;
+- `types/kamnet.ts` lost the warning that `PublicAgentProfile` is a misnomer for
+  an agent-to-agent view carrying ranking metrics;
+- `kamnet.module.ts` lost what the public directory publishes and what it does not.
+
+Develop's versions were taken back on all four.
+
+**Concise is not the same as short.** Section 9 says to cut anecdote and to keep
+what clarifies a non-obvious constraint; a measurement, a threat model and a
+misnomer warning are the constraint. The test to apply is not "can this be said
+in fewer words" but **"can the next person get this wrong without it"** - and if
+they can, the words are load-bearing however conversational they look.
+
+### A freeze written on one branch is a claim, not a property
+
+`WAVE_STATUS.md` was archived and frozen on 24 September on the remediation
+branch, with a banner saying nothing further would be written in it. Develop had
+not seen that commit, so the file went on being written there for another day -
+five hundred and fifty more lines, six more chantiers - and the merge brought all
+of it in, onto the renamed path, without a conflict.
+
+Nothing was wrong on either side. The freeze simply was not a fact about the file
+until both branches held it. **A convention introduced on a long-lived branch is
+not in force until that branch merges**, and the window is exactly as long as the
+branch is unmerged - which is the argument for merging often rather than for
+writing louder banners.
+
+## 9. Code Comments and Documentation Tone
+
+**The goal is strict, concise, and professional technical documentation.**
+
+When writing or rewriting comments across the codebase, adhere to these rules:
+
+1. **Be Technical and Direct**: Focus strictly on the technical behavior, domain logic, constraints, and intent. Explain _what_ the code does and _why_ it does it technically.
+2. **Remove Fluff and History**: Never write conversational stories, personal anecdotes, or lengthy histories about _how_ a bug was discovered or _which_ developer made a decision (e.g., "Visquis arbitrated this in September", "Due to a bug in Next.js...", "This is here because we used to...").
+3. **Keep it Concise**: Distill long-winded paragraphs into succinct summaries. If it can be said in one sentence, don't use three.
+4. **Professional English and Punctuation**: Write in good, formal English. Use standard punctuation marks and formatting. Avoid emotional language, complaints, or casual asides.
+5. **No Useless Comments**: Skip commenting if the code is self-explanatory (e.g., simple DTOs). Do not add noise. Add comments only where they clarify complex logic, business rules, or non-obvious architecture.
+6. **Use Correct Tools**: Use `///` for Prisma schemas, `/** */` for JSDoc/TSDoc on classes/functions, and `//` for inline logic explanations.

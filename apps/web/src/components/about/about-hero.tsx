@@ -1,7 +1,7 @@
-import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 
-export const AboutHero = () => {
-  const t = useTranslations('about');
+export async function AboutHero() {
+  const t = await getTranslations('about');
   return (
     <section className="bg-gradient-to-b from-primary-900 to-primary-800 px-6 py-24 text-white sm:px-8">
       <div className="mx-auto max-w-4xl text-center">
@@ -13,4 +13,4 @@ export const AboutHero = () => {
       </div>
     </section>
   );
-};
+}

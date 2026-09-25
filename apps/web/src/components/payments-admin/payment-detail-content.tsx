@@ -9,16 +9,12 @@ import { RecordReceiptForm } from './record-receipt-form';
 import { ValidatePaymentAction } from './validate-payment-action';
 import type { PaymentDetail } from '@/types/payments';
 
-// Channel labels come from the registry the API reads, not from a second map
-// here. Two lists that must say the same thing end up not saying it.
+// Channel labels are derived exclusively from the API registry.
 /**
- * One payment: its ledger, its proofs and its full history.
+ * Displays the full details, ledger, proofs, and history of a payment.
  *
- * The three totals - dû, reçu, reste - all come from the API, which computes
- * `amountReceived` and `outstanding` from the movement ledger on every read.
- * **Nothing is summed here**, because a monetary amount parsed into a
- * JavaScript number is the `Float` defect G1 removed from the schema, and a
- * total computed in two places is a total that disagrees with itself.
+ * Financial totals (`amountReceived`, `outstanding`, `amountDue`) are provided directly
+ * by the API to prevent inconsistencies and avoid floating point calculation errors on the client.
  */
 export const PaymentDetailContent = ({
   payment,
@@ -64,7 +60,7 @@ export const PaymentDetailContent = ({
       </CardContent>
     </Card>
 
-    {/* v03 4c: the wish is shown wherever the payment is shown, decided or not. */}
+    {/* The preferred channel is always displayed, regardless of payment state. */}
     <Card>
       <CardContent className="grid gap-4 p-4 sm:grid-cols-2">
         <div>
@@ -137,8 +133,7 @@ export const PaymentDetailContent = ({
                       )}
                     </td>
                     <td className="px-4 py-2 text-xs">
-                      {/* Named only where it is not the client - a deposit is
-                          made at a counter, often by somebody else. */}
+                      {/* Displays 'le client' by default if no external payer is specified. */}
                       {r.paidBy ?? <span className="text-gray-400">le client</span>}
                     </td>
                     <td className="px-4 py-2 font-mono text-xs text-gray-500">{r.recordedBy}</td>
@@ -198,10 +193,7 @@ export const PaymentDetailContent = ({
               </p>
               <p className="text-gray-700">{tr.reason}</p>
               <p className="font-mono text-xs text-gray-500">par {tr.actorUserId}</p>
-              {/* G7 - "sur quelle preuve". The receipt is named by what a person
-                  can recognise on the ledger above, and its proof opens from
-                  here. A step that rests on no receipt says so rather than
-                  leaving a blank a reader has to interpret. */}
+              {/* Renders the receipt details and associated proof if available. */}
               <p className="text-xs text-gray-500" data-testid="audit-evidence">
                 {tr.evidenceReceiptId ? (
                   (() => {

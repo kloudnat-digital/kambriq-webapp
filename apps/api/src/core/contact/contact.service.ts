@@ -23,34 +23,21 @@ export type SubmitContactRequestInput = {
   consentPolicyPath: string;
 };
 
-/** Thrown when a request arrives without consent. Never a silent drop. */
+/** Thrown when a contact request arrives without explicit consent. */
 export class ConsentRequiredError extends Error {
   constructor() {
-    super(
-      'Refusing to store a contact request without consent. The checkbox, the DTO and the ' +
-        'NOT NULL column each refuse it; this is the layer that refuses a caller who went ' +
-        'round the DTO.',
-    );
+    super('Refusing to store a contact request without consent.');
     this.name = 'ConsentRequiredError';
   }
 }
 
 /**
- * Thrown by the digest when it has nowhere to send.
- *
- * It **throws** rather than logging, unlike the per-request notification, and
- * the difference is the point. A request that cannot be announced is still
- * stored and still surfaces in the next digest. A digest that cannot be sent
- * has no later mechanism to catch it, so it must land on the queue's failed set
- * where `/health/queues/failed` can read it.
+ * Thrown when the contact digest cannot be delivered due to missing configuration.
+ * Failing ensures the issue is surfaced in health checks.
  */
 export class DigestUndeliverableError extends Error {
   constructor() {
-    super(
-      'CONTACT_INBOX_EMAIL is not set, so the daily contact digest has nowhere to go. ' +
-        'Failing rather than resolving: a digest that quietly does not send is exactly the ' +
-        'silence it exists to make impossible.',
-    );
+    super('CONTACT_INBOX_EMAIL is not set. Cannot send daily contact digest.');
     this.name = 'DigestUndeliverableError';
   }
 }
@@ -69,29 +56,13 @@ export class ContactService {
   ) {}
 
   /**
-   * Stores an inbound request, then announces it.
-   *
-   * ---------------------------------------------------------------------------
-   * The write is the success criterion, and nothing else is
-   * ---------------------------------------------------------------------------
-   * The prospect is told "sent" only when the row exists. The two emails are
-   * enqueued afterwards and **their failure does not fail the request**: the
-   * lead is already safe, and returning an error at that point would tell a
-   * person who wrote three paragraphs that nothing arrived, so they would send
-   * them again and we would hold the same lead twice.
-   *
-   * That is only defensible because a lost notification cannot go unnoticed:
-   * the daily digest counts **rows**, not emails, so a request whose
-   * notification never went out is still in tomorrow's count. Without the
-   * digest this would be a silent failure, and with it, it is a delayed one.
+   * Stores a contact request in the database and queues notification emails.
+   * Email failure does not prevent successful creation.
    */
   async submit(input: SubmitContactRequestInput): Promise<{ id: string; reference: string }> {
     if (input.consent !== true) throw new ConsentRequiredError();
 
-    /**
-     * The server's clock, never the browser's. A consent timestamp supplied by
-     * a caller is a claim about the past; this is a record of an event.
-     */
+    /** Server-side timestamp for consent auditing. */
     const consentGivenAt = new Date();
 
     const created = await this.prisma.contactRequest.create({
@@ -109,8 +80,7 @@ export class ContactService {
 
     const reference = this.referenceOf(created.id);
 
-    // The address is masked and the message is not logged at all: this is
-    // somebody's enquiry, and the row is the place it belongs.
+    // Mask sensitive PII before logging.
     this.logger.log('Contact request stored %o', {
       id: created.id,
       reference,
@@ -125,10 +95,8 @@ export class ContactService {
   }
 
   /**
-   * The two messages: one to the back office, one to the prospect.
-   *
-   * Never throws. Every failure is logged at `error` with the reference, so the
-   * row can be found and answered by hand, and the digest counts it regardless.
+   * Sends notifications to the back office and the prospect.
+   * Captures and logs errors to prevent failing the contact request submission.
    */
   private async announce(request: {
     id: string;
@@ -146,18 +114,9 @@ export class ContactService {
     const inbox = this.config.get<string>('CONTACT_INBOX_EMAIL');
 
     if (!inbox) {
-      /**
-       * Loud, and it names the variable.
-       *
-       * A degraded path must be an explicit setting, never an inference from
-       * absent configuration - the rule the SES client broke for seven months.
-       * There is no fallback to `EMAIL_FROM` here on purpose: guessing an
-       * address is how a lead ends up in a mailbox nobody reads.
-       */
+      /** Log error if CONTACT_INBOX_EMAIL is not configured, avoiding silent failures. */
       this.logger.error(
-        `Contact request ${request.reference} was stored but NOT announced: ` +
-          `CONTACT_INBOX_EMAIL is not set. Set it from SSM. The request is safe in the ` +
-          `database and will appear in the next daily digest.`,
+        `Contact request ${request.reference} stored but not announced: CONTACT_INBOX_EMAIL is not set.`,
       );
     } else {
       await this.trySend(request.reference, 'back-office notification', () =>

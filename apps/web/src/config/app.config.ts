@@ -1,6 +1,6 @@
 /**
- * Centralised app configuration.
- * All env vars are read here - never import process.env directly in components.
+ * Centralized application configuration.
+ * Reads environment variables to prevent direct process.env usage in components.
  */
 export const appConfig = {
   apiUrl: process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3000',

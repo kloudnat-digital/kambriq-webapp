@@ -282,6 +282,8 @@ export const mockLandsPrisma = () => {
     landReservation: {
       findUnique: fn(),
       findMany: fn(),
+      /** The admin step controls write here; a missing method fails as a shape error. */
+      update: fn(),
     },
     /**
      * Both call shapes, because the service uses both.
@@ -340,7 +342,11 @@ export const mockEmailService = () => ({
 
 export const mockJwtService = () => ({
   sign: jest.fn(() => 'jwt-access-token'),
-  verify: jest.fn(() => ({ sub: 'user-1', email: 'test@test.com' })),
+  // `verify` is only reached by the refresh path, so the default carries the
+  // type that path requires. A test about the wrong type overrides it.
+  verify: jest.fn(
+    (): Record<string, unknown> => ({ sub: 'user-1', email: 'test@test.com', type: 'refresh' }),
+  ),
 });
 
 // ----- ConfigService ------ //

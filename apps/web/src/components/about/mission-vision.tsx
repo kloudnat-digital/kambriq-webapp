@@ -1,8 +1,8 @@
 import { Target, Eye } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 
-export const MissionVision = () => {
-  const t = useTranslations('about');
+export const MissionVision = async () => {
+  const t = await getTranslations('about');
   return (
     <section className="px-6 py-20 sm:px-8">
       <div className="mx-auto grid max-w-5xl gap-8 sm:grid-cols-2">

@@ -1,36 +1,20 @@
-import {
-  createParamDecorator,
-  ExecutionContext,
-  SetMetadata,
-} from '@nestjs/common';
+import { createParamDecorator, ExecutionContext, SetMetadata } from '@nestjs/common';
 import { RequestUser } from '../types/user-payload.type';
 import { RoleCode } from '../types/roles.enum';
 
-/**
- * @CurrentUser() - Extracts authenticated user from request
- * Usage: @CurrentUser() user: RequestUser
- */
+/** Extracts authenticated `RequestUser` from the execution context. */
 export const CurrentUser = createParamDecorator(
-  (
-    data: keyof RequestUser | undefined,
-    ctx: ExecutionContext,
-  ): RequestUser | string | string[] => {
+  (data: keyof RequestUser | undefined, ctx: ExecutionContext): RequestUser | string | string[] => {
     const request = ctx.switchToHttp().getRequest();
     const user = request.user as RequestUser;
     return data ? user?.[data] : user;
   },
 );
 
-/**
- * @Roles(...roles) - Sets required roles metadata
- * Usage: @Roles(RoleCode.ADMIN, RoleCode.ADMIN_KBS)
- */
+/** Attaches required roles metadata to the route handler. */
 export const ROLES_KEY = 'KROLES';
 export const Roles = (...roles: RoleCode[]) => SetMetadata(ROLES_KEY, roles);
 
-/**
- * @Public() - Marks route as public (no JWT required)
- * Usage: @Public()
- */
+/** Marks route as public, bypassing JWT authentication guards. */
 export const IS_PUBLIC_KEY = 'IS_PUBLIC';
 export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);

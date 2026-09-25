@@ -1,26 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { sendInstructions } from '@/lib/actions/payments';
 import { ChannelLabel, selectableChannels } from './channel-label';
 import type { PaymentChannel } from '@/types/payments';
 
 /**
- * G13 - the back office chooses the channel and releases the coordinates.
+ * Renders the control for releasing payment instructions.
  *
- * ---------------------------------------------------------------------------
- * The preference is beside the choice, never inside it
- * ---------------------------------------------------------------------------
- * v03 4c asks for the client's wish to be visible and to bind nothing. So it is
- * shown, plainly, next to the six options - and **nothing is preselected**. A
- * control that arrives with the preference already chosen makes accepting it the
- * path of least resistance, which is a decision taken by the interface rather
- * than by the person.
+ * Implements requirement v03 4c: The client's preferred channel is displayed
+ * for context but must not be pre-selected in the UI. This forces a deliberate
+ * channel assignment by the operator.
  *
- * The reason is required, because the transition records "qui, quand, quel
- * canal, et pourquoi" and the why is a human's: the amount, the country the
- * funds come from, what was agreed on the telephone.
+ * Requires a rationale for the channel choice to maintain audit trail fidelity
+ * (capturing who, when, what channel, and why).
  */
 export const SendInstructionsAction = ({
   paymentId,

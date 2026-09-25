@@ -1,4 +1,4 @@
-/** G4 - the back-office payment shapes, as the API returns them. */
+/** Represents back-office payment shapes as returned by the API. */
 
 export type PaymentState =
   | 'INITIE'
@@ -14,12 +14,8 @@ export type PaymentState =
 export type PaymentChannel = 'VIR' | 'DEPO' | 'OMO' | 'MOMO' | 'ESP' | 'NOTA' | 'HIST';
 
 /**
- * Amounts are strings, all the way to the screen.
- *
- * `BigInt` does not survive `JSON.stringify`, and parsing a monetary amount
- * into a JavaScript number is the `Float` defect G1 removed from the schema,
- * reintroduced at the edge. They are formatted from the string and never
- * arithmetic'd in the browser.
+ * Monetary amounts are strictly represented as strings to prevent precision loss.
+ * These values should not be parsed into JavaScript numbers for client-side arithmetic.
  */
 export interface PaymentRow {
   id: string;
@@ -60,9 +56,9 @@ export interface PaymentTransition {
 }
 
 export interface PaymentDetail extends PaymentRow {
-  /** The client's wish, shown decided or not (v03 4c). Binds nothing. */
+  /** The client's preferred payment channel. */
   preferredChannel: PaymentChannel | null;
-  /** What the back office chose and communicated. Null until sent. */
+  /** The payment channel selected by the back office. Null until finalized. */
   channel: PaymentChannel | null;
   clientUserId: string | null;
   identityStatus: 'none' | 'pending' | 'verified' | 'rejected';
@@ -70,7 +66,7 @@ export interface PaymentDetail extends PaymentRow {
   transitions: PaymentTransition[];
 }
 
-/** One row of the back-office request queue (v03 4d). */
+/** Represents a single row in the back-office payment request queue. */
 export type PaymentRequestRow = {
   id: string;
   reference: string | null;
@@ -79,16 +75,16 @@ export type PaymentRequestRow = {
   subject: string | null;
   currency: string;
   amountDue: string;
-  /** The client's wish. Shown, never preselected into the decision. */
+  /** The client's preferred payment channel. */
   preferredChannel: PaymentChannel | null;
   identityStatus: 'none' | 'pending' | 'verified' | 'rejected';
-  /** Whether a send would be refused right now. */
+  /** Indicates if the payment request would currently be blocked due to identity verification status. */
   blockedByIdentity: boolean;
   requestedAt: string;
   waitingDays: number;
 };
 
-/** The client's own view of their payment, coordinates included once sent. */
+/** The client-facing representation of a payment, including coordinates once sent. */
 export type MyPayment = {
   id: string;
   reference: string | null;

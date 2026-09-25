@@ -14,8 +14,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly prisma: CorePrismaService,
   ) {
     const secret = config.get<string>('JWT_SECRET');
-    if (!secret)
-      throw new Error('JWT_SECRET is not defined in environment variables');
+    if (!secret) throw new Error('JWT_SECRET is not defined in environment variables');
 
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -26,6 +25,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload): Promise<RequestUser> {
     const lang = payload.lang || 'fr';
+
+    // Validate the token type to prevent refresh tokens from being used as access tokens.
+    if (payload.type !== 'access') {
+      throw new UnauthorizedException(this.t('auth.jwt.invalidTokenType', lang));
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       select: {
@@ -48,30 +53,22 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     // Account deactivated by admin
     if (!user.isActive && user.deactivatedBy) {
-      throw new UnauthorizedException(
-        this.t('auth.jwt.accountSuspended', userLang),
-      );
+      throw new UnauthorizedException(this.t('auth.jwt.accountSuspended', userLang));
     }
 
     // Account self-deleted
     if (!user.isActive && user.deletedAt) {
-      throw new UnauthorizedException(
-        this.t('auth.jwt.accountDeleted', userLang),
-      );
+      throw new UnauthorizedException(this.t('auth.jwt.accountDeleted', userLang));
     }
 
     // Generic inactive
     if (!user.isActive) {
-      throw new UnauthorizedException(
-        this.t('auth.jwt.accountInactive', userLang),
-      );
+      throw new UnauthorizedException(this.t('auth.jwt.accountInactive', userLang));
     }
 
     // Account locked
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      throw new UnauthorizedException(
-        this.t('auth.jwt.accountLocked', userLang),
-      );
+      throw new UnauthorizedException(this.t('auth.jwt.accountLocked', userLang));
     }
 
     return {

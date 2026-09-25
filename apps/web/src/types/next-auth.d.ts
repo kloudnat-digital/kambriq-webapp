@@ -3,8 +3,8 @@ import 'next-auth/jwt';
 
 declare module 'next-auth' {
   /**
-   * The shape of the user object returned by authorize().
-   * next-auth merges this into the JWT via the jwt() callback.
+   * User object structure returned by authorize().
+   * Merged into the JWT via the jwt() callback.
    */
   interface User {
     id: string;
@@ -15,13 +15,13 @@ declare module 'next-auth' {
     language: string;
     accessToken: string;
     refreshToken: string;
-    /** Unix timestamp in ms - when the access token expires */
+    /** Expiration time of the access token (Unix timestamp in milliseconds). */
     accessExpiresAt: number;
   }
 
   /**
-   * What useSession() / auth() exposes to the app.
-   * Never includes the refresh token.
+   * Session structure exposed to the application via useSession() or auth().
+   * The refresh token is intentionally excluded.
    */
   interface Session {
     user: {
@@ -32,16 +32,28 @@ declare module 'next-auth' {
       roles: string[];
       language: string;
     };
-    accessToken: string;
-    /** Set when token refresh failed - the app should redirect to /login */
+    /**
+     * The API bearer token. Present server-side only.
+     *
+     * `auth()` always resolves it, and `lib/api/server.ts` is its only reader.
+     * It is absent on the client in both directions: `sessionForClient` strips
+     * it before the session reaches `<Providers>`, and the route handler at
+     * `app/api/auth/[...nextauth]` strips it from the `/api/auth/session`
+     * response that `useSession()` refetches.
+     *
+     * Optional rather than required for that reason. Declared required, the
+     * compiler would promise client code a field that is never there.
+     */
+    accessToken?: string;
+    /** Indicates a failed token refresh; triggers a redirect to /login. */
     error?: 'RefreshTokenError';
   }
 }
 
 declare module 'next-auth/jwt' {
   /**
-   * What lives encrypted inside next-auth's httpOnly session cookie.
-   * Includes the refresh token so the jwt() callback can rotate it server-side.
+   * Structure of the encrypted next-auth httpOnly session cookie.
+   * Includes the refresh token to allow server-side rotation via the jwt() callback.
    */
   interface JWT {
     user: {
@@ -54,7 +66,7 @@ declare module 'next-auth/jwt' {
     };
     accessToken: string;
     refreshToken: string;
-    /** Unix timestamp in ms - when the access token expires */
+    /** Expiration time of the access token (Unix timestamp in milliseconds). */
     accessExpiresAt: number;
     error?: 'RefreshTokenError';
     /** A47. The API refused the refresh token: do not ask again. */

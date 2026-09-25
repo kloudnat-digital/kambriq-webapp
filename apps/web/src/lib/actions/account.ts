@@ -1,7 +1,7 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { serverApi } from '@/lib/api/server';
+import { revalidateLocalisedPath } from './revalidate';
 import { createAction, ServerActionError } from './create-action';
 import type { Me, AvatarUploadUrl } from '@/types/account';
 
@@ -24,7 +24,7 @@ type UpdateMePayload = {
 export const updateMe = createAction(async (data: UpdateMePayload, revalidate?: string) => {
   try {
     const result = await serverApi.patch<Me>('/users/me', data);
-    if (revalidate) revalidatePath(revalidate);
+    if (revalidate) await revalidateLocalisedPath(revalidate);
     return result;
   } catch (error) {
     throw new ServerActionError(

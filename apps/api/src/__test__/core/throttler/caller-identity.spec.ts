@@ -4,11 +4,12 @@ import { Writable } from 'node:stream';
 import pinoHttp from 'pino-http';
 import {
   CALLER_SECRET_HEADER,
+  REDACTED_REQUEST_HEADERS,
+  VISITOR_IP_HEADER,
+  callerSecretMismatch,
   lastForwardedHop,
   readCallerSecret,
-  REDACTED_REQUEST_HEADERS,
   resolveTracker,
-  VISITOR_IP_HEADER,
 } from '../../../core/throttler/caller-identity';
 
 /**
@@ -70,6 +71,33 @@ describe('A45 - resolveTracker', () => {
 
   it("falls back to the connection's address when nothing is forwarded", () => {
     expect(resolveTracker(req({}, '10.0.1.9'), SECRET)).toBe('10.0.1.9');
+  });
+});
+
+describe('A45 - a secret that is sent and wrong is a misconfiguration, not a choice', () => {
+  /**
+   * `vouchedVisitor` answers `null` for three different situations and the
+   * throttler treats them alike, which is right for the tracker and wrong for
+   * the operator: a rotation applied on one side only silently returns every
+   * visitor to one shared bucket - the A2 defect, with nothing to show for it.
+   */
+  it('is true only when a secret was sent and does not match', () => {
+    expect(callerSecretMismatch({ [CALLER_SECRET_HEADER]: 'wrong' }, SECRET)).toBe(true);
+  });
+
+  it('is false when nothing was sent, which is an ordinary direct caller', () => {
+    expect(callerSecretMismatch({}, SECRET)).toBe(false);
+    expect(callerSecretMismatch({ 'x-forwarded-for': '203.0.113.9' }, SECRET)).toBe(false);
+  });
+
+  it('is false when the API holds no secret, which is a stated choice', () => {
+    // The guard already warns about this one at startup. Reporting it again per
+    // request would bury the case that is actually wrong.
+    expect(callerSecretMismatch({ [CALLER_SECRET_HEADER]: 'anything' }, null)).toBe(false);
+  });
+
+  it('is false when the secret is right, so a working deployment stays quiet', () => {
+    expect(callerSecretMismatch({ [CALLER_SECRET_HEADER]: SECRET }, SECRET)).toBe(false);
   });
 });
 

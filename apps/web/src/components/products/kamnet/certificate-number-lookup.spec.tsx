@@ -1,7 +1,10 @@
 jest.mock('next-intl', () => require('@/test-utils/next-intl-mock'));
 
 const push = jest.fn();
-jest.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+// `@/i18n/navigation`, not `next/navigation`: the component navigates through
+// the localised router, so a mock of the unwrapped one is never consulted and
+// the real `useRouter` dies for want of an intl context.
+jest.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push }) }));
 
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -13,18 +16,14 @@ const field = () => screen.getByRole('textbox');
 const submit = () => screen.getByRole('button');
 
 /**
- * P11 - the verifier's front door.
+ * P11 - Public verifier entry point.
  *
- * `/verify-certificate/[certificateNumber]` was a deep link and nothing else: a
- * visitor could only reach a verdict if somebody had already handed them the
- * URL. This field is the entry point for a number read off a card or a message.
- *
- * The negative assertions are the interesting ones again. It must not navigate
- * on an empty value - that would land on `/verify-certificate/` and render
- * nothing anybody can act on - and it must not refuse a number the register
- * might hold. The format has changed once already, so validating shape here
- * would mean rejecting real certificates in the browser; the register is the
- * authority and this is a door, not a gate.
+ * Ensures navigation correctly routes manually entered certificate numbers.
+ * Enforces negative constraints:
+ * - Rejects empty inputs to avoid invalid routing (`/verify-certificate/`).
+ * - Forwards all non-empty inputs, avoiding strict client-side format validation.
+ *   The server remains the sole authority for validating certificate shapes
+ *   to accommodate historical format variations.
  */
 describe('the KCA number lookup', () => {
   beforeEach(() => {
@@ -87,9 +86,8 @@ describe('the KCA number lookup', () => {
   });
 
   /**
-   * A number the register may or may not hold is still sent. Refusing it here
-   * would be the browser overruling the authority, and `verifyCertificate`
-   * answers UNKNOWN for exactly this case.
+   * Forwards unformatted/legacy numbers without client-side rejection.
+   * `verifyCertificate` handles the UNKNOWN state directly.
    */
   it('does not refuse a number that does not look like today format', async () => {
     const user = userEvent.setup();

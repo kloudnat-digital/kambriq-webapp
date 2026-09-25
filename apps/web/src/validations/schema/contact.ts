@@ -2,18 +2,11 @@ import * as z from 'zod';
 import { ContactSubject } from '@kambriq/common/constants/core';
 
 /**
- * L1 - what the contact form asks for, checked in the browser.
- *
- * **This is a courtesy, not a guard.** It tells somebody filling in the form
- * what is missing before they wait for a round trip. The guard is
- * `submitContactRequestSchema` in the API, which validates the same fields
- * again on the server, because anything at all can post to that route and the
- * browser's opinion of a payload is not evidence about it.
- *
- * The two are deliberately not shared as one object: the server's version
- * refuses things this one cannot see (consent as a literal `true`, a locale
- * outside the published pair) and this one carries messages in the page's
- * language, which the API has no business knowing.
+ * Client-side validation schema for the contact form.
+ * Provides immediate user feedback prior to submission.
+ * Server-side validation (`submitContactRequestSchema`) acts as the definitive security guard.
+ * Schemas are intentionally kept separate to allow locale-specific error keys on the client
+ * and stricter domain validation on the server.
  */
 export const ContactFormResolver = z.object({
   name: z.string().trim().min(2, { error: 'nameRequired' }).max(120, { error: 'nameTooLong' }),
@@ -25,11 +18,7 @@ export const ContactFormResolver = z.object({
     .regex(/^\+?[0-9 ().-]{6,32}$/, { error: 'phoneInvalid' })
     .optional()
     .or(z.literal('')),
-  /**
-   * The field the audit found unvalidatable. A `required` attribute on a
-   * visually hidden native select produced no message anybody could see; this
-   * produces one the component renders under the trigger.
-   */
+  /** Ensures the select component displays validation errors correctly via aria-describedby. */
   subject: z.nativeEnum(ContactSubject, { error: 'subjectRequired' }),
   message: z
     .string()
@@ -41,10 +30,7 @@ export const ContactFormResolver = z.object({
 });
 
 /**
- * Errors carry a message **key**, not a sentence.
- *
- * The schema is imported by a client component that is rendered in French and
- * in English, and a resolver that hard-codes either would show the wrong one to
- * half the visitors. The component looks the key up in the page's catalogue.
+ * Inferred type from the ContactFormResolver.
+ * Error messages use i18n keys to support client-side localization.
  */
 export type ContactFormSchema = z.infer<typeof ContactFormResolver>;

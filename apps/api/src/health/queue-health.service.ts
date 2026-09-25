@@ -4,28 +4,8 @@ import { Queue } from 'bullmq';
 import { QUEUES } from '@kambriq/common';
 
 /**
- * A18 - what the queues are actually doing, from outside the VPC.
- *
- * ---------------------------------------------------------------------------
- * Why this exists
- * ---------------------------------------------------------------------------
- * `S9` proved that an unknown job lands on the failed set rather than
- * disappearing - `failed=1, completed=0`. That proof was taken **locally**. On
- * dev the same failure is invisible: BullMQ keeps its sets in ElastiCache, on a
- * private VPC endpoint, and nothing in the API reported them. `/health` answered
- * about databases, memory and disk, and said nothing about the queues.
- *
- * **A failure nobody can observe is a silent failure whatever the code
- * guarantees.** The KAMNET commission is the case that matters: an agent not
- * being paid, with a job sitting in a set nobody can read, is where this whole
- * line of work started.
- *
- * ---------------------------------------------------------------------------
- * Counts and payloads, not counts alone
- * ---------------------------------------------------------------------------
- * A count says *something* failed. It does not say what, for whom, or whether it
- * can be replayed. `removeOnFailed: 200` already keeps the last two hundred
- * failures with their data; this reads them back.
+ * Provides observability into job queues.
+ * Returns counts of jobs in various states and job payloads for inspection.
  */
 export type QueueCounts = {
   queue: string;
@@ -72,55 +52,55 @@ export class QueueHealthService {
   }
 
   /**
-   * Every queue, every state.
-   *
-   * All five are read in parallel and **one failing does not hide the others**:
-   * a queue whose Redis call throws comes back named, with its error, rather
-   * than collapsing the whole response - which would turn "one queue is
-   * unreachable" into "queues are unobservable", the exact thing this fixes.
+   * Retrieves job counts for all queues and states in parallel.
+   * Individual queue failures do not affect the reporting of others.
    */
   async counts(): Promise<{
     queues: (QueueCounts | { queue: string; error: string })[];
     totalFailed: number;
   }> {
     const results = await Promise.all(
-      Object.entries(this.queues).map(async ([name, queue]) => {
-        try {
-          const c = await queue.getJobCounts(
-            'waiting',
-            'active',
-            'completed',
-            'failed',
-            'delayed',
-            'paused',
-          );
-          return {
-            queue: name,
-            waiting: c['waiting'] ?? 0,
-            active: c['active'] ?? 0,
-            completed: c['completed'] ?? 0,
-            failed: c['failed'] ?? 0,
-            delayed: c['delayed'] ?? 0,
-            paused: c['paused'] ?? 0,
-          };
-        } catch (error) {
-          this.logger.error('Could not read queue counts %o', {
-            queue: name,
-            error: error instanceof Error ? error.message : String(error),
-          });
-          return {
-            queue: name,
-            error: error instanceof Error ? error.message : String(error),
-          };
-        }
-      }),
+      /**
+       * The return type union is explicit to ensure TypeScript correctly discriminates
+       * between success and error responses when calculating total failures.
+       */
+      Object.entries(this.queues).map(
+        async ([name, queue]): Promise<QueueCounts | { queue: string; error: string }> => {
+          try {
+            const c = await queue.getJobCounts(
+              'waiting',
+              'active',
+              'completed',
+              'failed',
+              'delayed',
+              'paused',
+            );
+            return {
+              queue: name,
+              waiting: c['waiting'] ?? 0,
+              active: c['active'] ?? 0,
+              completed: c['completed'] ?? 0,
+              failed: c['failed'] ?? 0,
+              delayed: c['delayed'] ?? 0,
+              paused: c['paused'] ?? 0,
+            };
+          } catch (error) {
+            this.logger.error('Could not read queue counts %o', {
+              queue: name,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            return {
+              queue: name,
+              error: error instanceof Error ? error.message : String(error),
+            };
+          }
+        },
+      ),
     );
 
     return {
       queues: results,
-      // The number somebody watches. Queues that could not be read contribute
-      // nothing to it, which is why they are returned individually above rather
-      // than silently counted as zero.
+      // Sums the failed jobs across all readable queues. Unreadable queues are omitted.
       totalFailed: results.reduce((sum, r) => sum + ('failed' in r ? r.failed : 0), 0),
     };
   }

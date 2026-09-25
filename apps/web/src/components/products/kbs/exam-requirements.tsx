@@ -3,12 +3,9 @@ import { CheckIcon } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
 /**
- * Three, not four. The fourth was "Disponibilite de 5 a 10 heures par semaine",
- * which reintroduces a global programme length by another door - six modules at
- * one week each is eight weeks, and so is a weekly commitment - against the
- * decision of 18 September that the page shows per-module durations and no
- * total. The keys are rendered literally, so the list and this array move
- * together or next-intl resolves a key that is not there.
+ * Maps to translation keys item1, item2, item3.
+ * These are rendered dynamically, requiring the keys in ITEM_KEYS to precisely
+ * match those provided in the localization file.
  */
 const ITEM_KEYS = ['item1', 'item2', 'item3'] as const;
 

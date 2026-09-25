@@ -10,14 +10,9 @@ import { KbsCandidatesService } from '../../../kbs/candidates/candidates.service
 import { buildUserResponse, mockEmailService, mockI18n } from '../../utils';
 
 /**
- * I15 - "is this person certified" is answered by the certificate, through
- * `isUserCertified`, at both doors into KAMNET.
- *
- * Submission asked a different question: is the number the caller TYPED a
- * valid certificate? Any valid number passed - somebody else's included - and
- * the application stored it as the applicant's. Approval asked nothing at all,
- * so a certificate revoked or expired between submission and review still
- * became an agent.
+ * Tests that KAMNET applications enforce proper certificate checks.
+ * Ensures the submitted certificate belongs to the caller and that
+ * the applicant is still certified at the time of review.
  */
 describe('KamnetApplicationsService - the certificate decides', () => {
   const OWN = 'KCA-20250101-0001';
@@ -42,7 +37,7 @@ describe('KamnetApplicationsService - the certificate decides', () => {
       findById: jest.fn().mockResolvedValue(buildUserResponse({ language: 'fr' })),
       addRole: jest.fn(),
     };
-    // A stranger's valid number verifies as VALID: that is the point of the test.
+    // Simulates a third-party certificate that is globally valid but does not belong to the user.
     certificates = {
       verifyCertificate: jest.fn().mockResolvedValue({ status: 'VALID', valid: true }),
     };
@@ -99,7 +94,9 @@ describe('KamnetApplicationsService - the certificate decides', () => {
       await service.submit('u1', { kcaNumber: OWN });
 
       expect(prisma.kamnetApplication.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ userId: 'u1', kcaNumber: OWN }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ userId: 'u1', kcaNumber: OWN }),
+        }),
       );
     });
   });
@@ -121,7 +118,7 @@ describe('KamnetApplicationsService - the certificate decides', () => {
         service.review('app-1', 'admin-1', { status: KamnetApplicationStatus.APPROVED }),
       ).rejects.toThrow(ForbiddenException);
 
-      // Nothing half-done: no decision recorded, no agent, no role.
+      // Ensure no partial state is persisted.
       expect(prisma.kamnetApplication.update).not.toHaveBeenCalled();
       expect(prisma.kamnetAgent.create).not.toHaveBeenCalled();
       expect(usersService.addRole).not.toHaveBeenCalled();

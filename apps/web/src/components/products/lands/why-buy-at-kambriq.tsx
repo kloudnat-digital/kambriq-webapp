@@ -5,7 +5,7 @@ import SectionCardContainer from '../../section/card/container';
 import SectionCard from '../../section/card';
 import { ArrowRight, ClipboardClock, CreditCard, Scale, ShieldUser } from 'lucide-react';
 import { Button } from '../../ui/button';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 
 const WhyBuyAtKambriq = async () => {
   const t = await getTranslations('whyBuyAtKambriq');

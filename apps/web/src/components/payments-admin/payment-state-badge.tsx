@@ -1,6 +1,6 @@
 import type { PaymentState } from '@/types/payments';
 
-/** The nine states, in French, with the colour a person reads them by. */
+/** Maps payment states to French labels and corresponding styling classes. */
 const LABELS: Record<PaymentState, { text: string; className: string }> = {
   INITIE: { text: 'Initié', className: 'bg-gray-100 text-gray-700' },
   INSTRUCTIONS_ENVOYEES: { text: 'Instructions envoyées', className: 'bg-blue-100 text-blue-800' },
@@ -13,7 +13,7 @@ const LABELS: Record<PaymentState, { text: string; className: string }> = {
   ANNULE: { text: 'Annulé', className: 'bg-gray-200 text-gray-600' },
 };
 
-/** The same nine labels, for anything that needs the words without the badge. */
+/** Exposes raw text labels for non-badge usages. */
 export const STATE_LABELS: Record<string, string> = Object.fromEntries(
   Object.entries(LABELS).map(([state, l]) => [state, l.text]),
 );

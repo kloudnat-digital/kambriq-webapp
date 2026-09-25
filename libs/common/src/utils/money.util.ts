@@ -1,8 +1,9 @@
 /**
- * Apply a decimal coefficient to an XAF integer using safe integer math.
- * Used for commission calculations: price × pv (Point Valeur, 0.1-2.0).
+ * Applies a decimal coefficient to an XAF integer using safe integer arithmetic.
  *
- * Example: applyCoefficient(7_500_000, 1.2) -> 9_000_000
+ * @param priceXAF - The base price in XAF.
+ * @param coefficient - The decimal multiplier.
+ * @returns The computed product.
  */
 export const applyCoefficient = (priceXAF: number, coefficient: number): number => {
   const scale = (coefficient.toString().split('.')[1] ?? '').length;
@@ -11,8 +12,7 @@ export const applyCoefficient = (priceXAF: number, coefficient: number): number 
 };
 
 /**
- * Format an XAF integer for display (e.g. in email templates or API responses).
- * Output: "7 500 000 FCFA"
+ * Formats an XAF integer into a localized string representation.
  */
 export const formatXAF = (amount: number, locale = 'fr-FR'): string => {
   return new Intl.NumberFormat(locale, {
@@ -24,8 +24,7 @@ export const formatXAF = (amount: number, locale = 'fr-FR'): string => {
 };
 
 /**
- * Compact format for short representations.
- * Output: "7,5M FCFA"
+ * Formats an XAF integer into a compact, localized string representation.
  */
 export const formatXAFCompact = (amount: number, locale = 'fr-FR'): string => {
   return new Intl.NumberFormat(locale, {

@@ -6,21 +6,15 @@ import { LandsAgentController } from '../../../lands/controllers/lands-agent.con
 import { LandsClientController } from '../../../lands/controllers/lands-client.controller';
 
 /**
- * I16 acceptance, through the real guard and the real decorators.
- *
- * A suspended agent must still open their own purchases and still see the
- * commissions they earned, and must not reserve. This runs the application's
- * own `RolesGuard` against the `@Roles` metadata the controllers actually carry,
- * for the roles a suspended agent actually holds, so it fails if a decorator or
- * the hierarchy says otherwise.
+ * Tests access rights for suspended agents using the actual RolesGuard and controller decorators.
+ * Ensures a suspended agent can still view their purchases and commissions, but cannot make new reservations.
  */
 describe('I16 - what a suspended agent can still do', () => {
   const guard = new RolesGuard(new Reflector());
 
-  // Every dev agent holds KCA_CERTIFIED, AGENT and - since the I16 one-off -
-  // CLIENT in its own right. Suspension removes AGENT only.
+  // Agents typically hold KCA_CERTIFIED and CLIENT roles. Suspension removes only the AGENT role.
   const SUSPENDED = [RoleCode.KCA_CERTIFIED, RoleCode.CLIENT];
-  // The same agent had the grant not come first: CLIENT only through AGENT.
+  // Simulates a suspended agent lacking an explicit CLIENT role grant.
   const SUSPENDED_WITHOUT_OWN_CLIENT = [RoleCode.KCA_CERTIFIED];
 
   const allows = (roles: string[], cls: object, method: string): boolean => {
