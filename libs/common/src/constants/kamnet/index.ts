@@ -51,6 +51,14 @@ export const KAMNET_VALID_LEAD_TRANSITIONS: Record<string, string[]> = {
 export const KAMNET_MAX_SPONSORSHIP_DEPTH = 1 as const;
 export const KAMNET_MAX_FULL_TREE_ROOTS = 50 as const; // Cap for full tree endpoint to prevent overload on large networks
 
+/**
+ * P22 - the most entries the public directory returns in one answer. Bounded the
+ * way the full tree is (`KAMNET_MAX_FULL_TREE_ROOTS`): a named cap, and a
+ * warning in the log when it is reached, never a silent cut. Ten agents today;
+ * the cap is ten times that, so reaching it is news, not noise.
+ */
+export const KAMNET_MAX_PUBLIC_DIRECTORY_ENTRIES = 100 as const;
+
 // ----- Job Payloads ----- //
 export interface SaleCompletedJobPayload {
   agentUserId: string;

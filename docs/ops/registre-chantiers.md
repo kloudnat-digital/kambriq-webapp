@@ -215,7 +215,7 @@ listed here first.
 | `P10`                         | `A FAIRE`           | `whyKbs.network.description` and `whyAgent.exclusiveAccess.description` still promise an exclusive catalogue reserved to agents                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `P21` follow-up               | `A FAIRE`           | the remuneration ban covers a hand-written list of message namespaces and `landTypes` is not in it, so the public LANDS page still carries "Avantages Agent KAMNET / Commission rapide". Derive the list from what the public pages render                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `A41`                         | `PROUVE`            | a rate limit each, chosen from 7 days of measured traffic; `auth-anonymous-routes-throttled.spec.ts` reads the @Throttle metadata, red first on five undefined routes, eight mutations each watched failing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `P22`                         | `A FAIRE`           | batch the certificate read behind the public directory and bound its page size. Opened by `P11`'s self-review on 22 September, not started                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `P22`                         | `EN COURS`          | the public directory reads every certificate in one query, not one per agent, and is bounded by `KAMNET_MAX_PUBLIC_DIRECTORY_ENTRIES` with a warning at the cap. Pending: the directory read on dev after deploy                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Audit 2026-09-23, wave 1      | `EN COURS`          | four security fixes on `chore/audit-remediation`, unmerged. The fifth finding, the API bearer token in the RSC payload, is **closed by wave 5** - `sessionForClient` strips it and `lib/session.spec.ts` plus the login journey pin it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | Audit 2026-09-23, wave 2      | `EN COURS`          | `GET /kbs/me` scoped to the active course, `no-console`, `strict` on the API, two seed preconditions. Unmerged; pending proof is `GET /kbs/me` read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | Audit 2026-09-23, wave 3      | `PROUVE`            | the wave of #155 to #162 folded in, the Open table de-duplicated, the states declared, `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -223,7 +223,7 @@ listed here first.
 | `confirmRemainingPayment`     | `A FAIRE`           | step 4 records the balance on the reservation alone: nothing creates a payment for it, so it cannot be gated the way the acompte now is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `P27`                         | `PROUVE`            | KAMBRIQ LANDS™, KAMBRIQ VERIFY™ and KAMNET™ carry the mark everywhere on the website, KBS does not; a guard watches every namespace and every MDX file; proven on dev at `sha-e059503`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `A44`                         | `PROUVE`            | an avatar is a key in the caller's own storage folder, refused otherwise on both write paths; `connect-src` names the bucket so the browser may upload; proven on dev at `sha-689bd2e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `A43`                         | `EN COURS`          | Swagger is served only where `APP_ENV=local` is declared, never from `NODE_ENV`; the local start scripts declare it. Pending: the anonymous request to the docs on dev, after deploy                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `A43`                         | `PROUVE`            | Swagger is served only where `APP_ENV=local` is declared, never from `NODE_ENV`; the local start scripts declare it; proven on dev at `sha-7ec907b`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `P24`                         | `PROUVE`            | the land title number is shaped `TF <number>/<department>` and validated by shape in the web form and the API; invented formats replaced; proven on dev at `sha-85c8966`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `P25`                         | `PROUVE`            | the verify price table was the only MDX element outside the component map; two consent sentences were split into columns by a flex label; proven on dev at `sha-828c509`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `I43`                         | `PROUVE`            | ten signed-in screens promised 38 unbuilt features in hardcoded French; the promise is removed and a guard reads every `.tsx`; proven on dev at `sha-383828e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -5607,11 +5607,19 @@ so nothing was changed.
   admin user list), whereas the upload route issues keys. That is not A44's
   field.
 
-### A43 - the API's documentation is served only where it is declared local - `EN COURS`
+### A43 - the API's documentation is served only where it is declared local - `PROUVE`
 
 **Cost impact: None.**
 
-**Pending:** the anonymous request to the documentation on dev, after deploy.
+**Proven on dev** through the deployed environment, anonymously, 25 September:
+
+| request                    | before (`sha-689bd2e`)        | after (`sha-7ec907b`, #182)             |
+| -------------------------- | ----------------------------- | --------------------------------------- |
+| `GET /api/v1/docs`         | 200, the Swagger UI           | **404**, "Cannot GET /api/v1/docs"      |
+| `GET /api/v1/docs-json`    | 200, 145 303 bytes of OpenAPI | **404**, "Cannot GET /api/v1/docs-json" |
+| `GET /api/v1/health/ready` | 200                           | 200                                     |
+
+The 404s come in the API's own envelope, so the routes are simply not mounted.
 
 **The premise, verified.** `main.ts` mounted Swagger whenever
 `NODE_ENV !== 'production'`, and the dev API runs with `NODE_ENV=development`.
@@ -5659,6 +5667,60 @@ not fixed, as the brief asks:**
 
 `kambriq-infra/kamtech-ws-context.md` still says Swagger is served "in
 non-production". That line is now stale and lives in the infra repository.
+
+### P22 - the public directory at scale - `EN COURS`
+
+**Cost impact: None.** One query where there were N, fewer connections held.
+
+**Pending:** the directory read on dev after deploy, with the same entries as
+before.
+
+**The finding, confirmed in the code.** `listPublicDirectory` read the
+consenting agents with no bound, then asked the KBS database for each agent's
+newest certificate with `findNewestCertificateFacts(userId)`, one per agent, all
+at once inside a `Promise.all`, against a pool of ten connections. Harmless at
+ten agents, and linear in the number of agents after that.
+
+**What changed:**
+
+- `KbsCandidatesService.findNewestCertificateFactsForUsers(userIds)` answers for
+  every user in **one** Prisma call and keys the newest certificate by its owner.
+  The owner is spread last, so no field of the certificate row can overwrite the
+  pairing that `toPublicDirectoryEntry` checks. The per-user method had no
+  other caller and is gone.
+- The agents are read with `take: KAMNET_MAX_PUBLIC_DIRECTORY_ENTRIES` (100),
+  oldest consent first. This is the convention `KAMNET_MAX_FULL_TREE_ROOTS`
+  already set, and when the cap is reached the log says so at `warn`.
+
+**Bounded rather than paginated, decided.** The web reads this endpoint as a
+bare array and treats any other shape as "register unavailable"
+(`getPublicAgentDirectory`). The admin list's `{ data, meta }` would change a
+public contract and the page with it. With ten agents today, a cap of a hundred
+is news when it is reached, and the warning makes it seen.
+
+**Proof, watched red before green.** The test counts the shape of the access,
+not its speed. On develop, the certificate lookups for 3 agents and for 12
+agents were **`[3, 12]`**, one per agent. They are now `[1, 1]`. Seven mutations,
+each failing its own test:
+
+- one lookup per agent again;
+- no bound;
+- the cap logged at `log` instead of `warn`;
+- a warning one short of the cap;
+- one Prisma call per user inside the lookup;
+- certificates keyed to the wrong user;
+- a query for nobody.
+
+**Its limit, stated.** The test counts calls into the certificate layer and
+Prisma calls inside it, not SQL statements: Prisma may load a relation in two
+statements. That number is also constant in N. The directory's database suite
+re-implements the queries rather than calling the service, so it could not
+count them. Wiring the service across three databases and Redis for one count
+was more than this subject.
+
+A first version of the lookup test left an `ownerUserId: undefined` on the
+certificate fixture, and the spread order let it erase the owner. The fixture
+now matches what the select returns, and the owner is spread last.
 
 ---
 
