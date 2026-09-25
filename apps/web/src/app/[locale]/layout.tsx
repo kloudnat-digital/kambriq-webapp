@@ -12,6 +12,7 @@ import { BRAND_NAVY } from '@/lib/brand-colors';
 import { routing, type Locale } from '@/i18n/routing';
 import { JsonLd, siteJsonLd } from '@/lib/seo/json-ld';
 import { sessionForClient } from '@/lib/session';
+import { FONT_STYLESHEET_URL, fontSrcSources, styleSrcSources } from '@/lib/security/image-hosts';
 import { cn } from '@/lib/utils';
 
 // Fonts
@@ -145,12 +146,15 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} suppressHydrationWarning className={cn(jetbrainsMono.variable, 'h-full')}>
       <head>
-        <link key="fontshare-preconnect" rel="preconnect" href="https://api.fontshare.com" />
+        {/* J11: the typeface's hosts live with the CSP's, in lib/security/image-hosts.ts. */}
+        <link key="font-preconnect" rel="preconnect" href={styleSrcSources()[0]} />
         <link
-          key="fontshare-stylesheet"
-          rel="stylesheet"
-          href="https://api.fontshare.com/css?f%5B%5D=switzer@400,500,600,700,800&display=swap"
+          key="font-files-preconnect"
+          rel="preconnect"
+          href={fontSrcSources()[0]}
+          crossOrigin=""
         />
+        <link key="font-stylesheet" rel="stylesheet" href={FONT_STYLESHEET_URL} />
       </head>
       <body>
         {/* Structured data, which this site carried none of. See lib/seo/json-ld.tsx. */}

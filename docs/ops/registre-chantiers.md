@@ -221,7 +221,8 @@ listed here first.
 | Audit 2026-09-23, wave 3      | `PROUVE`            | the wave of #155 to #162 folded in, the Open table de-duplicated, the states declared, `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Audit 2026-09-23, wave 4      | `EN COURS`          | the acompte step reads the payment ledger instead of answering for it. Unmerged; pending proof is one acompte carried end to end on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `confirmRemainingPayment`     | `A FAIRE`           | step 4 records the balance on the reservation alone: nothing creates a payment for it, so it cannot be gated the way the acompte now is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `A48`                         | `EN COURS`          | every API behaviour decision reads `APP_ENV` through `libs/common/src/config/app-env.ts`; SQL is logged only where `APP_ENV=local`; a guard refuses a new `NODE_ENV` read. Pending: dev logs read after deploy - no `prisma:query` line                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `J11`                         | `EN COURS`          | the typeface's stylesheet and font hosts reach `style-src` and `font-src` from the same module as the image hosts, and the layout links it from there. Pending: Switzer loading on dev in a real browser, before/after                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `A48`                         | `PROUVE`            | every API behaviour decision reads `APP_ENV` through `libs/common/src/config/app-env.ts`; SQL is logged only where `APP_ENV=local`; a guard refuses a new `NODE_ENV` read; proven on dev at `sha-3425132`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `P27`                         | `PROUVE`            | KAMBRIQ LANDS™, KAMBRIQ VERIFY™ and KAMNET™ carry the mark everywhere on the website, KBS does not; a guard watches every namespace and every MDX file; proven on dev at `sha-e059503`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `A44`                         | `PROUVE`            | an avatar is a key in the caller's own storage folder, refused otherwise on both write paths; `connect-src` names the bucket so the browser may upload; proven on dev at `sha-689bd2e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `A43`                         | `PROUVE`            | Swagger is served only where `APP_ENV=local` is declared, never from `NODE_ENV`; the local start scripts declare it; proven on dev at `sha-7ec907b`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -5729,13 +5730,22 @@ A first version of the lookup test left an `ownerUserId: undefined` on the
 certificate fixture, and the spread order let it erase the owner. The fixture
 now matches what the select returns, and the owner is spread last.
 
-### A48 - no behaviour in the API is decided on `NODE_ENV` - `EN COURS`
+### A48 - no behaviour in the API is decided on `NODE_ENV` - `PROUVE`
 
 **Cost impact: a saving.** Half of the dev API's log volume goes away (below),
 and CloudWatch ingestion is billed per GB.
 
-**Pending:** the dev API's log stream read after the deploy: no `prisma:query`
-line, and JSON lines at `info`.
+**Proven on dev** at `sha-3425132` (#185), 25 September.
+`/api/v1/health/version` reports `env: development` (how the image was built)
+and `appEnv: undeclared` (where it runs). The API's CloudWatch stream was read
+for the first ten minutes after the deploy, each line attributed to its task:
+
+- **the new task: 293 lines, all JSON at level 30 (`info`), no `prisma:query`,
+  nothing pretty-printed**;
+- the one `prisma:query` line and five pretty lines in that window came from
+  the previous task, draining during the rolling deploy (last event 20:22:01);
+- eleven more non-JSON lines came from a one-off migration task (`npm notice`);
+- the hour before the deploy held 300 `prisma:query` lines.
 
 **Third time, so the whole class in one pass.** P4 moved the robots header to
 `APP_ENV`, and A43 moved the Swagger documentation. Everything else that decided
@@ -5800,6 +5810,38 @@ five files above.
 
 My own guess of "over 300 files" for the sweep's floor was wrong. The true count
 is 132, and the floor is 120.
+
+### J11 - the site's typeface was refused by the CSP, and had never loaded - `EN COURS`
+
+**Cost impact: None.**
+
+**Pending:** a real browser on dev after the deploy: no CSP error, Switzer faces
+registered and used, before/after screenshots.
+
+**Measured on dev before the change** (Chromium through Playwright, home page,
+1280 px and iPhone 13, fr and en, 25 September): every load logged "Loading the
+stylesheet 'https://api.fontshare.com/css?…' violates the following Content
+Security Policy directive: style-src 'self' 'unsafe-inline'". `document.fonts`
+held **no Switzer face at all**, so text asked for `Switzer, system-ui,
+sans-serif` rendered in `system-ui`. `document.fonts.check('16px Switzer')`
+returned `true` all the same, because it reports "nothing to wait for" when no
+face exists. The empty face list is the signal, not that call.
+
+**Two hosts, not one.** The stylesheet comes from `api.fontshare.com` (for
+`style-src`), and its `@font-face` rules load the files from
+`cdn.fontshare.com` (for `font-src`, which allowed `'self' data:` only). This
+was read from the stylesheet's own `src:` URLs.
+
+**One list, as A40 taught.** `lib/security/image-hosts.ts`, already the CSP's
+source for `img-src` and `connect-src`, now also holds `FONT_STYLESHEET_URL`,
+`styleSrcSources()` and `fontSrcSources()`. The layout links the stylesheet and
+preconnects from those. `next.config.ts` builds `style-src` and `font-src` from
+them, and neither file names a fontshare host any more.
+
+**Proof so far, watched red first.** The layout and `next.config.ts` pins failed
+against develop. Four mutations each failed their own test: `style-src` without
+the host, the font host written into `next.config.ts`, the layout linking its
+own URL, and the wrong file host.
 
 ---
 
