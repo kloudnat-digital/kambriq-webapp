@@ -1,11 +1,11 @@
 import { type NextAuthConfig } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { visitorHeaders } from './lib/api/visitor-headers';
-import { refreshSession } from './lib/auth/refresh-session';
+import { knownSession, refreshSession } from './lib/auth/refresh-session';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'; // fallback for local dev only
 
-export default {
+const authConfig = {
   providers: [
     Credentials({
       /**
@@ -193,4 +193,45 @@ export default {
       }
     },
   },
+} satisfies NextAuthConfig;
+
+export default authConfig;
+
+type JwtParams = Parameters<NonNullable<NonNullable<NextAuthConfig['callbacks']>['jwt']>>[0];
+
+/**
+ * A47, second half - the configuration pages and server actions read the
+ * session with. Its `jwt` never calls `/auth/refresh`.
+ *
+ * Only the proxy writes the session cookie back to the browser: a plain
+ * `auth()` in a page or an action drops the `set-cookie` (next-auth
+ * `lib/index.js`). A refresh started there revoked the token the browser held
+ * and saved nothing in its place - on 25 September, browsing two public pages
+ * after the access token fell due signed the person out, twice.
+ *
+ * So a page takes the tokens the proxy obtained for the same request (shared
+ * across the two module instances through `globalThis`, see refresh-session.ts)
+ * and otherwise leaves the session exactly as it found it. Everything else -
+ * sign-in, a session still valid, one already refused - is the proxy's own
+ * callback, unchanged.
+ */
+const pageJwt = async (params: JwtParams) => {
+  const { token, user } = params;
+  const due = Date.now() >= token.accessExpiresAt - 60_000;
+  const refused = token.error === 'RefreshTokenError' && token.refreshRefused;
+  if (user || !due || refused) return authConfig.callbacks.jwt(params);
+
+  const known = await knownSession(token.refreshToken);
+  if (known?.ok) {
+    return { ...token, ...known.tokens, error: undefined, refreshRefused: undefined };
+  }
+  if (known && !known.ok && known.refused) {
+    return { ...token, error: 'RefreshTokenError' as const, refreshRefused: true };
+  }
+  return token;
+};
+
+export const pageAuthConfig = {
+  ...authConfig,
+  callbacks: { ...authConfig.callbacks, jwt: pageJwt },
 } satisfies NextAuthConfig;

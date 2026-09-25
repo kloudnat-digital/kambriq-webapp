@@ -1,4 +1,11 @@
-import { AUTH_ROUTES, PUBLIC_PATHS, ROLE_DEFAULTS, getDefaultRoute } from './routes';
+import {
+  AUTH_ROUTES,
+  PUBLIC_PATHS,
+  REDIRECT_WHEN_AUTHED,
+  ROLE_DEFAULTS,
+  getDefaultRoute,
+  isPublic,
+} from './routes';
 
 // proxy.ts is a pure decision over (pathname, session): it either lets the
 // request through or redirects it. Both dependencies are stubbed so the
@@ -18,9 +25,9 @@ jest.mock('next/server', () => ({
 }));
 
 // auth() wraps the handler in production. Unwrap it so the raw decision runs.
-jest.mock('./auth', () => ({ auth: (handler: unknown) => handler }));
+jest.mock('./auth', () => ({ authForProxy: (handler: unknown) => handler }));
 
-import proxy from './proxy';
+import proxy, { config } from './proxy';
 
 const ORIGIN = 'https://app.test';
 
@@ -153,4 +160,34 @@ describe('proxy: no decision loops', () => {
       }
     }
   });
+});
+
+/**
+ * A47. The proxy now RUNS on every public page, so that a refresh it needs is
+ * written back to the browser. Running must not become gating: every public
+ * literal in the matcher, walked through the real decision, lets an anonymous
+ * visitor through - and a signed-in or stale session through as well, except
+ * where the proxy always sent a signed-in person onward (`/`, `/login`,
+ * `/register`).
+ */
+describe('proxy: public pages it runs on are never gated (A47)', () => {
+  const publicLiterals = (config.matcher as string[])
+    .filter((m) => isPublic(m.split('/:')[0] || '/'))
+    .map((m) => m.replace(/:[A-Za-z]+$/, 'KCA-20260925-0001'));
+
+  it('has public pages to check', () => {
+    expect(publicLiterals.length).toBeGreaterThan(20);
+  });
+
+  it.each(publicLiterals)('lets an anonymous visitor through %s', (p) => {
+    expect(run(p, null)).toEqual({ kind: 'next' });
+  });
+
+  it.each(publicLiterals.filter((p) => !REDIRECT_WHEN_AUTHED.includes(p)))(
+    'lets a signed-in person, and a stale session, through %s',
+    (p) => {
+      expect(run(p, authed())).toEqual({ kind: 'next' });
+      expect(run(p, stale())).toEqual({ kind: 'next' });
+    },
+  );
 });

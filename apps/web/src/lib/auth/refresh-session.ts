@@ -54,12 +54,24 @@ export type RefreshOutcome =
   | { ok: false; refused: boolean };
 
 type Entry = { promise: Promise<RefreshOutcome>; settledAt?: number };
-const byRefreshToken = new Map<string, Entry>();
-let lastSweep = 0;
+
+/**
+ * A47, second half - on `globalThis`, not in module scope. The proxy and the
+ * pages are bundled as two module instances (two Turbopack runtime contexts)
+ * in ONE Node process - measured on the build: the proxy is `server/middleware.js`,
+ * CommonJS, requiring `node:async_hooks`, with no Edge function in the
+ * middleware manifest. A module-level map was two maps; the global is one, so
+ * a page renders with the tokens the proxy obtained for the same request.
+ */
+const STORE = Symbol.for('kambriq.web.refresh-session');
+type Store = { byRefreshToken: Map<string, Entry>; lastSweep: number };
+const globalStore = globalThis as unknown as Record<symbol, Store | undefined>;
+const store: Store = (globalStore[STORE] ??= { byRefreshToken: new Map(), lastSweep: 0 });
+const byRefreshToken = store.byRefreshToken;
 
 const sweep = (now: number) => {
-  if (now - lastSweep < 60_000) return;
-  lastSweep = now;
+  if (now - store.lastSweep < 60_000) return;
+  store.lastSweep = now;
   for (const [key, entry] of byRefreshToken) {
     if (entry.settledAt !== undefined && now - entry.settledAt > KEEP_FOR_MS) {
       byRefreshToken.delete(key);
@@ -128,4 +140,26 @@ export const refreshSession = async (
     current = outcome.tokens.refreshToken;
   }
   return exchange(apiUrl, current);
+};
+
+/**
+ * A47, second half - what a page may know about a session, without calling.
+ *
+ * Follows the chain from the token the browser presented to the newest
+ * exchange the proxy made, and returns it if its access token is still good,
+ * or the refusal if the API refused. Anything else - nothing known, or tokens
+ * that are due again - is `null`: a page never refreshes, because it cannot
+ * write the cookie back.
+ */
+export const knownSession = async (presented: string): Promise<RefreshOutcome | null> => {
+  let current = presented;
+  for (let hop = 0; hop < 1_000; hop += 1) {
+    const known = byRefreshToken.get(current);
+    if (!known) return null;
+    const outcome = await known.promise;
+    if (!outcome.ok) return outcome.refused ? outcome : null;
+    if (Date.now() < outcome.tokens.accessExpiresAt - REFRESH_AHEAD_MS) return outcome;
+    current = outcome.tokens.refreshToken;
+  }
+  return null;
 };

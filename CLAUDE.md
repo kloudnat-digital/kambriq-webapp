@@ -1337,6 +1337,16 @@ outlived a 15-minute token. **A session is tested by outliving its access
 token, not by logging in once.** `lib/auth/refresh-session.ts` shares one
 exchange per refresh token and follows the chain to the newest tokens.
 
+**And refresh only where the cookie can be written.** #171 shared the exchange
+through a module-level map, and it did not reach the proxy: the proxy runs in
+the Node runtime, in the same process as the pages (measured: no Edge function
+in `middleware-manifest.json`, a CommonJS `server/middleware.js`), but it gets
+its own Turbopack module context, so it had its own map. So the proxy now RUNS on
+every public page, listed one page at a time and never gating them. Pages read
+the session with a configuration that never refreshes. The same-request handoff
+goes through `globalThis`. A module-level singleton is not a process singleton
+under Turbopack.
+
 ### A guard written before anything can use it
 
 `callbackUrl` is written in four places in this app and **read in none**:
