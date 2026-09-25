@@ -836,15 +836,27 @@ export class KbsCandidatesService {
    * `findActiveCertificate`'s own docstring records. The certificate is the
    * truth, and revocation is read directly from it.
    */
-  async findNewestCertificateFacts(userId: string): Promise<{
-    ownerUserId: string;
-    kcaNumber: string;
-    issueDate: Date;
-    validUntil: Date;
-    revokedAt: Date | null;
-  } | null> {
-    const candidate = await this.prisma.kbsCandidate.findUnique({
-      where: { userId },
+  async findNewestCertificateFactsForUsers(userIds: readonly string[]): Promise<
+    Map<
+      string,
+      {
+        ownerUserId: string;
+        kcaNumber: string;
+        issueDate: Date;
+        validUntil: Date;
+        revokedAt: Date | null;
+      }
+    >
+  > {
+    /**
+     * P22 - ONE query for every user, not one per user. The directory used to
+     * call a per-user version inside a `Promise.all`, so N listed agents meant N
+     * simultaneous queries against a pool of ten connections.
+     */
+    if (userIds.length === 0) return new Map();
+
+    const candidates = await this.prisma.kbsCandidate.findMany({
+      where: { userId: { in: [...userIds] } },
       select: {
         userId: true,
         certificates: {
@@ -860,9 +872,6 @@ export class KbsCandidatesService {
       },
     });
 
-    const certificate = candidate?.certificates[0];
-    if (!candidate || !certificate) return null;
-
     /**
      * The owner travels WITH the facts, so the caller can prove the pairing.
      *
@@ -874,7 +883,22 @@ export class KbsCandidatesService {
      * constraint. A projection that trusts its arguments is one bad row away
      * from publishing one person's certificate under another's name.
      */
-    return { ownerUserId: candidate.userId, ...certificate };
+    const byUser = new Map<
+      string,
+      {
+        ownerUserId: string;
+        kcaNumber: string;
+        issueDate: Date;
+        validUntil: Date;
+        revokedAt: Date | null;
+      }
+    >();
+    for (const candidate of candidates) {
+      const certificate = candidate.certificates[0];
+      if (certificate)
+        byUser.set(candidate.userId, { ...certificate, ownerUserId: candidate.userId });
+    }
+    return byUser;
   }
 
   async findByUserId(userId: string) {
