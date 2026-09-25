@@ -221,6 +221,7 @@ listed here first.
 | Audit 2026-09-23, wave 3      | `PROUVE`            | the wave of #155 to #162 folded in, the Open table de-duplicated, the states declared, `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Audit 2026-09-23, wave 4      | `EN COURS`          | the acompte step reads the payment ledger instead of answering for it. Unmerged; pending proof is one acompte carried end to end on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `confirmRemainingPayment`     | `A FAIRE`           | step 4 records the balance on the reservation alone: nothing creates a payment for it, so it cannot be gated the way the acompte now is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `P24`                         | `EN COURS`          | the land title number is shaped `TF <number>/<department>` and validated by shape in the web form and the API; invented formats replaced. Pending: the verify page and the seeded titles read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `I43`                         | `EN COURS`          | ten signed-in screens promised 38 unbuilt features in hardcoded French; the promise is removed and a guard reads every `.tsx`. Pending: the screens read on dev in both languages                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Audit 2026-09-23, wave 5      | `EN COURS`          | locale-prefixed routing: every page under `[locale]`, `localePrefix: 'always'`, the proxy gate asked positively, the RSC token leak closed, 48 `next/link` and 35 `next/navigation` imports moved to `@/i18n/navigation`, `revalidatePath` given its prefix. Proved locally over HTTP (`/` -> 307 `/fr`, `/pricing` -> 404 not a login redirect, `/de/about` -> 404, `/fr/mylands` -> `/fr/login`) and by 55 browser tests. Unmerged; pending proof is the same table read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Audit 2026-09-23, wave 6      | `EN COURS`          | SEO: `app/sitemap.ts` (30 URLs, hreflang + x-default), `app/robots.ts`, canonical and alternates on all 15 public pages, JSON-LD where there was none, metadata on the four legal pages and `robots: noindex` on the six auth pages. Both files read `APP_ENV`, never `NODE_ENV`. Unmerged; pending proof is `/robots.txt` and `/sitemap.xml` read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -5277,6 +5278,92 @@ are declared, and most are the payments back office (G4, G9), the identity queue
 (A10), KBS admin (in English) and the public certificate verdict. Each reads in
 one language to a reader of the other. Each is a translation subject of its own,
 and the list shrinks one entry at a time.
+
+### P24 - a land title number is shaped like a Cameroonian one - `EN COURS`
+
+**Cost impact: None.**
+
+**Pending:** the verify page's example card and the seeded titles read on dev
+after deploy.
+
+**The business fact is Visquis's (25 September).** A titre foncier is written
+`TF <number>/<letters>`. The letters are one to three and name the department:
+`M` Menoua, `SM` Sanaga-Maritime, `WB` Wouri B. `TF 4129/M` is well formed.
+
+**The brief's three findings, confirmed, and two more it did not have:**
+
+1. `products/verify/hero.tsx` rendered `TF-12345-ABCD`, hardcoded, on the public
+   verify page;
+2. `prisma/seed.ts` invented `TF-CM-LT-2025-001` and seven more like it;
+3. nothing validated a title: `z.string().optional()` on the web,
+   `z.string().max(100)` on both API DTOs;
+4. **not in the brief:** the admin land form's placeholder was
+   `TF/MFOUNDI/2024/0421`, a fourth format, and the VERIFY back-office table and
+   `data/mock-lands.ts` carried the same `TF/<REGION>/<year>/<n>` shape;
+5. **not in the brief:** the seed's `update` restored status, publication, price
+   and label, but not `titleNumber`. Rewriting only the seed's values would have
+   left dev showing the invented titles for ever, since `create` runs once. This
+   is the "idempotent is not restorative" defect again.
+
+Measured on dev before the change: 20 lands, 8 carrying the seed's invented
+titles and 12 carrying none. No other title exists there, so the new rule
+refuses no stored value once the seed has rewritten them.
+
+**The rule: the shape, never a list.** `libs/common/src/lands/title-number.ts`
+is one parser used by the web form (a courtesy) and by both API DTOs (the rule).
+It accepts `TF`, one to six digits, a slash or hyphen, and one to three letters.
+It forgives case, spaces and `N°`, and stores `TF 4129/M`. The digits are a
+range because a title's number is its rank in its registry. Empty stays
+accepted: the field is optional. `KNOWN_DEPARTMENT_CODES` is kept apart and
+empty. `isUnlistedDepartment` may one day warn from it, and returns `false`
+while it is empty. Nothing reads it to accept or refuse.
+
+**The refusal says the shape, with an example.** The title field rendered no
+error at all, which cost nothing while nothing was refused. It now renders the
+translated message under the field, tied by `aria-describedby`. The API refuses
+the same input with the same example, in English, like its other DTO messages.
+
+**Copy and data for Visquis to check:**
+
+- `products.verify.heroCard.tfExample` = `TF 4129/M` (his example), fr and en;
+- `landsAdmin.form.titleNumberInvalid`, fr: "Un numéro de titre foncier s'écrit
+  TF, le numéro, une barre oblique, puis une à trois lettres du département -
+  par exemple TF 4129/M." / en: "A land title number is written TF, the number,
+  a slash, then one to three department letters - for example TF 4129/M.";
+- `landsAdmin.form.titleNumberPlaceholder`: "Ex. TF 4129/M" / "e.g. TF 4129/M";
+- the seeded and mock titles are fictitious. `WB` for the Douala parcels is his
+  code. **`MF` (Mfoundi, Yaoundé), `FA` (Fako, Buea), `MI` (Mifi, Bafoussam),
+  `BE` (Bénoué, Garoua) and `OC` (Océan, Kribi) are my inference** and wait for
+  his correction. The numbers are invented.
+
+**Proof, all watched red before green.** Against develop, the DTO tests failed
+on the refusals and on the canonical form, and the seed test on the missing
+restore. Then eleven mutations, each observed failing its own test:
+
+- the API accepting anything;
+- exactly four digits;
+- a closed department list deciding;
+- an empty title refused;
+- storing the title as typed;
+- a warning while the list is empty;
+- `TF-12345-ABCD` back in the hero (caught by a sweep over every title-shaped
+  literal in the web source);
+- the seed no longer restoring the title;
+- an invented seed title back;
+- the web form accepting anything;
+- an invented example in the `en` catalogue.
+
+A twelfth mutation hid the field error, and the render test failed in both
+languages. One mutation first broke the syntax instead of the rule, so the suite
+crashed rather than failed. It was redone as a clean change.
+
+**Found, not fixed:**
+
+- `/admin/lands/search` and `/admin/lands/compare` render `MOCK_LANDS`: invented
+  parcels, with invented prices, shown to administrators as if they were real;
+- the VERIFY back-office table renders four invented requests the same way.
+
+Only their title format is changed here.
 
 ---
 

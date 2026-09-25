@@ -173,6 +173,7 @@
       },
       "heroCard": {
         "tfLabel": "Title deed",
+        "tfExample": "TF 4129/M",
         "verified": "Verified",
         "authenticity": "Title authenticity",
         "authenticityResult": "Compliant",
@@ -1180,6 +1181,8 @@
       "selectOwnerType": "Select owner type",
       "partner": "Partner",
       "titleNumber": "Title number (TF)",
+      "titleNumberPlaceholder": "e.g. {example}",
+      "titleNumberInvalid": "A land title number is written TF, the number, a slash, then one to three department letters - for example {example}.",
       "size": "Surface area",
       "price": "Price",
       "pv": "Point Valeur (commission coefficient)",

@@ -54,7 +54,7 @@ const Hero = async () => {
                     </div>
                     {tc('tfLabel')}
                   </div>
-                  <div className="font-mono text-sm/7 text-gray-600">TF-12345-ABCD</div>
+                  <div className="font-mono text-sm/7 text-gray-600">{tc('tfExample')}</div>
                 </div>
                 <div className="ml-auto flex items-start">
                   <Badge className="bg-primary-100 text-primary-600 outline-1 outline-primary-700/50">

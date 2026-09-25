@@ -173,6 +173,7 @@
       },
       "heroCard": {
         "tfLabel": "Titre foncier",
+        "tfExample": "TF 4129/M",
         "verified": "Vérifié",
         "authenticity": "Authenticité du titre",
         "authenticityResult": "Conforme",
@@ -1180,6 +1181,8 @@
       "selectOwnerType": "Sélectionner un propriétaire",
       "partner": "Partenaire",
       "titleNumber": "Numéro de titre foncier (TF)",
+      "titleNumberPlaceholder": "Ex. {example}",
+      "titleNumberInvalid": "Un numéro de titre foncier s'écrit TF, le numéro, une barre oblique, puis une à trois lettres du département - par exemple {example}.",
       "size": "Superficie",
       "price": "Prix",
       "pv": "Point Valeur (coefficient de commission)",
