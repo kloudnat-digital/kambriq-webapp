@@ -3,7 +3,11 @@ import type { WithNxOptions } from '@nx/next/plugins/with-nx';
 import createNextIntlPlugin from 'next-intl/plugin';
 import createMDX from '@next/mdx';
 import { robotsHeaders } from './src/lib/seo/robots';
-import { imageRemotePatterns, imgSrcSources } from './src/lib/security/image-hosts';
+import {
+  imageRemotePatterns,
+  imgSrcSources,
+  uploadConnectSources,
+} from './src/lib/security/image-hosts';
 
 // next-intl plugin - path is relative.
 // - When NX's project-graph plugin analyses this file (CWD = workspace root),
@@ -82,7 +86,9 @@ const nextConfig: WithNxOptions = {
               `img-src 'self' data: blob: ${imgSrcSources(process.env).join(' ')} https://api.mapbox.com https://*.tiles.mapbox.com`,
               "font-src 'self' data:",
               "worker-src 'self' blob:",
-              "connect-src 'self' https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com",
+              // A44. The bucket, from the same variable as img-src, for the
+              // browser's presigned avatar PUT - refused on dev until this line.
+              `connect-src 'self' ${uploadConnectSources(process.env).join(' ')} https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com`,
             ].join('; '),
           },
           // Empty in production, `noindex, nofollow` everywhere else. Reads

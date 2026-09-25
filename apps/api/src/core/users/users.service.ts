@@ -44,6 +44,8 @@ import { I18nService } from 'nestjs-i18n';
 import crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 
+import { avatarKey, isOwnAvatarKey, safeFileName } from './avatar-key';
+
 @Injectable()
 export class UsersService {
   private logger = new Logger(UsersService.name);
@@ -63,6 +65,14 @@ export class UsersService {
 
   // ----- Update Me ---------------------------------------
   async updateMe(userId: string, dto: UpdateProfileDto): Promise<UserResponse> {
+    // A44: an avatar is a key the upload route issued to this person, or empty
+    // to remove it. Refused before anything is written, on both paths that end
+    // here - `PATCH /users/me` and the KAMNET agent profile.
+    if (dto.avatarUrl && !isOwnAvatarKey(userId, dto.avatarUrl)) {
+      const lang = dto.language ?? (await this.findByIdOrThrow(userId)).preferredLanguage ?? 'fr';
+      throw new BadRequestException(this.t('user.avatar.notOwnKey', lang));
+    }
+
     const userFields: Record<string, unknown> = {};
     const profileFields: Record<string, unknown> = {};
 
@@ -97,16 +107,14 @@ export class UsersService {
 
   // ----- Get avatar upload URL ---------------------------------------
   async getAvatarUploadUrl(userId: string, dto: AvatarUploadUrlDto) {
-    const timestamp = Date.now();
-    const name = dto.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const key = this.storage.buildKey('users', userId, 'avatar', `${timestamp}-${name}`);
+    const key = avatarKey(userId, Date.now(), safeFileName(dto.filename));
     return this.storage.getUploadUrl(key, dto.contentType);
   }
 
   // ----- Get ID Document upload URL ---------------------------------------
   async getIdDocumentUploadUrl(userId: string, dto: IdDocumentUploadUrlDto) {
     const timestamp = Date.now();
-    const name = dto.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const name = safeFileName(dto.filename);
     const key = this.storage.buildKey('users', userId, 'id-documents', `${timestamp}-${name}`);
     return this.storage.getUploadUrl(key, dto.contentType);
   }
