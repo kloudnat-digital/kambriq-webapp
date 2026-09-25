@@ -1170,3 +1170,23 @@ change and its proof are under **A47** in the register.
 
 Cost baseline taken on dev before the merge (`sha-6bc6294`, anonymous time to
 first byte, n=15): `/legal/privacy` 76 ms median, `/about` 97, `/products/lands` 103.
+
+## A47 - proven on dev
+
+#173 was squash-merged as `ccce5b9` under the standing authorization. Its gate
+was green on the second attempt, after develop's own run for `6bc6294` finished.
+Develop run `36100991632` was green, journeys and E2E included.
+
+**The proof, in a real browser (25 September, UTC).** Signed in at 06:19:18.
+After the access token fell due at 06:33:
+
+- `/legal/privacy`: one refresh, **200**, by the proxy, written back;
+- `/legal/terms`: no refresh;
+- `/mylands`: no refresh, data call 200, still signed in.
+
+No refresh was refused. The same path had signed the person out at 04:58 and
+05:36.
+
+**Cost:** no measurable change in anonymous time to first byte on three public
+pages (medians 79/95/101 ms after, 76/97/103 before). The register entry
+**A47** is now `PROUVE`.

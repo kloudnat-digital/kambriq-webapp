@@ -4358,7 +4358,7 @@ Deleting them is a decision for Visquis, not for this subject.
 
 ---
 
-### A47 - a session survives its access token's expiry - `EN COURS`
+### A47 - a session survives its access token's expiry - `PROUVE`
 
 **Cost impact: None.**
 
@@ -4514,10 +4514,28 @@ is rewritten.
 requests each): `/legal/privacy` median 76 ms, p90 158; `/about` 97 / 180;
 `/products/lands` 103 / 180.
 
-**Pending, named - the only proof that counts:** after the merge, sign in, let
-the access token fall due, browse two public pages, open a protected one. The
-person stays signed in, and the API log shows no refresh refused. The same
-latency measured after the merge.
+**Proven on dev, 25 September, on `sha-ccce5b9`** (#173, develop run
+`36100991632` green, journeys and E2E included). Signed in at 06:19:18 UTC.
+After the access token fell due, at 06:33:
+
+- `/legal/privacy` made **one refresh, 200**, in the proxy, written back;
+- `/legal/terms` made **no refresh**;
+- `/mylands` made **no refresh**; its data call `GET /lands/client/purchases`
+  answered 200, and the page rendered signed in.
+
+None was refused. That is the exact path that signed the person out at 04:58
+and at 05:36 that morning.
+
+**Cost, measured on dev** (anonymous time to first byte, n=15 each), before and
+after the proxy ran on public pages:
+
+| page              | before (`6bc6294`)    | after (`ccce5b9`) |
+| ----------------- | --------------------- | ----------------- |
+| `/legal/privacy`  | 76 ms median, p90 158 | 79 ms, p90 160    |
+| `/about`          | 97, p90 180           | 95, p90 105       |
+| `/products/lands` | 103, p90 180          | 101, p90 170      |
+
+No measurable change.
 
 ---
 
