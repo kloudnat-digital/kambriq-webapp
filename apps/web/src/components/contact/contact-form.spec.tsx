@@ -159,6 +159,14 @@ describe('the contact form', () => {
 
   // ----- CONSENT, AUTOCOMPLETE, PLACEHOLDER ----- //
 
+  /** P25 - see the newsletter spec: a flex label splits a loose sentence into columns. */
+  it('hands the consent sentence to its label as one element, link inside', () => {
+    render(<ContactForm />);
+    const label = document.querySelector('label[for="c-consent"]');
+    expect(label?.childNodes).toHaveLength(1);
+    expect(label?.firstElementChild?.querySelectorAll('a')).toHaveLength(1);
+  });
+
   it('requires consent, and links the privacy policy', async () => {
     const user = setupUser();
     render(<ContactForm />);

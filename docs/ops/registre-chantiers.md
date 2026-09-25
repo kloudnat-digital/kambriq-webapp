@@ -223,6 +223,7 @@ listed here first.
 | `confirmRemainingPayment`     | `A FAIRE`           | step 4 records the balance on the reservation alone: nothing creates a payment for it, so it cannot be gated the way the acompte now is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `P27`                         | `EN COURS`          | KAMBRIQ LANDS™, KAMBRIQ VERIFY™ and KAMNET™ carry the mark everywhere on the website, KBS does not; a guard watches every namespace and every MDX file. Pending: the pages read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `P24`                         | `PROUVE`            | the land title number is shaped `TF <number>/<department>` and validated by shape in the web form and the API; invented formats replaced; proven on dev at `sha-85c8966`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `P25`                         | `EN COURS`          | the verify price table was the only MDX element outside the component map; two consent sentences were split into columns by a flex label. Pending: after screenshots from dev, phone and desktop                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `I43`                         | `PROUVE`            | ten signed-in screens promised 38 unbuilt features in hardcoded French; the promise is removed and a guard reads every `.tsx`; proven on dev at `sha-383828e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Audit 2026-09-23, wave 5      | `EN COURS`          | locale-prefixed routing: every page under `[locale]`, `localePrefix: 'always'`, the proxy gate asked positively, the RSC token leak closed, 48 `next/link` and 35 `next/navigation` imports moved to `@/i18n/navigation`, `revalidatePath` given its prefix. Proved locally over HTTP (`/` -> 307 `/fr`, `/pricing` -> 404 not a login redirect, `/de/about` -> 404, `/fr/mylands` -> `/fr/login`) and by 55 browser tests. Unmerged; pending proof is the same table read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Audit 2026-09-23, wave 6      | `EN COURS`          | SEO: `app/sitemap.ts` (30 URLs, hreflang + x-default), `app/robots.ts`, canonical and alternates on all 15 public pages, JSON-LD where there was none, metadata on the four legal pages and `robots: noindex` on the six auth pages. Both files read `APP_ENV`, never `NODE_ENV`. Unmerged; pending proof is `/robots.txt` and `/sitemap.xml` read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -5449,6 +5450,62 @@ copy names KAMNET without the mark: 16 strings per language in
 everywhere. The emails are their own subject, with their own tests. The
 hardcoded-copy debt files of `I43` are not read by this guard, and after this
 change none of them names a product unmarked.
+
+### P25 - one unstyled MDX table, and two consent sentences split into columns - `EN COURS`
+
+**Cost impact: None.**
+
+**Pending:** the "after" screenshots from dev, at phone and desktop width, in
+both languages, against the "before" set taken on 25 September.
+
+**The report, and the hypothesis measured rather than believed.** Visquis saw the
+price table on `/products/verify` render "Vérification externe (terrain trouvé
+par vous)99 €". The brief suspected Next was not finding
+`apps/web/mdx-components.tsx`, which would leave all eight MDX pages unstyled.
+
+**The hypothesis is false.** The deployed HTML on dev (`sha-383828e`) is its own
+sentinel: every MDX heading carries the mapping's classes (`mt-10 mb-4 text-xl
+font-semibold text-gray-900`), and so does the rule. Only `<table>`, `<th>` and
+`<td>` came out bare: cell padding measured 0 px at both widths, in both
+languages. `@next/mdx` looks for the file at the project root, which is where it
+is, and the Next docs agree.
+
+**The cause:** MDX runs the component map over elements it builds from Markdown.
+A lowercase tag written literally, as the verify table was, is emitted as it
+stands. It was the only literal HTML in the sixteen MDX files. Markdown table
+syntax would need GFM. `remark-gfm` is a declared dependency but not enabled, and
+enabling it would change how all eight pages parse (autolinks, strikethrough),
+which is its own decision. So each table renderer is now defined once in
+`mdx-components.tsx` and offered under two names, `table` for Markdown and
+`Table` for MDX written as tags. MDX resolves capitalised tags through the same
+map. The verify table uses `<Table>`, `<Th>` and `<Td>`.
+
+**The footer, looked at before changing it.** At both widths and in both
+languages, the newsletter consent read as four side-by-side fragments. At phone
+width in French: the sentence, then "politique de / confidentialité" squeezed
+into 80 px, then "et au", then "RGPD". Nothing was clipped. The shared `Label` is
+a flex container, and the sentence was handed to it as loose children, so flex
+made each fragment a column. The contact form's consent had the same structure
+and the same defect: at phone width in English, "privacy policy" sat in 47 px.
+Both sentences are now one inline element inside the label.
+
+**Guards, watched red on develop first:**
+
+- `content/mdx-literal-html.spec.tsx` reads every MDX file and refuses any tag
+  the map styles, written literally. On develop it named the twelve tags of the
+  verify table, fr and en. It also pins each capitalised alias to the same
+  renderer as its lowercase element;
+- the newsletter and contact specs pin the label to a single child holding the
+  links. Both failed against develop's components (7 and 3 children).
+
+**Screenshots, "before", from dev** (Playwright, iPhone 13 emulation and a
+1280 px desktop; kept out of the repository): the verify table, the footer and
+the contact consent, fr and en, phone and desktop.
+
+**Found, not changed:** every price on the public site is in euros only: `99 €`
+on the verify page and `249€` in the KBS enrolment notice, in both languages, for
+services sold in Cameroon. As the brief says, naming these is useful and
+changing them is not ours to do.
 
 ---
 

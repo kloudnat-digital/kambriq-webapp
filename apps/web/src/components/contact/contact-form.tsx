@@ -305,14 +305,17 @@ export const ContactForm = () => {
               )}
             />
             <Label htmlFor="c-consent" className="text-sm leading-relaxed font-normal">
-              {t('consentBefore')}
-              <Link
-                href={PRIVACY_POLICY_PATH}
-                className="text-primary-600 underline underline-offset-2"
-              >
-                {t('consentLink')}
-              </Link>
-              {t('consentAfter')}
+              {/* P25: one inline element, or the flex label lays out each fragment as a column. */}
+              <span>
+                {t('consentBefore')}
+                <Link
+                  href={PRIVACY_POLICY_PATH}
+                  className="text-primary-600 underline underline-offset-2"
+                >
+                  {t('consentLink')}
+                </Link>
+                {t('consentAfter')}
+              </span>
             </Label>
           </div>
           {errors.consent && (
