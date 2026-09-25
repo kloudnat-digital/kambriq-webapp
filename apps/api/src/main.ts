@@ -10,6 +10,7 @@ import {
   robotsHeaderMiddleware,
   TransformResponseInterceptor,
   ZodExceptionFilter,
+  servesApiDocs,
 } from '@kambriq/common';
 
 async function bootstrap() {
@@ -63,7 +64,9 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TransformResponseInterceptor()); // Wrap responses in a consistent format
 
   // ----- Swagger ----------
-  if (process.env.NODE_ENV !== 'production') {
+  // A43: only where APP_ENV declares a local environment - never on dev, whose
+  // NODE_ENV=development is exactly a laptop's. See libs/common/src/config/api-docs.ts.
+  if (servesApiDocs(process.env)) {
     const config = new DocumentBuilder()
       .setTitle('KAMBRIQ API')
       .setDescription('KAMBRIQ Platform Backend API')
@@ -96,7 +99,7 @@ async function bootstrap() {
 
   const logger = app.get(Logger);
   logger.log(`🚀 KAMBRIQ API running on http://localhost:${port}/${prefix}`);
-  if (process.env.NODE_ENV !== 'production') {
+  if (servesApiDocs(process.env)) {
     logger.log(`📖 Swagger docs: http://localhost:${port}/${prefix}/docs`);
   }
 }

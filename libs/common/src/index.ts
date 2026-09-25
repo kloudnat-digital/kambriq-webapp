@@ -159,3 +159,6 @@ export {
   isUnlistedDepartment,
 } from './lands/title-number';
 export type { TitleNumber } from './lands/title-number';
+
+// ----- API documentation (A43) -----
+export { LOCAL_APP_ENV, servesApiDocs } from './config/api-docs';
