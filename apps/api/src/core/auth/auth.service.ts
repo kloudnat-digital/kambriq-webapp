@@ -580,11 +580,17 @@ export class AuthService {
       ? this.config.get<StringValue>('JWT_REFRESH_EXPIRATION', '30d')
       : '24h';
 
+    // A47. `jwtid` makes every token unique. Without it, two tokens issued for
+    // the same user in the same second were byte-identical - same claims, same
+    // `iat`, same `exp` - and a refresh token's hash then hit the unique index:
+    // a 409 on dev for a refresh made in the same second as its login.
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: accessExpiration,
+      jwtid: crypto.randomUUID(),
     });
     const refreshToken = this.jwtService.sign(payload, {
       expiresIn: refreshExpiration,
+      jwtid: crypto.randomUUID(),
     });
 
     const accessExpiresAt = new Date(Date.now() + this.parseExpiry(accessExpiration));

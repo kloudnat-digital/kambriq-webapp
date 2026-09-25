@@ -1,6 +1,7 @@
 import { type NextAuthConfig } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { visitorHeaders } from './lib/api/visitor-headers';
+import { refreshSession } from './lib/auth/refresh-session';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'; // fallback for local dev only
 
@@ -141,30 +142,22 @@ export default {
         return token;
       }
 
-      // Access token expired - ask the NestJS backend for a new one
-      try {
-        const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...(await visitorHeaders()) },
-          body: JSON.stringify({ refreshToken: token.refreshToken }),
-        });
-
-        if (!res.ok) throw new Error(`Refresh failed: ${res.status}`);
-
-        const { data } = await res.json();
-
-        return {
-          ...token,
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken ?? token.refreshToken,
-          accessExpiresAt: new Date(data.accessExpiresAt).getTime(),
-          error: undefined,
-        };
-      } catch {
-        // Refresh failed (token revoked, server down, etc.)
-        // Signal to the app that the session is broken → redirect to login
-        return { ...token, error: 'RefreshTokenError' as const };
+      // A47. The API refused this refresh token: asking again only repeats the
+      // refusal, and on a public page nothing redirects, so it used to be asked
+      // on every page load. The session is over until the person signs in.
+      if (token.error === 'RefreshTokenError' && token.refreshRefused) {
+        return token;
       }
+
+      // Shared across concurrent reads of the same session - see refresh-session.ts.
+      const outcome = await refreshSession(API_URL, token.refreshToken);
+      if (outcome.ok) {
+        return { ...token, ...outcome.tokens, error: undefined, refreshRefused: undefined };
+      }
+      // Refused, or failed (server down, network): either way the session is
+      // broken for this request, and the app redirects to login. Only a refusal
+      // stops later requests from trying again.
+      return { ...token, error: 'RefreshTokenError' as const, refreshRefused: outcome.refused };
     },
 
     /**

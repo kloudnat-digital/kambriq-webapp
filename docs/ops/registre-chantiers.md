@@ -4320,6 +4320,13 @@ green, journeys and E2E included):
 400, before A45 as after it. That is why NextAuth retries it in bursts. When
 refresh works again, the measured peak will fall, and 30 will be generous.
 
+> **Corrected on 25 September (A47).** "Every refresh answers 400" was measured
+> over a 16-hour window and written as if it described the route. Over 7 days
+> the web's refreshes answered 200 x3, 409 x2 and 400 x59: refresh worked one
+> call at a time and failed in bursts. The cause is recorded under **A47**. The
+> sentence above is kept, because the correction only means something beside
+> the claim it corrects.
+
 ---
 
 ### A46 - log hygiene - `PROUVE`
@@ -4348,6 +4355,84 @@ result meaning. The web's log group: nothing.
 
 Lines written before the deploy expire with the log group's 7-day retention.
 Deleting them is a decision for Visquis, not for this subject.
+
+---
+
+### A47 - a session survives its access token's expiry - `EN COURS`
+
+**Cost impact: None.**
+
+**The brief's premise, corrected first.** "`/auth/refresh` answers 400 every
+time" was my own report of 24 September, measured over 16 hours. Over the
+API's 7-day log the web's refreshes answered 200 x3, 409 x2 and 400 x59.
+Refresh worked one call at a time. It failed in bursts, and in a way that
+reached the user. The brief asked for the cause among four candidates: what the
+route expects, what the web sends, where the token is kept, and whether it
+reaches the API. It is none of them. The route expects a token in the body, the
+web sends one, and it reaches the API, which then rejects it (the 184-byte "invalide ou
+expiré" body, not the 171-byte "absent" one). The API itself refreshes correctly
+when called once after a pause (200, 200, then the replayed old token 400).
+
+**Three defects, each measured on dev before anything changed:**
+
+1. **Concurrent refreshes with a single-use token.** One navigation reads the
+   session several times at once - the proxy, the page, the root layout,
+   server actions - and each read of an expired session refreshed with the
+   same token. The API log shows it on 20 September (200, then 400 16 ms later)
+   and on 21 September (200, then 409 twice, then 400s). In a real browser on
+   25 September, one navigation to `/mylands` made three refreshes in 27 ms:
+   200, 400, 400.
+2. **Refreshes that are never saved.** Only the proxy writes the session cookie
+   back. A plain `auth()` in a page or an action drops the `set-cookie`: next-auth
+   `lib/index.js` returns `getSession(...).then(r => r.json())`. The root layout
+   calls `auth()` on every page, so a refresh on a page outside the proxy's
+   matcher was thrown away, and the browser kept a token that had just been
+   revoked.
+3. **Two tokens in the same second were identical.** Same claims, same `iat`,
+   same `exp`, so a refresh made in the same second as its login answered 409:
+   the new token's hash hit the unique index.
+
+**The journeys never exercised refresh.** No call to `/auth/refresh` and no
+journey longer than the 15-minute access token, which is why they passed.
+
+**The fix:**
+
+- `lib/auth/refresh-session.ts`: the web server remembers what each refresh
+  token was exchanged for. A request follows that chain to the newest tokens,
+  refreshes only when those are due and with their own token, and shares one
+  call between every request asking at the same moment. A stale cookie then
+  leads to the current tokens, and it catches up when the proxy next runs.
+- A refused session stops asking. A transient failure is retried.
+- The API gives every token a `jwtid`.
+- The map is in the web server's memory. A restart forgets it and falls back to
+  today's behaviour; with several web tasks, each keeps its own. One task runs
+  on dev.
+
+**Proof so far:**
+
+- `auth-refresh.spec.ts` calls the real `jwt` callback: 7 tests, red first
+  (three calls for three concurrent reads; a second call with the old token; a
+  refused session asking again).
+- `token-uniqueness.spec.ts` uses the real `JwtService`, red first: identical
+  tokens.
+- Journey 1 now refreshes straight after its login, rotates again, and has the
+  used token refused. Run against dev before the fix: `Expected 200, Received 409`.
+- Mutations, each observed failing on its own:
+  - web: sharing removed at the point it happens; an exchange forgotten when it
+    settles; a refused session asking again; a transient failure remembered; a
+    refusal treated as transient; the chain not followed; due tokens returned
+    as current; the refresh fetch without the visitor headers;
+  - API: `jwtid` removed from the refresh token, and from the access token.
+- One check inside `exchange` never failed under mutation, because the chain
+  lookup already covered it. It was removed.
+
+**A41's limit.** 30 was chosen from a peak of 15 produced by these bursts. Once
+concurrent reads share one call, a person refreshes about once per access
+token, so 30 is generous rather than wrong, and it is left alone.
+
+**Pending, named:** after the merge, on dev, a real browser session that outlives
+its access token while browsing public pages and then opens a protected one,
+and the journeys green.
 
 ---
 
