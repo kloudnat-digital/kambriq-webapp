@@ -28,5 +28,8 @@
   },
   "avatar": {
     "notOwnKey": "A profile photo must be uploaded from your account, with the upload button."
+  },
+  "idDocument": {
+    "notOwnKey": "Identity documents must be uploaded from your account, with the upload button."
   }
 }

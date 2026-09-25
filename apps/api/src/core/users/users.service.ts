@@ -44,7 +44,7 @@ import { I18nService } from 'nestjs-i18n';
 import crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 
-import { avatarKey, isOwnAvatarKey, safeFileName } from './avatar-key';
+import { isOwnUserFileKey, safeFileName, userFileKey } from './storage-keys';
 
 @Injectable()
 export class UsersService {
@@ -68,7 +68,7 @@ export class UsersService {
     // A44: an avatar is a key the upload route issued to this person, or empty
     // to remove it. Refused before anything is written, on both paths that end
     // here - `PATCH /users/me` and the KAMNET agent profile.
-    if (dto.avatarUrl && !isOwnAvatarKey(userId, dto.avatarUrl)) {
+    if (dto.avatarUrl && !isOwnUserFileKey(userId, 'avatar', dto.avatarUrl)) {
       const lang = dto.language ?? (await this.findByIdOrThrow(userId)).preferredLanguage ?? 'fr';
       throw new BadRequestException(this.t('user.avatar.notOwnKey', lang));
     }
@@ -107,15 +107,13 @@ export class UsersService {
 
   // ----- Get avatar upload URL ---------------------------------------
   async getAvatarUploadUrl(userId: string, dto: AvatarUploadUrlDto) {
-    const key = avatarKey(userId, Date.now(), safeFileName(dto.filename));
+    const key = userFileKey(userId, 'avatar', Date.now(), safeFileName(dto.filename));
     return this.storage.getUploadUrl(key, dto.contentType);
   }
 
   // ----- Get ID Document upload URL ---------------------------------------
   async getIdDocumentUploadUrl(userId: string, dto: IdDocumentUploadUrlDto) {
-    const timestamp = Date.now();
-    const name = safeFileName(dto.filename);
-    const key = this.storage.buildKey('users', userId, 'id-documents', `${timestamp}-${name}`);
+    const key = userFileKey(userId, 'id-documents', Date.now(), safeFileName(dto.filename));
     return this.storage.getUploadUrl(key, dto.contentType);
   }
 
@@ -798,6 +796,13 @@ export class UsersService {
 
   // ----- Submit ID document (user) --------------------------------
   async submitIdDocument(userId: string, dto: SubmitIdDocumentDto) {
+    // A49: each document is a key the upload route issued to this person, in
+    // their id-documents folder - the A44 rule, refused before anything is read.
+    if (dto.idDocumentUrls.some((key) => !isOwnUserFileKey(userId, 'id-documents', key))) {
+      const lang = (await this.prisma.user.findUnique({ where: { id: userId } }))
+        ?.preferredLanguage;
+      throw new BadRequestException(this.t('user.idDocument.notOwnKey', lang || 'fr'));
+    }
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { preferredLanguage: true, profile: { select: { idVerificationStatus: true } } },
