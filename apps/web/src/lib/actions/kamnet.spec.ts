@@ -20,6 +20,14 @@ jest.mock('@/lib/api/server', () => {
   };
 });
 jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }));
+// The revalidated path is built with the request's locale, which is read from
+// the referer and then the locale cookie. Without this the resolution throws,
+// `revalidatePath` is never reached, and the assertion below reads
+// "Number of calls: 0" - which looks like the action not revalidating at all.
+jest.mock('next/headers', () => ({
+  headers: () => Promise.resolve(new Headers()),
+  cookies: () => Promise.resolve({ get: () => undefined }),
+}));
 // winston's console transport schedules with setImmediate, which jsdom lacks.
 jest.mock('@/lib/logger', () => ({ logger: { error: jest.fn() } }));
 
@@ -232,7 +240,11 @@ describe('kamnet actions: leads', () => {
     await updateLead('l1', { status: 'CONTACTED' }, '/agent/prospects');
 
     expect(patch).toHaveBeenCalledWith('/kamnet/leads/l1', { status: 'CONTACTED' });
-    expect(revalidatePath).toHaveBeenCalledWith('/agent/prospects');
+    // The caller passes an unprefixed path, because next-intl's usePathname
+    // strips the locale. revalidatePath matches on the route file structure, so
+    // the prefix has to be put back or it invalidates nothing. See
+    // lib/actions/revalidate.ts.
+    expect(revalidatePath).toHaveBeenCalledWith('/fr/agent/prospects');
   });
 
   it('does not revalidate when no path is given', async () => {

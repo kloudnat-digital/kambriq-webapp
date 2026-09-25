@@ -1,5 +1,5 @@
 import { MapPin, Network, Building2, ArrowRight, Signature } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { getTranslations } from 'next-intl/server';
 
 import { Button } from '@/components/ui/button';

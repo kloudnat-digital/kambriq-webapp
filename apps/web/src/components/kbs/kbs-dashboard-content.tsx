@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { ArrowRight, BookOpen, CheckCircle2, GraduationCap, Lock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';

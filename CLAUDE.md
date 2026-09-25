@@ -1954,6 +1954,40 @@ hours: `migrate diff` has no `--from-url` and requires `--config`;
 request-body fields; PostgreSQL does not. All 47 seeded ids were rejected by the
 API until the version nibble became `4` and the variant `8`.
 
+### Every URL carries its locale, and the gate is asked positively
+
+`localePrefix: 'always'`, configured once in `apps/web/src/i18n/routing.ts`.
+Every page lives under `app/[locale]/`, which is also the **root layout** - there
+is deliberately no `app/layout.tsx`, because two files rendering `<html>` is
+invalid and the locale has to be readable where `lang` is set.
+
+**Navigation goes through `@/i18n/navigation`.** `next/link` and
+`next/navigation`'s `useRouter`, `usePathname` and `redirect` know nothing about
+the prefix, so they produce URLs that resolve to nothing.
+`no-unlocalised-navigation.spec.ts` bans them, and bans a hardcoded `/fr` in an
+href first - the outcome before the mechanism. `notFound` and `useSearchParams`
+stay on `next/navigation`: they carry no pathname, so no locale can be lost
+through them.
+
+**Two differences bite at the call site.** `usePathname` returns the path
+**without** the prefix, so comparisons against route constants work unchanged.
+`redirect` requires an explicit `locale` - `getLocale()` in a Server Component,
+`currentLocale()` from `lib/locale.ts` anywhere else, because a Server Action
+carries no `[locale]` segment and `getLocale()` would quietly answer with the
+default.
+
+**The proxy asks `isProtected()`, never `!isPublic()`.** The matcher has to see
+the public paths in order to redirect an unprefixed URL to a locale, so being
+matched no longer implies being protected. Negation under that wider matcher is
+`P3` reintroduced: every typo becomes a members' area. The partition is the
+guard - `middleware-matcher.spec.ts` fails when a route on disk is neither
+public nor covered by `PROTECTED_PREFIXES`, and names it.
+
+**The matcher stays a positive list**, in three locale entries plus the public
+and protected prefixes unprefixed. next-intl documents a negative lookahead for
+this file and it is not used; the refusal is written at the matcher, because
+somebody will read those docs.
+
 ### `PUBLIC_PATHS` matches on prefix
 
 `isPublic` matches `p` or `p + '/'`, so `/legal` is what makes `/legal/privacy`,
@@ -2212,6 +2246,170 @@ Two things beside it, both measured:
   with jest's default worker count. `--parallel=1` measured _faster_ (55 s, 55 s,
   49 s against 63 s) and deterministic, so `test` and `test:cov` now carry it.
   Parallelism that thrashes is slower than none.
+
+### A library's documented default can be the defect you already removed
+
+From wave 5. next-intl's own documentation gives this for `proxy.ts`:
+
+```
+matcher: '/((?!api|trpc|_next|_vercel|.*\..*).*)'
+```
+
+That is the **exact** negative pattern `P3` deleted, and the defect it removed:
+the proxy runs on every URL the site does not serve, finds it is not public, and
+sends it to a login page. Following the documentation would have reintroduced a
+catalogued defect, in a file whose own comment explains why it must not exist.
+
+The positive list survives the locale move, and that was established before
+anything was written by compiling candidates through **Next's own parser**
+(`next/dist/lib/try-to-parse-path`, which `getMiddlewareMatchers` calls):
+
+```
+/(fr|en)/admin/:path*  ->  ^(?:\/(fr|en))\/admin(?:\/(...))?[\/#\?]?$
+true /fr/admin   true /en/admin   false /de/admin
+true /admin      false /pricing   false /administration
+```
+
+**A documented default is a claim about the general case, and this repository is
+a particular case with its reasons written down.** Read the local reason before
+adopting the recommendation, and when you refuse one, say in the file that you
+refused it and why - otherwise the next person reads the docs, sees a mismatch,
+and "fixes" it.
+
+### The framework ships a tester for its own matcher, and its docs name it wrong
+
+Also wave 5. `middleware-matcher.spec.ts` carried a hand-written `compile()`: a
+small regex translator for the two matcher shapes the repo used, which returned
+`null` for anything else. It was careful, it named its own limits, and it was
+still **a second implementation of somebody else's parser** - and a wrong model
+reports a protected route as covered.
+
+Next exports `unstable_doesMiddlewareMatch` from
+`next/experimental/testing/server`, which answers with the code that decides at
+runtime. It needs `@jest-environment node`, because it constructs a real
+`Request` and jsdom has none.
+
+**And the documentation for 16.3.6 calls it `unstable_doesProxyMatch`.** That
+name appears in exactly one place in the installed package - the bundled copy of
+that same documentation page - and in no shipped JavaScript. The docs were read
+first, the package second, and only the second is what runs.
+
+**Read the docs for the intent and the shipped `.d.ts` for the signature.** A
+doc page will not tell you a default is a negative matcher; a type will not tell
+you what the thing is for. Neither is optional, and where they disagree the
+package wins.
+
+### Moving the root layout under a dynamic segment removes the boundary above it
+
+From wave 5, found by a browser test and invisible to 432 unit tests.
+
+`app/layout.tsx` was deleted and `app/[locale]/layout.tsx` became the root
+layout - which Next documents for internationalisation. `/fr/zzz-does-not-exist`
+then answered **404 with Next's built-in page**, not the one `P3` built with
+links back into the site.
+
+Two separate causes, and the first hid the second:
+
+- `not-found.tsx` is a **boundary**, and something has to trigger it. An
+  unmatched URL under a matched dynamic segment triggers nothing, so it falls
+  through to the built-in page. `[locale]/[...rest]/page.tsx` calling
+  `notFound()` is what closes it.
+- A `notFound()` thrown **from the root layout** has no boundary above it. So an
+  unconfigured first segment still gets the built-in page, and closing that needs
+  `experimental.globalNotFound`, which is off by default. It is left open, with
+  the difference pinned in both directions so it is a known bound.
+
+**The status code was 404 throughout, which is why nothing reported it.** The
+assertion the suite already had - and the right one - is about the status; the
+page is a second property, and it needed a test of its own.
+
+### A path that crosses a boundary unprefixed invalidates nothing
+
+From wave 5. Client components read their path from next-intl's `usePathname`,
+which returns it **without** the locale - `/account`, never `/fr/account` - and
+passed it to a server action that called `revalidatePath(path)`.
+
+`revalidatePath` matches on the **route file structure**, so an unprefixed path
+matched nothing once every page moved under `[locale]`. Nothing reports it: the
+mutation still succeeds, the action still returns `{success: true}`, and the
+screen simply goes on showing the old value. Forty call sites, one silent class
+of staleness.
+
+Fixed in one place rather than forty - `revalidateLocalisedPath` puts the
+request's locale back - and the spec that caught it now expects
+`/fr/agent/prospects`. **When a value is produced in one layer and consumed in
+another, ask what the consumer matches it against**, not what the producer meant.
+
+### An async helper that answers with a default where it cannot know
+
+Also wave 5, and it was one line from shipping. `getLocale()` resolves the locale
+from the rendered `[locale]` segment. **A Server Action is a POST handled outside
+that render**, so nothing populates it - and it does not fail. It returns the
+default locale.
+
+So `redirect({href: '/login', locale: await getLocale()})` inside a server action
+would have sent every English visitor into French, correctly typed, with a green
+suite. next-intl's own documentation says it in one line - _"the locale is not
+picked up automatically"_ - on a page about something else.
+
+`lib/locale.ts` reads the `referer` first, because on a Server Action that is the
+page the visitor submitted from, and falls back to the locale cookie. **A helper
+that cannot know the answer and returns a plausible one is the "reports success
+by saying nothing" family, wearing a return value instead of a silence.**
+
+### Control flow thrown as an error, and logged as a failure
+
+From wave 5, found by reading a build that exited 0. `next build` printed
+**sixteen** `UnhandledServerActionError` lines, from the application's own
+logger, for routes doing exactly the right thing.
+
+Next signals redirects, `notFound()` and a bail-out to dynamic rendering by
+**throwing**, with the reason in `error.digest`. `createAction` recognised
+`NEXT_REDIRECT` and only that, so the other two were logged at `error` and
+rethrown. The digests were read from the shipped package rather than remembered:
+`NEXT_REDIRECT`, `NEXT_HTTP_ERROR_FALLBACK` (which carries `notFound`,
+`forbidden` and `unauthorized`) and `DYNAMIC_SERVER_USAGE`.
+
+**The cost is not the noise.** It is that a real unhandled error in that log is
+indistinguishable from normal operation - the same shape as
+[a barrier that fires correctly still has to be reported correctly](#a-barrier-that-fires-correctly-still-has-to-be-reported-correctly),
+one layer down. 16 lines to 0, proved by rebuilding.
+
+### TypeScript will not narrow through a `never` it was handed indirectly
+
+`redirect` from next-intl **is** declared as returning `never`, and it does - it
+delegates to Next's `redirect`, which throws. But it arrives as
+`export const { redirect } = createNavigation(routing)`, a binding destructured
+from a call, and TypeScript narrows control flow through a `never`-returning call
+only when the callee's declaration carries an **explicit type annotation**.
+
+The compiler therefore reported `'candidate' is possibly 'null'` at six call
+sites and `A function returning 'never' cannot have a reachable end point` at a
+seventh - seven errors describing the same missing annotation, none of them
+naming it. One line fixes all seven:
+
+```ts
+export const redirect: typeof navigation.redirect = navigation.redirect;
+```
+
+**When several unrelated call sites break at once, suspect the declaration they
+share**, not each of them.
+
+### A transform allowlist copied from npm does not work under pnpm
+
+next-intl is ESM-only, and its documentation gives
+`transformIgnorePatterns: ['node_modules/(?!next-intl)/']`. Under pnpm a real
+path is
+`node_modules/.pnpm/next-intl@4.8.3_.../node_modules/next-intl/dist/...`, and the
+pattern is **unanchored** - so it matches at the first `node_modules/`, the one
+followed by `.pnpm`, and the file is ignored after all. The failure reads as
+next-intl being broken.
+
+`node_modules/(?!.*(?:next-intl|use-intl|@formatjs|intl-messageformat|icu-minify|@schummar))`
+asks whether the whole remaining path mentions one of them, so it answers the
+same at every `node_modules/` in it. **And the list is the dependency chain, not
+the package you imported**: each one surfaces only once the one above it is
+transformed, and a short list fails with the next package's name.
 
 ## 9. Code Comments and Documentation Tone
 

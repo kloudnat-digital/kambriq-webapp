@@ -1,8 +1,8 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { KAMNET_MAX_SPONSORSHIP_DEPTH } from '@kambriq/common/constants/kamnet';
 import { ApiError, serverApi } from '@/lib/api/server';
+import { revalidateLocalisedPath } from './revalidate';
 import { createAction, ServerActionError } from './create-action';
 import type {
   Commission,
@@ -70,7 +70,7 @@ export const updateMyAgentProfile = createAction(
   async (data: UpdateAgentProfileInput, revalidate?: string) => {
     try {
       const result = await serverApi.patch<MyAgentProfile>('/kamnet/agents/me', data);
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -104,7 +104,7 @@ export const getLead = createAction(async (leadId: string) => {
 export const createLead = createAction(async (data: CreateLeadInput, revalidate?: string) => {
   try {
     const result = await serverApi.post<Lead>('/kamnet/leads', data);
-    if (revalidate) revalidatePath(revalidate);
+    if (revalidate) await revalidateLocalisedPath(revalidate);
     return result;
   } catch (error) {
     throw new ServerActionError(
@@ -121,7 +121,7 @@ export const updateLead = createAction(
         `/kamnet/leads/${encodeURIComponent(leadId)}`,
         data,
       );
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -135,7 +135,7 @@ export const updateLead = createAction(
 export const deleteLead = createAction(async (leadId: string, revalidate?: string) => {
   try {
     const result = await serverApi.delete(`/kamnet/leads/${encodeURIComponent(leadId)}`);
-    if (revalidate) revalidatePath(revalidate);
+    if (revalidate) await revalidateLocalisedPath(revalidate);
     return result;
   } catch (error) {
     throw new ServerActionError(

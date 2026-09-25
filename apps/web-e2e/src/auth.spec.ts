@@ -93,11 +93,13 @@ test.describe('Authentication', () => {
       'a path the site does not serve must 404; while it redirected, this test proved nothing',
     ).toBe(404);
 
-    const protectedRoute = await request.get('/agent/dashboard', { maxRedirects: 0 });
+    // Locale-prefixed, because an unprefixed URL is redirected to a locale
+    // first and the first response would say nothing about the gate.
+    const protectedRoute = await request.get('/fr/agent/dashboard', { maxRedirects: 0 });
     expect(protectedRoute.status()).toBe(307);
-    expect(protectedRoute.headers()['location']).toContain('/login');
+    expect(protectedRoute.headers()['location']).toContain('/fr/login');
 
-    await page.goto('/agent/dashboard');
+    await page.goto('/fr/agent/dashboard');
     await expect(page).toHaveURL(/login/);
   });
 
@@ -169,5 +171,26 @@ test.describe('Authentication', () => {
 
     const cookies = await page.context().cookies();
     expect(cookies.some((c) => c.name.includes('session-token'))).toBe(true);
+
+    /**
+     * The API bearer token must not be in what the browser was sent.
+     *
+     * The root layout passed the whole `auth()` result into `<Providers>`,
+     * which is a Client Component, so the token was serialised into the RSC
+     * payload of every authenticated page. `lib/session.spec.ts` proves the
+     * function that strips it and the call site that uses it; this is the only
+     * check that reads what a browser actually received, which is the thing
+     * that was wrong.
+     *
+     * The field NAME is asserted rather than the value: the value is not
+     * knowable from here - it lives inside an encrypted cookie - and a payload
+     * that carries no `accessToken` key cannot be carrying its value.
+     */
+    const delivered = await page.content();
+    expect(delivered).not.toContain('accessToken');
+
+    // And the session endpoint the client refetches from, which strips it too.
+    const sessionResponse = await page.request.get('/api/auth/session');
+    expect(await sessionResponse.text()).not.toContain('accessToken');
   });
 });

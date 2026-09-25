@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { Link } from '@/i18n/navigation';
+import { useRouter, usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';

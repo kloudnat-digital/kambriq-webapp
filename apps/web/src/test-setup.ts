@@ -70,14 +70,21 @@ if (!('DOMRect' in globalThis)) {
   } as unknown as typeof DOMRect;
 }
 
-// Pointer capture: Radix's Select trigger calls these on every pointer down.
-if (!Element.prototype.hasPointerCapture) {
-  Element.prototype.hasPointerCapture = () => false;
-  Element.prototype.setPointerCapture = () => undefined;
-  Element.prototype.releasePointerCapture = () => undefined;
-}
+// The stubs below touch `Element`, which exists only under jsdom. A spec that
+// declares `@jest-environment node` - the matcher spec does, because Next's
+// matcher tester needs the real `Request` - would otherwise die here on
+// `ReferenceError: Element is not defined`, before a single test ran, and
+// report a broken setup file rather than a wrong environment.
+if (typeof Element !== 'undefined') {
+  // Pointer capture: Radix's Select trigger calls these on every pointer down.
+  if (!Element.prototype.hasPointerCapture) {
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.setPointerCapture = () => undefined;
+    Element.prototype.releasePointerCapture = () => undefined;
+  }
 
-// Called when the Select viewport brings the highlighted option into view.
-if (!Element.prototype.scrollIntoView) {
-  Element.prototype.scrollIntoView = () => undefined;
+  // Called when the Select viewport brings the highlighted option into view.
+  if (!Element.prototype.scrollIntoView) {
+    Element.prototype.scrollIntoView = () => undefined;
+  }
 }

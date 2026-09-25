@@ -17,26 +17,38 @@ import { test, expect } from '@playwright/test';
  * raw HTTP client - which does not, and reports the first response.
  */
 
-/** URLs the site does not serve. Each answered 307 -> /login before P3. */
-const UNKNOWN_PUBLIC_PATHS = [
-  '/zzz-does-not-exist',
-  '/pricing',
-  '/tarifs',
-  '/robots.txt',
-  '/sitemap.xml',
-  '/legal/does-not-exist',
-];
+/**
+ * URLs the site does not serve, in unprefixed form. Each answered 307 -> /login
+ * before P3, and each must answer 404 now.
+ *
+ * None of these is in the proxy matcher, so the request never reaches the
+ * proxy: `[locale]` matches the first segment, `dynamicParams = false` refuses
+ * a value that is not a configured locale, and Next answers 404 directly.
+ */
+const UNKNOWN_PUBLIC_PATHS = ['/zzz-does-not-exist', '/pricing', '/tarifs'];
 
-/** Routes that must go on refusing an anonymous visitor. */
+/**
+ * Unknown URLs UNDER a prefix the matcher does carry.
+ *
+ * `/legal/:path*` is matched so that `/legal/privacy` can be redirected to a
+ * locale, which means an unknown path beneath it is redirected first and 404s
+ * on the second request. Both hops are asserted: stopping at the 307 would not
+ * distinguish this from a login wall.
+ */
+const UNKNOWN_UNDER_A_MATCHED_PREFIX = ['/legal/does-not-exist', '/blog/a-post-that-moved'];
+
+/** Routes that must go on refusing an anonymous visitor, locale and all. */
 const PROTECTED_PATHS = [
-  '/mylands',
-  '/account',
-  '/admin/payments',
-  '/agent/dashboard',
-  '/kbs/enroll',
-  '/kamnet/apply',
-  '/lands',
-  '/settings',
+  '/fr/mylands',
+  '/fr/account',
+  '/fr/admin/payments',
+  '/fr/agent/dashboard',
+  '/fr/kbs/enroll',
+  '/fr/kamnet/apply',
+  '/fr/lands',
+  '/fr/settings',
+  '/en/mylands',
+  '/en/admin/payments',
 ];
 
 for (const path of UNKNOWN_PUBLIC_PATHS) {
@@ -54,20 +66,40 @@ for (const path of UNKNOWN_PUBLIC_PATHS) {
   });
 }
 
+for (const path of UNKNOWN_UNDER_A_MATCHED_PREFIX) {
+  test(`${path} reaches a 404 through the locale redirect, not a login wall`, async ({
+    request,
+  }) => {
+    const first = await request.get(path, { maxRedirects: 0 });
+    expect(first.status()).toBe(307);
+
+    const location = first.headers()['location'];
+    // The whole point: it is sent to a locale, never to login. A negation-based
+    // gate under the wider matcher would send it to login instead.
+    expect(location).toMatch(/\/(fr|en)\//);
+    expect(location).not.toContain('/login');
+
+    const second = await request.get(location, { maxRedirects: 0 });
+    expect(second.status()).toBe(404);
+  });
+}
+
 for (const path of PROTECTED_PATHS) {
   test(`${path} still refuses an anonymous visitor`, async ({ request }) => {
     const response = await request.get(path, { maxRedirects: 0 });
 
-    // Narrowing a matcher is the dangerous direction. This is the assertion
-    // that would catch a narrowing that went too far: the page must NOT be
-    // served, and it must send the visitor to the login page.
+    // Narrowing a gate is the dangerous direction. This is the assertion that
+    // would catch a narrowing that went too far: the page must NOT be served,
+    // and it must send the visitor to the login page of its own locale.
     expect(response.status()).toBe(307);
-    expect(response.headers()['location']).toContain('/login');
+    const location = response.headers()['location'];
+    expect(location).toContain('/login');
+    expect(location).toContain(`/${path.split('/')[1]}/login`);
   });
 }
 
 test('the 404 page offers a way back into the site', async ({ page }) => {
-  const response = await page.goto('/zzz-does-not-exist');
+  const response = await page.goto('/fr/zzz-does-not-exist');
   expect(response?.status()).toBe(404);
 
   // A dead end with no exit is the other half of the defect.
@@ -87,7 +119,7 @@ test('every response carries the noindex header outside production', async ({ re
    * can be varied - a deployed production site is not something a test may
    * conjure.
    */
-  for (const path of ['/', '/contact', '/zzz-does-not-exist']) {
+  for (const path of ['/', '/fr', '/fr/contact', '/fr/zzz-does-not-exist']) {
     const response = await request.get(path, { maxRedirects: 0 });
     expect(response.headers()['x-robots-tag']).toBe('noindex, nofollow');
   }

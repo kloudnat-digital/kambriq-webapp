@@ -1,7 +1,7 @@
 import type { FC, SVGProps } from 'react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { ArrowRight } from 'lucide-react';
 
 interface SharedHeroProps {

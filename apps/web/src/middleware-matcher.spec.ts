@@ -1,22 +1,33 @@
 /**
- * `next/server` needs web globals jsdom does not provide, and `./auth` reaches
- * for a NextAuth runtime. Both are stubbed exactly as `proxy.spec.ts` stubs
- * them: this file is about the exported `config`, not about Next internals.
+ * @jest-environment node
+ *
+ * Next's matcher tester constructs a real `Request`, which jsdom does not
+ * provide. This file asserts a routing table rather than any DOM, so it runs
+ * under node.
  */
-jest.mock('next/server', () => ({
-  NextResponse: { next: () => ({ kind: 'next' }), redirect: () => ({ kind: 'redirect' }) },
-}));
-jest.mock('./auth', () => ({ auth: (handler: unknown) => handler }));
-
-import { readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
-
-import { config } from './proxy';
-import { isPublic, PROTECTED_PREFIXES, REDIRECT_WHEN_AUTHED } from './routes';
 
 /**
- * P3 - **every route the app serves, and whether the middleware still guards
- * it.**
+ * `./auth` reaches for a NextAuth runtime and `next-intl/middleware` builds a
+ * real locale negotiator. Neither is the subject here: this file is about the
+ * exported `config` and the lists behind it.
+ */
+jest.mock('./auth', () => ({ auth: (handler: unknown) => handler }));
+jest.mock('next-intl/middleware', () => ({
+  __esModule: true,
+  default: () => () => undefined,
+}));
+
+import { existsSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { unstable_doesMiddlewareMatch } from 'next/experimental/testing/server';
+
+import { config } from './proxy';
+import { routing } from './i18n/routing';
+import { isProtected, isPublic, PROTECTED_PREFIXES, PUBLIC_PATHS, withLocale } from './routes';
+
+/**
+ * P3 - **every route the app serves, and whether the proxy still guards it.**
  *
  * Narrowing a matcher is the dangerous direction: the failure mode is a page
  * that used to require a session quietly becoming reachable by anyone, and
@@ -25,14 +36,39 @@ import { isPublic, PROTECTED_PREFIXES, REDIRECT_WHEN_AUTHED } from './routes';
  * `page.tsx` and `route.ts` on disk, and checks each one against the matcher
  * that actually ships.
  *
- * The rule it enforces is one sentence: **a route that `isPublic()` refuses
- * must be matched by the middleware.** If it is not, an anonymous request
- * reaches it, and the suite says which route by name.
+ * ---------------------------------------------------------------------------
+ * The matcher is compiled by Next, not modelled here
+ * ---------------------------------------------------------------------------
+ * This file used to carry its own `compile()` - a small regex translator for
+ * the two matcher shapes the repo happened to use, which threw on anything
+ * else. It was honest about its limits and it was still a second
+ * implementation of somebody else's parser, and a wrong model reports a
+ * protected route as covered.
+ *
+ * `unstable_doesMiddlewareMatch` is Next's own, from
+ * `next/experimental/testing/server`, and it answers with the same code that
+ * decides at runtime. It also removes the reason the old file needed a
+ * guard-on-the-guard: there is no shape it cannot model, so `/(fr|en)/:path*`
+ * needed no special case.
  */
 const APP_DIR = join(__dirname, 'app');
 
 /** Next's excluded infrastructure: not pages, and never intercepted. */
 const NOT_PAGES = ['/api', '/health'];
+
+/**
+ * Files under `app` that are routing machinery rather than pages.
+ *
+ * `[...rest]` is the catch-all that routes an unmatched path under a valid
+ * locale to `not-found.tsx`; it renders nothing and is reachable only by not
+ * matching anything else, so it belongs to neither list below. Named rather
+ * than pattern-matched away: a second catch-all appearing somewhere else is
+ * something this file should fail on, not absorb.
+ */
+const NOT_A_PAGE = ['/[...rest]'];
+
+/** The locale segment, which carries a language rather than a path. */
+const LOCALE_SEGMENT = '[locale]';
 
 const walk = (dir: string): string[] =>
   readdirSync(dir).flatMap((entry) => {
@@ -40,11 +76,20 @@ const walk = (dir: string): string[] =>
     return statSync(full).isDirectory() ? walk(full) : [full];
   });
 
-/** `app/(app)/admin/kbs/page.tsx` -> `/admin/kbs`. Route groups drop out. */
+/**
+ * `app/[locale]/(app)/admin/kbs/page.tsx` -> `/admin/kbs`.
+ *
+ * Route groups and the locale segment both drop out, for different reasons: a
+ * group never appears in a URL at all, and the locale appears in every URL, so
+ * neither distinguishes one route from another. Every list in `routes.ts` is
+ * written in this unprefixed form.
+ */
 const urlOf = (file: string): string => {
   const rel = file.slice(APP_DIR.length).replace(/\\/g, '/');
   const withoutFile = rel.replace(/\/(page|route)\.tsx?$/, '');
-  const segments = withoutFile.split('/').filter((s) => s !== '' && !/^\(.*\)$/.test(s));
+  const segments = withoutFile
+    .split('/')
+    .filter((s) => s !== '' && s !== LOCALE_SEGMENT && !/^\(.*\)$/.test(s));
   return segments.length === 0 ? '/' : `/${segments.join('/')}`;
 };
 
@@ -56,76 +101,57 @@ const ROUTES = [
   ),
 ]
   .filter((r) => !NOT_PAGES.some((p) => r === p || r.startsWith(`${p}/`)))
+  .filter((r) => !NOT_A_PAGE.includes(r))
   .sort();
 
-/**
- * Compiles one Next matcher entry into a regular expression.
- *
- * Only the two shapes this repo's matcher uses are supported - a literal path
- * and a trailing `/:path*` - and anything else **throws** rather than being
- * quietly treated as a literal. A matcher compiler that silently mis-reads a
- * pattern it does not understand would report a protected route as covered.
- *
- * `:path*` is zero-or-more segments, so `/admin/:path*` matches `/admin` too.
- * The shipped matcher lists both forms anyway; this models Next's behaviour
- * rather than relying on it.
- */
-const compile = (pattern: string): RegExp | null => {
-  if (/:[A-Za-z]+\*$/.test(pattern)) {
-    const base = pattern.replace(/\/:[A-Za-z]+\*$/, '');
-    return new RegExp(`^${base}(?:/.*)?$`);
-  }
-  if (pattern.includes(':') || pattern.includes('(')) return null;
-  return new RegExp(`^${pattern}$`);
-};
-
-const PATTERNS = config.matcher as string[];
-
-/**
- * Patterns this file cannot model, named rather than guessed at.
- *
- * `compile` returns `null` instead of throwing, and the throw used to be at
- * module scope. Restoring the old catch-all matcher as a mutation therefore
- * **crashed the suite before a single test ran** - `Tests: 0 total` - which is
- * the repository's own rule that if a mutation makes the suite fail to build,
- * the mutation has not been run yet. A crash is not a failing assertion: it
- * reports that this file is broken, not that the matcher is wrong.
- *
- * Now an unmodellable pattern fails one named test with a readable message,
- * and every other assertion still executes and reports on its own.
- */
-const UNMODELLABLE = PATTERNS.filter((p) => compile(p) === null);
-
-const MATCHERS = PATTERNS.map(compile).filter((re): re is RegExp => re !== null);
-const isMatched = (pathname: string) => MATCHERS.some((re) => re.test(pathname));
+const isMatched = (url: string) => unstable_doesMiddlewareMatch({ config, nextConfig: {}, url });
 
 /** A concrete URL for a dynamic route, so the matcher sees a real path. */
 const concrete = (route: string) => route.replace(/\[\.\.\.[^\]]+\]|\[[^\]]+\]/g, 'x');
 
-describe('P3 - the middleware matcher covers every protected route', () => {
-  it('every matcher pattern is one this file can model', () => {
-    /**
-     * The guard on the guard. A pattern this file cannot model is excluded from
-     * `MATCHERS`, which would make every "is it matched" assertion below answer
-     * from an incomplete picture - a protected route could read as covered by
-     * a pattern that was silently dropped.
-     *
-     * This is also the test that catches the old catch-all coming back: a
-     * negative lookahead is not a shape this models, on purpose.
-     */
-    expect(UNMODELLABLE).toEqual([]);
-  });
+/** Every locale-prefixed form of a path, which is how the app serves it. */
+const inEveryLocale = (path: string) => routing.locales.map((locale) => withLocale(path, locale));
 
+describe('the matcher covers every route the app serves', () => {
   it('is reading the routes it thinks it is', () => {
-    // A walk that found nothing would make every assertion below vacuous.
+    // A walk that found nothing would make every assertion below vacuous, and
+    // a walk that kept `[locale]` would find no route matching any list.
     expect(ROUTES.length).toBeGreaterThan(50);
     expect(ROUTES).toContain('/');
     expect(ROUTES).toContain('/contact');
     expect(ROUTES).toContain('/admin/payments');
+    expect(ROUTES.filter((r) => r.includes(LOCALE_SEGMENT))).toEqual([]);
+    // The exclusion above is real, not decorative: the file it names must exist.
+    expect(existsSync(join(APP_DIR, LOCALE_SEGMENT, '[...rest]', 'page.tsx'))).toBe(true);
   });
 
-  it('every protected route is still intercepted', () => {
-    const unguarded = ROUTES.filter((r) => !isPublic(r)).filter((r) => !isMatched(concrete(r)));
+  it('the matcher tester discriminates, rather than answering yes to everything', () => {
+    // The guard on the guard. A tester that matched everything would make the
+    // coverage assertions below pass while proving nothing, and one that
+    // matched nothing would fail them for the wrong reason.
+    expect(isMatched('/fr/admin')).toBe(true);
+    expect(isMatched('/de/admin')).toBe(false);
+    expect(isMatched('/pricing')).toBe(false);
+  });
+
+  it('every route is either public or protected - nothing is neither', () => {
+    /**
+     * The partition is what replaced "not public means protected".
+     *
+     * The proxy asks `isProtected()` now, because the matcher has to see the
+     * public paths to redirect them to a locale and negation under a wide
+     * matcher sends every typo to a login page. The cost of asking positively
+     * is that a new page in neither list is served to anybody, silently. This
+     * is the assertion that stops that, and it names the route.
+     */
+    const unclassified = ROUTES.filter((r) => !isPublic(r) && !isProtected(r));
+    expect(unclassified).toEqual([]);
+  });
+
+  it('every protected route is intercepted, in every locale', () => {
+    const unguarded = ROUTES.filter(isProtected).flatMap((r) =>
+      inEveryLocale(concrete(r)).filter((url) => !isMatched(url)),
+    );
     expect(unguarded).toEqual([]);
   });
 
@@ -148,47 +174,75 @@ describe('P3 - the middleware matcher covers every protected route', () => {
       '/client/verify',
     ]) {
       expect(isPublic(route)).toBe(false);
-      expect(isMatched(route)).toBe(true);
+      expect(isProtected(route)).toBe(true);
+      for (const url of inEveryLocale(route)) expect(isMatched(url)).toBe(true);
     }
   });
 
-  it('unknown public URLs are NOT intercepted, so Next can 404 them', () => {
-    // The audit's finding, as a property. Each of these answered
-    // 307 -> /login?callbackUrl=... before this chantier.
+  it('a public route is matched too, because it has to be sent to a locale', () => {
+    // The change P3's original version would have read as a regression. Being
+    // matched no longer means being guarded; `proxy.spec.ts` asserts the answer.
+    for (const url of ['/about', '/fr/about', '/contact', '/fr/legal/privacy']) {
+      expect(isMatched(url)).toBe(true);
+    }
+  });
+
+  it('an unknown unprefixed URL is not intercepted, so Next can 404 it', () => {
+    // Each of these answered 307 -> /login?callbackUrl=... before P3.
     for (const path of [
       '/zzz-does-not-exist',
       '/pricing',
       '/tarifs',
       '/robots.txt',
       '/sitemap.xml',
-      '/blog/a-post-that-moved',
-      '/legal/does-not-exist',
     ]) {
       expect(isMatched(path)).toBe(false);
     }
   });
 
-  it('public pages are not intercepted, except the three that redirect a signed-in user', () => {
-    const intercepted = ROUTES.filter((r) => isPublic(r)).filter((r) => isMatched(concrete(r)));
-    expect(intercepted.sort()).toEqual([...REDIRECT_WHEN_AUTHED].sort());
+  it('a locale that is not configured is not a locale', () => {
+    // `/de/admin` must not reach the matcher's locale branch, or a third
+    // language could be invented by typing it.
+    for (const url of ['/de/admin', '/es/mylands', '/england']) {
+      expect(isMatched(url)).toBe(false);
+    }
   });
 
-  it('the matcher literals and PROTECTED_PREFIXES say the same thing', () => {
+  it('the matcher literals and the route lists say the same thing', () => {
     /**
      * Next requires the matcher to be statically analysable, so it cannot be
-     * built from `PROTECTED_PREFIXES`. Two lists that must agree are two lists
-     * that drift, so this is the thing that stops them.
+     * built from the lists at module scope. Two lists that must agree are two
+     * lists that drift, so this is the thing that stops them.
      */
-    const fromMatcher = [...new Set((config.matcher as string[]).map((m) => m.split('/:')[0]))]
-      .filter((p) => !REDIRECT_WHEN_AUTHED.includes(p))
+    const LOCALE_ENTRIES = ['/', '/(fr|en)', '/(fr|en)/:path*'];
+    const fromMatcher = [
+      ...new Set(
+        (config.matcher as string[])
+          .filter((m) => !LOCALE_ENTRIES.includes(m))
+          .map((m) => m.split('/:')[0]),
+      ),
+    ].sort();
+
+    const fromLists = [...new Set([...PUBLIC_PATHS, ...PROTECTED_PREFIXES])]
+      .filter((p) => p !== '/')
       .sort();
-    expect(fromMatcher).toEqual([...PROTECTED_PREFIXES].sort());
+
+    expect(fromMatcher).toEqual(fromLists);
   });
 
-  it('every protected prefix is listed in both forms, bare and with children', () => {
+  it('the three locale entries are present and are the only patterns', () => {
+    for (const entry of ['/', '/(fr|en)', '/(fr|en)/:path*']) {
+      expect(config.matcher).toContain(entry);
+    }
+    // Any other parenthesised entry would be a second pattern nobody declared.
+    const patterns = (config.matcher as string[]).filter((m) => m.includes('('));
+    expect(patterns.sort()).toEqual(['/(fr|en)', '/(fr|en)/:path*']);
+  });
+
+  it('every listed prefix is present in both forms, bare and with children', () => {
     // `/admin` without `/admin/:path*` would guard the index and leave every
     // page under it open - the exact shape of a narrowing that goes wrong.
-    for (const prefix of PROTECTED_PREFIXES) {
+    for (const prefix of [...PUBLIC_PATHS, ...PROTECTED_PREFIXES].filter((p) => p !== '/')) {
       expect(config.matcher).toContain(prefix);
       expect(config.matcher).toContain(`${prefix}/:path*`);
       expect(isMatched(prefix)).toBe(true);
@@ -196,9 +250,10 @@ describe('P3 - the middleware matcher covers every protected route', () => {
     }
   });
 
-  it('the matcher no longer contains a catch-all negative pattern', () => {
-    // What was there before: '/((?!api|health|_next/static|...).*)'. It is the
-    // shape that caused this chantier, not just the specific string.
+  it('the matcher contains no catch-all negative pattern', () => {
+    // What was there before P3: '/((?!api|health|_next/static|...).*)'. It is
+    // also what next-intl's own documentation recommends for this file, so the
+    // ban is against a shape somebody will be told to use, not a forgotten one.
     for (const pattern of config.matcher as string[]) {
       expect(pattern).not.toContain('(?!');
     }
@@ -211,29 +266,28 @@ describe('P3 - the middleware matcher covers every protected route', () => {
  * It runs as a test so it cannot rot: if the walk stops finding routes, the
  * assertion above it fails rather than the table quietly shrinking.
  */
-describe('P3 - the route table', () => {
-  it('enumerates every route and whether it is protected after the change', () => {
+describe('the route table', () => {
+  it('enumerates every route and how an anonymous visitor is answered', () => {
     const rows = ROUTES.map((route) => {
-      const path = concrete(route);
+      const url = withLocale(concrete(route), routing.defaultLocale);
       return {
         route,
         public: isPublic(route),
-        matched: isMatched(path),
-        protectedAfter: !isPublic(route) && isMatched(path),
+        protected: isProtected(route),
+        matched: isMatched(url),
       };
     });
 
-    const widened = rows.filter((r) => !r.public && !r.matched);
-    expect(widened).toEqual([]);
+    expect(rows.filter((r) => r.protected && !r.matched)).toEqual([]);
 
     console.log(
-      `\nROUTE TABLE (${rows.length} routes)\n` +
-        `${'route'.padEnd(40)} public  matched  anonymous-visitor\n` +
+      `\nROUTE TABLE (${rows.length} routes, ${routing.locales.join('/')})\n` +
+        `${'route'.padEnd(40)} public  protected  matched  anonymous-visitor\n` +
         rows
           .map(
             (r) =>
-              `${r.route.padEnd(40)} ${String(r.public).padEnd(7)} ${String(r.matched).padEnd(8)} ` +
-              `${r.protectedAfter ? 'REFUSED' : r.public ? 'served' : 'served (!)'}`,
+              `${r.route.padEnd(40)} ${String(r.public).padEnd(7)} ${String(r.protected).padEnd(10)} ` +
+              `${String(r.matched).padEnd(8)} ${r.protected ? 'REFUSED' : 'served'}`,
           )
           .join('\n'),
     );

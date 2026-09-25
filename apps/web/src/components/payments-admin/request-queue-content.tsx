@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { Money, HumanDate } from './payment-money';
 import { ChannelLabel } from './channel-label';
 import type { PaymentRequestRow } from '@/types/payments';

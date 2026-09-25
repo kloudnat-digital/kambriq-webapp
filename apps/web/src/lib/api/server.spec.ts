@@ -10,7 +10,13 @@ const headersMock = jest.fn();
 const authMock = jest.fn();
 
 jest.mock('next/navigation', () => ({ redirect: (url: string) => redirectMock(url) }));
-jest.mock('next/headers', () => ({ headers: () => headersMock() }));
+// `cookies` joins `headers` here because the login redirect now resolves the
+// locale for the URL it redirects to, and falls back to the locale cookie when
+// the request carries no referer. See lib/locale.ts.
+jest.mock('next/headers', () => ({
+  headers: () => headersMock(),
+  cookies: () => Promise.resolve({ get: () => undefined }),
+}));
 jest.mock('@/auth', () => ({ auth: () => authMock() }));
 jest.mock('react', () => ({
   ...jest.requireActual('react'),
@@ -40,7 +46,7 @@ describe('the authenticated client sends a refused caller to login', () => {
     answers(401, { message: 'Unauthorized' });
 
     await expect(serverApi.get('/users/me')).rejects.toThrow('NEXT_REDIRECT');
-    expect(redirectMock).toHaveBeenCalledWith('/login?callbackUrl=%2Fmylands%3Ftab%3Dall');
+    expect(redirectMock).toHaveBeenCalledWith('/fr/login?callbackUrl=%2Fmylands%3Ftab%3Dall');
   });
 
   it('redirects before the request when the session already knows it is stale', async () => {
@@ -71,7 +77,7 @@ describe('the authenticated client sends a refused caller to login', () => {
     answers(401, { message: 'Unauthorized' });
 
     await expect(serverApi.get('/users/me')).rejects.toThrow('NEXT_REDIRECT');
-    expect(redirectMock).toHaveBeenCalledWith('/login?callbackUrl=%2F');
+    expect(redirectMock).toHaveBeenCalledWith('/fr/login?callbackUrl=%2F');
   });
 
   it('does not send the caller back to the login page it came from', async () => {
@@ -79,6 +85,6 @@ describe('the authenticated client sends a refused caller to login', () => {
     answers(401, { message: 'Unauthorized' });
 
     await expect(serverApi.get('/users/me')).rejects.toThrow('NEXT_REDIRECT');
-    expect(redirectMock).toHaveBeenCalledWith('/login?callbackUrl=%2F');
+    expect(redirectMock).toHaveBeenCalledWith('/fr/login?callbackUrl=%2F');
   });
 });

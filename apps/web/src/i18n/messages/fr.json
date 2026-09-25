@@ -1356,6 +1356,24 @@
     "blog": {
       "title": "Blog - KAMBRIQ",
       "description": "Articles éducatifs sur le foncier camerounais : titres fonciers, domaine national, pièges à éviter, réformes. Par KAMBRIQ, conseil en stratégie foncière."
+    },
+    "legal": {
+      "mentions": {
+        "title": "Mentions légales - KAMBRIQ",
+        "description": "Informations légales sur KAMBRIQ : éditeur du site, hébergement, propriété intellectuelle et conditions d'utilisation."
+      },
+      "terms": {
+        "title": "Conditions générales d'utilisation - KAMBRIQ",
+        "description": "Les conditions qui régissent l'utilisation du site et des services KAMBRIQ : accès, comptes, responsabilités et droit applicable."
+      },
+      "privacy": {
+        "title": "Politique de confidentialité - KAMBRIQ",
+        "description": "Quelles données personnelles KAMBRIQ collecte, pourquoi, combien de temps elles sont conservées et comment exercer vos droits."
+      },
+      "rgpd": {
+        "title": "Protection des données - KAMBRIQ",
+        "description": "Vos droits sur vos données personnelles chez KAMBRIQ au titre du RGPD : accès, rectification, effacement, portabilité et opposition."
+      }
     }
   },
   "legal": {

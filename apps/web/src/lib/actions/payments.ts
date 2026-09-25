@@ -1,7 +1,7 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { ApiError, serverApi } from '@/lib/api/server';
+import { revalidateLocalisedPath } from './revalidate';
 import { createAction, ServerActionError } from './create-action';
 import type { PaymentDetail, PaymentRequestRow, PaymentRow } from '@/types/payments';
 
@@ -102,7 +102,7 @@ export const recordReceipt = createAction(
     const result = await refusable(() =>
       serverApi.post(`/lands/admin/payments/${paymentId}/receipts`, body),
     );
-    revalidatePath(`/admin/payments/${paymentId}`);
+    await revalidateLocalisedPath(`/admin/payments/${paymentId}`);
     return result;
   },
 );
@@ -118,8 +118,8 @@ export const validatePayment = createAction(
     const result = await refusable(() =>
       serverApi.post(`/lands/admin/payments/${paymentId}/validate`, body),
     );
-    revalidatePath(`/admin/payments/${paymentId}`);
-    revalidatePath('/admin/payments');
+    await revalidateLocalisedPath(`/admin/payments/${paymentId}`);
+    await revalidateLocalisedPath('/admin/payments');
     return result;
   },
 );
@@ -136,8 +136,8 @@ export const transitionPayment = createAction(
     const result = await refusable(() =>
       serverApi.post(`/lands/admin/payments/${paymentId}/transition`, body),
     );
-    revalidatePath(`/admin/payments/${paymentId}`);
-    revalidatePath('/admin/payments');
+    await revalidateLocalisedPath(`/admin/payments/${paymentId}`);
+    await revalidateLocalisedPath('/admin/payments');
     return result;
   },
 );
@@ -162,8 +162,8 @@ export const sendInstructions = createAction(
     const result = await refusable(() =>
       serverApi.post(`/lands/admin/payments/${paymentId}/send-instructions`, body),
     );
-    revalidatePath(`/admin/payments/${paymentId}`);
-    revalidatePath('/admin/payment-requests');
+    await revalidateLocalisedPath(`/admin/payments/${paymentId}`);
+    await revalidateLocalisedPath('/admin/payment-requests');
     return result;
   },
 );
@@ -207,8 +207,8 @@ export const reviewIdentity = createAction(
     const result = await refusable(() =>
       serverApi.patch(`/users/${userId}/id-document/review`, body),
     );
-    revalidatePath('/admin/identities');
-    revalidatePath('/admin/payment-requests');
+    await revalidateLocalisedPath('/admin/identities');
+    await revalidateLocalisedPath('/admin/payment-requests');
     return result;
   },
 );

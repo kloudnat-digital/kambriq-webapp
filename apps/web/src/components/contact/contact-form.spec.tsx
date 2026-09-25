@@ -1,3 +1,4 @@
+jest.mock('@/i18n/navigation', () => require('@/test-utils/navigation-mock'));
 jest.mock('next-intl', () => require('@/test-utils/next-intl-mock'));
 jest.mock('@/lib/actions/contact', () => ({ submitContactRequestAction: jest.fn() }));
 

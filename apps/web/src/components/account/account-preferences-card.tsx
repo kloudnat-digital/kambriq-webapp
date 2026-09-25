@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from '@/i18n/navigation';
+import type { Locale } from '@/i18n/routing';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -11,10 +12,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { useToastStore } from '@/store/toast.store';
 import { updateMe } from '@/lib/actions/account';
-import { setLocale } from '@/lib/actions/locale';
 import type { Me } from '@/types/account';
-
-type Lang = 'fr' | 'en';
 
 interface AccountPreferencesCardProps {
   me: Me;
@@ -23,15 +21,24 @@ interface AccountPreferencesCardProps {
 export const AccountPreferencesCard = ({ me }: AccountPreferencesCardProps) => {
   const t = useTranslations('app.account.preferences');
   const pathname = usePathname();
+  const router = useRouter();
   const { createToast } = useToastStore();
 
-  const initialLang: Lang = me.language === 'en' ? 'en' : 'fr';
-  const [lang, setLang] = useState<Lang>(initialLang);
+  const initialLang: Locale = me.language === 'en' ? 'en' : 'fr';
+  const [lang, setLang] = useState<Locale>(initialLang);
   const [emailNotif, setEmailNotif] = useState(me.profile?.emailNotifications ?? false);
   const [langPending, startLangTransition] = useTransition();
   const [saving, setSaving] = useState(false);
 
-  const applyLanguage = (next: Lang) => {
+  /**
+   * The stored preference and the URL are two different things, and both move.
+   *
+   * `updateMe` records the account's language so that emails and any future
+   * session start in it. The navigation is what changes the language of the
+   * page being looked at: under locale-prefixed routing a language is a URL,
+   * so nothing else can.
+   */
+  const applyLanguage = (next: Locale) => {
     if (next === lang) return;
     setLang(next);
     startLangTransition(async () => {
@@ -41,8 +48,8 @@ export const AccountPreferencesCard = ({ me }: AccountPreferencesCardProps) => {
         createToast({ status: 'error', title: result.error || t('languageSaveError') });
         return;
       }
-      await setLocale(next);
       createToast({ status: 'success', title: t('languageSaved') });
+      router.replace(pathname, { locale: next });
     });
   };
 

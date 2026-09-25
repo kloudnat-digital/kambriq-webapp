@@ -32,7 +32,19 @@ declare module 'next-auth' {
       roles: string[];
       language: string;
     };
-    accessToken: string;
+    /**
+     * The API bearer token. Present server-side only.
+     *
+     * `auth()` always resolves it, and `lib/api/server.ts` is its only reader.
+     * It is absent on the client in both directions: `sessionForClient` strips
+     * it before the session reaches `<Providers>`, and the route handler at
+     * `app/api/auth/[...nextauth]` strips it from the `/api/auth/session`
+     * response that `useSession()` refetches.
+     *
+     * Optional rather than required for that reason. Declared required, the
+     * compiler would promise client code a field that is never there.
+     */
+    accessToken?: string;
     /** Indicates a failed token refresh; triggers a redirect to /login. */
     error?: 'RefreshTokenError';
   }

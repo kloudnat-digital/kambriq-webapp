@@ -1356,6 +1356,24 @@
     "blog": {
       "title": "Blog - KAMBRIQ",
       "description": "Educational articles on Cameroon land law: title deeds, national domain, pitfalls, reforms. By KAMBRIQ, land strategy advisory."
+    },
+    "legal": {
+      "mentions": {
+        "title": "Legal notices - KAMBRIQ",
+        "description": "Legal information about KAMBRIQ: site publisher, hosting, intellectual property and terms of use."
+      },
+      "terms": {
+        "title": "Terms of use - KAMBRIQ",
+        "description": "The terms governing use of the KAMBRIQ site and services: access, accounts, responsibilities and applicable law."
+      },
+      "privacy": {
+        "title": "Privacy policy - KAMBRIQ",
+        "description": "What personal data KAMBRIQ collects, why, how long it is kept, and how to exercise your rights."
+      },
+      "rgpd": {
+        "title": "Data protection - KAMBRIQ",
+        "description": "Your rights over your personal data at KAMBRIQ under the GDPR: access, rectification, erasure, portability and objection."
+      }
     }
   },
   "legal": {

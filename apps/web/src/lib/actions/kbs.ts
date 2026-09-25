@@ -1,9 +1,9 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { api, ApiError, serverApi } from '@/lib/api/server';
 import { type CertificateVerdict, toCertificateVerdict } from '@/lib/certificate-verdict';
 import { logger } from '@/lib/logger';
+import { revalidateLocalisedPath } from './revalidate';
 import { createAction, ServerActionError } from './create-action';
 import type {
   AdminCandidateDetail,
@@ -94,7 +94,7 @@ export const getLessonView = createAction(async (lessonId: string) => {
 export const completeLesson = createAction(async (lessonId: string, revalidate?: string) => {
   try {
     const result = await serverApi.post(`/kbs/lesson/${lessonId}/complete`);
-    if (revalidate) revalidatePath(revalidate);
+    if (revalidate) await revalidateLocalisedPath(revalidate);
     return result;
   } catch (error) {
     throw new ServerActionError(
@@ -116,7 +116,7 @@ export const submitQuiz = createAction(
   ) => {
     try {
       const result = await serverApi.post<QuizResult>(`/kbs/modules/${moduleId}/quiz`, { answers });
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -174,7 +174,7 @@ export const getExamEligibility = createAction(async () => {
 export const scheduleExam = createAction(async (revalidate?: string) => {
   try {
     const result = await serverApi.post<ExamSummary>('/kbs/exam/schedule');
-    if (revalidate) revalidatePath(revalidate);
+    if (revalidate) await revalidateLocalisedPath(revalidate);
     return result;
   } catch (error) {
     throw new ServerActionError(
@@ -190,7 +190,7 @@ export const rescheduleExam = createAction(
       const result = await serverApi.patch<ExamSummary>(`/kbs/exam/${examId}/reschedule`, {
         scheduledAt,
       });
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -223,7 +223,7 @@ export const submitExam = createAction(
   ) => {
     try {
       const result = await serverApi.post<ExamSummary>(`/kbs/exam/${examId}/submit`, { answers });
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -289,7 +289,7 @@ export const adminUpdateCandidateStatus = createAction(
   async (id: string, status: string, revalidate?: string) => {
     try {
       const result = await serverApi.patch(`/kbs/admin/candidates/${id}/status`, { status });
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -303,7 +303,7 @@ export const adminUpdateCandidateStatus = createAction(
 export const adminResetAttempts = createAction(async (id: string, revalidate?: string) => {
   try {
     const result = await serverApi.post(`/kbs/admin/candidates/${id}/reset-attempts`);
-    if (revalidate) revalidatePath(revalidate);
+    if (revalidate) await revalidateLocalisedPath(revalidate);
     return result;
   } catch (error) {
     throw new ServerActionError(
@@ -317,7 +317,7 @@ export const adminIssueCertificate = createAction(
   async (candidateId: string, pdfUrl: string | undefined, revalidate?: string) => {
     try {
       const result = await serverApi.post(`/kbs/admin/certificates/${candidateId}`, { pdfUrl });
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -334,7 +334,7 @@ export const adminRevokeCertificate = createAction(
       const result = await serverApi.patch(`/kbs/admin/certificates/${candidateId}/revoke`, {
         reason,
       });
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -400,7 +400,7 @@ export const adminUpdateCourse = createAction(
   ) => {
     try {
       const result = await serverApi.patch<AdminCourseDetail>(`/kbs/admin/courses/${id}`, data);
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -414,7 +414,7 @@ export const adminUpdateCourse = createAction(
 export const adminDeleteCourse = createAction(async (id: string, revalidate?: string) => {
   try {
     const result = await serverApi.delete(`/kbs/admin/courses/${id}`);
-    if (revalidate) revalidatePath(revalidate);
+    if (revalidate) await revalidateLocalisedPath(revalidate);
     return result;
   } catch (error) {
     throw new ServerActionError(
@@ -431,7 +431,7 @@ export const adminCreateModule = createAction(
   ) => {
     try {
       const result = await serverApi.post<AdminModule>('/kbs/admin/modules', data);
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -450,7 +450,7 @@ export const adminUpdateModule = createAction(
   ) => {
     try {
       const result = await serverApi.patch<AdminModule>(`/kbs/admin/modules/${id}`, data);
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -465,7 +465,7 @@ export const adminReorderModules = createAction(
   async (orders: Array<{ id: string; order: number }>, revalidate?: string) => {
     try {
       const result = await serverApi.patch('/kbs/admin/modules/reorder', { orders });
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -479,7 +479,7 @@ export const adminReorderModules = createAction(
 export const adminDeleteModule = createAction(async (id: string, revalidate?: string) => {
   try {
     const result = await serverApi.delete(`/kbs/admin/modules/${id}`);
-    if (revalidate) revalidatePath(revalidate);
+    if (revalidate) await revalidateLocalisedPath(revalidate);
     return result;
   } catch (error) {
     throw new ServerActionError(
@@ -510,7 +510,7 @@ export const adminCreateLesson = createAction(
   ) => {
     try {
       const result = await serverApi.post<AdminLesson>('/kbs/admin/lessons', data);
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -536,7 +536,7 @@ export const adminUpdateLesson = createAction(
   ) => {
     try {
       const result = await serverApi.patch<AdminLesson>(`/kbs/admin/lessons/${id}`, data);
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -550,7 +550,7 @@ export const adminUpdateLesson = createAction(
 export const adminDeleteLesson = createAction(async (id: string, revalidate?: string) => {
   try {
     const result = await serverApi.delete(`/kbs/admin/lessons/${id}`);
-    if (revalidate) revalidatePath(revalidate);
+    if (revalidate) await revalidateLocalisedPath(revalidate);
     return result;
   } catch (error) {
     throw new ServerActionError(
@@ -578,7 +578,7 @@ export const adminCreateQuestion = createAction(
   ) => {
     try {
       const result = await serverApi.post<AdminQuestion>('/kbs/admin/questions', data);
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -601,7 +601,7 @@ export const adminUpdateQuestion = createAction(
   ) => {
     try {
       const result = await serverApi.patch<AdminQuestion>(`/kbs/admin/questions/${id}`, data);
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -615,7 +615,7 @@ export const adminUpdateQuestion = createAction(
 export const adminDeleteQuestion = createAction(async (id: string, revalidate?: string) => {
   try {
     const result = await serverApi.delete(`/kbs/admin/questions/${id}`);
-    if (revalidate) revalidatePath(revalidate);
+    if (revalidate) await revalidateLocalisedPath(revalidate);
     return result;
   } catch (error) {
     throw new ServerActionError(
@@ -641,7 +641,7 @@ export const adminCreateExamQuestion = createAction(
   ) => {
     try {
       const result = await serverApi.post<AdminQuestion>('/kbs/admin/exam-questions', data);
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -665,7 +665,7 @@ export const adminUpdateExamQuestion = createAction(
   ) => {
     try {
       const result = await serverApi.patch<AdminQuestion>(`/kbs/admin/exam-questions/${id}`, data);
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -679,7 +679,7 @@ export const adminUpdateExamQuestion = createAction(
 export const adminDeleteExamQuestion = createAction(async (id: string, revalidate?: string) => {
   try {
     const result = await serverApi.delete(`/kbs/admin/exam-questions/${id}`);
-    if (revalidate) revalidatePath(revalidate);
+    if (revalidate) await revalidateLocalisedPath(revalidate);
     return result;
   } catch (error) {
     throw new ServerActionError(
@@ -706,7 +706,7 @@ export const adminCancelExam = createAction(
   async (examId: string, reason: string, revalidate?: string) => {
     try {
       const result = await serverApi.patch(`/kbs/admin/exams/${examId}/cancel`, { reason });
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(
@@ -727,7 +727,7 @@ export const adminUpdateSettings = createAction(
   async (data: Partial<AdminSettings>, revalidate?: string) => {
     try {
       const result = await serverApi.patch<AdminSettings>('/kbs/admin/settings', data);
-      if (revalidate) revalidatePath(revalidate);
+      if (revalidate) await revalidateLocalisedPath(revalidate);
       return result;
     } catch (error) {
       throw new ServerActionError(

@@ -1,4 +1,5 @@
 import { RoleCode } from '@/lib/roles';
+import { routing } from '@/i18n/routing';
 
 export const AUTH_ROUTES = {
   LOGIN: '/login',
@@ -64,13 +65,25 @@ export const REDIRECT_WHEN_AUTHED = ['/', '/login', '/register'];
  * protected", which is a list somebody can read and check.
  *
  * ---------------------------------------------------------------------------
+ * Locale routing moved the weight from the matcher onto this list
+ * ---------------------------------------------------------------------------
+ * The matcher now also covers the public paths, because an unprefixed URL has
+ * to reach the proxy to be redirected to a prefixed one. Being matched
+ * therefore no longer implies being protected, and the proxy asks
+ * `isProtected()` rather than negating `isPublic()`.
+ *
+ * That makes this list the guard rather than a description of one, and it is
+ * the only thing standing between a protected page and an anonymous visitor.
+ *
+ * ---------------------------------------------------------------------------
  * Narrowing a gate is the dangerous direction
  * ---------------------------------------------------------------------------
  * Every prefix here was derived from the route files rather than remembered:
  * `middleware-matcher.spec.ts` walks `src/app`, computes each route's URL, and
- * fails if any route that `isPublic()` refuses is not covered by this list. So
- * a new protected page that nobody adds here fails at the commit rather than by
- * being served to anonymous visitors.
+ * fails if any route is neither public nor covered by this list. The two lists
+ * have to account for every page on disk, so a new protected page that nobody
+ * adds here fails at the commit rather than by being served to anonymous
+ * visitors.
  *
  * `/kamnet` and `/kbs` stay protected deliberately. Public product pages link
  * straight at `/kamnet/apply` and `/kbs/enroll`, so an anonymous visitor
@@ -188,9 +201,58 @@ export const isAdminLands = (roles: string[]) => roles.some((r) => ADMIN_LANDS_R
 export const canManageReservations = (roles: string[]) =>
   isAdminLands(roles) || roles.includes(RoleCode.AGENT);
 
+/**
+ * Matches a leading locale segment: `/fr`, `/en`, and nothing else.
+ *
+ * The lookahead is what stops `/england` being read as the `en` locale
+ * followed by `gland`. Built from `routing.locales` so a third locale reaches
+ * this expression by being configured, not by being remembered.
+ */
+const LOCALE_SEGMENT = new RegExp(`^/(${routing.locales.join('|')})(?=/|$)`);
+
+/**
+ * Removes the locale prefix from a pathname.
+ *
+ * Every list in this file is written in unprefixed form, because a route's
+ * identity does not change with the language it is served in. Callers strip
+ * first and match afterwards.
+ */
+export const stripLocale = (pathname: string): string => {
+  const stripped = pathname.replace(LOCALE_SEGMENT, '');
+  return stripped === '' ? '/' : stripped;
+};
+
+/** The locale a pathname declares, or `undefined` when it carries none. */
+export const localeOf = (pathname: string): string | undefined =>
+  LOCALE_SEGMENT.exec(pathname)?.[1];
+
 export const isPublic = (pathname: string) => {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
 };
+
+/**
+ * Whether a pathname requires a session, asked positively.
+ *
+ * The proxy used to decide this by negation - anything `isPublic()` refused
+ * was protected - and that was safe only because the matcher had already
+ * excluded every URL the site does not serve. Locale routing widens the
+ * matcher, because an unprefixed URL has to be redirected to a prefixed one
+ * before anything can know whether a page exists behind it. Negation under a
+ * wide matcher is the P3 defect exactly: every typo becomes a members' area.
+ *
+ * So the question is asked of this list instead, and `isPublic` no longer
+ * decides anything on its own. The danger moves with it: a new protected page
+ * whose prefix is missing here would be served to anybody. `middleware-matcher
+ * .spec.ts` walks the route files and fails when a route is neither public nor
+ * covered here, so the two lists have to account for every page on disk.
+ */
+export const isProtected = (pathname: string) => {
+  return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'));
+};
+
+/** Puts a locale back on an internal path: `/login` -> `/fr/login`. */
+export const withLocale = (pathname: string, locale: string): string =>
+  pathname === '/' ? `/${locale}` : `/${locale}${pathname}`;
 
 export const matchGate = (pathname: string) => {
   return ROLE_GATES.find((g) => pathname === g.prefix || pathname.startsWith(g.prefix + '/'));

@@ -1,7 +1,8 @@
 'use client';
 
 import { Fragment, useState, useTransition } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useRouter, usePathname } from '@/i18n/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';

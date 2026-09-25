@@ -18,6 +18,9 @@ import { AUTH_ROUTES, PUBLIC_PATHS } from './routes';
  */
 const APP_DIR = join(__dirname, 'app');
 
+/** The directory that carries the locale, dropped when computing a URL path. */
+const LOCALE_SEGMENT = '[locale]';
+
 /**
  * Entries that are prefixes rather than pages, declared rather than inferred.
  *
@@ -45,7 +48,13 @@ const collectRoutes = (dir: string, urlPath = ''): string[] => {
       // reported as a defect in the thing measured, which is this project's
       // house speciality; the failure is left recorded here rather than tidied
       // away.
-      const segment = /^[(@_]/.test(entry) ? '' : `/${entry}`;
+      //
+      // `[locale]` is the one dynamic segment that IS dropped, and it is named
+      // rather than pattern-matched. It carries the language, so `PUBLIC_PATHS`
+      // and every other list in `routes.ts` is written without it; a second
+      // dynamic segment at the root would be a real path segment again and has
+      // to fail here rather than be absorbed.
+      const segment = entry === LOCALE_SEGMENT || /^[(@_]/.test(entry) ? '' : `/${entry}`;
       out.push(...collectRoutes(full, urlPath + segment));
     } else if (entry === 'page.tsx' || entry === 'page.ts') {
       out.push(urlPath === '' ? '/' : urlPath);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { sendInstructions } from '@/lib/actions/payments';
 import { ChannelLabel, selectableChannels } from './channel-label';
 import type { PaymentChannel } from '@/types/payments';

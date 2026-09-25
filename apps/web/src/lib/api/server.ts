@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/navigation';
+import { currentLocale } from '@/lib/locale';
 import { auth } from '@/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -102,7 +103,10 @@ const redirectToLogin = async (): Promise<never> => {
       // ignore malformed referer
     }
   }
-  redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+  redirect({
+    href: { pathname: '/login', query: { callbackUrl } },
+    locale: await currentLocale(),
+  });
 };
 
 const authedFetch = async <T>(path: string, options?: RequestInit): Promise<T> => {

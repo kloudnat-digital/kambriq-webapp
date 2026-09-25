@@ -6,7 +6,8 @@ import { api } from '@/lib/api/server';
 import { AUTH_ROUTES } from '@/routes';
 import { createAction, ServerActionError } from './create-action';
 import { getAuthErrorCause, parseReactivationSignal } from './utils/auth';
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/navigation';
+import { currentLocale } from '@/lib/locale';
 
 export const logInAction = createAction(
   async (credentials: { email: string; password: string; rememberMe: boolean }) => {
@@ -26,9 +27,13 @@ export const logInAction = createAction(
           // Redirect to the reactivation page instead of showing a generic error.
           const signal = parseReactivationSignal(causeMessage);
           if (signal) {
-            redirect(
-              `${AUTH_ROUTES.REACTIVATE}?userId=${signal.userId}&days=${signal.daysRemaining}`,
-            );
+            redirect({
+              href: {
+                pathname: AUTH_ROUTES.REACTIVATE,
+                query: { userId: signal.userId, days: String(signal.daysRemaining) },
+              },
+              locale: await currentLocale(),
+            });
           }
 
           // Real API error message (account locked, attempts remaining, inactive, etc.)
@@ -137,7 +142,7 @@ export const autoSignIn = async (email: string, password: string): Promise<void>
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      redirect(AUTH_ROUTES.LOGIN);
+      redirect({ href: AUTH_ROUTES.LOGIN, locale: await currentLocale() });
     }
     throw error; // NEXT_REDIRECT
   }
