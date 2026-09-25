@@ -56,7 +56,7 @@ describe('clientPortalAccess template', () => {
       i18n,
     );
 
-    expect(html).toContain('Votre agent KAMNET : Eric Mbou');
+    expect(html).toContain('Votre agent KAMNET™ : Eric Mbou');
   });
 
   it('omits the agent line entirely when the name is empty, rather than printing an id', () => {

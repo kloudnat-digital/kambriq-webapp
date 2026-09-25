@@ -62,43 +62,43 @@
     "body": "Hi {firstName}, your KAMBRIQ Certified Agent certificate has been issued!",
     "numberLabel": "Certificate Number:",
     "validLabel": "Valid until: <strong>{validUntil}</strong>",
-    "note": "You can now apply to join KAMNET and start your journey as a KAMBRIQ agent."
+    "note": "You can now apply to join KAMNET™ and start your journey as a KAMBRIQ agent."
   },
   "applicationSubmitted": {
-    "subject": "KAMNET Application Received",
+    "subject": "KAMNET™ Application Received",
     "heading": "Application Submitted",
-    "body": "Hi {firstName}, we've received your application to join the KAMNET agent network.",
+    "body": "Hi {firstName}, we've received your application to join the KAMNET™ agent network.",
     "note": "Our team will review your application shortly. You'll receive an email once a decision has been made."
   },
   "applicationApproved": {
-    "subject": "🎉 Welcome to KAMNET!",
+    "subject": "🎉 Welcome to KAMNET™!",
     "heading": "Application Approved",
-    "body": "Hi {firstName}, great news! Your KAMNET application has been approved.",
+    "body": "Hi {firstName}, great news! Your KAMNET™ application has been approved.",
     "agentCode": "Your agent code:",
     "note": "You can now access the agent dashboard, browse land listings, and start your KAMBRIQ journey."
   },
   "applicationRejected": {
-    "subject": "KAMNET Application Update",
+    "subject": "KAMNET™ Application Update",
     "heading": "Application Update",
-    "body": "Hi {firstName}, after review, your KAMNET application could not be approved at this time.",
+    "body": "Hi {firstName}, after review, your KAMNET™ application could not be approved at this time.",
     "reason": "Reviewer note: <em>{reason}</em>",
     "note": "If you believe this was an error, please contact our support team."
   },
   "agentSuspended": {
-    "subject": "Your KAMNET Agent Account has been suspended",
+    "subject": "Your KAMNET™ Agent Account has been suspended",
     "heading": "Account Suspended",
-    "body": "Hi {firstName}, your KAMNET agent account has been suspended.",
-    "note": "Please contact the KAMNET administration for more information."
+    "body": "Hi {firstName}, your KAMNET™ agent account has been suspended.",
+    "note": "Please contact the KAMNET™ administration for more information."
   },
   "agentReactivated": {
-    "subject": "Your KAMNET Agent Account has been reactivated",
+    "subject": "Your KAMNET™ Agent Account has been reactivated",
     "heading": "Agent Account Reactivated",
-    "body": "Hi {firstName}, your KAMNET agent account has been reactivated. You can now access all agent features again."
+    "body": "Hi {firstName}, your KAMNET™ agent account has been reactivated. You can now access all agent features again."
   },
   "agentPromotion": {
-    "subject": "🎉 You've been promoted on KAMNET!",
+    "subject": "🎉 You've been promoted on KAMNET™!",
     "heading": "Congratulations, {firstName}!",
-    "body": "Your hard work is paying off - you've earned a promotion on the KAMNET network.",
+    "body": "Your hard work is paying off - you've earned a promotion on the KAMNET™ network.",
     "tierLabel": "Your new rank:",
     "note": "Keep growing your network and closing sales. The next level is within reach."
   },
@@ -156,7 +156,7 @@
     "heading": "Welcome to KAMBRIQ",
     "body": "Hi {clientName}, your reservation has been opened and a client portal has been set up for you.",
     "landInfo": "Land: <strong>{landTitle}</strong> — {price} XAF",
-    "agent": "Your KAMNET agent: {agentName}",
+    "agent": "Your KAMNET™ agent: {agentName}",
     "note": "You can track every step of your acquisition from your portal."
   },
   "reservationConfirmed": {
@@ -170,7 +170,7 @@
     "heading": "Reservation cancelled",
     "body": "Hi {firstName}, your reservation on {landTitle} has been cancelled.",
     "reason": "Reason: <strong>{reason}</strong>",
-    "note": "If you have any questions, please contact your KAMNET agent."
+    "note": "If you have any questions, please contact your KAMNET™ agent."
   },
   "clientDocumentUploaded": {
     "subject": "New client document uploaded",

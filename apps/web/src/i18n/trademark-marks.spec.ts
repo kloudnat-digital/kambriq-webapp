@@ -31,6 +31,24 @@ const walk = (dir: string): string[] =>
   );
 const MDX = walk(join(__dirname, '..', 'content')).filter((f) => f.endsWith('.mdx'));
 
+/**
+ * P29 - the decision was about the mark, not about a surface: the API's own
+ * catalogues, which write every email and notification, are read by the same
+ * rule. Each file there is a namespace (`email`, `kamnet`, ...), watched unless
+ * declared exempt - none is.
+ */
+const API_CATALOGUES = join(__dirname, '..', '..', '..', '..', 'libs', 'common', 'src', 'i18n');
+const apiCatalogue = (locale: 'fr' | 'en') =>
+  Object.fromEntries(
+    readdirSync(join(API_CATALOGUES, locale))
+      .filter((f) => f.endsWith('.json'))
+      .map((f) => [
+        f.replace(/\.json$/, ''),
+        JSON.parse(readFileSync(join(API_CATALOGUES, locale, f), 'utf8')),
+      ]),
+  );
+const API_EXEMPT_NAMESPACES: Record<string, string> = {};
+
 describe('P27 - the product marks', () => {
   it('fails for the right reason: a missing mark, never a present one, a URL or a school', () => {
     expect(unmarked('KAMBRIQ LANDS et KAMNET')).toEqual(['LANDS', 'KAMNET']);
@@ -68,6 +86,19 @@ describe('P27 - the product marks', () => {
       .map(([k, v]) => `${k} = ${v}`);
     expect(found).toEqual([]);
   });
+
+  it.each(['fr', 'en'] as const)(
+    '%s: every product name in the API catalogues - emails and notifications - carries its mark',
+    (locale) => {
+      const catalogue = apiCatalogue(locale);
+      expect(Object.keys(catalogue)).toEqual(expect.arrayContaining(['email', 'kamnet']));
+      expect(staleExemptions(catalogue, API_EXEMPT_NAMESPACES)).toEqual([]);
+      const found = watchedCopy(catalogue, API_EXEMPT_NAMESPACES)
+        .filter(([, v]) => unmarked(v).length > 0 || /™\s*™|\bKBS™/.test(v))
+        .map(([k, v]) => `${k} = ${v}`);
+      expect(found).toEqual([]);
+    },
+  );
 
   it('every product name in the MDX content carries its mark', () => {
     expect(MDX.length).toBeGreaterThan(8);

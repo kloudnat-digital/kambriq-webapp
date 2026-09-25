@@ -223,6 +223,7 @@ listed here first.
 | `confirmRemainingPayment`     | `A FAIRE`           | step 4 records the balance on the reservation alone: nothing creates a payment for it, so it cannot be gated the way the acompte now is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `A51`                         | `EN COURS`          | the Firefox language-switch E2E test failed inside its own style injection, blocked by the CSP; rewritten to switch from the keyboard with no injection, 10/10 in Firefox against dev. Pending: develop's E2E green with no re-run                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `J11`                         | `PROUVE`            | the typeface's stylesheet and font hosts reach `style-src` and `font-src` from the same module as the image hosts, and the layout links it from there; proven on dev at `sha-87b1d13`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `P29`                         | `EN COURS`          | the API's catalogues - every email and notification - carry the product marks, read by P27's own guard. Pending: a delivered email naming KAMNET™ read in its mailbox on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `A48`                         | `PROUVE`            | every API behaviour decision reads `APP_ENV` through `libs/common/src/config/app-env.ts`; SQL is logged only where `APP_ENV=local`; a guard refuses a new `NODE_ENV` read; proven on dev at `sha-3425132`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `A49`                         | `PROUVE`            | an identity document is a key in its owner's `id-documents` folder, refused otherwise, through the A44 rule now shared in `core/users/storage-keys.ts`; proven on dev at `sha-23a2b97`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `P27`                         | `PROUVE`            | KAMBRIQ LANDS™, KAMBRIQ VERIFY™ and KAMNET™ carry the mark everywhere on the website, KBS does not; a guard watches every namespace and every MDX file; proven on dev at `sha-e059503`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -5944,6 +5945,37 @@ where the launcher does exist.
 
 Playwright's Firefox build was installed locally for this, the same install CI
 runs.
+
+### P29 - the product marks in the emails and notifications - `EN COURS`
+
+**Cost impact: None.**
+
+**Pending:** a delivered email that names KAMNET™, read in its mailbox. The
+delivery journeys send `clientPortalAccess` ("Votre agent KAMNET™ : …") to a
+maildrop address on every develop run, so the proof is observation only, with no
+reservation or account created for it.
+
+**Visquis's decision of 25 September was about the mark, not a surface.** P27
+applied it to the website. The API writes its emails and notifications from its
+own catalogues, `libs/common/src/i18n/{fr,en}/*.json`, which named KAMNET
+without the mark in **20 strings per language**: 16 in `email.json` and 4 in
+`kamnet.json`. They cover nine templates: `clientPortalAccess`,
+`applicationSubmitted`, `applicationApproved`, `applicationRejected`,
+`agentPromotion`, `agentSuspended`, `agentReactivated`, `certificateIssued` and
+`reservationCancelled`. LANDS and VERIFY appear in none.
+
+**P27's guard extended, no second rule.** `trademark-marks.spec.ts` now also
+reads every file in the API's catalogues as a namespace, watched unless declared
+in `API_EXEMPT_NAMESPACES` (empty, with stale entries failing). It uses the same
+`unmarked` rule and the same refusal of a double mark and of `KBS™`.
+Code strings that name KAMNET (internal error messages and Swagger summaries)
+are not copy a customer reads, and are left as they are.
+
+**Proof so far, watched red first.** On develop, the extended test failed on 20
+strings per language. Two mutations each failed it: one email string unmarked,
+and a new API catalogue file naming KAMNET with the guard untouched.
+`email.templates.spec.ts` pinned the sentence "Votre agent KAMNET : Eric Mbou"
+to prove the agent's name is printed. It follows the decision, now "KAMNET™".
 
 ---
 

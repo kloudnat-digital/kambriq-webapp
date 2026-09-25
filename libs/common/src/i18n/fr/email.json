@@ -62,43 +62,43 @@
     "body": "Bonjour {firstName}, votre certificat d'Agent Certifié KAMBRIQ a été émis !",
     "numberLabel": "Numéro de certificat :",
     "validLabel": "Valide jusqu'au : <strong>{validUntil}</strong>",
-    "note": "Vous pouvez maintenant postuler pour rejoindre KAMNET et commencer votre parcours d'agent KAMBRIQ."
+    "note": "Vous pouvez maintenant postuler pour rejoindre KAMNET™ et commencer votre parcours d'agent KAMBRIQ."
   },
   "applicationSubmitted": {
-    "subject": "Demande KAMNET reçue",
+    "subject": "Demande KAMNET™ reçue",
     "heading": "Demande soumise",
-    "body": "Bonjour {firstName}, nous avons reçu votre demande d'adhésion au réseau d'agents KAMNET.",
+    "body": "Bonjour {firstName}, nous avons reçu votre demande d'adhésion au réseau d'agents KAMNET™.",
     "note": "Notre équipe examinera votre demande sous peu. Vous recevrez un email dès qu'une décision sera prise."
   },
   "applicationApproved": {
-    "subject": "🎉 Bienvenue dans KAMNET !",
+    "subject": "🎉 Bienvenue dans KAMNET™ !",
     "heading": "Demande approuvée",
-    "body": "Bonjour {firstName}, bonne nouvelle ! Votre demande d'adhésion KAMNET a été approuvée.",
+    "body": "Bonjour {firstName}, bonne nouvelle ! Votre demande d'adhésion KAMNET™ a été approuvée.",
     "agentCode": "Votre code agent :",
     "note": "Vous pouvez maintenant accéder au tableau de bord agent, parcourir les terrains et commencer votre parcours KAMBRIQ."
   },
   "applicationRejected": {
-    "subject": "Mise à jour de votre demande KAMNET",
+    "subject": "Mise à jour de votre demande KAMNET™",
     "heading": "Mise à jour de la demande",
-    "body": "Bonjour {firstName}, après examen, votre demande KAMNET n'a pas pu être approuvée pour le moment.",
+    "body": "Bonjour {firstName}, après examen, votre demande KAMNET™ n'a pas pu être approuvée pour le moment.",
     "reason": "Note du réviseur : <em>{reason}</em>",
     "note": "Si vous pensez qu'il s'agit d'une erreur, veuillez contacter notre équipe de support."
   },
   "agentSuspended": {
-    "subject": "Votre compte agent KAMNET a été suspendu",
+    "subject": "Votre compte agent KAMNET™ a été suspendu",
     "heading": "Compte suspendu",
-    "body": "Bonjour {firstName}, votre compte agent KAMNET a été suspendu.",
-    "note": "Veuillez contacter l'administration KAMNET pour plus d'informations."
+    "body": "Bonjour {firstName}, votre compte agent KAMNET™ a été suspendu.",
+    "note": "Veuillez contacter l'administration KAMNET™ pour plus d'informations."
   },
   "agentReactivated": {
-    "subject": "Votre compte agent KAMNET a été réactivé",
+    "subject": "Votre compte agent KAMNET™ a été réactivé",
     "heading": "Compte agent réactivé",
-    "body": "Bonjour {firstName}, votre compte agent KAMNET a été réactivé. Vous pouvez à nouveau accéder à toutes les fonctionnalités."
+    "body": "Bonjour {firstName}, votre compte agent KAMNET™ a été réactivé. Vous pouvez à nouveau accéder à toutes les fonctionnalités."
   },
   "agentPromotion": {
-    "subject": "🎉 Vous avez été promu sur KAMNET !",
+    "subject": "🎉 Vous avez été promu sur KAMNET™ !",
     "heading": "Félicitations, {firstName} !",
-    "body": "Votre travail porte ses fruits - vous venez de gagner une promotion sur le réseau KAMNET.",
+    "body": "Votre travail porte ses fruits - vous venez de gagner une promotion sur le réseau KAMNET™.",
     "tierLabel": "Votre nouveau rang :",
     "note": "Continuez à développer votre réseau et à conclure des ventes. Le prochain niveau est à portée de main."
   },
@@ -156,7 +156,7 @@
     "heading": "Bienvenue chez KAMBRIQ",
     "body": "Bonjour {clientName}, votre réservation a été ouverte et un portail client a été créé pour vous.",
     "landInfo": "Terrain : <strong>{landTitle}</strong> — {price} XAF",
-    "agent": "Votre agent KAMNET : {agentName}",
+    "agent": "Votre agent KAMNET™ : {agentName}",
     "note": "Vous pouvez suivre chaque étape de votre acquisition depuis votre portail."
   },
   "reservationConfirmed": {
@@ -170,7 +170,7 @@
     "heading": "Réservation annulée",
     "body": "Bonjour {firstName}, votre réservation sur {landTitle} a été annulée.",
     "reason": "Raison : <strong>{reason}</strong>",
-    "note": "Pour toute question, veuillez contacter votre agent KAMNET."
+    "note": "Pour toute question, veuillez contacter votre agent KAMNET™."
   },
   "clientDocumentUploaded": {
     "subject": "Nouveau document client envoyé",

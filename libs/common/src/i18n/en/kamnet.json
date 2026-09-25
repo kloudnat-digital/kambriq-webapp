@@ -1,17 +1,17 @@
 {
   "application": {
-    "submitted": "Your KAMNET application has been submitted successfully",
-    "alreadyExists": "You already have a pending or approved KAMNET application",
+    "submitted": "Your KAMNET™ application has been submitted successfully",
+    "alreadyExists": "You already have a pending or approved KAMNET™ application",
     "notFound": "Application not found",
     "notPending": "This application is not in pending status",
     "invalidKca": "Your KCA certificate is invalid or expired. Please ensure you have a valid KBS certification.",
-    "approved": "Application approved - welcome to KAMNET!",
+    "approved": "Application approved - welcome to KAMNET™!",
     "rejected": "Application has been rejected",
     "sponsorNotFound": "Sponsor with code {code} not found"
   },
   "agent": {
     "notFound": "Agent profile not found",
-    "alreadyExists": "You are already a KAMNET agent",
+    "alreadyExists": "You are already a KAMNET™ agent",
     "suspended": "Your agent account has been suspended. Contact admin for details.",
     "profileUpdated": "Agent profile updated successfully",
     "statusUpdated": "Agent status updated to {status}",
