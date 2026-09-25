@@ -221,7 +221,8 @@ listed here first.
 | Audit 2026-09-23, wave 3      | `PROUVE`            | the wave of #155 to #162 folded in, the Open table de-duplicated, the states declared, `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Audit 2026-09-23, wave 4      | `EN COURS`          | the acompte step reads the payment ledger instead of answering for it. Unmerged; pending proof is one acompte carried end to end on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `confirmRemainingPayment`     | `A FAIRE`           | step 4 records the balance on the reservation alone: nothing creates a payment for it, so it cannot be gated the way the acompte now is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `A51`                         | `EN COURS`          | the Firefox language-switch E2E test failed inside its own style injection, blocked by the CSP; rewritten to switch from the keyboard with no injection, 10/10 in Firefox against dev. Pending: develop's E2E green with no re-run                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `A51`                         | `PROUVE`            | the Firefox language-switch E2E test failed inside its own style injection, blocked by the CSP; rewritten to switch from the keyboard with no injection, 10/10 in Firefox against dev; proven on develop's own run, first attempt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `I44`                         | `EN COURS`          | `/admin/lands/search`, `/admin/lands/compare` and `/admin/verify` showed invented parcels, requests and statistics; each now says it is not built, and a test pins the invented values out. Pending: the three screens read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `J11`                         | `PROUVE`            | the typeface's stylesheet and font hosts reach `style-src` and `font-src` from the same module as the image hosts, and the layout links it from there; proven on dev at `sha-87b1d13`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `P29`                         | `EN COURS`          | the API's catalogues - every email and notification - carry the product marks, read by P27's own guard. Pending: a delivered email naming KAMNET™ read in its mailbox on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `A48`                         | `PROUVE`            | every API behaviour decision reads `APP_ENV` through `libs/common/src/config/app-env.ts`; SQL is logged only where `APP_ENV=local`; a guard refuses a new `NODE_ENV` read; proven on dev at `sha-3425132`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -5913,11 +5914,14 @@ test, proof that the rule is shared), and only the first document checked.
 `z.string().min(1, 'Must be a valid URL')` stored unchanged. It is the next field
 for this rule, and not this brief's.
 
-### A51 - the language-switch E2E test depended on a style injection that the CSP refuses - `EN COURS`
+### A51 - the language-switch E2E test depended on a style injection that the CSP refuses - `PROUVE`
 
 **Cost impact: None.**
 
-**Pending:** develop's own E2E job green after the merge, **with no re-run**.
+**Proven on develop** at `ad56d1a` (#190), run `36190495431`, **attempt 1**:
+E2E green, `✓ [firefox] › locale-routing.spec.ts:109 › switching language keeps
+the visitor on the same page` passed first time, and the run reported 118 passed
+with nothing failed, flaky or retried.
 
 **The cause, named.** `locale-routing.spec.ts` › "switching language keeps the
 visitor on the same page" called `page.addStyleTag` before each click, to hide
@@ -5976,6 +5980,51 @@ strings per language. Two mutations each failed it: one email string unmarked,
 and a new API catalogue file naming KAMNET with the guard untouched.
 `email.templates.spec.ts` pinned the sentence "Votre agent KAMNET : Eric Mbou"
 to prove the agent's name is printed. It follows the decision, now "KAMNET™".
+
+### I44 - the administration screens show no invented data - `EN COURS`
+
+**Cost impact: None.**
+
+**Pending:** the three screens read on dev after deploy, signed in as an
+administrator, in both languages.
+
+**The finding, confirmed.** `/admin/lands/search` and `/admin/lands/compare`
+rendered `data/mock-lands.ts`: parcels with invented titles ("Terrain Dibamba"),
+prices and title numbers. `/admin/verify` rendered four invented verification
+requests (Jean Dupont, Alphonse Biya, Sandra Njoh, Roland Fouda) under invented
+statistics (4 pending, 3 in progress, 18 completed this month, 2 rejected). An
+administrator read them as the business. It is the same lie as I43 and as the six
+invented agents on `/agent/network`, moved to the back office.
+
+**Honest empty state, not real data, decided.** None of the three has a real
+source: VERIFY has no backend yet, and the search and compare screens were built
+over the mock (map, filters, comparison table). Wiring real data would be
+building those features. So each is now I43's placeholder, its translated name
+and "not built" and nothing else, and I43's own test covers them. Its pinned list
+of placeholder screens grew from ten to thirteen, which is the review that pin
+exists to force. `verify-requests-table.tsx`, invented rows and nothing else, is
+deleted, and its two entries leave I43's hardcoded-copy debt list, paid.
+
+**The pin, like `/agent/network`'s.** `admin/invented-data.spec.tsx` renders the
+three screens in both languages and refuses every invented value: the four
+requests and their places, the four statistic labels, and every title and title
+number in `MOCK_LANDS`, read from the file so the list cannot drift. **Two
+defects in the test's first version, found by running it:**
+
+- compare passed on develop, because with nothing selected the screen showed
+  nothing. The test now selects two mock parcels first, as an administrator
+  arriving from search would have;
+- search and compare failed on a crash, because `next/image` refuses remote
+  hosts under Jest, and not on a value. `next/image` is now a plain `img` in
+  this spec. The red is then "Terrain Dibamba" on both screens.
+
+**Proof so far:** red on develop for all three screens, fr and en. Three
+mutations each failed: search back on the mock, compare back on the mock, and
+verify's invented statistics back without the table.
+
+**Found, not changed:** the search and compare components and `MOCK_LANDS`
+remain in the repository, rendered by no route, as the base for wiring real
+data. `StatCard` is now used by nothing.
 
 ---
 

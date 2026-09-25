@@ -1,9 +1,16 @@
-import { CompareContent } from '@/components/products/lands/compare/compare-content';
+import { getTranslations } from 'next-intl/server';
+import { PlaceholderPage } from '@/components/placeholder-page';
+
+/**
+ * I44 - this screen showed invented data, and has no real source yet. It says
+ * what it is and that it is not built (I43). `admin/invented-data.spec.tsx`
+ * pins the invented values out.
+ */
+export async function generateMetadata() {
+  const t = await getTranslations('app.adminLandsCompare');
+  return { title: t('pageTitle') };
+}
 
 export default function CompareLandsPage() {
-  return (
-    <div className="p-6 lg:p-8">
-      <CompareContent />
-    </div>
-  );
+  return <PlaceholderPage namespace="app.adminLandsCompare" titleKey="pageTitle" />;
 }

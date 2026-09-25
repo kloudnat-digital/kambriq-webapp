@@ -53,12 +53,15 @@ const renderScreen = async (file: string) => {
 };
 
 describe('I43 - the screens that are not built', () => {
-  it('are found where they are, and there are the ten measured on 25 September', () => {
+  it('are found where they are: the ten measured on 25 September (I43), and the three I44 added', () => {
     expect(SCREENS.sort()).toEqual(
       [
         '[locale]/(app)/admin/escalations/page.tsx',
+        '[locale]/(app)/admin/lands/compare/page.tsx',
+        '[locale]/(app)/admin/lands/search/page.tsx',
         '[locale]/(app)/admin/kamnet/page.tsx',
         '[locale]/(app)/admin/reservations/page.tsx',
+        '[locale]/(app)/admin/verify/page.tsx',
         '[locale]/(app)/agent/commissions/page.tsx',
         '[locale]/(app)/agent/dashboard/page.tsx',
         '[locale]/(app)/agent/escalation/new/page.tsx',

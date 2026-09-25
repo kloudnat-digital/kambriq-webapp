@@ -2214,6 +2214,15 @@
     "notBuilt": {
       "title": "Not available yet",
       "description": "This screen has not been built yet."
+    },
+    "adminVerify": {
+      "pageTitle": "KAMBRIQ VERIFY™ administration"
+    },
+    "adminLandsSearch": {
+      "pageTitle": "Land search"
+    },
+    "adminLandsCompare": {
+      "pageTitle": "Land comparison"
     }
   },
   "a11y": {
