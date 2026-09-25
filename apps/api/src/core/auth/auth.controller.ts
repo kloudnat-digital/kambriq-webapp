@@ -76,7 +76,10 @@ export class AuthController {
     return { ...result, tokens: this.publicTokens(result.tokens) };
   }
 
+  // A41. Peak measured per caller: 15 a minute (NextAuth bursts). Double it -
+  // a limit too low here logs people out in the middle of a session.
   @Public()
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -96,7 +99,9 @@ export class AuthController {
     return this.publicTokens(tokens);
   }
 
+  // A41. One call per sign-out, none in the 7 days measured. House auth value.
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
@@ -111,7 +116,9 @@ export class AuthController {
     }
   }
 
+  // A41. Peak measured per caller: 3 (a journeys run). A double click is 2.
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify email address with a one-time token' })
@@ -141,7 +148,10 @@ export class AuthController {
     await this.authService.forgotPassword(dto);
   }
 
+  // A41. Peak measured per caller: 3 (journey 5). The token cannot be guessed;
+  // this bounds abuse, not brute force.
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('reset-password')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Reset password using a one-time token' })
@@ -151,7 +161,10 @@ export class AuthController {
     await this.authService.resetPassword(dto);
   }
 
+  // A41. It checks a password, like login, and was not called in the 7 days
+  // measured. Five tries a minute, as for forgot-password.
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('reactivate')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reactivate a soft-deleted account within the grace period' })

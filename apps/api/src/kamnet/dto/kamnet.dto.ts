@@ -32,6 +32,25 @@ export const updateAgentProfileDto = z.object({
 
 export class UpdateAgentProfileDto extends createZodDto(updateAgentProfileDto) {}
 
+/**
+ * P11 - the agent's decision to appear in the public directory, or to stop.
+ *
+ * Its own schema rather than a field on `updateAgentProfileDto`: that one is a
+ * bag of optional presentational fields, and a permission to publish somebody's
+ * name, face and city does not belong somewhere it can be carried along by a
+ * partial update nobody read closely.
+ *
+ * `listed` is REQUIRED and has no default. An absent field would have to mean
+ * something, and both readings are wrong: "leave it alone" makes the route a
+ * no-op that answers 200, and "false" withdraws consent because a key was
+ * forgotten. One boolean, stated explicitly, in both directions.
+ */
+export const setPublicListingConsentSchema = z.object({
+  listed: z.boolean(),
+});
+
+export class SetPublicListingConsentDto extends createZodDto(setPublicListingConsentSchema) {}
+
 /** Admin: Update agent status */
 export const updateAgentStatusSchema = z.object({
   tier: z.enum(KamnetAgentTier),

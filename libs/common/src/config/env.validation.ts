@@ -25,6 +25,13 @@ export const envSchema = z.object({
   // ----- Rate Limiting -----
   THROTTLE_TTL: z.coerce.number().default(60000),
   THROTTLE_LIMIT: z.coerce.number().default(100),
+  /**
+   * A45. Shared by the web and the API only. With it, the API believes the
+   * visitor address the web vouches for; without it, every call the web makes
+   * for its visitors counts against the web task. Read and length-checked by
+   * `caller-identity.ts` in the API.
+   */
+  WEB_CALLER_SECRET: z.string().optional(),
 
   // ----- Redis -----
   REDIS_HOST: z.string().default('localhost'),

@@ -12,7 +12,7 @@ import {
  * The journeys the delivery is defined by, run against a deployed API.
  *
  * They were proven by hand on 2026-09-04. Proven by hand means proven once, by
- * one person, on one build — nothing stops them regressing on Tuesday. This is
+ * one person, on one build - nothing stops them regressing on Tuesday. This is
  * the same evidence, taken automatically, against a build identified by its
  * commit.
  */
@@ -39,7 +39,7 @@ let agent: string;
  * counter says something changed, not what is running.**
  *
  * `EXPECTED_SHA` is supplied by CI as the commit under test. Locally it is
- * usually unset, and then the gate reports what it found rather than asserting —
+ * usually unset, and then the gate reports what it found rather than asserting -
  * an unset variable must not read as a passing gate, so the value is printed.
  */
 beforeAll(async () => {

@@ -157,3 +157,73 @@ describe('every navigation carries its locale', () => {
     expect(stillUsed.length).toBeGreaterThan(0);
   });
 });
+
+/**
+ * Every page lives under `[locale]`, or it is served at a URL nothing links to.
+ *
+ * This guard is here because the gap it closes was found the expensive way. The
+ * develop merge of 25 September brought six new files at
+ * `app/(app)/agent/profile/` and `app/products/kamnet/annuaire/` - paths that
+ * stopped existing when every page moved under `[locale]`. **Git merged them
+ * cleanly and nothing failed**: a page at the old path computes the same URL as
+ * one at the new path, so the route walks in `middleware-matcher.spec.ts` and
+ * `routes-have-pages.spec.ts` both saw `/agent/profile` and were satisfied.
+ *
+ * What would actually have happened is that the file sits outside the only root
+ * layout the app has, so it renders with no `<html>`, no locale and no
+ * provider - and the URL a visitor reaches it by carries no prefix, which the
+ * proxy redirects away to a locale where the page does not exist.
+ *
+ * The exceptions are named, never patterned: each one is a file Next requires
+ * at the app root, and a seventh appearing is something to fail on.
+ */
+const APP_DIR = join(SRC, 'app');
+
+/** Files Next requires at the app root, each with the reason it cannot move. */
+const OUTSIDE_THE_LOCALE: Record<string, string> = {
+  api: 'route handlers - no layout, and the proxy excludes them',
+  health: 'a route handler for the load balancer, called without a locale',
+  'robots.ts': 'must be served at /robots.txt, which a crawler reads unprefixed',
+  'sitemap.ts': 'must be served at /sitemap.xml, for the same reason',
+  'global-error.tsx': 'renders its own document; Next requires it at the app root',
+  'globals.css': 'a stylesheet, imported by the locale layout',
+  'brand-palette.spec.ts': 'a spec, not a route',
+};
+
+describe('every page lives under the locale segment', () => {
+  it('is reading the app directory it thinks it is', () => {
+    const top = readdirSync(APP_DIR);
+    expect(top).toContain('[locale]');
+    expect(top.length).toBeGreaterThan(3);
+  });
+
+  it('nothing but the named exceptions sits beside [locale]', () => {
+    // Dotfiles are skipped: this walks the filesystem rather than git, so it
+    // sees `.DS_Store`, which is gitignored and is nobody's route. Reporting a
+    // local artefact as a misplaced page is a defect in the measurement.
+    const strays = readdirSync(APP_DIR).filter(
+      (entry) => !entry.startsWith('.') && entry !== '[locale]' && !(entry in OUTSIDE_THE_LOCALE),
+    );
+    expect(strays).toEqual([]);
+  });
+
+  it('the exceptions all still exist', () => {
+    // An exception for a file that has gone is an exception that hides the
+    // next stray.
+    const gone = Object.keys(OUTSIDE_THE_LOCALE).filter(
+      (entry) => !readdirSync(APP_DIR).includes(entry),
+    );
+    expect(gone).toEqual([]);
+  });
+
+  it('every page.tsx and route.ts is under [locale], or under an exception', () => {
+    const pages = walk(APP_DIR)
+      .map((f) => relative(APP_DIR, f).replace(/\\/g, '/'))
+      .filter((rel) => /(^|\/)(page|route)\.tsx?$/.test(rel))
+      .filter((rel) => !rel.startsWith('[locale]/'))
+      .filter(
+        (rel) => !Object.keys(OUTSIDE_THE_LOCALE).some((e) => rel === e || rel.startsWith(`${e}/`)),
+      );
+    expect(pages).toEqual([]);
+  });
+});

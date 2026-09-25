@@ -17,6 +17,13 @@ export class NewsletterController {
   @ApiOperation({ summary: 'Subscribe an email address to the newsletter' })
   @ApiResponse({ status: 204, description: 'Subscribed successfully.' })
   async subscribe(@Body() dto: SubscribeNewsletterDto): Promise<void> {
-    await this.newsletterService.subscribe(dto.email);
+    await this.newsletterService.subscribe({
+      email: dto.email,
+      locale: dto.locale,
+      consent: dto.consent,
+      // The page the consent text links to. Recorded with the consent, because
+      // consent is to a document and documents change.
+      consentPolicyPath: '/legal/privacy',
+    });
   }
 }

@@ -12,8 +12,9 @@
  * chantier that needs a different one, so the list is the configuration and
  * adding a schema is one entry.
  *
- * `core` and `lands` are both here: each has `*.dbspec.ts` files. `kbs` and
- * `kamnet` are each a single entry on the day something needs them.
+ * All four are here now, each with at least one `*.dbspec.ts` file. `core` and
+ * `lands` came first; `kbs` arrived with I21 and `kamnet` with P11, each on the
+ * day something needed it - which is what this shape was for.
  *
  * The two arrived from different pull requests - core from the contact chantier,
  * lands from the payment-guarantee one - which both created this file
@@ -50,6 +51,16 @@ export const TEST_SCHEMAS: readonly TestSchema[] = [
     urlVar: 'DATABASE_URL_KBS_TEST',
     runtimeVar: 'DATABASE_URL_KBS',
     defaultUrl: 'postgresql://postgres:password@localhost:5432/kambriq_kbs_test',
+  },
+  // P11 - the public directory of certified agents. Who is listed is decided by
+  // three facts that live in three databases: consent and suspension on the
+  // agent row here, the name and city on the core profile, the certificate in
+  // kbs. Each exclusion needs a real row to be proved separately.
+  {
+    name: 'kamnet',
+    urlVar: 'DATABASE_URL_KAMNET_TEST',
+    runtimeVar: 'DATABASE_URL_KAMNET',
+    defaultUrl: 'postgresql://postgres:password@localhost:5432/kambriq_kamnet_test',
   },
 ];
 

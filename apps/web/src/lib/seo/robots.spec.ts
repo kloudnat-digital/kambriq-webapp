@@ -1,4 +1,8 @@
 import { isIndexableEnvironment, NOINDEX_HEADER, robotsHeaders } from './robots';
+// A static import on purpose: a dynamic `import()` of a library makes Nx treat
+// it as lazy-loaded and then forbids every static import of it in this app.
+// eslint-disable-next-line @nx/enforce-module-boundaries -- the point of this test is to compare against the shared rule itself
+import * as shared from '../../../../../libs/common/src/middleware/robots-header.middleware';
 
 /**
  * P4 - the noindex header, in **both** directions.
@@ -80,5 +84,12 @@ describe('P4 - X-Robots-Tag', () => {
 
   it('the header value is the pair a crawler acts on', () => {
     expect(NOINDEX_HEADER).toBe('noindex, nofollow');
+  });
+});
+
+describe('P4 - one rule for the whole hostname', () => {
+  it('is the very function the API uses, not a copy that happens to agree', () => {
+    expect(isIndexableEnvironment).toBe(shared.isIndexableEnvironment);
+    expect(NOINDEX_HEADER).toBe(shared.NOINDEX_HEADER);
   });
 });

@@ -3,6 +3,7 @@ import type { WithNxOptions } from '@nx/next/plugins/with-nx';
 import createNextIntlPlugin from 'next-intl/plugin';
 import createMDX from '@next/mdx';
 import { robotsHeaders } from './src/lib/seo/robots';
+import { imageRemotePatterns, imgSrcSources } from './src/lib/security/image-hosts';
 
 // next-intl plugin - path is relative.
 // - When NX's project-graph plugin analyses this file (CWD = workspace root),
@@ -41,9 +42,14 @@ const nextConfig: WithNxOptions = {
   // P4 joins this block rather than adding a second mechanism beside it. This
   // is already the only place the app sets response headers, it already matches
   // every path, and - measured - it already applies to 404 responses, which is
-  // exactly where a noindex header has to reach. A middleware header could not
-  // have done the same job after P3: the matcher now runs on protected prefixes
-  // only, so it never sees the public pages that most need the header.
+  // exactly where a noindex header has to reach.
+  //
+  // The proxy could not do the same job. Its matcher is a positive list, so it
+  // never sees a URL the site does not serve - and a 404 is exactly where the
+  // header matters most, because a 404 is what a crawler finds when it follows
+  // a stale link. (This said "the matcher runs on protected prefixes only",
+  // which stopped being true when locale routing widened it to the public
+  // paths; the conclusion was unchanged and the reason was not.)
   async headers() {
     return [
       {
@@ -70,7 +76,10 @@ const nextConfig: WithNxOptions = {
               "form-action 'self'",
               "script-src 'self' 'unsafe-inline' blob:",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https://*.amazonaws.com https://*.cloudfront.net https://images.unsplash.com https://api.mapbox.com https://*.tiles.mapbox.com",
+              // A40. The image hosts are the optimizer's own list, so the two
+              // cannot drift apart. The Mapbox sources are the map widget's
+              // tiles, loaded by the browser and never by the optimizer.
+              `img-src 'self' data: blob: ${imgSrcSources(process.env).join(' ')} https://api.mapbox.com https://*.tiles.mapbox.com`,
               "font-src 'self' data:",
               "worker-src 'self' blob:",
               "connect-src 'self' https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com",
@@ -85,14 +94,16 @@ const nextConfig: WithNxOptions = {
     ];
   },
 
-  // Allow Next.js image optimisation for external domains
+  // Next.js image optimisation for the hosts named in
+  // src/lib/security/image-hosts.ts, and no others (A40). The optimizer is
+  // anonymous and decodes what it fetches, so a wildcard host lets whoever owns
+  // a name under it choose those bytes. The media bucket comes from
+  // MEDIA_BUCKET_HOST at build time; without it, bucket URLs are refused.
+  //
+  // `unoptimized` stays as it is: the runtime image sets NODE_ENV=production on
+  // every environment, so optimisation is on for dev and prd alike.
   images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: 'images.unsplash.com' },
-      // S3 buckets - update with the actual bucket hostname when configured
-      { protocol: 'https', hostname: '**.amazonaws.com' },
-      { protocol: 'https', hostname: '**.cloudfront.net' },
-    ],
+    remotePatterns: imageRemotePatterns(process.env),
     unoptimized: process.env.NODE_ENV !== 'production',
   },
 };

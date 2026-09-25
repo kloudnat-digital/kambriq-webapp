@@ -1209,6 +1209,10 @@ after : computeAccessibleName(trigger) === "Sujet *"
 **Measure the accessible name, do not infer it from the markup.** The DOM had a
 label next to the control the whole time.
 
+**A placeholder is not a name either.** From `P2`: the newsletter's address field
+had a placeholder and no label, and `computeAccessibleName` returned `""`. It
+looked labelled to anybody who can see, which is why it survived.
+
 ### A mutation that cannot fail because the test mocks the thing being mutated
 
 From `L1`, and it is the sharpest thing that chantier found. The server action
@@ -1272,6 +1276,47 @@ because the two failures are not symmetrical: a prd that forgot to declare
 itself is visible in Search Console within a day and fixed by one variable, and
 a dev that forgot is indexed under the brand name, invisible until somebody
 searches, and weeks to unpick.
+
+### A header set by an interceptor misses every response that matters most
+
+From P4's second half. Dev was noindex on every page and indexable on its
+API: nothing on the API set `X-Robots-Tag`. The obvious place to add it is an
+interceptor, and that would have missed exactly the two responses a crawler
+meets most on an API: **an interceptor runs only for a matched handler**, so a
+404 for an unknown route and a 401 from a guard go out without it.
+
+**A header that must be on every response is Express middleware, registered
+before routing.** `robotsHeaderMiddleware()` sits right after helmet in
+`main.ts`, and `api-sends-robots-header.spec.ts` sees it on a 200, a 404 and a
+401 over real HTTP.
+
+**And one hostname answers one way.** The rule moved to `libs/common`, and the
+web re-exports the same function, pinned by identity, not by agreement. Its
+import is relative, because the loader that compiles `next.config.ts` cannot
+resolve the `@kambriq/common` alias. Anything `next.config.ts` imports must not
+use it.
+
+### A server that calls on a visitor's behalf is one visitor to everything downstream
+
+From `A45`. A2 fixed the rate limiter to key on the last `X-Forwarded-For` hop,
+and that was right for a browser calling the API. But nearly every call here is
+made by the Next server, through the same public ALB, so the last hop is the web
+task's own address. Every visitor's login, registration, contact request and
+newsletter subscription spent **one bucket for the whole site**, while a caller
+hitting the API directly kept a bucket of its own. Nothing failed, and the limits
+only looked like they worked because traffic was low.
+
+The web could not be recognised by its connection, which is always the ALB, or
+by its address, which was new at every deploy (four in one day). So it
+**vouches** for the visitor, with a secret only it and the API hold, and the API
+believes the claim with that secret and never otherwise. A forwarded address
+believed from anybody is worse than none, because a caller could then choose
+its own bucket.
+
+**Before proposing any limit, find out who the caller is**, by reading the
+request log for a marked request rather than reasoning about the topology. And
+a header that carries a secret must be redacted from the request log in the
+same change that adds it.
 
 ### A guard written before anything can use it
 
@@ -1676,6 +1721,32 @@ work needs a longer working note than an entry, the note is archived where it
 cannot be mistaken for the record, says in as many words that it is not the
 record, and is frozen. Kept for how something was proved; never read for what is
 true now.
+
+### A wildcard in an allowlist trusts whoever can register a name under it
+
+From `A40`. `images.remotePatterns` allowed `**.amazonaws.com`, read as "our S3".
+It meant every S3 bucket in the world, and anybody can create one. The optimizer
+at `/_next/image` is anonymous and hands what it fetches to `sharp`, so the
+wildcard let a stranger choose the bytes our server decodes. That was the one
+reachable critical out of 111 critical and high alerts.
+
+Nothing about it looked wrong. The comment beside it even said _"update with the
+actual bucket hostname when configured"_: a placeholder that shipped, with a
+comment to say so, and a comment refuses nothing.
+
+**A host in an allowlist is literal, and the list has one home.**
+`src/lib/security/image-hosts.ts` feeds both `remotePatterns` and the CSP
+`img-src`. A host that differs per environment comes from a build variable, and
+when the variable is missing the host is refused, never widened.
+`image-hosts.spec.ts` fails on a wildcard, on a host written into
+`next.config.ts`, and on a build that stops receiving the variable.
+
+Two properties of Next.js make this easy to get wrong:
+
+- a standalone build freezes `images` and `headers()` at `next build`, so the
+  variable must reach the Docker build, not the container;
+- a pattern with no `search` matches every query string. Presigned URLs need
+  that, and it is a statement about what the entry allows, not a detail.
 
 ## 5. Invariants somebody will otherwise break
 
@@ -2410,6 +2481,94 @@ asks whether the whole remaining path mentions one of them, so it answers the
 same at every `node_modules/` in it. **And the list is the dependency chain, not
 the package you imported**: each one surfaces only once the one above it is
 transformed, and a short list fails with the next package's name.
+
+### A merge can move a file to a path that stopped existing, and nothing reports it
+
+From the develop merge of 25 September, and it is the sharpest thing that merge
+found.
+
+Wave 5 moved every page under `app/[locale]/`. Develop, meanwhile, added six new
+files at the old paths - `app/(app)/agent/profile/` and
+`app/products/kamnet/annuaire/`. Git merged them **cleanly**: they are new files
+on one side and the other side never touched them, so there is no conflict to
+raise. The suite stayed green.
+
+**What made it invisible is that the URL is the same.** Both route walkers -
+`middleware-matcher.spec.ts` and `routes-have-pages.spec.ts` - strip `[locale]`
+when computing a URL, precisely so the lists in `routes.ts` can be written
+without it. A page at `app/(app)/agent/profile/page.tsx` therefore computes
+`/agent/profile`, exactly as one under `[locale]` does, and both walkers were
+satisfied. The page would have rendered outside the only root layout the app
+has: no `<html>`, no locale, no provider.
+
+`no-unlocalised-navigation.spec.ts` now asserts the **placement** as well as the
+navigation: every `page.tsx` and `route.ts` lives under `[locale]`, bar a named
+list of files Next requires at the app root. It found three more offenders the
+same minute - `newsletter-signup.tsx`, `directory-section.tsx` and
+`certificate-number-lookup.tsx`, all importing `next/link` or `next/navigation`.
+
+**The general rule: after a merge that follows a large move, ask what the other
+branch created while the move was happening.** A conflict is raised when two
+sides edit the same path. Nothing is raised when one side edits a path the other
+side deleted out from under it, and nothing is raised at all when one side
+simply adds a file where a directory used to mean something.
+
+### A suite that cannot run reports no defect, and looks like a suite that passes
+
+Also from that merge. `image-hosts.spec.ts` - A40's guard against a wildcard in
+the image allowlist, the one reachable critical out of 111 alerts - failed with
+`ReferenceError: TextDecoder is not defined` and ran **zero** of its 25 tests.
+It imports `@aws-sdk/client-s3`, which reaches `@smithy/core`, which reads
+`TextDecoder` at module scope; jsdom does not provide it and the project's
+default environment is jsdom.
+
+**It was red on develop, not broken by the merge**, and that was established
+rather than assumed: reverting the web jest config to develop's own left the
+failure unchanged. Not one line of the spec touches the DOM, so
+`@jest-environment node` is the whole fix, and 25 assertions began running.
+
+This is [a check that never runs](#a-check-that-never-runs-looks-exactly-like-a-check-that-passes)
+arriving through the test environment rather than through a script. **`Tests: 0
+total` beside a red suite is not a failing test - it is a missing one**, and a
+summary line that counts suites rather than assertions reads the two alike.
+
+### A comment rewrite can delete the reason and keep the sentence
+
+The uncomfortable one, and it is about our own work. Wave 2 rewrote comments
+repository-wide under section 9 - be technical, be concise, remove the stories.
+On four files the merge showed what that cost, because develop still had the
+originals:
+
+- `throttler-behind-proxy.guard.ts` became _"Custom ThrottlerGuard to correctly
+  identify the client IP behind a load balancer"_, losing **why the last
+  `X-Forwarded-For` entry** and the note that a CDN would move the offset;
+- `robots.ts` lost the entire reason `NODE_ENV` cannot make the decision - which
+  is the defect P4 existed to prevent;
+- `types/kamnet.ts` lost the warning that `PublicAgentProfile` is a misnomer for
+  an agent-to-agent view carrying ranking metrics;
+- `kamnet.module.ts` lost what the public directory publishes and what it does not.
+
+Develop's versions were taken back on all four.
+
+**Concise is not the same as short.** Section 9 says to cut anecdote and to keep
+what clarifies a non-obvious constraint; a measurement, a threat model and a
+misnomer warning are the constraint. The test to apply is not "can this be said
+in fewer words" but **"can the next person get this wrong without it"** - and if
+they can, the words are load-bearing however conversational they look.
+
+### A freeze written on one branch is a claim, not a property
+
+`WAVE_STATUS.md` was archived and frozen on 24 September on the remediation
+branch, with a banner saying nothing further would be written in it. Develop had
+not seen that commit, so the file went on being written there for another day -
+five hundred and fifty more lines, six more chantiers - and the merge brought all
+of it in, onto the renamed path, without a conflict.
+
+Nothing was wrong on either side. The freeze simply was not a fact about the file
+until both branches held it. **A convention introduced on a long-lived branch is
+not in force until that branch merges**, and the window is exactly as long as the
+branch is unmerged - which is the argument for merging often rather than for
+writing louder banners.
 
 ## 9. Code Comments and Documentation Tone
 

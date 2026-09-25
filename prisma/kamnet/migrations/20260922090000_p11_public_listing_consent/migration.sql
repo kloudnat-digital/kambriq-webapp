@@ -1,0 +1,16 @@
+-- P11 - consent to appear in the public directory of certified agents.
+--
+-- Null means not listed. The public projection lists only agents whose value is
+-- set; withdrawing consent writes null again and the entry is gone from the
+-- next read.
+--
+-- A nullable timestamp rather than a boolean, because "since when" is the fact
+-- a consent record has to be able to answer and a boolean cannot.
+--
+-- Additive, nullable, and deliberately WITHOUT a backfill. A10 backfilled
+-- `idSubmittedAt` from `updatedAt` because a pending document had a real
+-- submission moment that the row could approximate honestly. There is no such
+-- moment here: nobody has been asked yet. Writing a timestamp for the rows that
+-- already exist would publish a real person's name, face and city on the
+-- strength of a migration, which is exactly what this column exists to stop.
+ALTER TABLE "KamnetAgent" ADD COLUMN "publicListingConsentAt" TIMESTAMP(3);

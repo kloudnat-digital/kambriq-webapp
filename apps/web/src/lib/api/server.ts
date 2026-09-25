@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { redirect } from '@/i18n/navigation';
 import { currentLocale } from '@/lib/locale';
 import { auth } from '@/auth';
+import { visitorHeaders } from './visitor-headers';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 if (!API_URL && process.env.NODE_ENV === 'production') {
@@ -31,6 +32,8 @@ const baseFetch = async <T>(
     headers: {
       'Content-Type': 'application/json',
       ...(authHeader ? { Authorization: authHeader } : {}),
+      // A45: which visitor this call is for, vouched for by the web.
+      ...(await visitorHeaders()),
       ...options?.headers,
     },
   });
@@ -63,7 +66,18 @@ const baseFetch = async <T>(
  */
 
 export const api = {
-  get: <T>(path: string) => baseFetch<T>(path, { method: 'GET' }),
+  /**
+   * `init` is additive and almost always omitted.
+   *
+   * It exists so a single caller can pin `cache: 'no-store'` without changing
+   * `baseFetch` for everybody. That distinction matters in Next 16: an explicit
+   * `no-store` opts its ROUTE into dynamic rendering, so putting it in
+   * `baseFetch` would change the rendering mode of every statically rendered
+   * page, `generateMetadata`, sitemap or `generateStaticParams` that reaches
+   * it - or fail the build. Here it changes one read on a route that is
+   * already `force-dynamic`.
+   */
+  get: <T>(path: string, init?: RequestInit) => baseFetch<T>(path, { method: 'GET', ...init }),
 
   post: <T>(path: string, data?: unknown) =>
     baseFetch<T>(path, { method: 'POST', body: data ? JSON.stringify(data) : undefined }),

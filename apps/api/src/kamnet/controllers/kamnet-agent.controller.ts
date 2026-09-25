@@ -20,6 +20,7 @@ import {
 } from '@nestjs/common';
 import { CurrentUser, PaginationQueryDto, RequestUser, RoleCode, Roles } from '@kambriq/common';
 import {
+  SetPublicListingConsentDto,
   SubmitApplicationDto,
   UpdateAgentProfileDto,
   CreateLeadDto,
@@ -90,6 +91,35 @@ export class KamnetAgentController {
   @ApiResponse({ status: 200, description: 'Profile updated.' })
   async updateMyProfile(@CurrentUser() user: RequestUser, @Body() dto: UpdateAgentProfileDto) {
     return this.agentsService.updateMyProfile(user.id, dto);
+  }
+
+  /**
+   * P11 - the agent decides whether they appear in the public directory.
+   *
+   * One route for both directions, because "listed" is one decision with two
+   * values and two endpoints could disagree about which is current. Withdrawal
+   * takes effect on the next read: the service deletes the cached agent row, so
+   * nothing serves a stale consent for the 60 seconds `findByUserId` would
+   * otherwise hold it.
+   */
+  @Patch('agents/me/public-listing')
+  @Roles(RoleCode.AGENT)
+  @ApiOperation({
+    summary: 'Appear in the public directory, or stop appearing',
+    description:
+      "Records or withdraws this agent's consent to be listed publicly. `listed: true` publishes " +
+      'first name, last name, city, country, avatar when set, the KCA number and its issue date. ' +
+      '`listed: false` removes the entry from the next read. Null consent is the default: no agent ' +
+      'is listed until they ask to be.',
+  })
+  @ApiResponse({ status: 200, description: 'Consent recorded or withdrawn.' })
+  @ApiResponse({ status: 403, description: 'A suspended agent cannot be listed.' })
+  @ApiResponse({ status: 404, description: 'Agent profile not found.' })
+  async setMyPublicListing(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: SetPublicListingConsentDto,
+  ) {
+    return this.agentsService.setPublicListingConsent(user.id, dto.listed);
   }
 
   @Get('agents/:id')

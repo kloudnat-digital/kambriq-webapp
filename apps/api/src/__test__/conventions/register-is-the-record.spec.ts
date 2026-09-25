@@ -94,7 +94,6 @@ const NO_ENTRY_YET: ReadonlyArray<{ chantier: string; why: string }> = [
   { chantier: 'A32', why: 'the CI gate reads develop at its head' },
   { chantier: 'A33', why: 'WebKit out of the E2E matrix; Safari is not tested' },
   { chantier: 'A36', why: 'the journey client waits out a 429' },
-  { chantier: 'A41', why: "opened by P11's self-review, not started" },
   { chantier: 'Audit 2026-09-23, unwaved', why: 'findings with no wave assigned yet' },
   { chantier: 'G1', why: 'the payment model; detail is in docs/ops/g1-payment-model.md' },
   { chantier: 'G10', why: 'channel parameters applied; entry folded into G10b' },
@@ -199,7 +198,7 @@ describe('the chantier register is the record, and the only one', () => {
       (q) => q.chantier,
     );
     expect(stale).toEqual([]);
-    expect(NO_ENTRY_YET).toHaveLength(28);
+    expect(NO_ENTRY_YET).toHaveLength(27);
   });
 
   it('is the only file in the repository shaped like a record of work', () => {

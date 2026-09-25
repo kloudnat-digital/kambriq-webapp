@@ -23,6 +23,16 @@ export const INDEXABLE_PAGES = [
   '/products/verify',
   '/products/kbs',
   '/products/kamnet',
+  /**
+   * P11's directory, arriving with the develop merge of 25 September.
+   *
+   * Indexed deliberately. It is the public face of KAMNET and the thing a buyer
+   * checks an agent against, and every agent on it consented explicitly -
+   * `publicListingConsentAt`, a timestamp rather than a boolean, withdrawn by
+   * writing null. There is no per-agent URL, so indexing this page creates one
+   * search result about the directory rather than a permanent page per person.
+   */
+  '/products/kamnet/annuaire',
   '/legal/privacy',
   '/legal/terms',
   '/legal/mentions',
@@ -63,6 +73,8 @@ export const PAGE_WEIGHT: Record<
   '/products/verify': { changeFrequency: 'monthly', priority: 0.9 },
   '/products/kbs': { changeFrequency: 'monthly', priority: 0.9 },
   '/products/kamnet': { changeFrequency: 'monthly', priority: 0.9 },
+  // Weekly: the roll changes when an agent is certified, consents or withdraws.
+  '/products/kamnet/annuaire': { changeFrequency: 'weekly', priority: 0.7 },
   '/methode': { changeFrequency: 'monthly', priority: 0.8 },
   '/plan': { changeFrequency: 'monthly', priority: 0.8 },
   '/about': { changeFrequency: 'monthly', priority: 0.6 },

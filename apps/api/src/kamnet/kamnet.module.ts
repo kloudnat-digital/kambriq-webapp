@@ -10,18 +10,28 @@ import { KamnetNetworkService } from './network/network.service';
 import { KamnetProcessor } from './processors/kamnet.processor';
 import { KamnetAgentController } from './controllers/kamnet-agent.controller';
 import { KamnetAdminController } from './controllers/kamnet-admin.controller';
+import { KamnetPublicController } from './controllers/kamnet-public.controller';
 
 /**
+ *
  * The KAMNET module manages the certified agent network:
  * - Applications (KCA-certified users apply to become agents)
  * - Agent profiles (status management, sponsorship tree)
  * - Leads (prospect tracking for agents)
- * - Commissions (manual tracking for MVP)
- * - Network (sponsorship tree queries, limited to N1 depth)
+ * - Commissions (MVP: manual storage, v2: auto-calculation)
+ * - Network (sponsorship tree queries, N1 depth since P9)
+ * - The public directory (P11): the one surface here that answers without a
+ *   token, and after the P9 arbitrage the only public presence KAMNET keeps.
+ *   It lists an agent who consented, is not suspended and holds a certificate
+ *   that stands - name, city, country, avatar, KCA number, issue date, and
+ *   nothing else. `agents/public-listing.ts` is where that is decided.
+ *
  */
 
 @Module({
-  // Import KbsModule to access KbsCandidatesService for certification checks.
+  // KbsModule, not the former `KbsCertificatesModule`: KAMNET asks
+  // `KbsCandidatesService.isUserCertified` (I15), and the light module built a
+  // second KbsPrismaService - a second connection pool - of its own.
   imports: [CoreModule, KbsModule],
   providers: [
     KamnetPrismaService,
@@ -32,7 +42,7 @@ import { KamnetAdminController } from './controllers/kamnet-admin.controller';
     KamnetNetworkService,
     KamnetProcessor,
   ],
-  controllers: [KamnetAgentController, KamnetAdminController],
+  controllers: [KamnetAgentController, KamnetAdminController, KamnetPublicController],
   exports: [KamnetPrismaService, KamnetAgentsService],
 })
 export class KamnetModule {}

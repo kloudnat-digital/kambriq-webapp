@@ -207,14 +207,14 @@ listed here first.
 | `G5`                          | `PROUVE LOCALEMENT` | a correction entered from the back-office screen: three movements, total 500 000 over four lines, original line unchanged. Correction carries its own reason and author                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `G11` follow-up 3             | `PROUVE`            | the controller never forwarded `paidBy`: a DEPO keyed on the screen was refused by the service. Fixed and pinned here                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `P3`                          | `PROUVE LOCALEMENT` | the auth middleware was a global net: every unknown URL redirected to /login and nothing could 404. Positive matcher, real 404 page, route table proved unchanged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `P4`                          | `PROUVE LOCALEMENT` | X-Robots-Tag noindex outside production, on the existing headers() block. Reads APP_ENV: NODE_ENV is 'production' on every environment and cannot tell them apart                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `P4`                          | `PROUVE LOCALEMENT` | X-Robots-Tag noindex outside production, on the existing headers() block. Reads APP_ENV: NODE_ENV is 'production' on every environment and cannot tell them apart. Second half (API responses): PROUVE on dev 23/09; P4 stays below 100 % until D13                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `P5`                          | `A FAIRE`           | public product pages link at /kamnet/apply and /kbs/enroll, both behind the login wall. Kept protected by P3 deliberately: widening is a product change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | rename                        | `A DECIDER`         | `L1-contact`/`L2-contact` -> `P1`/`P2` was asked for in P3's brief; those ids exist only on PR #98's branch, which the same brief puts out of scope. Not done - see PR                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `A19`                         | `PROUVE`            | develop linted 1 project of 6 for seven months: the workflow promised "the full set", `pnpm run lint` was `nx lint api`. Widened to `nx run-many -t lint --all`; manifest corrected; proved in both directions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `I32`                         | `A FAIRE`           | `getMyNetwork` never reads the caller's tier; the rule lives in the page. `P9` clamped everyone to N1, so the gap is no longer observable from outside - a narrowed blast radius, not a fix                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `P10`                         | `A FAIRE`           | `whyKbs.network.description` and `whyAgent.exclusiveAccess.description` still promise an exclusive catalogue reserved to agents                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `P21` follow-up               | `A FAIRE`           | the remuneration ban covers a hand-written list of message namespaces and `landTypes` is not in it, so the public LANDS page still carries "Avantages Agent KAMNET / Commission rapide". Derive the list from what the public pages render                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `A41`                         | `A FAIRE`           | throttle the five anonymous auth routes. Opened by `P11`'s self-review on 22 September, not started                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `A41`                         | `PROUVE`            | a rate limit each, chosen from 7 days of measured traffic; `auth-anonymous-routes-throttled.spec.ts` reads the @Throttle metadata, red first on five undefined routes, eight mutations each watched failing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `P22`                         | `A FAIRE`           | batch the certificate read behind the public directory and bound its page size. Opened by `P11`'s self-review on 22 September, not started                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | Audit 2026-09-23, wave 1      | `EN COURS`          | four security fixes on `chore/audit-remediation`, unmerged. The fifth finding, the API bearer token in the RSC payload, is **closed by wave 5** - `sessionForClient` strips it and `lib/session.spec.ts` plus the login journey pin it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | Audit 2026-09-23, wave 2      | `EN COURS`          | `GET /kbs/me` scoped to the active course, `no-console`, `strict` on the API, two seed preconditions. Unmerged; pending proof is `GET /kbs/me` read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -225,6 +225,7 @@ listed here first.
 | Audit 2026-09-23, wave 6      | `EN COURS`          | SEO: `app/sitemap.ts` (30 URLs, hreflang + x-default), `app/robots.ts`, canonical and alternates on all 15 public pages, JSON-LD where there was none, metadata on the four legal pages and `robots: noindex` on the six auth pages. Both files read `APP_ENV`, never `NODE_ENV`. Unmerged; pending proof is `/robots.txt` and `/sitemap.xml` read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | Locale switcher coverage      | `A FAIRE`           | `QuickActions` carries the only language control and is mounted **per page**, on 8 of the 15 public pages. `/contact`, `/about`, `/faq` and the four legal pages have none. It predates wave 5 and matters more under it: a cookie carried the choice between pages and a URL does not, so a visitor who lands on `/fr/contact` from a search result cannot switch. Moving it into shared chrome is a design decision, so it was not made silently                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Built-in 404 above the locale | `A FAIRE`           | a `notFound()` thrown from the root layout has no boundary above it, so an unconfigured FIRST segment (`/pricing`, `/de/about`) is served Next's built-in 404 rather than the branded one. The status is 404 in both cases. Closing it needs `experimental.globalNotFound`, off by default in Next 16.3.6; pinned as a difference in `locale-routing.spec.ts` rather than left to be discovered                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| develop merged into waves 5-6 | `EN COURS`          | develop's 9 commits merged 25 September: 8 text conflicts, six new page files relocated under `[locale]`, three components moved off `next/link`/`next/navigation`, `revalidatePath` calls given their prefix, `image-hosts.spec.ts` unblocked (25 assertions that ran none), `A41` reconciled. Unmerged to develop; pending proof is the routing table and the sitemap read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Audit 2026-09-23, unwaved     | `A FAIRE`           | `/admin/verify` and `/kamnet/apply` are mocks behind real roles that toast success and write nothing; the Mapbox build `ARG` reaches no workflow, so the land-search map is dark in every image; `legal/mentions/{fr,en}.mdx` publishes `Capital social : XXX XXX XAF` and `N° RCCM : XX / XXX / XX` on a public page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | register                      | `A FAIRE`           | twenty-eight rows above have no `###` entry in this file - their detail lives in the tracker or in a wave note. The list is pinned in `register-is-the-record.spec.ts`; writing an entry means removing its line there                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
@@ -1115,6 +1116,75 @@ quality job for `nx run api:test-db`.
 
 ---
 
+### P2 - the newsletter form, held to L1's discipline - `PROUVE`
+
+**Cost impact: None.** No new resource. The consent is stored as attributes on
+the SES contact that already holds the subscription.
+
+`L1-contact` is this chantier's first half: the contact form. P2 stood at 95 %
+for one reason, the **newsletter form had none of it**. That was checked against
+the code before anything changed, and every claim held:
+
+- no consent box and no privacy link;
+- a resolver with one hard-coded English sentence on a French site;
+- an action that turned every failure into another English sentence;
+- a server that checked only the address.
+
+Measured: the address field's accessible name was **`""`**, because it had a
+placeholder and no label, and `computeAccessibleName` does not count a
+placeholder.
+
+Now the same shape as L1, not a better one:
+
+- the resolver carries the rules as catalogue keys (`footer.newsletter.validation`);
+- each message is visible under its field, tied by `aria-describedby`, with
+  `aria-invalid` set;
+- consent is an explicit box linking the privacy policy and the RGPD page, using
+  the consent sentence already in the catalogues;
+- the API refuses a subscription without a literal `true` consent at the DTO,
+  and again in the service (`NewsletterConsentRequiredError`), before SES is
+  called;
+- the consent time is the server's clock. It is stored on the SES contact as
+  `AttributesData` (`consentGivenAt`, `consentPolicyPath`, `locale`), and none
+  of it is accepted from the wire;
+- a refusal is said in a `role="alert"` region and the address stays in the
+  field. A 409 is named with the catalogue's "already subscribed" sentence.
+
+After: accessible name **`"Adresse email"`** (an `sr-only` label; the footer's
+heading already says what the field is for).
+
+**Proof.** Red first: 13 web tests failed and the controller seam failed. The
+DTO and service specs failed to compile against the old code, which is not a
+red, so their behavioural reds are the mutations. Eighteen mutations, each
+observed failing on its own, one per expectation:
+
+- DTO: consent optional; consent as `'true'` or `1`; a wire timestamp let through;
+- service: consent guard removed; timestamp not the server's; locale not stored;
+- controller: policy path dropped;
+- web: resolver consent optional; action always succeeding; each `aria-describedby`
+  and `aria-invalid`; the label detached; the English sentence restored in the
+  resolver; the 409 unnamed; the locale hard-coded; the RGPD link redirected.
+
+`fr` and `en` keys are pinned in lockstep by a test.
+
+**Proven on dev, 23 September, on `sha-581f99d`** (develop run `35886840188`
+green, journeys included):
+
+- the footer's address field carries its label, `"Adresse email"`, read from the
+  deployed DOM;
+- one subscription through the form in a real browser, to a throwaway
+  `kambriq-p2-proof-20260923163245@maildrop.cc`, answered "Inscription réussie !"
+  and reset the field;
+- read back with `aws sesv2 get-contact` on `kambriq-newsletter`: `AttributesData`
+  holds `consentGivenAt: 2026-09-23T16:33:20.881Z` - 39 ms before SES's own
+  `CreatedTimestamp`, 16:33:20.920Z, so the server's clock -
+  `consentPolicyPath: /legal/privacy` and `locale: fr`.
+
+The contact list is shared by the account, so that throwaway contact stays in
+it until somebody removes it.
+
+---
+
 ### L2-contact - the daily digest, so silence is impossible - `PROUVE LOCALEMENT`
 
 **Cost impact: None.** A job name on `QUEUES.CORE`, handled by the
@@ -1347,6 +1417,76 @@ the Playwright spec run against a local server (16 passed). **No CI run has
 confirmed any of it** - the Actions quota is exhausted and jobs do not start.
 CI still has to run the three unit suites and the e2e suite on a clean runner,
 and build the web image with the new page.
+
+---
+
+## P4, second half - the API carries the header too - `PROUVE`
+
+**Cost impact: None.**
+
+P4 was capped at 90 % for a reason measured on dev: `X-Robots-Tag: noindex,
+nofollow` was on the home page, a legal page, two protected routes, a 404, the
+login page and a static asset, and **absent on `/api/v1/health/version`**. So
+"every route" was false on the same hostname.
+
+Re-measured on 23 September before anything changed (`sha-581f99d`):
+
+- `/` and `/legal/privacy` carry the header;
+- `/api/v1/health/version` (200), `/api/v1/kamnet/public/agents` (200),
+  `/api/v1/no-such-route` (404) and `/api/v1/users/me` (401) carry nothing.
+
+**One rule, not two.** `isIndexableEnvironment` and `NOINDEX_HEADER` moved to
+`libs/common/src/middleware/robots-header.middleware.ts`.
+`apps/web/src/lib/seo/robots.ts` re-exports them, and a test asserts the web's
+function **is** the shared one, not a copy that agrees. It is still `APP_ENV`,
+never `NODE_ENV`, and absent means noindex. Dev sets no `APP_ENV` on either
+container, so both answer noindex with no infra change. prd must set
+`APP_ENV=production` on **both**, and that is the existing ADR-005 follow-up.
+
+**Express middleware, not an interceptor.** An interceptor runs only for a
+matched handler, so a 404 for an unknown route and a 401 from a guard would
+leave without the header. `robotsHeaderMiddleware()` is registered in `main.ts`
+right after helmet, before the global prefix. The environment is read once, at
+startup.
+
+The web import is relative, with a scoped
+`eslint-disable-next-line @nx/enforce-module-boundaries`. `next.config.ts` imports
+`robots.ts`, and the config loader cannot resolve the `@kambriq/common` alias:
+measured, "Cannot find module '../../libs/common/...'". `next build` with and
+without `APP_ENV=production` still gives `["noindex, nofollow"]` and `[]` in the
+routes manifest.
+
+**Proof so far.** The `main.ts` pins were red first, against the unregistered
+app. An HTTP test boots a Nest app with the middleware registered as `main.ts`
+does and sees the header on a 200, a 404 and a 401. Nine mutations, each
+observed failing on its own:
+
+- registration removed;
+- registered after the prefix;
+- a `NODE_ENV` fallback;
+- the header sent in production;
+- `next()` forgotten;
+- the decision taken per request;
+- `APP_ENV` not normalised;
+- the web keeping its own copy;
+- the header never set.
+
+**Proven on dev, 23 September 19:38 UTC, on `sha-f0e8819`** (develop run
+`35908835479` green, journeys included), by request:
+
+| request                        | status | X-Robots-Tag                    |
+| ------------------------------ | ------ | ------------------------------- |
+| `/api/v1/health/version`       | 200    | `noindex, nofollow`             |
+| `/api/v1/kamnet/public/agents` | 200    | `noindex, nofollow`             |
+| `/api/v1/no-such-route`        | 404    | `noindex, nofollow`             |
+| `/api/v1/users/me`             | 401    | `noindex, nofollow`             |
+| `/`, `/legal/privacy`          | 200    | `noindex, nofollow` (unchanged) |
+
+The same four API requests carried nothing on `sha-581f99d` that afternoon.
+
+**What P4 cannot reach before D13.** Dev answers 200 to anonymous callers, with
+no access authentication. That half belongs to D13, and P4 stays below 100 %
+until D13 lands.
 
 ---
 
@@ -4595,6 +4735,279 @@ is created and validated for that reservation. That is the correct answer to the
 question being asked, and it is a behaviour change an operator will meet on the
 first click.
 
+### A40 - the image optimizer fetched from any `*.amazonaws.com` host - `PROUVE`
+
+**Cost impact: None.** One build argument and one GitHub variable, no resource.
+
+The A40 triage (`AUDIT_a40-dependabot.md`, 23 September) classified 111
+critical and high Dependabot alerts by what the images actually ship. Exactly one
+critical was reachable by an anonymous visitor: GHSA-2xp9 (Next.js image
+optimizer, RCE through AVIF), with the two `sharp`/libheif advisories behind it.
+The web image runs `NODE_ENV=production` on every environment, so the optimizer
+is on, and `images.remotePatterns` allowed `**.amazonaws.com` - which matches any
+S3 bucket, including one anybody can create. Shown on dev with two benign URLs:
+`s3.amazonaws.com` passed the allowlist and was fetched, `example.org` was
+refused.
+
+The wildcard was never a requirement. Its own comment said _"update with the
+actual bucket hostname when configured"_ - a comment refuses nothing.
+
+**The fix, without a dependency bump.** `src/lib/security/image-hosts.ts` is the
+one list: `images.unsplash.com` (the home hero and the KBS page still load it)
+and the media bucket, read from `MEDIA_BUCKET_HOST` at `next build`. The bucket
+is `kambriq-media-<env>` in `eu-central-1` (terraform `modules/s3-media`, SSM
+`/kambriq/dev/api/AWS_S3_BUCKET` compared without printing), with no CloudFront
+in front. `next.config.ts` takes `remotePatterns` and the CSP `img-src` from that
+list, so the two cannot drift. Unset variable: the bucket is refused, never
+replaced by a wildcard. A malformed value fails the build.
+
+What the bucket entry allows, stated plainly: any path and any query on that one
+host, over https, on the default port. It has to accept any query, because
+avatar and land URLs are presigned and every signature differs.
+
+**Proof so far.** `image-hosts.spec.ts`, 25 tests. Red first against the old
+config (the two `next.config.ts` tests), then green. Seventeen mutations, each
+observed failing on its own, among them the brief's own (`**.amazonaws.com` back
+in `next.config.ts`), a wildcard in the list, a fallback-open on a missing
+variable, a loosened validation, a dropped port rule, drift between CSP and
+patterns, and each of the three build-arg sites removed. The optimizer's own
+matcher (`hasRemoteMatch`) accepts a URL presigned by the API's SDK with the API's
+options, and refuses another bucket, `s3.amazonaws.com`, CloudFront and an
+explicit port. `next build` with and without the variable produced exactly the
+expected `remotePatterns` and `img-src`. The built standalone server, run
+locally, answered the triage's request with `"url" parameter is not allowed`.
+
+**Proven on dev, 23 September, on `sha-581f99d`**, built with
+`MEDIA_BUCKET_HOST=kambriq-media-dev.s3.eu-central-1.amazonaws.com` (read from the
+build log's `--build-arg`):
+
+- the triage's request, `/_next/image?url=https://s3.amazonaws.com/&w=64&q=75`,
+  answers **400 `"url" parameter is not allowed`**, and so does another bucket in
+  the same region;
+- two genuine bucket images - a land photo and an avatar, presigned locally with
+  the API's SDK and options - come back through `/_next/image` as **200
+  `image/jpeg`**, resized to 256 px;
+- the CSP `img-src` on dev names `https://kambriq-media-dev.s3.eu-central-1.amazonaws.com`;
+- under that enforced CSP, on a dev page in a real browser, the presigned avatar
+  **loaded** (2048x1365, no violation) while an image from another bucket was
+  **blocked** with an `img-src` violation.
+
+**A regression on the way, recorded because it was mine.** #163 merged before the
+variable existed, and dev ran `sha-239d13e`, from its deploy until the next one, refusing its own
+bucket: land photos through the optimizer, and avatars too, because the CSP stopped
+naming the bucket. The PR had warned only about the land photos. Setting the
+variable and the next deploy (`sha-581f99d`) cleared both.
+
+**Not observed:** the avatar on the account screen itself, which needs a signed-in
+session. What was observed is the same URL shape under the same enforced policy.
+
+**Not fixed here, and why A42 exists.** Naming the hosts removes the anonymous
+way in. `sharp` and the optimizer are unchanged, so an image in our own bucket,
+which any signed-in user can upload an avatar to, still reaches the same
+library.
+
+**Observed, not changed:** the CSP `connect-src` names no S3 host, while the
+avatar uploader `PUT`s to a presigned S3 URL from the browser.
+
+---
+
+### A45 - the API counts rate limits per visitor, not per web task - `PROUVE`
+
+**Cost impact: None.** One standard SSM parameter, which is free, once the
+infra half described below is applied.
+
+**Measured on dev before anything changed (23 September, `sha-f0e8819`), from
+the API's own request log and marked requests:**
+
+- the API's TCP peer is always the ALB (`10.0.1.x`), never the caller;
+- a direct call arrives as `x-forwarded-for: <caller>`, one hop, and the guard
+  picks the caller;
+- a forged header arrives as `forged, <caller>` and
+  `forged1, forged2, <caller>`: the ALB **appends** and never replaces, so the
+  guard's last hop cannot be chosen by the caller;
+- a call the web server makes for a visitor arrives as `x-forwarded-for:
+3.71.109.x`, one hop - the web task's public IP, matched against its ENI - with
+  `user-agent: node`. Nothing identifies the visitor;
+- the web task's address changes at **every deploy**: four different addresses
+  on 23 September (`18.197.188.x`, `18.184.213.x`, `3.70.216.x`, `3.71.109.x`).
+  The CI runners that run the journeys also send `user-agent: node`, from Azure
+  addresses.
+
+So every limit on a route the web calls - login and register 10/min,
+forgot-password and resend-verification 5, contact and newsletter 3, and the
+global 100 - was counted once for the whole site. Someone calling the API
+directly kept a bucket of their own.
+
+**Why not the brief's shape.** "Accept the claim only when the connection comes
+from the web service" cannot be checked. The connection is always the ALB, and
+the web's address is new at every deploy. The web and the API share no secret
+today: the web has `AUTH_SECRET` and `JWT_EXPIRES_IN`, and the API has four
+database URLs and `JWT_SECRET`.
+
+**The rule.** The web vouches for the visitor:
+
+- it sends `x-kambriq-visitor-ip`, the last `X-Forwarded-For` hop of the
+  incoming request, which the same ALB appended;
+- it proves it is the web with `x-kambriq-caller-secret` (`WEB_CALLER_SECRET`).
+
+The API believes the address only when that secret matches (constant-time, over
+SHA-256 digests) and the value is a single IP address. Anything else falls back
+to the old rule unchanged: no secret configured, none sent, a wrong or repeated
+one, or a value that is not an address. The secret is shorter than 32
+characters? Startup fails. It is unset? One warning at startup, and today's
+behaviour. The secret header is redacted from the request log.
+
+**Found, not fixed - opened as A46, open.** Only this subject's own header is
+redacted here.
+
+**Proof so far:**
+
+- `rate-limit-per-visitor.spec.ts` runs over real HTTP through the real guard,
+  with the requests shaped as the ALB delivers them. Red first: visitor B was
+  refused (`Expected 200, Received 429`) after visitor A exhausted the web's
+  shared bucket. Now visitor A's third call is 429 and visitor B is 200. Forged
+  claims, with no secret or a wrong one, still count against the caller.
+- `caller-identity.spec.ts` covers one rule per test, and runs the redaction
+  through `pino-http` with the app's own paths.
+- `visitor-headers.spec.ts` covers the web helper, and pins that all four
+  NextAuth fetches and the API client carry the headers.
+- Eighteen mutations, each observed failing on its own:
+  - API: a claim believed without the secret (which also turned the two HTTP
+    forgery tests red); believed when no secret is configured; a longer wrong
+    secret; a non-address; a repeated secret; the first hop instead of the last;
+    the guard ignoring the vouched visitor; a short secret; redaction
+    unregistered; redaction aimed at the wrong header; IPv6 refused;
+  - web: the first incoming hop; headers sent without a secret; an error
+    escaping outside a request; a non-address; IPv6 dropped; the refresh fetch
+    and the API client each forgetting the headers.
+
+`next build` passes. Its eight "Dynamic server usage" messages are identical, on
+the same seven routes, in builds made before this change.
+
+**The infra half - kambriq-infra #65, open, not applied.** One `random_password` of 48
+characters written to a SecureString, `/kambriq/dev/shared/WEB_CALLER_SECRET`,
+and referenced as a `secret` named `WEB_CALLER_SECRET` in both the web and the
+API task definitions. Same pattern as A30's database password. Until it exists
+the code is inert and counts exactly as before, so the merge order is free.
+
+**Known limit, named.** A call NextAuth makes outside a request scope (a token
+refresh triggered while `proxy.ts` runs, if `headers()` is unavailable there)
+sends no claim and still counts against the web task. Where a person is known -
+refresh and logout carry a refresh token - a per-account key is the better
+answer, and it belongs to A41.
+
+**Proven on dev, 24 September, on `sha-43ef4ab`**, API `:205` and web `:159`,
+both carrying `WEB_CALLER_SECRET` (kambriq-infra #65, applied by run
+`35955366789`). The API's startup logged the missing-secret warning once before
+the secret existed (04:23) and not after it (04:34).
+
+- **Per visitor.** Two visitors went through the same web task (`3.76.44.x`):
+  mine (`90.25.230.x`) and the E2E runner (`20.168.103.x`). From 04:49:15 to
+  04:49:55 their `/auth/login` counters fell independently, in the same seconds:
+  mine from 9 to 1, the runner's from 9 to 6. Mine had been held at 429 from
+  04:48:52 to 04:49:08, and the runner's first call at 04:49:15 found a full
+  bucket.
+- **A forged claim ignored.** Thirty-two direct calls to the certificate
+  verifier (limit 30), each claiming a different visitor with a wrong secret,
+  gave 30 x 200 then 429, 429: everything counted against the caller.
+- **The four paths, end to end, in a real browser, with a throwaway maildrop
+  account.** Register `POST /auth` 201. The emailed link: `verify-email` 200.
+  `forgot-password` 204, then the emailed link: `reset-password` 204. `login`
+  200 with the new password, landing on `/mylands`. Each call reached the API
+  through the web task, carrying the visitor, with the secret logged as
+  `[redacted]`.
+- The journeys and E2E ran green on the develop run after the secret existed.
+
+**The known limit did not show.** NextAuth's refresh calls, triggered by the
+page while the proofs ran, carried the visitor claim too.
+
+**Observed, not A45's, opened as a subject.** Every `POST /auth/refresh` on dev
+answered 400: 7 of 7 in the 16 hours before A45 deployed, and 27 of 27 after.
+No refresh succeeded in that window.
+
+---
+
+### A41 - the five anonymous auth routes get a rate limit each - `PROUVE`
+
+**Cost impact: None.**
+
+P11 listed `refresh`, `logout`, `verify-email`, `reset-password` and
+`reactivate` as exempt, "inherited and not examined". They could not be examined
+honestly before A45: every call the web makes for a visitor counted against the
+web task's own address, so a limit here would have been a limit on the whole
+site. A45 is proven on dev, so limits now count per visitor. Only the global
+default of 100 a minute applied to these routes until now.
+
+**Measured before choosing**, per caller - the vouched visitor, otherwise the
+last hop, the same key the guard uses - over the API's request log (7-day
+retention, 17-24 September):
+
+| route            | calls | callers | peak per caller / 60 s | limit / 60 s | why                                                                                   |
+| ---------------- | ----- | ------- | ---------------------- | ------------ | ------------------------------------------------------------------------------------- |
+| `refresh`        | 91    | 6       | 15                     | **30**       | NextAuth refreshes in bursts. Too low logs people out mid-session, so double the peak |
+| `logout`         | 0     | 0       | 0                      | 10           | one per sign-out; the house auth value                                                |
+| `verify-email`   | 123   | 48      | 3                      | 10           | a journeys run verifies three users from one runner; a double click is 2              |
+| `reset-password` | 73    | 25      | 3                      | 10           | journey 5 sets, resets and replays; the 64-character token cannot be guessed          |
+| `reactivate`     | 0     | 0       | 0                      | **5**        | it checks a password and issues tokens, like login; five tries, as `forgot-password`  |
+
+Every caller is the Next server, apart from the journeys and one browser on
+`verify-email`. The web client and the journeys were read to confirm it.
+
+**Proof so far.** `auth-anonymous-routes-throttled.spec.ts` reads each
+handler's `@Throttle` metadata. It was red first: five routes read `undefined`.
+The P11 pin no longer exempts them. Eight mutations, each observed failing on its
+own: each of the five decorators removed, which fails its own test and the P11
+sweep; the refresh limit changed; the TTL changed; a stale exemption put back.
+
+**Caught on the way.** A comment between `@Public()` and `@Throttle` hid
+`@Public()` from the P11 sweep: its parser strips comments and stops at the
+blank line they leave. All five routes vanished from the public list, which
+would have made the throttle assertion vacuous. The route-count floor caught
+it, and the comments now sit above the decorator stack. This is the trap P11
+already recorded.
+
+**Proven on dev, 24 September, on `sha-66d7ee8`** (#166, develop run `35959233220`
+green, journeys and E2E included):
+
+- during that run the five routes answered `verify-email` 200 x5,
+  `reset-password` 204 x2 and one 400 (journey 5's deliberate replay of a used
+  token), with no 429 on any of them;
+- `reactivate` for an address with no account, seven times in a row: 404 x5,
+  then 429, 429 - the new limit of 5, counted per caller.
+
+**Observed, not A41's, a new subject:** every `POST /auth/refresh` on dev answers
+400, before A45 as after it. That is why NextAuth retries it in bursts. When
+refresh works again, the measured peak will fall, and 30 will be generous.
+
+---
+
+### A46 - log hygiene - `PROUVE`
+
+**Cost impact: None.**
+
+Opened by A45. The request logger now writes no token, password or credential
+header. `request-log-redaction.ts` owns the paths it never writes, and
+`app.module.ts` registers them.
+
+**Proof so far.** `request-log-redaction.spec.ts` sends a real request through
+`pino-http`, configured with the app's own paths, and reads back the line
+written - the bytes CloudWatch receives. It was red first against the paths as
+they stood. Five mutations, each observed failing on its own: each of the four
+paths removed, and the registration in `app.module.ts` removed.
+
+**Proven on dev, 24 September, on `sha-df4d523`** (#169, develop run
+`35961004092`). The develop run's E2E suite, a real user logging in through the
+web, and the delivery journeys, covering registration, verification, login and
+reset, ran against the new build. Then everything the API wrote after its new
+task started at 05:49:38 UTC was searched in CloudWatch: 2 001 lines, and no
+credential-shaped content. The credential headers appear only as `[redacted]`,
+which also shows the requests are still logged. The same search over the hour
+before the deploy did not come back clean, and that is what gives the clean
+result meaning. The web's log group: nothing.
+
+Lines written before the deploy expire with the log group's 7-day retention.
+Deleting them is a decision for Visquis, not for this subject.
+
 ---
 
 ## Proven
@@ -4666,6 +5079,49 @@ trigger and the grant.
 | 8   | `users.controller.ts:289` / `:313` → any role               | admin grants or revokes directly           | `@Roles(ADMIN_GLOBAL)` only                                                        | Fine                           |
 | 9   | `users.service.ts:257` → replaces the whole role set        | admin updates a user with `roleCodes`      | `@Roles(ADMIN_GLOBAL)`                                                             | Fine                           |
 | —   | `grading-processor.ts:183` → `KCA_CERTIFIED`                | **nothing enqueues it any more**           | —                                                                                  | Dormant — see below            |
+
+### develop merged into waves 5-6 - `EN COURS`
+
+**Cost impact: None.**
+
+Nine commits, 74 files, 5508 insertions since the merge base. Eight text
+conflicts, all resolved by reading rather than by side: develop's docstrings
+were taken back on four files where wave 2's rewrite had removed the reason (see
+CLAUDE.md), and our `///` Prisma doc comments were kept while develop's
+`publicListingConsentAt` was added to the same schema.
+
+**What git did not flag, and what found it.** Develop added six files at
+`app/(app)/agent/profile/` and `app/products/kamnet/annuaire/` - paths wave 5
+had emptied. They merged clean, and both route walkers were satisfied because a
+page at the old path computes the same URL. `no-unlocalised-navigation.spec.ts`
+gained a placement assertion, which then found three more components importing
+`next/link` or `next/navigation`, and `lib/actions/kamnet.ts` calling
+`revalidatePath` with unprefixed paths - the defect wave 5 closed, arriving
+fresh.
+
+**Two findings in the incoming code, reported rather than assumed.**
+
+- `caller-identity.ts` fell back silently when a caller sent a secret that does
+  not match. An absent secret warns at startup and is a stated choice; a wrong
+  one is a misconfiguration that looks identical to working, and its cost is
+  every visitor sharing the web task's bucket - the A2 defect, returning with
+  nothing to show for it. `callerSecretMismatch` now reports it once per
+  process. Four tests, one mutation watched failing alone.
+- `image-hosts.spec.ts` ran **zero of its 25 tests** under jsdom
+  (`TextDecoder is not defined` from `@aws-sdk/client-s3`). Red on develop, not
+  caused by the merge - proved by reverting the web jest config to develop's own
+  and watching the failure stand. `@jest-environment node` is the fix.
+
+**The archive's freeze was falsified by the merge and is corrected in place.**
+`WAVE_STATUS.md` was frozen on 24 September on this branch; develop had not seen
+that commit and wrote another 550 lines into it. All six of those chantiers have
+entries here.
+
+**Proof.** 1879 tests across the four projects, both typechecks, lint, both
+builds, `nx build web` with 0 error lines. The full run needs `--maxWorkers=2`
+on this machine: unbounded, four projects oversubscribe it and the KCA1 loader
+and A45 suites time out at 5000 ms. Each passes in isolation, so the failures are
+the machine and not the code - stated here because a timeout reads like a defect.
 
 ### Audit 2026-09-23, wave 5 - locale-prefixed routing - `EN COURS`
 

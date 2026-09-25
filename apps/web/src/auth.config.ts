@@ -1,5 +1,6 @@
 import { type NextAuthConfig } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+import { visitorHeaders } from './lib/api/visitor-headers';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'; // fallback for local dev only
 
@@ -26,7 +27,7 @@ export default {
 
         const res = await fetch(`${API_URL}/api/v1/auth/login`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(await visitorHeaders()) },
           body: JSON.stringify({
             email: credentials.email,
             password: credentials.password,
@@ -113,6 +114,7 @@ export default {
             headers: {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${token.accessToken}`,
+              ...(await visitorHeaders()),
             },
           });
           if (res.ok) {
@@ -143,7 +145,7 @@ export default {
       try {
         const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(await visitorHeaders()) },
           body: JSON.stringify({ refreshToken: token.refreshToken }),
         });
 
@@ -190,7 +192,7 @@ export default {
       try {
         await fetch(`${API_URL}/api/v1/auth/logout`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(await visitorHeaders()) },
           body: JSON.stringify({ refreshToken: message.token.refreshToken }),
         });
       } catch {

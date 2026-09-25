@@ -11,7 +11,7 @@ import { join, relative } from 'node:path';
  * route silently. Nothing fails, nothing logs, and the route simply stops asking.
  *
  * So this pins the public surface as a list. Adding a `@Public()` route is then a
- * change to this file — a reviewed decision — rather than a line nobody sees.
+ * change to this file - a reviewed decision - rather than a line nobody sees.
  * It also pins the class-level `@Roles` on the admin controllers, because a
  * deleted `@Roles` line downgrades an admin controller to "any authenticated
  * user" without changing a single response shape.
@@ -81,6 +81,16 @@ const PUBLIC_SURFACE: Record<string, number> = {
   // can address.
   'core/contact/contact.controller.ts': 1,
   'health/health.controller.ts': 3,
+  // P11: the public directory of certified agents, one route. A buyer deciding
+  // whether to trust an agent has no account and is the person this exists for,
+  // so it answers without a token. Throttled at 30/minute - a read a visitor
+  // may reload, not a write that sends mail like `contact` and `newsletter` at
+  // 3. `kbs-public` carries the same shape since 45681ce; an earlier version of
+  // this comment said it did not, and was left standing after that commit made
+  // it false. What this route may publish is decided by
+  // `toPublicDirectoryEntry`, not here: consent, no suspension, a certificate
+  // that stands, and one that provably belongs to that agent.
+  'kamnet/controllers/kamnet-public.controller.ts': 1,
   'kbs/controllers/kbs-public.controller.ts': 1,
   'newsletter/newsletter.controller.ts': 1,
 };
