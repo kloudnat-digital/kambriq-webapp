@@ -22,7 +22,7 @@ const STATUS_CONFIG: Record<AppStatus, { label: string; style: string; message: 
   approved: {
     label: 'Approuvé',
     style: 'border-success/30 bg-success/10 text-success',
-    message: 'Félicitations ! Votre candidature a été approuvée. Bienvenue dans KAMNET !',
+    message: 'Félicitations ! Votre candidature a été approuvée. Bienvenue dans KAMNET™ !',
   },
   rejected: {
     label: 'Rejeté',
@@ -52,7 +52,7 @@ export default function KamnetApplyPage() {
       <main className="min-h-screen bg-gray-50/50 pt-18.25">
         <div className="mx-auto max-w-xl px-6 py-14 sm:px-8">
           <div className="mb-6 flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Candidature KAMNET</h1>
+            <h1 className="text-2xl font-bold">Candidature KAMNET™</h1>
             <Badge className={style}>{label}</Badge>
           </div>
 

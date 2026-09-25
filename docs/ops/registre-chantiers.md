@@ -221,7 +221,8 @@ listed here first.
 | Audit 2026-09-23, wave 3      | `PROUVE`            | the wave of #155 to #162 folded in, the Open table de-duplicated, the states declared, `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Audit 2026-09-23, wave 4      | `EN COURS`          | the acompte step reads the payment ledger instead of answering for it. Unmerged; pending proof is one acompte carried end to end on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `confirmRemainingPayment`     | `A FAIRE`           | step 4 records the balance on the reservation alone: nothing creates a payment for it, so it cannot be gated the way the acompte now is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `P24`                         | `EN COURS`          | the land title number is shaped `TF <number>/<department>` and validated by shape in the web form and the API; invented formats replaced. Pending: the verify page and the seeded titles read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `P27`                         | `EN COURS`          | KAMBRIQ LANDS™, KAMBRIQ VERIFY™ and KAMNET™ carry the mark everywhere on the website, KBS does not; a guard watches every namespace and every MDX file. Pending: the pages read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `P24`                         | `PROUVE`            | the land title number is shaped `TF <number>/<department>` and validated by shape in the web form and the API; invented formats replaced; proven on dev at `sha-85c8966`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `I43`                         | `PROUVE`            | ten signed-in screens promised 38 unbuilt features in hardcoded French; the promise is removed and a guard reads every `.tsx`; proven on dev at `sha-383828e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Audit 2026-09-23, wave 5      | `EN COURS`          | locale-prefixed routing: every page under `[locale]`, `localePrefix: 'always'`, the proxy gate asked positively, the RSC token leak closed, 48 `next/link` and 35 `next/navigation` imports moved to `@/i18n/navigation`, `revalidatePath` given its prefix. Proved locally over HTTP (`/` -> 307 `/fr`, `/pricing` -> 404 not a login redirect, `/de/about` -> 404, `/fr/mylands` -> `/fr/login`) and by 55 browser tests. Unmerged; pending proof is the same table read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Audit 2026-09-23, wave 6      | `EN COURS`          | SEO: `app/sitemap.ts` (30 URLs, hreflang + x-default), `app/robots.ts`, canonical and alternates on all 15 public pages, JSON-LD where there was none, metadata on the four legal pages and `robots: noindex` on the six auth pages. Both files read `APP_ENV`, never `NODE_ENV`. Unmerged; pending proof is `/robots.txt` and `/sitemap.xml` read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -5288,12 +5289,34 @@ are declared, and most are the payments back office (G4, G9), the identity queue
 one language to a reader of the other. Each is a translation subject of its own,
 and the list shrinks one entry at a time.
 
-### P24 - a land title number is shaped like a Cameroonian one - `EN COURS`
+### P24 - a land title number is shaped like a Cameroonian one - `PROUVE`
 
 **Cost impact: None.**
 
-**Pending:** the verify page's example card and the seeded titles read on dev
-after deploy.
+**Proven on dev** at `sha-85c8966` (#178), 25 September:
+
+- `/fr/products/verify` and `/en/products/verify` show `TF 4129/M` on the card;
+- `PATCH /lands/admin/:id` with `TF-12345-ABCD` answered **400** with "A land
+  title number is shaped TF <number>/<department letters>, e.g. TF 4129/M", and
+  the stored title was unchanged;
+- the eight seeded fixtures still held the invented titles, and were rewritten
+  through the same route from phone-typed input, each stored canonical:
+  `tf1187 / wb` -> `TF 1187/WB`, `TF-3462-WB` -> `TF 3462/WB`, `TF N° 4803/WB`
+  -> `TF 4803/WB`, `tf 912/mi` -> `TF 912/MI`, `TF 6075 / MF` -> `TF 6075/MF`,
+  and three more. Each answered 200.
+
+**A premise of mine, corrected.** The entry said the seed rewrites the titles on
+every run, and that is true of a run. **No deploy runs it**: the seed step in
+`deploy-dev.yml` is opt-in (`run_seed`, meant for a first deploy). So dev kept
+the invented titles after the deploy. I did not run the seed to fix that,
+because it deletes reservations on seeded parcels, and a deletion on dev is
+Visquis's decision. The fixtures were written through the API instead, which is
+also the proof above.
+
+The first develop run after the merge went red on journey 1: maildrop answered
+HTTP 520 and the journey could not read its verification mail. The journey says
+so itself ("not a product failure"). The failed job was re-run once maildrop
+answered 200, and it passed.
 
 **The business fact is Visquis's (25 September).** A titre foncier is written
 `TF <number>/<letters>`. The letters are one to three and name the department:
@@ -5373,6 +5396,59 @@ crashed rather than failed. It was redone as a clean change.
 - the VERIFY back-office table renders four invented requests the same way.
 
 Only their title format is changed here.
+
+### P27 - the product marks, everywhere on the website - `EN COURS`
+
+**Cost impact: None.**
+
+**Pending:** the public pages read on dev after deploy.
+
+**Decided by Visquis on 25 September:** KAMBRIQ LANDS, KAMBRIQ VERIFY and KAMNET
+carry `™` everywhere, in both languages. KBS does not: it is a school, not a
+product mark.
+
+**Measured on develop before the change, in each language:** VERIFY carried the
+mark 20 times out of 21, LANDS 0 out of 15, KAMNET 0 out of 53. The brief counted
+18 of 19 and 0 of 49; develop had moved since. The one unmarked VERIFY is a KBS
+syllabus line naming the ecosystem, "KAMBRIQ / LANDS / KAMNET / KBS / VERIFY".
+The decision applies there too, and KBS stays bare.
+
+**What changed:** every string value in both catalogues (68 per language, keys
+never), four MDX files (the plan page and the terms of use, fr and en, each
+naming KAMNET once), and three hardcoded strings that render: the KAMNET
+application page twice and the KAMNET back office's title. **The terms of use
+are a legal document**, so their one-word change is named here for Visquis.
+
+**The guard reads everything, and its list is of exceptions.**
+`trademark-marks.spec.ts` watches every namespace unless it is declared in
+`EXEMPT_NAMESPACES`, which is empty and fails when it names a namespace that no
+longer exists. It also reads every MDX file under `src/content`. The brief asked
+to reuse P21's inverted list, but on develop P21 still reads a hand-kept list:
+the inversion exists only in #174 (P10), which is not merged. So the mechanism
+is now `i18n/watched-namespaces.ts`, shared, for P21 to use when #174 lands,
+instead of a second copy of it.
+
+**The trap, tested before the rule.** A mark after every `LANDS` would double
+`KAMBRIQ LANDS™` and fire inside a URL. The check is "a name not followed by
+`™`", read outside URLs and paths. A separate test refuses a double mark and a
+marked KBS.
+
+**Proof, all watched red before green.** Against develop: 68 unmarked strings
+per language, and the MDX. Then six mutations, each failing its own test:
+
+- one unmarked LANDS in `fr`;
+- a fresh `en` namespace carrying "Join KAMNET", with the guard untouched;
+- a double mark;
+- `KBS™`;
+- an unmarked KAMNET in an MDX file;
+- a stale exemption.
+
+**Found, not fixed - outside the website.** The API's email and notification
+copy names KAMNET without the mark: 16 strings per language in
+`libs/common/src/i18n/*/email.json` and 4 in `kamnet.json`. The decision says
+everywhere. The emails are their own subject, with their own tests. The
+hardcoded-copy debt files of `I43` are not read by this guard, and after this
+change none of them names a product unmarked.
 
 ---
 

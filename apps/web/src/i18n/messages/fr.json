@@ -1,9 +1,9 @@
 {
   "nav": {
-    "lands": "KAMBRIQ LANDS",
+    "lands": "KAMBRIQ LANDS™",
     "verify": "KAMBRIQ VERIFY™",
     "kbs": "KBS",
-    "kamnet": "KAMNET",
+    "kamnet": "KAMNET™",
     "login": "Se connecter",
     "contact": "Nous contacter",
     "openMenu": "Ouvrir le menu principal",
@@ -37,7 +37,7 @@
     },
     "distance": {
       "title": "Un réseau d'agents certifiés",
-      "description": "Chaque agent KAMNET est formé et certifié par KAMBRIQ Business School. Votre interlocuteur unique, où que vous soyez."
+      "description": "Chaque agent KAMNET™ est formé et certifié par KAMBRIQ Business School. Votre interlocuteur unique, où que vous soyez."
     }
   },
   "process": {
@@ -45,7 +45,7 @@
     "subtitle": "Un accompagnement sur-mesure, de votre premier contact jusqu'à votre titre foncier.",
     "step1": {
       "title": "Parlez-nous de votre projet",
-      "description": "Votre agent KAMNET écoute vos besoins : budget, zone, usage, horizon."
+      "description": "Votre agent KAMNET™ écoute vos besoins : budget, zone, usage, horizon."
     },
     "step2": {
       "title": "On vérifie pour vous",
@@ -89,7 +89,7 @@
     "title": "Notre méthode : 7 vérifications avant toute proposition",
     "subtitle": "Aucun terrain n'entre dans notre catalogue sans passer par KAMBRIQ VERIFY™.",
     "cta": "Nous contacter",
-    "cta2": "Découvrir KAMBRIQ LANDS"
+    "cta2": "Découvrir KAMBRIQ LANDS™"
   },
   "homeCta": {
     "title": "Vous avez un projet foncier au Cameroun ?",
@@ -168,7 +168,7 @@
         },
         "q4": {
           "question": "Le service est-il gratuit si j'achète via KAMBRIQ ?",
-          "answer": "Oui, si vous achetez un terrain via KAMBRIQ LANDS avec accompagnement de votre agent KAMNET, la vérification KAMBRIQ VERIFY™ est incluse. Sinon, le tarif est de 99 €."
+          "answer": "Oui, si vous achetez un terrain via KAMBRIQ LANDS™ avec accompagnement de votre agent KAMNET™, la vérification KAMBRIQ VERIFY™ est incluse. Sinon, le tarif est de 99 €."
         }
       },
       "heroCard": {
@@ -188,10 +188,10 @@
     "kbs": {
       "hero": {
         "eyebrow": "Formation professionnelle",
-        "title": "Devenez agent KAMNET certifié",
-        "subtitle": "KAMBRIQ Business School (KBS) est la formation de référence pour maîtriser le foncier camerounais et rejoindre le réseau KAMNET.",
+        "title": "Devenez agent KAMNET™ certifié",
+        "subtitle": "KAMBRIQ Business School (KBS) est la formation de référence pour maîtriser le foncier camerounais et rejoindre le réseau KAMNET™.",
         "applyNow": "Nous contacter",
-        "learnMore": "En savoir plus sur KAMNET",
+        "learnMore": "En savoir plus sur KAMNET™",
         "certificateBadge": "Obtenez votre certificat KCA (KAMBRIQ Certified Agent)"
       },
       "program": {
@@ -220,8 +220,8 @@
         "subtitle": "Deux voies d'entrée pour accéder à la formation",
         "sponsorship": {
           "name": "Parrainage",
-          "title": "Parrainage KAMNET",
-          "description": "Si un Agent KAMNET vous a recommandé, vous pouvez renseigner son code parrain lors de votre candidature. Il est enregistré avec votre dossier."
+          "title": "Parrainage KAMNET™",
+          "description": "Si un Agent KAMNET™ vous a recommandé, vous pouvez renseigner son code parrain lors de votre candidature. Il est enregistré avec votre dossier."
         },
         "freeApplication": {
           "name": "Candidature libre",
@@ -409,18 +409,18 @@
       },
       "badge": "Formation certifiante",
       "title": "KAMBRIQ Business School",
-      "description": "La formation de référence pour devenir agent KAMNET certifié. Maîtrisez le foncier camerounais.",
+      "description": "La formation de référence pour devenir agent KAMNET™ certifié. Maîtrisez le foncier camerounais.",
       "cta": "Découvrir KBS",
       "about": {
         "title": "Qu'est-ce que KAMBRIQ Business School ?",
-        "subtitle": "KAMBRIQ Business School (KBS) est le centre de formation officiel pour devenir Agent KAMNET certifié. Le programme KCA1 vous prépare à maîtriser le marché foncier camerounais et à réussir dans le réseau d'agents KAMBRIQ.",
+        "subtitle": "KAMBRIQ Business School (KBS) est le centre de formation officiel pour devenir Agent KAMNET™ certifié. Le programme KCA1 vous prépare à maîtriser le marché foncier camerounais et à réussir dans le réseau d'agents KAMBRIQ.",
         "missionLabel": "Notre mission",
         "missionText": "Former des professionnels compétents et éthiques capables d'accompagner les investisseurs (diaspora et locaux) dans leurs projets fonciers au Cameroun, en veillant à la sécurité juridique et à la transparence."
       },
       "whoCanRegister": {
         "heading": "Qui peut s'inscrire ?",
         "futureAgent": {
-          "title": "Futurs Agents KAMNET",
+          "title": "Futurs Agents KAMNET™",
           "description": "Vous souhaitez rejoindre notre réseau d'agents certifiés et développer une activité commerciale dans l'immobilier foncier."
         },
         "diaspora": {
@@ -439,8 +439,8 @@
           "description": "Obtenez le certificat KCA (KAMBRIQ Certified Agent), valable 2 ans, attestant de votre expertise."
         },
         "network": {
-          "title": "Accès au réseau KAMNET",
-          "description": "Rejoignez le réseau exclusif d'agents KAMBRIQ et accédez au catalogue vérifié KAMBRIQ LANDS."
+          "title": "Accès au réseau KAMNET™",
+          "description": "Rejoignez le réseau exclusif d'agents KAMBRIQ et accédez au catalogue vérifié KAMBRIQ LANDS™."
         },
         "expertise": {
           "title": "Expertise KAMBRIQ TFL™ / VEFL™ / VEFIL™",
@@ -449,13 +449,13 @@
       },
       "whatYouLearn": {
         "title": "Qu'allez-vous apprendre ?",
-        "subtitle": "Une formation complète couvrant tous les aspects essentiels pour réussir comme Agent KAMNET",
+        "subtitle": "Une formation complète couvrant tous les aspects essentiels pour réussir comme Agent KAMNET™",
         "chapter1": {
           "name": "Parcours 1",
           "title": "ÉCOSYSTÈME KAMBRIQ",
           "description": "Comprendre avant de vendre - Le filtre culturel, éthique et professionnel de KAMBRIQ",
           "item1": "Expliquer pourquoi KAMBRIQ existe en une phrase claire",
-          "item2": "Comprendre l'architecture de l'écosystème (KAMBRIQ / LANDS / KAMNET / KBS / VERIFY / KPVE / KCPI)",
+          "item2": "Comprendre l'architecture de l'écosystème (KAMBRIQ / LANDS™ / KAMNET™ / KBS / VERIFY™ / KPVE / KCPI)",
           "item3": "Présenter les 3 labels produits sans confusion ni survente",
           "item4": "Appliquer les règles non négociables et les interdictions absolues"
         },
@@ -481,7 +481,7 @@
           "name": "Parcours 4",
           "title": "ÉTHIQUE · CONFORMITÉ · MARQUE KAMBRIQ",
           "description": "On ne vend pas du foncier sans rigueur morale - L'éthique est le cœur du modèle économique",
-          "item1": "Vendre LANDS sans sortir du cadre (discours + preuves + process)",
+          "item1": "Vendre LANDS™ sans sortir du cadre (discours + preuves + process)",
           "item2": "Appliquer sans hésitation la Liste Rouge (argent / docs / prix / promesses / contournement)",
           "item3": "Faire la différence entre informer vs conseiller juridiquement, rassurer vs promettre",
           "item4": "Reconnaître les situations à risque et appliquer STOP → TRACE → ESCALADE"
@@ -496,7 +496,7 @@
         "format3": "Score minimal : 80 %",
         "afterTitle": "Après certification",
         "after1": "Certificat KCA téléchargeable",
-        "after2": "Éligibilité KAMNET",
+        "after2": "Éligibilité KAMNET™",
         "after3": "Accès au réseau agents"
       },
       "requirements": {
@@ -508,10 +508,10 @@
       },
       "whyKbs": {
         "title": "Pourquoi se former ?",
-        "subtitle": "La formation KBS vous ouvre les portes du réseau KAMNET et de nouvelles opportunités",
+        "subtitle": "La formation KBS vous ouvre les portes du réseau KAMNET™ et de nouvelles opportunités",
         "network": {
-          "title": "Rejoindre le réseau KAMNET",
-          "description": "Devenez Agent KAMNET certifié et accédez à notre catalogue exclusif de terrains vérifiés."
+          "title": "Rejoindre le réseau KAMNET™",
+          "description": "Devenez Agent KAMNET™ certifié et accédez à notre catalogue exclusif de terrains vérifiés."
         },
         "expertise": {
           "title": "Expertise reconnue",
@@ -524,7 +524,7 @@
       },
       "process": {
         "title": "Comment se passe le parcours ?",
-        "subtitle": "4 étapes pour devenir Agent KAMNET certifié",
+        "subtitle": "4 étapes pour devenir Agent KAMNET™ certifié",
         "step1": {
           "title": "Formation en ligne",
           "description": "Parcours complet en ligne : modules théoriques, cas pratiques, et accompagnement personnalisé."
@@ -538,29 +538,29 @@
           "description": "Obtenez votre certificat KCA (KAMBRIQ Certified Agent), valable 2 ans."
         },
         "step4": {
-          "title": "Activation Agent KAMNET",
-          "description": "Rejoignez officiellement le réseau KAMNET et commencez à présenter nos terrains vérifiés."
+          "title": "Activation Agent KAMNET™",
+          "description": "Rejoignez officiellement le réseau KAMNET™ et commencez à présenter nos terrains vérifiés."
         }
       }
     },
     "kamnet": {
       "hero": {
-        "eyebrow": "Réseau d'Agents KAMNET",
+        "eyebrow": "Réseau d'Agents KAMNET™",
         "title": "Le réseau des agents certifiés KAMBRIQ",
-        "subtitle": "Les agents KAMNET sont certifiés par KAMBRIQ Business School et accompagnent les acheteurs à chaque étape. On rejoint le réseau après la certification KCA.",
-        "cta": "Postuler à KAMNET",
+        "subtitle": "Les agents KAMNET™ sont certifiés par KAMBRIQ Business School et accompagnent les acheteurs à chaque étape. On rejoint le réseau après la certification KCA.",
+        "cta": "Postuler à KAMNET™",
         "cta2": "Nous contacter"
       },
       "badge": "Premium",
-      "title": "KAMNET",
+      "title": "KAMNET™",
       "description": "Réseau professionnel pour connecter investisseurs, experts et entrepreneurs du secteur immobilier camerounais.",
       "cta": "En savoir plus",
       "agentJourney": {
-        "title": "Parcours d'un Agent KAMNET",
+        "title": "Parcours d'un Agent KAMNET™",
         "subtitle": "De la formation à l'évolution professionnelle",
         "step1": {
           "title": "Parrainage",
-          "description": "Être parrainé par un Agent KAMNET existant ou demander directement une formation KBS"
+          "description": "Être parrainé par un Agent KAMNET™ existant ou demander directement une formation KBS"
         },
         "step2": {
           "title": "Formation sur KBS",
@@ -571,7 +571,7 @@
           "description": "Obtenez votre certification KAMBRIQ Certified Agent après validation de la formation"
         },
         "step4": {
-          "title": "Demande d'adhésion au KAMNET",
+          "title": "Demande d'adhésion au KAMNET™",
           "description": "Soumettez votre dossier avec votre code de parrainage pour rejoindre officiellement le réseau"
         },
         "step5": {
@@ -591,7 +591,7 @@
         "heading": "Pourquoi devenir Agent KAMBRIQ ?",
         "subheading": "Rejoignez un réseau professionnel en pleine croissance",
         "exclusiveAccess": {
-          "title": "Accès exclusif aux produits KAMBRIQ LANDS",
+          "title": "Accès exclusif aux produits KAMBRIQ LANDS™",
           "description": "Distribuez les terrains KAMBRIQ TFL™, VEFL™ et VEFIL™ en exclusivité et accédez aux futurs produits KAMBRIQ."
         },
         "training": {
@@ -600,7 +600,7 @@
         },
         "followUp": {
           "title": "Accompagnement des Agents",
-          "description": "Bénéficiez du soutien de votre parrain et de la communauté KAMNET pour développer votre activité."
+          "description": "Bénéficiez du soutien de votre parrain et de la communauté KAMNET™ pour développer votre activité."
         },
         "career": {
           "title": "Opportunité professionnelle stable",
@@ -634,9 +634,9 @@
     "comingSoon": "Bientôt disponible",
     "lands": {
       "badge": "Disponible",
-      "title": "KAMBRIQ LANDS",
+      "title": "KAMBRIQ LANDS™",
       "description": "Des terrains vérifiés, avec un label clair sur leur statut juridique. Vous savez exactement ce que vous achetez.",
-      "cta": "Découvrir KAMBRIQ LANDS"
+      "cta": "Découvrir KAMBRIQ LANDS™"
     }
   },
   "faq": {
@@ -648,10 +648,10 @@
     "noResults": "Aucun résultat. Essayez une autre recherche.",
     "categories": {
       "all": "Tout",
-      "lands": "KAMBRIQ LANDS",
+      "lands": "KAMBRIQ LANDS™",
       "verify": "KAMBRIQ VERIFY™",
       "kbs": "KBS",
-      "kamnet": "KAMNET"
+      "kamnet": "KAMNET™"
     },
     "title": "Questions Fréquentes",
     "subtitle": "Tout ce que vous devez savoir sur KAMBRIQ et nos services.",
@@ -664,7 +664,7 @@
       {
         "id": "2",
         "q": "Comment acheter un terrain depuis l'étranger ?",
-        "a": "Contactez-nous par WhatsApp (+33 7 45 90 98 56) ou par email (contact@kambriq.com). Un agent KAMNET certifié vous accompagne de la sélection du terrain jusqu'à l'obtention de votre titre foncier."
+        "a": "Contactez-nous par WhatsApp (+33 7 45 90 98 56) ou par email (contact@kambriq.com). Un agent KAMNET™ certifié vous accompagne de la sélection du terrain jusqu'à l'obtention de votre titre foncier."
       },
       {
         "id": "3",
@@ -688,7 +688,7 @@
       },
       {
         "id": "7",
-        "q": "Comment devenir agent KAMNET ?",
+        "q": "Comment devenir agent KAMNET™ ?",
         "a": "En passant la certification KCA via KAMBRIQ Business School (KBS). Formation en ligne, examen final (score minimum 80%), certificat numéroté valable 2 ans. Consultez la page KBS pour en savoir plus."
       },
       {
@@ -707,9 +707,9 @@
     "description": "Conseil en stratégie foncière au Cameroun.",
     "location": "Douala-Dibamba, Cameroun",
     "productsServices": "Produits & Services",
-    "lands": "KAMBRIQ LANDS",
+    "lands": "KAMBRIQ LANDS™",
     "verify": "KAMBRIQ VERIFY™",
-    "kamnet": "KAMNET",
+    "kamnet": "KAMNET™",
     "kbs": "KAMBRIQ Business School",
     "annuaire": "Annuaire des agents",
     "support": "Support",
@@ -825,10 +825,10 @@
     }
   },
   "landsHero": {
-    "badge": "KAMBRIQ LANDS",
+    "badge": "KAMBRIQ LANDS™",
     "title": "Des terrains vérifiés, un label clair sur chaque bien",
     "subtitle": "Chaque terrain proposé par KAMBRIQ passe par 7 vérifications. Chaque bien reçoit un label qui vous dit exactement où vous en êtes.",
-    "cta": "Parler à un agent KAMNET",
+    "cta": "Parler à un agent KAMNET™",
     "cta2": "Vérifier un terrain",
     "indicator1": "7 vérifications par terrain",
     "indicator2": "3 labels de sécurité",
@@ -836,9 +836,9 @@
   },
   "howItWorks": {
     "title": "Comment acheter un terrain via KAMBRIQ",
-    "subtitle": "Un accompagnement sur-mesure par votre agent KAMNET certifié",
+    "subtitle": "Un accompagnement sur-mesure par votre agent KAMNET™ certifié",
     "step1": {
-      "title": "Contactez un agent KAMNET",
+      "title": "Contactez un agent KAMNET™",
       "description": "Un agent certifié écoute votre projet : budget, zone, usage, horizon."
     },
     "step2": {
@@ -857,7 +857,7 @@
   "whyBuyAtKambriq": {
     "title": "Pourquoi acheter via KAMBRIQ ?",
     "subtitle": "Chaque service répond à une étape précise de votre projet foncier",
-    "cta": "Parler à un agent KAMNET",
+    "cta": "Parler à un agent KAMNET™",
     "cta2": "Vérifier un terrain",
     "legalSecurity": {
       "title": "Sécurité juridique vérifiée",
@@ -872,7 +872,7 @@
       "description": "Dossier complet, label clair, prix fixe. Vous savez exactement ce que vous achetez avant de vous engager."
     },
     "kamnetAgent": {
-      "title": "Accompagnement Agent KAMNET",
+      "title": "Accompagnement Agent KAMNET™",
       "description": "De la sélection jusqu'à l'obtention du titre foncier, votre agent certifié vous guide à chaque étape."
     }
   },
@@ -880,7 +880,7 @@
     "title": "Nos 3 labels",
     "subtitle": "Chaque terrain reçoit un label KAMBRIQ qui indique clairement son statut juridique",
     "clientAdvantages": "Ce que ça signifie pour vous",
-    "agentAdvantages": "Avantages Agent KAMNET",
+    "agentAdvantages": "Avantages Agent KAMNET™",
     "kambriqCommitment": "Engagement KAMBRIQ",
     "tfl": {
       "name": "KAMBRIQ TFL™ - Titre Foncier Loti",
@@ -919,8 +919,8 @@
     "questions": {
       "landInfo": "Je souhaite obtenir des informations sur les terrains disponibles",
       "verifyService": "J'aimerais en savoir plus sur le service KAMBRIQ VERIFY™",
-      "kbsFormation": "Comment devenir Agent KAMNET Certifié via la formation KBS ?",
-      "kamnetAgent": "Comment rejoindre le réseau KAMNET et gagner des commissions ?",
+      "kbsFormation": "Comment devenir Agent KAMNET™ Certifié via la formation KBS ?",
+      "kamnetAgent": "Comment rejoindre le réseau KAMNET™ et gagner des commissions ?",
       "pricing": "Quels sont vos tarifs et conditions de paiement ?",
       "buyingProcess": "Comment se déroule le processus d'achat depuis l'étranger ?",
       "documentation": "Quels documents sont nécessaires pour acheter un terrain ?",
@@ -968,7 +968,7 @@
         "actions": "Actions Agent"
       },
       "actions": {
-        "title": "Actions Agent KAMNET",
+        "title": "Actions Agent KAMNET™",
         "description": "Actions disponibles pour accompagner vos clients sur ce terrain.",
         "createProspect": "Créer un prospect pour ce terrain",
         "reserve": "Réserver pour un client",
@@ -1077,7 +1077,7 @@
   },
   "landsAdmin": {
     "header": {
-      "title": "KAMBRIQ LANDS - Admin",
+      "title": "KAMBRIQ LANDS™ - Admin",
       "subtitle": "Gérez votre catalogue de terrains et les réservations",
       "newLand": "Nouveau terrain"
     },
@@ -1243,7 +1243,7 @@
           "description": "Introduction de notre service de vérification de titres fonciers, protégeant les acheteurs de la diaspora."
         },
         {
-          "title": "Expansion KBS & KAMNET",
+          "title": "Expansion KBS & KAMNET™",
           "description": "Lancement du programme de formation des agents et du réseau d'agents certifiés dans 4 pays."
         }
       ]
@@ -1331,7 +1331,7 @@
       "subjects": {
         "lands": "Terrains & acquisition",
         "verify": "Vérifier un titre foncier",
-        "kamnet": "Devenir agent KAMNET",
+        "kamnet": "Devenir agent KAMNET™",
         "kbs": "Formation KBS",
         "partnership": "Partenariat",
         "other": "Autre"
@@ -1354,8 +1354,8 @@
       "description": "Faites vérifier l'authenticité d'un terrain au Cameroun avant tout achat. 7 points de contrôle, rapport détaillé. 99€ ou gratuit si achat via KAMBRIQ."
     },
     "lands": {
-      "title": "KAMBRIQ LANDS - Terrains vérifiés au Cameroun",
-      "description": "KAMBRIQ LANDS propose des terrains au Cameroun vérifiés en 7 points. 3 labels de sécurité (TFL™, VEFL™, VEFIL™). Accompagnement complet par un agent certifié."
+      "title": "KAMBRIQ LANDS™ - Terrains vérifiés au Cameroun",
+      "description": "KAMBRIQ LANDS™ propose des terrains au Cameroun vérifiés en 7 points. 3 labels de sécurité (TFL™, VEFL™, VEFIL™). Accompagnement complet par un agent certifié."
     },
     "plan": {
       "title": "KAMBRIQ PLAN™ - Paiement échelonné terrain Cameroun",
@@ -1363,11 +1363,11 @@
     },
     "kbs": {
       "title": "KAMBRIQ Business School - Formation agent foncier Cameroun",
-      "description": "Formez-vous au foncier camerounais et devenez agent KAMNET certifié. Programme KCA, formation en ligne, certification reconnue."
+      "description": "Formez-vous au foncier camerounais et devenez agent KAMNET™ certifié. Programme KCA, formation en ligne, certification reconnue."
     },
     "kamnet": {
-      "title": "KAMNET - Réseau d'agents fonciers certifiés KAMBRIQ",
-      "description": "KAMNET est le réseau d'agents certifiés KAMBRIQ. Formés par KBS, ils accompagnent la diaspora dans ses projets fonciers au Cameroun."
+      "title": "KAMNET™ - Réseau d'agents fonciers certifiés KAMBRIQ",
+      "description": "KAMNET™ est le réseau d'agents certifiés KAMBRIQ. Formés par KBS, ils accompagnent la diaspora dans ses projets fonciers au Cameroun."
     },
     "annuaire": {
       "title": "Annuaire des agents certifiés KAMBRIQ - Cameroun",
@@ -1453,8 +1453,8 @@
         "ops": "Ops KAMBRIQ",
         "adminLands": "Admin terrains",
         "adminKbs": "Admin KBS",
-        "adminKamnet": "Admin KAMNET",
-        "agent": "Agent KAMNET",
+        "adminKamnet": "Admin KAMNET™",
+        "agent": "Agent KAMNET™",
         "partner": "Partenaire",
         "client": "Client",
         "user": "Utilisateur"
@@ -1708,7 +1708,7 @@
       }
     },
     "network": {
-      "pageTitle": "Mon réseau KAMNET",
+      "pageTitle": "Mon réseau KAMNET™",
       "pageSubtitle": "Agents parrainés et connexions de réseau",
       "emptyTitle": "Vous n'avez pas encore de filleul",
       "emptyMessage": "Votre réseau se construit quand un candidat s'inscrit avec votre code agent. Partagez votre code, accompagnez la personne jusqu'à sa certification, et elle apparaîtra ici.",
@@ -1770,7 +1770,7 @@
       "savedOn": "Vous figurez désormais dans l'annuaire public.",
       "savedOff": "Votre fiche a été retirée de l'annuaire public.",
       "saveFailed": "Votre choix n'a pas été enregistré. Rien n'a changé : réessayez.",
-      "emptyTitle": "Vous n'êtes pas agent KAMNET",
+      "emptyTitle": "Vous n'êtes pas agent KAMNET™",
       "emptyMessage": "Cette page est réservée aux agents certifiés. Si vous avez déposé une candidature, elle doit d'abord être approuvée.",
       "unavailableTitle": "Profil momentanément indisponible",
       "unavailableMessage": "Nous ne pouvons pas lire votre profil en ce moment. Rien n'a changé : réessayez dans quelques minutes."
@@ -1927,7 +1927,7 @@
       "pageTitle": "Admin réservations"
     },
     "adminKamnet": {
-      "pageTitle": "Admin KAMNET"
+      "pageTitle": "Admin KAMNET™"
     },
     "adminEscalations": {
       "pageTitle": "Escalades"

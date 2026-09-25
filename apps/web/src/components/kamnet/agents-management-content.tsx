@@ -93,7 +93,7 @@ export const AgentsManagementContent = () => {
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 sm:px-8">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestion des agents KAMNET</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Gestion des agents KAMNET™</h1>
           <p className="text-sm text-gray-500">{MOCK_AGENTS.length} agents au total</p>
         </div>
         <div className="relative w-64">
