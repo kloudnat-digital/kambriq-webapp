@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
 
-// ----- Pagination Query - Reusable accross all list endpoints -----
+// Pagination Query
 export const paginationQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
@@ -13,7 +13,7 @@ export class PaginationQueryDto extends createZodDto(paginationQuerySchema) {}
 
 export type PaginationQuery = z.infer<typeof paginationQuerySchema>;
 
-// ----- Pagination Meta - Returned in list responses -----
+// Pagination Meta
 export interface PaginationMeta {
   total: number;
   page: number;
@@ -30,11 +30,7 @@ export const buildPaginationMeta = (total: number, page: number, limit: number):
   };
 };
 
-/**
- * Constraint type that prevents `T` from being a Promise.
- * Ensures paginated endpoints do not accidentally return unawaited Promises,
- * which serialize to empty objects in JSON responses.
- */
+/** Rejects Promise types to prevent serialization of unawaited objects in JSON responses. */
 type NotPromise<T> = T extends Promise<unknown> ? never : T;
 
 export const buildPaginatedResponse = <T>(

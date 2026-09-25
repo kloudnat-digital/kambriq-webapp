@@ -5,11 +5,9 @@ import { DUNNING_JOBS, QUEUES } from '@kambriq/common';
 import { DunningService } from './dunning.service';
 
 /**
- * G6 - runs the dunning sweep.
- *
- * Thin on purpose: the decisions are in `DunningService`, which is unit-testable
- * without Redis. What this adds is the property the chantier is about - **a
- * throw here becomes a durable, readable failure** rather than a log line.
+ * Processes the dunning sweep queue.
+ * Extracts operational logic into `DunningService` and acts strictly as a durable
+ * error-handling boundary for Redis tasks.
  */
 @Processor(QUEUES.DUNNING)
 export class DunningProcessor extends WorkerHost {

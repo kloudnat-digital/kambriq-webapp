@@ -1,10 +1,4 @@
-/**
- * Supported payment channels and their configuration.
- *
- * Defines the distinct channels by which funds can be received.
- * Codes (e.g., 'OMO') are used for database storage and manual transcription,
- * while labels are used for UI presentation.
- */
+/** Defines supported payment channels and their behavior. */
 export enum PaymentChannel {
   /** Virement bancaire. */
   VIR = 'VIR',
@@ -29,9 +23,9 @@ export type ChannelDefinition = {
   readonly label: string;
   /** Description of the required evidence/receipt. */
   readonly proof: string;
-  /** Indicates if the payer frequently differs from the primary client (e.g., cash deposits by third parties). */
+  /** Whether the payer frequently differs from the primary client. */
   readonly payerMayDiffer: boolean;
-  /** Indicates if the channel can be actively selected for new transactions. */
+  /** Whether the channel accepts new transactions. */
   readonly selectable: boolean;
 };
 

@@ -10,7 +10,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   override canActivate(context: ExecutionContext) {
-    // Check if the route is marked @Public
+    // Check for @Public decorator
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),

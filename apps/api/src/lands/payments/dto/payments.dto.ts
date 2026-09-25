@@ -10,20 +10,15 @@ import {
 import { PROOF_CONTENT_TYPES } from '../payments.service';
 
 /**
- * G4 - what the back office sends.
- *
- * Every field a receipt carries is required here. The database CHECK is the
- * backstop; a request that reaches it has already passed a boundary that should
- * have refused it.
+ * DTO for back-office receipt submission.
+ * Enforces strict validation of all receipt fields at the application boundary
+ * before reaching database constraints.
  */
 
 /**
- * Amounts cross the wire as strings.
- *
- * `BigInt` does not survive `JSON.stringify`, and a monetary amount parsed as a
- * JavaScript number is the `Float` defect G1 removed from the schema,
- * reintroduced at the edge. A digit string is parsed to `BigInt`, never to
- * `Number`.
+ * Parses monetary amounts as strings to preserve precision.
+ * Prevents precision loss that occurs when parsing as JavaScript Numbers.
+ * Evaluates to `BigInt` safely over the wire.
  */
 const integerAmount = z
   .string()
@@ -35,10 +30,8 @@ export const recordReceiptSchema = z
     amount: integerAmount,
     currency: z.string().regex(/^[A-Z]{3}$/, 'An ISO 4217 code, upper case.'),
     /**
-     * Derived from the enum, not spelled again, and narrowed to the recordable
-     * subset. `INCONNU_HISTORIQUE` belongs to the rows G1 backfilled and is
-     * refused here as well as in the service - a new receipt may not claim it has
-     * no channel because it never had one.
+     * Narrows the channel enum to the explicitly recordable subset.
+     * Rejects historical or invalid channel states (e.g., `INCONNU_HISTORIQUE`).
      */
     channel: z
       .nativeEnum(PaymentChannel)
@@ -47,14 +40,9 @@ export const recordReceiptSchema = z
         `A channel must be one of ${RECORDABLE_CHANNELS.join(', ')}.`,
       ),
     /**
-     * The real date the money arrived, which is **not** when somebody typed it
-     * in. `recordedAt` is set by the server and is a different fact.
-     *
-     * An ISO string on the wire, converted to a `Date` in the controller.
-     * `z.coerce.date()` reads better and **crashes the application at boot**:
-     * `nestjs-zod` renders every DTO into an OpenAPI schema at startup and zod's
-     * `dateProcessor` throws on a coerced date. Nothing in the type checker or
-     * the unit tests sees that - only starting the process does.
+     * Represents the actual date of funds arrival, distinct from `recordedAt`.
+     * Validates as an ISO string over the wire to avoid startup crashes in
+     * `nestjs-zod`'s OpenAPI generation caused by `z.coerce.date()`.
      */
     receivedAt: z
       .string()
@@ -66,10 +54,7 @@ export const recordReceiptSchema = z
     /** The S3 key from the upload-url route. Required: no proof, no receipt. */
     evidenceUrl: z.string().min(1, 'A receipt requires its proof.'),
     /**
-     * Who actually handed the money over, as declared. Required for `DEPO`.
-     *
-     * The refinement below is what enforces it, rather than a `.optional()` that
-     * a caller could satisfy with an empty string.
+     * Declared depositor name. Strictly required for `DEPO` channels via refinement.
      */
     paidBy: z.string().min(1).max(200).optional(),
     /** Set when this line corrects an earlier one. */
@@ -100,16 +85,11 @@ export class ProofUploadUrlDto extends createZodDto(proofUploadUrlSchema) {}
 
 export const validatePaymentSchema = z.object({
   /**
-   * Required, and not a formality. `assertTransitionIsDeliberate` refuses a
-   * committing transition without one; this refuses it a boundary earlier, with
-   * a message a person can act on.
+   * Mandatory reason for payment validation to maintain auditability.
    */
   reason: z.string().min(1, 'Validating a payment records why. A blank reason is refused.'),
   /**
-   * G7 - "sur quelle preuve". Required here, not optional: VALIDE says the
-   * whole amount was "constatee et prouvee", and `assertTransitionIsEvidenced`
-   * refuses it without a receipt. Optional at this boundary would mean the
-   * refusal arrives from the service with less context than it could have.
+   * Required evidence receipt ID validating the payment transition to VALIDE.
    */
   evidenceReceiptId: z.string().uuid('Validating names the encaissement the decision rests on.'),
 });
@@ -117,18 +97,15 @@ export class ValidatePaymentDto extends createZodDto(validatePaymentSchema) {}
 
 export const transitionPaymentSchema = z.object({
   /**
-   * The next state. `nativeEnum` rather than a hand-written union, so the wire
-   * contract and the state machine cannot drift apart. Whether this particular
-   * step is legal from the current state is the transition table's job, not
-   * validation's - it depends on a row nobody has read yet.
+   * Target state for the transition.
+   * Uses `nativeEnum` to ensure contract consistency with the state machine.
+   * State machine transition legality is enforced downstream.
    */
   to: z.nativeEnum(PaymentState),
   reason: z.string().min(1, 'A state change records why. A blank reason is refused.'),
   /**
-   * The receipt the step rests on. Optional on the wire because most steps
-   * have none behind them (see `EVIDENCED_STATES`); the service refuses
-   * `PARTIELLEMENT_RECU` without one, which depends on `to` and is the
-   * transition guard's decision rather than validation's.
+   * Evidence receipt for the transition.
+   * Required conditionally by the transition guard for `EVIDENCED_STATES` (e.g., `PARTIELLEMENT_RECU`).
    */
   evidenceReceiptId: z.string().uuid().optional(),
 });

@@ -7,9 +7,8 @@ export class PrismaExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(PrismaExceptionFilter.name);
 
   /**
-   * Explicitly delegates non-Prisma exceptions to the global fallback filter.
-   * Because this filter is annotated with `@Catch()` and registered late,
-   * throwing the exception would bypass NestJS's exception layer and leak stack traces via Express.
+   * Delegates non-Prisma exceptions to the global fallback filter.
+   * Prevents bypassing NestJS exception layer and leaking stack traces via Express.
    */
   private readonly fallback = new GlobalExceptionFilter();
 
@@ -32,8 +31,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
 
     this.logger.warn('Prisma Error %o', {
       code: prismaError.code,
-      // Log only the path and not the query string to prevent logging sensitive tokens.
-      // The Prisma message is preserved as it describes schema details safely.
+      // Log path without query string to prevent sensitive token leakage. Preserves schema-safe Prisma messages.
       path: request.url.split('?')[0],
       message,
       status,

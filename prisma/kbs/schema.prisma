@@ -66,14 +66,13 @@ model KbsLesson {
   @@unique([moduleId, order])
 }
 
-/// Represents a pending or fulfilled media slot within a lesson.
-/// Media slots are created with a null URL and updated once the required media is provided.
+/// Pending or fulfilled media slot within a lesson.
+/// Created with a null URL; updated upon media upload.
 model KbsLessonMedia {
   id        String   @id @default(uuid())
   lessonId  String
-  /// Media kind. There is no enum on this column, so the permitted values are
-  /// LESSON_MEDIA_KINDS in libs/common/src/constants/kbs/lesson-media.ts, and
-  /// are deliberately not restated here: a copy in prose drifts silently.
+  /// Media kind. Constrained by LESSON_MEDIA_KINDS in libs/common/src/constants/kbs/lesson-media.ts.
+  /// Omitted as a Prisma enum to prevent schema drift.
   kind      String
   /// Order of this media slot within the lesson, starting from 1.
   position  Int
@@ -158,7 +157,7 @@ model KbsCandidate {
   sponsorCode        String?
   cvUrl              String?
   engagementAcceptedAt DateTime?
-  /// Current status of the candidate (CANDIDATE, IN_TRAINING, EXAM_PENDING, CERTIFIED, FAILED).
+  /// Candidate lifecycle state (CANDIDATE, IN_TRAINING, EXAM_PENDING, CERTIFIED, FAILED).
   status             String
   maxAttempts        Int       @default(3)
   retakeCooldownDays Int       @default(7)
@@ -171,7 +170,7 @@ model KbsCandidate {
   progress           KbsCandidateProgress[]
   lessonCompletions  KbsLessonCompletion[]
   exams              KbsExam[]
-  /// History of all certificates issued to the candidate.
+  /// Historical log of issued certificates.
   certificates       KbsCertificate[]
 }
 
@@ -182,7 +181,7 @@ model KbsCandidateProgress {
   /// Quiz score percentage (0-100).
   score       Int?
   passed      Boolean   @default(false)
-  /// Total number of quiz submissions for this module.
+  /// Total quiz submissions for this module.
   attempts    Int       @default(0)
   completedAt DateTime?
   createdAt   DateTime  @default(now())
@@ -201,7 +200,7 @@ model KbsExam {
   /// Exam score percentage (0-100).
   score           Int?
   passingScore    Int       @default(75)
-  /// Current state of the exam (SCHEDULED, IN_PROGRESS, SUBMITTED, PASSED, FAILED, CANCELLED).
+  /// Exam lifecycle state (SCHEDULED, IN_PROGRESS, SUBMITTED, PASSED, FAILED, CANCELLED).
   status          String    @default("SCHEDULED")
   cycle           Int       @default(1)
   durationMinutes Int       @default(60)
@@ -225,7 +224,7 @@ model KbsExamAnswer {
   examId          String
   questionId      String
   flagged         Boolean   @default(false)
-  /// Indicates if the answer is correct. Null until graded.
+  /// Indicates answer correctness. Null until graded.
   questionCorrect Boolean?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -242,7 +241,7 @@ model KbsExamAnswerSelection {
   id           String   @id @default(uuid())
   examAnswerId String
   answerId     String
-  /// Snapshot of the answer's correctness at grading time. Null until graded.
+  /// Snapshot of answer correctness at grading time. Null until graded.
   wasCorrect   Boolean?
 
   examAnswer KbsExamAnswer         @relation(fields: [examAnswerId], references: [id], onDelete: Cascade)
@@ -251,7 +250,7 @@ model KbsExamAnswerSelection {
   @@unique([examAnswerId, answerId])
 }
 
-/// Global settings configuration for the KBS module. Intended as a singleton.
+/// KBS module global configuration singleton.
 model KbsSettings {
   id                Int      @id @default(autoincrement())
   activeCourseId    String?
@@ -264,7 +263,7 @@ model KbsSettings {
 
 model KbsCertificate {
   id          String    @id @default(uuid())
-  /// Candidate identifier. Supports multiple entries for certificate renewals.
+  /// Associated candidate. Supports multiple records for renewals.
   candidateId String
   /// Unique certification number (e.g., KCA-YYYYMMDD-XXXX).
   kcaNumber   String    @unique

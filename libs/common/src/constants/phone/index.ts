@@ -1,6 +1,5 @@
 // Validates international phone numbers.
-// Accepts an optional international prefix, digits, and common separators (spaces, dots, hyphens, parentheses).
-// Note: This provides basic structural validation, not country-specific formatting checks.
+// Asserts basic structure (digits, prefix, separators) without country-specific formatting rules.
 export const PHONE_REGEX = /^\+?[0-9 ().-]{6,20}$/;
 
 export const PHONE_ERROR =

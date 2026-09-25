@@ -1,4 +1,11 @@
-import { AUTH_ROUTES, PUBLIC_PATHS, ROLE_DEFAULTS, getDefaultRoute, withLocale } from './routes';
+import {
+  AUTH_ROUTES,
+  PUBLIC_PATHS,
+  REDIRECT_WHEN_AUTHED,
+  ROLE_DEFAULTS,
+  getDefaultRoute,
+  withLocale,
+} from './routes';
 
 // proxy.ts is a pure decision over (pathname, session): it either lets the
 // request through, redirects it, or hands it to next-intl. All three
@@ -32,7 +39,7 @@ jest.mock('next-intl/middleware', () => ({
 }));
 
 // auth() wraps the handler in production. Unwrap it so the raw decision runs.
-jest.mock('./auth', () => ({ auth: (handler: unknown) => handler }));
+jest.mock('./auth', () => ({ authForProxy: (handler: unknown) => handler }));
 
 import proxy from './proxy';
 
@@ -232,6 +239,54 @@ describe('proxy: no decision loops', () => {
       if (outcome.kind === 'redirect') {
         expect(new URL(outcome.url).pathname).not.toBe(withLocale(p, LOCALE));
       }
+    }
+  });
+});
+
+/**
+ * A47. The proxy RUNS on every public page, and running must not become gating.
+ *
+ * The root layout reads the session on every page, and only the proxy can write
+ * a refreshed session cookie back to the browser - NextAuth appends the
+ * session's `set-cookie` onto whatever response the handler returns. A public
+ * page the proxy never saw therefore refreshed where nothing could save the
+ * result, and browsing two of them signed the person out.
+ *
+ * A47 met this by listing each public page in the matcher one at a time. Locale
+ * routing already meets it and more completely - `/(fr|en)/:path*` matches every
+ * URL the app links to - so this asserts the PROPERTY rather than the list: a
+ * public page lets every kind of session through, whatever the matcher looks
+ * like. Written against `PUBLIC_PATHS` instead of parsed out of `config.matcher`
+ * for that reason; a test that reads the matcher would pass by agreeing with
+ * whatever the matcher happens to say.
+ *
+ * `/`, `/login` and `/register` are excluded from the signed-in case only: the
+ * proxy has always sent a signed-in person onward from those three.
+ */
+describe('proxy: public pages it runs on are never gated (A47)', () => {
+  it('has public pages to check', () => {
+    // A list that went empty would make every assertion below vacuous.
+    expect(PUBLIC_PATHS.length).toBeGreaterThan(10);
+  });
+
+  it.each(PUBLIC_PATHS)('lets an anonymous visitor through %s', (p) => {
+    expect(run(p, null)).toEqual({ kind: 'intl' });
+  });
+
+  it.each(PUBLIC_PATHS.filter((p) => !REDIRECT_WHEN_AUTHED.includes(p)))(
+    'lets a signed-in person, and a stale session, through %s',
+    (p) => {
+      expect(run(p, authed())).toEqual({ kind: 'intl' });
+      expect(run(p, stale())).toEqual({ kind: 'intl' });
+    },
+  );
+
+  it('runs on a public page rather than skipping it, in both locales', () => {
+    // The half that makes the rest mean something: `intl` is the outcome for a
+    // page the proxy HANDLED. A page it never matched would never reach here.
+    for (const locale of ['fr', 'en']) {
+      expect(runRaw(`/${locale}/about`, authed())).toEqual({ kind: 'intl' });
+      expect(runRaw(`/${locale}/legal/privacy`, authed())).toEqual({ kind: 'intl' });
     }
   });
 });

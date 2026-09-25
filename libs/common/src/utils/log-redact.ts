@@ -1,12 +1,6 @@
-/**
- * Utilities for redacting sensitive fields from log payloads.
- * Masks PII to maintain privacy and observability standards.
- */
+/** Redacts sensitive PII from log payloads. */
 
-/**
- * Obfuscates an email address for logging.
- * Retains sufficient characters for correlation without exposing the full identity.
- */
+/** Masks email addresses, retaining partial identifiers for correlation. */
 export const maskEmail = (email: string | null | undefined): string => {
   if (!email) return '<none>';
   const at = email.indexOf('@');

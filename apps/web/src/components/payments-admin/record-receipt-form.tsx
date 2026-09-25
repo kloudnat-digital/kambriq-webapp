@@ -11,17 +11,16 @@ import { PAYMENT_CHANNELS } from '@kambriq/common/payments/payment-channels';
 import type { PaymentReceipt } from '@/types/payments';
 
 /**
- * Renders a form to record a payment receipt or correct an existing one.
+ * Form for recording new payment receipts or correcting existing ledger entries.
  *
- * This form is responsible exclusively for recording receipts via `recordReceipt`.
- * It does not validate payments.
+ * Exclusively invokes `recordReceipt` (receipt capture is strictly decoupled from payment validation).
+ * Orchestrates a two-step submission: uploads the required proof document via an S3 presigned URL,
+ * then submits the returned object key with the receipt payload.
  *
- * It handles uploading the proof document to an S3 presigned URL first, then
- * submits the resulting key along with the receipt details. A proof file is required.
- *
- * For corrections: A negative amount reduces the total, and a positive amount adds to it.
- * Corrections require selecting an existing ledger line and providing a reason.
- * Corrections are appended as new entries; existing lines are never mutated.
+ * Ledger immutability:
+ * - Existing lines are never mutated.
+ * - Corrections are appended as net-new entries referencing a prior receipt ID.
+ * - Requires a mandatory justification and accepts signed amounts (positive/negative).
  */
 export const RecordReceiptForm = ({
   paymentId,
@@ -30,7 +29,7 @@ export const RecordReceiptForm = ({
 }: {
   paymentId: string;
   currency: string;
-  /** The ledger as it stands, so a correction can point at a line on it. */
+  /** Current ledger receipts available for correction targeting. */
   receipts: PaymentReceipt[];
 }) => {
   const router = useRouter();

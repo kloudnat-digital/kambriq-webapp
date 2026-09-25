@@ -28,8 +28,7 @@ export class StorageService {
     this.transport =
       this.config.get<string>('STORAGE_TRANSPORT', 's3') === 'disabled' ? 'disabled' : 's3';
 
-    // Disabling storage must be explicitly configured.
-    // Incomplete configuration results in fatal startup errors rather than silent failures.
+    // Enforce explicit configuration to prevent silent failures on incomplete setup.
     if (this.transport === 'disabled') {
       this.s3 = null;
       this.logger.warn('STORAGE_TRANSPORT=disabled - S3 is off; storage calls will throw.');
@@ -45,8 +44,7 @@ export class StorageService {
       );
     }
 
-    // The default credential provider chain resolves the ECS task role on Fargate
-    // and the local developer profile automatically.
+    // Relies on default credential chain (ECS task role or local profile).
     this.s3 = new S3Client({
       region: this.region,
       requestChecksumCalculation: 'WHEN_REQUIRED',
@@ -136,8 +134,7 @@ export class StorageService {
   }
 
   /**
-   * Lists all keys under a specified prefix.
-   * Automatically handles pagination to retrieve all matching keys.
+   * Lists all keys under a specified prefix, handling pagination automatically.
    *
    * @param prefix - The prefix to search for.
    * @returns An array of S3 object keys.

@@ -4,18 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import type { NetworkNode as NetworkNodeType } from '@/types/kamnet';
 
 /**
- * One agent in the tree, and its referrals beneath it.
+ * Renders an agent node and their referrals in the network tree.
  *
- * `data-level` carries the depth this node sits at, so a test can assert the
- * shape of the tree rather than count cards. The previous version of this
- * screen had no notion of level at all: it rendered a flat grid of six invented
- * agents with a made-up "Expert" / "Senior" / "Junior" badge that matched no
- * enum in the system. The real tiers are JUNIOR, CONFIRMED and MANAGER, and
- * they come from the server.
- *
- * Every colour here is a token. The previous version used `gray-200`,
- * `gray-400`, `gray-600`, `gray-900` and `bg-white`, and styled its badge from
- * a hand-written `LEVEL_STYLES` map keyed on strings that do not exist.
+ * Exposes `data-level` to allow tests to assert structural depth.
+ * Applies strictly token-based colors to enforce design system compliance.
+ * Agent tiers (JUNIOR, CONFIRMED, MANAGER) are driven by the API response.
  */
 
 const TIER_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {

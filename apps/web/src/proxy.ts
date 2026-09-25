@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
-import { auth } from './auth';
+import { authForProxy as auth } from './auth';
 import { routing } from './i18n/routing';
 import {
   AUTH_ROUTES,
@@ -138,6 +138,20 @@ export const config = {
 
     // Unprefixed forms, so they are redirected to a locale rather than 404ing.
     // Keep in step with PUBLIC_PATHS and PROTECTED_PREFIXES in routes.ts.
+    //
+    // A47 requires the proxy to RUN on every public page: the root layout reads
+    // the session on every page, only the proxy can write a refreshed session
+    // cookie back, and a page the proxy never saw refreshed where nothing could
+    // save it - browsing two of them signed the person out. A47 met that by
+    // listing each public page here one at a time.
+    //
+    // Locale routing already meets it, and more completely: `/(fr|en)/:path*`
+    // above matches every locale-prefixed URL, which after wave 5 is every URL
+    // the app links to, and the entries below add the unprefixed forms. The
+    // one-page-at-a-time list was A47's way of keeping an unknown URL unmatched
+    // so it still 404s; here that property does not rest on the matcher at all
+    // but on the handler asking `isProtected()` positively, which is asserted
+    // by running the proxy rather than by reading the list.
     '/about',
     '/about/:path*',
     '/account',

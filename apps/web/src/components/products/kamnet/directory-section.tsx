@@ -6,13 +6,11 @@ import SectionHeader from '@/components/section/header';
 import { Button } from '@/components/ui/button';
 
 /**
- * P11 - the KAMNET product page points at KAMNET's only public surface.
+ * P11 - Renders the KAMNET public directory entry point on the product page.
  *
- * After the P9 arbitrage the directory is the whole of what KAMNET shows a
- * visitor, so a product page that never mentions it leaves the page with
- * nothing to send anybody to. The copy is about certification and
- * accompaniment and says nothing about what an agent earns - the P21 pin sweeps
- * `products.kamnet` for exactly that and would fail this file otherwise.
+ * Ensures visitors have a direct path to the directory, KAMNET's sole public surface.
+ * Copy strictly focuses on certification and accompaniment. References to agent earnings
+ * are omitted to comply with P21 pin sweeps.
  */
 const DirectorySection = async () => {
   const t = await getTranslations('products.kamnet.directory');

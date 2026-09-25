@@ -206,20 +206,13 @@ model LandReservation {
   clientPhone  String?
   status       LandReservationStatus @default(PENDING)
 
-  /// Legacy acompte amount in XAF, and the one monetary Float left in this model.
-  /// Quarantined in no-float-money.spec.ts rather than converted, because it
-  /// moves with Land.price. requestPaymentForReservation rounds it to derive the
-  /// Payment.amountDue, so a payment created from a reservation and a payment
-  /// backfilled by the G1 migration agree.
+  /// Legacy down payment amount (XAF).
+  /// Preserved as Float to maintain consistency with Land.price and ledger projections.
   downPaymentAmount    Float?
-  /// The acompte step of the reservation journey, projected from the ledger.
-  /// It is NOT the record that money arrived: Payment, PaymentReceipt and
-  /// PaymentTransition are. confirmDownPayment writes it only once a Payment on
-  /// this reservation is VALIDE, and reservation-money-projects-the-ledger.spec.ts
-  /// keeps it the only writer outside the seed.
+  /// Indicates ledger confirmation of the down payment.
+  /// Modified strictly upon Payment validation to project ledger state.
   downPaymentConfirmed Boolean   @default(false)
-  /// The admin who advanced the reservation to CONFIRMED. A different fact from
-  /// who validated the payment, which PaymentTransition records.
+  /// Admin user ID who advanced the reservation to CONFIRMED.
   confirmedBy          String?
   confirmedAt          DateTime?
 

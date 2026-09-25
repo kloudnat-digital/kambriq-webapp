@@ -1,10 +1,4 @@
-/**
- * Redis Connection Configuration
- *
- * Provides a unified mechanism to generate connection options for Redis clients across the application.
- * Manages conditional configuration of TLS and authentication to ensure compatibility
- * across different environments (e.g., local development, AWS ElastiCache).
- */
+/** Generates Redis connection options dynamically, managing TLS and authentication across environments. */
 
 /** Callback function for retrieving environment configuration values. */
 export type RedisEnvLookup = (key: string) => string | undefined;

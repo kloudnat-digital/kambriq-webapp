@@ -1,5 +1,5 @@
 import NextAuth from 'next-auth';
-import authConfig from './auth.config';
+import authConfig, { pageAuthConfig } from './auth.config';
 
 /**
  * next-auth is configured with JWT strategy (no database adapter).
@@ -11,7 +11,27 @@ import authConfig from './auth.config';
  *   cookie managed by next-auth - no database reads per request.
  * - The NestJS backend is the source of truth for users and refresh tokens.
  */
-export const { handlers, auth, signIn, signOut } = NextAuth({
+/**
+ * A47, second half - two instances over ONE cookie, split by who can write it.
+ *
+ * The proxy and the `/api/auth` route handlers write the session cookie back to
+ * the browser, so they are the only ones allowed to refresh: `authForProxy`,
+ * `handlers`, `signIn` and `signOut` use `authConfig`. A plain `auth()` in a
+ * page or a server action drops the `set-cookie`, so a refresh there revoked
+ * the browser's token and saved nothing: pages read with `pageAuthConfig`,
+ * which never refreshes. Same secret, same cookie name - one session.
+ */
+export const {
+  handlers,
+  auth: authForProxy,
+  signIn,
+  signOut,
+} = NextAuth({
   session: { strategy: 'jwt' },
   ...authConfig,
+});
+
+export const { auth } = NextAuth({
+  session: { strategy: 'jwt' },
+  ...pageAuthConfig,
 });

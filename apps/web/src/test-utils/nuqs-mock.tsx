@@ -27,12 +27,8 @@ export const parseAsFloat = parser<number>((raw) => Number(raw));
 export const parseAsBoolean = parser<string>((raw) => raw);
 
 /**
- * The state every `useQueryStates` in one test shares.
- *
- * Module-level rather than per-hook because two components in the same render
- * read the same URL. `resetTestQueryState()` clears it between tests - without
- * that, a status set in one test leaks into the next and the second passes for
- * the wrong reason.
+ * Global mock URL state shared across all hook instances.
+ * Must be reset between tests via `resetTestQueryState()` to prevent test pollution.
  */
 let state: QueryState = {};
 
@@ -40,7 +36,7 @@ export const resetTestQueryState = (initial: QueryState = {}) => {
   state = { ...initial };
 };
 
-/** What the URL currently holds, for a test that wants to assert on it. */
+/** Exposes current mock URL state for test assertions. */
 export const testQueryState = (): QueryState => ({ ...state });
 
 type Definitions = Record<string, { defaultValue?: QueryValue }>;

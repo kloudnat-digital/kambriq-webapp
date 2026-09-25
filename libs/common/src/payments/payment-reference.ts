@@ -1,16 +1,9 @@
 /**
- * Payment Reference Generator and Validator
- *
- * Generates and validates unique payment references designed for manual transcription.
- * Format: KBQ-YYMM-XXXXX-C
- * - YYMM: Year and month
- * - XXXXX: 5-character body using a restricted base-36 alphabet
- * - C: Modulo-29 check character
+ * Generates and validates transcription-safe payment references.
+ * Format: KBQ-YYMM-XXXXX-C (YYMM: Period, XXXXX: Base-29 body, C: Modulo-29 check character)
  */
 
-/**
- * Characters excluded from the reference alphabet to prevent transcription errors.
- */
+/** Confusable characters excluded from the alphabet. */
 const CONFUSABLE = 'O0IL1S5';
 
 const BASE36 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -26,18 +19,12 @@ export const REFERENCE_BODY_LENGTH = 5;
 /** Number of distinct reference bodies possible per month (29^5). */
 export const REFERENCE_BODY_SPACE = REFERENCE_ALPHABET.length ** REFERENCE_BODY_LENGTH;
 
-/**
- * Weights used to calculate the modulo-29 check character.
- * Provides guaranteed detection of single-character errors and adjacent transpositions.
- */
+/** Modulo-29 check weights guaranteeing detection of single-character and adjacent transposition errors. */
 const CHECK_WEIGHTS = [2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
 const MODULUS = REFERENCE_ALPHABET.length;
 
-/**
- * Linear congruential generator parameters for obfuscating sequential reference counters.
- * Ensures consecutive sequence values produce non-consecutive reference strings without collisions.
- */
+/** LCG parameters for sequence obfuscation without collisions. */
 const MULTIPLIER = 7_777_763;
 const OFFSET = 1_234_577;
 
@@ -122,9 +109,7 @@ export const validateReference = (input: string): ReferenceValidation => {
 
   const [, period, body, given] = m;
 
-  // Only the body and the check character are drawn from the restricted
-  // alphabet. `YYMM` is ordinary digits, so a `0` there is a month, not a typo -
-  // 2026-01 is `2601`. Rejecting a zero everywhere would refuse January.
+  // YYMM uses standard digits; restricted alphabet applies only to body and check character.
   const offending = [...body, given].filter((c) => !REFERENCE_ALPHABET.includes(c));
   if (offending.length > 0) {
     return {

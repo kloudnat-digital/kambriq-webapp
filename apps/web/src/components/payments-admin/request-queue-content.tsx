@@ -4,21 +4,14 @@ import { ChannelLabel } from './channel-label';
 import type { PaymentRequestRow } from '@/types/payments';
 
 /**
- * G12 - every payment still waiting for an answer, oldest first.
+ * Renders the queue of pending payment requests, sorted oldest first.
  *
- * v03 4d: *"Un client qui a demande a payer et a qui personne n'a repondu est
- * exactement le genre de silence que ce systeme existe pour rendre
- * impossible."*
+ * Displays wait duration alongside identity verification status to indicate
+ * blocking dependencies. Requests blocked by unverified identities include
+ * direct links to the identity queue.
  *
- * Two facts sit beside each other on every row because together they decide
- * what happens next: how long it has waited, and whether the client's identity
- * is verified. An old request whose client is unverified is waiting on the
- * identity queue, not on the person reading this screen - and the row says so
- * and links there.
- *
- * The client's stated preference is shown here, before anything has been
- * decided, so the operator picking up the telephone already knows what was
- * asked for.
+ * Exposes the client's preferred channel to inform operator outreach
+ * before channel selection is finalized.
  */
 export const RequestQueueContent = ({
   rows,

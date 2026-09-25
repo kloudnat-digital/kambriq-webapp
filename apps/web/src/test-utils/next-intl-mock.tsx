@@ -38,19 +38,16 @@ const interpolate = (template: string, args?: Record<string, string | number>): 
     : template;
 
 /**
- * The translator itself, as a plain function.
- *
- * Separated from `useTranslations` so that `getTranslations` can return the
- * same thing without calling a hook: a hook invoked from a function that is
- * neither a component nor a hook is a `react-hooks/rules-of-hooks` error, and
- * silencing that rule to make a mock compile would blunt it everywhere else.
+ * Core translation resolver decoupled from React context.
+ * Enables both `useTranslations` (client hooks) and `getTranslations` (async server API)
+ * to share resolution logic without violating React hook constraints.
  */
 const makeTranslator = (namespace?: string) => {
   const prefix = namespace ? `${namespace}.` : '';
   const translate = (key: string, args?: Record<string, string | number>): string => {
     const value = resolve(`${prefix}${key}`);
     if (typeof value !== 'string') {
-      // Loud on purpose. See the note above.
+      // Fails fast to prevent silent translation omissions from masking rendering regressions.
       throw new Error(
         `Missing ${locale} translation for "${prefix}${key}". The component would have ` +
           `rendered the key itself to a user.`,

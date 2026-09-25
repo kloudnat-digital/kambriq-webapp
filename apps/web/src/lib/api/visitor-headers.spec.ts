@@ -59,12 +59,19 @@ describe('A45 - visitorHeaders', () => {
 describe('A45 - every server-side call to the API vouches for its visitor', () => {
   const read = (p: string) => readFileSync(join(__dirname, '..', '..', p), 'utf8');
 
-  it('in auth.config.ts, each of the four fetches to the API', () => {
+  it('in auth.config.ts, each of its three fetches to the API (login, users/me, logout)', () => {
     const src = read('auth.config.ts');
     const fetches = src.match(/await fetch\(`\$\{API_URL\}\/api\/v1\//g) ?? [];
     const vouched = src.match(/\.\.\.\(await visitorHeaders\(\)\)/g) ?? [];
-    expect(fetches).toHaveLength(4);
+    expect(fetches).toHaveLength(3);
     expect(vouched).toHaveLength(fetches.length);
+  });
+
+  // A47 moved the refresh out of auth.config.ts; it carries the headers there.
+  it('in the session refresh, its one fetch', () => {
+    const src = read('lib/auth/refresh-session.ts');
+    expect(src.match(/await fetch\(`\$\{apiUrl\}\/api\/v1\/auth\/refresh`/g) ?? []).toHaveLength(1);
+    expect(src).toMatch(/\.\.\.\(await visitorHeaders\(\)\)/);
   });
 
   it("in the API client's one fetch", () => {

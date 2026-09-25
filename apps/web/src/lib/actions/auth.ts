@@ -23,8 +23,7 @@ export const logInAction = createAction(
         const causeMessage = getAuthErrorCause(error);
 
         if (causeMessage) {
-          // Grace period - account soft-deleted but within the reactivation window.
-          // Redirect to the reactivation page instead of showing a generic error.
+          // Redirects soft-deleted accounts in grace period to the reactivation flow.
           const signal = parseReactivationSignal(causeMessage);
           if (signal) {
             redirect({
@@ -36,7 +35,7 @@ export const logInAction = createAction(
             });
           }
 
-          // Real API error message (account locked, attempts remaining, inactive, etc.)
+          // Propagates upstream error context (locked, inactive, attempts).
           throw new ServerActionError(causeMessage, 401);
         }
 
@@ -49,9 +48,8 @@ export const logInAction = createAction(
 );
 
 export const logOutAction = async (): Promise<void> => {
-  // Backend revocation happens in auth.config events.signOut, where the JWT is still
-  // accessible. Calling the logout endpoint here would only ever hit a request without
-  // the refresh token (server-side fetch doesn't carry browser cookies).
+  // Backend revocation occurs in `auth.config` `events.signOut` to ensure JWT access,
+  // circumventing server-side fetch constraints regarding refresh token cookies.
   await signOut({ redirectTo: '/' });
 };
 
@@ -75,7 +73,7 @@ export const registerAction = createAction(
   },
 );
 
-// Intentionally vague on success/failure - we never reveal whether an email exists (OWASP A07).
+// Conforms to OWASP A07 by abstracting email existence across verification and reset responses.
 
 export const forgotPasswordAction = createAction(async (email: string) => {
   try {

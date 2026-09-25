@@ -26,10 +26,9 @@ export const envSchema = z.object({
   THROTTLE_TTL: z.coerce.number().default(60000),
   THROTTLE_LIMIT: z.coerce.number().default(100),
   /**
-   * A45. Shared by the web and the API only. With it, the API believes the
-   * visitor address the web vouches for; without it, every call the web makes
-   * for its visitors counts against the web task. Read and length-checked by
-   * `caller-identity.ts` in the API.
+   * Shared secret between web and API.
+   * Authenticates client IP addresses forwarded by the web layer.
+   * Unauthenticated calls are rate-limited against the web task itself.
    */
   WEB_CALLER_SECRET: z.string().optional(),
 
@@ -37,38 +36,34 @@ export const envSchema = z.object({
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.coerce.number().default(6379),
 
-  // Redis authentication is optional to support both local unauthenticated development
-  // clusters and AWS ElastiCache clusters that require AUTH and TLS.
+  // Optional Redis authentication. Supports unauthenticated local clusters and authenticated AWS ElastiCache clusters.
   REDIS_PASSWORD: z.string().optional(),
 
-  // Represents a boolean as a string (e.g., 'true' or 'false').
+  // Boolean represented as string ('true' or 'false').
   REDIS_TLS: z.string().default('false'),
 
   // ----- AWS -----
-  // AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are omitted to rely on the ECS task role
-  // via the default credential provider chain.
+  // AWS credentials omitted to force default credential provider chain (e.g., ECS task role).
   AWS_REGION: z.string().default('eu-central-1'),
 
   // ----- Bootstrap -----
-  // The SSM parameter store path for bootstrap administrative identities.
-  // It is optional for the API runtime but required by the standalone bootstrap script.
+  // SSM parameter store path for bootstrap administrative identities.
+  // Optional in API runtime; required by standalone bootstrap script.
   BOOTSTRAP_SSM_PREFIX: z.string().optional(),
 
   // ----- Payment channel details -----
-  // The SSM path holding the bank, mobile money, and notary details used in
-  // payment instructions. Fetched at runtime to allow dynamic updates.
+  // SSM path for payment channel details (bank, mobile money, notary). Fetched at runtime.
   PAYMENT_CHANNELS_SSM_PREFIX: z.string().optional(),
 
-  // Controls how payment channels are resolved. When set to 'ssm', PAYMENT_CHANNELS_SSM_PREFIX
-  // is required. Disabling it is intended primarily for local development and CI.
+  // Payment channel resolution strategy. 'ssm' requires PAYMENT_CHANNELS_SSM_PREFIX. 'disabled' intended for local/CI.
   PAYMENT_CHANNELS_TRANSPORT: z.enum(['ssm', 'disabled']).default('ssm'),
 
-  // The duration (in days) a payment remains valid after creation before it expires.
+  // Validity duration (in days) for a payment before expiration.
   PAYMENT_VALIDITY_DAYS: z.coerce.number().int().positive().default(30),
 
   /**
-   * Comma-separated list of days before the payment deadline when reminders should be sent.
-   * Defined as a string to allow configuration updates without deployments.
+   * Comma-separated days before deadline to send payment reminders.
+   * String format permits runtime configuration updates.
    */
   PAYMENT_REMINDER_OFFSETS_DAYS: z.string().default('7,1'),
 
@@ -76,42 +71,39 @@ export const envSchema = z.object({
   DUNNING_SWEEP_CRON: z.string().default('0 6 * * *'),
 
   // ----- Contact Settings -----
-  // The destination email address for inbound contact requests and daily digests.
-  // Provided via SSM in production environments.
+  // Destination email for inbound contact requests and daily digests.
   CONTACT_INBOX_EMAIL: z.email().optional(),
 
   /** The cron schedule for the daily contact digest. Defaults to 07:00 UTC. */
   CONTACT_DIGEST_CRON: z.string().default('0 7 * * *'),
 
-  /**
-   * The language used for back-office notifications, independent of the user's locale.
-   */
+  /** Back-office notification language, independent of user locale. */
   CONTACT_BACKOFFICE_LOCALE: z.enum(['en', 'fr']).default('fr'),
 
   // ----- SES Contact Lists -----
-  // The name of the AWS SES contact list.
+  // AWS SES contact list name.
   AWS_SES_CONTACT_LIST_NAME: z.string().default('kambriq-newsletter'),
 
   // ----- Storage transport -----
-  // Selects the storage backend. Setting this to 'disabled' will cause storage operations to throw.
+  // Storage backend selection. 'disabled' causes storage operations to throw.
   STORAGE_TRANSPORT: z.enum(['s3', 'disabled']).default('s3'),
 
   // ----- Email transport -----
-  // Defines the email delivery mechanism. Use 'console' for local development logging.
+  // Email delivery mechanism. 'console' routes to stdout for local development.
   EMAIL_TRANSPORT: z.enum(['ses', 'console']).default('ses'),
 
   // ----- S3 Bucket configuration -----
-  // Required when STORAGE_TRANSPORT is 's3'.
+  // Required if STORAGE_TRANSPORT='s3'.
   AWS_S3_BUCKET: z.string().default(''),
   AWS_S3_REGION: z.string().default(''),
 
   // ----- Email sender -----
-  // Read by EmailProcessor when it hands the message to SES.
+  // Sender identity injected by EmailProcessor for SES delivery.
   EMAIL_FROM: z.email().default('noreply@kambriq.com'),
   EMAIL_FROM_NAME: z.string().min(1).default('KAMBRIQ Team'),
 
   // ----- Frontend origin -----
-  // The base URL used for constructing links in transactional emails.
+  // Base URL for transactional email links.
   FRONTEND_URL: z.url().default('http://localhost:3001'),
 });
 

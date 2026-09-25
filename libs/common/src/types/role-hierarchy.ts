@@ -1,14 +1,7 @@
-/**
- * Defines the application's role hierarchy independently to avoid unnecessary
- * dependencies on the NestJS runtime context.
- */
+/** Defines role hierarchy independent of NestJS runtime context. */
 import { RoleCode } from './roles.enum';
 
-/**
- * The highest privilege role in the hierarchy.
- * Represents a super administrator with implicit access to all protected routes
- * and role management endpoints.
- */
+/** Global administrator with implicit access to all protected resources. */
 export const SUPER_ADMIN_ROLE = RoleCode.ADMIN_GLOBAL;
 
 /**

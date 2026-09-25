@@ -2,32 +2,15 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * Not one new colour class outside the design system.
+ * Enforces strict usage of the design system palette.
  *
- * Step 0 re-anchored `globals.css` on the brand palette and, in doing so,
- * measured what the re-anchoring does NOT reach: 1226 occurrences of 75
- * distinct Tailwind colour classes in `apps/web/src`, 734 of them `gray-*`.
- * A `text-gray-500` renders the same grey before and after, so every one of
- * them is a place the design system does not actually govern.
- *
- * The constraint on this PR is therefore directional rather than absolute: the
- * count in a file it touches must go DOWN, never up. `/agent/network/page.tsx`
- * carried nine - `gray-400` x3, `gray-900` x2, `gray-200`, `gray-600`,
- * `gray-500`, `white` - and this pins it at zero.
- *
- * Why a test rather than a review note: the failure is silent. A `bg-white`
- * typed into a new component looks right on the day it is written and stops
- * matching the system the day the system moves, which is exactly what step 0
- * just did. The same reasoning as `brand-palette.spec.ts`, one layer up: that
- * one bans a hex, this one bans a palette that is not ours.
+ * Prevents the introduction of Tailwind utility classes (e.g., `gray-*`, `white`)
+ * that fall outside the defined `@theme` palette in `globals.css`.
+ * Any deviation bypasses the design system and creates hardcoded visual drift.
  */
 const HERE = __dirname;
 
-/**
- * The families the design system owns, from the `@theme` block in
- * `globals.css`: four eleven-step scales plus the semantic role tokens.
- * Anything else is Tailwind's default palette, which is not KAMBRIQ's.
- */
+/** Permitted design system families defined in `globals.css`. */
 const SYSTEM_FAMILIES = [
   'primary',
   'accent',
@@ -69,13 +52,7 @@ const COLOUR_UTILITIES = [
 const STEPPED = new RegExp(`\\b(?:${COLOUR_UTILITIES})-([a-z]+)-(\\d{2,3})\\b`, 'g');
 const PLAIN = new RegExp(`\\b(?:${COLOUR_UTILITIES})-(white|black)\\b`, 'g');
 
-/**
- * Comments are stripped first, and this repository has paid for that lesson
- * three times: `route-guards.spec.ts` counted a comment explaining a route was
- * NOT public as a public route, and `brand-palette.spec.ts` flagged its own
- * prose naming the old hex values. A sweep that bans a token flags the code
- * explaining the ban first.
- */
+/** Strips comments to prevent the regex from falsely flagging documentation. */
 const withoutComments = (source: string): string =>
   source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
@@ -102,11 +79,7 @@ describe('/agent/network carries no colour outside the design system', () => {
     }
   });
 
-  /**
-   * The sweep has to discriminate, or it has replaced a false positive with a
-   * silent hole. A gate that refuses everything proves nothing about what it
-   * admits; one that admits everything proves less.
-   */
+  /** Verifies that the regex accurately discriminates code from prose. */
   it('still catches a non-system class in code, and forgives one only in prose', () => {
     const catches = (src: string) => {
       const code = withoutComments(src);

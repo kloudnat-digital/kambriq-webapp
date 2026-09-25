@@ -11,7 +11,7 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<T, ApiRe
   intercept(context: ExecutionContext, next: CallHandler): Observable<ApiResponse<T>> {
     return next.handle().pipe(
       map((data) => {
-        // If response is already wrapped (e.g pagination) pass through
+        // Pass through pre-wrapped responses.
         if (data && typeof data === 'object' && 'success' in data) {
           return data;
         }

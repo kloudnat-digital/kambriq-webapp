@@ -2,11 +2,8 @@ export * from './lesson-content';
 export * from './lesson-media';
 
 /**
- * Passing thresholds for different assessment types.
- *
- * Note: `EXAM_PASSING_SCORE` applies to newly scheduled exams. The grading logic
- * relies on the snapshot `passingScore` stored on the exam record itself,
- * ensuring past results remain unaffected by future threshold changes.
+ * Assessment passing thresholds.
+ * `EXAM_PASSING_SCORE` applies to new schedules; grading relies on snapshots to immunize past results from threshold changes.
  */
 export const MODULE_PASSING_SCORE = 70 as const;
 export const EXAM_PASSING_SCORE = 80 as const;
@@ -14,9 +11,8 @@ export const DEFAULT_EXAM_QUESTION_COUNT = 20 as const;
 export const DEFAULT_QUIZ_QUESTION_COUNT = 10 as const;
 
 /**
- * Represents the lifecycle stages of a candidate.
- * Note: `CERTIFIED` requires an explicit administrative action to issue a certificate,
- * whereas `EXAM_PASSED` is granted automatically upon successful grading.
+ * Candidate lifecycle stages.
+ * `CERTIFIED` requires manual certificate issuance; `EXAM_PASSED` triggers automatically on grading.
  */
 export const enum CandidateStatus {
   CANDIDATE = 'CANDIDATE',
@@ -30,7 +26,7 @@ export const STATUS_TRANSITIONS: Record<string, string[]> = {
   [CandidateStatus.CANDIDATE]: [CandidateStatus.IN_TRAINING],
   [CandidateStatus.IN_TRAINING]: [CandidateStatus.EXAM_PENDING],
   [CandidateStatus.EXAM_PENDING]: [CandidateStatus.EXAM_PASSED, CandidateStatus.FAILED],
-  // CERTIFIED is reached only via explicit certificate issuance, not via a generic status transition.
+  // CERTIFIED requires explicit certificate issuance.
   [CandidateStatus.EXAM_PASSED]: [],
   [CandidateStatus.FAILED]: [CandidateStatus.EXAM_PENDING],
   [CandidateStatus.CERTIFIED]: [],

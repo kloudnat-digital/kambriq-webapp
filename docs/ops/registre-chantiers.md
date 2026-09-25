@@ -4979,6 +4979,13 @@ green, journeys and E2E included):
 400, before A45 as after it. That is why NextAuth retries it in bursts. When
 refresh works again, the measured peak will fall, and 30 will be generous.
 
+> **Corrected on 25 September (A47).** "Every refresh answers 400" was measured
+> over a 16-hour window and written as if it described the route. Over 7 days
+> the web's refreshes answered 200 x3, 409 x2 and 400 x59: refresh worked one
+> call at a time and failed in bursts. The cause is recorded under **A47**. The
+> sentence above is kept, because the correction only means something beside
+> the claim it corrects.
+
 ---
 
 ### A46 - log hygiene - `PROUVE`
@@ -5007,6 +5014,187 @@ result meaning. The web's log group: nothing.
 
 Lines written before the deploy expire with the log group's 7-day retention.
 Deleting them is a decision for Visquis, not for this subject.
+
+---
+
+### A47 - a session survives its access token's expiry - `PROUVE`
+
+**Cost impact: None.**
+
+**The brief's premise, corrected first.** "`/auth/refresh` answers 400 every
+time" was my own report of 24 September, measured over 16 hours. Over the
+API's 7-day log the web's refreshes answered 200 x3, 409 x2 and 400 x59.
+Refresh worked one call at a time. It failed in bursts, and in a way that
+reached the user. The brief asked for the cause among four candidates: what the
+route expects, what the web sends, where the token is kept, and whether it
+reaches the API. It is none of them. The route expects a token in the body, the
+web sends one, and it reaches the API, which then rejects it (the 184-byte "invalide ou
+expiré" body, not the 171-byte "absent" one). The API itself refreshes correctly
+when called once after a pause (200, 200, then the replayed old token 400).
+
+**Three defects, each measured on dev before anything changed:**
+
+1. **Concurrent refreshes with a single-use token.** One navigation reads the
+   session several times at once - the proxy, the page, the root layout,
+   server actions - and each read of an expired session refreshed with the
+   same token. The API log shows it on 20 September (200, then 400 16 ms later)
+   and on 21 September (200, then 409 twice, then 400s). In a real browser on
+   25 September, one navigation to `/mylands` made three refreshes in 27 ms:
+   200, 400, 400.
+2. **Refreshes that are never saved.** Only the proxy writes the session cookie
+   back. A plain `auth()` in a page or an action drops the `set-cookie`: next-auth
+   `lib/index.js` returns `getSession(...).then(r => r.json())`. The root layout
+   calls `auth()` on every page, so a refresh on a page outside the proxy's
+   matcher was thrown away, and the browser kept a token that had just been
+   revoked.
+3. **Two tokens in the same second were identical.** Same claims, same `iat`,
+   same `exp`, so a refresh made in the same second as its login answered 409:
+   the new token's hash hit the unique index.
+
+**The journeys never exercised refresh.** No call to `/auth/refresh` and no
+journey longer than the 15-minute access token, which is why they passed.
+
+**The fix:**
+
+- `lib/auth/refresh-session.ts`: the web server remembers what each refresh
+  token was exchanged for. A request follows that chain to the newest tokens,
+  refreshes only when those are due and with their own token, and shares one
+  call between every request asking at the same moment. A stale cookie then
+  leads to the current tokens, and it catches up when the proxy next runs.
+- A refused session stops asking. A transient failure is retried.
+- The API gives every token a `jwtid`.
+- The map is in the web server's memory. A restart forgets it and falls back to
+  today's behaviour; with several web tasks, each keeps its own. One task runs
+  on dev.
+
+**Proof so far:**
+
+- `auth-refresh.spec.ts` calls the real `jwt` callback: 7 tests, red first
+  (three calls for three concurrent reads; a second call with the old token; a
+  refused session asking again).
+- `token-uniqueness.spec.ts` uses the real `JwtService`, red first: identical
+  tokens.
+- Journey 1 now refreshes straight after its login, rotates again, and has the
+  used token refused. Run against dev before the fix: `Expected 200, Received 409`.
+- Mutations, each observed failing on its own:
+  - web: sharing removed at the point it happens; an exchange forgotten when it
+    settles; a refused session asking again; a transient failure remembered; a
+    refusal treated as transient; the chain not followed; due tokens returned
+    as current; the refresh fetch without the visitor headers;
+  - API: `jwtid` removed from the refresh token, and from the access token.
+- One check inside `exchange` never failed under mutation, because the chain
+  lookup already covered it. It was removed.
+
+**A41's limit.** 30 was chosen from a peak of 15 produced by these bursts. Once
+concurrent reads share one call, a person refreshes about once per access
+token, so 30 is generous rather than wrong, and it is left alone.
+
+**After the merge (#171, `sha-99a95ba`, develop run `36096965253` green):**
+
+- Holds: journey 1's new steps ran green on dev. The journeys' refreshes were
+  200, 200, then 400 for the deliberately replayed token, with no 409.
+- **Does not hold: the public-pages sign-out.** A fresh session, then at 05:36:51
+  UTC, after its access token came due: `/legal/privacy` refresh **200**;
+  `/legal/terms` **made no refresh call** (the remembered exchange answered, as
+  designed); `/mylands`: the **proxy** refreshed with the **old** token, got
+  **400**, and redirected to `/login`.
+- One web task was running, so this is not two servers.
+- **Hypothesis, not verified:** Next bundles the proxy separately from the pages,
+  so each holds its own copy of the module-level map. The pages share their
+  exchanges; the proxy - the only place the cookie is written - never sees them.
+  Verifying it, and choosing a store both can reach, is the next step.
+- **What is fixed:** the same-second 409 (`jwtid`), and concurrent reads
+  within the pages.
+- **What is not:** a person browsing public pages after their access token
+  expires is still signed out at the next protected page.
+
+**Stopped here** under the standing authorization: a proof that does not hold.
+#171 stays merged: it removes the 409 and the page-side bursts, and the
+sign-out is no worse than before it.
+
+**Second half (#173) - refresh only where the cookie can be written.**
+
+The runtime claim, measured on the build rather than taken on trust. The brief
+said the proxy runs in the Edge runtime, in a separate isolate. **It does not:**
+
+- `middleware-manifest.json` declares no Edge function (`middleware: []`);
+- the proxy is `server/middleware.js`, CommonJS, loaded through
+  `require("./chunks/[turbopack]_runtime.js")`, requiring `node:async_hooks`;
+- it runs in the Node runtime, in the same process as the pages.
+
+**What is true** is that it has its own Turbopack runtime context: the refresh
+code is bundled into two chunks, one for the proxy and one for SSR. So there are
+two module instances and two maps - which is why #171's map never reached the
+proxy.
+
+The brief's direction holds either way: only the proxy writes the cookie, so the
+refresh belongs there. The same process means `globalThis` can hand the proxy's
+exchange to the page render of the SAME request, which still reads the old
+cookie. That is a handoff within one request, not a store: the browser's cookie
+is rewritten.
+
+**The change:**
+
+- **Matcher.** The proxy RUNS on every public page, listed one page at a time
+  (23, one of them dynamic), never as a prefix. It GATES exactly what it gated
+  before: `proxy.ts`'s decision is unchanged. An unknown URL is still not matched
+  and still 404s, and P3's assertion to that effect is unchanged.
+- **P3's pin.** "Public pages are not intercepted, except three" pinned running
+  and gating as one thing. It is now "every public page runs through the proxy",
+  plus "the matcher lists exactly the public pages on disk, never a public
+  prefix". `proxy.spec.ts` walks every public literal through the real decision:
+  anonymous, signed in and stale all pass.
+- **Two NextAuth instances over one cookie.** The proxy, the `/api/auth`
+  handlers and `signIn`/`signOut` refresh. The `auth()` that pages and actions
+  import uses `pageAuthConfig`, whose `jwt` never calls `/auth/refresh`: it takes
+  what the proxy obtained, or a refusal it recorded, and otherwise leaves the
+  session as it found it.
+- **The exchange map lives on `globalThis`.**
+
+**Proof so far:**
+
+- `auth-page-read-only.spec.ts`, red first: a page render called refresh (1,
+  expected 0), and a second module instance saw nothing.
+- Seven mutations, each observed failing on its own:
+  - pages reading with the refreshing jwt;
+  - the store back in module scope;
+  - `auth.ts` giving pages the refreshing instance;
+  - the proxy wrapped in the read-only one;
+  - a public page dropped from the matcher;
+  - a public prefix instead of pages, which also trips P3's unknown-URL test;
+  - a recorded refusal ignored by a page. That one survived until its test was
+    written, and was then seen failing.
+- A local standalone build: `/about`, `/legal/privacy` and
+  `/verify-certificate/…` answer 200; `/zzz-does-not-exist` and
+  `/legal/does-not-exist` answer **404**; `/mylands` redirects to login.
+  `X-Robots-Tag` is on every one.
+
+**Cost baseline on dev before the change** (anonymous time to first byte, 15
+requests each): `/legal/privacy` median 76 ms, p90 158; `/about` 97 / 180;
+`/products/lands` 103 / 180.
+
+**Proven on dev, 25 September, on `sha-ccce5b9`** (#173, develop run
+`36100991632` green, journeys and E2E included). Signed in at 06:19:18 UTC.
+After the access token fell due, at 06:33:
+
+- `/legal/privacy` made **one refresh, 200**, in the proxy, written back;
+- `/legal/terms` made **no refresh**;
+- `/mylands` made **no refresh**; its data call `GET /lands/client/purchases`
+  answered 200, and the page rendered signed in.
+
+None was refused. That is the exact path that signed the person out at 04:58
+and at 05:36 that morning.
+
+**Cost, measured on dev** (anonymous time to first byte, n=15 each), before and
+after the proxy ran on public pages:
+
+| page              | before (`6bc6294`)    | after (`ccce5b9`) |
+| ----------------- | --------------------- | ----------------- |
+| `/legal/privacy`  | 76 ms median, p90 158 | 79 ms, p90 160    |
+| `/about`          | 97, p90 180           | 95, p90 105       |
+| `/products/lands` | 103, p90 180          | 101, p90 170      |
+
+No measurable change.
 
 ---
 
@@ -5117,8 +5305,37 @@ fresh.
 that commit and wrote another 550 lines into it. All six of those chantiers have
 entries here.
 
-**Proof.** 1879 tests across the four projects, both typechecks, lint, both
-builds, `nx build web` with 0 error lines. The full run needs `--maxWorkers=2`
+**Second merge, 25 September (A47).** develop moved four commits while the pull
+request was open, and A47 lands in exactly the files wave 5 rewrote. Four
+conflicts, all folded rather than chosen:
+
+- `auth.service.ts`: wave 1's `type` claim and A47's `jwtid` are different
+  defects - one stops a refresh token being presented as an access token, the
+  other stops two tokens issued in the same second being byte-identical and
+  colliding on the unique index. Both kept.
+- `proxy.ts`: takes `authForProxy`, A47's refreshing NextAuth instance. **A47's
+  matcher additions are not carried over and do not need to be**:
+  `/(fr|en)/:path*` already matches every URL the app links to, so the proxy
+  runs on every public page, which is A47's actual requirement. A47 met it by
+  listing each public page one at a time; locale routing meets it more
+  completely.
+- `proxy.spec.ts` and `middleware-matcher.spec.ts`: A47's property is kept -
+  every public page runs through the proxy, in both locales, and none of them is
+  gated for any kind of session. The assertion that pinned A47's _implementation_
+  ("one by one, never a public prefix") is deliberately dropped, with the reason
+  at the line: it pinned a list rather than a property, and the property it
+  protected is asserted directly by the unknown-URL test and by the positive
+  `isProtected()` gate.
+
+**Checked before relying on it, not assumed:** NextAuth's wrapper builds
+`new Response(response?.body, response)` and then **appends** the session's
+`set-cookie` onto whatever the handler returned (`next-auth/lib/index.js`). So
+returning next-intl's response from inside the wrapper keeps the refresh, and
+wave 5 and A47 compose.
+
+**Proof.** 1927 tests across the four projects (api 1002, web 573, common 342,
+api-e2e 10), both typechecks, lint, prettier, `nx build web` with 0 error
+lines. The full run needs `--maxWorkers=2`
 on this machine: unbounded, four projects oversubscribe it and the KCA1 loader
 and A45 suites time out at 5000 ms. Each passes in isolation, so the failures are
 the machine and not the code - stated here because a timeout reads like a defect.

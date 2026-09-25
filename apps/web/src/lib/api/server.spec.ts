@@ -10,9 +10,7 @@ const headersMock = jest.fn();
 const authMock = jest.fn();
 
 jest.mock('next/navigation', () => ({ redirect: (url: string) => redirectMock(url) }));
-// `cookies` joins `headers` here because the login redirect now resolves the
-// locale for the URL it redirects to, and falls back to the locale cookie when
-// the request carries no referer. See lib/locale.ts.
+// Mocks `cookies` to support `lib/locale.ts` falling back when resolving redirect URLs.
 jest.mock('next/headers', () => ({
   headers: () => headersMock(),
   cookies: () => Promise.resolve({ get: () => undefined }),

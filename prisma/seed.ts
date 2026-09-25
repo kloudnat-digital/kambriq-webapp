@@ -10,24 +10,17 @@ import { restoredParcelStatus } from './seed-data/parcel-status';
 import { SEED_ROLES, seedRoleId } from './seed-data/roles';
 import { describeKbsSettings, seedKbsSettings } from './kbs-settings-apply';
 /**
- * Kambriq - Database seed script
+ * Database seed script.
+ * Idempotent execution (UUID-keyed upserts).
  *
- * Run via:  npm run db:seed
- * Or:       npx prisma db seed
+ * Execution: `npm run db:seed` or `npx prisma db seed`
+ * Global password: Test1234!
  *
- * Idempotent - safe to re-run. All entities use hardcoded UUIDs so
- * re-running upserts existing rows instead of creating duplicates.
- *
- * Seeded accounts (password: Test1234! for all):
- *   admin@kambriq.com         ADMIN_GLOBAL
- *   jean.kbs@kambriq.com      ADMIN_KBS
- *   claude.kamnet@kambriq.com ADMIN_KAMNET
- *   pierre.lands@kambriq.com  ADMIN_LANDS
- *   eric.mbou@kambriq.com     AGENT  (AGT-2025-0001, sponsor of others)
- *   sylvie.ngo@kambriq.com    AGENT  (AGT-2025-0002, N1 under Eric)
- *   boris.tcha@kambriq.com    AGENT  (AGT-2025-0003, N1 under Eric)
- *   amina.fall@kambriq.com    AGENT  (AGT-2025-0004, N2 under Sylvie)
- *   paul.fouda@kambriq.com    AGENT  (AGT-2025-0005, N1 under Eric)
+ * Accounts:
+ * - admin, jean.kbs, claude.kamnet, pierre.lands (Admins)
+ * - eric.mbou (Agent root, AGT-2025-0001)
+ * - sylvie.ngo, boris.tcha, paul.fouda (Agents, N1)
+ * - amina.fall (Agent, N2)
  */
 
 /* eslint-disable @nx/enforce-module-boundaries */
@@ -261,10 +254,10 @@ async function seedCore() {
   ];
 
   /**
-   * The user upsert keys on EMAIL and every other module keys on the ID.
-   * This check ensures that seeded emails map exactly to expected IDs before writing.
-   * If a user exists with a different ID, fixtures across databases (KBS, KAMNET, Lands)
-   * would dangle since there are no cross-database foreign keys.
+   * Pre-flight cross-database reference integrity check.
+   * Ensures seeded emails strictly map to the exact deterministic IDs required
+   * by fixtures across KBS, KAMNET, and Lands databases. Prevents dangling
+   * relations resulting from legacy non-deterministic UUID collisions.
    */
   const seededEmails = users.map((u) => u.email);
   const existing = await core.user.findMany({
@@ -280,14 +273,12 @@ async function seedCore() {
 
   if (displaced.length > 0) {
     throw new Error(
-      `Core seed precondition failed: ${displaced.length} seeded account(s) exist at their ` +
-        `address under a different id, so every fixture keyed on the seeded id would dangle ` +
-        `(there are no foreign keys between the four databases):\n` +
+      `Core seed precondition failed: ${displaced.length} seeded account(s) exist under unexpected IDs. ` +
+        `Cross-database fixtures would dangle without strictly matched UUIDs:\n` +
         displaced
-          .map((u) => `  ${u.email}: database has ${byEmail.get(u.email)}, seed expects ${u.id}`)
+          .map((u) => `  ${u.email}: expected ${u.id}, found ${byEmail.get(u.email)}`)
           .join('\n') +
-        `\nThis is what a database seeded before the ids became RFC-4122 valid looks like. ` +
-        `Reset it with \`pnpm run db:reset\`.`,
+        `\nExecute \`pnpm run db:reset\` to clear legacy schema state.`,
     );
   }
 
@@ -461,22 +452,13 @@ async function seedKbs() {
   // -------------------------------------------------------------------------
   // Question pools: quiz (KbsQuestion) and exam (KbsExamQuestion)
   //
-  // Sized from the code, not from taste:
-  //   - the quiz draw is PER MODULE, sliced to quizQuestionCount (10):
-  //     courses.service.ts findQuestionsForQuiz -> findMany({ where: { moduleId } })
-  //   - the exam pool check and draw are GLOBAL, sliced to examQuestionCount (20):
-  //     exam.service.ts ensureQuestionPoolAvailable -> count() with no where
+  // Sizing constraints:
+  // - Quiz draws are scoped per module, limited by quizQuestionCount (10).
+  // - Exam draws are global, limited by examQuestionCount (20).
+  // Seed size provides a 3x margin above limits to prevent exhaustion during test iterations.
   //
-  // 30 per module gives the quiz a 3x margin and the exam a 3x global margin, so
-  // a predicate added later to either findMany has to remove two thirds of the
-  // pool before the guards refuse. Content is real, not templated: a tester must
-  // be able to spot a wrong grade, which needs one defensibly correct answer and
-  // three defensibly wrong ones.
-  //
-  // No KbsExam rows are seeded on purpose. An exam is candidate state, not
-  // content: a pre-seeded one sits in SCHEDULED/IN_PROGRESS and
-  // checkEligibilityRules then refuses to schedule another, so it would block
-  // the tester rather than help. Seed the pool, not the state.
+  // KbsExam state records are intentionally excluded. Seeding in-progress exams
+  // violates checkEligibilityRules prerequisites for subsequent scheduling.
   // -------------------------------------------------------------------------
   const quizBank: Array<[string, SeedQuestion[]]> = [
     [IDS.KBS_MODULE_1, MODULE_1_QUIZ],
@@ -487,13 +469,9 @@ async function seedKbs() {
     [IDS.KBS_MODULE_2, MODULE_2_EXAM],
   ];
 
-  // Deterministic ids so re-running upserts instead of duplicating.
-  //
-  // The last UUID segment must be exactly 12 hex characters. Prefixes a-e are
-  // already taken by the IDS block above (roles a, users b, KBS c, kamnet d,
-  // lands e), so these use f with a family digit: f1 quiz question, f2 quiz
-  // answer, f3 exam question, f4 exam answer. Reusing an existing prefix would
-  // have let an upsert silently overwrite a real row rather than fail.
+  // Deterministic ID generation for idempotent upserts.
+  // Last UUID segment uses prefix 'f' (a-e reserved in IDS map) with a type indicator:
+  // f1: quiz question, f2: quiz answer, f3: exam question, f4: exam answer.
   const qId = (mod: number, n: number, exam: boolean) =>
     `00000000-0000-4000-8000-f${exam ? '3' : '1'}${mod}${String(n).padStart(9, '0')}`;
   const aId = (mod: number, n: number, a: number, exam: boolean) =>
@@ -765,16 +743,9 @@ async function seedKamnet() {
   }
 
   /**
-   * Two sales, each with its direct agent and that agent's sponsor.
-   *
-   * `KamnetCommission.reservationId` is NOT NULL and identifies the
-   * reservation the sale came from. KAMNET and LANDS are separate databases,
-   * so the reference carries no foreign key and a dangling value is not
-   * refused by anything. `main()` checks the references resolve, once both
-   * modules are seeded.
-   *
-   * There is no commission for LAND_1: it is seeded AVAILABLE, so no sale and
-   * no reservation exist to attribute one to.
+   * Seed commissions for direct agents and sponsors.
+   * Note: `reservationId` lacks cross-database foreign key enforcement.
+   * Referential integrity to Lands database is verified at end of execution.
    */
   const commissions: Array<{
     agentId: string;

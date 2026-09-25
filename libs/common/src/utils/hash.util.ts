@@ -7,14 +7,8 @@ export const hashPassword = async (password: string): Promise<string> => {
 };
 
 /**
- * Securely compares a plaintext password against a hash.
- *
- * Safely handles null, undefined, or empty hashes that may occur
- * on uninitialized or pending accounts, explicitly returning false.
- *
- * @param password - The plaintext password to evaluate.
- * @param hash - The bcrypt hash to verify against.
- * @returns A boolean indicating whether the password matches the hash.
+ * Securely compares a plaintext password against a bcrypt hash.
+ * Safely rejects empty hashes (e.g., pending accounts).
  */
 export const comparePassword = async (
   password: string,

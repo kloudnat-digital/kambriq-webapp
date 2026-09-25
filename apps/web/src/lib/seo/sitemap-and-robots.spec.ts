@@ -9,17 +9,9 @@ import { INDEXABLE_PAGES, NOT_INDEXABLE, PAGE_WEIGHT } from './pages';
 import { siteJsonLd } from './json-ld';
 
 /**
- * The sitemap and robots.txt this site did not have, and what they must not say.
- *
- * Both are read by machines, once, and acted on for weeks. A wrong entry does
- * not throw and nobody reads the output: the only signals are a page missing
- * from an index somebody has to think to check, or a page appearing in one that
- * should never have been offered.
- *
- * The environment decides everything here, and it is read from `APP_ENV` alone.
- * `NODE_ENV` is `production` on dev too - the runtime image sets it - so a
- * check against it would put a live sitemap on dev.kambriq.com while every
- * local test agreed it worked.
+ * Validates sitemap and robots.txt generation.
+ * Guards against environment misconfigurations (relying strictly on `APP_ENV` over `NODE_ENV`)
+ * to prevent staging sites from being indexed and crawling regressions.
  */
 const PRODUCTION = { APP_ENV: 'production' };
 
@@ -55,13 +47,7 @@ describe('the sitemap', () => {
   });
 
   it('lists nothing at all outside production', () => {
-    /**
-     * An empty sitemap rather than a dev one.
-     *
-     * A sitemap naming dev.kambriq.com is an invitation to index the staging
-     * site under the brand name - invisible until somebody searches for it, and
-     * weeks to unpick.
-     */
+    /** Enforces empty sitemaps for non-production environments to prevent staging site indexing. */
     expect(withEnv({ APP_ENV: 'dev' }, sitemap)).toEqual([]);
     expect(withEnv({ APP_ENV: '' }, sitemap)).toEqual([]);
   });
@@ -77,9 +63,7 @@ describe('the sitemap', () => {
   });
 
   it('gives every entry its alternates, in both languages plus x-default', () => {
-    // Without these the two language versions read as unrelated pages and
-    // neither is offered to the right visitor - which is the whole reason the
-    // URLs carry a locale.
+    // Ensures bidirectional alternate links for localized content to maintain correct indexing.
     for (const entry of withEnv(PRODUCTION, sitemap)) {
       const languages = entry.alternates?.languages ?? {};
       expect(Object.keys(languages).sort()).toEqual(['en', 'fr', 'x-default']);
@@ -87,8 +71,7 @@ describe('the sitemap', () => {
   });
 
   it('offers no page that requires a session', () => {
-    // THE OUTCOME. A sitemap entry pointing at a login wall spends the crawl
-    // budget and fills Search Console with soft 404s.
+    // Prevents authenticated routes from polluting the sitemap, avoiding crawl budget waste and soft 404s.
     const offered = withEnv(PRODUCTION, sitemap).map((e) => new URL(e.url).pathname);
     const behindAuth = offered.filter((path) =>
       PROTECTED_PREFIXES.some((prefix) =>
@@ -101,8 +84,7 @@ describe('the sitemap', () => {
   });
 
   it('states a priority and a frequency for every page it lists', () => {
-    // An unset priority is read as 0.5, which would rank the legal pages level
-    // with the home page. Defaulting silently is the failure here.
+    // Requires explicit priorities to prevent unintended 0.5 defaults across disparate pages.
     for (const path of INDEXABLE_PAGES) {
       expect(PAGE_WEIGHT[path]).toBeDefined();
     }
@@ -116,13 +98,7 @@ describe('the indexable inventory', () => {
   });
 
   it('every public page is either listed or excluded with a reason', () => {
-    /**
-     * Pinned in both directions, so the list cannot rot into a lie.
-     *
-     * A public page nobody adds here is invisible to search, and nothing
-     * reports it - which is how a site ends up with pages that exist and
-     * cannot be found.
-     */
+    /** Enforces bidirectional synchronization between public routes and the indexable inventory. */
     const publicRoutes = ROUTES.filter((route) =>
       PUBLIC_PATHS.some((p) => route === p || route.startsWith(`${p}/`)),
     );
@@ -136,8 +112,7 @@ describe('the indexable inventory', () => {
   });
 
   it('every exclusion names a page that exists, and gives a reason', () => {
-    // An exclusion for a page that has gone is an exclusion that hides the
-    // next one.
+    // Validates exclusions against existing routes to prevent stale omission rules.
     for (const [path, reason] of Object.entries(NOT_INDEXABLE)) {
       expect(reason.length).toBeGreaterThan(10);
       expect(ROUTES.some((r) => r === path || r.startsWith(`${path}/`))).toBe(true);
@@ -178,9 +153,7 @@ describe('robots.txt', () => {
   });
 
   it('does not disallow the pages the sitemap offers', () => {
-    // The two files contradicting each other is the failure nobody would see:
-    // the sitemap says "index this", robots says "do not fetch it", and the
-    // page simply never appears.
+    // Guards against contradictory SEO directives between sitemap inclusions and robots disallows.
     const { rules } = withEnv(PRODUCTION, robots);
     const disallow = (Array.isArray(rules) ? [] : ((rules.disallow as string[]) ?? [])).map(String);
     const offered = withEnv(PRODUCTION, sitemap).map((e) => new URL(e.url).pathname);
@@ -200,12 +173,7 @@ describe('the structured data', () => {
   });
 
   it('carries no placeholder anybody forgot to fill in', () => {
-    /**
-     * The public mentions légales still serves `Capital social : XXX XXX XAF`
-     * and `N° RCCM : XX / XXX / XX`. Structured data is a machine-readable
-     * claim about a real legal entity, and a placeholder published as one is a
-     * false statement that a search engine will repeat.
-     */
+    /** Validates structured data against unresolved placeholders to prevent false machine-readable claims. */
     const serialised = JSON.stringify(siteJsonLd('fr'));
     expect(serialised).not.toMatch(/XXX|X{2,}\s*\/|TODO|à compléter|lorem/i);
   });
@@ -215,7 +183,7 @@ describe('the structured data', () => {
     const organisation = graph.find((n) => n['@type'] === 'Organization') as { '@id': string };
     const site = graph.find((n) => n['@type'] === 'WebSite') as { publisher: { '@id': string } };
 
-    // Two copies of one entity is how a name and an address come to disagree.
+    // Enforces single-source-of-truth for entities by asserting identifier linkage over duplication.
     expect(site.publisher['@id']).toBe(organisation['@id']);
   });
 

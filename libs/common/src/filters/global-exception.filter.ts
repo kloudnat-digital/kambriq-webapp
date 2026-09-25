@@ -47,8 +47,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       error,
       timestamp: new Date().toISOString(),
       path: request.url,
-      // Omit the stack trace from the response to prevent information leakage.
-      // The stack trace is logged securely on the server instead.
+      // Omit stack trace to prevent information leakage.
     };
 
     response.status(status).json(body);

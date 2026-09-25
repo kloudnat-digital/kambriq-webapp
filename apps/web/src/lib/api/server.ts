@@ -49,8 +49,7 @@ const baseFetch = async <T>(
   // Handle 204 No Content
   if (res.status === 204) return undefined as T;
 
-  // Extract payload from NestJS standard response wrapper ({ success, data, meta }).
-  // Retain the full response body for paginated endpoints to expose metadata.
+  // Unwraps NestJS response payload (`{ success, data, meta }`), retaining the full body when `meta` is present.
   const body = await res.json();
   if (body?.meta) return body as T;
   return (body?.data ?? body) as T;
@@ -67,15 +66,8 @@ const baseFetch = async <T>(
 
 export const api = {
   /**
-   * `init` is additive and almost always omitted.
-   *
-   * It exists so a single caller can pin `cache: 'no-store'` without changing
-   * `baseFetch` for everybody. That distinction matters in Next 16: an explicit
-   * `no-store` opts its ROUTE into dynamic rendering, so putting it in
-   * `baseFetch` would change the rendering mode of every statically rendered
-   * page, `generateMetadata`, sitemap or `generateStaticParams` that reaches
-   * it - or fail the build. Here it changes one read on a route that is
-   * already `force-dynamic`.
+   * Accepts `init` options to permit caller-level cache configuration (e.g., `cache: 'no-store'`).
+   * This prevents global `baseFetch` modifications from inadvertently opting static routes into dynamic rendering.
    */
   get: <T>(path: string, init?: RequestInit) => baseFetch<T>(path, { method: 'GET', ...init }),
 
@@ -133,8 +125,7 @@ const authedFetch = async <T>(path: string, options?: RequestInit): Promise<T> =
   try {
     return await baseFetch<T>(path, options, header);
   } catch (error) {
-    // Handle scenarios where the access token is invalid but has not yet expired locally.
-    // A 401 response indicates API rejection, necessitating a login redirect.
+    // Initiates login redirect on 401s, handling cases where the access token is locally valid but API-rejected.
     if (error instanceof ApiError && error.status === 401) {
       await redirectToLogin();
     }

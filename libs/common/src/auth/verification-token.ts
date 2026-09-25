@@ -3,10 +3,8 @@ import { RESET_TOKEN_EXPIRY_HOURS, VerificationTokenType } from '../constants/co
 import { EMAIL_TOKEN_EXPIRY_HOURS } from '../constants/email';
 
 /**
- * Defines a structurally typed store interface for verification tokens.
- * This abstraction allows token issuance to be reused across different execution
- * contexts (e.g., the main API runtime and standalone bootstrap scripts) without
- * coupling to a specific Prisma client instance.
+ * Structurally typed store interface for verification tokens.
+ * Decouples token issuance from Prisma client instances to support both the main API runtime and standalone bootstrap scripts.
  */
 export type VerificationTokenStore = {
   verificationToken: {
@@ -27,8 +25,7 @@ export const verificationTokenExpiryHours = (type: VerificationTokenType): numbe
     : EMAIL_TOKEN_EXPIRY_HOURS;
 
 /**
- * Invalidates all existing unused tokens of the specified type for the given user,
- * then issues and returns a new verification token.
+ * Invalidates unused tokens of the specified type for a user, then issues and returns a new token.
  */
 export async function issueVerificationToken(
   store: VerificationTokenStore,

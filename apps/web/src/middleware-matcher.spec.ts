@@ -11,7 +11,9 @@
  * real locale negotiator. Neither is the subject here: this file is about the
  * exported `config` and the lists behind it.
  */
-jest.mock('./auth', () => ({ auth: (handler: unknown) => handler }));
+// `authForProxy`, not `auth`: A47 split the two NextAuth instances by who can
+// write the session cookie, and the proxy uses the one that refreshes.
+jest.mock('./auth', () => ({ authForProxy: (handler: unknown) => handler }));
 jest.mock('next-intl/middleware', () => ({
   __esModule: true,
   default: () => () => undefined,
@@ -200,6 +202,39 @@ describe('the matcher covers every route the app serves', () => {
     }
   });
 
+  /**
+   * A47. Every public page runs through the proxy, so a refresh it needs is
+   * written back to the browser.
+   *
+   * The root layout reads the session on every page and only the proxy can
+   * write a refreshed session cookie - NextAuth appends the session's
+   * `set-cookie` onto whatever response the handler returns. A public page the
+   * proxy never matched refreshed where nothing could save the result, and
+   * browsing two of them signed the person out.
+   *
+   * Running is not gating: `proxy.spec.ts` walks the same pages through the
+   * real decision and finds every one of them ungated. Pinning the two together
+   * is the conflation P3 was about.
+   */
+  it('every public page runs through the proxy, in both locales', () => {
+    const publicPages = ROUTES.filter(isPublic);
+    expect(publicPages.length).toBeGreaterThan(20);
+
+    const unseen = publicPages.flatMap((r) =>
+      inEveryLocale(concrete(r)).filter((url) => !isMatched(url)),
+    );
+    expect(unseen).toEqual([]);
+  });
+
+  /**
+   * A47 listed each public page in the matcher one at a time, never as a
+   * prefix, so that an unknown URL stayed unmatched and still answered 404.
+   * Locale routing uses prefixes and `/(fr|en)/:path*` instead, so that
+   * assertion is deliberately not carried over - it pinned an implementation,
+   * and the property it protected is asserted directly by
+   * "an unknown unprefixed URL is not intercepted" above and by the positive
+   * `isProtected()` gate that proxy.spec.ts runs.
+   */
   it('a locale that is not configured is not a locale', () => {
     // `/de/admin` must not reach the matcher's locale branch, or a third
     // language could be invented by typing it.

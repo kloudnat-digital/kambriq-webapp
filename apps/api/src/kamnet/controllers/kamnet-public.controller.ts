@@ -5,18 +5,9 @@ import { Public } from '@kambriq/common';
 import { KamnetAgentsService } from '../agents/agents.service';
 
 /**
- * P11 - the one KAMNET surface a visitor with no account may read.
- *
- * Separate from `KamnetAgentController` rather than a `@Public()` route added
- * to it: that controller carries `@ApiBearerAuth()` at the class level and
- * every one of its routes is `@Roles(...)`. A single unauthenticated route
- * among them would be one decorator away from being gated, and one missing
- * decorator away from publishing an agent's leads.
- *
- * After the P9 arbitrage this directory is also the ONLY public presence KAMNET
- * keeps. It is proof, not recruitment: nothing here describes what an agent
- * earns, and `toPublicDirectoryEntry` is what makes that structural rather than
- * a matter of remembering.
+ * Public, unauthenticated controller for KAMNET.
+ * Structurally segregated from `KamnetAgentController` to strictly enforce
+ * authentication boundaries and prevent accidental public route exposure.
  */
 @ApiTags('KAMNET - Public')
 @Controller('kamnet/public')

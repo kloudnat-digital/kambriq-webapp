@@ -559,13 +559,23 @@ export class AuthService {
       ? this.config.get<StringValue>('JWT_REFRESH_EXPIRATION', '30d')
       : '24h';
 
-    // Differentiate token types via the `type` claim to prevent misuse of refresh tokens.
+    // Two independent properties, and both are needed.
+    //
+    // The `type` claim stops a refresh token being presented as an access token:
+    // without it the two were interchangeable and every "sessions revoked" claim
+    // was true of refresh and false of API access.
+    //
+    // `jwtid` makes every token unique. Without it, two tokens issued for the
+    // same user in the same second were byte-identical - same claims, same
+    // `iat`, same `exp` - and a refresh token's hash then hit the unique index:
+    // a 409 on dev for a refresh made in the same second as its login.
     const accessToken = this.jwtService.sign({ ...payload, type: 'access' } satisfies JwtPayload, {
       expiresIn: accessExpiration,
+      jwtid: crypto.randomUUID(),
     });
     const refreshToken = this.jwtService.sign(
       { ...payload, type: 'refresh' } satisfies JwtPayload,
-      { expiresIn: refreshExpiration },
+      { expiresIn: refreshExpiration, jwtid: crypto.randomUUID() },
     );
 
     const accessExpiresAt = new Date(Date.now() + this.parseExpiry(accessExpiration));

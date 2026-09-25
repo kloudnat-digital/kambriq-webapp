@@ -102,25 +102,21 @@ export const NAV_SECTIONS: NavSection[] = [
         labelKey: 'items.adminPaymentRequests',
         href: '/admin/payment-requests',
         icon: BookmarkCheck,
-        // The queue of clients waiting for an answer. First in the section
-        // because it is the one that has somebody on the other end of it.
+        // Prioritized to address immediate client blocking states.
         roles: [RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL],
       },
       {
         labelKey: 'items.adminIdentities',
         href: '/admin/identities',
         icon: BookmarkCheck,
-        // v03 section 8 puts identity verification on ADMIN_LANDS as well as
-        // ADMIN_GLOBAL: it is now on the path of the money, and a queue only a
-        // super admin can clear is a queue that does not get cleared.
+        // Granted to ADMIN_LANDS per v03.8 to unblock payment flows.
         roles: [RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL],
       },
       {
         labelKey: 'items.adminPayments',
         href: '/admin/payments',
         icon: BookmarkCheck,
-        // Recording is ADMIN_LANDS; validating inside the screen is
-        // ADMIN_GLOBAL, which the detail page enforces. Both may see the list.
+        // ADMIN_LANDS can record; ADMIN_GLOBAL validation is enforced at the detail route.
         roles: [RoleCode.ADMIN_LANDS, RoleCode.ADMIN_GLOBAL],
       },
       {

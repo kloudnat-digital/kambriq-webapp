@@ -1,13 +1,11 @@
 /**
  * Resolves the restored status for a seeded parcel.
  *
- * The seed script cannot delete reservations tied to payments due to ledger constraints.
- * If a parcel still has active reservations that cannot be cleared, its status must
- * accurately reflect those reservations (e.g., RESERVED or SOLD) rather than reverting
- * to the original seeded status, avoiding data inconsistencies.
+ * Prevents inconsistencies when the seed script encounters reservations tied
+ * to payments, which cannot be deleted due to ledger constraints. Parcel status
+ * projects these uncleared reservations (e.g., RESERVED, SOLD) instead of reverting.
  *
- * Plain string unions are used here instead of Prisma enums to allow testing without
- * a generated client.
+ * Uses plain string unions over Prisma enums to support testing without a generated client.
  */
 export type SeedLandStatus = 'AVAILABLE' | 'RESERVED' | 'SOLD' | 'ARCHIVED';
 export type SeedReservationStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';

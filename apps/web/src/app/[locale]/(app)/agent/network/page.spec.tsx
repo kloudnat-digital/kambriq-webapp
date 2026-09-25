@@ -19,31 +19,13 @@ const network = getMyNetwork as jest.MockedFunction<typeof getMyNetwork>;
 const sponsors = getMySponsors as jest.MockedFunction<typeof getMySponsors>;
 
 /**
- * `/agent/network`, which until now was the worst screen in the application.
+ * Asserts the negative constraint: `/agent/network` must never render hardcoded agents.
  *
- * It was not a placeholder. It declared a module-level `const NETWORK` holding
- * six invented agents - Marie Kameni, Paul Eteme, Sophie Mbarga, Alain Fotso,
- * Claire Ngo, Jean Dupont - with invented sales and referral counts, and
- * rendered them. A screen saying "coming soon" is honest; this one looked
- * finished. An agent opening it saw a network that does not exist.
- *
- * So the load-bearing tests here are the NEGATIVE ones, exactly as on
- * `/verify-certificate`: whatever the API answers, those six names can never
- * appear. `Jean Dupont` was the hard-coded name on the certificate page too,
- * and it is the same defect wearing a different screen.
- *
- * The tier rule is the UX specification's, section 2.3, quoted verbatim:
- *   "Junior : filleuls N1 uniquement. Confirme : filleuls N1.
- *    Manager : filleuls N1+N2+N3 + stats reseau globales."
- * Note CONFIRMED sees N1 only, like JUNIOR. The brief names only Junior and
- * Manager and is silent on CONFIRMED, which is a real tier - so the
- * specification decides it and the PR says so.
- *
- * P9 (20 September 2026) SUPERSEDES the depth half of that quotation: every
- * tier asks for N1, because sponsorship now stops at the direct sponsor. The
- * quotation is left exactly as the specification writes it - editing a citation
- * to match a later decision misrepresents the document it cites. Only the
- * statistics half still separates a MANAGER from the rest.
+ * Earlier implementations displayed static placeholders if the API was empty.
+ * This test ensures that the real API response entirely dictates the page structure.
+ * Additionally verifies depth rules according to UX spec section 2.3 and P9:
+ * - All tiers (JUNIOR, CONFIRMED, MANAGER) request N1 depth.
+ * - Only MANAGER renders network statistics.
  */
 
 const INVENTED = [
@@ -115,26 +97,15 @@ describe('/agent/network - the invented agents are gone', () => {
   });
 
   it('carries no hard-coded network source in the page module', async () => {
-    // Structural, not behavioural: the constant could be re-added and the tests
-    // above would still pass if the page merely stopped rendering it.
-    //
-    // Comments are stripped first, and this repository has now paid for that
-    // lesson three times - `route-guards.spec.ts` counted a comment explaining a
-    // route was NOT public, `brand-palette.spec.ts` flagged its own prose naming
-    // the old hex values, and this test failed on the page's own docstring
-    // listing the six agents it had just deleted. A sweep that bans a token
-    // flags the code explaining the ban first.
+    // Evaluates structure statically. Ensures no hardcoded fallback is reintroduced silently.
+    // Strips comments first so this test does not fail on its own documentation.
     const raw = require('node:fs').readFileSync(__dirname + '/page.tsx', 'utf8') as string;
     const src = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
     expect(src).not.toMatch(/const\s+NETWORK\s*=/);
     expect(src).not.toMatch(/Marie Kameni|Jean Dupont|Sophie Mbarga/);
-    // The stripper's discrimination is proved in
-    // `no-colour-outside-the-system.spec.ts`, which feeds it a known-bad string
-    // and a known-good one. It is NOT proved by asserting that this page's
-    // prose still names the six agents: that would pin comment wording rather
-    // than behaviour, and it failed the moment the docstring was reworded to
-    // say "six agents who do not exist" instead of listing them.
+    // The regex's accuracy is verified in `no-colour-outside-the-system.spec.ts`.
+    // We intentionally avoid asserting comment text here to prevent brittle tests.
   });
 });
 
@@ -201,8 +172,7 @@ describe('/agent/network - depth and statistics follow the tier', () => {
   });
 
   it('asks for N1 only when the agent is CONFIRMED, per UX 2.3', async () => {
-    // The specification puts CONFIRMED at N1, the same as JUNIOR. This is the
-    // assertion that fails if somebody "simplifies" the rule to Junior vs rest.
+    // Per UX spec 2.3, CONFIRMED is restricted to N1 depth.
     answers('CONFIRMED', []);
 
     await renderPage();
@@ -212,15 +182,8 @@ describe('/agent/network - depth and statistics follow the tier', () => {
 
   it('asks for N1 even when the agent is MANAGER, since P9', async () => {
     /**
-     * INVERTED by P9, not deleted. It read "asks for N1 to N3 when the agent is
-     * MANAGER" and expected 3 - accurate about the code and, after the 20
-     * September arbitrage, wrong about the requirement.
-     *
-     * It is also the test that did NOT fail when the constant moved, because
-     * `DEPTH_FOR_TIER` held a hardcoded 3 that never read it. The page asked for
-     * a depth the action silently clamped, and this assertion agreed with the
-     * page rather than with the platform. That is why the literal 1 is asserted
-     * here too: a depth change must turn this red.
+     * P9 overrides earlier spec: depth is always clamped at N1.
+     * Asserts literal `1` to catch regressions if depth logic diverges.
      */
     answers('MANAGER', []);
 
@@ -239,11 +202,8 @@ describe('/agent/network - depth and statistics follow the tier', () => {
 
     const stats = container.querySelector('[data-network-stats]');
     expect(stats).toBeInTheDocument();
-    // Three agents across two levels: two at N1, one at N2. This fixture is
-    // handed to the component directly, so it still exercises nested rendering
-    // - but since P9 the API no longer returns a second level, so no live
-    // response has this shape. Kept deliberately: the component's ability to
-    // render depth outlives the business rule that currently forbids it.
+    // Exercises nested rendering for statistics with a multi-level fixture.
+    // The API restricts depth to N1, but the component supports rendering N-level depth.
     expect(stats).toHaveTextContent('3');
   });
 

@@ -11,23 +11,8 @@ export interface EmailJobPayload {
   args: Record<string, string | number>; // interpolation args
 }
 
-/**
- * EmailService - Enqueues emails as BullMQ jobs for async delivery
- *
- * Usage:
- *  await this.emailService.send({
- *    to: 'user@example.com',
- *    template: 'verification',
- *    lang: 'en',
- *    args: {
- *      name: 'John Doe',
- *      code: '123456'
- *    }
- *  })
- */
-/**
- * Indicates the result of sending an update email.
- */
+/** Enqueues emails as BullMQ jobs for asynchronous delivery. */
+/** Outcome of an update email delivery attempt. */
 export type EmailOutcome =
   | { status: 'queued' }
   | { status: 'suppressed'; reason: 'user-preference' };
@@ -38,10 +23,7 @@ export class EmailService {
 
   constructor(@InjectQueue(QUEUES.NOTIFICATIONS) private readonly notifQueue: Queue) {}
 
-  /**
-   * Validates that no interpolation arguments are unresolved Promises or objects.
-   * Prevents emails from sending with improperly stringified values like "[object Promise]".
-   */
+  /** Prevents transmission of improperly stringified interpolation values (e.g., "[object Promise]"). */
   private assertNoUnresolvedArgs(payload: EmailJobPayload): void {
     for (const [key, value] of Object.entries(payload.args)) {
       if (typeof value === 'string' && value.includes('[object ')) {
@@ -53,10 +35,7 @@ export class EmailService {
     }
   }
 
-  /**
-   * Validates that fields ending in `Name` do not contain UUIDs.
-   * Prevents the accidental exposure of internal identifiers to users.
-   */
+  /** Prevents accidental exposure of internal identifiers by enforcing non-UUID structures on `Name` fields. */
   private assertNoIdentifiersInNames(payload: EmailJobPayload): void {
     const UUID_SHAPED = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     for (const [key, value] of Object.entries(payload.args)) {
@@ -91,10 +70,8 @@ export class EmailService {
   }
 
   /**
-   * Sends an informational update email, honoring the recipient's opt-out preferences.
-   * Returns an EmailOutcome indicating whether the email was queued or suppressed.
-   *
-   * Throws an error if used with transactional templates, which should never be suppressed.
+   * Enqueues an informational email subject to user opt-out preferences.
+   * Throws on transactional templates, which strictly require guaranteed delivery.
    */
   async sendUpdate(
     payload: EmailJobPayload,

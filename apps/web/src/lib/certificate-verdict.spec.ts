@@ -17,11 +17,10 @@ const held = (overrides: Record<string, unknown> = {}) => ({
 });
 
 describe('toCertificateVerdict', () => {
-  // ----- THE NEGATIVE VERDICTS, which are the point ----- //
+  // ----- NEGATIVE VERDICTS ----- //
 
   it('reads the API answer for an unknown number as not recognised, never as valid', () => {
-    // The exact body KbsCertificatesService.verifyCertificate returns when the
-    // register holds no such number. The page this replaced said "valid" here.
+    // Verifies KbsCertificatesService.verifyCertificate response for an unknown registry entry.
     const verdict = toCertificateVerdict('KCA-00000000-FAKE', {
       status: 'UNKNOWN',
       valid: false,
@@ -36,8 +35,7 @@ describe('toCertificateVerdict', () => {
   });
 
   it('gives no positive verdict when a field of the yes is missing', () => {
-    // An answer from an API that does not state revocation cannot be read as
-    // "not revoked": that is precisely the defect the API carried until now.
+    // An API response omitting revocation status must not default to "not revoked".
     const withoutRevoked: Record<string, unknown> = held();
     delete withoutRevoked.revoked;
     expect(toCertificateVerdict(KCA, withoutRevoked)).toEqual({ kind: 'unavailable' });
@@ -53,7 +51,7 @@ describe('toCertificateVerdict', () => {
     }
   });
 
-  // ----- THE REGISTER'S OWN DISTINCTIONS ----- //
+  // ----- REGISTRY DISTINCTIONS ----- //
 
   it('reads a revoked certificate as revoked', () => {
     const verdict = toCertificateVerdict(

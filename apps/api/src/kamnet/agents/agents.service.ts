@@ -187,19 +187,9 @@ export class KamnetAgentsService {
   }
 
   /**
-   * The agent's own decision to be listed, or to stop being listed.
-   *
-   * Set from the agent's private space and nowhere else. It is deliberately NOT
-   * a field on `updateAgentProfileDto`: that schema is a bag of optional
-   * presentational fields - bio, name, phone, city - and a permission to
-   * publish somebody's identity does not belong in a partial update where it
-   * can be carried along by accident. It is also the reason this returns the
-   * timestamp rather than the whole profile: a caller should see exactly what
-   * it changed.
-   *
-   * Withdrawal deletes the Redis agent row as suspend and reactivate do, so the
-   * next read of any agent-scoped endpoint sees the new value rather than a
-   * cached one.
+   * Manages explicit agent consent for public directory listing.
+   * Explicitly decoupled from standard profile updates to ensure deliberate action.
+   * Clears the Redis cache immediately upon withdrawal to enforce instantaneous delisting.
    */
   async setPublicListingConsent(userId: string, consented: boolean) {
     const agent = await this.findByIdOrThrowByUserId(userId);

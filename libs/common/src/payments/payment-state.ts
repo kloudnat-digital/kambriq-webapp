@@ -1,9 +1,4 @@
-/**
- * Payment State Machine
- *
- * Defines payment states, allowed transitions, and corresponding guards.
- * Ensures state transitions are validated consistently across the application.
- */
+/** Defines payment states, transitions, and structural validation guards. */
 
 /** Mirrors `PaymentState` in prisma/lands/schema.prisma. */
 export enum PaymentState {
@@ -23,10 +18,7 @@ export enum PaymentState {
  */
 export { PaymentChannel, RECORDABLE_CHANNELS } from './payment-channels';
 
-/**
- * Terminal payment states.
- * No further state transitions are permitted from these states. Correcting errors requires appending new ledger entries.
- */
+/** Terminal payment states. Corrections require appending new ledger entries. */
 export const TERMINAL_STATES: ReadonlySet<PaymentState> = new Set([
   PaymentState.VALIDE,
   PaymentState.REJETE,
@@ -36,10 +28,8 @@ export const TERMINAL_STATES: ReadonlySet<PaymentState> = new Set([
 
 /**
  * Allowed payment state transitions.
- *
- * Linear path: INITIE -> INSTRUCTIONS_ENVOYEES -> ANNONCE_CLIENT -> EN_VERIFICATION -> PARTIELLEMENT_RECU -> VALIDE
- * Note: PARTIELLEMENT_RECU can transition to itself to handle multi-part payments.
  * Exits (REJETE, EXPIRE, ANNULE) are reachable from any non-terminal state.
+ * PARTIELLEMENT_RECU can transition to itself for installments.
  */
 const EXITS: readonly PaymentState[] = [
   PaymentState.REJETE,
@@ -75,10 +65,7 @@ export const COMMITTING_STATES: ReadonlySet<PaymentState> = new Set([
   PaymentState.ANNULE,
 ]);
 
-/**
- * States that require an explicit evidence receipt verifying the financial transaction.
- * States without this requirement may optionally include a receipt, but do not mandate it to avoid spurious data collection.
- */
+/** States requiring an explicit evidence receipt to verify the transaction. */
 export const EVIDENCED_STATES: ReadonlySet<PaymentState> = new Set([
   PaymentState.PARTIELLEMENT_RECU,
   PaymentState.VALIDE,
@@ -172,10 +159,7 @@ export function assertTransitionAllowed(from: PaymentState, to: PaymentState): v
   }
 }
 
-/**
- * Validates that transitions to committing states are deliberate acts by a named human actor providing a reason.
- * Prevents automated processes from finalizing financial obligations.
- */
+/** Requires explicit, reasoned actions by named human actors to enter committing states. */
 export function assertTransitionIsDeliberate(
   to: PaymentState,
   actorUserId: string | null | undefined,

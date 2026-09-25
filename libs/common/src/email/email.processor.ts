@@ -36,7 +36,7 @@ export class EmailProcessor extends WorkerHost {
       return;
     }
 
-    // Relies on the default AWS credential provider chain (ECS task role on Fargate or local profile).
+    // Default AWS credential provider chain (ECS task role or local profile).
     this.sesClient = new SESv2Client({ region });
     this.logger.log('SES transport active %o', {
       region,
@@ -66,7 +66,7 @@ export class EmailProcessor extends WorkerHost {
       return { delivered: false, transport: 'console', to, subject };
     }
 
-    // Rethrow SES failures to trigger BullMQ job retries.
+    // Rethrow SES failures for BullMQ job retries.
     try {
       const result = await this.sesClient.send(
         new SendEmailCommand({
@@ -81,12 +81,12 @@ export class EmailProcessor extends WorkerHost {
         }),
       );
 
-      // Interpolate metadata directly into the log string to prevent nestjs-pino from interpreting it as context.
+      // Direct log interpolation prevents nestjs-pino context misinterpretation.
       this.logger.log(`Email sent to ${to} messageId=${result.MessageId} subject="${subject}"`);
       return { delivered: true, messageId: result.MessageId, to, subject };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      // Interpolate error details into the log string.
+      // Direct error log interpolation.
       this.logger.error(`Failed to send email to ${to} subject="${subject}" error=${message}`);
       throw error;
     }

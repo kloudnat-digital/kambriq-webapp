@@ -19,8 +19,8 @@ export enum IdVerificationStatus {
 }
 
 /**
- * Subject categories for inbound contact requests.
- * Duplicated here (mirrors Prisma schema) to allow importing into web bundles.
+ * Inbound contact request subject categories.
+ * Mirrors Prisma schema to support web bundle imports.
  */
 export enum ContactSubject {
   LANDS = 'LANDS',
@@ -31,14 +31,14 @@ export enum ContactSubject {
   OTHER = 'OTHER',
 }
 
-/** Where a contact request has got to in the back office. */
+/** Back-office status of a contact request. */
 export enum ContactRequestStatus {
   NEW = 'NEW',
   IN_PROGRESS = 'IN_PROGRESS',
   CLOSED = 'CLOSED',
 }
 
-/** Defines the display order for contact subjects in UI listings. */
+/** Display order for UI contact subject listings. */
 export const CONTACT_SUBJECTS: readonly ContactSubject[] = [
   ContactSubject.LANDS,
   ContactSubject.VERIFY,

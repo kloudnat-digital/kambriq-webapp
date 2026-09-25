@@ -94,13 +94,7 @@ export class KamnetAgentController {
   }
 
   /**
-   * P11 - the agent decides whether they appear in the public directory.
-   *
-   * One route for both directions, because "listed" is one decision with two
-   * values and two endpoints could disagree about which is current. Withdrawal
-   * takes effect on the next read: the service deletes the cached agent row, so
-   * nothing serves a stale consent for the 60 seconds `findByUserId` would
-   * otherwise hold it.
+   * Sets the agent's explicit public directory visibility consent.
    */
   @Patch('agents/me/public-listing')
   @Roles(RoleCode.AGENT)

@@ -60,17 +60,11 @@ export type Kca1Lesson = {
 };
 
 /**
- * One media slot: a marker the document left for something not yet produced.
+ * Represents a media slot required by the lesson text but pending file upload.
  *
- * A3. The `contentUrl` widening the brief first proposed could not work - the
- * API signs `contentUrl` only for VIDEO/PDF lessons and the web view does not
- * read it for an HTML lesson either, so a companion video on an HTML lesson was
- * unreachable through both read paths. A slot is a row instead: it names the
- * lesson it belongs to, its position within that lesson, and what the marker
- * said, and carries a `url` that is null until the file exists.
- *
- * That is what makes a slot addressable - Visquis can be shown the eighteen
- * empty ones, pick one, and attach a file without anyone re-reading the docx.
+ * Slots allow HTML lessons to declare required media attachments independent of `contentUrl`.
+ * This enables the back office to address and attach files to specific markers
+ * without re-parsing the original document.
  */
 export type Kca1MediaSlot = {
   kind: Kca1MarkerKind;
@@ -358,12 +352,10 @@ export const parseCsvRows = (csv: string): Record<string, string>[] =>
   parse(csv, { columns: true, skip_empty_lines: true, bom: true }) as Record<string, string>[];
 
 /**
- * Reads one parcours's quiz file, and fails loudly on a row it cannot trust.
+ * Parses quiz CSV files and validates schema constraints.
  *
- * A question with no correct answer is a question nobody can pass, and I21
- * already showed where scoring defects end up: a certificate that certifies
- * nothing, and through KAMNET an agent. So a malformed row stops the load,
- * named, rather than being seeded and discovered by a candidate.
+ * Fails fast on malformed rows (e.g., missing correct answers) to prevent
+ * unpassable questions from entering the database and corrupting exam integrity.
  */
 export const parseQuizCsv = (csv: string, source: string): Kca1Question[] => {
   const rows = parseCsvRows(csv);
@@ -405,24 +397,13 @@ export const parseQuizCsv = (csv: string, source: string): Kca1Question[] => {
 };
 
 /**
- * A2 - the correct answer is moved across positions when the seed is generated.
+ * Redistributes correct answer positions to prevent answer key patterns.
  *
- * The source key is degenerate: A 0, B 63, C 16, D 1 over the eighty questions.
- * A candidate answering B to everything passes three of the four module quizzes
- * as written, and reaches 79 % against an 80 % exam. Visquis decided the CSV
- * files stay exactly as he wrote them and the redistribution happens here.
+ * Source CSVs often exhibit skewed correct answer distributions. This redistributes
+ * positions deterministically using `orderAnswers`, preventing pattern exploitation.
  *
- * `orderAnswers` and `POSITION_CYCLE` in `./kbs-questions` already do this for
- * the demonstration bank, and they are reused rather than reimplemented - one
- * mechanism, one place it can be wrong. The cycle places each position twice per
- * eight questions, so twenty questions give five apiece.
- *
- * Nothing about the content changes: the four answer TEXTS are the same four,
- * and only their order moves. Step 1 confirmed no `explication` cites an option
- * letter, so no explanation is left pointing at the wrong place.
- *
- * The index runs continuously across the parcours, matching how `prisma/seed.ts`
- * indexes its own banks.
+ * - Option texts and correctness flags remain untouched; only order changes.
+ * - Index increments continuously across the course to maintain consistent shuffle logic.
  */
 export const withDistributedAnswers = (questions: Kca1Question[]): Kca1Question[] =>
   questions.map((question, index) => {

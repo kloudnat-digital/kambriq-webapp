@@ -1,14 +1,11 @@
 import { SUPER_ADMIN_ROLE } from '../types/role-hierarchy';
 
 /**
- * Provides pure logic for determining the necessary database operations
- * during the bootstrap process for admin accounts.
- *
- * This module is dependency-free to allow execution from standalone scripts
- * outside the NestJS runtime.
+ * Pure logic for resolving database operations during admin account bootstrapping.
+ * Dependency-free to support execution from standalone scripts outside the NestJS runtime.
  */
 
-/** Fields the bootstrap owns and will reconcile with the parameter store. */
+/** Fields owned by the bootstrap process and reconciled with the parameter store. */
 export type BootstrapIdentity = {
   firstName: string;
   lastName: string;
@@ -17,7 +14,7 @@ export type BootstrapIdentity = {
   country: string;
 };
 
-/** The shape the bootstrap reads back for an account that already exists. */
+/** Existing account structure read by the bootstrap process. */
 export type ExistingAccount = {
   firstName: string;
   lastName: string;
@@ -28,25 +25,22 @@ export type ExistingAccount = {
 
 export type BootstrapPlan = {
   action: 'create' | 'update' | 'unchanged';
-  /** True when a `UserRole` row for the top role has to be written. */
+  /** Indicates if a `UserRole` row for the top role must be written. */
   grantRole: boolean;
-  /** Names of the fields that differ, for the log line. Never their values. */
+  /** Names of differing fields. Excludes values to prevent logging sensitive data. */
   changedFields: string[];
 };
 
 /**
- * Generates a plan to reconcile the existing account state with the provided bootstrap identity.
- * Note: Fields such as `passwordHash`, `emailVerified`, and `isActive` are excluded
- * from the reconciliation process to preserve user-managed state.
+ * Generates a reconciliation plan between existing account state and the bootstrap identity.
+ * Excludes user-managed state (`passwordHash`, `emailVerified`, `isActive`).
  */
 export function planBootstrap(
   existing: ExistingAccount | null,
   identity: BootstrapIdentity,
 ): BootstrapPlan {
   if (!existing) {
-    // The role is assigned on create. It is also assigned on update below - the
-    // two branches must not disagree about it, which is the whole point of
-    // deciding it in one place.
+    // Ensure consistent role assignment across create and update branches.
     return { action: 'create', grantRole: true, changedFields: [] };
   }
 

@@ -87,8 +87,7 @@ describe('L1 - ContactService', () => {
       expect(ack?.lang).toBe(locale);
       expect(ack?.to).toBe(ROW.email);
 
-      // And it is stored on the row, so a human reply months later is written
-      // in the same language without anybody having to work it out.
+      // Stored on row to persist reply language context.
       const stored = prisma.contactRequest.create.mock.calls[0][0] as {
         data: { locale: string };
       };
@@ -96,8 +95,7 @@ describe('L1 - ContactService', () => {
     });
 
     it('the back office is written to in its own language, not the prospect’s', async () => {
-      // A prospect writing in English must not switch the team's notification
-      // into English: the two messages have two different readers.
+      // Prospect language selection must not override internal notification language.
       await service.submit(input({ locale: 'en' }));
 
       const notification = sends().find((s) => s.template === 'contactRequestNotification');
@@ -135,8 +133,7 @@ describe('L1 - ContactService', () => {
     });
 
     it('a failed write fails the request, and nothing is sent', async () => {
-      // The prospect must not be told "sent" when nothing was stored. That is
-      // the exact defect this chantier exists to remove, in reverse.
+      // Failure to write must prevent client success acknowledgment.
       prisma.contactRequest.create.mockRejectedValue(new Error('connection refused'));
 
       await expect(service.submit(input())).rejects.toThrow('connection refused');
@@ -145,12 +142,8 @@ describe('L1 - ContactService', () => {
 
     it('an email that cannot be queued does NOT fail the request', async () => {
       /**
-       * Deliberate, and it is a trade rather than an oversight. The lead is
-       * already stored; returning an error here would tell somebody who wrote
-       * three paragraphs that nothing arrived, and they would send it again.
-       *
-       * It is only defensible because the daily digest counts **rows**, so a
-       * request whose notification was lost is still in tomorrow's count.
+       * Notification failures do not fail the request to prevent duplicate submissions.
+       * Unnotified requests are surfaced via the daily row-based digest.
        */
       (email.send as jest.Mock).mockRejectedValue(new Error('redis unreachable'));
 
@@ -275,11 +268,7 @@ describe('L1 - ContactService', () => {
 
     it('throws when it has nowhere to send, so the job lands on the failed set', async () => {
       /**
-       * The opposite choice from the per-request notification, and the
-       * difference is the point: a request that cannot be announced is still
-       * stored and still surfaces tomorrow. A digest that cannot be sent has no
-       * later mechanism to catch it, so resolving would be the silence this
-       * whole mechanism exists to abolish.
+       * Digest failures must throw to trigger job retry mechanisms, avoiding silent failures.
        */
       jest.clearAllMocks();
       await build({ CONTACT_INBOX_EMAIL: undefined });

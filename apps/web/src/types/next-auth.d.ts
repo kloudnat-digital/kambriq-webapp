@@ -69,5 +69,7 @@ declare module 'next-auth/jwt' {
     /** Expiration time of the access token (Unix timestamp in milliseconds). */
     accessExpiresAt: number;
     error?: 'RefreshTokenError';
+    /** A47. The API refused the refresh token: do not ask again. */
+    refreshRefused?: boolean;
   }
 }

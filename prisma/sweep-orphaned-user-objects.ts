@@ -6,20 +6,17 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient as CoreClient } from '../libs/common/src/prisma/core-client/client';
 
 /**
- * Cleans up orphaned user objects in S3 where the user no longer exists in the database.
+ * Orphaned S3 object garbage collector.
  *
- * Behavior and safety mechanisms:
- * - Operates from the bucket side, listing all `users/` prefixes and querying the database
- *   to determine if the corresponding user account still exists.
- * - Deletes are executed strictly for prefixes whose owner ID is absent from the database.
- * - Non-UUID folder names are skipped to prevent unintended data loss.
- * - Database lookup failures halt execution immediately.
- * - Dry run is the default mode. The `--apply` flag is explicitly required to execute deletions.
- * - The script is idempotent and resumes processing accurately if interrupted.
+ * Constraints & Safety:
+ * - Scans `users/` prefixes; issues deletes strictly when DB owner ID is absent.
+ * - Skips non-UUID prefixes.
+ * - Fails safe on DB lookup errors.
+ * - Dry-run default. Requires `--apply` to execute deletions.
+ * - Fully idempotent.
  *
  * Usage:
- *   npx tsx prisma/sweep-orphaned-user-objects.ts            # Dry run report
- *   npx tsx prisma/sweep-orphaned-user-objects.ts --apply    # Execute deletions
+ *   npx tsx prisma/sweep-orphaned-user-objects.ts [--apply]
  */
 
 const BUCKET = process.env['AWS_S3_BUCKET'] ?? '';
