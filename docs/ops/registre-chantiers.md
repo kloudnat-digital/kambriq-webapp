@@ -221,6 +221,7 @@ listed here first.
 | Audit 2026-09-23, wave 3      | `PROUVE`            | the wave of #155 to #162 folded in, the Open table de-duplicated, the states declared, `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Audit 2026-09-23, wave 4      | `EN COURS`          | the acompte step reads the payment ledger instead of answering for it. Unmerged; pending proof is one acompte carried end to end on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `confirmRemainingPayment`     | `A FAIRE`           | step 4 records the balance on the reservation alone: nothing creates a payment for it, so it cannot be gated the way the acompte now is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `A48`                         | `EN COURS`          | every API behaviour decision reads `APP_ENV` through `libs/common/src/config/app-env.ts`; SQL is logged only where `APP_ENV=local`; a guard refuses a new `NODE_ENV` read. Pending: dev logs read after deploy - no `prisma:query` line                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `P27`                         | `PROUVE`            | KAMBRIQ LANDS™, KAMBRIQ VERIFY™ and KAMNET™ carry the mark everywhere on the website, KBS does not; a guard watches every namespace and every MDX file; proven on dev at `sha-e059503`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `A44`                         | `PROUVE`            | an avatar is a key in the caller's own storage folder, refused otherwise on both write paths; `connect-src` names the bucket so the browser may upload; proven on dev at `sha-689bd2e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `A43`                         | `PROUVE`            | Swagger is served only where `APP_ENV=local` is declared, never from `NODE_ENV`; the local start scripts declare it; proven on dev at `sha-7ec907b`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -5727,6 +5728,78 @@ was more than this subject.
 A first version of the lookup test left an `ownerUserId: undefined` on the
 certificate fixture, and the spread order let it erase the owner. The fixture
 now matches what the select returns, and the owner is spread last.
+
+### A48 - no behaviour in the API is decided on `NODE_ENV` - `EN COURS`
+
+**Cost impact: a saving.** Half of the dev API's log volume goes away (below),
+and CloudWatch ingestion is billed per GB.
+
+**Pending:** the dev API's log stream read after the deploy: no `prisma:query`
+line, and JSON lines at `info`.
+
+**Third time, so the whole class in one pass.** P4 moved the robots header to
+`APP_ENV`, and A43 moved the Swagger documentation. Everything else that decided
+on `NODE_ENV` in `apps/api` and `libs/common`:
+
+| where                                                  | decision                                   | on dev, before                    |
+| ------------------------------------------------------ | ------------------------------------------ | --------------------------------- |
+| `core`, `kbs`, `kamnet`, `lands` `*-prisma.service.ts` | Prisma logs every query when `development` | every SQL statement logged        |
+| `app/app.module.ts`                                    | pino level `debug` unless `production`     | debug level                       |
+| `app/app.module.ts`                                    | pino-pretty transport unless `production`  | pretty-printed, multi-field lines |
+
+All of them now read `libs/common/src/config/app-env.ts`: `prismaLogLevels`,
+`apiLogLevel` and `prettyLogs`, beside `servesApiDocs`, which now shares
+`isLocalEnvironment` with them. Only an explicit `APP_ENV=local` turns the
+conveniences on, and `pnpm start` declares it (A43). `APP_ENV` is set on no
+deployed environment today, so dev gets the quiet behaviour.
+
+**Measured on dev before the change** (CloudWatch, `/ecs/kambriq-dev-api`, 25
+September):
+
+- in the last hour, **360 of 720** log events were `prisma:query` lines;
+- over 24 hours, of the first 3,000 `prisma:query` lines, **2,993 were the
+  health check's `SELECT 1`**. The rest were full statements: certificate and
+  agent reads, and `DELETE`s of refresh and verification tokens.
+
+**The brief's premise, corrected on one point.** "Queries carry values": in
+this log format they do not. Prisma prints statements with `$n` placeholders,
+and **none** of those lines contained a literal value. What was exposed is the
+schema and the traffic pattern (which tables, which columns, which rows get
+deleted), not customer data. It was one log option away from values.
+
+**What still reads `NODE_ENV`, and why that is allowed:**
+
+- `health/build-info.ts` reports it as `env`, which is how the image was built.
+  It decides nothing. It now reports `appEnv` beside it (`undeclared` on dev
+  today), and its docstring says which is which;
+- `config/env.validation.ts` declares the variable's schema and default; it is
+  not a read.
+
+**The web, named and not converted.** The web image sets `NODE_ENV=production`
+on every environment, so there it genuinely means "how the code was built":
+React Query devtools (`providers.tsx`), the logger level (`lib/logger.ts`), the
+dev-only API URL checks (`lib/api/server.ts`) and `images.unoptimized`
+(`next.config.ts`) all distinguish `next dev` from a production build.
+
+**The guard, so there is no fourth time.** `no-node-env-gates.spec.ts` reads
+every source file in `apps/api/src` and `libs/common/src` (132, generated
+Prisma clients excluded), with comments stripped so an explanation cannot trip
+it, and refuses any `NODE_ENV` read outside `MAY_READ_NODE_ENV`. An exemption
+that is no longer used fails too. **Watched red on develop:** it named exactly the
+five files above.
+
+**Mutations, each failing its own test:**
+
+- one Prisma service back on `NODE_ENV`;
+- SQL logged everywhere;
+- debug level everywhere;
+- pretty printing everywhere;
+- nothing declared counting as local;
+- comments no longer stripped;
+- an unused exemption.
+
+My own guess of "over 300 files" for the sweep's floor was wrong. The true count
+is 132, and the floor is 120.
 
 ---
 

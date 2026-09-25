@@ -10,6 +10,8 @@ import {
   RedisModule,
   RolesGuard,
   UserLanguageResolver,
+  apiLogLevel,
+  prettyLogs,
   validateEnv,
 } from '@kambriq/common';
 import { AcceptLanguageResolver, HeaderResolver, I18nModule } from 'nestjs-i18n';
@@ -50,24 +52,24 @@ import { NewsletterModule } from '../newsletter/newsletter.module';
 
     // ----- Logging (Pino) -----
     LoggerModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
+      useFactory: () => ({
         pinoHttp: {
           // A45, A46. See request-log-redaction.ts.
           redact: { paths: REQUEST_LOG_REDACT_PATHS, censor: '[redacted]' },
-          level: config.get('NODE_ENV') === 'production' ? 'info' : 'debug',
-          transport:
-            config.get('NODE_ENV') !== 'production'
-              ? {
-                  target: 'pino-pretty',
-                  options: {
-                    colorize: true,
-                    translateTime: 'HH:MM:ss.l',
-                    ignore: 'pid,hostname',
-                    singleLine: true,
-                  },
-                }
-              : undefined,
+          // A48: from APP_ENV. Dev logged at debug level, pretty-printed, because it
+          // runs NODE_ENV=development like a laptop.
+          level: apiLogLevel(),
+          transport: prettyLogs()
+            ? {
+                target: 'pino-pretty',
+                options: {
+                  colorize: true,
+                  translateTime: 'HH:MM:ss.l',
+                  ignore: 'pid,hostname',
+                  singleLine: true,
+                },
+              }
+            : undefined,
           autoLogging: true,
           customProps: (req: IncomingMessage) => {
             const header = req.headers['x-correlation-id'];
