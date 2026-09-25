@@ -221,6 +221,7 @@ listed here first.
 | Audit 2026-09-23, wave 3      | `PROUVE`            | the wave of #155 to #162 folded in, the Open table de-duplicated, the states declared, `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Audit 2026-09-23, wave 4      | `EN COURS`          | the acompte step reads the payment ledger instead of answering for it. Unmerged; pending proof is one acompte carried end to end on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `confirmRemainingPayment`     | `A FAIRE`           | step 4 records the balance on the reservation alone: nothing creates a payment for it, so it cannot be gated the way the acompte now is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `I43`                         | `EN COURS`          | ten signed-in screens promised 38 unbuilt features in hardcoded French; the promise is removed and a guard reads every `.tsx`. Pending: the screens read on dev in both languages                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Audit 2026-09-23, wave 5      | `EN COURS`          | locale-prefixed routing: every page under `[locale]`, `localePrefix: 'always'`, the proxy gate asked positively, the RSC token leak closed, 48 `next/link` and 35 `next/navigation` imports moved to `@/i18n/navigation`, `revalidatePath` given its prefix. Proved locally over HTTP (`/` -> 307 `/fr`, `/pricing` -> 404 not a login redirect, `/de/about` -> 404, `/fr/mylands` -> `/fr/login`) and by 55 browser tests. Unmerged; pending proof is the same table read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Audit 2026-09-23, wave 6      | `EN COURS`          | SEO: `app/sitemap.ts` (30 URLs, hreflang + x-default), `app/robots.ts`, canonical and alternates on all 15 public pages, JSON-LD where there was none, metadata on the four legal pages and `robots: noindex` on the six auth pages. Both files read `APP_ENV`, never `NODE_ENV`. Unmerged; pending proof is `/robots.txt` and `/sitemap.xml` read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | Locale switcher coverage      | `A FAIRE`           | `QuickActions` carries the only language control and is mounted **per page**, on 8 of the 15 public pages. `/contact`, `/about`, `/faq` and the four legal pages have none. It predates wave 5 and matters more under it: a cookie carried the choice between pages and a URL does not, so a visitor who lands on `/fr/contact` from a search result cannot switch. Moving it into shared chrome is a design decision, so it was not made silently                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -5195,6 +5196,87 @@ after the proxy ran on public pages:
 | `/products/lands` | 103, p90 180          | 101, p90 170      |
 
 No measurable change.
+
+### I43 - a screen that is not built says so, and promises nothing - `EN COURS`
+
+**Cost impact: None.** Copy, one component, two test files.
+
+**Pending:** the ten screens read on dev after deploy, in French and in English.
+
+**Measured on develop (`de40c29`), and the count holds.** Ten signed-in screens
+render `PlaceholderPage`: `/settings`, `/profile`, `/welcome`, `/client/verify`,
+`/admin/escalations`, `/admin/reservations`, `/admin/kamnet`,
+`/agent/dashboard`, `/agent/commissions`, `/agent/escalation/new`. Their
+`features` lists hold 38 strings, all hardcoded French, all features that do not
+exist. The ten KAMNET agents about to sign in for the first time would have read
+"Export des relevés" and "Graphique des commissions (6 derniers mois)".
+
+**The component promised on its own too, as the brief suspected.** Above every
+list, the card said "En construction - Cette page est en cours de
+développement": a claim that somebody is building it. Under the list, "Rôles
+autorisés" showed `ROOT` and `OPS`, two roles the platform does not have (`I18`
+removed `ROOT`), and `/profile` and `/welcome` added "Tous les utilisateurs
+authentifiés", in French whatever the language. Each screen also carried a
+subtitle describing what it would do: "Suivi de vos commissions et revenus"
+over a screen that tracks nothing.
+
+**What changed.** `PlaceholderPage` takes a namespace and a title, nothing else.
+It renders the screen's name and "Pas encore disponible - Cet écran n'est pas
+encore construit." (en: "Not available yet - This screen has not been built
+yet."), both from the translations. The ten screens pass only those two props.
+Removed from both catalogues because nothing reads them any more:
+`app.underConstruction`, `app.underConstructionDesc`, `app.features`,
+`app.authorizedRoles`, the nine placeholder subtitles, and every
+`app.agentDashboard` key but `title` - a dashboard's worth of strings
+("Commissions (6 derniers mois)", a sales pipeline) that no component read. No
+screen was built.
+
+**New copy for Visquis to approve:** `app.notBuilt.title` and
+`app.notBuilt.description`, fr and en, as quoted above.
+
+**Two guards, one for each defect.**
+
+- `components/placeholder-page.spec.tsx` finds the placeholder screens by
+  reading `src/app` for the import and renders each in both languages. It
+  asserts the WHOLE text of the screen: its name and the two statements, nothing
+  else, and no list item. A list, a subtitle or a row of roles cannot come back
+  under a new name. The ten screens are pinned by path, so an eleventh is a
+  decision somebody reads.
+- `i18n/no-hardcoded-copy.spec.ts` is P21's sibling. P21 reads the catalogues
+  and could see none of the 38, because they never entered one. The sibling reads
+  every `.tsx` under `apps/web/src`, new files included. It parses the TypeScript
+  and finds prose written into JSX: text, a string given to a prop, or strings in
+  an array or a conditional handed to JSX. Only a file declared in
+  `HARDCODED_COPY_DEBT`, with its reason, may hold any. An entry whose file no
+  longer owes anything fails. **Its limit, stated in the file:** a string kept in
+  a constant and passed to JSX by name is not seen.
+
+**Proof, all watched red before green:**
+
+- against develop, the sibling named exactly the ten screens and their strings,
+  and the render test showed the whole promise on each, e.g. `Received:
+"EscaladesGestion des incidents et signalements.En constructionCette page est
+en cours de développement.Fonctionnalités prévues• Liste de toutes les
+escalades…Rôles autorisésOPSADMIN_GLOBALROOT"`;
+- a hardcoded `features` list put back on `/agent/commissions`: the sibling
+  fails, naming the file and the string;
+- a translated list put back in the component: the render test fails on every
+  screen;
+- a second line of copy under the title: the render test fails;
+- the statement hardcoded in French: the English render fails;
+- a new file with hardcoded prose: the sibling fails;
+- a debt entry for a file that owes nothing: the stale-entry test fails.
+
+**Two defects in the guard's first version, found by running it.** Its prose
+pattern allowed only spaces between words, so "Catégories d'escalade (litige,
+fraude, blocage)" passed. It now allows punctuation between words. And the image
+`sizes` prop read as prose; it is on the list of props nobody reads.
+
+**Found, not fixed - larger than I43.** 30 files still hold hardcoded copy. All
+are declared, and most are the payments back office (G4, G9), the identity queue
+(A10), KBS admin (in English) and the public certificate verdict. Each reads in
+one language to a reader of the other. Each is a translation subject of its own,
+and the list shrinks one entry at a time.
 
 ---
 

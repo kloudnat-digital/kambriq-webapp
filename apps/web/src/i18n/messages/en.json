@@ -1458,34 +1458,7 @@
       }
     },
     "agentDashboard": {
-      "title": "Agent dashboard",
-      "welcome": "Welcome",
-      "statSales": "Sales this month",
-      "statCommissions": "Commissions (month)",
-      "statClients": "Active clients",
-      "statLevel": "Level",
-      "pipeline": {
-        "title": "Sales pipeline",
-        "subtitle": "Number of prospects per stage",
-        "stage1": "Contacts",
-        "stage2": "Prospected",
-        "stage3": "Visited",
-        "stage4": "Reserved",
-        "stage5": "Sold"
-      },
-      "recentClients": {
-        "title": "Recent clients",
-        "statusInProgress": "In progress",
-        "statusReserved": "Reserved",
-        "statusCompleted": "Sold",
-        "landLabel": "land",
-        "ventes": "sales"
-      },
-      "salesChart": {
-        "title": "Commissions (last 6 months)",
-        "subtitle": "In XAF",
-        "tooltipLabel": "Commissions"
-      }
+      "title": "Agent dashboard"
     },
     "clientDashboard": {
       "greeting": "Hello",
@@ -1779,8 +1752,7 @@
       "verified": "Verified"
     },
     "profile": {
-      "pageTitle": "My profile",
-      "subtitle": "Manage your personal information and preferences."
+      "pageTitle": "My profile"
     },
     "agentProfile": {
       "pageTitle": "My agent profile",
@@ -1878,12 +1850,10 @@
       }
     },
     "settings": {
-      "pageTitle": "Settings",
-      "subtitle": "General platform configuration."
+      "pageTitle": "Settings"
     },
     "clientVerify": {
-      "pageTitle": "My verifications",
-      "subtitle": "Track your land verification requests."
+      "pageTitle": "My verifications"
     },
     "prospects": {
       "pageTitle": "My prospects",
@@ -1945,24 +1915,19 @@
       }
     },
     "commissions": {
-      "pageTitle": "Commissions",
-      "subtitle": "Track your commissions and earnings."
+      "pageTitle": "Commissions"
     },
     "escalation": {
-      "pageTitle": "Escalation",
-      "subtitle": "Report an issue or situation to resolve."
+      "pageTitle": "Escalation"
     },
     "adminReservations": {
-      "pageTitle": "Admin reservations",
-      "subtitle": "Global reservation management."
+      "pageTitle": "Admin reservations"
     },
     "adminKamnet": {
-      "pageTitle": "Admin KAMNET",
-      "subtitle": "Agent network management."
+      "pageTitle": "Admin KAMNET"
     },
     "adminEscalations": {
-      "pageTitle": "Escalations",
-      "subtitle": "Incident and report management."
+      "pageTitle": "Escalations"
     },
     "kbs": {
       "title": "KAMBRIQ Business School",
@@ -2241,13 +2206,12 @@
       }
     },
     "welcome": {
-      "pageTitle": "Welcome",
-      "subtitle": "Welcome to the KAMBRIQ platform."
+      "pageTitle": "Welcome"
     },
-    "underConstruction": "Under construction",
-    "underConstructionDesc": "This page is under development.",
-    "authorizedRoles": "Authorized roles",
-    "features": "Planned features"
+    "notBuilt": {
+      "title": "Not available yet",
+      "description": "This screen has not been built yet."
+    }
   },
   "a11y": {
     "openMenu": "Open menu",

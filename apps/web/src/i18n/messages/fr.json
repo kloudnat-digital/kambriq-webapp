@@ -1458,34 +1458,7 @@
       }
     },
     "agentDashboard": {
-      "title": "Tableau de bord Agent",
-      "welcome": "Bienvenue",
-      "statSales": "Ventes ce mois",
-      "statCommissions": "Commissions (mois)",
-      "statClients": "Clients actifs",
-      "statLevel": "Niveau",
-      "pipeline": {
-        "title": "Pipeline de vente",
-        "subtitle": "Nombre de prospects par étape",
-        "stage1": "Contacts",
-        "stage2": "Prospecté",
-        "stage3": "Visité",
-        "stage4": "Réservé",
-        "stage5": "Vendu"
-      },
-      "recentClients": {
-        "title": "Clients récents",
-        "statusInProgress": "En cours",
-        "statusReserved": "Réservé",
-        "statusCompleted": "Vendu",
-        "landLabel": "terrain",
-        "ventes": "ventes"
-      },
-      "salesChart": {
-        "title": "Commissions (6 derniers mois)",
-        "subtitle": "En XAF",
-        "tooltipLabel": "Commissions"
-      }
+      "title": "Tableau de bord Agent"
     },
     "clientDashboard": {
       "greeting": "Bonjour",
@@ -1779,8 +1752,7 @@
       "verified": "Vérifié"
     },
     "profile": {
-      "pageTitle": "Mon profil",
-      "subtitle": "Gérez vos informations personnelles et préférences."
+      "pageTitle": "Mon profil"
     },
     "agentProfile": {
       "pageTitle": "Mon profil agent",
@@ -1878,12 +1850,10 @@
       }
     },
     "settings": {
-      "pageTitle": "Paramètres",
-      "subtitle": "Configuration générale de la plateforme."
+      "pageTitle": "Paramètres"
     },
     "clientVerify": {
-      "pageTitle": "Mes vérifications",
-      "subtitle": "Suivez vos demandes de vérification foncière."
+      "pageTitle": "Mes vérifications"
     },
     "prospects": {
       "pageTitle": "Mes prospects",
@@ -1945,24 +1915,19 @@
       }
     },
     "commissions": {
-      "pageTitle": "Commissions",
-      "subtitle": "Suivi de vos commissions et revenus."
+      "pageTitle": "Commissions"
     },
     "escalation": {
-      "pageTitle": "Escalade",
-      "subtitle": "Signalez un problème ou une situation à résoudre."
+      "pageTitle": "Escalade"
     },
     "adminReservations": {
-      "pageTitle": "Admin réservations",
-      "subtitle": "Gestion globale des réservations."
+      "pageTitle": "Admin réservations"
     },
     "adminKamnet": {
-      "pageTitle": "Admin KAMNET",
-      "subtitle": "Gestion du réseau d'agents."
+      "pageTitle": "Admin KAMNET"
     },
     "adminEscalations": {
-      "pageTitle": "Escalades",
-      "subtitle": "Gestion des incidents et signalements."
+      "pageTitle": "Escalades"
     },
     "kbs": {
       "title": "KAMBRIQ Business School",
@@ -2241,13 +2206,12 @@
       }
     },
     "welcome": {
-      "pageTitle": "Bienvenue",
-      "subtitle": "Bienvenue sur la plateforme KAMBRIQ."
+      "pageTitle": "Bienvenue"
     },
-    "underConstruction": "En construction",
-    "underConstructionDesc": "Cette page est en cours de développement.",
-    "authorizedRoles": "Rôles autorisés",
-    "features": "Fonctionnalités prévues"
+    "notBuilt": {
+      "title": "Pas encore disponible",
+      "description": "Cet écran n'est pas encore construit."
+    }
   },
   "a11y": {
     "openMenu": "Ouvrir le menu",
