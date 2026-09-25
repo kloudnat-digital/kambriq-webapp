@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { prismaLogLevels } from '@kambriq/common';
 import { PrismaClient } from '@kambriq/common/prisma/kamnet-client/client';
 
 @Injectable()
@@ -14,7 +15,8 @@ export class KamnetPrismaService extends PrismaClient implements OnModuleInit, O
     const pool = new Pool({ connectionString });
     const adapter = new PrismaPg(pool);
     super({
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn', 'info'] : ['error'],
+      // A48: SQL is logged only where APP_ENV=local - never on dev.
+      log: prismaLogLevels(),
       adapter,
     });
     this.pool = pool;

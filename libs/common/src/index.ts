@@ -162,3 +162,12 @@ export type { TitleNumber } from './lands/title-number';
 
 // ----- API documentation (A43) -----
 export { LOCAL_APP_ENV, servesApiDocs } from './config/api-docs';
+
+// ----- Environment (A48) -----
+export {
+  appEnvironment,
+  apiLogLevel,
+  isLocalEnvironment,
+  prettyLogs,
+  prismaLogLevels,
+} from './config/app-env';
