@@ -32,7 +32,6 @@ const LAND_TYPES = [
     descriptionKey: 'tfl.description' as const,
     features: [
       { labelKey: 'clientAdvantages' as const, detailKey: 'tfl.advantages.client' as const },
-      { labelKey: 'agentAdvantages' as const, detailKey: 'tfl.advantages.agent' as const },
       { labelKey: 'kambriqCommitment' as const, detailKey: 'tfl.advantages.commitment' as const },
     ],
   },
@@ -43,7 +42,6 @@ const LAND_TYPES = [
     descriptionKey: 'vefl.description' as const,
     features: [
       { labelKey: 'clientAdvantages' as const, detailKey: 'vefl.advantages.client' as const },
-      { labelKey: 'agentAdvantages' as const, detailKey: 'vefl.advantages.agent' as const },
       { labelKey: 'kambriqCommitment' as const, detailKey: 'vefl.advantages.commitment' as const },
     ],
   },
@@ -54,7 +52,6 @@ const LAND_TYPES = [
     descriptionKey: 'vefil.description' as const,
     features: [
       { labelKey: 'clientAdvantages' as const, detailKey: 'vefil.advantages.client' as const },
-      { labelKey: 'agentAdvantages' as const, detailKey: 'vefil.advantages.agent' as const },
       { labelKey: 'kambriqCommitment' as const, detailKey: 'vefil.advantages.commitment' as const },
     ],
   },

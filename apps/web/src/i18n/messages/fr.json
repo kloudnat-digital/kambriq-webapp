@@ -826,7 +826,7 @@
   },
   "landsHero": {
     "badge": "KAMBRIQ LANDS™",
-    "title": "Des terrains vérifiés, un label clair sur chaque bien",
+    "title": "Une méthode vérifiée, un label clair, un agent certifié à vos côtés",
     "subtitle": "Chaque terrain proposé par KAMBRIQ passe par 7 vérifications. Chaque bien reçoit un label qui vous dit exactement où vous en êtes.",
     "cta": "Parler à un agent KAMNET™",
     "cta2": "Vérifier un terrain",
@@ -854,6 +854,38 @@
       "description": "Paiements, démarches administratives, signature, obtention du titre foncier."
     }
   },
+  "landsDossier": {
+    "title": "Ce que votre agent vous remet",
+    "subtitle": "Pour chaque terrain de votre sélection, un dossier en sept rubriques.",
+    "items": [
+      {
+        "title": "Le terrain",
+        "detail": "Type, superficie, usages compatibles"
+      },
+      {
+        "title": "La localisation et l'accès",
+        "detail": "Repères, distances, temps d'accès"
+      },
+      {
+        "title": "La situation juridique",
+        "detail": "Statut foncier, propriétaire légal vérifié, bornage, charges et litiges"
+      },
+      {
+        "title": "Les pièces du dossier",
+        "detail": "Titre ou certificat, plan de bornage, photos géolocalisées et vidéo, historique de propriété"
+      },
+      {
+        "title": "L'environnement",
+        "detail": "Caractéristiques physiques, voies d'accès, réseaux et équipements"
+      },
+      {
+        "title": "Le label KAMBRIQ et la disponibilité"
+      },
+      {
+        "title": "Le prix et les modalités de paiement"
+      }
+    ]
+  },
   "whyBuyAtKambriq": {
     "title": "Pourquoi acheter via KAMBRIQ ?",
     "subtitle": "Chaque service répond à une étape précise de votre projet foncier",
@@ -861,7 +893,7 @@
     "cta2": "Vérifier un terrain",
     "legalSecurity": {
       "title": "Sécurité juridique vérifiée",
-      "description": "Chaque terrain passe par 7 contrôles KAMBRIQ VERIFY™ avant d'entrer dans notre catalogue. Label clair sur chaque bien."
+      "description": "Chaque terrain qu'un agent vous présente a passé les 7 contrôles KAMBRIQ VERIFY™ et porte un label clair."
     },
     "payment": {
       "title": "Paiement échelonné avec KAMBRIQ PLAN™",
@@ -880,14 +912,12 @@
     "title": "Nos 3 labels",
     "subtitle": "Chaque terrain reçoit un label KAMBRIQ qui indique clairement son statut juridique",
     "clientAdvantages": "Ce que ça signifie pour vous",
-    "agentAdvantages": "Avantages Agent KAMNET™",
     "kambriqCommitment": "Engagement KAMBRIQ",
     "tfl": {
       "name": "KAMBRIQ TFL™ - Titre Foncier Loti",
       "description": "L'immatriculation est faite et le lotissement est fait. La propriété vous est transférée immédiatement.",
       "advantages": {
         "client": "Vous devenez propriétaire dès la signature chez le notaire. Aucune procédure administrative supplémentaire.",
-        "agent": "Commission rapide, processus simplifié, client sécurisé.",
         "commitment": "Titre foncier authentique vérifié par KAMBRIQ VERIFY™, conformité cadastrale confirmée."
       }
     },
@@ -896,7 +926,6 @@
       "description": "L'immatriculation est terminée - le titre foncier existe. Le lotissement est en cours. La propriété vous est transférée après la fin du lotissement.",
       "advantages": {
         "client": "L'existence du titre foncier sécurise votre achat. Vous obtiendrez un titre individuel à l'issue du lotissement. Délais plus courts qu'un VEFIL™.",
-        "agent": "Bon équilibre prix/délai, accompagnement maîtrisé.",
         "commitment": "Titre foncier vérifié par KAMBRIQ VERIFY™, plan de lotissement approuvé, jalons de suivi KAMBRIQ."
       }
     },
@@ -905,7 +934,6 @@
       "description": "Le terrain est encore en cours d'immatriculation. Le lotissement viendra après. La propriété vous est transférée après la fin de l'immatriculation et du lotissement. C'est le processus le plus long.",
       "advantages": {
         "client": "Vous n'êtes PAS propriétaire à la signature. Vous devez attendre la fin de l'immatriculation ET du lotissement. Prix plus attractif, risque plus élevé.",
-        "agent": "Accompagnement long terme, potentiel de fidélisation client.",
         "commitment": "Jalons de vérification supplémentaires exigés par KAMBRIQ. Suivi complet du processus d'immatriculation."
       }
     }
@@ -920,7 +948,7 @@
       "landInfo": "Je souhaite obtenir des informations sur les terrains disponibles",
       "verifyService": "J'aimerais en savoir plus sur le service KAMBRIQ VERIFY™",
       "kbsFormation": "Comment devenir Agent KAMNET™ Certifié via la formation KBS ?",
-      "kamnetAgent": "Comment rejoindre le réseau KAMNET™ et gagner des commissions ?",
+      "kamnetAgent": "Comment rejoindre le réseau KAMNET™ ?",
       "pricing": "Quels sont vos tarifs et conditions de paiement ?",
       "buyingProcess": "Comment se déroule le processus d'achat depuis l'étranger ?",
       "documentation": "Quels documents sont nécessaires pour acheter un terrain ?",

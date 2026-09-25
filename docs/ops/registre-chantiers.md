@@ -214,7 +214,7 @@ listed here first.
 | `A19`                         | `PROUVE`            | develop linted 1 project of 6 for seven months: the workflow promised "the full set", `pnpm run lint` was `nx lint api`. Widened to `nx run-many -t lint --all`; manifest corrected; proved in both directions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `I32`                         | `PROUVE`            | the API decides the network depth by the caller's own tier (`KAMNET_NETWORK_DEPTH_BY_TIER` in `libs/common`, bounded by `KAMNET_MAX_SPONSORSHIP_DEPTH`); the page asks without a depth. Proven by test with the maximum raised, since on dev every tier and the maximum are 1 and the rule changes no answer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `P10`                         | `EN COURS`          | the two agent-page promises of an exclusive catalogue (`whyKbs.network`, `whyAgent.exclusiveAccess`) are replaced with the copy Visquis validated on 26 September, pinned by `agent-copy-promises-no-exclusive-catalogue.spec.ts`; still open: the LANDS page rewrite (#174, held for copy)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `P21` follow-up               | `A FAIRE`           | the remuneration ban covers a hand-written list of message namespaces and `landTypes` is not in it, so the public LANDS page still carries "Avantages Agent KAMNET / Commission rapide". Derive the list from what the public pages render                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `P21` follow-up               | `EN COURS`          | the inverted namespace list and the vocabulary ban are in #174 with P10, held open for the copy approval; see `P10`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `A41`                         | `PROUVE`            | a rate limit each, chosen from 7 days of measured traffic; `auth-anonymous-routes-throttled.spec.ts` reads the @Throttle metadata, red first on five undefined routes, eight mutations each watched failing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `P22`                         | `PROUVE`            | the public directory reads every certificate in one query, not one per agent, and is bounded by `KAMNET_MAX_PUBLIC_DIRECTORY_ENTRIES` with a warning at the cap; proven on dev at `sha-caf8f98`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | Audit 2026-09-23, wave 1      | `EN COURS`          | four security fixes on `chore/audit-remediation`, unmerged. The fifth finding, the API bearer token in the RSC payload, is **closed by wave 5** - `sessionForClient` strips it and `lib/session.spec.ts` plus the login journey pin it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
@@ -243,7 +243,7 @@ listed here first.
 | Built-in 404 above the locale | `PROUVE`            | P31, decided by Visquis on 26 September: the route group. Every page is in `[locale]/(site)`, whose layout refuses an unknown locale below the branded boundary. Proven on dev (`sha-e1b965f`): `/pricing` and `/de/about` give the branded 404, HTTP 404, in the visitor's language; all seventeen public pages 200 with the language switch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | develop merged into waves 5-6 | `EN COURS`          | develop's 9 commits merged 25 September: 8 text conflicts, six new page files relocated under `[locale]`, three components moved off `next/link`/`next/navigation`, `revalidatePath` calls given their prefix, `image-hosts.spec.ts` unblocked (25 assertions that ran none), `A41` reconciled. Unmerged to develop; pending proof is the routing table and the sitemap read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Audit 2026-09-23, unwaved     | `A FAIRE`           | superseded in part: `/admin/verify` (honest since I44) and `/kamnet/apply` (wired since P5, #193) are no longer mocks. Still open, as recorded: the Mapbox build `ARG` reaches no workflow (the land-search map it named was deleted in A53; whether another map needs it is not checked here); `legal/mentions/{fr,en}.mdx` publishes placeholder company details (`Capital social : XXX XXX XAF`, `N° RCCM : XX / XXX / XX`, and their English forms) on a public page                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| register                      | `A FAIRE`           | one row has no `###` entry: `P10`, whose entry is in #174 (held for the LANDS copy). Twenty-one were written on 26 September. The list is pinned in `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| register                      | `PROUVE`            | every open chantier has an entry: `P10`'s, the last, is written with #174. The list in `register-is-the-record.spec.ts` is empty and pinned at zero                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ### H1 - `ADMIN_GLOBAL` is the super admin, and there is no second one - `PROUVE`
 
@@ -6868,7 +6868,7 @@ The register's `## Proven` section says a wider collision is already live:
 _"Eleven ids mean two different things depending on which half of the document
 you are reading"_. It chose not to rename, and it states the ambiguity instead.
 
-### register - rows with no entry - `A FAIRE`
+### register - rows with no entry - `PROUVE`
 
 **Cost impact: None.**
 
@@ -6878,10 +6878,8 @@ missing in `NO_ENTRY_YET`. **On 26 September twenty-one were written**, from
 the row, the frozen wave note (`docs/ops/waves/2026-09-20-wave.md`), CLAUDE.md
 and the commits on develop - facts with their source named, nothing inferred.
 
-**One remains: `P10`**, whose entry is written in #174, which Visquis holds open
-for the LANDS page copy. Writing it here as well would put two `### P10`
-headings in the file the day #174 merges. The inventory goes to zero with
-#174.
+**The last one, `P10`, is written with #174**, and the inventory is empty:
+`NO_ENTRY_YET` is pinned at zero.
 
 ### rename - L1-contact and L2-contact to P1 and P2 - `A DECIDER`
 
@@ -6896,6 +6894,111 @@ The `P3` entry, under "Follow-ups", repeats it: the IDs exist only on
 _"Named rather than resolved; see the PR body for the command"_. The register's
 `## Proven` section calls `rename` _"the related open decision"_ to the id
 collision. See contradiction 5: those IDs are now on develop.
+
+### P10 - the LANDS page is for the buyer - `EN COURS`
+
+**Cost impact: None.** Copy, one server component, tests.
+
+**Pending:** Visquis's approval of the copy below, then review and merge, then a
+read of the deployed `/fr/products/lands` and `/en/products/lands` on dev. #174
+is kept green and open until then: merging it would put unapproved copy on dev.
+
+`/products/lands` promised a catalogue it never shows and told a buyer what the
+AGENT gets: "Avantages Agent KAMNET" on each of the three labels,
+"Commission rapide" on TFL. Both break a standing decision: no parcel on a public page
+(`docs/base/regles-produit.md`) and no agent remuneration on the public site
+(P9, decision 1).
+
+**What changed, fr and en together:**
+
+- `landTypes.agentAdvantages` and the three `advantages.agent` keys are deleted,
+  with their `features` entries in `land-types.tsx`, in the same commit;
+- `whyBuyAtKambriq.legalSecurity.description` no longer says "catalogue";
+- `landsHero.title` promises the method and the accompaniment, not goods;
+- `quickActions.questions.kamnetAgent` no longer says "gagner des commissions" -
+  the widened pin found it, on every public page;
+- a new section after "Comment acheter", `landsDossier` /
+  `selection-dossier.tsx`, lists the seven rubriques of a selection dossier,
+  taken from sections 1 to 7 of the land file template. Headings only.
+  Sections 8 and 9 and the owner's identity document never appear.
+
+**Every line of new copy is for Visquis to approve**, all mine, none of it his voice:
+
+| Key                                         | fr                                                                                                                        | en                                                                                                    |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `landsHero.title`                           | Une méthode vérifiée, un label clair, un agent certifié à vos côtés                                                       | A verified method, a clear label, a certified agent at your side                                      |
+| `whyBuyAtKambriq.legalSecurity.description` | Chaque terrain qu'un agent vous présente a passé les 7 contrôles KAMBRIQ VERIFY™ et porte un label clair.                | Every land an agent presents to you has passed KAMBRIQ VERIFY™'s 7 checks and carries a clear label. |
+| `quickActions.questions.kamnetAgent`        | Comment rejoindre le réseau KAMNET™ ?                                                                                    | How to join the KAMNET™ network?                                                                     |
+| `landsDossier.title` / `.subtitle`          | Ce que votre agent vous remet / Pour chaque terrain de votre sélection, un dossier en sept rubriques.                     | What your agent hands you / For each land in your selection, a file in seven sections.                |
+| `landsDossier.items`                        | the seven rubriques of the brief's table, capitalised; rubriques 6 and 7 have no detail line because the table gives none | my translation of the same                                                                            |
+
+**Why P21's pin missed "Commission rapide", precisely.** The brief guessed that
+`landTypes` was not on its namespace list. It was on it. Three things let the
+string through:
+
+1. the rate and deadline sweeps read every listed namespace, but they need a
+   figure (`%`, a base) or `J+n`, and "Commission rapide" carries neither;
+2. the earning sweep, the only one about words, read `products.kamnet` and
+   `products.kbs` only;
+3. and even there, `EARNING_PROMISE` matched promise PHRASES, deliberately not
+   the bare word "commission".
+
+**The pin now covers the class.** Every namespace is covered unless it is
+declared private in `PRIVATE_NAMESPACES`, each with its reason (`app`, the
+authenticated product; `landsAdmin`, the back office). A new public namespace is
+covered by default. A vocabulary pattern (commission, remuneration, gagnez,
+revenus, earn, income) runs beside the phrase pattern on every covered key. Two
+honest strings are allowed by key, each with a one-line reason, and an
+allowlist entry that stops matching fails the suite.
+
+**Proof, all watched red before green:**
+
+- against develop, the widened pin failed on `landTypes.tfl.advantages.agent`
+  and `quickActions.questions.kamnetAgent`, fr and en;
+- the page test failed on "catalogue", on the agent's advantages and on the
+  missing dossier, over the real render;
+- "Commission rapide" put back in `fr.json` only: the vocabulary test fails
+  (and the fr/en parity test beside it);
+- a fresh namespace `zzFresh` carrying "gagnez", pin untouched: fails;
+- keys and JSX of the agent advantages put back: the page test fails, fr and en;
+- the dossier removed, then moved after "Pourquoi acheter", then given an eighth
+  item, then "Déclarations du partenaire" in place of a rubrique: each fails its
+  own test;
+- "catalogue" put back: fails;
+- "500 m²", "2 ha", "4 500 000 FCFA", "12 000 €", "TF n° 1234", "KBQ-" in the
+  dossier: each fails the no-parcel test.
+
+**Two defects in my own test, found by those mutations:**
+
+- **the first render was empty.** The page's sections are async server
+  components, and Testing Library renders nothing for an async component nested
+  in a tree. "Promises no catalogue" PASSED against copy that said
+  "catalogue". The test now awaits each section and renders it, and a first
+  test asserts the render holds the page's real text before any "does not
+  contain" is believed;
+- **"500 m²" and "12 000 €" passed the no-parcel test.** `\b` after `²` or `€`
+  never matches, because neither is a word character, and `textContent` glued
+  the price to the next heading ("€Pourquoi"). The page is now read one text
+  node per line, and those two units take no boundary.
+
+`test-utils/next-intl-mock.tsx` gains `t.raw`, loud on a miss like `t`. The
+public namespaces now come from `i18n/watched-namespaces.ts`, the helper P27
+introduced for this pin, instead of a list kept in the spec.
+
+**Rebased on 25 September (evening) onto develop after #176.** The first version
+of #174 recorded its work in a `WAVE_STATUS.md`, which the repository has
+retired, and targeted `app/products/lands`, which now lives under `[locale]`. It
+was rebuilt from develop rather than replayed: same copy, with the `™` P27 added
+since, same component, the pin ported onto Ulrich's rewrite of it, and the page
+test given the navigation mock the locale-aware links now need. Re-proved on the
+new base: the page test and the pin fail against develop's page and copy (10
+failures), "Commission rapide" put back fails the pin, and a fresh namespace
+carrying "gagnez" fails it without touching it.
+
+**The KBS and agent pages' exclusive-catalogue promises**
+(`whyKbs.network.description`, `whyAgent.exclusiveAccess`) were replaced in #200
+with the copy Visquis validated on 26 September, separately from this PR so they
+were not held by it, and pinned by `agent-copy-promises-no-exclusive-catalogue.spec.ts`.
 
 ---
 

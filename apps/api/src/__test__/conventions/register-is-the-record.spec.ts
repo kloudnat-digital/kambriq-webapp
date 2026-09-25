@@ -82,13 +82,10 @@ const hasEntry = (chantier: string): boolean =>
  * with no entry fails because it is not here, and writing an entry without
  * removing its line fails too, so the list cannot rot into a lie.
  *
- * Twenty-one entries were written on 26 September. `P10` remains: its entry is
- * written in #174, held open for the LANDS copy, and a second one here would put
- * two `### P10` headings in the file when #174 merges.
+ * Empty since #174 wrote the last missing entry (`P10`). A new open chantier
+ * with no entry fails because it is not here.
  */
-const NO_ENTRY_YET: ReadonlyArray<{ chantier: string; why: string }> = [
-  { chantier: 'P10', why: 'agent-page copy replaced; the LANDS page rewrite waits in #174' },
-];
+const NO_ENTRY_YET: ReadonlyArray<{ chantier: string; why: string }> = [];
 
 /**
  * Files allowed to look like a record of work.
@@ -167,7 +164,7 @@ describe('the chantier register is the record, and the only one', () => {
       (q) => q.chantier,
     );
     expect(stale).toEqual([]);
-    expect(NO_ENTRY_YET).toHaveLength(1);
+    expect(NO_ENTRY_YET).toHaveLength(0);
   });
 
   it('is the only file in the repository shaped like a record of work', () => {
