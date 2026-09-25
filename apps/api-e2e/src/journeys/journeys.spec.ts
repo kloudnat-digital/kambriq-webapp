@@ -102,11 +102,43 @@ describe('journey 1 - a new user signs up, verifies, and logs in', () => {
     expect(verify.status).toBe(200);
   });
 
+  let refreshToken = '';
+
   it('logs in once verified', async () => {
     const res = await call('POST', '/auth/login', { body: { email, password: PASSWORD } });
     expect(res.status).toBe(200);
-    const { data } = res.json<{ data: { user: { roles: string[] } } }>();
+    const { data } = res.json<{
+      data: { user: { roles: string[] }; tokens: { refreshToken: string } };
+    }>();
     expect(data.user.roles).toContain('CLIENT');
+    refreshToken = data.tokens.refreshToken;
+  });
+
+  /**
+   * A47. Until 25 September nothing here ever called `/auth/refresh`, and no
+   * journey lasted past the 15-minute access token - so the journeys passed
+   * while refresh answered 409 in the same second as a login and 400 to every
+   * request that lost a burst. These steps fail if refresh stops answering 200,
+   * and the replay step fails if a used token starts being accepted.
+   */
+  it('refreshes the session straight after the login, then again, and refuses a used token', async () => {
+    const first = await call('POST', '/auth/refresh', { body: { refreshToken } });
+    expect(first.status).toBe(200);
+    const next = first.json<{ data: { accessToken: string; refreshToken: string } }>().data;
+    expect(next.refreshToken).not.toBe(refreshToken);
+
+    const second = await call('POST', '/auth/refresh', {
+      body: { refreshToken: next.refreshToken },
+    });
+    expect(second.status).toBe(200);
+
+    const replay = await call('POST', '/auth/refresh', { body: { refreshToken } });
+    expect(replay.status).toBe(400);
+
+    const me = await call('GET', '/users/me', {
+      token: second.json<{ data: { accessToken: string } }>().data.accessToken,
+    });
+    expect(me.status).toBe(200);
   });
 });
 

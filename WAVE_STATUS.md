@@ -1044,6 +1044,13 @@ attempts in the logs. No real person's account was touched.
 **Observed, not A45's:** every `POST /auth/refresh` on dev answers 400, before
 A45 as after it. A new subject.
 
+> **Corrected on 25 September (A47).** "Every refresh answers 400" was measured
+> over a 16-hour window and written as if it described the route. Over 7 days
+> the web's refreshes answered 200 x3, 409 x2 and 400 x59: refresh worked one
+> call at a time and failed in bursts. The cause is recorded under **A47**. The
+> sentence above is kept, because the correction only means something beside
+> the claim it corrects.
+
 ## P4 - proven on dev
 
 Read on dev at 19:38 UTC on 23 September, after #165 merged as `f0e8819` and
@@ -1107,3 +1114,31 @@ now `PROUVE`.
 
 Older lines are left to the 7-day retention. Deleting them was not done: that
 is reserved to Visquis by the authorization.
+
+## A47 - a session survives its access token's expiry (claimed as #171)
+
+Under the standing dev authorization. **The brief's premise was corrected
+first.** "Refresh answers 400 every time" was my report of 24 September,
+measured over 16 hours. Over the API's 7-day log the web got 200 x3, 409 x2 and
+400 x59. The correction is written beside both sentences that overstated it.
+
+**Measured on dev before any change (25 September, UTC):**
+
+- Direct to the API with a throwaway account: login, then refresh at once gave
+  **409**; after a 3 s pause **200**, a second rotation **200**, and the replayed
+  first token **400**. So the API refreshes correctly, and two tokens minted in
+  the same second collide.
+- Real browser, one navigation to `/mylands` at 04:44:09, after the access
+  token was due: three refreshes in 27 ms, **200, 400, 400**. The proxy's 200
+  was saved, and the session survived.
+- Real browser at 04:58, after the next expiry: `/legal/privacy`, outside the
+  proxy's matcher, gave refresh **200**, which was discarded because a page
+  cannot write the cookie. Then `/legal/terms` gave **400** with the revoked
+  token, `/mylands` gave **400** x3 and **redirected to `/login`**, and the login
+  page rendered on the broken session with 400 x4 more. **The person was signed
+  out by browsing two public pages.**
+- Journey 1's new refresh steps, run against dev: `Expected 200, Received 409`.
+- The journeys never called `/auth/refresh`, and no journey outlived the
+  15-minute access token.
+
+Cause, fix and proof are under **A47** in the register.
