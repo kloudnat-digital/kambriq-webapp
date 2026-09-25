@@ -7,18 +7,5 @@ export async function generateMetadata() {
 }
 
 export default function ProfilePage() {
-  return (
-    <PlaceholderPage
-      namespace="app.profile"
-      titleKey="pageTitle"
-      subtitleKey="subtitle"
-      features={[
-        'Informations personnelles (nom, email, téléphone)',
-        'Photo de profil',
-        'Changement de mot de passe',
-        'Préférences de notification',
-      ]}
-      roles={['Tous les utilisateurs authentifiés']}
-    />
-  );
+  return <PlaceholderPage namespace="app.profile" titleKey="pageTitle" />;
 }

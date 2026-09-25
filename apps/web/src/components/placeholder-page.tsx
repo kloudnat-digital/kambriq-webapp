@@ -1,22 +1,22 @@
 import { Construction } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
-import { Badge } from '@/components/ui/badge';
 
+/**
+ * A signed-in screen that is not built yet (I43).
+ *
+ * It names itself and says it is not built - nothing else. It used to take a
+ * `features` list, hardcoded French, and render it as "Fonctionnalités
+ * prévues": 38 promises across ten screens, none of them built, read by the
+ * agents we were recruiting. A list of what a screen will do is a promise, so
+ * this component no longer accepts one, nor a subtitle describing the screen,
+ * nor the roles allowed on it. `placeholder-page.spec.tsx` pins the whole text.
+ */
 type PlaceholderPageProps = {
-  titleKey: string;
-  subtitleKey: string;
   namespace: string;
-  features: string[];
-  roles: string[];
+  titleKey: string;
 };
 
-export async function PlaceholderPage({
-  titleKey,
-  subtitleKey,
-  namespace,
-  features,
-  roles,
-}: PlaceholderPageProps) {
+export async function PlaceholderPage({ namespace, titleKey }: PlaceholderPageProps) {
   const t = await getTranslations(namespace);
   const tApp = await getTranslations('app');
 
@@ -24,39 +24,12 @@ export async function PlaceholderPage({
     <div className="p-6 lg:p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">{t(titleKey)}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t(subtitleKey)}</p>
       </div>
 
       <div className="mx-auto max-w-lg rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center">
         <Construction className="mx-auto size-12 text-gray-400" />
-        <h2 className="mt-4 text-lg font-semibold text-gray-900">{tApp('underConstruction')}</h2>
-        <p className="mt-2 text-sm text-gray-500">{tApp('underConstructionDesc')}</p>
-
-        {features.length > 0 && (
-          <div className="mt-6 text-left">
-            <h3 className="text-sm font-medium text-gray-700">{tApp('features')}</h3>
-            <ul className="mt-2 space-y-1">
-              {features.map((feature) => (
-                <li key={feature} className="text-sm text-gray-500">
-                  &bull; {feature}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {roles.length > 0 && (
-          <div className="mt-6">
-            <h3 className="mb-2 text-sm font-medium text-gray-700">{tApp('authorizedRoles')}</h3>
-            <div className="flex flex-wrap justify-center gap-2">
-              {roles.map((role) => (
-                <Badge key={role} variant="secondary">
-                  {role}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
+        <h2 className="mt-4 text-lg font-semibold text-gray-900">{tApp('notBuilt.title')}</h2>
+        <p className="mt-2 text-sm text-gray-500">{tApp('notBuilt.description')}</p>
       </div>
     </div>
   );

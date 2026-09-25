@@ -1347,6 +1347,24 @@ the session with a configuration that never refreshes. The same-request handoff
 goes through `globalThis`. A module-level singleton is not a process singleton
 under Turbopack.
 
+### A guard that reads the catalogues cannot see copy that never entered one
+
+From `I43`. P21 banned promises across every translation namespace, and ten
+signed-in screens went on promising 38 features, because the promises were
+French strings written straight into the components. The guard was right about
+everything it read. It could not read them.
+
+**A ban on words needs a second reach: the source files where words bypass the
+catalogue.** `no-hardcoded-copy.spec.ts` parses every `.tsx` and fails on prose
+in JSX, unless the file is declared as debt with its reason. It works the same
+way as P21 and the proxy matcher: everything is covered by default, and an
+exemption is a line somebody wrote.
+
+**And pin a placeholder's whole text, not the absence of one list.** A test
+that only checks for no `<li>` lets the same promise come back as a subtitle.
+The placeholder test compares the screen's entire text with the three strings it
+may say.
+
 ### A guard written before anything can use it
 
 `callbackUrl` is written in four places in this app and **read in none**:

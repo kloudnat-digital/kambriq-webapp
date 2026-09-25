@@ -7,17 +7,5 @@ export async function generateMetadata() {
 }
 
 export default function WelcomePage() {
-  return (
-    <PlaceholderPage
-      namespace="app.welcome"
-      titleKey="pageTitle"
-      subtitleKey="subtitle"
-      features={[
-        'Onboarding personnalisé selon le rôle',
-        'Présentation des fonctionnalités disponibles',
-        'Liens rapides vers les sections principales',
-      ]}
-      roles={['Tous les utilisateurs authentifiés']}
-    />
-  );
+  return <PlaceholderPage namespace="app.welcome" titleKey="pageTitle" />;
 }
