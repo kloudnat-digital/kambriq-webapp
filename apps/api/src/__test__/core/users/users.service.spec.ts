@@ -104,7 +104,7 @@ describe('UsersService', () => {
       prisma.userProfile.upsert.mockResolvedValue({});
 
       await service.updateMe(user.id, {
-        avatarUrl: 'https://img.test/avatar.jpg',
+        avatarUrl: `users/${user.id}/avatar/1-avatar.jpg`, // A44: a key, never a foreign URL
         city: 'Douala',
       });
 

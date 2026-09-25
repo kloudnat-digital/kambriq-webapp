@@ -22,6 +22,7 @@ import {
   imgSrcSources,
   MEDIA_BUCKET_HOST_VAR,
   mediaBucketHost,
+  uploadConnectSources,
 } from './image-hosts';
 
 const DEV_BUCKET = 'kambriq-media-dev';
@@ -145,6 +146,29 @@ describe('image optimizer hosts', () => {
         );
       },
     );
+  });
+
+  /**
+   * A44 - the browser uploads an avatar straight to the bucket with a presigned
+   * PUT. `connect-src` named Mapbox only, so on dev Chromium refused the request
+   * ("violates the following Content Security Policy directive: connect-src")
+   * and the upload had never worked. The bucket reaches `connect-src` from the
+   * same variable as `img-src` - and only the bucket: the browser uploads
+   * nowhere else, so no other image host is opened for writing.
+   */
+  describe('the browser may upload to the bucket, and only there', () => {
+    it('names the bucket when the variable is set', () => {
+      expect(uploadConnectSources(withBucket)).toEqual([`https://${DEV_HOST}`]);
+    });
+
+    it('names nothing when it is missing, rather than opening up', () => {
+      expect(uploadConnectSources(withoutBucket)).toEqual([]);
+    });
+
+    it('connect-src in next.config.ts is built from it', () => {
+      const connectSrc = NEXT_CONFIG.match(/[`'"]connect-src [^\n]*/)?.[0] ?? '';
+      expect(connectSrc).toContain('uploadConnectSources(process.env)');
+    });
   });
 
   describe('next.config.ts takes its hosts from here and nowhere else', () => {

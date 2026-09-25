@@ -20,7 +20,7 @@ export const updateProfileSchema = z.object({
     .refine((v) => !v || PHONE_REGEX.test(v), PHONE_ERROR),
   language: z.enum(SUPPORTED_LANGUAGES).optional(),
 
-  avatarUrl: z.string().optional(),
+  avatarUrl: z.string().max(300).optional(), // A44: a storage key; UsersService.updateMe decides whose
   address: z.string().optional(),
   city: z.string().optional(),
   country: z.string().optional(),

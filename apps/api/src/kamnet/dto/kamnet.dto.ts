@@ -24,7 +24,7 @@ export const updateAgentProfileDto = z.object({
     .refine((v) => !v || PHONE_REGEX.test(v), PHONE_ERROR),
   language: z.enum(SUPPORTED_LANGUAGES).optional(),
 
-  avatarUrl: z.url('Must be a valid URL').optional(),
+  avatarUrl: z.string().max(300).optional(), // A44: a storage key, not a URL - see UsersService.updateMe
   address: z.string().optional(),
   city: z.string().optional(),
   country: z.string().optional(),

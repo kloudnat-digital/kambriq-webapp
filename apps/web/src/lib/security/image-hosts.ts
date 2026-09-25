@@ -59,3 +59,15 @@ export function imageRemotePatterns(env: NodeJS.ProcessEnv) {
 export function imgSrcSources(env: NodeJS.ProcessEnv): string[] {
   return imageHosts(env).map((host) => `https://${host}`);
 }
+
+/**
+ * A44 - the CSP `connect-src` sources for the browser's presigned uploads. The
+ * avatar goes straight from the browser to the bucket with a PUT, and a
+ * `connect-src` that did not name the bucket refused it. Only the bucket: the
+ * browser uploads nowhere else, so no other image host is opened for writing.
+ * Missing variable, no source - never a wider one.
+ */
+export function uploadConnectSources(env: NodeJS.ProcessEnv): string[] {
+  const bucket = mediaBucketHost(env);
+  return bucket ? [`https://${bucket}`] : [];
+}

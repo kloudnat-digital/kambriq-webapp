@@ -25,5 +25,8 @@
     "noDocument": "No document pending verification",
     "notPending": "Document is in status \"{status}\", not eligible for review",
     "statusUpdated": "ID verification status updated to {status}"
+  },
+  "avatar": {
+    "notOwnKey": "A profile photo must be uploaded from your account, with the upload button."
   }
 }

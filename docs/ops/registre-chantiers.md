@@ -222,8 +222,9 @@ listed here first.
 | Audit 2026-09-23, wave 4      | `EN COURS`          | the acompte step reads the payment ledger instead of answering for it. Unmerged; pending proof is one acompte carried end to end on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `confirmRemainingPayment`     | `A FAIRE`           | step 4 records the balance on the reservation alone: nothing creates a payment for it, so it cannot be gated the way the acompte now is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `P27`                         | `PROUVE`            | KAMBRIQ LANDS™, KAMBRIQ VERIFY™ and KAMNET™ carry the mark everywhere on the website, KBS does not; a guard watches every namespace and every MDX file; proven on dev at `sha-e059503`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `A44`                         | `EN COURS`          | an avatar is a key in the caller's own storage folder, refused otherwise on both write paths; `connect-src` names the bucket so the browser may upload. Pending: an avatar uploaded end to end on dev in a real browser                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `P24`                         | `PROUVE`            | the land title number is shaped `TF <number>/<department>` and validated by shape in the web form and the API; invented formats replaced; proven on dev at `sha-85c8966`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `P25`                         | `EN COURS`          | the verify price table was the only MDX element outside the component map; two consent sentences were split into columns by a flex label. Pending: after screenshots from dev, phone and desktop                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `P25`                         | `PROUVE`            | the verify price table was the only MDX element outside the component map; two consent sentences were split into columns by a flex label; proven on dev at `sha-828c509`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `I43`                         | `PROUVE`            | ten signed-in screens promised 38 unbuilt features in hardcoded French; the promise is removed and a guard reads every `.tsx`; proven on dev at `sha-383828e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Audit 2026-09-23, wave 5      | `EN COURS`          | locale-prefixed routing: every page under `[locale]`, `localePrefix: 'always'`, the proxy gate asked positively, the RSC token leak closed, 48 `next/link` and 35 `next/navigation` imports moved to `@/i18n/navigation`, `revalidatePath` given its prefix. Proved locally over HTTP (`/` -> 307 `/fr`, `/pricing` -> 404 not a login redirect, `/de/about` -> 404, `/fr/mylands` -> `/fr/login`) and by 55 browser tests. Unmerged; pending proof is the same table read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Audit 2026-09-23, wave 6      | `EN COURS`          | SEO: `app/sitemap.ts` (30 URLs, hreflang + x-default), `app/robots.ts`, canonical and alternates on all 15 public pages, JSON-LD where there was none, metadata on the four legal pages and `robots: noindex` on the six auth pages. Both files read `APP_ENV`, never `NODE_ENV`. Unmerged; pending proof is `/robots.txt` and `/sitemap.xml` read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -5457,12 +5458,24 @@ everywhere. The emails are their own subject, with their own tests. The
 hardcoded-copy debt files of `I43` are not read by this guard, and after this
 change none of them names a product unmarked.
 
-### P25 - one unstyled MDX table, and two consent sentences split into columns - `EN COURS`
+### P25 - one unstyled MDX table, and two consent sentences split into columns - `PROUVE`
 
 **Cost impact: None.**
 
-**Pending:** the "after" screenshots from dev, at phone and desktop width, in
-both languages, against the "before" set taken on 25 September.
+**Proven on dev** at `sha-828c509` (#180, journeys green), 25 September, with
+the same Playwright scripts as the "before" set (iPhone 13 emulation and a
+1280 px desktop, fr and en):
+
+|                             | before                                                                | after                              |
+| --------------------------- | --------------------------------------------------------------------- | ---------------------------------- |
+| verify table, cell padding  | 0 px everywhere                                                       | 16 px everywhere                   |
+| verify table, desktop width | 369 / 405 px, columns touching                                        | 768 px, header row, separated rows |
+| newsletter consent links    | block columns, 39 px tall ("politique de / confidentialité" in 80 px) | inline in the sentence, 15 px tall |
+| contact consent label       | 3 flex children, link 46 px tall                                      | 1 child, link 17 px tall           |
+
+Read as pictures too: the price sits in its own padded column, and each consent
+reads as one sentence that wraps like prose. The screenshots are kept out of the
+repository.
 
 **The report, and the hypothesis measured rather than believed.** Visquis saw the
 price table on `/products/verify` render "Vérification externe (terrain trouvé
@@ -5512,6 +5525,71 @@ the contact consent, fr and en, phone and desktop.
 on the verify page and `249€` in the KBS enrolment notice, in both languages, for
 services sold in Cameroon. As the brief says, naming these is useful and
 changing them is not ours to do.
+
+### A44 - an avatar is a key in the caller's own storage, and the browser may upload it - `EN COURS`
+
+**Cost impact: None.**
+
+**Pending:** an avatar uploaded end to end on dev, in a real browser, after the
+deploy.
+
+**Both premises verified before anything was built, and both hold.**
+
+1. **The address was not checked, and on more paths than the brief named.**
+   `PATCH /users/me` took `avatarUrl: z.string()`, anything at all. The KAMNET
+   agent profile took any URL (`z.url()`). `StorageService.getDownloadUrl`
+   hands back an `http(s)` value as it stands. And
+   `kamnet/agents/public-listing.ts` carries `avatarUrl` into the public
+   directory's API response. A foreign address would therefore have travelled
+   to anonymous readers, which is the brief's point about a stored value outliving
+   the one surface a CSP guards.
+2. **The upload was already broken on dev, and nobody had noticed.** Measured in
+   Chromium (Playwright) on 25 September, signed in as the seeded admin: choosing
+   a PNG on `/fr/account` made the browser refuse the presigned PUT with
+   "violates the following Content Security Policy directive: connect-src 'self'
+   https://api.mapbox.com …". No request left the page. On dev, 0 of the 699
+   users has an avatar stored.
+
+**What "KAMBRIQ's own storage" means here, decided.** The upload route issues
+`users/<id>/avatar/<timestamp>-<name>` and the web sends that key back.
+Storage resolves keys. **No URL is legitimate, not even one on our own bucket**,
+because a second accepted form is a second way in. So the rule is a shape bound
+to the caller: `core/users/avatar-key.ts` defines the key once, for the upload
+route and for the check, and `updateMe` refuses anything else before writing.
+Both write paths end in `updateMe`. The KAMNET DTO took a URL and so refused the
+real key: it now takes a string and leaves the decision to the service. Empty
+still removes the photo. The refusal is translated: "La photo de profil doit
+être envoyée depuis votre compte, avec le bouton de téléversement."
+
+**No host list is written for the API**, because no host is accepted. The
+brief's "same single source" applies to the web half: `connect-src` gets the
+bucket from `uploadConnectSources`, beside `imgSrcSources` in
+`lib/security/image-hosts.ts`, from the same variable. It gets the bucket only:
+the browser uploads nowhere else, so no other image host is opened for writing.
+
+**Stored addresses that would now be refused: none.** No avatar exists on dev,
+so nothing was changed.
+
+**Proof so far, all watched red before green:**
+
+- against develop, the five refusals (a foreign site, our bucket as a URL,
+  another person's key, the caller's own identity document, a key climbing out
+  of its folder) all stored the value, and the KAMNET DTO refused the real key;
+  the `connect-src` tests failed;
+- seven mutations, each failing its own test: the check removed, any person's
+  folder, anything under the folder, our bucket's URL accepted, removal refused,
+  every image host opened for upload, `connect-src` back to Mapbox only;
+- `users.service.spec.ts` stored `https://img.test/avatar.jpg` as its example
+  profile write. That is a test encoding the defect, and it now uses a key.
+
+**Found, not fixed:**
+
+- in the same browser session, the Switzer stylesheet from `api.fontshare.com`
+  is refused by `style-src 'self' 'unsafe-inline'`, so the site's intended
+  typeface never loads on dev;
+- identity-document addresses are stored as full `https://` URLs (seen in the
+  admin user list), whereas the upload route issues keys. That is not A44's
+  field.
 
 ---
 
