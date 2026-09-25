@@ -4430,9 +4430,28 @@ journey longer than the 15-minute access token, which is why they passed.
 concurrent reads share one call, a person refreshes about once per access
 token, so 30 is generous rather than wrong, and it is left alone.
 
-**Pending, named:** after the merge, on dev, a real browser session that outlives
-its access token while browsing public pages and then opens a protected one,
-and the journeys green.
+**After the merge (#171, `sha-99a95ba`, develop run `36096965253` green):**
+
+- Holds: journey 1's new steps ran green on dev. The journeys' refreshes were
+  200, 200, then 400 for the deliberately replayed token, with no 409.
+- **Does not hold: the public-pages sign-out.** A fresh session, then at 05:36:51
+  UTC, after its access token came due: `/legal/privacy` refresh **200**;
+  `/legal/terms` **made no refresh call** (the remembered exchange answered, as
+  designed); `/mylands`: the **proxy** refreshed with the **old** token, got
+  **400**, and redirected to `/login`.
+- One web task was running, so this is not two servers.
+- **Hypothesis, not verified:** Next bundles the proxy separately from the pages,
+  so each holds its own copy of the module-level map. The pages share their
+  exchanges; the proxy - the only place the cookie is written - never sees them.
+  Verifying it, and choosing a store both can reach, is the next step.
+- **What is fixed:** the same-second 409 (`jwtid`), and concurrent reads
+  within the pages.
+- **What is not:** a person browsing public pages after their access token
+  expires is still signed out at the next protected page.
+
+**Stopped here** under the standing authorization: a proof that does not hold.
+#171 stays merged: it removes the 409 and the page-side bursts, and the
+sign-out is no worse than before it.
 
 ---
 

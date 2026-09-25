@@ -1142,3 +1142,21 @@ measured over 16 hours. Over the API's 7-day log the web got 200 x3, 409 x2 and
   15-minute access token.
 
 Cause, fix and proof are under **A47** in the register.
+
+## A47 - merged, and its proof did not hold
+
+#171 was squash-merged as `99a95ba` under the standing authorization: gate green,
+mergeable, no review requesting changes. Develop run `36096965253` was green, and
+journey 1's new refresh steps passed on dev (200, 200, then the replayed token
+400; no 409).
+
+**The browser proof failed.** A fresh session on the fixed build, 05:36:51 UTC:
+`/legal/privacy` refresh 200; `/legal/terms` no refresh call; `/mylands`: the
+proxy refreshed with the old token, got 400, and redirected to `/login`. **The
+person is still signed out after browsing public pages.** The likely cause, not
+verified, is that the proxy and the pages hold separate copies of the in-memory
+map. The chain stopped here. The register entry **A47** stays `EN COURS`, with the
+evidence.
+
+**P10 was not started.** It stopped on a false premise, recorded in the session
+report: its claim and release steps rely on `docs/suivi/`, which does not exist.
