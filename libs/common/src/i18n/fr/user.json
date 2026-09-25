@@ -28,5 +28,8 @@
   },
   "avatar": {
     "notOwnKey": "La photo de profil doit être envoyée depuis votre compte, avec le bouton de téléversement."
+  },
+  "idDocument": {
+    "notOwnKey": "Les pièces d'identité doivent être envoyées depuis votre compte, avec le bouton de téléversement."
   }
 }

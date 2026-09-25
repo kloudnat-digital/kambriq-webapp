@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { RoleCode } from '@kambriq/common';
 import { UsersService } from '../../../core/users/users.service';
 import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
@@ -738,7 +738,7 @@ describe('UsersService', () => {
       prisma.userProfile.upsert.mockResolvedValue({});
 
       const result = await service.submitIdDocument('u1', {
-        idDocumentUrls: ['https://s3.example.com/docs/id.jpg'],
+        idDocumentUrls: ['users/u1/id-documents/1-id.jpg'],
       });
 
       expect(prisma.userProfile.upsert).toHaveBeenCalledWith(
@@ -758,9 +758,9 @@ describe('UsersService', () => {
 
       await expect(
         service.submitIdDocument('u1', {
-          idDocumentUrls: ['https://s3.example.com/new.jpg'],
+          idDocumentUrls: ['users/u1/id-documents/1-new.jpg'],
         }),
-      ).rejects.toThrow();
+      ).rejects.toBeInstanceOf(ForbiddenException);
     });
   });
 
@@ -769,7 +769,7 @@ describe('UsersService', () => {
   describe('reviewIdDocument', () => {
     const pendingProfile = {
       userId: 'u1',
-      idDocumentUrls: ['https://s3.example.com/doc.jpg'],
+      idDocumentUrls: ['users/u1/id-documents/1-doc.jpg'],
       idVerificationStatus: 'pending',
       user: { email: 'u@test.com', firstName: 'John', preferredLanguage: 'fr' },
     };

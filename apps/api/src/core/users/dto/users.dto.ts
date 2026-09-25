@@ -76,7 +76,7 @@ export class ConfirmEmailChangeDto extends createZodDto(confirmEmailChangeSchema
 // ----- Submit ID document -----
 export const submitIdDocumentSchema = z.object({
   idDocumentUrls: z
-    .array(z.string().min(1, 'Must be a valid URL'))
+    .array(z.string().min(1).max(300)) // A49: storage keys; UsersService.submitIdDocument decides whose
     .min(1, 'At least one ID document is required')
     .max(2, 'At most 2 Id document files are allowed'),
 });

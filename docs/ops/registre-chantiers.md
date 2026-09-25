@@ -221,8 +221,9 @@ listed here first.
 | Audit 2026-09-23, wave 3      | `PROUVE`            | the wave of #155 to #162 folded in, the Open table de-duplicated, the states declared, `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Audit 2026-09-23, wave 4      | `EN COURS`          | the acompte step reads the payment ledger instead of answering for it. Unmerged; pending proof is one acompte carried end to end on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `confirmRemainingPayment`     | `A FAIRE`           | step 4 records the balance on the reservation alone: nothing creates a payment for it, so it cannot be gated the way the acompte now is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `J11`                         | `EN COURS`          | the typeface's stylesheet and font hosts reach `style-src` and `font-src` from the same module as the image hosts, and the layout links it from there. Pending: Switzer loading on dev in a real browser, before/after                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `J11`                         | `PROUVE`            | the typeface's stylesheet and font hosts reach `style-src` and `font-src` from the same module as the image hosts, and the layout links it from there; proven on dev at `sha-87b1d13`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `A48`                         | `PROUVE`            | every API behaviour decision reads `APP_ENV` through `libs/common/src/config/app-env.ts`; SQL is logged only where `APP_ENV=local`; a guard refuses a new `NODE_ENV` read; proven on dev at `sha-3425132`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `A49`                         | `EN COURS`          | an identity document is a key in its owner's `id-documents` folder, refused otherwise, through the A44 rule now shared in `core/users/storage-keys.ts`. Pending: the journeys green on dev and a foreign address refused there                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `P27`                         | `PROUVE`            | KAMBRIQ LANDS™, KAMBRIQ VERIFY™ and KAMNET™ carry the mark everywhere on the website, KBS does not; a guard watches every namespace and every MDX file; proven on dev at `sha-e059503`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `A44`                         | `PROUVE`            | an avatar is a key in the caller's own storage folder, refused otherwise on both write paths; `connect-src` names the bucket so the browser may upload; proven on dev at `sha-689bd2e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `A43`                         | `PROUVE`            | Swagger is served only where `APP_ENV=local` is declared, never from `NODE_ENV`; the local start scripts declare it; proven on dev at `sha-7ec907b`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -5605,9 +5606,11 @@ so nothing was changed.
 - in the same browser session, the Switzer stylesheet from `api.fontshare.com`
   is refused by `style-src 'self' 'unsafe-inline'`, so the site's intended
   typeface never loads on dev;
-- identity-document addresses are stored as full `https://` URLs (seen in the
-  admin user list), whereas the upload route issues keys. That is not A44's
-  field.
+- ~~identity-document addresses are stored as full `https://` URLs (seen in the
+  admin user list)~~ **Retracted by A49, 25 September.** The admin list signs
+  every stored key on the way out, and I read its output as stored addresses.
+  All 241 documents on dev are keys in their owner's folder. What was true: the
+  write path accepted any string. A49 closes that.
 
 ### A43 - the API's documentation is served only where it is declared local - `PROUVE`
 
@@ -5811,12 +5814,24 @@ five files above.
 My own guess of "over 300 files" for the sweep's floor was wrong. The true count
 is 132, and the floor is 120.
 
-### J11 - the site's typeface was refused by the CSP, and had never loaded - `EN COURS`
+### J11 - the site's typeface was refused by the CSP, and had never loaded - `PROUVE`
 
 **Cost impact: None.**
 
-**Pending:** a real browser on dev after the deploy: no CSP error, Switzer faces
-registered and used, before/after screenshots.
+**Proven on dev** at `sha-87b1d13` (#186), 25 September, with the same script as
+the "before" set (home page, 1280 px and iPhone 13, fr and en):
+
+|                                   | before                                    | after                                                         |
+| --------------------------------- | ----------------------------------------- | ------------------------------------------------------------- |
+| CSP errors in the console         | 1 on every load (`style-src`)             | **0**                                                         |
+| Switzer faces in `document.fonts` | none                                      | 400, 500, 600, 700 loaded; 800 registered                     |
+| served `style-src` / `font-src`   | `'self' 'unsafe-inline'` / `'self' data:` | `+ https://api.fontshare.com` / `+ https://cdn.fontshare.com` |
+
+The 800 face stays `unloaded` because the home page sets no text at that
+weight, and a browser fetches a face when text first needs it. The screenshots
+side by side show different letterforms, wider-set headings, and the navigation
+spacing shifted. That is the site's typeface, rendered for the first time. They
+are kept out of the repository.
 
 **Measured on dev before the change** (Chromium through Playwright, home page,
 1280 px and iPhone 13, fr and en, 25 September): every load logged "Loading the
@@ -5842,6 +5857,52 @@ them, and neither file names a fontshare host any more.
 against develop. Four mutations each failed their own test: `style-src` without
 the host, the font host written into `next.config.ts`, the layout linking its
 own URL, and the wrong file host.
+
+### A49 - an identity document is a key in its owner's storage, nothing else - `EN COURS`
+
+**Cost impact: None.**
+
+**Pending:** develop's journeys green after the deploy (journey 2 attaches a
+real document through this path), and a foreign address refused on dev.
+
+**The premise, corrected first: it was mine.** A44's entry said identity
+documents "are stored as full `https://` URLs". Measured properly on dev on 25
+September: **241 documents, all keys** in their owner's own folder
+(`users/<id>/id-documents/<timestamp>-<name>`), all written by the delivery
+journeys' throwaway accounts. The admin user list signs every stored key on the
+way out (`getDownloadUrl`), and I had read those signed URLs as stored values.
+All 241 came back signed, and a stored address would come back unsigned. **So no
+stored document needs a decision.** That line in A44 is struck through and
+retracted.
+
+**What was true, and is closed here.** `PATCH /users/me/id-document` took
+`z.string().min(1)` (any string) and stored it. `getDownloadUrl` hands an
+`http(s)` value back as it stands, so an address on anybody's server would have
+travelled into the identity-review queue as a customer's identity document.
+
+**A44's mechanism, reused rather than copied.** `core/users/avatar-key.ts`
+became `core/users/storage-keys.ts`: one `userFileKey` for the upload routes and
+one `isOwnUserFileKey(userId, folder, value)` for the write paths, with the folder
+(`avatar` or `id-documents`) part of the rule. `submitIdDocument` refuses before
+reading anything when any document is not a key the upload route could have
+issued to this person in their `id-documents` folder. The refusal is translated.
+The DTO message "Must be a valid URL", which invited the defect, is gone.
+
+**Tests that encoded the defect, corrected.** `users.service.spec.ts` submitted
+`https://s3.example.com/...` and `pending-id-documents.spec.ts` submitted
+`s3://a.pdf` as their examples. Both now use keys. The "already verified" test
+asserted only `rejects.toThrow()`, so it would have passed on the new refusal
+instead of the `Forbidden` it exists for. It now asserts `ForbiddenException`.
+
+**Proof so far, watched red first.** On develop, all five refusals stored the
+value: a foreign site, our bucket as a URL, another person's document, this
+person's avatar, a key climbing out of its folder. Three mutations each failed
+their own test: no check, any folder of the person (which also fails A44's
+test, proof that the rule is shared), and only the first document checked.
+
+**Found, not fixed:** the KBS candidate's `cvUrl` has the same defect, with
+`z.string().min(1, 'Must be a valid URL')` stored unchanged. It is the next field
+for this rule, and not this brief's.
 
 ---
 
