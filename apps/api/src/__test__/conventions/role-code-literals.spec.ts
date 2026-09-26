@@ -64,11 +64,6 @@ const NOT_A_ROLE: ReadonlyArray<{ file: string; literal: string; why: string }> 
     literal: "'client'",
     why: "a translation key, t('client')",
   },
-  {
-    file: 'apps/web/src/components/products/lands/search/land-detail-modal/dialogs.tsx',
-    literal: "'client'",
-    why: 'a support-request category, not a person',
-  },
 ];
 
 const CODES = Object.values(RoleCode);
