@@ -16,6 +16,8 @@ import { dirname, join, relative } from 'node:path';
  * is written.
  */
 const LOCALE_ROOT = join(__dirname);
+/** Every page sits in the `(site)` group (P31); names below are relative to it. */
+const SITE_ROOT = join(LOCALE_ROOT, '(site)');
 
 const EXEMPT: Record<string, string> = {
   '[...rest]/page.tsx': 'the catch-all only calls notFound(); the branded 404 is the boundary',
@@ -27,19 +29,15 @@ const walk = (dir: string): string[] =>
     e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)],
   );
 
-const PUBLIC_PAGES = walk(LOCALE_ROOT)
+const PUBLIC_PAGES = walk(SITE_ROOT)
   .filter((f) => f.endsWith('/page.tsx'))
-  .map((f) => relative(LOCALE_ROOT, f))
+  .map((f) => relative(SITE_ROOT, f))
   .filter((f) => !f.startsWith('(app)/') && !f.startsWith('(auth)/'));
 
 /** The page itself, then every layout between it and `app/[locale]`. */
 const chain = (page: string): string[] => {
-  const files = [join(LOCALE_ROOT, page)];
-  for (
-    let dir = dirname(join(LOCALE_ROOT, page));
-    dir.startsWith(LOCALE_ROOT);
-    dir = dirname(dir)
-  ) {
+  const files = [join(SITE_ROOT, page)];
+  for (let dir = dirname(join(SITE_ROOT, page)); dir.startsWith(LOCALE_ROOT); dir = dirname(dir)) {
     const layout = join(dir, 'layout.tsx');
     if (dir !== LOCALE_ROOT && existsSync(layout)) files.push(layout);
     if (dir === LOCALE_ROOT) break;

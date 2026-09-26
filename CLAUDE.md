@@ -2111,7 +2111,7 @@ API until the version nibble became `4` and the variant `8`.
 ### Every URL carries its locale, and the gate is asked positively
 
 `localePrefix: 'always'`, configured once in `apps/web/src/i18n/routing.ts`.
-Every page lives under `app/[locale]/`, which is also the **root layout** - there
+Every page lives under `app/[locale]/(site)/` (P31), and `app/[locale]/` is the **root layout** - there
 is deliberately no `app/layout.tsx`, because two files rendering `<html>` is
 invalid and the locale has to be readable where `lang` is set.
 
@@ -2468,10 +2468,16 @@ Two separate causes, and the first hid the second:
   unmatched URL under a matched dynamic segment triggers nothing, so it falls
   through to the built-in page. `[locale]/[...rest]/page.tsx` calling
   `notFound()` is what closes it.
-- A `notFound()` thrown **from the root layout** has no boundary above it. So an
-  unconfigured first segment still gets the built-in page, and closing that needs
-  `experimental.globalNotFound`, which is off by default. It is left open, with
-  the difference pinned in both directions so it is a known bound.
+- A `notFound()` thrown **from the root layout** has no boundary above it, so an
+  unconfigured first segment got the built-in page. **`experimental.globalNotFound`
+  does not close it** - measured in a production build: `/pricing` matches
+  `[locale]`, so the global page is never reached. What closes it (P31) is
+  moving the refusal one level down: every page sits in `[locale]/(site)`,
+  whose layout calls `notFound()` for an unknown locale, below
+  `[locale]/not-found.tsx`. The root layout renders any segment, in the
+  visitor's language (`localeForSegment`), and never refuses.
+  `every-page-refuses-an-unknown-locale.spec.ts` fails on a page placed beside
+  the group instead of inside it.
 
 **The status code was 404 throughout, which is why nothing reported it.** The
 assertion the suite already had - and the right one - is about the status; the

@@ -2,6 +2,7 @@ import { hasLocale } from 'next-intl';
 import { getRequestConfig } from 'next-intl/server';
 
 import { routing } from './routing';
+import { localeForSegment } from '@/lib/locale';
 
 /**
  * Resolves the locale for a request from the `[locale]` route segment.
@@ -16,14 +17,16 @@ import { routing } from './routing';
  * case would render the French home page at `/pricing` with HTTP 200, which is
  * a soft 404: indexable, and invisible to any monitor.
  *
- * The refusal is `dynamicParams = false` on the `[locale]` layout, which
- * returns 404 for a segment value `generateStaticParams` did not produce. This
- * function only has to avoid inventing a locale when it was handed a value the
- * routing configuration does not know.
+ * The refusal is `(site)/layout.tsx`, which every page sits under (P31): it
+ * calls `notFound()` for an unknown segment, and the branded 404 above it is the
+ * only thing that renders. That page is rendered in the visitor's language,
+ * `localeForSegment`, never in a language invented from the segment.
  */
 export default getRequestConfig(async ({ requestLocale }) => {
   const requested = await requestLocale;
-  const locale = hasLocale(routing.locales, requested) ? requested : routing.defaultLocale;
+  const locale = hasLocale(routing.locales, requested)
+    ? requested
+    : await localeForSegment(requested);
 
   return {
     locale,
