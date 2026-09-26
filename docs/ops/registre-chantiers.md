@@ -132,7 +132,7 @@ are longer than a table row and are still needed. Everything genuinely open is
 listed here first.
 
 | Entry                         | State               | What it needs                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ----------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --- |
+| ----------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `L2`                          | `EN COURS`          | one deployed log line carrying its interpolated metadata, quoted                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `L3`                          | `DECIDE, A FAIRE`   | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `F1`                          | `A DECIDER`         | coverage ratchet: a floor, and what happens when a PR drops below it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -165,7 +165,7 @@ listed here first.
 | `G9`                          | `PROUVE LOCALEMENT` | the client creates the payment, from their own purchase page. Creation writes its audit row; sending the instructions is a second act                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `G9` follow-up                | `A DECIDER`         | `PAYMENT_VALIDITY_DAYS` is 30 because a month is the shape of a diaspora transfer. The design gives no number - this one needs deciding                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `G10` (webapp)                | `PROUVE`            | an absent channel prefix now fails the boot exactly as an empty parameter does; disabling is `PAYMENT_CHANNELS_TRANSPORT=disabled`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `G10` (infra)                 | `PLAN PRET`         | twelve parameters + the prefix into terraform. Plan run and shown, **nothing applied**. Correction-without-deploy proved on a running process                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |     |
+| `G10` (infra)                 | `PROUVE`            | twelve parameters and the prefix, applied: on 26 September the running API (`kambriq-dev-api:250`) carries `PAYMENT_CHANNELS_SSM_PREFIX`, and 13 SecureString parameters exist under `/kambriq/dev/api/payment-channels` (names and types read, no value). The row said "nothing applied"; `G10` and G8 Part 1 had recorded the apply (revision 143)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `G4`                          | `PROUVE`            | the back office and its screen. Five defects only a real request could see; `db:seed` unbroken; deployed-dev pass deferred to `G8`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `G4` follow-up                | `A DECIDER`         | `GetUploadUrlDto` is declared twice with different schemas (lands + kbs); the API logs `Duplicate DTO detected` on every boot                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `V1` follow-up                | `PROUVE`            | the commission lookup throws now but has never run: 0 sales completed, all 5 commissions seeded. Closed by inspection only                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -186,20 +186,20 @@ listed here first.
 | `A54`                         | `EN COURS`          | a failed queue job writes an error-level line (every processor, by a shared base class, pinned by a guard), and the API refuses to start without `CONTACT_INBOX_EMAIL`. Proven on dev: `sha-603e6ab` started with the variable required. Pending: the first real failure seen as a line                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `L1-contact` f-up             | `A DECIDER`         | infra owes `/kambriq/{env}/api/CONTACT_INBOX_EMAIL`. Until it exists dev stores every request and announces none, loudly                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | naming                        | `A DECIDER`         | the brief's `L1`/`L2` collide with this register's logging `L2`/`L3`. Entries above are `L1-contact`/`L2-contact`; somebody should decide which series keeps the bare letter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `A31`                         | `EN COURS`          | develop red on journeys 4 and 5 from 08:22 UTC on 14 Sept: the seed kept payment-carrying reservations, reset their parcels to AVAILABLE anyway (8 on dev), and the first available parcel answered 409. Fixed in the seed and proved locally. Pending: merge, one seed run on dev, a green journeys run on develop. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `A31`                         | `EN COURS`          | develop red on journeys 4 and 5 from 08:22 UTC on 14 Sept: the seed kept payment-carrying reservations, reset their parcels to AVAILABLE anyway (8 on dev), and the first available parcel answered 409. Fixed in the seed and proved locally. Merged (#126); pending: one seed run on dev, a green journeys run on develop. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `verify-cert`                 | `EN COURS`          | `/verify-certificate` said "valide" for any number; the API ignored `revokedAt` and handed strangers the holder's UUID. Pending proof on dev: seeded number valid, fake number non reconnu, revoked number révoqué. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `A33`                         | `EN COURS`          | cause named and fixed: the sign-in fields were controlled inputs, and text typed before hydration was wiped by it, so validation refused and no request left - WebKit on the runner was the engine slow enough to hydrate late. Fields uncontrolled, every password form POSTs (a tap before hydration sent the password in a GET URL), WebKit back in the CI matrix. Pending: develop's E2E run with WebKit green                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `A32`                         | `EN COURS`          | Gate reads develop's HEAD sha, then its run (`scripts/ci/develop-gate.sh`): green passes; red, never started or not yet verified refuses; label `merge-on-red-develop` plus re-run releases. v1 read a list and passed #134 on a stale run; 12 stub cases run in every CI Gate. Cost: each develop push blocks merges ~20 min                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `A36`                         | `EN COURS`          | develop red on `70a5e07`: both journey suites run in one `runInBand` process from one runner address and `getTracker` keys on the last X-Forwarded-For entry, so they legitimately share one bucket of 100 requests per 60000 ms - the gap between them decides it (9.33 s PASSED on `1cbde1a`; 0.36 s and 0.35 s FAILED on `70a5e07`). `call()` now waits one full window and retries, bounded at 3 attempts, one log line per wait, still throwing today's sentence after them. The comment claiming CI "never sees it" is replaced by the measurements. `getTracker` had no test and now has 11, watched failing on `parts[0]`. The spec runs in `Quality` via a new `test` target, because `api-e2e` had none and the file would otherwise execute only in the job it repairs. Pending: a green `Delivery journeys (dev)` on develop. Cost: up to 120 s added to a journeys job that is actually throttled, none otherwise |
-| `I19`                         | `EN COURS`          | no user without a role: registration refused a missing CLIENT row silently, an existing user reserved as a client got no CLIENT, the seed wrote 8 role rows of 11. Fixed, red then green locally. Pending: merge through the gate, then one seed run on dev showing 11 rows. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `I15`                         | `EN COURS`          | the certificate is the truth: CERTIFIED only by issuance, `isUserCertified` reads revocation and decides at KAMNET submit and approval, KCA_CERTIFIED not settable by hand, a daily sweep withdraws it on expiry. Dev: 60 holders, 0 without certificate, 0 expired. Pending: merge, first sweep on dev. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `I18`                         | `EN COURS`          | one definition of the roles: the literal ban now scans `apps/web` and the e2e suite; 8 codes in 14 web files moved to `RoleCode`. The layout's own ROOT check is deleted (decided 15 Sept); the proxy is the one gate, proven by mutation. Pending: merge through the gate. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `I20`                         | `EN COURS`          | any logged-in account read KBS lessons, drafts and outlines through the API (the web never called those routes). Lesson now needs a verified candidate record and a published course; lists and outlines are published-only. Pending: merge, then a no-record call on dev answering 404. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `I7`                          | `EN COURS`          | VERIFY is operated by STAFF_VERIFY; ADMIN_GLOBAL now inherits it (one level, listed on ADMIN_GLOBAL itself), pinned before any route uses it. Every super admin therefore reaches identity documents and titles, and no record says which one read what (ADR-008). Pending: merge. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `I16`                         | `EN COURS`          | CLIENT in its own right first: dev one-off wrote 5 rows, 5/5 agents now hold CLIENT directly; approval grants it. Then suspension and revocation remove AGENT, lifting returns it if still certified; commissions read by ownership. Pending: merge. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `I15` renewal                 | `EN COURS`          | a renewal issues a new certificate (candidateId no longer unique, migration drops one index); the old one stays verifiable. Proven locally through the real API and page: old numbers still Expiré / Révoqué, new ones Valide. Pending: merge, migration on dev. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `I21`                         | `EN COURS`          | an exam accepted answers on any pool question: 60 correct answers on a 20-question exam graded 300%, a fail became a certificate, then AGENT. Now the served questions are recorded at start and only those answerable; score capped at 100; late submit refused. Red first on the exploit. Pending: merge via gate. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `I31` seuils                  | `EN COURS`          | exam threshold 75 -> 80, module quizzes stay 70 (Visquis, 18 Sept): the certification document governs what is promised to the candidate, the quizzes stay drilling. Neither constant had a single test before - 4 now pin them, and `scheduleExam` is pinned to write the exam constant onto the row, watched failing. Cost: none, verified rather than assumed - `KbsExam.passingScore` is stamped per row at schedule time and `gradeExam` judges that stored column, so no past verdict moves; dev holds 75 exam rows (74 PASSED, 1 FAILED), 0 SCHEDULED or IN_PROGRESS, and 20 certificates each with an exam row behind it. The note saying `KbsExam` was empty and that five certificates had no exam behind them is false on both halves. `prisma/kbs/schema.prisma` still defaults the column to 75, unreachable while `scheduleExam` always writes the constant; left to the KBS foundation subject. Pending: merge  |
+| `I19`                         | `EN COURS`          | no user without a role: registration refused a missing CLIENT row silently, an existing user reserved as a client got no CLIENT, the seed wrote 8 role rows of 11. Fixed, red then green locally. Merged (#132); pending: one seed run on dev showing 11 rows. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `I15`                         | `EN COURS`          | the certificate is the truth: CERTIFIED only by issuance, `isUserCertified` reads revocation and decides at KAMNET submit and approval, KCA_CERTIFIED not settable by hand, a daily sweep withdraws it on expiry. Dev: 60 holders, 0 without certificate, 0 expired. Merged (#133); pending: first sweep on dev. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `I18`                         | `EN COURS`          | one definition of the roles: the literal ban now scans `apps/web` and the e2e suite; 8 codes in 14 web files moved to `RoleCode`. The layout's own ROOT check is deleted (decided 15 Sept); the proxy is the one gate, proven by mutation. Merged (#134, #140). Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `I20`                         | `EN COURS`          | any logged-in account read KBS lessons, drafts and outlines through the API (the web never called those routes). Lesson now needs a verified candidate record and a published course; lists and outlines are published-only. Merged (#136); pending: a no-record call on dev answering 404. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `I7`                          | `EN COURS`          | VERIFY is operated by STAFF_VERIFY; ADMIN_GLOBAL now inherits it (one level, listed on ADMIN_GLOBAL itself), pinned before any route uses it. Every super admin therefore reaches identity documents and titles, and no record says which one read what (ADR-008). Merged (#137). Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `I16`                         | `EN COURS`          | CLIENT in its own right first: dev one-off wrote 5 rows, 5/5 agents now hold CLIENT directly; approval grants it. Then suspension and revocation remove AGENT, lifting returns it if still certified; commissions read by ownership. Merged (#138). Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `I15` renewal                 | `EN COURS`          | a renewal issues a new certificate (candidateId no longer unique, migration drops one index); the old one stays verifiable. Proven locally through the real API and page: old numbers still Expiré / Révoqué, new ones Valide. Merged (#139); pending: migration on dev. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `I21`                         | `EN COURS`          | an exam accepted answers on any pool question: 60 correct answers on a 20-question exam graded 300%, a fail became a certificate, then AGENT. Now the served questions are recorded at start and only those answerable; score capped at 100; late submit refused. Red first on the exploit. Merged (#143). Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `I31` seuils                  | `EN COURS`          | exam threshold 75 -> 80, module quizzes stay 70 (Visquis, 18 Sept): the certification document governs what is promised to the candidate, the quizzes stay drilling. Neither constant had a single test before - 4 now pin them, and `scheduleExam` is pinned to write the exam constant onto the row, watched failing. Cost: none, verified rather than assumed - `KbsExam.passingScore` is stamped per row at schedule time and `gradeExam` judges that stored column, so no past verdict moves; dev holds 75 exam rows (74 PASSED, 1 FAILED), 0 SCHEDULED or IN_PROGRESS, and 20 certificates each with an exam row behind it. The note saying `KbsExam` was empty and that five certificates had no exam behind them is false on both halves. `prisma/kbs/schema.prisma` still defaults the column to 75, unreachable while `scheduleExam` always writes the constant; left to the KBS foundation subject. Merged (#150).  |
 | `G6`                          | `PROUVE LOCALEMENT` | the dunning queue, reminders at J-7 and J-1, EXPIRE at the term. Found and fixed a processor collision that silently ate a reminder email                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `R4`                          | `EN COURS`          | back to hosted runners under a spending cap. Baseline measured: 27 billed minutes, of which the quality matrix billed 5 to do 102s of checking                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `R3`                          | `EN COURS`          | CI moved to the self-hosted `kambriq-ci` runner. No `services:` anywhere, so macOS is viable. Exposed three image builds pinning no platform - amd64 held by accident of `ubuntu-latest`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -208,9 +208,9 @@ listed here first.
 | `G5`                          | `PROUVE LOCALEMENT` | a correction entered from the back-office screen: three movements, total 500 000 over four lines, original line unchanged. Correction carries its own reason and author                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `G11` follow-up 3             | `PROUVE`            | the controller never forwarded `paidBy`: a DEPO keyed on the screen was refused by the service. Fixed and pinned here                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `P3`                          | `PROUVE LOCALEMENT` | the auth middleware was a global net: every unknown URL redirected to /login and nothing could 404. Positive matcher, real 404 page, route table proved unchanged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `P4`                          | `PROUVE LOCALEMENT` | X-Robots-Tag noindex outside production, on the existing headers() block. Reads APP_ENV: NODE_ENV is 'production' on every environment and cannot tell them apart. Second half (API responses): PROUVE on dev 23/09; P4 stays below 100 % until D13                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `P4`                          | `PROUVE`            | X-Robots-Tag noindex outside production, on the existing headers() block. Reads APP_ENV: NODE_ENV is 'production' on every environment and cannot tell them apart. Second half (API responses): PROUVE on dev 23/09; P4 stays below 100 % until D13                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `P5`                          | `EN COURS`          | `/kamnet/apply` is wired to `POST /kamnet/applications` (#193), the floor first (#192); proven on dev in a real browser - stored, page shows the real status, applicant mailed, `contact@` notification accepted by SES once `CONTACT_INBOX_EMAIL` was set (kambriq-infra #66). Pending: Visquis confirms that notification arrived in `contact@`. No admin screen lists applications. The login wall stays (P3)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| rename                        | `A DECIDER`         | `L1-contact`/`L2-contact` -> `P1`/`P2` was asked for in P3's brief; those ids exist only on PR #98's branch, which the same brief puts out of scope. Not done - see PR                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| rename                        | `A DECIDER`         | `L1-contact`/`L2-contact` -> `P1`/`P2` was asked for in P3's brief; those ids have since reached develop with PR #98 (`L1-contact`, `L2-contact` entries). Not done - see PR                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `A19`                         | `PROUVE`            | develop linted 1 project of 6 for seven months: the workflow promised "the full set", `pnpm run lint` was `nx lint api`. Widened to `nx run-many -t lint --all`; manifest corrected; proved in both directions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `I32`                         | `PROUVE`            | the API decides the network depth by the caller's own tier (`KAMNET_NETWORK_DEPTH_BY_TIER` in `libs/common`, bounded by `KAMNET_MAX_SPONSORSHIP_DEPTH`); the page asks without a depth. Proven by test with the maximum raised, since on dev every tier and the maximum are 1 and the rule changes no answer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `P10`                         | `EN COURS`          | the two agent-page promises of an exclusive catalogue (`whyKbs.network`, `whyAgent.exclusiveAccess`) are replaced with the copy Visquis validated on 26 September, pinned by `agent-copy-promises-no-exclusive-catalogue.spec.ts`; still open: the LANDS page rewrite (#174, held for copy)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
@@ -242,8 +242,8 @@ listed here first.
 | Locale switcher coverage      | `PROUVE`            | J4 / P16: `QuickActions` on every public page, guarded by default (#197); the switch also sets a signed-in person's account language, announced with the way back, and a visitor changes only the page (#201). Proven on dev, web `sha-65521db`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | Built-in 404 above the locale | `EN COURS`          | P31, decided by Visquis on 26 September: the route group. Every page moved into `[locale]/(site)`, whose layout refuses an unknown locale below the branded boundary; `/pricing` and `/de/about` give the branded 404, HTTP 404, in the visitor's language. Proven locally on a production build. Pending: the same on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | develop merged into waves 5-6 | `EN COURS`          | develop's 9 commits merged 25 September: 8 text conflicts, six new page files relocated under `[locale]`, three components moved off `next/link`/`next/navigation`, `revalidatePath` calls given their prefix, `image-hosts.spec.ts` unblocked (25 assertions that ran none), `A41` reconciled. Unmerged to develop; pending proof is the routing table and the sitemap read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| Audit 2026-09-23, unwaved     | `A FAIRE`           | `/admin/verify` and `/kamnet/apply` are mocks behind real roles that toast success and write nothing; the Mapbox build `ARG` reaches no workflow, so the land-search map is dark in every image; `legal/mentions/{fr,en}.mdx` publishes `Capital social : XXX XXX XAF` and `N° RCCM : XX / XXX / XX` on a public page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| register                      | `A FAIRE`           | twenty-two rows above have no `###` entry in this file - their detail lives in the tracker or in a wave note. The list is pinned in `register-is-the-record.spec.ts`; writing an entry means removing its line there                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Audit 2026-09-23, unwaved     | `A FAIRE`           | superseded in part: `/admin/verify` (honest since I44) and `/kamnet/apply` (wired since P5, #193) are no longer mocks. Still open, as recorded: the Mapbox build `ARG` reaches no workflow (the land-search map it named was deleted in A53; whether another map needs it is not checked here); `legal/mentions/{fr,en}.mdx` publishes placeholder company details (`Capital social : XXX XXX XAF`, `N° RCCM : XX / XXX / XX`, and their English forms) on a public page                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| register                      | `A FAIRE`           | one row has no `###` entry: `P10`, whose entry is in #174 (held for the LANDS copy). Twenty-one were written on 26 September. The list is pinned in `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 ### H1 - `ADMIN_GLOBAL` is the super admin, and there is no second one - `PROUVE`
 
@@ -6397,6 +6397,497 @@ reference) in both languages, and checks that the English render holds none
 of the namespace's French-only strings. Against develop's components: the three
 English tests fail and the French ones pass. `next-intl-mock` gains `t.has`.
 
+### A19 - develop linted one project of six - `PROUVE`
+
+**Cost impact: not recorded in the sources.**
+
+The row: _"develop linted 1 project of 6 for seven months: the workflow promised
+"the full set", `pnpm run lint` was `nx lint api`. Widened to `nx run-many -t
+lint --all`; manifest corrected; proved in both directions"_.
+
+The commit is `44e27a2 fix(a19): lint every project on develop, and make the
+manifest true` (11 September). It touches `ci.yml`, `package.json`,
+`libs/common/package.json` and `libs/common/eslint.config.mjs`.
+
+CLAUDE.md, "A check that never runs looks exactly like a check that passes",
+records the detail. `libs/common` had two undeclared dependencies, `ioredis` and
+`@jest/globals`. The defect surfaced when `#98` touched `libs/common`. The proof
+in both directions was: _"`nx lint api` succeeds against the reintroduced defect
+and `nx run-many -t lint --all` fails naming both errors"_.
+
+### A31 - the seed left parcels AVAILABLE under a reservation - `EN COURS`
+
+**Cost impact: none (the row: _"Cost: none"_).**
+
+The row: develop went red on journeys 4 and 5 from 08:22 UTC on 14 September.
+_"The seed kept payment-carrying reservations, reset their parcels to AVAILABLE
+anyway (8 on dev), and the first available parcel answered 409. Fixed in the
+seed and proved locally."_ **Pending, per the row: "merge, one seed run on dev,
+a green journeys run on develop".**
+
+`3734818 fix(seed): a parcel held by a reservation the seed kept stays held
+(a31) (#126)` is on develop (15 September). It adds
+`prisma/seed-data/parcel-status.ts` and
+`apps/api/src/__test__/seed/parcel-status.spec.ts`. No source quotes the seed
+run on dev or the journeys run that the row names as the proof.
+
+CLAUDE.md, "A postcondition that counts a word has not checked the thing", says
+four merges went in on top of the red. The old postcondition counted eighteen
+AVAILABLE rows and passed. The new check asks that _"no seeded parcel is
+AVAILABLE while a reservation holds it"_. It was proved on develop's seed with
+only the new check added: the count passes and _"the new check alone refuses,
+naming the parcels"_.
+
+**Row corrected, 26 September:** it said the merge was pending; the commit
+above is on develop, so the row now names only the dev-side proof, which no
+source quotes yet.
+
+### A32 - the CI gate reads develop at its head - `EN COURS`
+
+**Cost impact: each push to develop blocks merges for about 20 minutes (the
+row: _"each develop push blocks merges ~20 min"_).**
+
+The row: _"Gate reads develop's HEAD sha, then its run
+(`scripts/ci/develop-gate.sh`): green passes; red, never started or not yet
+verified refuses; label `merge-on-red-develop` plus re-run releases. v1 read a
+list and passed #134 on a stale run; 12 stub cases run in every CI Gate."_ The
+row names no pending proof.
+
+Two commits, both 15 September: `23af837 ci(a32): the gate refuses while develop
+is red on the journeys (#130)` (v1), and `4a4b349 fix(ci): the develop gate reads
+develop's head by sha (a32) (#141)`. The second adds
+`scripts/ci/develop-gate.sh` and `scripts/ci/develop-gate.test.sh`.
+
+CLAUDE.md, "A gate that only sees the pull request cannot see develop", records
+why. On 14 September six pull requests merged on a red develop. On 15 September
+the list-based v1 _"answered #134 with a run six merges old"_. The gate fails
+closed, and it _"stops the stacking, not the breaking"_. Labels are read live
+through the API, because a re-run replays the original event.
+
+The gate is recorded in use twice. The wave note, "P11 merged - #162, 23
+September", has _"`merge-on-red-develop` was not used"_. The `A53` entry has
+_"the CI Gate refuses every pull request until develop's head is green again
+... the fix needs `merge-on-red-develop`, which is Visquis's alone"_.
+
+### A36 - the journey client waits out a 429 - `EN COURS`
+
+**Cost impact: up to 120 s added to a journeys job that is actually throttled,
+none otherwise (the row).**
+
+The row: develop went red on `70a5e07`. Both journey suites run in one
+`runInBand` process from one runner address, and `getTracker` keys on the last
+X-Forwarded-For entry. So they _"legitimately share one bucket of 100 requests
+per 60000 ms"_: 9.33 s apart PASSED on `1cbde1a`, 0.36 s and 0.35 s apart
+FAILED on `70a5e07`. `call()` now waits one full window and retries, at most 3
+attempts. `getTracker` has 11 tests. The spec runs in `Quality` through a new
+`test` target. **Pending, per the row: "a green `Delivery journeys (dev)` on
+develop".**
+
+The commit is `8f84b4f fix(journeys): wait for the throttle window on a 429, and
+the exam passing score is 80 (#150)` (18 September). It adds
+`apps/api-e2e/jest.unit.config.cts`,
+`apps/api-e2e/src/unit/support.call.spec.ts` and
+`throttler-behind-proxy.guard.spec.ts`. It also carries `I31`.
+
+Three CLAUDE.md sections come from A36:
+
+- "A prose guarantee is a claim, and the system is not obliged to keep it" (the
+  comment _"In CI the suite runs once per deploy and never sees it"_, run
+  `35306506751`, and the two fixes that were refused);
+- "A test has to live somewhere that runs, and a project can have nowhere";
+- "The code that decides who owns the bucket had no test" (the `parts[0]`
+  mutation fails five).
+
+No source quotes the pending journeys run.
+
+### Audit 2026-09-23, unwaved - findings with no wave assigned - `A FAIRE`
+
+**Cost impact: not recorded in the sources.**
+
+The row lists three findings. `/admin/verify` and `/kamnet/apply` are _"mocks
+behind real roles that toast success and write nothing"_. The Mapbox build `ARG`
+_"reaches no workflow, so the land-search map is dark in every image"_.
+`legal/mentions/{fr,en}.mdx` publishes _"`Capital social : XXX XXX XAF` and
+`N° RCCM : XX / XXX / XX` on a public page"_.
+
+The same list is in the `Audit 2026-09-23, wave 2 - correctness` entry, under
+_"Still open from the same audit, none of it started"_. There it also names the
+RSC bearer token, which the wave 1 row says wave 5 closed, and it places the
+Mapbox `ARG` in `Dockerfile.web`. The `Audit 2026-09-23, wave 6 - SEO` entry
+says the structured data _"carries no RCCM number and no share capital"_,
+because _"the public mentions légales still serves `XXX XXX XAF"`_.
+
+Later rows cover two of the three findings: `I44` (`PROUVE`) for `/admin/verify`
+and `P5` (`EN COURS`) for `/kamnet/apply`. See contradiction 3 at the top. No
+source records work on the Mapbox `ARG` or the mentions placeholders.
+
+**Row corrected, 26 September:** `/admin/verify` (I44) and `/kamnet/apply` (P5,
+#193) are no longer mocks; the row now says so and keeps the two findings still
+open.
+
+### G1 - the payment model - `EN COURS`
+
+**Cost impact: None. Three tables in an existing database, no new resource
+(`docs/ops/g1-payment-model.md`).**
+
+The row: _"payment model in `lands`: BigInt money, 9-state machine, append-only
+ledger and audit. Pending proof is G8, one payment end to end on dev"_. The
+commit is `73931c0 feat(g1): the payment data model and state machine (#82)`
+(6 September).
+
+`docs/ops/g1-payment-model.md` covers the rest:
+
+- The tables are `Payment`, `PaymentReceipt` (the ledger) and
+  `PaymentTransition` (the audit trail). Both append-only tables carry a
+  `BEFORE UPDATE OR DELETE` trigger that raises.
+- The states are `INITIE`, `INSTRUCTIONS_ENVOYEES`, `ANNONCE_CLIENT`,
+  `EN_VERIFICATION`, `PARTIELLEMENT_RECU` (which loops), `VALIDE`, and the exits
+  `REJETE`, `EXPIRE` and `ANNULE`.
+- `assertTransitionIsDeliberate` refuses a committing transition that has no
+  named person and reason. `EXPIRE` is the one automatic exception.
+- The schema is `lands` rather than `core` because there are no cross-database
+  foreign keys.
+- The document's "What is still missing" table leaves one thing undecided:
+  whether, above a threshold, the validator must be a different person from
+  the recorder.
+
+CLAUDE.md "Money, and the three rules that hold it" states the same rules.
+
+The pending proof is G8, and the `G8` row is `ARRETE`. The `G8` blocker row
+(`PROUVE`) ends _"**G8 itself stays open**"_.
+
+### G10 - channel parameters applied - `PROUVE`
+
+**Cost impact: not recorded for G10. The `G10b (infra)` entry records _"None.
+Four additional SSM Standard parameters (free tier is 10 000)"_ for G10b.**
+
+There are three rows. `G10`: _"applied and observed: 16 SecureString parameters
+none empty, task definition 143 with the three variables and no channel value,
+0 AccessDenied"_. `G10` (webapp): _"an absent channel prefix now fails the boot
+exactly as an empty parameter does; disabling is
+`PAYMENT_CHANNELS_TRANSPORT=disabled`"_. `G10` (infra), `PLAN PRET`: _"twelve
+parameters + the prefix into terraform. Plan run and shown, **nothing
+applied**"_.
+
+The observation is in the `G8 - the end-to-end proof on deployed dev` entry,
+"Part 1 - the deployed state, as facts". It has 16 SecureString parameters,
+none empty; task definition revision 143 with `PAYMENT_CHANNELS_SSM_PREFIX`,
+`PAYMENT_CHANNELS_TRANSPORT=ssm` and `PAYMENT_VALIDITY_DAYS=30` and no channel
+value; and 0 `AccessDeniedException` events. It ends _"This part passed, and it
+closes `G10`"_.
+
+The webapp half is in the `G9` entry, section "G10's webapp half - the asymmetry,
+corrected": `payment-channels-config.spec.ts`, 7 tests, and _"Whitespace is
+absence"_. The reader design is in CLAUDE.md "Channel details are configuration,
+and the reader decides whether a fix needs a deploy". The spec's own reason for
+this row is _"entry folded into G10b"_. The `G10` (infra) row and the `G10b`
+entry contradict the bare row; see contradiction 2 at the top.
+
+**Rows corrected, 26 September:** the `G10` (infra) row said "nothing applied".
+Read on dev that day: the running API, `kambriq-dev-api:250`, carries
+`PAYMENT_CHANNELS_SSM_PREFIX`, and 13 SecureString parameters exist under
+`/kambriq/dev/api/payment-channels` (names and types only, no value). The row
+now says `PROUVE`.
+
+### I15 - the certificate is the truth, and renewal - `EN COURS`
+
+**Cost impact: none (both rows: _"Cost: none"_).**
+
+The `I15` row: _"CERTIFIED only by issuance, `isUserCertified` reads revocation
+and decides at KAMNET submit and approval, KCA_CERTIFIED not settable by hand, a
+daily sweep withdraws it on expiry. Dev: 60 holders, 0 without certificate, 0
+expired. Pending: merge, first sweep on dev."_ The `I15` renewal row: _"a
+renewal issues a new certificate (candidateId no longer unique, migration drops
+one index); the old one stays verifiable. Proven locally through the real API
+and page ... Pending: merge, migration on dev."_
+
+Both are on develop, 15 September: `f79d4bb fix(kbs): the certificate is the
+source of truth, kca_certified reflects it (i15) (#133)` and `ed60327 feat(kbs):
+a renewal issues a new certificate, the old one stays verifiable (i15) (#139)`.
+No source quotes the first sweep or the migration on dev.
+
+CLAUDE.md, "A role that projects a record is not a setting", states the rule and
+tags it `(I15)`. `record-derived-roles.ts` closes the admin doors, and the role
+is withdrawn on revocation and on expiry. "Is this person certified" is asked of
+`findActiveCertificate`, not of the role. CLAUDE.md "A barrier guards a table"
+calls the wave 4 acompte fix _"`I15`'s rule at one boundary further out"_.
+
+**Row corrected, 26 September:** it said the merge was pending; the commit
+above is on develop, so the row now names only the dev-side proof, which no
+source quotes yet.
+
+### I16 - CLIENT in its own right, suspension removes AGENT - `EN COURS`
+
+**Cost impact: none (the row: _"Cost: none"_).**
+
+The row: _"CLIENT in its own right first: dev one-off wrote 5 rows, 5/5 agents
+now hold CLIENT directly; approval grants it. Then suspension and revocation
+remove AGENT, lifting returns it if still certified; commissions read by
+ownership. Pending: merge."_
+
+The commit is `657f241 fix(kamnet): suspension removes agent, and client is held
+in its own right (i16) (#138)` (15 September).
+
+The wave note, "P11 - the public directory of certified agents", under
+"Reported, not fixed", has an item headed _"I16 withdrawn."_ It records that
+the two `/kamnet/commissions` routes carry no `@Roles` on purpose: _"suspending
+an agent removes `AGENT`, which would have hidden commissions already earned, so
+ownership via `findByUserId` is the guard"_.
+
+**Row corrected, 26 September:** it named the merge as the only pending step;
+the commit above is on develop. No source quotes a reading on dev, so the state
+stays `EN COURS` rather than being moved without a proof.
+
+### I18 - one definition of the roles - `EN COURS`
+
+**Cost impact: none (the row: _"Cost: none"_).**
+
+The row: _"the literal ban now scans `apps/web` and the e2e suite; 8 codes in 14
+web files moved to `RoleCode`. The layout's own ROOT check is deleted (decided
+15 Sept); the proxy is the one gate, proven by mutation. Pending: merge through
+the gate."_
+
+Two commits, both 15 September: `a4f403b fix(web): one definition of the roles
+(i18) (#134)` and `1145add fix(web): one gate for /admin/kbs, the proxy (i18)
+(#140)`.
+
+CLAUDE.md, "A string literal where a constant exists", says
+`role-code-literals.spec.ts` now covers `apps/web/src` and the e2e suite. It had
+covered only three trees, _"which is how a role that does not exist, `ROOT`,
+came to guard a real layout (`I18`)"_. The web imports the enum once, through
+`apps/web/src/lib/roles.ts`. The `I43` entry and the `I32` entry both refer back
+to I18's shape.
+
+**Row corrected, 26 September:** it named the merge as the only pending step;
+the commit above is on develop. No source quotes a reading on dev, so the state
+stays `EN COURS` rather than being moved without a proof.
+
+### I19 - no user without a role - `EN COURS`
+
+**Cost impact: none (the row: _"Cost: none"_).**
+
+The row: _"registration refused a missing CLIENT row silently, an existing user
+reserved as a client got no CLIENT, the seed wrote 8 role rows of 11. Fixed, red
+then green locally. Pending: merge through the gate, then one seed run on dev
+showing 11 rows."_
+
+The commit is `32c9dd7 fix(core): no user without a role (i19) (#132)` (15
+September). No source quotes the seed run on dev showing 11 rows.
+
+**Row corrected, 26 September:** it said the merge was pending; the commit
+above is on develop, so the row now names only the dev-side proof, which no
+source quotes yet.
+
+### I20 - training content only to an enrolment that permits it - `EN COURS`
+
+**Cost impact: none (the row: _"Cost: none"_).**
+
+The row: _"any logged-in account read KBS lessons, drafts and outlines through
+the API (the web never called those routes). Lesson now needs a verified
+candidate record and a published course; lists and outlines are published-only.
+Pending: merge, then a no-record call on dev answering 404."_
+
+The commit is `97aefee fix(kbs): serve training content only to an enrolment
+that permits it (i20) (#136)` (15 September). No source quotes the no-record call
+on dev.
+
+**Row corrected, 26 September:** it said the merge was pending; the commit
+above is on develop, so the row now names only the dev-side proof, which no
+source quotes yet.
+
+### I21 - an exam is answered only on the questions it served - `EN COURS`
+
+**Cost impact: none (the row: _"Cost: none"_).**
+
+The row: _"60 correct answers on a 20-question exam graded 300%, a fail became a
+certificate, then AGENT. Now the served questions are recorded at start and only
+those answerable; score capped at 100; late submit refused. Red first on the
+exploit. Pending: merge via gate."_
+
+The commit is `70d79e1 fix(kbs): an exam is answered only on the questions it
+served (i21) (#143)` (15 September).
+
+CLAUDE.md, "An exam records which questions it served, not how many", gives the
+proof: in `exam-integrity.dbspec.ts`, against the real kbs migrations, the
+exploit gave `{ refused: 0, score: 300 }` before and `{ refused: 40, score: 100 }`
+after. There is one empty `KbsExamAnswer` slot per served question. Past the
+deadline plus 30 s the exam is closed on what was saved in time. The wave note,
+"Step 1 - I38", under "Changed", cites I21 as the reason display paths allow an
+absent settings row.
+
+**Row corrected, 26 September:** it named the merge as the only pending step;
+the commit above is on develop. No source quotes a reading on dev, so the state
+stays `EN COURS` rather than being moved without a proof.
+
+### I31 - exam and quiz thresholds - `EN COURS`
+
+**Cost impact: none, "verified rather than assumed" (the row).**
+
+The row: the exam threshold goes from 75 to 80 and module quizzes stay at 70
+(Visquis, 18 September). _"the certification document governs what is promised
+to the candidate, the quizzes stay drilling"_. Four tests now pin the two
+constants, and `scheduleExam` is pinned to write the exam constant onto the row.
+
+Also from the row: _"`KbsExam.passingScore` is stamped per row at schedule time
+and `gradeExam` judges that stored column, so no past verdict moves; dev holds
+75 exam rows (74 PASSED, 1 FAILED), 0 SCHEDULED or IN_PROGRESS"_.
+`prisma/kbs/schema.prisma` still defaults the column to 75, and this is _"left to
+the KBS foundation subject"_. **Pending, per the row: "merge".**
+
+`8f84b4f fix(journeys): wait for the throttle window on a 429, and the exam
+passing score is 80 (#150)` is on develop (18 September). It touches
+`libs/common/src/constants/kbs/index.ts` and adds
+`kbs-passing-scores.spec.ts`. It also carries `A36`.
+
+**Row corrected, 26 September:** it named the merge as the only pending step;
+the commit above is on develop. No source quotes a reading on dev, so the state
+stays `EN COURS` rather than being moved without a proof.
+
+### I7 - ADMIN_GLOBAL inherits STAFF_VERIFY - `EN COURS`
+
+**Cost impact: none (the row: _"Cost: none"_).**
+
+The row: _"VERIFY is operated by STAFF_VERIFY; ADMIN_GLOBAL now inherits it (one
+level, listed on ADMIN_GLOBAL itself), pinned before any route uses it. Every
+super admin therefore reaches identity documents and titles, and no record says
+which one read what (ADR-008). Pending: merge."_
+
+The commit is `d58a79a feat(roles): admin_global inherits staff_verify (i7)
+(#137)` (15 September).
+
+The `H1` entry says `STAFF_VERIFY` is _"in the enum, [has] no row in the
+database, and [appears] in no decorator"_, and that _"the guard fails the day
+one of them does"_.
+
+**Row corrected, 26 September:** it named the merge as the only pending step;
+the commit above is on develop. No source quotes a reading on dev, so the state
+stays `EN COURS` rather than being moved without a proof.
+
+### P4 - X-Robots-Tag outside production - `PROUVE`
+
+**Cost impact: None for the second half (register section "P4, second half").
+The first half names one: _"prd must set `APP_ENV=production` when it is first
+built"_ (register section "P4 - `NODE_ENV` could not have answered this").**
+
+The row: _"X-Robots-Tag noindex outside production, on the existing headers()
+block. Reads APP_ENV: NODE_ENV is 'production' on every environment and cannot
+tell them apart. Second half (API responses): PROUVE on dev 23/09; P4 stays below
+100 % until D13"_.
+
+The first half shipped inside the `P3` entry, sections "P4 - `NODE_ENV` could not
+have answered this, and that was the trap" and "Follow-ups". `docker/Dockerfile.web`
+sets `NODE_ENV=production` for every environment. `APP_ENV` is introduced, and
+absent means noindex. The P3 commit is `6358f71 feat(p3): scope the auth
+middleware, serve a real 404, keep dev unindexable`. The P3 "Gate - LOCAL ONLY"
+section says _"No CI run has confirmed any of it"_. CLAUDE.md "`NODE_ENV` cannot
+tell dev from prd in this repository" records the rule.
+
+The second half is `f0e8819 P4 - the API sends X-Robots-Tag from the same
+APP_ENV decision as the web (#165)`. Both the register section "P4, second half"
+and the wave note section "P4 - proven on dev" quote dev at `sha-f0e8819`, 23
+September 19:38 UTC: `noindex, nofollow` on `/api/v1/health/version` (200),
+`/api/v1/kamnet/public/agents` (200), `/api/v1/no-such-route` (404) and
+`/api/v1/users/me` (401). The same table has `/` and `/legal/privacy` as
+_"(unchanged)"_. **Moved to `PROUVE` on 26 September**, read on dev at `sha-8637543`'s
+predecessors (web `sha-e1b965f`): `X-Robots-Tag: noindex, nofollow` on `/`,
+`/fr`, `/fr/legal/privacy` and `/api/v1/health`, and `robots.txt` answers
+`Disallow: /`. Both halves are now observed on a deployed build; the row had
+kept `PROUVE LOCALEMENT` after the second half was proven.
+
+The part still open is D13 (access authentication). Dev _"answers 200 to
+anonymous callers"_ (both sections). The ADR-005 follow-up: _"prd must set
+`APP_ENV=production` on **both**"_.
+
+### Q1 - the certification follow-up - `A DECIDER`
+
+**Cost impact: not recorded in the sources.**
+
+This is the row `` `Q1` follow-up ``: _"`generateKcaNumber` says \_sequential per
+day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and
+gates nothing"\_. The row does not say what arbitration is missing.
+
+The second half is in the register section "Role-grant inventory - read-only,
+folded into V1", under "Three things the sweep turned up anyway", item 2.
+_"`POST /kbs/enroll` grants it to the caller with no human in the loop. There is
+no `@Roles(RoleCode.CANDIDATE_KBS)` anywhere in the codebase ... Harmless today,
+and worth knowing before somebody gates something on it."_ The wave note,
+"P11 - the public directory of certified agents", has an item on the number
+format: KCA numbers are _"`KCA-YYYYMMDD-XXXX`, a date and four hex characters,
+65,536 per issue date"_. No source was found for the "sequential per day" half
+beyond the row.
+
+The parent is the delivery-week `Q1` in `## Proven`: _"`CERTIFIED` was set by
+grading, on the score alone"_. The fix was `4be405b fix(kbs): passing an exam
+earns exam_passed, issuing a certificate confers certified (#54)`, and it was
+proven on dev per `5390c8a docs(register): q1 proven on dev ... (#55)`.
+
+### verify-cert - the public verdict page - `EN COURS`
+
+**Cost impact: none (the row: _"Cost: none"_).**
+
+The row: _"`/verify-certificate` said "valide" for any number; the API ignored
+`revokedAt` and handed strangers the holder's UUID."_ **Pending, per the row:
+"proof on dev: seeded number valid, fake number non reconnu, revoked number
+révoqué".**
+
+The commit is `c7b297c fix(kbs): verify-certificate reads the register instead
+of a mock (#125)` (15 September). It adds `apps/web/src/lib/certificate-verdict.ts`
+and `page-through-the-bff.spec.tsx`. CLAUDE.md, "A public verdict says yes only
+on an explicit, complete yes", records the rule. A positive verdict needs an
+explicit, complete yes from the source, and _"cannot verify" is its own
+answer_. It was proved by mutation at three layers.
+
+Two related facts are recorded elsewhere. The wave note section "The second
+addition: the verifier is throttled now" puts `@Throttle({ default: { limit: 30,
+ttl: 60_000 } })` on `GET /kbs/public/verify/:kcaNumber`. The `I43 follow-up -
+the public certificate verdict reads in the visitor's language` entry
+(`PROUVE`) quotes dev at `sha-06cf797` on 26 September: a real number reads
+"Valid certificate" and `KCA-00000000-FAKE` reads "Certificate not recognised".
+That covers two of the three pending cases. No source quotes a revoked number
+read on dev.
+
+### naming - which ID series keeps the bare letter - `A DECIDER`
+
+**Cost impact: not recorded in the sources.**
+
+The decision, from the row: _"the brief's `L1`/`L2` collide with this register's
+logging `L2`/`L3`. Entries above are `L1-contact`/`L2-contact`; somebody should
+decide which series keeps the bare letter"_. The row names nobody. Under the
+States table, `A DECIDER` means _"Stop and report. Do not choose."_
+
+The register's `## Proven` section says a wider collision is already live:
+_"Eleven ids mean two different things depending on which half of the document
+you are reading"_. It chose not to rename, and it states the ambiguity instead.
+
+### register - rows with no entry - `A FAIRE`
+
+**Cost impact: None.**
+
+The row asked for an entry for every open chantier whose detail lived in the
+tracker or in a wave note; `register-is-the-record.spec.ts` pins the ones still
+missing in `NO_ENTRY_YET`. **On 26 September twenty-one were written**, from
+the row, the frozen wave note (`docs/ops/waves/2026-09-20-wave.md`), CLAUDE.md
+and the commits on develop - facts with their source named, nothing inferred.
+
+**One remains: `P10`**, whose entry is written in #174, which Visquis holds open
+for the LANDS page copy. Writing it here as well would put two `### P10`
+headings in the file the day #174 merges. The inventory goes to zero with
+#174.
+
+### rename - L1-contact and L2-contact to P1 and P2 - `A DECIDER`
+
+**Cost impact: not recorded in the sources.**
+
+The decision, from the row: _"`L1-contact`/`L2-contact` -> `P1`/`P2` was asked
+for in P3's brief; those ids exist only on PR #98's branch, which the same brief
+puts out of scope. Not done - see PR"_. The row names nobody.
+
+The `P3` entry, under "Follow-ups", repeats it: the IDs exist only on
+`feat/l1-contact-lead-pipeline` (PR #98, 8 occurrences), and the rename is
+_"Named rather than resolved; see the PR body for the command"_. The register's
+`## Proven` section calls `rename` _"the related open decision"_ to the id
+collision. See contradiction 5: those IDs are now on develop.
+
 ---
 
 ## Proven
@@ -6468,6 +6959,10 @@ trigger and the grant.
 | 8   | `users.controller.ts:289` / `:313` → any role               | admin grants or revokes directly           | `@Roles(ADMIN_GLOBAL)` only                                                        | Fine                           |
 | 9   | `users.service.ts:257` → replaces the whole role set        | admin updates a user with `roleCodes`      | `@Roles(ADMIN_GLOBAL)`                                                             | Fine                           |
 | —   | `grading-processor.ts:183` → `KCA_CERTIFIED`                | **nothing enqueues it any more**           | —                                                                                  | Dormant — see below            |
+
+**Row corrected, 26 September:** the ids `L1-contact` and `L2-contact` reached
+develop with PR #98; the row no longer says they exist only on its branch. The
+decision itself - whether to rename them - is still Visquis's.
 
 ### develop merged into waves 5-6 - `EN COURS`
 

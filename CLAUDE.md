@@ -2314,7 +2314,8 @@ outright. Where the proof needs a deployed environment, the closing PR sets
 `EN COURS` and **names the pending proof explicitly**; a follow-up commit moves
 it to `PROUVE` with the proof quoted.
 
-The four states, and what each demands of you:
+The main states, and what each demands of you (the register's `### States` table
+declares all eight, including `PROUVE LOCALEMENT` and `PLAN PRET`):
 
 | State             | Meaning                                                               |
 | ----------------- | --------------------------------------------------------------------- |
