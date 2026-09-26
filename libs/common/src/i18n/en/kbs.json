@@ -4,7 +4,8 @@
     "success": "Enrolled in KBS successfully",
     "notEnrolled": "You are not enrolled in KBS",
     "idRequired": "Please submit your ID document first",
-    "awaitingVerification": "Your enrollment is awaiting admin validation. You'll get access to the training once approved."
+    "awaitingVerification": "Your enrollment is awaiting admin validation. You'll get access to the training once approved.",
+    "cvNotOwnKey": "The CV must be uploaded from your account, with the upload button."
   },
   "course": {
     "notFound": "Course {id} not found",
