@@ -123,7 +123,11 @@ test.describe('Authentication', () => {
 
     holding = false;
     for (const release of held) await release();
-    await page.waitForLoadState('networkidle');
+    // Hydrated: React has attached itself to the form element.
+    await page.waitForFunction(() => {
+      const form = document.querySelector('form');
+      return !!form && Object.keys(form).some((key) => key.startsWith('__react'));
+    });
 
     await expect(page.locator('input[type="email"]')).toHaveValue('nobody@example.com');
     await expect(page.locator('input[type="password"]')).toHaveValue('wrong-password-123');
@@ -131,18 +135,17 @@ test.describe('Authentication', () => {
 
   test('a tap before the page hydrates never puts the password in a URL', async ({ page }) => {
     await page.route('**/_next/static/chunks/**/*.js', () => undefined);
-    const urls: string[] = [];
-    page.on('request', (r) => {
-      if (r.isNavigationRequest()) urls.push(r.url());
-    });
     await page.goto('/fr/login', { waitUntil: 'domcontentloaded' });
     await page.locator('input[type="email"]').fill('nobody@example.com');
     await page.locator('input[type="password"]').fill('wrong-password-123');
-    await page.locator('button[type="submit"]').click({ force: true });
-    await page.waitForTimeout(2000);
+    // Enter in the password field: an implicit, native submission, which is
+    // what a person's submit is before the page has hydrated.
+    const submitted = page.waitForRequest((r) => r.isNavigationRequest());
+    await page.locator('input[type="password"]').press('Enter');
+    const request = await submitted;
 
-    expect(urls.length).toBeGreaterThan(1);
-    expect(urls.filter((u) => u.includes('password'))).toEqual([]);
+    expect(request.url()).not.toContain('password');
+    expect(request.method()).toBe('POST');
   });
 
   test('invalid credentials show an error without crashing', async ({ page }) => {
