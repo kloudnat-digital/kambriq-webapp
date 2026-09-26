@@ -1,6 +1,7 @@
 import { Link } from '@/i18n/navigation';
 import { Money, HumanDate } from './payment-money';
 import { ChannelLabel } from './channel-label';
+import { PaymentPurposeLabel } from './payment-purpose-label';
 import type { PaymentRequestRow } from '@/types/payments';
 
 /**
@@ -48,6 +49,7 @@ export const RequestQueueContent = ({
           <thead className="border-b bg-gray-50 text-left text-xs text-gray-500 uppercase">
             <tr>
               <th className="px-4 py-2">Référence</th>
+              <th className="px-4 py-2">Nature</th>
               <th className="px-4 py-2">Client</th>
               <th className="px-4 py-2">Terrain</th>
               <th className="px-4 py-2 text-right">Montant</th>
@@ -67,6 +69,9 @@ export const RequestQueueContent = ({
                   >
                     {r.reference ?? '—'}
                   </Link>
+                </td>
+                <td className="px-4 py-2">
+                  <PaymentPurposeLabel purpose={r.purpose} />
                 </td>
                 <td className="px-4 py-2">{r.clientName ?? '—'}</td>
                 <td className="px-4 py-2 text-gray-600">{r.subject ?? '—'}</td>

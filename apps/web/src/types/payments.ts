@@ -11,6 +11,9 @@ export type PaymentState =
   | 'EXPIRE'
   | 'ANNULE';
 
+/** What a payment pays for (G20). Mirrors `PaymentPurpose` in libs/common. */
+export type PaymentPurpose = 'ACOMPTE' | 'SOLDE';
+
 export type PaymentChannel = 'VIR' | 'DEPO' | 'OMO' | 'MOMO' | 'ESP' | 'NOTA' | 'HIST';
 
 /**
@@ -21,6 +24,8 @@ export interface PaymentRow {
   id: string;
   reference: string | null;
   reservationId: string;
+  /** Deposit or balance: two payments of one reservation look alike without it. */
+  purpose: PaymentPurpose;
   state: PaymentState;
   currency: string;
   amountDue: string;
@@ -70,6 +75,7 @@ export interface PaymentDetail extends PaymentRow {
 export type PaymentRequestRow = {
   id: string;
   reference: string | null;
+  purpose: PaymentPurpose;
   clientName: string | null;
   clientUserId: string | null;
   subject: string | null;

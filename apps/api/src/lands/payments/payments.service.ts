@@ -616,6 +616,7 @@ export class PaymentsService {
       return {
         id: p.id,
         reference: p.reference,
+        purpose: p.purpose,
         clientName: reservation?.clientName ?? null,
         clientUserId: reservation?.clientUserId ?? null,
         subject: reservation?.land.title ?? null,
@@ -994,6 +995,7 @@ export class PaymentsService {
         return {
           id: p.id,
           reference: p.reference,
+          purpose: p.purpose,
           reservationId: p.reservationId,
           state: p.state,
           currency: p.currency,
@@ -1044,6 +1046,7 @@ export class PaymentsService {
     return {
       id: payment.id,
       reference: payment.reference,
+      purpose: payment.purpose,
       reservationId: payment.reservationId,
       state: payment.state,
       currency: payment.currency,
