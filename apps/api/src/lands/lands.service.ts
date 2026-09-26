@@ -107,7 +107,7 @@ export class LandsService {
     }
 
     // Track price change if price is being updated
-    if (dto.totalPrice !== undefined && dto.totalPrice !== land.totalPrice) {
+    if (dto.totalPrice !== undefined && BigInt(dto.totalPrice) !== land.totalPrice) {
       await this.prisma.landPriceHistory.create({
         data: {
           landId,

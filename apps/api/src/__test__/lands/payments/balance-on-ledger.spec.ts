@@ -26,7 +26,7 @@ const reservation = (over: Record<string, unknown> = {}) => ({
   status: 'CONFIRMED',
   downPaymentAmount: 170000,
   documentsReceivedAt: new Date('2026-09-20T10:00:00Z'),
-  land: { title: 'Parcelle Bertoua Nkolbikon', totalPrice: 3_400_000 },
+  land: { title: 'Parcelle Bertoua Nkolbikon', totalPrice: 3_400_000n },
   payments: [],
   ...over,
 });

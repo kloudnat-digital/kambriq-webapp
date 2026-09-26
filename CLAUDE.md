@@ -1964,9 +1964,12 @@ stored beside it.** `BigInt`, never `Float`. **XAF has no minor unit** - one uni
 is one franc, not a centime, which is the thing people get wrong. An amount
 without its currency is a number, not money.
 `no-float-money.spec.ts` fails on any monetary field declared `Float`, `Decimal`,
-`Double` or `Real` across all four schemas; five pre-existing columns are
-quarantined there with the reason each is not yet converted, and the list is
-pinned in both directions so it cannot rot into a lie.
+`Double` or `Real` across all four schemas; two pre-existing columns remain
+quarantined there (`downPaymentAmount`, `KamnetCommission.amount`) with the
+reason each is not yet converted, and the list is pinned in both directions so
+it cannot rot into a lie. **A `BigInt` leaves the API through the response
+envelope** (`TransformResponseInterceptor`), as an exact number, or as a string
+past `Number.MAX_SAFE_INTEGER` - never rounded, never a `JSON.stringify` crash.
 
 **A computed total is never a stored column.** `Payment` has no `totalReceived`.
 The total is a sum over `PaymentReceipt`, and a correction appends a signed line

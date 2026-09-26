@@ -105,7 +105,9 @@ export class LandReservationsService {
       }
 
       // 3. Calculate down payment (5% of the parcel's total price, G19)
-      const downPaymentAmount = depositFor(land.totalPrice);
+      // `downPaymentAmount` is still the quarantined Float column; the total is exact
+      // integer money, far inside the range a number holds exactly.
+      const downPaymentAmount = depositFor(Number(land.totalPrice));
 
       // 4. Create the reservation
       const reservation = await tx.landReservation.create({
@@ -660,7 +662,7 @@ export class LandReservationsService {
   private async moneyForClient(reservation: {
     id: string;
     downPaymentAmount: number | null;
-    land: { totalPrice: number };
+    land: { totalPrice: bigint };
   }) {
     const live = await this.prisma.payment.findMany({
       where: {
@@ -674,7 +676,7 @@ export class LandReservationsService {
         .filter((p) => p.purpose === purpose)
         .reduce((sum, p) => sum + sumReceipts(p.receipts), 0n);
 
-    const total = BigInt(Math.round(reservation.land.totalPrice));
+    const total = reservation.land.totalPrice;
     const depositDue = BigInt(Math.round(reservation.downPaymentAmount ?? 0));
     const depositReceived = received(PaymentPurpose.ACOMPTE);
     const balanceReceived = received(PaymentPurpose.SOLDE);

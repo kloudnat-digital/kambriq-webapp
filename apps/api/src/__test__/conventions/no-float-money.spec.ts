@@ -49,27 +49,14 @@ const NOT_MONEY = new Set([
  * of these without removing its line fails the test too, so the list cannot rot
  * into a lie.
  *
- * They are not converted here because `Land.totalPrice` (named `price` until G19) alone has **51 call sites**
- * across the API and the web, and `BigInt` does not survive `JSON.stringify`,
- * so converting it means changing the response serialiser and the web types in
- * the same breath. That is a chantier, not a detail of this one - and shipping
- * half of it silently is worse than shipping none of it.
+ * `Land.totalPrice` and its price history were converted to `BigInt` on 26
+ * September; the response envelope turns a BigInt into an exact number (or a
+ * string past that range), which is what made the conversion small. Two remain.
  *
  * `downPaymentAmount` is here for a second reason: G1 deprecates it rather than
  * dropping it, so it must survive this PR unchanged.
  */
 const QUARANTINED: ReadonlyArray<{ module: string; field: string; why: string }> = [
-  {
-    module: 'lands',
-    field: 'totalPrice',
-    why: 'Land.totalPrice (was price, G19) - dozens of call sites, needs its own chantier',
-  },
-  {
-    module: 'lands',
-    field: 'previousTotalPrice',
-    why: 'LandPriceHistory - moves with Land.totalPrice',
-  },
-  { module: 'lands', field: 'newTotalPrice', why: 'LandPriceHistory - moves with Land.totalPrice' },
   {
     module: 'lands',
     field: 'downPaymentAmount',
@@ -160,6 +147,6 @@ describe('money is never a floating-point type', () => {
       expect(found).toBeDefined();
       expect(FLOATING.has(found?.type ?? '')).toBe(true);
     }
-    expect(QUARANTINED).toHaveLength(5);
+    expect(QUARANTINED).toHaveLength(2);
   });
 });
