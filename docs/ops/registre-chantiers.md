@@ -189,6 +189,7 @@ listed here first.
 | `A31`                         | `EN COURS`          | develop red on journeys 4 and 5 from 08:22 UTC on 14 Sept: the seed kept payment-carrying reservations, reset their parcels to AVAILABLE anyway (8 on dev), and the first available parcel answered 409. Fixed in the seed and proved locally. Merged (#126); pending: one seed run on dev, a green journeys run on develop. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `verify-cert`                 | `EN COURS`          | `/verify-certificate` said "valide" for any number; the API ignored `revokedAt` and handed strangers the holder's UUID. Pending proof on dev: seeded number valid, fake number non reconnu, revoked number révoqué. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `A33`                         | `PROUVE`            | cause named and fixed: the sign-in fields were controlled inputs, and text typed before hydration was wiped by it - WebKit on the runner was the engine slow enough to hydrate late. Fields uncontrolled, every password form POSTs, WebKit back in the matrix. Proven: develop's E2E run on `8637543`, WebKit included, 186 passed, none flaky                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `A55`                         | `PROUVE`            | did real passwords reach the logs before #214? No server-side record on dev can hold one: no ALB access logs, no CloudFront or WAF, and the containers log no request URL - my own password-in-URL requests of 26 September are absent (the control). The referer carried the origin only. The one place such a URL can remain is the visitor's own browser history. Rotation stays Visquis's call                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `A32`                         | `EN COURS`          | Gate reads develop's HEAD sha, then its run (`scripts/ci/develop-gate.sh`): green passes; red, never started or not yet verified refuses; label `merge-on-red-develop` plus re-run releases. v1 read a list and passed #134 on a stale run; 12 stub cases run in every CI Gate. Cost: each develop push blocks merges ~20 min                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `A36`                         | `EN COURS`          | develop red on `70a5e07`: both journey suites run in one `runInBand` process from one runner address and `getTracker` keys on the last X-Forwarded-For entry, so they legitimately share one bucket of 100 requests per 60000 ms - the gap between them decides it (9.33 s PASSED on `1cbde1a`; 0.36 s and 0.35 s FAILED on `70a5e07`). `call()` now waits one full window and retries, bounded at 3 attempts, one log line per wait, still throwing today's sentence after them. The comment claiming CI "never sees it" is replaced by the measurements. `getTracker` had no test and now has 11, watched failing on `parts[0]`. The spec runs in `Quality` via a new `test` target, because `api-e2e` had none and the file would otherwise execute only in the job it repairs. Pending: a green `Delivery journeys (dev)` on develop. Cost: up to 120 s added to a journeys job that is actually throttled, none otherwise |
 | `I19`                         | `EN COURS`          | no user without a role: registration refused a missing CLIENT row silently, an existing user reserved as a client got no CLIENT, the seed wrote 8 role rows of 11. Fixed, red then green locally. Merged (#132); pending: one seed run on dev showing 11 rows. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -7456,6 +7457,54 @@ deploy). `GET /lands/client/purchases/380d2626-…` as the G8 throwaway client:
 any more. The purchase page, read in Firefox, says "Amount due: 170 000 XAF",
 "Deposit of 170 000" and **"3 230 000 FCFA remaining"**, where it said
 1 631 830 000.
+
+### A55 - did a password in a URL reach any log? - `PROUVE`
+
+**Cost impact: None.** Read-only.
+
+**The question.** Before #214, a tap before the page's scripts loaded submitted
+six forms as a native GET, so `/fr/login?email=...&password=...` (and the same
+on register, reactivate, reset-password and two account forms) could be sent
+by a real visitor. Dev is public and the ten KAMNET agents have real accounts on
+it. Visquis, 26 September: search the logs now, before retention erases them.
+
+**What was searched, 26 September ~15:10 UTC.** Every place on dev that could
+record the URL of a web request:
+
+- the load balancer `kambriq-dev-alb`: `access_logs.s3.enabled = false`,
+  `connection_logs.s3.enabled = false`;
+- CloudFront, WAF: none exist on the account for this site;
+- `/ecs/kambriq-dev-web` (7-day retention, oldest event kept 19 September) and
+  `/ecs/kambriq-dev-api` (7 days), Logs Insights over 8 days for
+  `[?&](password|newPassword|currentPassword|confirmPassword)=`: **0 matches**
+  in 4 829 and 229 074 records.
+
+**The zero is not a clean bill by itself, and the control says why.** My own A33
+reproduction sent exactly such requests to dev that afternoon
+(`/fr/login?email=nobody@example.com&password=wrong-password-123`, several
+between about 13:00 and 14:05 UTC). **None of them is in the web log either.**
+The web container logs its start and its errors, never a request line, and the
+API never received those GETs. So the answer is structural rather than a
+search result: **no server log on dev records the URL of a web request, so none
+can hold a password sent that way** - not in the seven days kept, and not
+before. Retention was never the limit; the window of the defect (since the
+sign-in page existed, 16 April) is not covered by any log because nothing
+logged it.
+
+**The other channels, measured:**
+
+- **referer:** the site sends `Referrer-Policy: strict-origin-when-cross-origin`
+  (explicit since 19 April, and the browsers' own default before that). The
+  sign-in page's only third-party request, `api.fontshare.com`, carries
+  `referer: https://dev.kambriq.com/` - the origin, never the path or the query;
+- **in transit:** HTTPS encrypts the query string;
+- **what remains, and cannot be checked from here:** the visitor's own browser
+  history and address-bar suggestions, on their own device. That matters only
+  on a shared device.
+
+**The consequence is Visquis's.** No credential appears anywhere a server
+wrote. Whether to ask the ten agents to change their passwords anyway - for the
+shared-device case - is his decision; nothing was rotated.
 
 ### A33 - Safari is tested again, with its cause - `PROUVE`
 
