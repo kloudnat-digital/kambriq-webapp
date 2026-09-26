@@ -134,7 +134,7 @@ listed here first.
 | Entry                         | State               | What it needs                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ----------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `L2`                          | `EN COURS`          | one deployed log line carrying its interpolated metadata, quoted                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `L3`                          | `DECIDE, A FAIRE`   | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `L3`                          | `EN COURS`          | log payloads are top-level JSON fields: one pino `hooks.logMethod` (`core/logging/structured-fields.ts`) lifts the single `%o` object every call site passes, instead of rewriting 161 calls. Pending: a field queried in CloudWatch Insights on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `F1`                          | `A DECIDER`         | coverage ratchet: a floor, and what happens when a PR drops below it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `P1`                          | `A DECIDER`         | SES contact list, one per account per region — the prd constraint                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `X2`                          | `DECIDE, A FAIRE`   | NAT option 2, decided, deliberately unapplied before delivery                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -3753,7 +3753,7 @@ rotated under a new deploy and the stream name moved with it. That is worth
 knowing before the next attempt: the stream is `api/api/<task-id>` and the task
 id changes on every deploy._
 
-### L3 — Migrate logging to PinoLogger structured fields — `DECIDE, A FAIRE`
+### L3 — Log payloads as queryable fields — `EN COURS`
 
 `%o` makes payloads **readable** but not **queryable**: the object is serialised
 into the message string, so CloudWatch Insights cannot filter on `userId` or
@@ -3763,6 +3763,34 @@ top level of the JSON, which is what the migration buys.
 **Decision:** do it later, as its own chantier. Roughly 102 call sites plus DI
 changes, and it should not ride along with a change whose value is that it is
 mechanical. **Cost: none.**
+
+**Done, 26 September - by a different method than the one recorded, for the
+same result.** The decision was to move about 102 call sites to
+`PinoLogger.info(obj, msg)` so the payload lands at the top level of the JSON.
+Counted again: **161** logger calls, 119 with `%o`. But
+`logging-metadata.spec.ts` already forces every one of them into one shape - a
+message ending in `%o` and a single object - and nestjs-pino hands that to pino
+as `({ context }, 'Contact digest sent %o', { count, pending })`. So one
+`hooks.logMethod` in the API's pino options lifts that object into top-level
+fields and keeps the words as the message: `{"context":"ContactService",
+"msg":"Contact digest sent","count":0,"pending":0}`. **Same outcome, one point
+of change, and no call site touched** - which also keeps Ulrich's code as it
+is. If Visquis wanted the call sites rewritten anyway, say so and it is a
+mechanical follow-up.
+
+- A payload key that would overwrite one of pino's own fields (`msg`, `level`,
+  `time`, `context`, `req`, `err`...) goes under `data` instead.
+- An Error, an array, or anything but a plain object is left to pino exactly as
+  before - and that surfaced a fact worth writing down: **pino prints an `Error`
+  passed through `%o` as `{}`**. No call site does it today (checked).
+- **Proof, red first:** `structured-fields.spec.ts` runs the real pino-http
+  logger: the payload becomes fields, a colliding key goes under `data`, non-plain
+  payloads come out identical to pino alone, and without the hook the payload is
+  text inside `msg` (the defect, pinned). A fifth test requires `app.module.ts`
+  to carry the hook. Mutations: no lifting (fails two), no collision guard (fails
+  one), the hook unwired (fails the wiring test).
+
+**Pending:** on dev, a CloudWatch Insights query filtering on a lifted field.
 
 ### Z1 — Three never-used access keys, one of them full admin — `PROUVE`, applied 2026-09-04
 

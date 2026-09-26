@@ -16,6 +16,7 @@ import {
 } from '@kambriq/common';
 import { AcceptLanguageResolver, HeaderResolver, I18nModule } from 'nestjs-i18n';
 import { LoggerModule } from 'nestjs-pino';
+import { structuredFieldsHook } from '../core/logging/structured-fields';
 import { IncomingMessage } from 'http';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { REQUEST_LOG_REDACT_PATHS } from '../core/logging/request-log-redaction';
@@ -71,6 +72,8 @@ import { NewsletterModule } from '../newsletter/newsletter.module';
               }
             : undefined,
           autoLogging: true,
+          // L3: a log payload becomes top-level JSON fields. See structured-fields.ts.
+          hooks: { logMethod: structuredFieldsHook },
           customProps: (req: IncomingMessage) => {
             const header = req.headers['x-correlation-id'];
             const correlationId = Array.isArray(header) ? header[0] : header;
