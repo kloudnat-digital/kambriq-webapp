@@ -1,6 +1,7 @@
 import { Link } from '@/i18n/navigation';
 import { getTranslations } from 'next-intl/server';
 
+import QuickActions from '@/components/floating/quick-actions';
 import Navbar from '@/components/layout/navbar';
 
 const LEGAL_LINKS = [
@@ -31,6 +32,8 @@ export default async function LegalLayout({ children }: { children: React.ReactN
         </div>
         <div className="mx-auto max-w-3xl px-6 py-14 sm:px-8">{children}</div>
       </main>
+      {/* J4: the language switch, as on every public page. */}
+      <QuickActions />
     </>
   );
 }
