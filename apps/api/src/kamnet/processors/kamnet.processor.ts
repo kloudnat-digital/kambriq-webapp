@@ -1,5 +1,11 @@
-import { KAMNET_JOBS, QUEUES, RoleCode, SaleCompletedJobPayload } from '@kambriq/common';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import {
+  KAMNET_JOBS,
+  QUEUES,
+  RoleCode,
+  SaleCompletedJobPayload,
+  LoudWorkerHost,
+} from '@kambriq/common';
+import { Processor } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { KamnetAgentsService } from '../agents/agents.service';
 import { KamnetPrismaService } from '../prisma/kamnet-prisma.service';
@@ -7,7 +13,7 @@ import { Job } from 'bullmq';
 import { UsersService } from '../../core/users/users.service';
 
 @Processor(QUEUES.KAMNET)
-export class KamnetProcessor extends WorkerHost {
+export class KamnetProcessor extends LoudWorkerHost {
   private readonly logger = new Logger(KamnetProcessor.name);
 
   constructor(

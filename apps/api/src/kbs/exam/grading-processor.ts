@@ -1,5 +1,12 @@
-import { EmailService, EXAM_PASSING_SCORE, ExamStatus, KBS_JOBS, QUEUES } from '@kambriq/common';
-import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
+import {
+  EmailService,
+  EXAM_PASSING_SCORE,
+  ExamStatus,
+  KBS_JOBS,
+  QUEUES,
+  LoudWorkerHost,
+} from '@kambriq/common';
+import { InjectQueue, Processor } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { KbsExamService } from './exam.service';
 import { UsersService } from '../../core/users/users.service';
@@ -9,7 +16,7 @@ import { Job, Queue } from 'bullmq';
 import { DateTime } from 'luxon';
 
 @Processor(QUEUES.KBS)
-export class KbsGradingProcessor extends WorkerHost {
+export class KbsGradingProcessor extends LoudWorkerHost {
   private readonly logger = new Logger(KbsGradingProcessor.name);
 
   constructor(
