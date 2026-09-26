@@ -31,7 +31,6 @@ const WEB_SRC = join(__dirname, '..');
 const HARDCODED_COPY_DEBT: Record<string, string> = {
   'app/[locale]/(app)/admin/identities/[id]/page.tsx': 'identity review (A10/G4), French only',
   'app/[locale]/(app)/invite/page.tsx': 'client portal invitation, French only',
-  'app/[locale]/kamnet/apply/page.tsx': 'KAMNET application form, French only',
   'app/[locale]/verify-certificate/[certificateNumber]/page.tsx':
     'public certificate verdict, French only',
   'app/global-error.tsx': 'last-resort error page, rendered outside the i18n provider',

@@ -2245,5 +2245,13 @@
       "contact": "Contact us",
       "faq": "Frequently asked questions"
     }
+  },
+  "kamnetApply": {
+    "closed": {
+      "title": "KAMNET™ application",
+      "body": "Online applications are not open yet: no form on this page records an application.",
+      "how": "To become a KAMNET™ agent, write to us from the contact page and choose the subject “Become a KAMNET™ agent”. Your message is recorded and our team will reply.",
+      "contact": "Write to KAMBRIQ from the contact page"
+    }
   }
 }

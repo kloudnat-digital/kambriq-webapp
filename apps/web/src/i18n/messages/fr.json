@@ -2245,5 +2245,13 @@
       "contact": "Nous contacter",
       "faq": "Questions fréquentes"
     }
+  },
+  "kamnetApply": {
+    "closed": {
+      "title": "Candidature KAMNET™",
+      "body": "Les candidatures en ligne ne sont pas encore ouvertes : aucun formulaire de cette page n'enregistre de candidature.",
+      "how": "Pour devenir agent KAMNET™, écrivez-nous depuis la page contact en choisissant le sujet « Devenir agent KAMNET™ ». Votre message est enregistré et notre équipe vous répond.",
+      "contact": "Écrire à KAMBRIQ via la page contact"
+    }
   }
 }
