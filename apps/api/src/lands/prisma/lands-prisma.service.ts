@@ -27,7 +27,7 @@ export class LandsPrismaService extends PrismaClient implements OnModuleInit, On
       await this.$connect();
       this.logger.log('LANDS database connected');
     } catch (error) {
-      this.logger.error('LANDS database connection failed', error);
+      this.logger.error('LANDS database connection failed %o', { err: error });
       throw error;
     }
   }
@@ -38,7 +38,7 @@ export class LandsPrismaService extends PrismaClient implements OnModuleInit, On
       await this.pool.end();
       this.logger.log('LANDS database disconnected');
     } catch (error) {
-      this.logger.error('LANDS database disconnection failed', error);
+      this.logger.error('LANDS database disconnection failed %o', { err: error });
     }
   }
 }

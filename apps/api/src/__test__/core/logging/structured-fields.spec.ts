@@ -28,6 +28,24 @@ const capture = (withHook: boolean) => {
 };
 
 describe('L3 - log payloads are fields, not text', () => {
+  it('writes an Error under `err` with its type, message and stack, never as {}', () => {
+    // pino-http serialises a top-level `err`; anywhere else pino writes an Error
+    // as `{}`, the message and the stack gone (the rule in log-errors-in-err.spec.ts).
+    const { logger, lines } = capture(true);
+    logger.warn({ context: 'X' }, 'Email failed %o', { err: new Error('SES refused'), to: 'a' });
+    const err = lines[0].err as Record<string, unknown>;
+    expect(err).toMatchObject({ type: 'Error', message: 'SES refused' });
+    expect(String(err.stack)).toContain('SES refused');
+    expect(lines[0]).toMatchObject({ msg: 'Email failed', to: 'a' });
+    expect(lines[0].data).toBeUndefined();
+  });
+
+  it('shows what the old shape wrote: an Error under any other key is {}', () => {
+    const { logger, lines } = capture(true);
+    logger.warn({ context: 'X' }, 'Email failed %o', { error: new Error('SES refused') });
+    expect(lines[0].error).toEqual({});
+  });
+
   it('lifts the payload to top-level fields and keeps the words as the message', () => {
     const { logger, lines } = capture(true);
     logger.info({ context: 'ContactService' }, 'Contact digest sent %o', { count: 0, pending: 2 });

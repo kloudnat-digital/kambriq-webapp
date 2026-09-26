@@ -10,8 +10,11 @@
  * of 161 call sites.
  *
  * A payload key that would overwrite one of pino's own fields goes under `data`
- * instead. An Error, an array, or anything but a plain object is left to pino's
- * interpolation exactly as before.
+ * instead - except an Error under `err`, which is lifted so pino-http's
+ * serializer writes its type, message and stack (anywhere else pino writes an
+ * Error as `{}`; `log-errors-in-err.spec.ts` holds every call site to `err`).
+ * An Error, an array, or anything but a plain object as the whole payload is
+ * left to pino's interpolation exactly as before.
  */
 const RESERVED = new Set([
   'level',
@@ -52,7 +55,8 @@ export function structuredFieldsHook(
     const fields: Record<string, unknown> = {};
     const collided: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(payload)) {
-      if (RESERVED.has(key) || key in bindings) collided[key] = value;
+      if (key === 'err' && value instanceof Error && !(key in bindings)) fields[key] = value;
+      else if (RESERVED.has(key) || key in bindings) collided[key] = value;
       else fields[key] = value;
     }
     const merged = {
