@@ -41,7 +41,6 @@ const ANCHORS: ReadonlyArray<{ token: string; value: string; name: string }> = [
  * `#4f46e5` is an indigo belonging to no KAMBRIQ palette at all.
  */
 const FILES_THAT_MUST_CARRY_NO_HEX: readonly string[] = [
-  'apps/web/src/components/products/lands/search/lands-map.tsx',
   'apps/web/src/components/lands/app/land-map.tsx',
   'apps/web/src/components/app-shell/sidebar.tsx',
   'apps/web/src/app/[locale]/layout.tsx',
