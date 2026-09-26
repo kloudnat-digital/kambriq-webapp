@@ -1831,6 +1831,20 @@ unkeyed, the effect that reads it ran once more on the page being left and
 showed it in the old language. The test that reads the toast's words caught it;
 a test that only counted toasts would not have.
 
+### A flaky test in one browser can be a product defect every browser has
+
+From `A33`. WebKit's sign-in test failed every other run and never locally, so
+WebKit came out of the matrix. The cause was in the page: controlled inputs,
+whose empty state hydration writes over whatever was typed before it. Holding
+the page's scripts reproduced it in Chromium as well. WebKit on the runner was
+only the engine slow enough to lose the race, and a person on a slow phone loses
+it too.
+
+**Before blaming a browser, reproduce the ORDER the slow run took**, not the
+browser: hold the scripts, act, release. And a form holding a password declares
+`method="post"`: before hydration a tap is a native submission, and without a
+method that is a GET with the password in the URL (`password-forms-post.spec.ts`).
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope

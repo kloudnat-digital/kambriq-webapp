@@ -103,6 +103,51 @@ test.describe('Authentication', () => {
     await expect(page).toHaveURL(/login/);
   });
 
+  /**
+   * A33 - the cause of WebKit's flaky sign-in. The fields were controlled
+   * inputs: text typed before hydration was overwritten by React's empty state,
+   * validation refused, and no request left the page. WebKit on the CI runner
+   * was simply the engine slow enough to hydrate after the typing. This holds
+   * the page's scripts until the typing is done, so every engine is tested in
+   * the order that failed.
+   */
+  test('what is typed before the page hydrates survives it', async ({ page }) => {
+    const held: Array<() => Promise<void>> = [];
+    let holding = true;
+    await page.route('**/_next/static/chunks/**/*.js', (route) =>
+      holding ? held.push(() => route.continue()) : route.continue(),
+    );
+    await page.goto('/fr/login', { waitUntil: 'domcontentloaded' });
+    await page.locator('input[type="email"]').fill('nobody@example.com');
+    await page.locator('input[type="password"]').fill('wrong-password-123');
+
+    holding = false;
+    for (const release of held) await release();
+    // Hydrated: React has attached itself to the form element.
+    await page.waitForFunction(() => {
+      const form = document.querySelector('form');
+      return !!form && Object.keys(form).some((key) => key.startsWith('__react'));
+    });
+
+    await expect(page.locator('input[type="email"]')).toHaveValue('nobody@example.com');
+    await expect(page.locator('input[type="password"]')).toHaveValue('wrong-password-123');
+  });
+
+  test('a tap before the page hydrates never puts the password in a URL', async ({ page }) => {
+    await page.route('**/_next/static/chunks/**/*.js', () => undefined);
+    await page.goto('/fr/login', { waitUntil: 'domcontentloaded' });
+    await page.locator('input[type="email"]').fill('nobody@example.com');
+    await page.locator('input[type="password"]').fill('wrong-password-123');
+    // Enter in the password field: an implicit, native submission, which is
+    // what a person's submit is before the page has hydrated.
+    const submitted = page.waitForRequest((r) => r.isNavigationRequest());
+    await page.locator('input[type="password"]').press('Enter');
+    const request = await submitted;
+
+    expect(request.url()).not.toContain('password');
+    expect(request.method()).toBe('POST');
+  });
+
   test('invalid credentials show an error without crashing', async ({ page }) => {
     await page.goto('/login');
     await expect(page).toHaveURL(/login/);
