@@ -266,3 +266,13 @@ export const assertOwnedByThisRun = async (
     );
   }
 };
+
+/**
+ * An amount of money as the API must send it: a JSON number, whole, inside the
+ * range a number holds exactly. Money is integer XAF in the database (G1) and
+ * the response envelope turns a BigInt into a number only when that is exact,
+ * into a string otherwise - so a string, a fraction or an unsafe number each
+ * mean the chain broke somewhere.
+ */
+export const exactMoney = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
