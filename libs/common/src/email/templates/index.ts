@@ -739,6 +739,59 @@ const templates = defineTemplates({
   }),
 
   /**
+   * P5 - notification to the back office for a new KAMNET application. No
+   * screen lists applications yet, so this is how KAMBRIQ learns one arrived.
+   */
+  kamnetApplicationNotification: (i18n, lang, args) => ({
+    subject: subjectText(i18n, 'email.kamnetApplicationNotification.subject', lang, args),
+    html: layout(
+      html`
+        <h1>${t(i18n, 'email.kamnetApplicationNotification.heading', lang)}</h1>
+        <p>${t(i18n, 'email.kamnetApplicationNotification.intro', lang, args)}</p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <tr>
+            <td style="padding:6px 0;color:#a0aec0;">
+              ${t(i18n, 'email.kamnetApplicationNotification.nameLabel', lang)}
+            </td>
+            <td style="padding:6px 0;">${args['name']}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#a0aec0;">
+              ${t(i18n, 'email.kamnetApplicationNotification.emailLabel', lang)}
+            </td>
+            <td style="padding:6px 0;">${args['email']}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#a0aec0;">
+              ${t(i18n, 'email.kamnetApplicationNotification.phoneLabel', lang)}
+            </td>
+            <td style="padding:6px 0;">${args['phone']}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#a0aec0;">
+              ${t(i18n, 'email.kamnetApplicationNotification.kcaLabel', lang)}
+            </td>
+            <td style="padding:6px 0;font-family:monospace;">${args['kcaNumber']}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#a0aec0;">
+              ${t(i18n, 'email.kamnetApplicationNotification.sponsorLabel', lang)}
+            </td>
+            <td style="padding:6px 0;font-family:monospace;">${args['sponsorCode']}</td>
+          </tr>
+        </table>
+        <p class="muted" style="margin-top:24px;margin-bottom:4px;">
+          ${t(i18n, 'email.kamnetApplicationNotification.motivationLabel', lang)}
+        </p>
+        ${preservedTextBlock(args['motivation'])}
+        <p>${t(i18n, 'email.kamnetApplicationNotification.reviewNote', lang)}</p>
+      `,
+      lang,
+      i18n,
+    ),
+  }),
+
+  /**
    * Notification to the back office for a new contact request.
    * Includes the prospect's details and message for immediate follow-up.
    */

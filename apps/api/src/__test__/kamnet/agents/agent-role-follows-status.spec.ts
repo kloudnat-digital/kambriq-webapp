@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { EmailService, KamnetApplicationStatus, RedisService, RoleCode } from '@kambriq/common';
 import { KamnetAgentsService } from '../../../kamnet/agents/agents.service';
@@ -36,6 +37,7 @@ describe('I16 - the AGENT role follows the agent status', () => {
         { provide: KbsCandidatesService, useValue: candidates },
         { provide: EmailService, useValue: mockEmailService() },
         { provide: I18nService, useValue: mockI18n() },
+        { provide: ConfigService, useValue: { get: (_k: string, fallback?: unknown) => fallback } },
         { provide: RedisService, useValue: { get: jest.fn(), set: jest.fn(), del: jest.fn() } },
       ],
     }).compile();

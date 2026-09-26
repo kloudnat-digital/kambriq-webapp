@@ -285,5 +285,17 @@
     "days": "{days} jour(s)",
     "none": "Aucune",
     "breakdownLabel": "Par sujet, sur la periode"
+  },
+  "kamnetApplicationNotification": {
+    "subject": "Nouvelle candidature KAMNET™ - {name}",
+    "heading": "Une nouvelle candidature KAMNET™ est arrivée",
+    "intro": "Reçue le {receivedAt}. Répondez à {email}.",
+    "nameLabel": "Nom",
+    "emailLabel": "Email",
+    "phoneLabel": "Téléphone",
+    "kcaLabel": "Certificat KCA",
+    "sponsorLabel": "Code de parrainage",
+    "motivationLabel": "Motivation",
+    "reviewNote": "La candidature est en attente de revue par un administrateur KAMNET™."
   }
 }

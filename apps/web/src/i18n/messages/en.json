@@ -2247,11 +2247,34 @@
     }
   },
   "kamnetApply": {
-    "closed": {
-      "title": "KAMNET™ application",
-      "body": "Online applications are not open yet: no form on this page records an application.",
-      "how": "To become a KAMNET™ agent, write to us from the contact page and choose the subject “Become a KAMNET™ agent”. Your message is recorded and our team will reply.",
-      "contact": "Write to KAMBRIQ from the contact page"
+    "title": "KAMNET™ application",
+    "contact": "Write to KAMBRIQ from the contact page",
+    "unavailable": "We cannot read your standing right now. Try again in a few minutes, or write to us from the contact page.",
+    "notCertified": "Applying to KAMNET™ requires a valid KCA certificate, awarded at the end of the KBS training.",
+    "kbs": "Discover the KBS training",
+    "status": {
+      "PENDING": {
+        "label": "Application awaiting review",
+        "body": "Your application was recorded on {date}. A KAMNET™ administrator is reviewing it; you will receive the decision by email."
+      },
+      "APPROVED": {
+        "label": "Application approved",
+        "body": "Your application of {date} was approved. Welcome to KAMNET™."
+      },
+      "REJECTED": {
+        "label": "Application not accepted",
+        "body": "Your application of {date} was not accepted."
+      }
+    },
+    "form": {
+      "intro": "Your application uses your account details and your certificate {kcaNumber}.",
+      "sponsorLabel": "Sponsor code (optional)",
+      "sponsorHelp": "The code of the KAMNET™ agent sponsoring you, for example AGT-2025-0001.",
+      "motivationLabel": "Motivation",
+      "motivationHelp": "Between 50 and 1000 characters.",
+      "submit": "Send my application",
+      "sending": "Sending…",
+      "error": "The application was not recorded: {message}"
     }
   }
 }

@@ -208,7 +208,7 @@ listed here first.
 | `G11` follow-up 3             | `PROUVE`            | the controller never forwarded `paidBy`: a DEPO keyed on the screen was refused by the service. Fixed and pinned here                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `P3`                          | `PROUVE LOCALEMENT` | the auth middleware was a global net: every unknown URL redirected to /login and nothing could 404. Positive matcher, real 404 page, route table proved unchanged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `P4`                          | `PROUVE LOCALEMENT` | X-Robots-Tag noindex outside production, on the existing headers() block. Reads APP_ENV: NODE_ENV is 'production' on every environment and cannot tell them apart. Second half (API responses): PROUVE on dev 23/09; P4 stays below 100 % until D13                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `P5`                          | `EN COURS`          | `/kamnet/apply` was a mock that toasted "Candidature soumise !" and stored nothing; the floor is landed (the page says applications are not open online and sends people to the contact form); wiring it to `POST /kamnet/applications` is next. The login wall in front of it stays, deliberately (P3)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `P5`                          | `EN COURS`          | `/kamnet/apply` is wired to `POST /kamnet/applications`: stored, the applicant emailed, and the contact inbox notified; the floor (#192) came first. No admin screen lists applications yet. Pending: a submission on dev in a real browser, the stored record and the mail. The login wall in front of it stays, deliberately (P3)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | rename                        | `A DECIDER`         | `L1-contact`/`L2-contact` -> `P1`/`P2` was asked for in P3's brief; those ids exist only on PR #98's branch, which the same brief puts out of scope. Not done - see PR                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `A19`                         | `PROUVE`            | develop linted 1 project of 6 for seven months: the workflow promised "the full set", `pnpm run lint` was `nx lint api`. Widened to `nx run-many -t lint --all`; manifest corrected; proved in both directions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `I32`                         | `A FAIRE`           | `getMyNetwork` never reads the caller's tier; the rule lives in the page. `P9` clamped everyone to N1, so the gap is no longer observable from outside - a narrowed blast radius, not a fix                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
@@ -6069,6 +6069,57 @@ anything. It sends people to the contact form, whose "Devenir agent KAMNET™"
 subject is stored and notified since L1. It goes through the translations, so it
 leaves I43's hardcoded-copy debt list. The copy is mine, for Visquis:
 `kamnetApply.closed.*`.
+
+**The real thing, on top of the floor.** The page reads where the signed-in
+person stands (`getMyApplicationStanding`) and shows one of four states, each
+from the API:
+
+- **no valid certificate** (a 404, or the 403 somebody who never enrolled in
+  KBS gets): no form, a link to the KBS training and one to the contact page;
+- **standing unreadable**: it says so, and never says "not certified", which
+  would be a false statement to the very person being recruited;
+- **an application exists**: its real status and date;
+- **may apply**: a form that posts to `POST /kamnet/applications`.
+
+The form never claims success itself. A stored application re-renders the page
+from the API, and a refusal is shown where it happened.
+
+**Visquis's defaults, and where I departed from them:**
+
+- _Store with the data the form already collects, do not enlarge it._ I shrank
+  it. The old form asked for name, email, phone and address, which the account
+  already holds and the API does not take. Collecting them to drop them would
+  have been a smaller version of the same lie. It now asks for a sponsor code
+  (optional) and a motivation (50 to 1000 characters, as before). The KCA
+  number the API requires is read on the server from the applicant's own
+  certificate, never typed and never taken from the browser;
+- _Notify by email to `contact@kambriq.com`_: done, through `CONTACT_INBOX_EMAIL`
+  as the contact form does, in the back office's language, with a new
+  `kamnetApplicationNotification` template (name, email, phone, certificate,
+  sponsor code, motivation). As in L1, the record is the success. Both mails,
+  the applicant's confirmation and the inbox notification, are logged loudly on
+  failure and never fail the request. Before this, a failed confirmation mail
+  failed the request after the application was stored, and sent the applicant
+  back to a 409;
+- _A minimal back-office list if natural_: **not built.** `GET
+/kamnet/admin/applications` and `POST …/:id/review` already exist, but
+  `/admin/kamnet` is an I43 placeholder, and a list there is a screen of its own.
+  **The list is missing.** Applications are seen through the notification and
+  the API;
+- _I26 shares a storage shape?_ I26 is not in this repository's register. The
+  application is `KamnetApplication`, which the API already defined, so no new
+  shape was invented.
+
+**Proof so far.** The page states and the actions were tested on their own (the
+L1 lesson, since the page tests mock the actions). The notification cases:
+announced, stored when the announcement fails, stored when the applicant's mail
+fails, and loud when no inbox is configured. Escaping of the new template is
+tested. Four mutations each failed their own test: any failure read as "not
+certified", the browser's KCA number trusted, the inbox given the wrong mail,
+and the applicant's mail able to fail the request.
+
+**New copy for Visquis:** `kamnetApply.*` and
+`email.kamnetApplicationNotification.*`.
 
 **The login wall stays.** The register's own P5 row records that the public
 product pages link to `/kamnet/apply` behind the login wall, kept deliberately
