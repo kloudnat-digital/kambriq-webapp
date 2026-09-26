@@ -307,12 +307,12 @@ describe('kamnet actions: network', () => {
     expect(get).toHaveBeenCalledWith('/kamnet/network?depth=1');
   });
 
-  it('defaults to depth 1, which is the API default and the Junior rule', async () => {
+  it('without a depth, asks for none: the API answers with the tier allowance (I32)', async () => {
     get.mockResolvedValue(tree as never);
 
     await getMyNetwork();
 
-    expect(get).toHaveBeenCalledWith('/kamnet/network?depth=1');
+    expect(get).toHaveBeenCalledWith('/kamnet/network');
   });
 
   it('refuses to ask for more than sponsorship reaches, rather than letting the server clamp it', async () => {

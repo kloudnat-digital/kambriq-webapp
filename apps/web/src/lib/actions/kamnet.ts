@@ -176,18 +176,17 @@ export const getCommissionSummary = createAction(async () => {
  * Since P9 that constant is 1, so every request resolves to N1 whatever the
  * caller asks for.
  *
- * Note what this function does NOT do: it does not decide which depth a tier is
- * entitled to. `GET /kamnet/network` never reads the caller's tier, so that
- * rule lives nowhere on the server today and the page applies it. That is a
- * presentation choice over an unenforced endpoint, not a security boundary, and
- * it is reported as such.
+ * Without a depth it asks for none, and `GET /kamnet/network` answers with
+ * the caller's tier allowance: which depth a tier is entitled to is the API's
+ * rule (I32), not this module's.
  */
 export const getMyNetwork = createAction(async (depth?: number) => {
   // `depth?: number` rather than `depth = 1`. A default parameter makes
   // `createAction`'s `Args` generic infer as `[]`, so the body sees `Args[0]`
   // and `tsc` refuses it. `kbs.ts` has the same shape everywhere it takes an
   // optional argument - `params?:`, `flagged?:` - and this follows it.
-  const safeDepth = Math.min(Math.max(depth ?? 1, 1), KAMNET_MAX_SPONSORSHIP_DEPTH);
+  if (depth === undefined) return nullOn404(() => serverApi.get<NetworkNode>('/kamnet/network'));
+  const safeDepth = Math.min(Math.max(depth, 1), KAMNET_MAX_SPONSORSHIP_DEPTH);
   return nullOn404(() => serverApi.get<NetworkNode>(`/kamnet/network?depth=${safeDepth}`));
 });
 

@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic';
 
 import { getTranslations } from 'next-intl/server';
 
-import { KAMNET_MAX_SPONSORSHIP_DEPTH } from '@kambriq/common/constants/kamnet';
 import { getMyAgentProfile, getMyNetwork, getMySponsors } from '@/lib/actions/kamnet';
 import { NetworkContent } from './network-content';
 import { NetworkEmpty } from './network-empty';
@@ -10,29 +9,12 @@ import { NetworkEmpty } from './network-empty';
 /**
  * Renders the authenticated agent's network tree.
  *
- * Implements depth rules per UX specification section 2.3 and P9:
- * - Depth is restricted to N1 for all tiers (JUNIOR, CONFIRMED, MANAGER).
- * - MANAGER tier is the only tier authorized to view network statistics.
- *
- * Note on security constraint I32: Tier-based depth limits are currently
- * enforced by this client. The GET /kamnet/network endpoint reads the `depth`
- * query parameter without independently asserting tier authorization.
+ * The depth of the tree is the API's decision, by the caller's own tier (I32):
+ * the page asks for the network and renders what comes back. Only the MANAGER
+ * tier is shown network statistics.
  *
  * Server-fetched translations are passed down as strings to synchronous children.
  */
-
-/**
- * Maps agent tiers to authorized network depth.
- *
- * Uses `KAMNET_MAX_SPONSORSHIP_DEPTH` for MANAGER to prevent drift
- * between the client constraint and platform constants.
- * Currently, all tiers resolve to depth 1.
- */
-const DEPTH_FOR_TIER: Record<string, number> = {
-  JUNIOR: 1,
-  CONFIRMED: 1,
-  MANAGER: KAMNET_MAX_SPONSORSHIP_DEPTH,
-};
 
 export async function generateMetadata() {
   const t = await getTranslations('app.network');
@@ -46,9 +28,8 @@ export default async function AgentNetworkPage() {
   const profile = profileRes.success ? profileRes.data : null;
 
   const tier = profile?.tier ?? 'JUNIOR';
-  const depth = DEPTH_FOR_TIER[tier] ?? 1;
 
-  const [networkRes, sponsorsRes] = await Promise.all([getMyNetwork(depth), getMySponsors()]);
+  const [networkRes, sponsorsRes] = await Promise.all([getMyNetwork(), getMySponsors()]);
   const root = networkRes.success ? networkRes.data : null;
   const sponsors = sponsorsRes.success ? sponsorsRes.data : null;
 

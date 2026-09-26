@@ -104,7 +104,6 @@ const NO_ENTRY_YET: ReadonlyArray<{ chantier: string; why: string }> = [
   { chantier: 'I20', why: 'the 18 September wave, tracked outside this repository' },
   { chantier: 'I21', why: 'the 18 September wave, tracked outside this repository' },
   { chantier: 'I31', why: 'exam threshold arbitration, tracked outside this repository' },
-  { chantier: 'I32', why: 'getMyNetwork never reads the caller tier; not started' },
   { chantier: 'I7', why: 'the 18 September wave, tracked outside this repository' },
   { chantier: 'P10', why: 'agent-page copy replaced; the LANDS page rewrite waits in #174' },
   { chantier: 'P4', why: 'X-Robots-Tag; entry never written' },
@@ -196,7 +195,7 @@ describe('the chantier register is the record, and the only one', () => {
       (q) => q.chantier,
     );
     expect(stale).toEqual([]);
-    expect(NO_ENTRY_YET).toHaveLength(25);
+    expect(NO_ENTRY_YET).toHaveLength(24);
   });
 
   it('is the only file in the repository shaped like a record of work', () => {

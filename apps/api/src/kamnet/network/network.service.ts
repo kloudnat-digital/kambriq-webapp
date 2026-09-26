@@ -5,6 +5,7 @@ import { I18nService } from 'nestjs-i18n';
 import {
   KAMNET_MAX_FULL_TREE_ROOTS,
   KAMNET_MAX_SPONSORSHIP_DEPTH,
+  KAMNET_NETWORK_DEPTH_BY_TIER,
   KamnetAgentTier,
 } from '@kambriq/common';
 
@@ -30,9 +31,11 @@ export class KamnetNetworkService {
 
   // ----- Get My Network ----- //
   /**
-   * Returns the agent's referrals, clamped to KAMNET_MAX_SPONSORSHIP_DEPTH.
+   * Returns the agent's referrals, as deep as the caller's own tier allows
+   * (`KAMNET_NETWORK_DEPTH_BY_TIER`, never beyond `KAMNET_MAX_SPONSORSHIP_DEPTH`).
+   * A requested depth can only narrow that; with none, the allowance is served.
    */
-  async getMyNetwork(userId: string, depth = 1) {
+  async getMyNetwork(userId: string, depth?: number) {
     const agent = await this.prisma.kamnetAgent.findUnique({
       where: { userId },
     });
@@ -41,7 +44,11 @@ export class KamnetNetworkService {
       throw new NotFoundException(this.t('kamnet.agent.notFound'));
     }
 
-    const safeDepth = Math.min(depth, KAMNET_MAX_SPONSORSHIP_DEPTH);
+    const allowance = Math.min(
+      KAMNET_NETWORK_DEPTH_BY_TIER[agent.tier] ?? 1,
+      KAMNET_MAX_SPONSORSHIP_DEPTH,
+    );
+    const safeDepth = Math.min(depth ?? allowance, allowance);
 
     return this.buildTree(agent.id, safeDepth);
   }
