@@ -1795,6 +1795,21 @@ Two properties of Next.js make this easy to get wrong:
 - a pattern with no `search` matches every query string. Presigned URLs need
   that, and it is a statement about what the entry allows, not a detail.
 
+### A write to a stored preference, caused by a click read as temporary, is said out loud
+
+From J4's second half. Switching the page language now also sets a signed-in
+person's account language, so their emails follow. That is a write to a profile
+from a control people read as affecting only what they are looking at, and a
+silent one is how somebody ends up receiving mail in a language they did not
+choose. So the write is announced on the page it lands on, in that page's
+language, with the way to undo it; a failed write is announced too; and a
+visitor, who has no account, changes nothing but the page.
+
+**A notice carried across a navigation is keyed to where it lands.** Left
+unkeyed, the effect that reads it ran once more on the page being left and
+showed it in the old language. The test that reads the toast's words caught it;
+a test that only counted toasts would not have.
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope
