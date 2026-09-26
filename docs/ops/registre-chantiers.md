@@ -229,6 +229,7 @@ listed here first.
 | Land price integer money      | `PROUVE`            | `Land.totalPrice` and the price history move from Float to BigInt (whole XAF), the last land price held as a floating-point number; the response envelope turns a BigInt into an exact number. Pending: the migration read back on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | Deposit integer money         | `EN COURS`          | `LandReservation.downPaymentAmount` from Float to BigInt (whole XAF), still deprecated by G1 and kept; the float-money quarantine drops to one (`KamnetCommission.amount`). Pending: the migration read back on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Signed-in price smoke         | `EN COURS`          | the gap Land price integer money left: its proof rested on a database read and the journeys, since every lands route needs a session. The delivery journeys now read a parcel signed in and require its total to arrive as a whole, exact JSON number matching the database's own `pricePerM2`, and the client's deposit and money summary likewise. Pending: the first develop run with it green                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Commission integer money      | `EN COURS`          | `KamnetCommission.amount` from Float to BigInt (whole XAF), the last monetary Float in the four schemas: the float-money quarantine is empty, pinned at zero. Pending: the migration read back on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `confirmRemainingPayment`     | `EN COURS`          | G20, built (#218): every payment states its purpose, one live payment per reservation and purpose, each money step asks for its own, the balance is the total minus what the deposit received. Read on dev, 26 September: all 38 payments `ACOMPTE`, the default dropped. Pending: a balance exercised on dev, once a reservation reaches step 4                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `A52`                         | `PROUVE`            | a KBS candidate's CV is a key in their own CV folder, refused otherwise at enrolment, by the A44/A49 rule in `core/users/storage-keys.ts`; proven on dev at `sha-d5fd78e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `A53`                         | `PROUVE`            | the unrendered land search and compare components, `MOCK_LANDS`, their store and `StatCard` are deleted; the I44 pin keeps the invented values as literals. Proven by develop's run on `844cf32` (after #199): Quality, deploy, journeys and E2E green. The two namespaces only they read, `landSearch` and `landsCompare`, are removed, with a guard that every namespace is read                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -7594,6 +7595,37 @@ list test.
 
 **Pending:** the deployed back office read on dev, a deposit and a balance side
 by side.
+
+### Commission integer money - `EN COURS`
+
+**Cost impact: None.**
+
+The last of the three pre-existing monetary `Float` columns. **The quarantine
+list in `no-float-money.spec.ts` is now empty**, and pinned at zero in both
+directions: a new monetary Float fails, and so does a new entry that is not
+argued for.
+
+**Recounted before starting:** **one API service**, `commissions.service.ts`:
+`create` writes the amount from an admin DTO that already accepts only a whole
+positive number (`z.number().int().positive()`), and `getSummary` sums it in
+three aggregates. The seed writes four; the web only displays. The quarantine's
+stated reason ("moves with `Land.totalPrice`, which it is derived from") no
+longer held once the total was converted, and the amount is not computed from
+it in code - it is entered by an administrator.
+
+- **The migration:** `ALTER ... TYPE BIGINT USING ROUND(...)::BIGINT`.
+- `pv` and `tpc` stay `Float`: a coefficient and a rate, not money.
+- The summary's empty sums are `0n` instead of `0`; the envelope sends both as
+  the number 0.
+
+**Proof, red first:** the spec without the line failed naming
+`kamnet/schema.prisma:150 amount Float`; after the migration it passes with the
+list pinned at zero. API 1 112, common 376, database 130 green.
+
+**Read on dev before the migration, 26 September:** 6 commissions, **0
+fractional**, sum 2 270 000, largest 750 000, column `double precision`.
+
+**Pending:** the same read after the deploy - `bigint`, 6, sum 2 270 000.
 
 ### Deposit integer money - `EN COURS`
 

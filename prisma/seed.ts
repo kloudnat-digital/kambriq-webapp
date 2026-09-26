@@ -754,7 +754,7 @@ async function seedKamnet() {
     level: number;
     pv: number;
     tpc: number;
-    amount: number;
+    amount: bigint;
     status: KamnetCommissionStatus;
   }> = [
     {
@@ -764,7 +764,7 @@ async function seedKamnet() {
       level: 0,
       pv: 1.0,
       tpc: 0.05,
-      amount: 450000,
+      amount: 450000n,
       status: KamnetCommissionStatus.PAID,
     },
     {
@@ -774,7 +774,7 @@ async function seedKamnet() {
       level: 0,
       pv: 1.0,
       tpc: 0.05,
-      amount: 750000,
+      amount: 750000n,
       status: KamnetCommissionStatus.VALIDATED,
     },
     {
@@ -784,7 +784,7 @@ async function seedKamnet() {
       level: 1,
       pv: 1.0,
       tpc: 0.02,
-      amount: 180000,
+      amount: 180000n,
       status: KamnetCommissionStatus.PAID,
     },
     {
@@ -794,7 +794,7 @@ async function seedKamnet() {
       level: 1,
       pv: 1.0,
       tpc: 0.02,
-      amount: 300000,
+      amount: 300000n,
       status: KamnetCommissionStatus.VALIDATED,
     },
   ];

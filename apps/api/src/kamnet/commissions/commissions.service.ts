@@ -48,7 +48,7 @@ export class KamnetCommissionsService {
         level: dto.level,
         pv: dto.pv,
         tpc: dto.tpc,
-        amount: dto.amount,
+        amount: BigInt(dto.amount),
         status: KamnetCommissionStatus.PENDING,
       },
     });
@@ -168,15 +168,15 @@ export class KamnetCommissionsService {
     return {
       pending: {
         count: pending._count,
-        totalAmount: pending._sum.amount || 0,
+        totalAmount: pending._sum.amount ?? 0n,
       },
       validated: {
         count: validated._count,
-        totalAmount: validated._sum.amount || 0,
+        totalAmount: validated._sum.amount ?? 0n,
       },
       paid: {
         count: paid._count,
-        totalAmount: paid._sum.amount || 0,
+        totalAmount: paid._sum.amount ?? 0n,
       },
     };
   }

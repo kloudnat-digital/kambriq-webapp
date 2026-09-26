@@ -53,15 +53,11 @@ const NOT_MONEY = new Set([
  * September; the response envelope turns a BigInt into an exact number (or a
  * string past that range), which is what made the conversion small.
  * `LandReservation.downPaymentAmount` followed on 27 September - still
- * deprecated by G1, still kept, now integer. One remains.
+ * deprecated by G1, still kept, now integer - and `KamnetCommission.amount` the
+ * same day. **The list is empty**: every monetary column in the four schemas is
+ * integer money. It stays, pinned at zero, so a new entry has to be argued for.
  */
-const QUARANTINED: ReadonlyArray<{ module: string; field: string; why: string }> = [
-  {
-    module: 'kamnet',
-    field: 'amount',
-    why: 'KamnetCommission.amount - moves with Land.totalPrice, which it is derived from',
-  },
-];
+const QUARANTINED: ReadonlyArray<{ module: string; field: string; why: string }> = [];
 
 type Field = { module: string; name: string; type: string; line: number };
 
@@ -141,6 +137,6 @@ describe('money is never a floating-point type', () => {
       expect(found).toBeDefined();
       expect(FLOATING.has(found?.type ?? '')).toBe(true);
     }
-    expect(QUARANTINED).toHaveLength(1);
+    expect(QUARANTINED).toHaveLength(0);
   });
 });

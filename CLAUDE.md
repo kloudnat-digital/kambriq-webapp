@@ -1964,10 +1964,10 @@ stored beside it.** `BigInt`, never `Float`. **XAF has no minor unit** - one uni
 is one franc, not a centime, which is the thing people get wrong. An amount
 without its currency is a number, not money.
 `no-float-money.spec.ts` fails on any monetary field declared `Float`, `Decimal`,
-`Double` or `Real` across all four schemas; one pre-existing column remains
-quarantined there (`KamnetCommission.amount`) with the
-reason each is not yet converted, and the list is pinned in both directions so
-it cannot rot into a lie. **A `BigInt` leaves the API through the response
+`Double` or `Real` across all four schemas. **Its quarantine list is empty**
+since 27 September (`Land.totalPrice`, `downPaymentAmount` and
+`KamnetCommission.amount` were converted to `BigInt`), and it stays, pinned at
+zero in both directions, so a new entry has to be argued for rather than slip in. **A `BigInt` leaves the API through the response
 envelope** (`TransformResponseInterceptor`), as an exact number, or as a string
 past `Number.MAX_SAFE_INTEGER` - never rounded, never a `JSON.stringify` crash.
 
