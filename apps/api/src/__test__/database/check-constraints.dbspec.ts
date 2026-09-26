@@ -64,9 +64,12 @@ describe('A17 - the CHECK constraints refuse what the design forbids', () => {
   ) =>
     attempt(
       db.pool,
+      // An ended deposit (G20): the fixture's reservation already holds a live
+      // payment, and these tests are about the CHECKs, which apply in every
+      // state - not about the one-live-payment-per-purpose index.
       `INSERT INTO "Payment"
-         ("id", "reference", "reservationId", "currency", "amountDue", "state", "updatedAt")
-       VALUES ($1, $2, $3, $4, 750000, 'INITIE', now())`,
+         ("id", "reference", "reservationId", "currency", "amountDue", "state", "purpose", "updatedAt")
+       VALUES ($1, $2, $3, $4, 750000, 'ANNULE', 'ACOMPTE', now())`,
       [
         randomUUID(),
         over.reference === undefined ? null : over.reference,

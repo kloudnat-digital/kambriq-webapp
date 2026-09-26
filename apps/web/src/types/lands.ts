@@ -209,7 +209,17 @@ export interface ClientPurchase {
   };
 }
 
+/** G20 - read from the ledger by the API: what was expected, and what is still owed. */
+export interface PurchaseMoney {
+  totalPrice: number;
+  depositDue: number;
+  depositReceived: number;
+  balanceExpected: number;
+  balanceOwed: number;
+}
+
 export interface ClientPurchaseDetail {
+  money: PurchaseMoney;
   id: string;
   landId: string;
   agentUserId: string;

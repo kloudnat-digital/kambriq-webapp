@@ -36,10 +36,16 @@ export const RequestPaymentCard = ({
   reservationId,
   amountDue,
   currency = 'XAF',
+  purpose = 'ACOMPTE',
+  expected,
 }: {
   reservationId: string;
   amountDue: number;
   currency?: string;
+  /** Which payment the card asks for; the server decides which one is due (G20). */
+  purpose?: 'ACOMPTE' | 'SOLDE';
+  /** The balance announced at reservation, shown beside what is actually owed when they differ. */
+  expected?: number;
 }) => {
   const t = useTranslations('myPayment');
   const r = useTranslations('myPayment.request');
@@ -72,7 +78,9 @@ export const RequestPaymentCard = ({
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <h3 className="font-semibold text-gray-900">{r('title')}</h3>
+      <h3 className="font-semibold text-gray-900">
+        {purpose === 'SOLDE' ? r('balanceTitle') : r('title')}
+      </h3>
 
       {!payment ? (
         <>
@@ -87,6 +95,12 @@ export const RequestPaymentCard = ({
             </span>
             . {r('notOnline')}
           </p>
+          {expected !== undefined && Math.round(expected) !== Math.round(amountDue) && (
+            <p className="mt-1 text-sm text-amber-800">
+              {r('balanceDiffers')}{' '}
+              <Money amount={String(Math.round(expected))} currency={currency} />
+            </p>
+          )}
           <button
             type="button"
             disabled={create.isPending}

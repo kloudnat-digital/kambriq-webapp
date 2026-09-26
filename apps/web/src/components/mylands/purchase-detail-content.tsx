@@ -45,8 +45,12 @@ const buildSteps = (
 ): Step[] => {
   const agentName = `${r.agent.firstName} ${r.agent.lastName}`;
   const deposit = formatXAF(r.downPaymentAmount);
-  const total = r.land.totalPrice;
-  const remainingAmount = formatXAF(total - r.downPaymentAmount);
+  // G20: before the deposit is confirmed, the balance line announces the balance
+  // expected; once it is confirmed, what is actually still owed, from the ledger,
+  // so a deposit received short shows here instead of vanishing.
+  const remainingAmount = formatXAF(
+    r.downPaymentConfirmed ? r.money.balanceOwed : r.money.balanceExpected,
+  );
   const requiredCount = r.requiredDocuments.length;
   const uploadedCount = r.requiredDocuments.filter((d) => d.uploaded).length;
   const remainingDocs = requiredCount - uploadedCount;
@@ -194,6 +198,19 @@ export function PurchaseDetailContent({ id }: Props) {
       {!isCancelled && !r.downPaymentConfirmed && (
         <RequestPaymentCard reservationId={id} amountDue={r.downPaymentAmount} />
       )}
+      {/* G20: the balance opens once the documents are validated (step 3). */}
+      {!isCancelled &&
+        r.downPaymentConfirmed &&
+        r.documentsReceivedAt &&
+        !r.remainingPaymentConfirmedAt &&
+        r.money.balanceOwed > 0 && (
+          <RequestPaymentCard
+            reservationId={id}
+            purpose="SOLDE"
+            amountDue={r.money.balanceOwed}
+            expected={r.money.balanceExpected}
+          />
+        )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_500px]">
         <div className="rounded-md border border-slate-200 bg-white p-6">

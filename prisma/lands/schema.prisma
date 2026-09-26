@@ -276,6 +276,14 @@ model LandPriceHistory {
 /// Orchestrates and records payment receipts across external channels.
 
 /// Represents the lifecycle states of a payment.
+/// What a payment pays for (G20). Required on every payment; one live payment
+/// per reservation and purpose is enforced by the partial unique index
+/// "Payment_one_live_per_purpose" (SQL, migration 20260926210000).
+enum PaymentPurpose {
+  ACOMPTE
+  SOLDE
+}
+
 enum PaymentState {
   INITIE
   INSTRUCTIONS_ENVOYEES
@@ -313,6 +321,8 @@ model Payment {
 
   /// Due amount stored in indivisible integer units to prevent floating point imprecision.
   amountDue BigInt
+
+  purpose PaymentPurpose
 
   state PaymentState @default(INITIE)
 
