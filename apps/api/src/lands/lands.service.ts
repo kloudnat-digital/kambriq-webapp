@@ -69,7 +69,7 @@ export class LandsService {
         latitude: dto.latitude || null,
         longitude: dto.longitude || null,
         sizeM2: dto.sizeM2,
-        price: dto.price,
+        totalPrice: dto.totalPrice,
         labelId: dto.labelId,
         pv: dto.pv,
         ownerType: dto.ownerType,
@@ -107,21 +107,21 @@ export class LandsService {
     }
 
     // Track price change if price is being updated
-    if (dto.price !== undefined && dto.price !== land.price) {
+    if (dto.totalPrice !== undefined && dto.totalPrice !== land.totalPrice) {
       await this.prisma.landPriceHistory.create({
         data: {
           landId,
-          previousPrice: land.price,
-          newPrice: dto.price,
+          previousTotalPrice: land.totalPrice,
+          newTotalPrice: dto.totalPrice,
           changedBy: adminUserId,
-          reason: `Price updated from ${land.price} to ${dto.price} XAF`,
+          reason: `Total price updated from ${land.totalPrice} to ${dto.totalPrice} XAF`,
         },
       });
 
       this.logger.log('Land price changed %o', {
         landId,
-        from: land.price,
-        to: dto.price,
+        from: land.totalPrice,
+        to: dto.totalPrice,
         adminUserId,
       });
     }
@@ -139,7 +139,7 @@ export class LandsService {
         ...(dto.latitude !== undefined && { latitude: dto.latitude }),
         ...(dto.longitude !== undefined && { longitude: dto.longitude }),
         ...(dto.sizeM2 !== undefined && { sizeM2: dto.sizeM2 }),
-        ...(dto.price !== undefined && { price: dto.price }),
+        ...(dto.totalPrice !== undefined && { totalPrice: dto.totalPrice }),
         ...(dto.labelId !== undefined && { labelId: dto.labelId }),
         ...(dto.pv !== undefined && { pv: dto.pv }),
         ...(dto.ownerType !== undefined && { ownerType: dto.ownerType }),
@@ -195,13 +195,13 @@ export class LandsService {
     if (filters?.labelCode) {
       where.label = { code: filters.labelCode };
     }
-    if (filters?.minPrice !== undefined || filters?.maxPrice !== undefined) {
-      where.price = {};
-      if (filters?.minPrice !== undefined) {
-        (where.price as Record<string, unknown>).gte = filters.minPrice;
+    if (filters?.minTotalPrice !== undefined || filters?.maxTotalPrice !== undefined) {
+      where.totalPrice = {};
+      if (filters?.minTotalPrice !== undefined) {
+        (where.totalPrice as Record<string, unknown>).gte = filters.minTotalPrice;
       }
-      if (filters?.maxPrice !== undefined) {
-        (where.price as Record<string, unknown>).lte = filters.maxPrice;
+      if (filters?.maxTotalPrice !== undefined) {
+        (where.totalPrice as Record<string, unknown>).lte = filters.maxTotalPrice;
       }
     }
     if (filters?.search) {

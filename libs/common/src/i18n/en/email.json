@@ -148,14 +148,14 @@
     "subject": "New reservation created",
     "heading": "Reservation confirmed on your side",
     "body": "Hi {firstName}, you just reserved a land for {clientName}.",
-    "landInfo": "Land: <strong>{landTitle}</strong> — {price} XAF",
+    "landInfo": "Land: <strong>{landTitle}</strong> — {totalPrice} XAF",
     "note": "The client has been notified and will receive their portal access shortly."
   },
   "clientPortalAccess": {
     "subject": "Welcome to your KAMBRIQ client portal",
     "heading": "Welcome to KAMBRIQ",
     "body": "Hi {clientName}, your reservation has been opened and a client portal has been set up for you.",
-    "landInfo": "Land: <strong>{landTitle}</strong> — {price} XAF",
+    "landInfo": "Land: <strong>{landTitle}</strong> — {totalPrice} XAF",
     "agent": "Your KAMNET™ agent: {agentName}",
     "note": "You can track every step of your acquisition from your portal."
   },

@@ -44,16 +44,16 @@ export class LandsAgentController {
     description: 'Filter by land classification',
   })
   @ApiQuery({
-    name: 'minPrice',
+    name: 'minTotalPrice',
     required: false,
     type: Number,
-    description: 'Minimum price in XAF',
+    description: 'Minimum total price of the parcel, in XAF',
   })
   @ApiQuery({
-    name: 'maxPrice',
+    name: 'maxTotalPrice',
     required: false,
     type: Number,
-    description: 'Maximum price in XAF',
+    description: 'Maximum total price of the parcel, in XAF',
   })
   @ApiQuery({
     name: 'search',

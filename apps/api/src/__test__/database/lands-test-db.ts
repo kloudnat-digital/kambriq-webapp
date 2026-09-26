@@ -74,6 +74,8 @@ export const SQLSTATE = {
   UNDEFINED_COLUMN: '42703',
   /** A `RAISE EXCEPTION` with no `ERRCODE` - the G6 reminder triggers. */
   RAISE_EXCEPTION: 'P0001',
+  /** A write to a `GENERATED ALWAYS` column - `Land.pricePerM2` (G19). */
+  GENERATED_ALWAYS: '428C9',
 } as const;
 
 /**
@@ -126,7 +128,7 @@ export const createPaymentFixture = async (
       description: 'Created by the database-backed suite.',
       region: 'Littoral',
       sizeM2: 500,
-      price: 15_000_000,
+      totalPrice: 15_000_000,
       labelId: label.id,
     },
   });

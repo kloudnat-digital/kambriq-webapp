@@ -63,7 +63,7 @@ export const createLandSchema = z.object({
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   sizeM2: z.number().int().positive('Size must be positive'),
-  price: z.number().int().positive('Price must be positive'), // In XAF
+  totalPrice: z.number().int().positive('Total price must be positive'), // In XAF, the whole parcel (G19)
   labelId: z.string().min(1, 'Label ID is required'),
   pv: z.number().min(0.1).max(2.0).default(1.0), // Point Valeur (commission coefficient)
   ownerType: z.enum(LandOwnerType).default(LandOwnerType.KAMBRIQ),
@@ -85,7 +85,7 @@ export const updateLandSchema = z.object({
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   sizeM2: z.number().int().positive().optional(),
-  price: z.number().int().positive().optional(), // Triggers price history
+  totalPrice: z.number().int().positive().optional(), // Triggers price history
   labelId: z.string().optional(),
   pv: z.number().min(0.1).max(2.0).optional(),
   ownerType: z.enum(LandOwnerType).optional(),
@@ -103,8 +103,8 @@ export const landFilterSchema = z.object({
   region: z.string().optional(),
   city: z.string().optional(),
   labelCode: z.enum(LandLabelCodes).optional(),
-  minPrice: z.coerce.number().int().min(0).optional(),
-  maxPrice: z.coerce.number().int().positive().optional(),
+  minTotalPrice: z.coerce.number().int().min(0).optional(),
+  maxTotalPrice: z.coerce.number().int().positive().optional(),
   status: z.enum(LandStatus).optional(),
   search: z.string().optional(),
 });

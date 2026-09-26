@@ -15,7 +15,7 @@ import {
   LandReservationFilterDto,
 } from '../dto/lands.dto';
 import {
-  DOWN_PAYMENT_PERCENT,
+  depositFor,
   EmailService,
   KAMNET_JOBS,
   LandClientDocumentType,
@@ -102,8 +102,8 @@ export class LandReservationsService {
         throw new ConflictException(this.t('lands.reservation.conflict'));
       }
 
-      // 3. Calculate down payment (5% of land price)
-      const downPaymentAmount = Math.round((land.price * DOWN_PAYMENT_PERCENT) / 100);
+      // 3. Calculate down payment (5% of the parcel's total price, G19)
+      const downPaymentAmount = depositFor(land.totalPrice);
 
       // 4. Create the reservation
       const reservation = await tx.landReservation.create({
@@ -161,7 +161,7 @@ export class LandReservationsService {
       args: {
         clientName: dto.clientName,
         landTitle: land.title,
-        price: String(land.price),
+        totalPrice: String(land.totalPrice),
         // Empty rather than an id: the template omits the line when there is no
         // name, which is the only honest option if the name cannot be reached.
         agentName,
@@ -178,7 +178,7 @@ export class LandReservationsService {
           firstName: agentUser.firstName || agentUser.email,
           clientName: dto.clientName,
           landTitle: land.title,
-          price: String(land.price),
+          totalPrice: String(land.totalPrice),
         },
       },
       agentUser.profile,
@@ -199,7 +199,8 @@ export class LandReservationsService {
       land: {
         id: land.id,
         title: land.title,
-        price: land.price,
+        totalPrice: land.totalPrice,
+        pricePerM2: land.pricePerM2,
         label: land.label.code,
       },
     };
@@ -542,7 +543,7 @@ export class LandReservationsService {
         orderBy: { [sort || 'createdAt']: order || 'desc' },
         include: {
           land: {
-            select: { id: true, title: true, price: true, status: true },
+            select: { id: true, title: true, totalPrice: true, pricePerM2: true, status: true },
           },
         },
       }),
@@ -567,7 +568,8 @@ export class LandReservationsService {
             title: true,
             region: true,
             city: true,
-            price: true,
+            totalPrice: true,
+            pricePerM2: true,
             sizeM2: true,
             label: { select: { code: true, name: true } },
             documents: {
@@ -643,7 +645,8 @@ export class LandReservationsService {
               title: true,
               region: true,
               city: true,
-              price: true,
+              totalPrice: true,
+              pricePerM2: true,
               sizeM2: true,
               label: { select: { code: true, name: true } },
             },
@@ -685,7 +688,8 @@ export class LandReservationsService {
             select: {
               id: true,
               title: true,
-              price: true,
+              totalPrice: true,
+              pricePerM2: true,
               status: true,
               sizeM2: true,
               label: { select: { code: true } },

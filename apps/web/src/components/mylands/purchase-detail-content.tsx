@@ -45,7 +45,7 @@ const buildSteps = (
 ): Step[] => {
   const agentName = `${r.agent.firstName} ${r.agent.lastName}`;
   const deposit = formatXAF(r.downPaymentAmount);
-  const total = r.land.price * r.land.sizeM2;
+  const total = r.land.totalPrice;
   const remainingAmount = formatXAF(total - r.downPaymentAmount);
   const requiredCount = r.requiredDocuments.length;
   const uploadedCount = r.requiredDocuments.filter((d) => d.uploaded).length;

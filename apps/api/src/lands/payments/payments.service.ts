@@ -334,7 +334,7 @@ export class PaymentsService {
      * `Math.round`, and it is deliberate.
      *
      * `downPaymentAmount` is a `Float` - the defect G1 exists to end, quarantined
-     * rather than converted because converting it means converting `Land.price`
+     * rather than converted because converting it means converting `Land.totalPrice`
      * with it. The G1 migration rounded it exactly this way when it backfilled,
      * so a payment created here and a payment backfilled there agree.
      * XAF has no minor unit: one indivisible unit is one franc.

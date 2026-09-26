@@ -49,7 +49,7 @@ const NOT_MONEY = new Set([
  * of these without removing its line fails the test too, so the list cannot rot
  * into a lie.
  *
- * They are not converted here because `Land.price` alone has **51 call sites**
+ * They are not converted here because `Land.totalPrice` (named `price` until G19) alone has **51 call sites**
  * across the API and the web, and `BigInt` does not survive `JSON.stringify`,
  * so converting it means changing the response serialiser and the web types in
  * the same breath. That is a chantier, not a detail of this one - and shipping
@@ -59,9 +59,17 @@ const NOT_MONEY = new Set([
  * dropping it, so it must survive this PR unchanged.
  */
 const QUARANTINED: ReadonlyArray<{ module: string; field: string; why: string }> = [
-  { module: 'lands', field: 'price', why: 'Land.price - 51 call sites, needs its own chantier' },
-  { module: 'lands', field: 'previousPrice', why: 'LandPriceHistory - moves with Land.price' },
-  { module: 'lands', field: 'newPrice', why: 'LandPriceHistory - moves with Land.price' },
+  {
+    module: 'lands',
+    field: 'totalPrice',
+    why: 'Land.totalPrice (was price, G19) - dozens of call sites, needs its own chantier',
+  },
+  {
+    module: 'lands',
+    field: 'previousTotalPrice',
+    why: 'LandPriceHistory - moves with Land.totalPrice',
+  },
+  { module: 'lands', field: 'newTotalPrice', why: 'LandPriceHistory - moves with Land.totalPrice' },
   {
     module: 'lands',
     field: 'downPaymentAmount',
@@ -70,7 +78,7 @@ const QUARANTINED: ReadonlyArray<{ module: string; field: string; why: string }>
   {
     module: 'kamnet',
     field: 'amount',
-    why: 'KamnetCommission.amount - moves with Land.price, which it is derived from',
+    why: 'KamnetCommission.amount - moves with Land.totalPrice, which it is derived from',
   },
 ];
 
@@ -113,7 +121,8 @@ describe('money is never a floating-point type', () => {
     const names = ALL_FIELDS.filter(isMonetary).map((f) => f.name);
     expect(names).toContain('amountDue');
     expect(names).toContain('amount');
-    expect(names).toContain('price');
+    expect(names).toContain('totalPrice');
+    expect(names).toContain('pricePerM2');
   });
 
   it('no monetary field is Float, Decimal, Double or Real', () => {
