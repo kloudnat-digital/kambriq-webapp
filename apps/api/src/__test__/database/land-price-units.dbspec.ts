@@ -43,7 +43,7 @@ describe('G19 - the total and the price per m2 cannot disagree', () => {
 
   it('the parcel from the diagnosis: 3 400 000 over 480 m2 is 7 083 per m2', async () => {
     const land = await createLand(3_400_000, 480);
-    expect(land.totalPrice).toBe(3_400_000);
+    expect(land.totalPrice).toBe(3_400_000n);
     expect(land.pricePerM2).toBe(7083);
   });
 

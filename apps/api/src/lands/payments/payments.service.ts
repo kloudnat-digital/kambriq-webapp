@@ -393,7 +393,7 @@ export class PaymentsService {
    */
   private async createBalance(
     clientUserId: string,
-    reservation: { id: string; documentsReceivedAt: Date | null; land: { totalPrice: number } },
+    reservation: { id: string; documentsReceivedAt: Date | null; land: { totalPrice: bigint } },
     depositPaymentId: string,
   ): Promise<{ id: string; reference: string; amountDue: string; currency: string }> {
     if (!reservation.documentsReceivedAt) {
@@ -407,8 +407,8 @@ export class PaymentsService {
       where: { paymentId: { in: [depositPaymentId] } },
       select: { amount: true },
     });
-    // XAF has no minor unit; `totalPrice` is still a Float until it is converted.
-    const amountDue = BigInt(Math.round(reservation.land.totalPrice)) - sumReceipts(receipts);
+    // Whole XAF on both sides: the total and the receipts are integer money.
+    const amountDue = reservation.land.totalPrice - sumReceipts(receipts);
     if (amountDue <= 0n) {
       throw new BadRequestException('Nothing remains to be paid on this reservation.');
     }

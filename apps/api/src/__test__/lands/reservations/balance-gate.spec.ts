@@ -129,7 +129,7 @@ describe('G20 - what the client is told they owe', () => {
       agentUserId: 'agent-1',
       status: 'CONFIRMED',
       downPaymentAmount: 170000,
-      land: { totalPrice: 3_400_000, documents: [] },
+      land: { totalPrice: 3_400_000n, documents: [] },
       landClientDocuments: [],
     });
     prisma.payment.findMany.mockResolvedValue(

@@ -271,7 +271,7 @@ describe('G9 - the payment entry point', () => {
             { id: 'pay-paid', reference: 'KBQ-2609-ABCDE-F', state: 'VALIDE', purpose: 'ACOMPTE' },
           ],
           documentsReceivedAt: null,
-          land: { title: 'Parcelle Douala Akwa', totalPrice: 8_000_000 },
+          land: { title: 'Parcelle Douala Akwa', totalPrice: 8_000_000n },
         }),
       );
 
