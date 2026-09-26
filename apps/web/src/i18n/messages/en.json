@@ -927,6 +927,36 @@
       "other": "I have another question"
     }
   },
+  "verifyCertificate": {
+    "home": "Back to home",
+    "labels": {
+      "number": "KCA number",
+      "issued": "Issued on",
+      "validUntil": "Valid until",
+      "revokedOn": "Revoked on",
+      "expiredOn": "Expired on"
+    },
+    "valid": {
+      "title": "Valid certificate",
+      "description": "This KCA certificate was issued by KAMBRIQ and is currently valid."
+    },
+    "revoked": {
+      "title": "Revoked certificate",
+      "description": "This KCA certificate was issued by KAMBRIQ and later revoked. It is no longer valid."
+    },
+    "expired": {
+      "title": "Expired certificate",
+      "description": "This KCA certificate was issued by KAMBRIQ, but its validity period has ended. It no longer attests to a current certification."
+    },
+    "unknown": {
+      "title": "Certificate not recognised",
+      "description": "No certificate issued by KAMBRIQ matches the number <number>{requested}</number>. This number is not recognised."
+    },
+    "unavailable": {
+      "title": "Verification unavailable for now",
+      "description": "We cannot check the number <number>{requested}</number> right now. This page neither confirms nor denies its authenticity: try again in a few minutes."
+    }
+  },
   "languageSwitch": {
     "saved": {
       "title": "Your account is now in English",

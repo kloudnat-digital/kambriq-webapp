@@ -6703,6 +6703,33 @@ only when 200 newer failures accumulate (`removeOnFail: 200`).
 real failed job seen as a line in the dev log. That needs a failure, and none
 will be manufactured on dev.
 
+### I43 follow-up - the public certificate verdict reads in the visitor's language - `EN COURS`
+
+**Cost impact: None.**
+
+`/verify-certificate/[n]` is read by strangers: a buyer checking an agent before
+ever meeting KAMBRIQ. Every verdict (valid, revoked, expired, not recognised,
+cannot verify) was French only, and the page was on I43's hardcoded-copy debt
+list. It now reads from `verifyCertificate`, fr and en, with dates in the
+reader's locale. The number the visitor asked about is still shown back to
+them, set apart in monospace, through a `t.rich` tag. `next-intl-mock` gains
+real tag rendering for `t.rich` to test that. **24 debt entries remain.**
+
+**The verdict logic is untouched** (`lib/certificate-verdict.ts`): the
+translation changes the words, never which verdict is given. Both existing
+specs pass unchanged in French.
+
+**Proof, red first.** `page-in-english.spec.tsx` renders each of the five
+verdicts in English and requires no French word in the page; against develop's
+page, all five fail. Two more tests require the requested number in its own
+element, as pins. Mutations: the number no longer set apart fails both pins;
+the home link hardcoded back in French fails all five.
+
+**The English copy is mine, for Visquis:** `verifyCertificate.*`. The French
+keeps today's wording.
+
+**Pending:** the verdict read on dev in English.
+
 ### G19 - a 170 000 deposit beside a 1 631 830 000 balance - `A DECIDER`
 
 **Cost impact: None.** Diagnosis only; nothing was changed.
