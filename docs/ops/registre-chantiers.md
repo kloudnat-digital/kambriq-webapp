@@ -182,7 +182,7 @@ listed here first.
 | `G11` follow-up 2             | `A DECIDER`         | v03 section 5's example uses a hyphen between reference and channel, which section 4b forbids. 4b implemented                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `A18`                         | `PROUVE LOCALEMENT` | queue counts and failed payloads on `/health/queues`, ADMIN_GLOBAL. `failed` 0->1 observed through the endpoint against a real Redis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `L1-contact`                  | `PROUVE LOCALEMENT` | the public contact form sent nothing behind a success toast. Now persisted, announced, acknowledged in the page's locale; consent stored with its timestamp                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `L2-contact`                  | `PROUVE LOCALEMENT` | a daily digest on the existing core queue, sent even at zero, so its absence is the alarm. Exercised once end to end with a forced zero count                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `L2-contact`                  | `PROUVE LOCALEMENT` | a daily digest on the existing core queue, sent even at zero, so its absence is the alarm. **On dev it failed every morning, silently, until 26 September**: `CONTACT_INBOX_EMAIL` was unset, the job threw, BullMQ kept it as a failed job and no line was logged (16 failed jobs on the core queue, names not read). First send on dev: 26 September 07:00 UTC, count 0. Delivery can only be seen in `contact@`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `L1-contact` f-up             | `A DECIDER`         | infra owes `/kambriq/{env}/api/CONTACT_INBOX_EMAIL`. Until it exists dev stores every request and announces none, loudly                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | naming                        | `A DECIDER`         | the brief's `L1`/`L2` collide with this register's logging `L2`/`L3`. Entries above are `L1-contact`/`L2-contact`; somebody should decide which series keeps the bare letter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `A31`                         | `EN COURS`          | develop red on journeys 4 and 5 from 08:22 UTC on 14 Sept: the seed kept payment-carrying reservations, reset their parcels to AVAILABLE anyway (8 on dev), and the first available parcel answered 409. Fixed in the seed and proved locally. Pending: merge, one seed run on dev, a green journeys run on develop. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -237,7 +237,7 @@ listed here first.
 | `I43`                         | `PROUVE`            | ten signed-in screens promised 38 unbuilt features in hardcoded French; the promise is removed and a guard reads every `.tsx`; proven on dev at `sha-383828e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Audit 2026-09-23, wave 5      | `EN COURS`          | locale-prefixed routing: every page under `[locale]`, `localePrefix: 'always'`, the proxy gate asked positively, the RSC token leak closed, 48 `next/link` and 35 `next/navigation` imports moved to `@/i18n/navigation`, `revalidatePath` given its prefix. Proved locally over HTTP (`/` -> 307 `/fr`, `/pricing` -> 404 not a login redirect, `/de/about` -> 404, `/fr/mylands` -> `/fr/login`) and by 55 browser tests. Unmerged; pending proof is the same table read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Audit 2026-09-23, wave 6      | `EN COURS`          | SEO: `app/sitemap.ts` (30 URLs, hreflang + x-default), `app/robots.ts`, canonical and alternates on all 15 public pages, JSON-LD where there was none, metadata on the four legal pages and `robots: noindex` on the six auth pages. Both files read `APP_ENV`, never `NODE_ENV`. Unmerged; pending proof is `/robots.txt` and `/sitemap.xml` read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| Locale switcher coverage      | `EN COURS`          | J4 / P16: `QuickActions` now on every public page, guarded by default (#197). Second half, decided by Visquis on 26 September: the switch also sets a signed-in person's account language, and so their emails, announced with a link to the profile; a visitor changes only the page. Pending: both halves used on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Locale switcher coverage      | `PROUVE`            | J4 / P16: `QuickActions` on every public page, guarded by default (#197); the switch also sets a signed-in person's account language, announced with the way back, and a visitor changes only the page (#201). Proven on dev, web `sha-65521db`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | Built-in 404 above the locale | `A FAIRE`           | a `notFound()` thrown from the root layout has no boundary above it, so an unconfigured FIRST segment (`/pricing`, `/de/about`) is served Next's built-in 404 rather than the branded one. The status is 404 in both cases. Closing it needs `experimental.globalNotFound`, off by default in Next 16.3.6; pinned as a difference in `locale-routing.spec.ts` rather than left to be discovered                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | develop merged into waves 5-6 | `EN COURS`          | develop's 9 commits merged 25 September: 8 text conflicts, six new page files relocated under `[locale]`, three components moved off `next/link`/`next/navigation`, `revalidatePath` calls given their prefix, `image-hosts.spec.ts` unblocked (25 assertions that ran none), `A41` reconciled. Unmerged to develop; pending proof is the routing table and the sitemap read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Audit 2026-09-23, unwaved     | `A FAIRE`           | `/admin/verify` and `/kamnet/apply` are mocks behind real roles that toast success and write nothing; the Mapbox build `ARG` reaches no workflow, so the land-search map is dark in every image; `legal/mentions/{fr,en}.mdx` publishes `Capital social : XXX XXX XAF` and `N° RCCM : XX / XXX / XX` on a public page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
@@ -1247,6 +1247,32 @@ than by inspecting the code. Both messages now format their dates.
 ## Gate - LOCAL ONLY
 
 As `L1-contact`'s.
+
+**On dev, 26 September - the digest had never been sent, and nothing said so.**
+The dev log from 19 September (the oldest line it still holds for this) to 25
+September has the schedule line at every task start and **nothing at 07:00 UTC
+on any day** (each of 21 to 25 September read minute by minute): no "Contact digest sent", and no
+error either. `CONTACT_INBOX_EMAIL` was unset on dev (it was set by infra #66 on
+26 September, found by P5), so `sendDailyDigest` threw
+`DigestUndeliverableError`, BullMQ recorded a failed job, and the processor
+logs nothing when a job fails. `GET /health/queues` shows 16 failed jobs on the
+`core` queue, consistent with one per morning (their names were not read) -
+the only place it was visible, and only to somebody asking.
+**A design whose alarm is the absence of a message had its message absent, and
+nobody was expecting it yet**, so the absence alarmed nobody.
+
+The first digest on dev left at **26 September 07:00:00 UTC**:
+`Contact digest sent {"count":0,"pending":0,"windowHours":48}`. Whether it
+arrived is visible only in `contact@`, and this entry stays `PROUVE LOCALEMENT`
+until Visquis sees it there.
+
+**The fourth round's subject 4 asked for "an alert when the volume stays at zero
+for 48 hours" as P1's last piece.** Not built. `P1` in this register is the SES
+contact-list question, and the 48-hour zero case is this entry, where the
+decision was a digest rather than an alert. An alert would reverse that
+decision, which is his to make. Two smaller things that are not decisions,
+also not built: logging a failed core job at `error`, and `CONTACT_INBOX_EMAIL`
+being required at startup rather than at 07:00.
 
 ### P3 - the auth middleware was a global net, and nothing could 404 - `PROUVE LOCALEMENT`
 
@@ -6319,11 +6345,29 @@ is Visquis's alone. The merge also went in under the PR's title rather than a
 lowercase commit subject, because my merge script took the wrong field; the
 script is corrected.
 
-### I43 follow-up - the client payment screens read in the customer's language - `EN COURS`
+### I43 follow-up - the client payment screens read in the customer's language - `PROUVE`
 
 **Cost impact: None.**
 
-**Pending:** the payment page read on dev in English.
+**Proven on dev, 26 September, in Firefox, against web `sha-cf56bc1`**, signed
+in as the G8 throwaway client `g8.client.1789151649764@maildrop.cc`, read only:
+`/en/mylands/payment/449d7584-…` (validated, bank transfer), `/en/mylands/payment/cdbebecc-…`
+(requested, details not yet sent) and `/en/mylands/purchase/380d2626-…` (the
+request card) read in English throughout: "AMOUNT DUE", "How to pay - Bank
+transfer (VIR)", "Account number / IBAN", "Keep your receipt", "Your request has
+arrived", "Pay the deposit", "Get my payment reference". What is still French is
+data, not copy: parcel names, and the deliberately fake dev channel values from
+SSM ("DEV - aucune banque reelle").
+
+**The first reading was of the wrong build, and it said French.** I waited for
+the API's `/api/v1/health/version` to report the new sha, and the deploy
+rolls the API out first: the web was still the old image. The web answers its
+own identity at `/health`. The second reading waited for that.
+
+**Found, not changed:** the purchase page writes the same deposit as "170 000
+XAF" in the card and "170 000 FCFA" in the journey, and shows a remaining
+payment of "1 631 830 000 FCFA" on that parcel. P28 says touch no price, so it
+is named here.
 
 `components/mylands/my-payment-content.tsx` (the client's payment page) and
 `request-payment-card.tsx` (the card that issues the payment reference) were
@@ -6567,7 +6611,7 @@ which removes a second implementation of somebody else's parser; note that the
 Next 16.3.6 documentation calls it `unstable_doesProxyMatch`, **a name that
 appears nowhere in the shipped build**.
 
-### Locale switcher coverage - `EN COURS`
+### Locale switcher coverage - `PROUVE`
 
 **Cost impact: None.** A component already in the tree, mounted in one more
 place.
@@ -6644,7 +6688,23 @@ its locale.
 
 **Cost impact: None.**
 
-**Pending:** both halves used on dev: the switch on `/fr/contact` and a legal page as a visitor, and signed in, with the account's stored language read back and the notice seen.
+**Proven on dev, 26 September, in Firefox, against web `sha-65521db`** (read
+from the web's own `/health`, six samples out of six):
+
+- **a visitor**, on `/fr/contact` and `/fr/legal/privacy`: the switch lands on
+  `/en/contact` and `/en/legal/privacy`, `<html lang="en">`, and no notice;
+- **signed in** as the throwaway `e2e-login.1790405064949.4715@maildrop.cc`,
+  whose stored language read `fr` through `GET /users/me` before: on
+  `/fr/contact` the switch lands on `/en/contact`, the notice reads "Your
+  account is now in English - Our emails to you will be in English too. You can
+  change this in your profile. - My profile", and the stored language reads
+  `en`. On `/fr/legal/privacy` the switch lands in English with **no** notice,
+  because the account already had it - stored still `en`;
+- **the way back**: `/en/account`, "French" on the preferences card, and the
+  stored language reads `fr` again. The throwaway is left as it was found.
+
+The coverage half alone was also used on dev as a visitor on `sha-2fbfc5b`,
+before #201, with the same landings.
 
 ### Built-in 404 above the locale - `A FAIRE`
 

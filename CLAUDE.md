@@ -111,6 +111,13 @@ against a build that did not contain it.
 
 `/api/v1/health/version` returns `gitSha`, `imageTag` and `buildTime`. Use it.
 
+**Ask the component the proof is about.** The deploy rolls the API out before
+the web, so the API reporting the new sha says nothing about the page you are
+about to read: a payment screen was read in French on 26 September against the
+old web image while the API already answered the new sha. The web answers its
+own identity at `/health`; a web proof waits for that one, and during a
+rollout samples it more than once, because both tasks answer.
+
 ### A claim is unproven until its failure has been watched
 
 If you have not seen the guard fail, you have a claim, not a guard. _"Would have
