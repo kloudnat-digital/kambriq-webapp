@@ -56,19 +56,19 @@ describe('I43 - the screens that are not built', () => {
   it('are found where they are: the ten measured on 25 September (I43), and the three I44 added', () => {
     expect(SCREENS.sort()).toEqual(
       [
-        '[locale]/(app)/admin/escalations/page.tsx',
-        '[locale]/(app)/admin/lands/compare/page.tsx',
-        '[locale]/(app)/admin/lands/search/page.tsx',
-        '[locale]/(app)/admin/kamnet/page.tsx',
-        '[locale]/(app)/admin/reservations/page.tsx',
-        '[locale]/(app)/admin/verify/page.tsx',
-        '[locale]/(app)/agent/commissions/page.tsx',
-        '[locale]/(app)/agent/dashboard/page.tsx',
-        '[locale]/(app)/agent/escalation/new/page.tsx',
-        '[locale]/(app)/client/verify/page.tsx',
-        '[locale]/(app)/profile/page.tsx',
-        '[locale]/(app)/settings/page.tsx',
-        '[locale]/(app)/welcome/page.tsx',
+        '[locale]/(site)/(app)/admin/escalations/page.tsx',
+        '[locale]/(site)/(app)/admin/lands/compare/page.tsx',
+        '[locale]/(site)/(app)/admin/lands/search/page.tsx',
+        '[locale]/(site)/(app)/admin/kamnet/page.tsx',
+        '[locale]/(site)/(app)/admin/reservations/page.tsx',
+        '[locale]/(site)/(app)/admin/verify/page.tsx',
+        '[locale]/(site)/(app)/agent/commissions/page.tsx',
+        '[locale]/(site)/(app)/agent/dashboard/page.tsx',
+        '[locale]/(site)/(app)/agent/escalation/new/page.tsx',
+        '[locale]/(site)/(app)/client/verify/page.tsx',
+        '[locale]/(site)/(app)/profile/page.tsx',
+        '[locale]/(site)/(app)/settings/page.tsx',
+        '[locale]/(site)/(app)/welcome/page.tsx',
       ].sort(),
     );
   });

@@ -240,7 +240,7 @@ listed here first.
 | Audit 2026-09-23, wave 5      | `EN COURS`          | locale-prefixed routing: every page under `[locale]`, `localePrefix: 'always'`, the proxy gate asked positively, the RSC token leak closed, 48 `next/link` and 35 `next/navigation` imports moved to `@/i18n/navigation`, `revalidatePath` given its prefix. Proved locally over HTTP (`/` -> 307 `/fr`, `/pricing` -> 404 not a login redirect, `/de/about` -> 404, `/fr/mylands` -> `/fr/login`) and by 55 browser tests. Unmerged; pending proof is the same table read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Audit 2026-09-23, wave 6      | `EN COURS`          | SEO: `app/sitemap.ts` (30 URLs, hreflang + x-default), `app/robots.ts`, canonical and alternates on all 15 public pages, JSON-LD where there was none, metadata on the four legal pages and `robots: noindex` on the six auth pages. Both files read `APP_ENV`, never `NODE_ENV`. Unmerged; pending proof is `/robots.txt` and `/sitemap.xml` read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | Locale switcher coverage      | `PROUVE`            | J4 / P16: `QuickActions` on every public page, guarded by default (#197); the switch also sets a signed-in person's account language, announced with the way back, and a visitor changes only the page (#201). Proven on dev, web `sha-65521db`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| Built-in 404 above the locale | `A DECIDER`         | an unconfigured first segment (`/pricing`, `/de/about`) still gets Next's built-in 404, with the right status. `experimental.globalNotFound` was tried in a production build on 26 September and changes nothing: those URLs match `[locale]`, so the global page is never reached. The two remaining routes are a move of every page into a route group, or a redirect the positive proxy matcher cannot see                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Built-in 404 above the locale | `EN COURS`          | P31, decided by Visquis on 26 September: the route group. Every page moved into `[locale]/(site)`, whose layout refuses an unknown locale below the branded boundary; `/pricing` and `/de/about` give the branded 404, HTTP 404, in the visitor's language. Proven locally on a production build. Pending: the same on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | develop merged into waves 5-6 | `EN COURS`          | develop's 9 commits merged 25 September: 8 text conflicts, six new page files relocated under `[locale]`, three components moved off `next/link`/`next/navigation`, `revalidatePath` calls given their prefix, `image-hosts.spec.ts` unblocked (25 assertions that ran none), `A41` reconciled. Unmerged to develop; pending proof is the routing table and the sitemap read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Audit 2026-09-23, unwaved     | `A FAIRE`           | `/admin/verify` and `/kamnet/apply` are mocks behind real roles that toast success and write nothing; the Mapbox build `ARG` reaches no workflow, so the land-search map is dark in every image; `legal/mentions/{fr,en}.mdx` publishes `Capital social : XXX XXX XAF` and `N° RCCM : XX / XXX / XX` on a public page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | register                      | `A FAIRE`           | twenty-three rows above have no `###` entry in this file - their detail lives in the tracker or in a wave note. The list is pinned in `register-is-the-record.spec.ts`; writing an entry means removing its line there                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
@@ -7003,7 +7003,7 @@ from the web's own `/health`, six samples out of six):
 The coverage half alone was also used on dev as a visitor on `sha-2fbfc5b`,
 before #201, with the same landings.
 
-### Built-in 404 above the locale - `A DECIDER`
+### Built-in 404 above the locale - `EN COURS`
 
 **Cost impact: None.**
 
@@ -7046,6 +7046,45 @@ through that segment. The branch was discarded; nothing shipped.
   307 then a 404.
 
 Until one is chosen the status is right and the page is plain.
+
+**P31 - Visquis chose the route group, 26 September.** His reason, recorded: a
+real 404 stays a real 404, which matters to search engines and to the site's
+honesty, and the proxy keeps the short explicit path list A47 gave it.
+
+**Done in one PR.** All 101 files under `app/[locale]` except the root layout
+and `not-found.tsx` moved into `app/[locale]/(site)/` with `git mv` (73 pages;
+a route group changes no URL). `(site)/layout.tsx` calls `notFound()` for an
+unknown locale: it sits below `[locale]/not-found.tsx`, so the throw is caught
+and the branded page renders, with HTTP 404. The root layout no longer refuses:
+it renders any segment, in the visitor's language - `localeForSegment` in
+`lib/locale.ts`: a known segment, else the locale cookie (their last explicit
+choice), else `Accept-Language`, else French. `i18n/request.ts` uses the same
+function, and reads the headers only on that branch.
+
+**Proof, red first.** On dev before the change (26 September, Firefox):
+`/pricing` and `/de/about` showed the built-in "404". On a local production
+build of this branch, served standalone and read in Firefox:
+
+| Visitor | `/pricing`                                   | `/de/about`            | `/fr/zzz-does-not-exist`          |
+| ------- | -------------------------------------------- | ---------------------- | --------------------------------- |
+| `fr-FR` | 404, `lang="fr"`, "Cette page n'existe pas"  | 404, `lang="fr"`, same | 404, French                       |
+| `en-GB` | 404, `lang="en"`, "This page does not exist" | 404, `lang="en"`, same | 404, French (the URL says French) |
+
+with links back into the site in the page's language. **The pages that moved
+still work:** all seventeen public pages under `/fr` answered 200 with their
+heading and the language switch present; the switch took `/fr/contact`,
+`/fr/legal/privacy` and `/fr/products/lands` to their `/en` counterparts with
+`lang="en"`; `/fr/login` and `/en/register` answered 200, and `/fr/account`,
+`/fr/admin/payments` and `/fr/agent/network` still redirect to the login.
+
+`every-page-refuses-an-unknown-locale.spec.ts` fails on a page placed beside
+the group (moved out: fails), on the group layout losing its refusal (fails),
+and on the root layout refusing again (develop's layout put back: fails). The
+e2e spec that pinned the built-in page is inverted, and asks for the English
+404 at `/pricing` with an English `Accept-Language`. Five unit specs that named
+page paths follow the move.
+
+**Pending:** the same read on dev.
 
 ### Audit 2026-09-23, wave 6 - SEO - `EN COURS`
 

@@ -87,7 +87,7 @@ describe('/verify-certificate through the BFF', () => {
     // one level deeper under `[locale]`, reporting a missing file rather than
     // the property it checks.
     const action = readFileSync(
-      join(__dirname, '..', '..', '..', '..', 'lib', 'actions', 'kbs.ts'),
+      join(__dirname, '..', '..', '..', '..', '..', 'lib', 'actions', 'kbs.ts'),
       'utf8',
     );
 

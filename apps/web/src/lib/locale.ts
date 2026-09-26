@@ -42,3 +42,24 @@ export const currentLocale = async (): Promise<Locale> => {
 
   return routing.defaultLocale;
 };
+
+/**
+ * The language to render a request in, given its first path segment (P31).
+ *
+ * A known locale segment is the answer. Any other first segment - `/pricing`,
+ * `/de/about` - is a 404, and the 404 page speaks the visitor's language: their
+ * last explicit choice (the locale cookie), else the first supported language
+ * in `Accept-Language`, else the default. The headers are read only on that
+ * branch, so a page under a real locale is rendered as before.
+ */
+export const localeForSegment = async (segment: string | undefined): Promise<Locale> => {
+  if (isLocale(segment)) return segment;
+
+  const fromCookie = (await cookies()).get(LOCALE_COOKIE)?.value;
+  if (isLocale(fromCookie)) return fromCookie;
+
+  const accepted = ((await headers()).get('accept-language') ?? '')
+    .split(',')
+    .map((part) => part.split(';')[0].trim().slice(0, 2).toLowerCase());
+  return accepted.find(isLocale) ?? routing.defaultLocale;
+};

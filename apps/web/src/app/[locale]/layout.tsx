@@ -1,15 +1,15 @@
-import { notFound } from 'next/navigation';
 import type { Metadata, Viewport } from 'next';
 import { JetBrains_Mono } from 'next/font/google';
 import { getTranslations } from 'next-intl/server';
-import { hasLocale, NextIntlClientProvider } from 'next-intl';
+import { NextIntlClientProvider } from 'next-intl';
 import { auth } from '@/auth';
 import { Providers } from '@/components/providers';
 import { Toaster } from '@/components/ui/sonner';
 import ToastContainer from '@/components/ui/toast-container';
 import '../globals.css';
 import { BRAND_NAVY } from '@/lib/brand-colors';
-import { routing, type Locale } from '@/i18n/routing';
+import { routing } from '@/i18n/routing';
+import { localeForSegment } from '@/lib/locale';
 import { JsonLd, siteJsonLd } from '@/lib/seo/json-ld';
 import { sessionForClient } from '@/lib/session';
 import { FONT_STYLESHEET_URL, fontSrcSources, styleSrcSources } from '@/lib/security/image-hosts';
@@ -38,23 +38,19 @@ const jetbrainsMono = JetBrains_Mono({
  */
 
 /**
- * The locale segment accepts the configured locales and nothing else.
+ * The locale segment accepts the configured locales and nothing else, and the
+ * refusal is not made here (P31).
  *
- * `[locale]` matches any single first segment, so `/pricing` would otherwise
- * render the home page with HTTP 200 - a soft 404, which a crawler indexes and
- * no monitor counts.
- *
- * The refusal is the `hasLocale` check in the layout below rather than
- * `dynamicParams = false`. Both answer 404, and they differ in WHICH 404:
- * `dynamicParams` refuses inside Next's routing, before any of this code runs,
- * so the visitor gets the built-in "404: This page could not be found" instead
- * of the page P3 built with links back into the site - and an unprefixed typo
- * is the commonest way anybody arrives at a 404 at all. Calling `notFound()`
- * from the layout renders `[locale]/not-found.tsx` with the same status.
+ * `[locale]` matches any single first segment, so `/pricing` reaches this
+ * layout. A `notFound()` thrown from a root layout has no boundary above it, so
+ * Next serves its built-in "404: This page could not be found" instead of the
+ * page P3 built. So this layout renders for any segment, in the visitor's
+ * language when the segment is not a locale (`localeForSegment`), and
+ * `(site)/layout.tsx`, which every page sits under, refuses the segment: its
+ * `notFound()` is caught by `[locale]/not-found.tsx`, with HTTP 404.
  *
  * `[...rest]/page.tsx` covers the other half: a path that is unmatched UNDER a
- * valid locale, which reaches this layout successfully and would otherwise fall
- * through to the same built-in page.
+ * valid locale.
  */
 export const generateStaticParams = () => routing.locales.map((locale) => ({ locale }));
 
@@ -72,7 +68,7 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
-  const { locale } = await params;
+  const locale = await localeForSegment((await params).locale);
   const t = await getTranslations({ locale, namespace: 'metadata' });
   const description = t('description');
   return {
@@ -127,17 +123,13 @@ export default async function LocaleLayout({
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 }) {
-  const { locale } = await params;
-
   /**
-   * The refusal, and the only one: an unconfigured first segment is not a
-   * language, and rendering the default catalogue under it would publish the
-   * French site at `/pricing` and at every typo, with HTTP 200.
-   *
+   * Not the refusal: that is `(site)/layout.tsx`, below the 404 boundary. Here
+   * an unknown segment only chooses the language of the 404 that follows.
    * `locale-routing.spec.ts` asserts the status over HTTP for `/de`, `/es` and
-   * `/zzz`, because nothing here can observe what a visitor is actually served.
+   * `/zzz`.
    */
-  if (!hasLocale(routing.locales, locale)) notFound();
+  const locale = await localeForSegment((await params).locale);
 
   // Only the client-safe half of the session crosses into <Providers>, which
   // is a Client Component. See lib/session.ts.
@@ -158,7 +150,7 @@ export default async function LocaleLayout({
       </head>
       <body>
         {/* Structured data, which this site carried none of. See lib/seo/json-ld.tsx. */}
-        <JsonLd data={siteJsonLd(locale as Locale)} />
+        <JsonLd data={siteJsonLd(locale)} />
         <NextIntlClientProvider>
           <Providers session={session}>{children}</Providers>
           <Toaster theme="light" closeButton className="font-sans" />

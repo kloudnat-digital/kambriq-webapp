@@ -73,8 +73,8 @@ test('the two locales serve different text at the same route', async ({ page }) 
 for (const segment of ['de', 'es', 'zzz']) {
   test(`/${segment}/about is not a locale and answers 404`, async ({ request }) => {
     /**
-     * `[locale]` matches any first segment, so without the layout's `hasLocale`
-     * refusal this would render the French page at `/de/about` with HTTP 200 -
+     * `[locale]` matches any first segment, so without the `(site)` layout's
+     * `hasLocale` refusal this would render the French page at `/de/about` with HTTP 200 -
      * a soft 404 under a language the site does not offer.
      */
     const response = await request.get(`/${segment}/about`, { maxRedirects: 0 });
@@ -82,28 +82,28 @@ for (const segment of ['de', 'es', 'zzz']) {
   });
 }
 
-test('a 404 under a valid locale is the branded page, and one above it is not', async ({
-  page,
-}) => {
+test('every 404 is the branded page, under a locale or above one (P31)', async ({ page }) => {
   /**
-   * The two 404s this app serves, pinned as a difference rather than left to be
-   * discovered.
-   *
-   * Under a valid locale, `[locale]/[...rest]` routes to `[locale]/not-found`,
-   * which is the page P3 built with links back into the site. An unconfigured
-   * FIRST segment is refused by the root layout, and a `notFound()` thrown from
-   * a root layout has no boundary above it to render - so Next serves its
-   * built-in page. Both answer 404, which is the part that matters.
-   *
-   * Closing the difference needs `experimental.globalNotFound`, which is off by
-   * default in Next 16.3.6 and is not worth an experimental flag for a prettier
-   * page. Recorded here so it is a known bound rather than a surprise.
+   * An unconfigured first segment used to get Next's built-in page: the refusal
+   * sat in the root layout, and a `notFound()` thrown there has no boundary
+   * above it. Since P31 every page sits in `(site)`, whose layout refuses the
+   * segment below the branded boundary.
    */
   await page.goto('/fr/zzz-does-not-exist');
   await expect(page.getByRole('link', { name: /accueil/i }).first()).toBeVisible();
 
   await page.goto('/zzz-not-a-locale');
-  await expect(page.getByRole('link', { name: /accueil/i })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /accueil/i }).first()).toBeVisible();
+});
+
+test('the 404 above a locale speaks the visitor language', async ({ browser }) => {
+  const context = await browser.newContext({ locale: 'en-GB' });
+  const page = await context.newPage();
+  const response = await page.goto('/pricing');
+  expect(response?.status()).toBe(404);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.getByRole('link', { name: /home/i }).first()).toBeVisible();
+  await context.close();
 });
 
 test('switching language keeps the visitor on the same page', async ({ page }) => {
