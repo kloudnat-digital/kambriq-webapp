@@ -190,7 +190,8 @@ listed here first.
 | `verify-cert`                 | `EN COURS`          | `/verify-certificate` said "valide" for any number; the API ignored `revokedAt` and handed strangers the holder's UUID. Pending proof on dev: seeded number valid, fake number non reconnu, revoked number révoqué. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `A33`                         | `PROUVE`            | cause named and fixed: the sign-in fields were controlled inputs, and text typed before hydration was wiped by it - WebKit on the runner was the engine slow enough to hydrate late. Fields uncontrolled, every password form POSTs, WebKit back in the matrix. Proven: develop's E2E run on `8637543`, WebKit included, 186 passed, none flaky                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `J12`                         | `PROUVE`            | the five sign-in and account forms refused in English on the French pages; their schemas now carry keys under `auth.validation`, fr and en (#219). Proven on dev (`sha-a19d680`): an empty sign-in shows "Saisissez une adresse email valide." and "Le mot de passe est requis." on `/fr/login`, the English ones on `/en/login`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `A55`                         | `PROUVE`            | did real passwords reach the logs before #214? No server-side record on dev can hold one: no ALB access logs, no CloudFront or WAF, and the containers log no request URL - my own password-in-URL requests of 26 September are absent (the control). The referer carried the origin only. The one place such a URL can remain is the visitor's own browser history. Rotation stays Visquis's call                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `A55`                         | `PROUVE`            | did real passwords reach the logs before #214? No server-side record on dev can hold one: no ALB access logs, no CloudFront or WAF, and the web container logs no request URL (the API's request log does, and holds no password or token in any URL: corrected under D28) - my own password-in-URL requests of 26 September are absent (the control). The referer carried the origin only. The one place such a URL can remain is the visitor's own browser history. Rotation stays Visquis's call                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `D28`                         | `EN COURS`          | no HTTP access log answers who called what, when, from where. **Premise corrected:** the API already logs every request (path, query, timing; 7 days), but not the visitor's address or account; the web and the load balancer log nothing. Plan written with masking at write time and retention proposed; nothing switched on. Pending Visquis: the plan and the retention                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `A32`                         | `EN COURS`          | Gate reads develop's HEAD sha, then its run (`scripts/ci/develop-gate.sh`): green passes; red, never started or not yet verified refuses; label `merge-on-red-develop` plus re-run releases. v1 read a list and passed #134 on a stale run; 12 stub cases run in every CI Gate. Cost: each develop push blocks merges ~20 min                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `A36`                         | `EN COURS`          | develop red on `70a5e07`: both journey suites run in one `runInBand` process from one runner address and `getTracker` keys on the last X-Forwarded-For entry, so they legitimately share one bucket of 100 requests per 60000 ms - the gap between them decides it (9.33 s PASSED on `1cbde1a`; 0.36 s and 0.35 s FAILED on `70a5e07`). `call()` now waits one full window and retries, bounded at 3 attempts, one log line per wait, still throwing today's sentence after them. The comment claiming CI "never sees it" is replaced by the measurements. `getTracker` had no test and now has 11, watched failing on `parts[0]`. The spec runs in `Quality` via a new `test` target, because `api-e2e` had none and the file would otherwise execute only in the job it repairs. Pending: a green `Delivery journeys (dev)` on develop. Cost: up to 120 s added to a journeys job that is actually throttled, none otherwise |
 | `I19`                         | `PROUVE`            | no user without a role - fixed in code (#132). On dev, 26 September: the three missing role rows (`STAFF_VERIFY`, `STAFF_VALUATION`, `PARTNER_GEO`) added from the seed's own definitions, and the two role-less throwaways of 4 September given `CLIENT`, what registration gives. 11 role rows, 0 users without a role; no reservation touched                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -7757,6 +7758,89 @@ server-side, so a rotation would protect against nothing and disturb ten
 agents. The control above (test requests with a password in the URL appear
 nowhere) is what settled it. Not to be reopened on the same facts. The hole it
 revealed, no HTTP access log at all, is its own subject: D28.
+
+### D28 - no HTTP access log answers who, what, when, from where - `EN COURS`
+
+**Cost impact: none today; the options below cost from USD 0.2 to about 6 a
+month on dev.** Nothing was switched on.
+
+**The brief, eighth round:** no access logs on the load balancer, no
+CloudFront, no WAF, and the containers do not log requests; on the day of an
+incident, who called what, when, from where and how many times cannot be
+answered. Two reservations: every sensitive parameter masked **at write time**,
+with the control taken afterwards; and the retention decided **before** anything
+is switched on.
+
+**The premise is half right, read on dev on 26 September.**
+
+- **The API already has a request log**, and has had one since before this
+  round: `pinoHttp` with `autoLogging: true` writes one line per request into
+  `/ecs/kambriq-dev-api` (7-day retention): method, path, query, route params,
+  status, response time, correlation id, headers with `authorization`, `cookie`
+  and the caller secret redacted (A46). A55's row said "the containers log no
+  request URL"; that is true of the web container only, and the row is corrected.
+- **Its seven days hold nothing sensitive in a URL.** Logs Insights over
+  232 115 lines: the query strings are `limit`, `page` and `depth` and nothing
+  else; the only URL matching `passw|token=|secret|code=` are the paths
+  `/api/v1/auth/reset-password` and `/api/v1/auth/forgot-password`, with no
+  query string. A55's conclusion stands.
+- **But it cannot say who, or from where.** `remoteAddress` is the load
+  balancer's private address and `x-forwarded-for` is the **web task's** public
+  address, because every call reaches the API from the web server, not from the
+  visitor. No user id is written.
+- **The web and the load balancer log nothing** - the web log group holds
+  263 KB, all application lines.
+- **Five email links carry a credential in a web URL:** `verify-email?token=`
+  (twice), `reset-password?token=`, `auth/set-password?token=` and
+  `auth/confirm-email-change?token=`. Any web access log that writes the raw
+  URL writes them - a reset link is an account, for as long as it is valid.
+
+**Volume:** the dev load balancer served **175 625 requests** in the seven days
+to 26 September (about 760 000 a month); the API log group stores 51.5 MB.
+
+**The options, against the two reservations.**
+
+| Option                                                                   | Masked at write time?                                                                                                         | Who / from where                                                                          | Dev cost a month                                                   |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| ALB access logs to S3                                                    | **No** - the load balancer writes the raw URL, tokens included; masking would be a later pass, which the reservation excludes | client IP, status, bytes                                                                  | cents                                                              |
+| WAF on the ALB, count only, logging with `RedactedFields` = query string | Yes, by AWS, at write time                                                                                                    | client IP, country, method, path, headers (no status)                                     | about USD 5.5 (web ACL 5, 0.60 per million requests) + 0.6 of logs |
+| **In the application (proposed)**                                        | Yes - the line is built by our code with an allowlist of query keys                                                           | visitor IP (A45 already vouches for it), account id, method, path, status on the API side | about USD 0.2 of log ingestion                                     |
+
+**Proposed plan (application side, no new AWS resource):**
+
+1. **API:** the request line gains the visitor's address (the one A45 already
+   vouches for with `WEB_CALLER_SECRET`) and the account id once authenticated,
+   and its `query` and `url` are rewritten by a serializer that keeps an
+   allowlist of keys (`page`, `limit`, `depth`, `sort`, `order`, `q`...) and
+   writes every other value as `[redacted]`. The existing log gets safer on the
+   way.
+2. **Web:** one line per page request from the proxy: time, method, path, the
+   same masked query, visitor address (first `x-forwarded-for` hop, set by the
+   ALB), user agent, correlation id - the id the API line carries, so the two
+   join. The five token links are then written `token=[redacted]`.
+3. **The control, as A55's:** request each of the five links and a
+   `?password=` URL on dev, then search both log groups for the raw values and
+   show they are absent - and show the masked line present.
+4. **Red first:** a spec per side feeding a URL with a token and a password and
+   asserting the written line holds neither; a mutation that drops the
+   allowlist fails it.
+
+**Retention proposed (for decision before anything is switched on):**
+
+- **Dev: 7 days**, what both log groups already have - no change, no new store.
+- **Production: 30 days.** Long enough for an incident noticed at the end of a
+  month (and for a bill question), short enough to limit a store of IP
+  addresses, which are personal data. It is also a line the privacy policy
+  should state - copy, Visquis's.
+- Not proposed: the load balancer's own logs, until the five token links stop
+  carrying their token in the query (a change to the auth flows, Ulrich's).
+
+**Why stopped at the plan:** the brief's premise ("the containers do not log
+requests") is false for the API, which changes what the subject is - from
+switching logs on to widening and masking one that exists, plus a web line.
+The standing authorization says to stop on a false premise, and the retention
+is to be decided before the switch, not by the one who switches. **Pending
+Visquis:** the option (application side proposed), and the retention.
 
 ### J12 - the sign-in forms refuse in the reader's language - `PROUVE`
 
