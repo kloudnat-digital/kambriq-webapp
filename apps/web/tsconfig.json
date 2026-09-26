@@ -43,7 +43,6 @@
     "**/*.tsx",
     "**/*.js",
     "**/*.jsx",
-    "**/*.mdx",
     "../../apps/web/.next/types/**/*.ts",
     "../../dist/apps/web/.next/types/**/*.ts",
     "next-env.d.ts"

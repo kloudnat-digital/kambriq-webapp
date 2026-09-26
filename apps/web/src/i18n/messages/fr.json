@@ -1411,7 +1411,8 @@
       "terms": "CGU",
       "privacy": "Confidentialité",
       "rgpd": "RGPD"
-    }
+    },
+    "lastUpdated": "Dernière mise à jour : {date}"
   },
   "app": {
     "nav": {

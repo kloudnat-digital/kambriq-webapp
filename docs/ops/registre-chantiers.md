@@ -226,6 +226,7 @@ listed here first.
 | Locale switcher coverage      | `A FAIRE`           | `QuickActions` carries the only language control and is mounted **per page**, on 8 of the 15 public pages. `/contact`, `/about`, `/faq` and the four legal pages have none. It predates wave 5 and matters more under it: a cookie carried the choice between pages and a URL does not, so a visitor who lands on `/fr/contact` from a search result cannot switch. Moving it into shared chrome is a design decision, so it was not made silently                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Built-in 404 above the locale | `A FAIRE`           | a `notFound()` thrown from the root layout has no boundary above it, so an unconfigured FIRST segment (`/pricing`, `/de/about`) is served Next's built-in 404 rather than the branded one. The status is 404 in both cases. Closing it needs `experimental.globalNotFound`, off by default in Next 16.3.6; pinned as a difference in `locale-routing.spec.ts` rather than left to be discovered                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | develop merged into waves 5-6 | `EN COURS`          | develop's 9 commits merged 25 September: 8 text conflicts, six new page files relocated under `[locale]`, three components moved off `next/link`/`next/navigation`, `revalidatePath` calls given their prefix, `image-hosts.spec.ts` unblocked (25 assertions that ran none), `A41` reconciled. Unmerged to develop; pending proof is the routing table and the sitemap read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Wave 7                        | `EN COURS`          | steps 0-3 done: `PolicySnapshot` append-only by trigger, proved by removal; `POST /cms/webhooks/sanity` writes it, authenticated by HMAC over the raw body; `frame-ancestors` behind a validated `SANITY_STUDIO_ORIGIN`; the Studio, the GROQ contract pinned from both sides, the webhook created by script, and the Sanity hosts scoped by project. the 16 documents converted out of mdx and committed as ndjson, delivery through `@sanity/client` (`next-sanity` refused on a measured 1846-entry install), the KBS labels moved to fields, and consent bound to an archived revision. Step 4 (the blog) not started. **No delivery from Sanity has ever reached the route and every CMS page answers 404** - there is no Sanity project yet                                                                                                                                                                              |
 | Audit 2026-09-23, unwaved     | `A FAIRE`           | `/admin/verify` and `/kamnet/apply` are mocks behind real roles that toast success and write nothing; the Mapbox build `ARG` reaches no workflow, so the land-search map is dark in every image; `legal/mentions/{fr,en}.mdx` publishes `Capital social : XXX XXX XAF` and `N° RCCM : XX / XXX / XX` on a public page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | register                      | `A FAIRE`           | twenty-eight rows above have no `###` entry in this file - their detail lives in the tracker or in a wave note. The list is pinned in `register-is-the-record.spec.ts`; writing an entry means removing its line there                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
@@ -5267,6 +5268,513 @@ trigger and the grant.
 | 8   | `users.controller.ts:289` / `:313` → any role               | admin grants or revokes directly           | `@Roles(ADMIN_GLOBAL)` only                                                        | Fine                           |
 | 9   | `users.service.ts:257` → replaces the whole role set        | admin updates a user with `roleCodes`      | `@Roles(ADMIN_GLOBAL)`                                                             | Fine                           |
 | —   | `grading-processor.ts:183` → `KCA_CERTIFIED`                | **nothing enqueues it any more**           | —                                                                                  | Dormant — see below            |
+
+### Wave 7 - CMS - `EN COURS`
+
+**Cost impact: None.** Sanity Free covers this project - 20 seats, 2 datasets,
+10k documents, 1m CDN requests against roughly 20 documents. Growth is $15 per
+seat per month and buys nothing needed here. Hosted Studio is included.
+
+**Steps 0 and 1 are done. Steps 2 to 4 are not started.**
+
+**What step 0 closes.** `ContactRequest.consentPolicyPath` records what was
+consented to as `/legal/privacy`. L1's own migration says, at that column,
+_"consent is to a document and documents change; a row that records agreement
+without naming what was agreed to says nothing"_ - and then stores a path, which
+names the document and not the version. The comment states the requirement
+correctly and the value meets half of it.
+
+`PolicySnapshot` in **core** - the API owns Prisma and the web is a BFF with no
+client, so there was no other place it could live. Columns
+`{documentId, revision, locale, slug, rendered, publishedAt, archivedAt}`,
+unique on `(documentId, revision)` because a webhook can be delivered twice,
+indexed on `(slug, locale, publishedAt)` because "which version was current
+then" is the question consent depends on.
+
+**The bytes are stored, not referenced.** Sanity keeps **3 days** of revision
+history on the Free plan - read from its pricing page on 25 September, after a
+search summary claimed the plans had changed to 30/90 days and the source said
+they had not. A stored `_rev` therefore stops resolving long before anybody asks
+what a policy said, and a consent record has to answer in ten years. `rendered`
+is HTML from `@portabletext/to-html`, which emits a string with no React
+dependency: an archive that must outlive our component tree cannot be rendered
+through it.
+
+**Append-only by the database**, `kambriq_append_only()` exactly as G1 wrote it
+for the payment ledger; core and lands are separate databases so each carries
+its own copy of the function.
+
+**Proved by removal, which is the only proof that counts here.** A scratch
+migration dropped the trigger and both refusals were watched failing:
+
+```
+● refuses an UPDATE with restrict_violation, and the row is untouched
+    Received has value: null
+● refuses a DELETE with restrict_violation, and the row is still there
+    Received has value: null
+```
+
+Two failures, nothing else moved, scratch deleted, `pnpm test:db:reset`: 129
+passing across 15 suites.
+
+**`frame-ancestors` is now read from a validated variable.**
+`SANITY_STUDIO_ORIGIN` unset gives `'none'`; a literal origin gives exactly that
+origin; a wildcard **fails the build**, naming the variable. Proved in all three
+states over HTTP and at the build. The reason is in CLAUDE.md.
+
+**Said rather than left to be found: nothing writes to `PolicySnapshot` yet.**
+Its writer is step 1's webhook and its reader is the contact form in step 3. By
+this repository's own rule a method with no caller is not a feature, so the
+table is a guarantee in place before the thing that needs it, and the gap is
+here rather than implied.
+
+**Decisions taken during the research, both reversing an earlier recommendation
+of mine.** The Studio is **hosted** (`npx sanity deploy`), not embedded: Sanity's
+deployment guide presents hosting as the default and warns that embedded studios
+_"slow builds, tie every Studio update to an app deploy, and rule out
+auto-updates and TypeGen watch mode"_. It also removes three problems - no
+`/studio` route outside `[locale]`, nothing to classify in the proxy partition,
+and no Studio CSP. Delivery is `defineLive` on **`next-sanity@13.3.4`**: v12 on
+Next 16, which is this repository's exact combination, produced _"an average 4x
+increase in request load"_ from a prefetch and `revalidateTag` cascade, fixed in
+v13.
+
+**Known and not yet needed:** Sanity's Presentation tool frames the site from
+the Studio origin, so enabling visual editing later is a `frame-ancestors`
+decision rather than a Studio setting. `<SanityLive>` subscribes from the
+**browser**, so `connect-src` will need Sanity when step 2 lands, and
+`cdn.sanity.io` goes through `image-hosts.ts` rather than into `next.config.ts`.
+
+#### Step 1 - the publish webhook, `POST /cms/webhooks/sanity`
+
+`PolicySnapshot` now has its writer. `@Public()` removes the JWT requirement and
+`SanityWebhookGuard` is what authenticates the caller: an HMAC-SHA256 signature
+over the raw request body, verified through `@sanity/webhook` 4.0.4. Throttled at
+30/minute and listed in `route-guards.spec.ts` with its reason. 1033 API tests,
+131 database tests, both typechecks, lint and prettier green.
+
+**Four properties read out of the shipped packages rather than from their docs,
+each of which changed a decision.**
+
+- **`sanity-webhook-signature`**, not `X-Sanity-Signature`. A search summary gave
+  the second; `SIGNATURE_HEADER_NAME` in the installed package gives the first,
+  and only the package runs. The redaction path and the spec both take the
+  constant rather than the string.
+- **Nothing checks the signature timestamp's age.** `MINIMUM_TIMESTAMP` is a
+  floor at 2021-01-01 and there is no freshness window, so a captured delivery
+  replays forever. No freshness check was added: the unique index on
+  `(documentId, revision)` already makes a replay a no-op, and a clock-skew
+  failure mode would buy nothing. Written at the guard so nobody adds one
+  thinking it was forgotten.
+- **The final comparison is `signature !== encoded`, not constant-time.** Stated
+  rather than papered over. Reimplementing the scheme to add `timingSafeEqual`
+  would be a second implementation of somebody else's parser, which this
+  repository has already paid for once.
+- **`assertValidRequest` throws a plain `Error`** - not a signature error - when
+  the body is not a string or Buffer, so `isValidRequest` rethrows it and the
+  route would answer 500 where it means 401. The guard therefore calls
+  `isValidSignature` with the buffer itself and handles the absent-header and
+  absent-`rawBody` cases explicitly.
+
+**`rawBody: true` at `NestFactory.create`**, pinned by
+`api-captures-raw-body.spec.ts` and watched failing: 1 of 3 assertions, alone.
+It installs a `verify` hook that keeps a reference to the buffer body-parser had
+already allocated, so it costs no extra memory - checked in
+`get-body-parser-options.util.js` rather than assumed. The guard refuses when
+`rawBody` is absent rather than falling back to the parsed body, because the hash
+is over bytes that `JSON.stringify` does not reproduce.
+
+**The renderer refuses what it cannot reproduce, and that is the substance of the
+step.** `@portabletext/to-html` does not fail on an unknown node: an unknown block
+type renders as `<div style="display:none">` and an unknown block style flattens
+to `<p>`. Both produce HTML that looks complete and is not, which for an archive
+of what somebody agreed to is the one outcome that must never happen.
+`onMissingComponent` throws instead. The library's default is asserted in the
+suite, so the justification is measured rather than claimed:
+
+```
+it('would otherwise have hidden the content instead of failing')
+  expect(html).toContain('display:none')      <- the library's own behaviour
+```
+
+**The duplicate reading was wrong, and the database is what said so.** The
+service first read `meta.target` to decide which index refused. Prisma 7 with the
+pg adapter **does not set `meta.target` at all**; it reports the columns at
+`meta.driverAdapterError.cause.constraint.fields`, as `['"documentId"',
+'revision']` - the first quoted. The unit spec, which built the error by hand,
+passed throughout. The db-backed test failed with `Received promise rejected
+instead of resolved`, which is how the shape was found. The service now confirms
+by reading the row back, so nothing is coupled to a driver's error internals, and
+a P2002 with no such row is rethrown.
+
+**One defect of my own, in step 0's spec, visible only on a second run.**
+`archives one row per revision` used fixed identifiers, so the row from the
+previous run was already there and the test's own setup write was the one
+refused. It passed on the first run and failed on every later one. Corrected to
+mint per-run identifiers; `pnpm test:db` now runs twice consecutively with no
+reset, 131 passing both times.
+
+**The signature header is redacted from the request log**, in the same change
+that introduced it, and the assertion was watched failing alone. It is not the
+secret; it is credential material twice over - an HMAC beside a payload that is
+published content is material for an offline attack on the secret, and a
+signature that never expires is a replayable credential.
+
+**Two configs carry the ESM transform, and narrowing one is a check that stops
+running.** `@portabletext/*` is ESM-only and Jest's CJS runtime does not use
+Node's `require(esm)`, so `jest.config.cts` and `jest.database.config.cts` both
+need `node_modules/(?!.*@portabletext)`. Both directions proved: without it the
+suite reports `Tests: 0 total` beside a red suite, with it 18 passed. The
+container runs Node 24.13.1 and `engines` requires >=24, so `require(esm)` is
+available where it ships - checked in `docker/Dockerfile.api`, not assumed.
+
+**Pending proof, named:** no delivery from Sanity has ever reached this route.
+There is no Sanity project yet, so the route has been exercised only by its own
+tests and by a database. `SANITY_WEBHOOK_SECRET` is in `.env.example` and in no
+environment. Step 2 creates the project, the schema and the webhook, and the
+proof this step is waiting for is one signed delivery archiving one row on dev.
+
+**Still true, and now one step closer:** `ContactRequest.consentPolicyPath` still
+stores a path. The archive can answer "which version was current then" and
+nothing asks it yet. That is step 3.
+
+#### Step 2 - the Studio, the contract and the hosts
+
+**Cost impact: None.** Sanity Free covers the project, the hosted Studio is
+included, and nothing here adds a resource. It also takes care not to add CI
+cost - see the workspace decision below.
+
+**The Studio is a separate project, deliberately.** `studio/` has its own
+`package.json` and its own lockfile, is not listed in `pnpm-workspace.yaml`, and
+is named in a new `.nxignore`. `sanity` and its dependencies are several hundred
+megabytes; a workspace package is installed by every job that installs, which
+here is every quality run, both image builds and the journeys. Measured rather
+than assumed: with `.nxignore` removed, `nx show projects` answers with a seventh
+project, `kambriq-studio`; with it, six. The price is one extra install,
+`pnpm install --ignore-workspace`, and it is written at the top of
+`studio/README.md`.
+
+**Eight documents, opened by id, with no create button.** `legalPolicy` is four
+policies in two languages; the structure lists each by
+`legalPolicy.<slug>.<language>` and `newDocumentOptions` removes the type from
+the global create menu. A collection would let an editor make a second French
+privacy policy, and the archive would then hold two rows claiming to be the
+current version with nothing to say which a consent record meant. `slug` and
+`language` are read-only and set by the template the structure item carries, so
+they cannot disagree with the id.
+
+**The Studio was built, not just written.** `npx sanity build` against a
+placeholder project id, and the bundle carries `legalPolicy` and `legal-privacy`.
+It also corrected the configuration: `autoUpdates` at the top level of
+`sanity.cli.ts` is deprecated in favour of `deployment: {autoUpdates: true}`, and
+the CLI says so.
+
+**The contract has one home.** `libs/common/src/cms/legal-policy.ts` holds the
+document type, the languages, the slugs, the GROQ filter and the GROQ
+projection. `policy-publish.dto.ts` is built from it, and the Studio - which
+cannot import it - carries copies that are pinned:
+
+- `policy-projection.spec.ts` evaluates the filter and the projection with
+  `groq-js`, the same GROQ implementation the Studio ships, over a document
+  shaped as the schema defines one, and hands the result to the DTO. Five of its
+  tests are the projection with one field removed, each required to be refused.
+  Mutated by dropping the `"locale": language` rename: three tests fail, one
+  reading `Expected: "fr", Received: undefined`.
+- `studio-schema-matches-the-contract.spec.ts` reads the Studio file as text -
+  importing it would pull in `sanity` - and checks it against the contract. It
+  takes the field names from the parsed GROQ rather than listing them a third
+  time. Mutated twice, each alone: renaming `language` to `locale` fails
+  `carries every field the projection reads`; dropping `legal-rgpd` fails
+  `offers the same policies as the contract`.
+
+**The webhook is created by a script, not by hand.**
+`scripts/sanity/upsert-policy-webhook.ts` reconciles it through Sanity's
+Management API from the values above, and `--check` reads back what is
+configured. Sanity's dashboard is the other option and it is the shape this
+repository already has an entry about: configuration that exists on one project
+and nowhere in the repository. The endpoint was confirmed against the live
+service rather than from the documentation alone - a run with a fake token
+answers
+`GET https://<id>.api.sanity.io/v2025-02-19/hooks/projects/<id> answered 401`,
+which is the URL, the version and the auth mechanism proved in one line.
+
+**`cdn.sanity.io` is one hostname for every Sanity customer.** It is literal, so
+it passes A40's rule by the letter and breaks it in substance: anybody can create
+a project on it and choose the bytes our optimizer hands to sharp. The allowlist
+entry therefore carries a path, `/images/<projectId>/`, and `image-hosts.ts` now
+holds sources rather than bare hostnames so the CSP `img-src` and the optimizer
+take the same value. Proved through Next's own matcher: our project's image with
+its transform query accepted, another customer's project, the same host outside
+`/images/`, and the bare host all refused - and all four refused when the
+variable is missing.
+
+**Two build-time variables were wired to nothing, and this is how they surfaced.**
+`build-vars-reach-the-image.spec.ts` pins every variable the web build reads
+against `docker/Dockerfile.web`, `ci.yml` and `manual-deploy-dev.yml`, in both
+directions. Writing it found:
+
+- **`NEXT_PUBLIC_MAPBOX_TOKEN` was declared as an `ARG` and passed by neither
+  workflow.** Every deployed image has run the map widget with an empty token.
+  The line is now in both workflows; the GitHub variable still has to be set,
+  which is an action, not a deploy.
+- **`SANITY_STUDIO_ORIGIN` was read by `next.config.ts` with no `ARG` at all** -
+  step 0's own gap, one step old. It could never have reached a build.
+
+Both were invisible for the same reason: every one of these variables is designed
+to fail closed, so the symptom is a feature quietly off rather than a red build.
+
+**Not in this step, and why.** `next-sanity`, `defineLive` and the pages are step
+3, with their first caller: a client nothing calls is the shape this repository
+has an entry about. The host guard is the exception and it is the other entry -
+a guard is cheapest to write while nothing depends on the hole it closes.
+`NEXT_PUBLIC_SANITY_DATASET` is not wired either, for the same reason: nothing
+reads it yet.
+
+**Pending proof, named, and it is the same one step 1 is waiting for.** There is
+no Sanity project. Nothing has been deployed, no webhook exists, and no delivery
+has ever reached the route. What remains is somebody's action on their own
+account, in this order:
+
+1. `cd studio && pnpm install --ignore-workspace && npx sanity login && npx sanity init`
+2. put the project id in `studio/.env` and in the GitHub variable
+   `NEXT_PUBLIC_SANITY_PROJECT_ID`
+3. `pnpm deploy` from `studio/`, then set `SANITY_STUDIO_ORIGIN` only if
+   Presentation is wanted
+4. put `SANITY_WEBHOOK_SECRET` in SSM and in the environment, then run the upsert
+   script
+5. publish one policy, and read one row in `PolicySnapshot`
+
+#### Step 3 - delivery, the content migration, and consent bound to a version
+
+**Cost impact: None.** Two packages added to the root install, measured below.
+Sanity Free still covers 16 documents and the queries the pages make.
+
+**`next-sanity` was refused on a measurement, reversing step 0's choice.**
+`defineLive` on `next-sanity@13.3.4` was decided during step 0's research. It
+declares `sanity` as a **non-optional peer**, and pnpm installs peers, so adding
+it takes the whole Studio into the root install that every quality job, both
+image builds and the journeys pay for. Resolved with `--lockfile-only`, same
+three direct dependencies each time:
+
+| install                                    | lockfile entries | `sanity` pulled in                                                           |
+| ------------------------------------------ | ---------------- | ---------------------------------------------------------------------------- |
+| `next` + `react` + `react-dom`             | 108              | -                                                                            |
+| `+ @sanity/client` + `@portabletext/react` | 128              | no                                                                           |
+| `+ next-sanity@13.3.4`                     | **1846**         | **yes** - `sanity@6.16.0`, styled-components, vite 8, rolldown, typescript 7 |
+
+`peerDependencyRules.ignoreMissing` and `packageExtensions` both left it at 1846
+unchanged. Only `autoInstallPeers: false` in `pnpm-workspace.yaml` removes it
+(304), and that changes resolution for every package in the repository. So
+delivery is `@sanity/client` directly: **8 packages added**, measured against the
+lockfile before and after.
+
+What that costs is `<SanityLive>` and the Presentation tool, neither of which is
+in use. **The `connect-src` entry step 2 added is therefore removed**, with the
+reason written at the directive: documents are fetched by the Next server, so
+nothing in the browser talks to Sanity, and a source listed for a connection
+nothing makes is a permission granted for nothing. `sanity-hosts.spec.ts` fails
+if a browser subscription returns without it.
+
+**Sixteen documents, converted rather than retyped.** The converter parsed with
+`mdast-util-from-markdown` - a hand-written markdown reader would be a second
+implementation of somebody else's parser - and mapped mdast to Portable Text. It
+**refused** a node it could not map, because a converter that drops one produces
+a document that looks complete. `scripts/sanity/content/initial-content.ndjson`
+is committed and is loaded once with `sanity dataset import`.
+
+Three transforms are deliberate and each was checked rather than assumed:
+
+- **the `# Title` line became the `title` field**, so the page renders one
+  heading rather than printing the body's first line under it;
+- **the "Dernière mise à jour" line became `publishedAt`**. The line and the
+  field are the same fact, and the migration refuses if they disagree;
+- **the three label sections became one `labelDefinitions` block**, and the
+  converter refuses unless `KBS_LABEL_DEFINITIONS` reproduces the markdown
+  **character for character, in both languages**. That check is what made it safe
+  to delete the mdx.
+
+**Proved by reading the bytes back, not by asserting them.** With the markdown
+restored from `HEAD` for the check: `--check` reported _the committed import file
+matches the sources_, and a sweep of **180 fragments** of the sources against the
+converted documents found **0 missing**. The markdown was then deleted again.
+
+**The converter was then deleted with it, and that is the decision rather than
+an oversight.** Its only caller was the build script, which reads the mdx paths
+from a manifest; with the markdown gone that script refuses by design, so the
+converter's only remaining exercise was its own seventeen tests. A method with no
+caller is not a feature. Removed: the converter, the build script, the manifest,
+the spec, and the two `mdast` devDependencies - no install saving, because
+`react-markdown` is a production dependency for KBS lessons and pulls the same
+chain. **What it costs, stated rather than assumed:** the ndjson can no longer be
+re-derived from the markdown and compared byte for byte, so
+`initial-content.spec.ts` is its only remaining guard and the proof above is the
+record of the one time the derivation was checked. Neither script was ever
+committed, so a later markdown loader - the blog, if step 4 takes drafts as
+markdown - starts from `mdast-util-from-markdown` again rather than from them.
+
+**Two defects the converter found in itself.** A GFM pipe table is not seen by
+the CommonMark core at all - it returns paragraphs whose text contains pipes - so
+that was the one input it would have silently mangled; it is now refused by
+shape. And an html table (the VERIFY price list, which no Portable Text node
+covers) is transcribed in the manifest and every cell checked against the source
+html, so a typo fails the migration instead of rewriting the page.
+
+**The labels stopped being prose, which is what kept their guard.**
+`kbs-label-definitions.spec.ts` read `methode/fr.mdx`, and a Sanity document
+cannot be read by a test: CI has no token, and giving it one to guard three
+sentences is a poor trade. So TFL, VEFL and VEFIL are **fields** in
+`libs/common/src/kbs/label-definitions.ts` - four booleans each, plus the
+description as runs so the bold on "PAS" and "NOT" survives - the `methode` page
+renders them through a block carrying no text of its own, and the question bank
+is pinned to the same constants. Mutated with the exact historical regression,
+`VEFL.titleExists: false`: **1 failed, 16 passed**.
+
+**The foreign key is proved by removal, which is the only proof that counts for
+a database guarantee.** `policy-snapshot.dbspec.ts` gained three tests - an id no
+snapshot carries is refused by name, an archived revision is accepted, and `null`
+is accepted. With the constraint dropped in a scratch migration:
+
+```
+● a consent record cannot point at a version the archive does not hold
+  › refuses an id no snapshot carries, by name
+    Received has value: null
+```
+
+One assertion failing alone, scratch deleted, `pnpm test:db:reset`: **134 passing
+across 15 suites** (was 131).
+
+**A consent record now names the version.** `ContactRequest` gains
+`consentPolicySnapshotId`, a foreign key to `PolicySnapshot`, resolved
+**server-side** at write time from the newest archived revision of
+`legal-privacy` in the page's language. Not taken from the request: a version
+supplied by a browser is a claim about what somebody was shown. `consentPolicyPath`
+stays, because it is what every existing row carries and it is still true.
+
+Null is not a silence. Nothing archived means nobody has published a policy yet;
+the request is still stored, because the lead is the success criterion (L1), the
+resolver logs at `error`, and **the daily digest carries the count - printed even
+when it is zero**, because a row that only appears when something is wrong cannot
+be told apart from a row nobody deployed.
+
+**What an editor is offered is narrower than Sanity's defaults, and that is the
+guard.** Measured: `@portabletext/react` merges its own components under ours, so
+an `h5` resolves to the library's unstyled heading and **never reaches
+`onMissingComponent`**. Nothing at render time can refuse it, so the style is not
+offered - `studio/schemaTypes/richText.ts` declares the five styles, three marks
+and two list kinds the site renders, pinned to the contract in both directions.
+No `h1`: the policy title is a field and the editorial heading comes from the
+translation files, so an `h1` in a body would be a second top-level heading.
+
+For a block TYPE the renderer does refuse, and the spec measures the alternative:
+with the library's own handling the same document renders `Unknown block type`
+and no error.
+
+**`NEXT_PUBLIC_SANITY_DATASET` is wired now that something reads it** - `ARG`,
+both workflows, `.env.example` and `build-vars-reach-the-image.spec.ts`.
+
+**Its validation was in the wrong place first, and reading the built manifests is
+what showed it.** The dataset was read only by `lib/cms/client.ts`, at runtime, so
+"a project with no dataset fails the build" - which the Dockerfile comment, the
+README and a draft of this entry all claimed - was false: it would have been a
+500 on the first page somebody opened. It now lives beside the project id in
+`lib/security/sanity-hosts.ts` and `next.config.ts` calls it, so the claim is
+true. **The same sentence was in three files before anything checked it.**
+
+Proved in all three states against the built manifests rather than by reading the
+config:
+
+- **neither variable**: `img-src` carries no Sanity source, `remotePatterns` is
+  `["images.unsplash.com"]`, and `connect-src` names no Sanity host;
+- **both**: `img-src ... https://cdn.sanity.io/images/7k3m2q1p/` and
+  `remotePatterns` gains `cdn.sanity.io/images/7k3m2q1p/**` -
+  **`connect-src` unchanged**, which is the delivery decision visible in the
+  output;
+- **project, no dataset**: the build exits **1** with
+  `NEXT_PUBLIC_SANITY_DATASET is required when NEXT_PUBLIC_SANITY_PROJECT_ID is set`.
+
+**Seven mutations, each watched failing alone, each restored:**
+
+| mutation                                             | result                |
+| ---------------------------------------------------- | --------------------- |
+| a real `import ... from 'next-sanity'` in the client | `1 failed, 12 passed` |
+| `h3` removed from the Studio's offered styles        | `1 failed, 17 passed` |
+| a page slug with no document and no page             | `3 failed, 7 passed`  |
+| `consentPolicySnapshotId` dropped from the row       | `3 failed, 18 passed` |
+| the dataset defaults to `production`                 | `1 failed, 8 passed`  |
+| the dataset line removed from `ci.yml`               | `1 failed, 21 passed` |
+| `VEFL.titleExists: false`                            | `1 failed, 16 passed` |
+
+The slug mutation was run **twice**: the first stopped the suite compiling, which
+is a mutation that has not been run at all, and it was redone with a route so it
+built.
+
+**`sanity build` bundles a schema it has not validated.** The Studio's own
+acceptance in step 2 was "it was built, not just written", and that standard was
+not enough: `divider` was declared with `fields: []`, the build exited 0, the
+bundle carried the type - and the first page load showed **Schema errors**,
+_Object should have at least one field_. `sanity schema validate` is a separate
+command and it named exactly that one error; with the field added it reports 0
+errors and 0 warnings, so the gate was watched refusing and accepting in the
+same sitting. It is now `pnpm validate` in `studio/package.json` and is named in
+the README, because a command nobody runs is not a gate.
+
+**Two things found by running rather than by reading.** `sanity build --y` is not
+a valid flag: the Studio build exited 2 and printed usage, and the wrapper's exit
+code was 0 because a later command in the pipeline succeeded. Re-run without it,
+the bundle carries `contentPage`, `labelDefinitions`, `divider`, `tableRow` and
+`legalPolicy`. And `@sanity/client` **strips the leading `v`** from `apiVersion`
+and re-adds it when it builds the URL, so `config().apiVersion` reads
+`2025-02-19`; the spec pins `cdnUrl` instead, which is what goes on the wire.
+
+**The token sweep caught its own explanation for the fifth time.** The docstring
+saying why `next-sanity` is not used was counted as a use of it. Matched by shape
+now - an import opens its own line - and the sweep was proved to still fire.
+
+**A dot in a document id makes it private, and that cost a full round trip.**
+The id scheme written in step 2 was `legalPolicy.legal-privacy.fr`. On the first
+real import it produced a site where **every CMS page answered 404** while
+everything upstream looked right: 16 documents imported, the Studio listed them
+with their content, `sanity documents query` returned them. In a **public**
+dataset Sanity treats any `_id` containing a period as private - the same rule
+that hides `drafts.*` - so the only caller without a token, which is the delivery
+client, saw an empty dataset.
+
+**Two wrong diagnoses before the right one, both from reading rather than
+measuring.** First "the dataset is private" - `dataset visibility get` answers
+`public`. Then "the documents are drafts" - `count(*[_id in path("drafts.**")])`
+is 0 and 28 non-draft documents exist. The answer came from a **control**: a
+dotless document written into the same dataset was readable anonymously in the
+same second that a dotted one was not.
+
+```
+*[_id=="zzz-anon-probe"]      -> [{"_id":"zzz-anon-probe"}]
+*[_id=="contentPage.about.fr"] -> []
+```
+
+Ids are now `legalPolicy-<slug>-<language>` and `contentPage-<slug>-<language>`,
+in the contract, in both Studio copies and in the import file. Two tests hold it:
+the ids the contract builds carry no dot, and no document in the import file
+does. Mutated by restoring the dot: **5 failed**, including the dedicated one.
+
+**The documents already imported under the old ids have to be deleted** - they
+are unreachable by the structure and by delivery, and nothing about them looks
+wrong in the Studio. The commands are in `studio/README.md`.
+
+**Said rather than left to be found: every page served from the CMS answers 404
+until the content is imported.** The markdown is deleted, the bytes are in
+`initial-content.ndjson`, and there is no Sanity project yet. That is the cost of
+"zero mdx" and it is one command away from closed.
+
+**Pending proof.** Steps 1 and 2's list, plus:
+
+6. `cd studio && npx sanity dataset import ../scripts/sanity/content/initial-content.ndjson production`
+7. read `/fr/legal/privacy` and `/fr/methode`, and one row in `PolicySnapshot`
+8. submit the contact form and read `consentPolicySnapshotId` on the row
+
+**Not in this step.** Step 4, the blog. And a reconciliation between the Sanity
+`methode` document and the label constants: nothing in CI can read the dataset
+without a token, so the labels are guarded in code and the page is not checked
+against them. Named here rather than implied.
 
 ### develop merged into waves 5-6 - `EN COURS`
 

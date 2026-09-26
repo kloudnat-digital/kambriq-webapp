@@ -284,6 +284,7 @@
     "oldestLabel": "La plus ancienne en attente",
     "days": "{days} jour(s)",
     "none": "Aucune",
-    "breakdownLabel": "Par sujet, sur la periode"
+    "breakdownLabel": "Par sujet, sur la periode",
+    "consentVersionLabel": "Consentements sans version archivee"
   }
 }

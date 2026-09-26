@@ -1,18 +1,24 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { getLocale } from 'next-intl/server';
 import { publicPageMetadata } from '@/lib/seo/metadata';
 
 import Navbar from '@/components/layout/navbar';
 import Footer from '@/components/layout/footer';
 import { AboutHero } from '@/components/about/about-hero';
-import { loadContent } from '@/lib/content';
+import { CmsBody } from '@/components/cms/portable-text';
+import { cmsLanguage, fetchContentPage } from '@/lib/cms/documents';
 
 export const generateMetadata = (): Promise<Metadata> =>
   publicPageMetadata('/about', 'metadata.about');
 
 export default async function AboutPage() {
-  const locale = await getLocale();
-  const AboutContent = await loadContent('about', locale);
+  const locale = cmsLanguage(await getLocale());
+  const document = await fetchContentPage('about', locale);
+
+  // 404 rather than a hero with nothing under it: a page whose content is
+  // missing has none, and a soft 404 over a 200 is indexed as a real page.
+  if (!document) notFound();
 
   return (
     <>
@@ -21,15 +27,10 @@ export default async function AboutPage() {
         {/* Hero - short UI copy (eyebrow, title, subtitle) from next-intl JSON */}
         <AboutHero />
 
-        {/*
-         * Content - long-form narrative from MDX.
-         * Edit:  apps/web/src/content/about/en.mdx  (English)
-         *        apps/web/src/content/about/fr.mdx  (French)
-         * Style: apps/web/mdx-components.tsx
-         */}
+        {/* Long-form content, from the CMS */}
         <section className="px-6 py-20 sm:px-8">
           <div className="mx-auto max-w-3xl">
-            <AboutContent />
+            <CmsBody body={document.body} language={locale} />
           </div>
         </section>
       </main>

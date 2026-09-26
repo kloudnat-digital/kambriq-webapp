@@ -182,8 +182,15 @@ model ContactRequest {
   /// This is required for compliance and must always be recorded.
   consentGivenAt DateTime
 
-  /// The path or identifier of the specific privacy policy version the user consented to.
+  /// The policy document consented to, as a path: `/legal/privacy`. Names the
+  /// document and not the wording, which is what the snapshot below adds.
   consentPolicyPath String
+
+  /// The archived revision of that policy that was current when consent was
+  /// given, resolved server-side. Null means nothing was archived yet, which is
+  /// reported in the daily digest rather than left as a silent gap.
+  consentPolicySnapshotId String?
+  consentPolicySnapshot   PolicySnapshot? @relation(fields: [consentPolicySnapshotId], references: [id])
 
   status ContactRequestStatus @default(NEW)
 
@@ -193,4 +200,52 @@ model ContactRequest {
   /// Index for optimizing time-based queries.
   @@index([createdAt])
   @@index([status])
+  @@index([consentPolicySnapshotId])
+}
+
+/// An immutable copy of a published policy document, as a reader saw it.
+///
+/// Consent is to a document, and documents change. `ContactRequest` already
+/// records what was consented to - and records it as `/legal/privacy`, a path,
+/// which names the document and not the version. A row that says somebody
+/// agreed to the privacy policy, with no way to show which words those were,
+/// answers nothing the day it is asked.
+///
+/// Sanity keeps 3 days of revision history on the plan this project uses, so
+/// `revision` is provenance and never a way to retrieve the content later: by
+/// the time a consent record is questioned, the revision it names is gone.
+/// The rendered bytes are therefore stored here, not referenced.
+///
+/// Append-only at the database, by trigger. A correction is a new row.
+model PolicySnapshot {
+  id String @id @default(uuid())
+
+  /// The Sanity document (`_id`) this copy was taken from.
+  documentId String
+  /// The Sanity revision (`_rev`) this copy was taken from.
+  revision   String
+  /// The language of the document, which under document-level i18n is a
+  /// property of the document rather than of a field.
+  locale     String
+  /// The policy this document is, independent of Sanity: `legal-privacy`.
+  /// What a caller looks up when it needs the version current right now.
+  slug       String
+
+  /// The document rendered to HTML, exactly as it was served.
+  rendered String
+
+  /// When Sanity published this revision.
+  publishedAt DateTime
+  /// When this archive received it. Distinct from publishedAt: a webhook can
+  /// arrive late, and the difference is the thing worth seeing.
+  archivedAt  DateTime @default(now())
+
+  /// The consents given to this exact wording.
+  consents ContactRequest[]
+
+  /// One row per revision. A webhook that fires twice must not archive twice.
+  @@unique([documentId, revision])
+  /// "The version of this policy current at that moment", which is the query
+  /// consent depends on.
+  @@index([slug, locale, publishedAt])
 }

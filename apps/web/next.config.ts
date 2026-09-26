@@ -1,9 +1,10 @@
 import { composePlugins, withNx } from '@nx/next';
 import type { WithNxOptions } from '@nx/next/plugins/with-nx';
 import createNextIntlPlugin from 'next-intl/plugin';
-import createMDX from '@next/mdx';
 import { robotsHeaders } from './src/lib/seo/robots';
 import { imageRemotePatterns, imgSrcSources } from './src/lib/security/image-hosts';
+import { frameAncestors } from './src/lib/security/studio-origin';
+import { sanityDataset } from './src/lib/security/sanity-hosts';
 
 // next-intl plugin - path is relative.
 // - When NX's project-graph plugin analyses this file (CWD = workspace root),
@@ -13,17 +14,24 @@ import { imageRemotePatterns, imgSrcSources } from './src/lib/security/image-hos
 // Absolute paths are intentionally avoided: Turbopack rejects them.
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
-// MDX plugin - enables .mdx files as React components throughout the app.
-// Note: remark/rehype plugins with function values are not supported by Turbopack
-// (options must be serializable). Add plugins only when switching to webpack builds.
-const withMDX = createMDX({});
+/**
+ * The CMS variables, read for their validation.
+ *
+ * `NEXT_PUBLIC_SANITY_DATASET` is used at runtime by `lib/cms/client.ts` and
+ * nothing here needs its value - but a standalone build freezes what it reads,
+ * and a project configured without a dataset would otherwise surface as a 500 on
+ * the first page somebody opened. Failing here names the variable instead.
+ */
+sanityDataset(process.env);
 
 const nextConfig: WithNxOptions = {
   // NX-specific options - controls monorepo build behaviour
   nx: {},
 
-  // Tell Next.js to treat .md and .mdx files as pages/components
-  pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
+  // Pages are TypeScript. Long-form content comes from the CMS, so `md` and
+  // `mdx` were removed with `apps/web/src/content` - leaving them would let a
+  // stray markdown file become a route.
+  pageExtensions: ['ts', 'tsx', 'js', 'jsx'],
 
   // Required for Docker standalone output (copies only the files needed to run)
   output: 'standalone',
@@ -72,7 +80,10 @@ const nextConfig: WithNxOptions = {
               "default-src 'self'",
               "base-uri 'self'",
               "object-src 'none'",
-              "frame-ancestors 'none'",
+              // `'none'` unless SANITY_STUDIO_ORIGIN names a literal Studio
+              // origin, which Sanity's Presentation tool needs in order to frame
+              // this site. A wildcard is refused: see src/lib/security/studio-origin.ts.
+              frameAncestors(process.env),
               "form-action 'self'",
               "script-src 'self' 'unsafe-inline' blob:",
               "style-src 'self' 'unsafe-inline'",
@@ -82,6 +93,10 @@ const nextConfig: WithNxOptions = {
               `img-src 'self' data: blob: ${imgSrcSources(process.env).join(' ')} https://api.mapbox.com https://*.tiles.mapbox.com`,
               "font-src 'self' data:",
               "worker-src 'self' blob:",
+              // No Sanity entry: CMS documents are fetched by the Next server,
+              // so nothing in the browser connects to Sanity. A source listed
+              // for a connection nothing makes is a permission granted for
+              // nothing.
               "connect-src 'self' https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com",
             ].join('; '),
           },
@@ -111,8 +126,6 @@ const nextConfig: WithNxOptions = {
 const plugins = [
   // withNextIntl must come before withNx so Next.js picks up the plugin hooks first
   withNextIntl,
-  // withMDX compiles .mdx files; must come before withNx
-  withMDX,
   withNx,
 ];
 

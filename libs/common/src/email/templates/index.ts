@@ -840,6 +840,16 @@ const templates = defineTemplates({
             </td>
             <td style="padding:6px 0;">${args['oldest']}</td>
           </tr>
+          <!--
+            Printed even when it is zero. A row that only appears when there is
+            something wrong cannot be told apart from a row nobody deployed.
+          -->
+          <tr>
+            <td style="padding:6px 0;color:#a0aec0;">
+              ${t(i18n, 'email.contactDigest.consentVersionLabel', lang)}
+            </td>
+            <td style="padding:6px 0;">${args['consentsWithoutVersion']}</td>
+          </tr>
         </table>
       `,
       lang,

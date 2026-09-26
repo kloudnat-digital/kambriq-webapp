@@ -64,7 +64,7 @@ const config = {
 module.exports = async () => ({
   ...(await createJestConfig(config)()),
   transformIgnorePatterns: [
-    'node_modules/(?!.*(?:next-intl|use-intl|@formatjs|intl-messageformat|icu-minify|@schummar))',
+    'node_modules/(?!.*(?:next-intl|use-intl|@formatjs|intl-messageformat|icu-minify|@schummar|@sanity/client|get-it|eventsource|obug|@portabletext/react|@portabletext/toolkit))',
     '^.+\\.module\\.(css|sass|scss)$',
   ],
 });

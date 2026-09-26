@@ -1411,7 +1411,8 @@
       "terms": "Terms of use",
       "privacy": "Privacy policy",
       "rgpd": "Data protection"
-    }
+    },
+    "lastUpdated": "Last updated: {date}"
   },
   "app": {
     "nav": {

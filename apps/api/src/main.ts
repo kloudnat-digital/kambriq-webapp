@@ -15,6 +15,11 @@ import {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true, // Buffer untill Pino Logger is ready
+    // Keeps the unparsed body on `req.rawBody`, which `SanityWebhookGuard` needs:
+    // the webhook signature is an HMAC over the bytes received, and re-encoding
+    // the parsed body does not reproduce them. It holds a reference to the buffer
+    // body-parser already allocated, so it costs no extra memory.
+    rawBody: true,
   });
 
   // ----- Logger ------------

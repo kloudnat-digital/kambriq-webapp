@@ -28,6 +28,7 @@ import { AppService } from './app.service';
 import { KamnetModule } from '../kamnet/kamnet.module';
 import { LandsModule } from '../lands/lands.module';
 import { NewsletterModule } from '../newsletter/newsletter.module';
+import { CmsModule } from '../cms/cms.module';
 
 @Module({
   imports: [
@@ -97,6 +98,7 @@ import { NewsletterModule } from '../newsletter/newsletter.module';
     KamnetModule,
     LandsModule,
     NewsletterModule,
+    CmsModule,
     HealthModule,
 
     // Infrastructure Modules
