@@ -1,11 +1,12 @@
 jest.mock('next-intl/server', () => require('@/test-utils/next-intl-mock'));
 jest.mock('next-intl', () => require('@/test-utils/next-intl-mock'));
 jest.mock('@/i18n/navigation', () => require('@/test-utils/navigation-mock'));
-// A plain img: the real loader refuses remote hosts under Jest, and a crash
+// A stand-in: the real loader refuses remote hosts under Jest, and a crash
 // would make the search and compare tests fail without reading a single value.
 jest.mock('next/image', () => ({
   __esModule: true,
-  default: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} />,
+  // Its alt text is all these tests read; a span carries it without an image.
+  default: ({ src, alt }: { src: string; alt: string }) => <span data-src={src}>{alt}</span>,
 }));
 
 import { isValidElement, type ReactElement } from 'react';

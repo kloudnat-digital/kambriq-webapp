@@ -2247,11 +2247,34 @@
     }
   },
   "kamnetApply": {
-    "closed": {
-      "title": "Candidature KAMNET™",
-      "body": "Les candidatures en ligne ne sont pas encore ouvertes : aucun formulaire de cette page n'enregistre de candidature.",
-      "how": "Pour devenir agent KAMNET™, écrivez-nous depuis la page contact en choisissant le sujet « Devenir agent KAMNET™ ». Votre message est enregistré et notre équipe vous répond.",
-      "contact": "Écrire à KAMBRIQ via la page contact"
+    "title": "Candidature KAMNET™",
+    "contact": "Écrire à KAMBRIQ via la page contact",
+    "unavailable": "Nous ne pouvons pas lire votre situation pour le moment. Réessayez dans quelques minutes, ou écrivez-nous depuis la page contact.",
+    "notCertified": "Pour candidater à KAMNET™, il faut un certificat KCA valide, délivré à l'issue de la formation KBS.",
+    "kbs": "Découvrir la formation KBS",
+    "status": {
+      "PENDING": {
+        "label": "Candidature en attente de revue",
+        "body": "Votre candidature a été enregistrée le {date}. Un administrateur KAMNET™ l'examine ; vous recevrez sa décision par email."
+      },
+      "APPROVED": {
+        "label": "Candidature approuvée",
+        "body": "Votre candidature du {date} a été approuvée. Bienvenue dans KAMNET™."
+      },
+      "REJECTED": {
+        "label": "Candidature non retenue",
+        "body": "Votre candidature du {date} n'a pas été retenue."
+      }
+    },
+    "form": {
+      "intro": "Votre candidature utilise les informations de votre compte et votre certificat {kcaNumber}.",
+      "sponsorLabel": "Code de parrainage (optionnel)",
+      "sponsorHelp": "Le code de l'agent KAMNET™ qui vous parraine, par exemple AGT-2025-0001.",
+      "motivationLabel": "Motivation",
+      "motivationHelp": "Entre 50 et 1000 caractères.",
+      "submit": "Envoyer ma candidature",
+      "sending": "Envoi…",
+      "error": "La candidature n'a pas été enregistrée : {message}"
     }
   }
 }

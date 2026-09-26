@@ -7,7 +7,8 @@
     "invalidKca": "Your KCA certificate is invalid or expired. Please ensure you have a valid KBS certification.",
     "approved": "Application approved - welcome to KAMNET™!",
     "rejected": "Application has been rejected",
-    "sponsorNotFound": "Sponsor with code {code} not found"
+    "sponsorNotFound": "Sponsor with code {code} not found",
+    "none": "Not provided"
   },
   "agent": {
     "notFound": "Agent profile not found",

@@ -285,5 +285,17 @@
     "days": "{days} day(s)",
     "none": "None",
     "breakdownLabel": "By subject, over the period"
+  },
+  "kamnetApplicationNotification": {
+    "subject": "New KAMNET™ application - {name}",
+    "heading": "A new KAMNET™ application has arrived",
+    "intro": "Received on {receivedAt}. Reply to {email}.",
+    "nameLabel": "Name",
+    "emailLabel": "Email",
+    "phoneLabel": "Phone",
+    "kcaLabel": "KCA certificate",
+    "sponsorLabel": "Sponsor code",
+    "motivationLabel": "Motivation",
+    "reviewNote": "The application is waiting for review by a KAMNET™ administrator."
   }
 }

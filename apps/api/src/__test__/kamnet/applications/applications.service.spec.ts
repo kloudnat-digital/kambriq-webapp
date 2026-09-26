@@ -1,5 +1,6 @@
 import { ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { EmailService, KamnetApplicationStatus } from '@kambriq/common';
 import { KamnetApplicationsService } from '../../../kamnet/applications/applications.service';
@@ -52,6 +53,7 @@ describe('KamnetApplicationsService - the certificate decides', () => {
         { provide: KbsCandidatesService, useValue: candidates },
         { provide: EmailService, useValue: mockEmailService() },
         { provide: I18nService, useValue: mockI18n() },
+        { provide: ConfigService, useValue: { get: (_k: string, fallback?: unknown) => fallback } },
       ],
     }).compile();
 
