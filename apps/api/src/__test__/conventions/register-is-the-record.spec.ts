@@ -108,10 +108,6 @@ const NO_ENTRY_YET: ReadonlyArray<{ chantier: string; why: string }> = [
   { chantier: 'P10', why: 'agent-page copy replaced; the LANDS page rewrite waits in #174' },
   { chantier: 'P4', why: 'X-Robots-Tag; entry never written' },
   { chantier: 'Q1', why: 'certification follow-up; entry never written' },
-  {
-    chantier: 'confirmRemainingPayment',
-    why: 'the balance has no ledger; described inside the wave 4 entry rather than its own',
-  },
   { chantier: 'naming', why: 'a decision about this document, not a chantier' },
   { chantier: 'register', why: 'a decision about this document, not a chantier' },
   { chantier: 'rename', why: 'a decision about this document, not a chantier' },
@@ -195,7 +191,7 @@ describe('the chantier register is the record, and the only one', () => {
       (q) => q.chantier,
     );
     expect(stale).toEqual([]);
-    expect(NO_ENTRY_YET).toHaveLength(24);
+    expect(NO_ENTRY_YET).toHaveLength(23);
   });
 
   it('is the only file in the repository shaped like a record of work', () => {
