@@ -18,7 +18,7 @@ const base = {
   description: 'Une parcelle',
   region: 'Littoral',
   sizeM2: 500,
-  price: 1_000_000,
+  totalPrice: 1_000_000,
   labelId: 'label',
 };
 const create = (titleNumber?: string) => createLandSchema.safeParse({ ...base, titleNumber });

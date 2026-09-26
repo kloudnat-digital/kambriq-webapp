@@ -55,7 +55,9 @@ export const ReservationCard = ({ reservation: r, isAdmin }: Props) => {
               <p className="text-sm text-gray-500">{r.land.city ?? r.land.region}</p>
             </div>
             <div className="shrink-0 text-right">
-              <p className="text-sm font-bold text-gray-900">{formatXAF(r.land.price)} F/m²</p>
+              <p className="text-sm font-bold text-gray-900">
+                {r.land.pricePerM2 === null ? '—' : `${formatXAF(r.land.pricePerM2)} F/m²`}
+              </p>
               <p className="text-xs text-gray-400">{r.land.sizeM2} m²</p>
             </div>
           </div>

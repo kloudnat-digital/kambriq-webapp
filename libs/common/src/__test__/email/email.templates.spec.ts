@@ -50,7 +50,7 @@ describe('clientPortalAccess template', () => {
       {
         clientName: 'Alice',
         landTitle: 'Parcelle Kribi',
-        price: '8000000',
+        totalPrice: '8000000',
         agentName: 'Eric Mbou',
       },
       i18n,
@@ -63,7 +63,7 @@ describe('clientPortalAccess template', () => {
     const { html } = buildEmail(
       'clientPortalAccess',
       'fr',
-      { clientName: 'Alice', landTitle: 'Parcelle Kribi', price: '8000000', agentName: '' },
+      { clientName: 'Alice', landTitle: 'Parcelle Kribi', totalPrice: '8000000', agentName: '' },
       i18n,
     );
 
@@ -78,7 +78,7 @@ describe('clientPortalAccess template', () => {
     const { html } = buildEmail(
       'clientPortalAccess',
       'fr',
-      { clientName: 'Alice', landTitle: 'Parcelle Kribi', price: '8000000', agentName: UUID },
+      { clientName: 'Alice', landTitle: 'Parcelle Kribi', totalPrice: '8000000', agentName: UUID },
       i18n,
     );
 

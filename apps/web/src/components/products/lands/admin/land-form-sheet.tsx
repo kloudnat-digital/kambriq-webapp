@@ -74,7 +74,7 @@ const LandFormSheet: FC<LandFormSheetProps> = ({
           latitude: land.latitude,
           longitude: land.longitude,
           sizeM2: land.sizeM2,
-          price: land.price,
+          totalPrice: land.totalPrice,
           labelId: land.label.id,
           pv: land.pv,
           ownerType: land.ownerType,
@@ -235,8 +235,8 @@ const LandFormSheet: FC<LandFormSheetProps> = ({
                     label: t('form.size'),
                     placeholder: 'Ex: 500',
                   },
-                  price: {
-                    name: 'price',
+                  totalPrice: {
+                    name: 'totalPrice',
                     label: t('form.price'),
                     placeholder: 'Ex: 15000000',
                   },

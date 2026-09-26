@@ -106,7 +106,7 @@ export function ReservationDetailDialog({
             <p className="font-semibold text-gray-900">{reservation.land.title}</p>
             <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
               <MapPin className="size-3" />
-              {formatXAF(reservation.land.price)}
+              {formatXAF(reservation.land.totalPrice)}
             </div>
           </div>
 

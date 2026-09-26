@@ -114,7 +114,7 @@ const ReservationsTable: FC<ReservationsTableProps> = ({
                     <td className="px-4 py-3">
                       <p className="font-medium text-foreground">{res.land.title}</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        {formatXAF(res.land.price)}
+                        {formatXAF(res.land.totalPrice)}
                       </p>
                     </td>
                     <td className="px-4 py-3">

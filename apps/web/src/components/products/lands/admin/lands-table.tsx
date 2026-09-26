@@ -220,7 +220,7 @@ const LandsTable: FC<LandsTableProps> = ({
                       {land.sizeM2.toLocaleString()} m²
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-primary-600">
-                      {formatXAF(land.price)}
+                      {formatXAF(land.totalPrice)}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <Badge
