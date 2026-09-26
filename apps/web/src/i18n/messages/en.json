@@ -927,6 +927,17 @@
       "other": "I have another question"
     }
   },
+  "languageSwitch": {
+    "saved": {
+      "title": "Your account is now in English",
+      "description": "Our emails to you will be in English too. You can change this in your profile."
+    },
+    "failed": {
+      "title": "Your account language was not changed",
+      "description": "This page is in English, but our emails stay in your account's language. You can change it in your profile."
+    },
+    "profile": "My profile"
+  },
   "landSearch": {
     "verified": "Verified",
     "details": "View details",

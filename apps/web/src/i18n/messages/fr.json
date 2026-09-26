@@ -927,6 +927,17 @@
       "other": "J'ai une autre question"
     }
   },
+  "languageSwitch": {
+    "saved": {
+      "title": "Votre compte est maintenant en français",
+      "description": "Nos e-mails vous seront aussi envoyés en français. Vous pouvez le modifier dans votre profil."
+    },
+    "failed": {
+      "title": "La langue de votre compte n'a pas été modifiée",
+      "description": "Cette page est en français, mais nos e-mails restent dans la langue de votre compte. Vous pouvez la modifier dans votre profil."
+    },
+    "profile": "Mon profil"
+  },
   "landSearch": {
     "verified": "Vérifié",
     "details": "Voir les détails",

@@ -237,7 +237,7 @@ listed here first.
 | `I43`                         | `PROUVE`            | ten signed-in screens promised 38 unbuilt features in hardcoded French; the promise is removed and a guard reads every `.tsx`; proven on dev at `sha-383828e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Audit 2026-09-23, wave 5      | `EN COURS`          | locale-prefixed routing: every page under `[locale]`, `localePrefix: 'always'`, the proxy gate asked positively, the RSC token leak closed, 48 `next/link` and 35 `next/navigation` imports moved to `@/i18n/navigation`, `revalidatePath` given its prefix. Proved locally over HTTP (`/` -> 307 `/fr`, `/pricing` -> 404 not a login redirect, `/de/about` -> 404, `/fr/mylands` -> `/fr/login`) and by 55 browser tests. Unmerged; pending proof is the same table read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Audit 2026-09-23, wave 6      | `EN COURS`          | SEO: `app/sitemap.ts` (30 URLs, hreflang + x-default), `app/robots.ts`, canonical and alternates on all 15 public pages, JSON-LD where there was none, metadata on the four legal pages and `robots: noindex` on the six auth pages. Both files read `APP_ENV`, never `NODE_ENV`. Unmerged; pending proof is `/robots.txt` and `/sitemap.xml` read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| Locale switcher coverage      | `EN COURS`          | J4 / P16: `QuickActions` now on every public page (contact, about, FAQ, the four legal pages, the certificate verdict), and a guard watches every public page by default. Pending: the switch used on dev. Emails follow the account's own language setting, deliberately not the page switch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Locale switcher coverage      | `EN COURS`          | J4 / P16: `QuickActions` now on every public page, guarded by default (#197). Second half, decided by Visquis on 26 September: the switch also sets a signed-in person's account language, and so their emails, announced with a link to the profile; a visitor changes only the page. Pending: both halves used on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Built-in 404 above the locale | `A FAIRE`           | a `notFound()` thrown from the root layout has no boundary above it, so an unconfigured FIRST segment (`/pricing`, `/de/about`) is served Next's built-in 404 rather than the branded one. The status is 404 in both cases. Closing it needs `experimental.globalNotFound`, off by default in Next 16.3.6; pinned as a difference in `locale-routing.spec.ts` rather than left to be discovered                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | develop merged into waves 5-6 | `EN COURS`          | develop's 9 commits merged 25 September: 8 text conflicts, six new page files relocated under `[locale]`, three components moved off `next/link`/`next/navigation`, `revalidatePath` calls given their prefix, `image-hosts.spec.ts` unblocked (25 assertions that ran none), `A41` reconciled. Unmerged to develop; pending proof is the routing table and the sitemap read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Audit 2026-09-23, unwaved     | `A FAIRE`           | `/admin/verify` and `/kamnet/apply` are mocks behind real roles that toast success and write nothing; the Mapbox build `ARG` reaches no workflow, so the land-search map is dark in every image; `legal/mentions/{fr,en}.mdx` publishes `Capital social : XXX XXX XAF` and `N° RCCM : XX / XXX / XX` on a public page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
@@ -6582,7 +6582,7 @@ page or a layout above it, unless the page is declared exempt with its reason
 develop:** it named exactly the eight pages. Removing the legal layout's mount
 fails it on the four legal pages.
 
-**J4's other half, decided and not done: emails.** Emails follow the account's
+**J4's other half, as first left (superseded below): emails.** Emails follow the account's
 `preferredLanguage`, which the account preferences card already sets
 (`account-preferences-card.tsx`). The floating switch only changes the page's
 language. Making it also rewrite the account's stored preference would change a
@@ -6591,7 +6591,43 @@ the anonymous visitor this repair is for. So the two stay separate: a person who
 wants English mail sets it on their account. If Visquis wants the page switch to
 carry to email, it is a product decision about a stored preference.
 
-**Pending:** the switch used on dev on `/fr/contact` and a legal page.
+**J4's second half - Visquis, 26 September: the switch carries to the
+account.** His reasoning: someone who switches does not tell the page from their
+account. They switched to English; they expect English, and that includes the
+mail. So the paragraph above is overruled, and it stays as the reasoning he
+decided against.
+
+- `followLanguage` (`lib/actions/account.ts`) reads the session first. No
+  session, or one that can no longer be refreshed, is a visitor: nothing is read
+  or written, and a language switch never becomes a sign-in redirect. A
+  signed-in person whose account already has the language is not written
+  either.
+- `useSwitchLanguage` (`hooks/use-switch-language.ts`) is the only switch on the
+  public site and on the sign-in screens. It asks the account to follow, then
+  navigates. **A write to a stored preference caused by a click read as
+  temporary is made visible**: on the page the switch lands on, in its
+  language, a toast says the account and its emails are now in that language,
+  with a "My profile" action to the preferences card where it is undone. A
+  failed write is said as well, never passed over: the page changes, the
+  account does not, and the person is told which.
+- The notice crosses the navigation in `sessionStorage`, keyed to the locale
+  switched to. Keying it is not tidiness: without it the effect re-ran on the
+  old page and showed the notice in the old language. The spec caught exactly
+  that when the effect gained its full dependencies.
+- `quick-actions.spec.tsx` also fails when any source file other than the hook
+  and the profile card switches the locale, so a new switcher cannot change the
+  page and silently not the emails.
+
+Tests: `follow-language.spec.ts` (5) and `quick-actions.spec.tsx` (7). **Fourteen mutations, each watched failing:** no session check, a stale
+session trusted, always writing, "saved" without writing, a failure reported as
+saved, the page not following, the wrong language sent, a visitor announced, an
+unchanged account announced, a save not announced, a failure silent, the
+profile link wrong, a switcher bypassing the hook, and the notice read without
+its locale.
+
+**Cost impact: None.**
+
+**Pending:** both halves used on dev: the switch on `/fr/contact` and a legal page as a visitor, and signed in, with the account's stored language read back and the notice seen.
 
 ### Built-in 404 above the locale - `A FAIRE`
 
