@@ -146,8 +146,8 @@ model KamnetCommission {
   pv            Float
   /// The commission rate applied (Taux Part Commission).
   tpc           Float
-  /// The calculated commission amount in the local currency (XAF).
-  amount        Float
+  /// The commission amount, whole XAF (no minor unit). Integer money since 27 September.
+  amount        BigInt
   status        KamnetCommissionStatus  @default(PENDING)
   paidAt        DateTime?
   createdAt     DateTime                @default(now())
