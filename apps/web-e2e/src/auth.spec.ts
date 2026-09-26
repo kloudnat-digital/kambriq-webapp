@@ -103,6 +103,48 @@ test.describe('Authentication', () => {
     await expect(page).toHaveURL(/login/);
   });
 
+  /**
+   * A33 - the cause of WebKit's flaky sign-in. The fields were controlled
+   * inputs: text typed before hydration was overwritten by React's empty state,
+   * validation refused, and no request left the page. WebKit on the CI runner
+   * was simply the engine slow enough to hydrate after the typing. This holds
+   * the page's scripts until the typing is done, so every engine is tested in
+   * the order that failed.
+   */
+  test('what is typed before the page hydrates survives it', async ({ page }) => {
+    const held: Array<() => Promise<void>> = [];
+    let holding = true;
+    await page.route('**/_next/static/chunks/**/*.js', (route) =>
+      holding ? held.push(() => route.continue()) : route.continue(),
+    );
+    await page.goto('/fr/login', { waitUntil: 'domcontentloaded' });
+    await page.locator('input[type="email"]').fill('nobody@example.com');
+    await page.locator('input[type="password"]').fill('wrong-password-123');
+
+    holding = false;
+    for (const release of held) await release();
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.locator('input[type="email"]')).toHaveValue('nobody@example.com');
+    await expect(page.locator('input[type="password"]')).toHaveValue('wrong-password-123');
+  });
+
+  test('a tap before the page hydrates never puts the password in a URL', async ({ page }) => {
+    await page.route('**/_next/static/chunks/**/*.js', () => undefined);
+    const urls: string[] = [];
+    page.on('request', (r) => {
+      if (r.isNavigationRequest()) urls.push(r.url());
+    });
+    await page.goto('/fr/login', { waitUntil: 'domcontentloaded' });
+    await page.locator('input[type="email"]').fill('nobody@example.com');
+    await page.locator('input[type="password"]').fill('wrong-password-123');
+    await page.locator('button[type="submit"]').click({ force: true });
+    await page.waitForTimeout(2000);
+
+    expect(urls.length).toBeGreaterThan(1);
+    expect(urls.filter((u) => u.includes('password'))).toEqual([]);
+  });
+
   test('invalid credentials show an error without crashing', async ({ page }) => {
     await page.goto('/login');
     await expect(page).toHaveURL(/login/);

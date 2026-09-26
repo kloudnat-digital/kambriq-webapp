@@ -26,15 +26,16 @@ const Login: FC = () => {
 
   const methods = useForm<LoginSchema>({
     resolver: zodResolver(LoginResolver),
+    // A33: no default for the email and the password. A default is written into
+    // the field when it registers, which would erase what the visitor typed
+    // before the page hydrated; without one, the field's own value is read.
     defaultValues: {
-      email: '',
-      password: '',
       rememberMe: false,
     },
   });
 
-  const { formState, reset } = methods;
-  const { isSubmitting } = formState;
+  const { formState, reset, register } = methods;
+  const { isSubmitting, errors } = formState;
 
   const handleSubmit = async (data: LoginSchema) => {
     const result = await logInAction(data);
@@ -49,68 +50,58 @@ const Login: FC = () => {
   };
 
   return (
-    <form className="space-y-6" onSubmit={methods.handleSubmit(handleSubmit)}>
+    <form method="post" className="space-y-6" onSubmit={methods.handleSubmit(handleSubmit)}>
       <FieldGroup>
-        <Controller
-          name="email"
-          control={methods.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="email">{t('login.email')}</FieldLabel>
-              <Input
-                {...field}
-                id="email"
-                type="email"
-                disabled={isSubmitting}
-                aria-invalid={fieldState.invalid}
-                placeholder="you@example.com"
-                autoComplete="email"
-              />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
+        {/*
+          A33: the email and the password are uncontrolled (`register`), so what
+          the visitor typed before hydration survives it. As controlled inputs,
+          hydration wrote their empty state over the typed text, validation
+          refused, and the button appeared to do nothing.
+        */}
+        <Field data-invalid={!!errors.email}>
+          <FieldLabel htmlFor="email">{t('login.email')}</FieldLabel>
+          <Input
+            {...register('email')}
+            id="email"
+            type="email"
+            disabled={isSubmitting}
+            aria-invalid={!!errors.email}
+            placeholder="you@example.com"
+            autoComplete="email"
+          />
+          {errors.email && <FieldError errors={[errors.email]} />}
+        </Field>
 
-        <Controller
-          name="password"
-          control={methods.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="password">{t('login.password')}</FieldLabel>
-              <InputGroup className="h-9">
-                <InputGroupInput
-                  {...field}
-                  id="password"
-                  disabled={isSubmitting}
-                  aria-invalid={fieldState.invalid}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  type={showPassword ? 'text' : 'password'}
-                  spellCheck={false}
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                />
-                <InputGroupAddon align="inline-end">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={isSubmitting}
-                    onClick={togglePasswordVisibility}
-                    type="button"
-                    className="hover:bg-transparent"
-                  >
-                    {showPassword ? (
-                      <EyeOffIcon className="size-4" />
-                    ) : (
-                      <EyeIcon className="size-4" />
-                    )}
-                  </Button>
-                </InputGroupAddon>
-              </InputGroup>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
+        <Field data-invalid={!!errors.password}>
+          <FieldLabel htmlFor="password">{t('login.password')}</FieldLabel>
+          <InputGroup className="h-9">
+            <InputGroupInput
+              {...register('password')}
+              id="password"
+              disabled={isSubmitting}
+              aria-invalid={!!errors.password}
+              placeholder="••••••••"
+              autoComplete="current-password"
+              type={showPassword ? 'text' : 'password'}
+              spellCheck={false}
+              autoCorrect="off"
+              autoCapitalize="off"
+            />
+            <InputGroupAddon align="inline-end">
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={isSubmitting}
+                onClick={togglePasswordVisibility}
+                type="button"
+                className="hover:bg-transparent"
+              >
+                {showPassword ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+              </Button>
+            </InputGroupAddon>
+          </InputGroup>
+          {errors.password && <FieldError errors={[errors.password]} />}
+        </Field>
 
         <div className="flex items-center justify-between">
           <Controller

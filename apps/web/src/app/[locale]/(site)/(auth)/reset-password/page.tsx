@@ -57,7 +57,7 @@ const ResetPassword: FC = () => {
   };
 
   return (
-    <form className="space-y-6" onSubmit={methods.handleSubmit(handleSubmit)}>
+    <form method="post" className="space-y-6" onSubmit={methods.handleSubmit(handleSubmit)}>
       <FieldGroup>
         <Controller
           name="password"

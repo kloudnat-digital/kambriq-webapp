@@ -71,7 +71,7 @@ const ReactivateForm: FC = () => {
         : t('reactivate.graceOther', { days });
 
   return (
-    <form className="space-y-6" onSubmit={methods.handleSubmit(handleSubmit)}>
+    <form method="post" className="space-y-6" onSubmit={methods.handleSubmit(handleSubmit)}>
       <div
         role="status"
         className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
