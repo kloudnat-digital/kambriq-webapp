@@ -6692,12 +6692,46 @@ bootstrap list.
   payload" assertion was removed, because the exact fields and the single call
   already refuse it and it could never fail alone.
 
-**The sixteen dead jobs are kept.** Fourteen are the digest (above). The other
-two are older and unrelated: `core.purge-deleted-users` and
-`core.cleanup-expired-tokens`, both failed on **26 February 2026** with "User
-was denied access on the database `kambriq_core`". Nothing is deleted; that is
-Visquis's call. They stay readable at `/health/queues/core/failed` and age out
-only when 200 newer failures accumulate (`removeOnFail: 200`).
+**The sixteen dead jobs: read, recorded, then cleared (Visquis, 26
+September: clear them all, after reading the two nobody had explained).**
+Fourteen are the digest (above). The other two, read in full through
+`/health/queues/core/failed` on 26 September before anything was deleted:
+
+| Job                           | Repeat slot (UTC)   | Scheduled at             | Failed at                | Attempts |
+| ----------------------------- | ------------------- | ------------------------ | ------------------------ | -------- |
+| `core.cleanup-expired-tokens` | 2026-02-26 03:00:00 | 2026-02-25 18:44:37.653Z | 2026-02-26 03:00:15.442Z | 3        |
+| `core.purge-deleted-users`    | 2026-02-26 04:00:00 | 2026-02-25 18:44:37.751Z | 2026-02-26 04:00:15.242Z | 3        |
+
+Both failed at the first Prisma call (`refreshToken.deleteMany`,
+`user.deleteMany`) with **"User was denied access on the database
+`kambriq_core`"** - Prisma's refusal when the connecting role may not use that
+database - with empty payloads. The trace shows the purge as a single
+`deleteMany`, the code before the S3-aware purge: the original build.
+
+**What they were, as far as the evidence reaches.** The API first started on
+25 February at 18:44 and scheduled both crons; at their first slot, that night,
+its database role could not use `kambriq_core`; and **neither job has failed
+since**: no later failure of either name is in the failed set, which keeps up
+to 200. That is a one-night condition on
+dev's first night - the register's `B3` places the seed's single run on 26
+February, the same day. **What cannot be shown any more, and is not claimed:**
+why the role was refused. CloudWatch keeps seven days, and the databases were
+dropped and rebuilt for `S2` (`kambriq_core`'s first migration now reads 4
+September 2026), so nothing from February remains outside these two Redis
+entries. The cause is inferred, not proven: the role or its grants were not in
+place yet when the API began scheduling.
+
+**Cleared, 26 September, shortly before 12:29 UTC**, from inside the running API task (ECS
+exec, BullMQ `Queue('core').clean(0, 1000, 'failed')`): the failed set held
+exactly the sixteen read above (fourteen `core.contact-digest`, one of each
+February job); `removed 16`; the failed count then read **0**, confirmed
+through `/health/queues` (`core: 0`). A full copy of the sixteen as read was
+kept outside the repository before the deletion.
+
+**Not touched:** the one failed job on `kamnet`, `kamnet.definitely-unknown-job`
+of 4 September (payload `{probe}`) - a deliberate probe of the kind S9 and A18
+used to show an unknown job lands on the failed set. It is not one of the
+sixteen, so it stays.
 
 **Proven on dev, 26 September:** the API at `sha-603e6ab` (read from
 `/api/v1/health/version`) logged "Nest application successfully started" at
