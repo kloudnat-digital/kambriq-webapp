@@ -7539,7 +7539,7 @@ G20 proof, which had to read the column from the database.
 
 **Proof, red first:** `purpose-in-back-office.spec.ts` (API, three reads) and a
 new test in `dunning.spec.ts` (the overdue queue) failed to compile - the field
-did not exist on any of the four. `purpose-in-back-office.spec.tsx` (web) failed
+did not exist on any of the four. `payments-purpose-in-back-office.spec.tsx` (web, beside the `payments-admin` folder: `payment-format.spec.ts` rightly scans every file inside it for a written currency, and a fixture carries one) failed
 on all three screens, then passed. A mutation swapping the two labels fails the
 list test.
 

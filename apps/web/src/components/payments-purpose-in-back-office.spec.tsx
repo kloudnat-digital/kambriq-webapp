@@ -2,9 +2,9 @@ jest.mock('@/i18n/navigation', () => require('@/test-utils/navigation-mock'));
 jest.mock('@/lib/actions/payments', () => ({}));
 
 import { render, screen, within } from '@testing-library/react';
-import { PaymentsListContent } from './payments-list-content';
-import { PaymentDetailContent } from './payment-detail-content';
-import { RequestQueueContent } from './request-queue-content';
+import { PaymentsListContent } from './payments-admin/payments-list-content';
+import { PaymentDetailContent } from './payments-admin/payment-detail-content';
+import { RequestQueueContent } from './payments-admin/request-queue-content';
 import type { PaymentDetail, PaymentRequestRow, PaymentRow } from '@/types/payments';
 
 const row = (purpose: PaymentRow['purpose'], id: string): PaymentRow => ({
