@@ -11,3 +11,9 @@ export const DOWN_PAYMENT_PERCENT = 5 as const; // 5% of the parcel's total pric
  */
 export const depositFor = (totalPrice: number): number =>
   Math.round((totalPrice * DOWN_PAYMENT_PERCENT) / 100);
+
+/**
+ * What remains after the deposit: the total price minus `depositFor`, so the
+ * two always add up to the total exactly, whatever the deposit's rounding (G20).
+ */
+export const balanceFor = (totalPrice: number): number => totalPrice - depositFor(totalPrice);
