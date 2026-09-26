@@ -106,7 +106,7 @@ const NO_ENTRY_YET: ReadonlyArray<{ chantier: string; why: string }> = [
   { chantier: 'I31', why: 'exam threshold arbitration, tracked outside this repository' },
   { chantier: 'I32', why: 'getMyNetwork never reads the caller tier; not started' },
   { chantier: 'I7', why: 'the 18 September wave, tracked outside this repository' },
-  { chantier: 'P10', why: 'the exclusive-catalogue promise; not started' },
+  { chantier: 'P10', why: 'agent-page copy replaced; the LANDS page rewrite waits in #174' },
   { chantier: 'P4', why: 'X-Robots-Tag; entry never written' },
   { chantier: 'Q1', why: 'certification follow-up; entry never written' },
   {
