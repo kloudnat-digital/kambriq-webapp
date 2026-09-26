@@ -160,7 +160,7 @@ listed here first.
 | `A12`                         | `PROUVE`            | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `R1`                          | `EN COURS`          | **a merge can succeed and have no effect.** `#89` merged into a branch consumed 89 s earlier; `#88` was squash-merged, so nothing showed. Pending proof is the three commands in `R1`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `G8`                          | `ARRETE`            | **G11-G14 is not on develop and not deployed**: #89 merged into the G9 branch 89s after that branch merged to develop. 51 files stranded at `230b827`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `G8` blocker                  | `A FAIRE`           | re-land `230b827` on develop (**not** conflict-free - see `R1`), deploy, then re-run G8. Until then dev emails every channel's coordinates to whoever clicks                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `G8` blocker                  | `PROUVE`            | the exposure closed on 7 September: `230b827` (#89) merged into a consumed branch and was re-landed the same day as #92 (`5c35aa2`, on develop, code-identical). This row stayed open 19 days after the fix. A test now pins that only the chosen channel's details leave. **G8 itself stays open**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `G10`                         | `PROUVE`            | applied and observed: 16 SecureString parameters none empty, task definition 143 with the three variables and no channel value, 0 AccessDenied                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `G9`                          | `PROUVE LOCALEMENT` | the client creates the payment, from their own purchase page. Creation writes its audit row; sending the instructions is a second act                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `G9` follow-up                | `A DECIDER`         | `PAYMENT_VALIDITY_DAYS` is 30 because a month is the shape of a diaspora transfer. The design gives no number - this one needs deciding                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -6124,6 +6124,64 @@ and the applicant's mail able to fail the request.
 **The login wall stays.** The register's own P5 row records that the public
 product pages link to `/kamnet/apply` behind the login wall, kept deliberately
 (P3): widening it is a product change.
+
+### G8 blocker - only the chosen channel's details leave - `PROUVE`
+
+**Cost impact: None.**
+
+**The row was stale for 19 days, and the exposure it described was closed on
+7 September.** The row said "re-land `230b827` … until then dev emails every
+channel's coordinates to whoever clicks". Measured on 26 September:
+
+- `230b827` is PR #89's G11–G14 work, and it is **not** in develop's history;
+- **it did not need to be**: `5c35aa2`, "fix: re-land the G11-G14 work on
+  develop (#92)", is, and its code is identical to `230b827`'s (an empty diff
+  across `apps`, `libs` and `prisma`).
+
+**How it was lost - the process defect, named.** #89 was stacked on #88, with
+`feat/g9-payment-entry-point` as its base. #88 merged at 09:59:41 on 7
+September, and #89 merged into the already-consumed branch at 10:01:10,
+**89 seconds later**. GitHub called it merged, and nothing reached develop. It
+was found and re-landed as #92 at 14:36 the same day. CLAUDE.md has recorded
+this rule since then ("a stacked PR must be re-based when its base merges, or it
+merges into nothing"). **What went wrong after that is the register itself**:
+this row was never updated, so it described an open exposure for 19 days after
+the fix. That is the stale-record defect `register-is-the-record` exists for,
+surviving because it was a row about a single commit.
+
+**What was actually exposed, and to whom - narrower than "every channel to
+whoever clicks".**
+
+- _Before_ the re-land (v02, until #92 deployed on 7 September): the
+  instructions email (and the reminder after it, `paymentReminder`) listed
+  every channel's coordinates, and went to the
+  signed-in client who requested a payment on their own reservation. It was
+  not open to "whoever": the recipient was authenticated, and the payment was
+  their own. On dev the coordinates are deliberately fictitious
+  (`DEV-COMPTE-FICTIF-NE-PAS-UTILISER`, see CLAUDE.md), and no production
+  environment exists. So what was sent was the design error v03 corrected:
+  every channel instead of the chosen one, to the right person, with fake
+  values;
+- _Since #92_: `sendInstructions` takes the one channel the back office chose,
+  after the client's identity is verified. It fetches only that channel
+  (`detailsFor(by.channel)`) and stores what was communicated. **The email
+  carries no coordinates at all** (`no-coordinates-in-email.spec.ts`), and the
+  client reads them on their own authenticated page. KAMBRIQ's support phone
+  and email ride along by design, so the client has somebody to call.
+
+**The test the brief asked for.** `payment-instructions.spec.ts` proved that
+`sendInstructions` asks for one channel, but it mocks `detailsFor`, so nothing
+proved what `detailsFor` hands back. `one-channel-leaves.spec.ts` runs the real
+service with every channel's parameters present, the worst case, and requires,
+for each selectable channel, exactly its own fields plus the named support
+contact, and no value belonging to another channel. **My own first version was
+wrong**: it failed on the support contact, which is by design and not a
+leak. The allowed set now names it. Mutations: sending every channel's fields
+failed six cases, and adding one foreign field failed five (all but OMO, whose
+own field it is).
+
+**G8 stays open.** It carries the deferred dev proofs of eleven other
+subjects. Only this blocker is closed.
 
 ---
 
