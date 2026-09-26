@@ -27,7 +27,7 @@ export class CorePrismaService extends PrismaClient implements OnModuleInit, OnM
       await this.$connect();
       this.logger.log('Core database connected');
     } catch (error) {
-      this.logger.error('Core database connection failed', error);
+      this.logger.error('Core database connection failed %o', { err: error });
       throw error;
     }
   }
@@ -38,7 +38,7 @@ export class CorePrismaService extends PrismaClient implements OnModuleInit, OnM
       await this.pool.end();
       this.logger.log('Core database disconnected');
     } catch (error) {
-      this.logger.error('Core database disconnection failed', error);
+      this.logger.error('Core database disconnection failed %o', { err: error });
     }
   }
 }

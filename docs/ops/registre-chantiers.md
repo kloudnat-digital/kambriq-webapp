@@ -135,6 +135,7 @@ listed here first.
 | ----------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `L2`                          | `EN COURS`          | one deployed log line carrying its interpolated metadata, quoted                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `L3`                          | `PROUVE`            | log payloads are top-level JSON fields: one pino `hooks.logMethod` (`core/logging/structured-fields.ts`) lifts the single `%o` object every call site passes, instead of rewriting 161 calls. Pending: a field queried in CloudWatch Insights on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Errors logged under err       | `EN COURS`          | an error object is logged under `err`, where pino-http writes its type, message and stack. Thirteen call sites lost it (ten dropped it, three wrote `{}`), against the seventh round's "no call site does it"; fixed, and `log-errors-in-err.spec.ts` refuses both shapes. Pending: one error line read on dev with its message and stack                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `F1`                          | `A DECIDER`         | coverage ratchet: a floor, and what happens when a PR drops below it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `P1`                          | `A DECIDER`         | SES contact list, one per account per region — the prd constraint                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `X2`                          | `PROUVE`            | NAT option 2 - **already applied on 12 September** as infra D15 (dev has no NAT gateway, tasks in public subnets); the "unapplied" state here was stale. No live NAT gateway on 26 September. The net saving is partly taken back by per-task public IPv4 hours and is read on the bill (Visquis)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
@@ -3787,6 +3788,10 @@ mechanical follow-up.
 - An Error, an array, or anything but a plain object is left to pino exactly as
   before - and that surfaced a fact worth writing down: **pino prints an `Error`
   passed through `%o` as `{}`**. No call site does it today (checked).
+  **Tracker correction, 26 September (eighth round): that check was wrong.** It
+  looked for an Error passed as the whole payload; it missed an Error inside the
+  payload (`{ error }`, three sites, written `{}`) and an Error passed without a
+  placeholder (ten sites, dropped outright). See "Errors logged under err".
 - **Proof, red first:** `structured-fields.spec.ts` runs the real pino-http
   logger: the payload becomes fields, a colliding key goes under `data`, non-plain
   payloads come out identical to pino alone, and without the hook the payload is
@@ -3802,6 +3807,47 @@ certificate-expiry schedulers alike). The same line from the previous image,
 read the same way, was `"msg":"Contact digest cron scheduled {\"pattern\":\"0 7 * * *\"}"`
 
 - the payload was text in the message, now it is a field.
+
+### Errors logged under err - `EN COURS`
+
+**Cost impact: None.**
+
+**The brief:** the logging library prints an error object as `{}`; no code does
+it today, so put the rule in before the first time it hides a real error.
+
+**The premise was mine, and it was wrong.** The seventh round wrote "no call
+site does it today (checked)"; the check only looked for an Error passed as the
+whole payload. Measured on 26 September, from nestjs-pino's `Logger.call` and
+the L3 hook, two other shapes lose an error, and **13 call sites used them**:
+
+- `logger.error('Core database connection failed', error)` - no placeholder,
+  so pino **drops the argument**: no message, no stack. Eight Prisma service
+  handlers (connect and disconnect, four databases), the readiness check, and
+  the Redis client's `error` event. `logging-metadata.spec.ts` never saw the
+  Prisma ones: it skips every folder named `prisma`, generated or not.
+- `logger.warn('clientDocumentUploaded email failed %o', { error })` - L3 lifts
+  the payload, and pino writes an Error under any key but `err` as **`{}`**.
+  Three email-failure warnings in `reservations.service.ts`.
+
+**The fix:**
+
+- **`err` is the one key that keeps an error.** pino-http serialises a top-level
+  `err` as `{ type, message, stack }`. The L3 hook treated `err` as reserved and
+  moved it under `data`, where it became `{}` too; it now passes an Error under
+  `err` through.
+- **The 13 sites** now log `'... %o', { err: error }`.
+- **`log-errors-in-err.spec.ts`** (libs/common, beside the metadata rule) refuses
+  an error-named identifier (`error`, `err`, `e`, `exception`, `cause`) passed as
+  a bare argument, or as a payload value under any key but `err`. It walks the
+  hand-written `prisma/` service folders and skips only the generated clients.
+
+**Proof, red first:** the static spec listed exactly the 13 sites; the hook test
+("an Error under `err` is written with its type, message and stack") failed with
+the error under `data`, then passed. A second test pins the old defect: an Error
+under `error` is `{}`. API suite 1 114 and common 378 green.
+
+**Pending:** one real error line on dev read with its message and stack - the
+next failed email or dropped connection.
 
 ### Z1 — Three never-used access keys, one of them full admin — `PROUVE`, applied 2026-09-04
 

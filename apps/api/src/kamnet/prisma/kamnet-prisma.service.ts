@@ -27,7 +27,7 @@ export class KamnetPrismaService extends PrismaClient implements OnModuleInit, O
       await this.$connect();
       this.logger.log('KAMNET database connected');
     } catch (error) {
-      this.logger.error('KAMNET database connection failed', error);
+      this.logger.error('KAMNET database connection failed %o', { err: error });
       throw error;
     }
   }
@@ -38,7 +38,7 @@ export class KamnetPrismaService extends PrismaClient implements OnModuleInit, O
       await this.pool.end();
       this.logger.log('KAMNET database disconnected');
     } catch (error) {
-      this.logger.error('KAMNET database disconnection failed', error);
+      this.logger.error('KAMNET database disconnection failed %o', { err: error });
     }
   }
 }

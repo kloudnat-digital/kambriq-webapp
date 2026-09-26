@@ -1021,7 +1021,7 @@ export class LandReservationsService {
         agent.profile,
       );
     } catch (error) {
-      this.logger.warn('clientDocumentUploaded email failed %o', { error });
+      this.logger.warn('clientDocumentUploaded email failed %o', { err: error });
     }
   }
 
@@ -1067,7 +1067,7 @@ export class LandReservationsService {
         },
       });
     } catch (error) {
-      this.logger.warn(`${template} email failed %o`, { error });
+      this.logger.warn(`${template} email failed %o`, { err: error });
     }
   }
 
@@ -1100,7 +1100,7 @@ export class LandReservationsService {
         },
       });
     } catch (error) {
-      this.logger.warn('clientDocumentRejected email failed %o', { error });
+      this.logger.warn('clientDocumentRejected email failed %o', { err: error });
     }
   }
 

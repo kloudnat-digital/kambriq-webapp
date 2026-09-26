@@ -27,7 +27,7 @@ export class KbsPrismaService extends PrismaClient implements OnModuleInit, OnMo
       await this.$connect();
       this.logger.log('KBS database connected');
     } catch (error) {
-      this.logger.error('KBS database connection failed', error);
+      this.logger.error('KBS database connection failed %o', { err: error });
       throw error;
     }
   }
@@ -38,7 +38,7 @@ export class KbsPrismaService extends PrismaClient implements OnModuleInit, OnMo
       await this.pool.end();
       this.logger.log('KBS database disconnected');
     } catch (error) {
-      this.logger.error('KBS database disconnection failed', error);
+      this.logger.error('KBS database disconnection failed %o', { err: error });
     }
   }
 }
