@@ -1,6 +1,7 @@
 import { ShieldAlert, ShieldCheck, ShieldQuestion, ShieldX } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import type { ReactNode } from 'react';
+import { getLocale, getTranslations } from 'next-intl/server';
 
 import Navbar from '@/components/layout/navbar';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,8 @@ export default async function VerifyCertificatePage({
   const { certificateNumber } = await params;
   const result = await verifyCertificate(certificateNumber).catch(() => null);
   const verdict = result?.success ? result.data : UNAVAILABLE;
+  const t = await getTranslations('verifyCertificate');
+  const dateLocale = (await getLocale()) === 'en' ? 'en-GB' : 'fr-FR';
 
   return (
     <>
@@ -37,9 +40,14 @@ export default async function VerifyCertificatePage({
             className="rounded-3xl border-2 border-border bg-white p-10 text-center shadow-lg"
             data-verdict={verdict.kind}
           >
-            <Verdict verdict={verdict} requested={certificateNumber} />
+            <Verdict
+              verdict={verdict}
+              requested={certificateNumber}
+              t={t}
+              dateLocale={dateLocale}
+            />
             <Button asChild variant="outline" className="w-full">
-              <Link href="/">Retour à l&apos;accueil</Link>
+              <Link href="/">{t('home')}</Link>
             </Button>
           </div>
         </div>
@@ -49,21 +57,43 @@ export default async function VerifyCertificatePage({
   );
 }
 
-function Verdict({ verdict, requested }: { verdict: CertificateVerdict; requested: string }) {
+type Translator = Awaited<ReturnType<typeof getTranslations<'verifyCertificate'>>>;
+
+/** The requested number, set apart so a reader can compare it with what they typed. */
+const numberTag = (chunks: ReactNode) => <span className="font-mono font-medium">{chunks}</span>;
+
+function Verdict({
+  verdict,
+  requested,
+  t,
+  dateLocale,
+}: {
+  verdict: CertificateVerdict;
+  requested: string;
+  t: Translator;
+  dateLocale: string;
+}) {
+  const date = (iso: string | null | undefined) => formatDate(iso, dateLocale);
+  const heading = (kind: CertificateVerdict['kind']) => (
+    <>
+      <h1 className="mb-2 text-2xl font-bold text-gray-900">{t(`${kind}.title`)}</h1>
+      <p className="mb-8 text-sm text-gray-500">
+        {t.rich(`${kind}.description`, { requested, number: numberTag })}
+      </p>
+    </>
+  );
+
   switch (verdict.kind) {
     case 'valid':
       return (
         <>
           <Seal tone="success" icon={<ShieldCheck className="size-10 text-success" />} />
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">Certificat valide</h1>
-          <p className="mb-8 text-sm text-gray-500">
-            Ce certificat KCA a été délivré par KAMBRIQ et est en cours de validité.
-          </p>
+          {heading('valid')}
           <Details
             rows={[
-              ['Numéro KCA', verdict.kcaNumber, true],
-              ['Délivré le', formatDate(verdict.issueDate)],
-              ['Valide jusqu’au', formatDate(verdict.validUntil)],
+              [t('labels.number'), verdict.kcaNumber, true],
+              [t('labels.issued'), date(verdict.issueDate)],
+              [t('labels.validUntil'), date(verdict.validUntil)],
             ]}
           />
         </>
@@ -72,16 +102,13 @@ function Verdict({ verdict, requested }: { verdict: CertificateVerdict; requeste
       return (
         <>
           <Seal tone="danger" icon={<ShieldX className="size-10 text-red-500" />} />
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">Certificat révoqué</h1>
-          <p className="mb-8 text-sm text-gray-500">
-            Ce certificat KCA a été délivré par KAMBRIQ puis révoqué. Il n’est plus valide.
-          </p>
+          {heading('revoked')}
           <Details
             rows={[
-              ['Numéro KCA', verdict.kcaNumber, true],
-              ['Délivré le', formatDate(verdict.issueDate)],
+              [t('labels.number'), verdict.kcaNumber, true],
+              [t('labels.issued'), date(verdict.issueDate)],
               ...(verdict.revokedAt
-                ? ([['Révoqué le', formatDate(verdict.revokedAt)]] as const)
+                ? ([[t('labels.revokedOn'), date(verdict.revokedAt)]] as const)
                 : []),
             ]}
           />
@@ -91,16 +118,12 @@ function Verdict({ verdict, requested }: { verdict: CertificateVerdict; requeste
       return (
         <>
           <Seal tone="warning" icon={<ShieldAlert className="size-10 text-amber-500" />} />
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">Certificat expiré</h1>
-          <p className="mb-8 text-sm text-gray-500">
-            Ce certificat KCA a été délivré par KAMBRIQ, mais sa période de validité est terminée.
-            Il n’atteste plus d’une certification en cours.
-          </p>
+          {heading('expired')}
           <Details
             rows={[
-              ['Numéro KCA', verdict.kcaNumber, true],
-              ['Délivré le', formatDate(verdict.issueDate)],
-              ['Expiré le', formatDate(verdict.validUntil)],
+              [t('labels.number'), verdict.kcaNumber, true],
+              [t('labels.issued'), date(verdict.issueDate)],
+              [t('labels.expiredOn'), date(verdict.validUntil)],
             ]}
           />
         </>
@@ -109,25 +132,14 @@ function Verdict({ verdict, requested }: { verdict: CertificateVerdict; requeste
       return (
         <>
           <Seal tone="danger" icon={<ShieldX className="size-10 text-red-500" />} />
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">Certificat non reconnu</h1>
-          <p className="mb-8 text-sm text-gray-500">
-            Aucun certificat délivré par KAMBRIQ ne correspond au numéro{' '}
-            <span className="font-mono font-medium">{requested}</span>. Ce numéro n’est pas reconnu.
-          </p>
+          {heading('unknown')}
         </>
       );
     case 'unavailable':
       return (
         <>
           <Seal tone="neutral" icon={<ShieldQuestion className="size-10 text-gray-500" />} />
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">
-            Vérification impossible pour le moment
-          </h1>
-          <p className="mb-8 text-sm text-gray-500">
-            Nous ne pouvons pas vérifier le numéro{' '}
-            <span className="font-mono font-medium">{requested}</span> en ce moment. Cette page ne
-            confirme ni n’infirme son authenticité : réessayez dans quelques minutes.
-          </p>
+          {heading('unavailable')}
         </>
       );
   }
