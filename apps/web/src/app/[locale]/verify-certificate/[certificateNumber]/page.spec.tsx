@@ -1,3 +1,4 @@
+jest.mock('@/components/floating/quick-actions', () => ({ __esModule: true, default: () => null }));
 jest.mock('@/i18n/navigation', () => require('@/test-utils/navigation-mock'));
 jest.mock('@/components/layout/navbar', () => ({ __esModule: true, default: () => null }));
 jest.mock('@/lib/actions/kbs', () => ({ verifyCertificate: jest.fn() }));

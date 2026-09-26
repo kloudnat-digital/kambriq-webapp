@@ -6,6 +6,7 @@ import Navbar from '@/components/layout/navbar';
 import { Button } from '@/components/ui/button';
 import { verifyCertificate } from '@/lib/actions/kbs';
 import type { CertificateVerdict } from '@/lib/certificate-verdict';
+import QuickActions from '@/components/floating/quick-actions';
 import { formatDate } from '@/lib/kbs';
 
 // Fetches the verdict from the register on every request to prevent serving stale "valid" results after a revocation.
@@ -43,6 +44,7 @@ export default async function VerifyCertificatePage({
           </div>
         </div>
       </main>
+      <QuickActions />
     </>
   );
 }

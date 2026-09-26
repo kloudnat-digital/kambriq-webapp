@@ -5,6 +5,7 @@ import { publicPageMetadata } from '@/lib/seo/metadata';
 import Navbar from '@/components/layout/navbar';
 import Footer from '@/components/layout/footer';
 import { ContactInfo } from '@/components/contact/contact-info';
+import QuickActions from '@/components/floating/quick-actions';
 import { ContactForm } from '@/components/contact/contact-form';
 
 export const generateMetadata = (): Promise<Metadata> =>
@@ -40,6 +41,7 @@ export default function ContactPage() {
         </section>
       </main>
       <Footer />
+      <QuickActions />
     </>
   );
 }

@@ -5,6 +5,7 @@ import { publicPageMetadata } from '@/lib/seo/metadata';
 import Navbar from '@/components/layout/navbar';
 import Footer from '@/components/layout/footer';
 import { AboutHero } from '@/components/about/about-hero';
+import QuickActions from '@/components/floating/quick-actions';
 import { loadContent } from '@/lib/content';
 
 export const generateMetadata = (): Promise<Metadata> =>
@@ -34,6 +35,7 @@ export default async function AboutPage() {
         </section>
       </main>
       <Footer />
+      <QuickActions />
     </>
   );
 }
