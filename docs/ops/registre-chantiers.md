@@ -6259,7 +6259,7 @@ the land search components (`search-content`, `lands-map`, `land-card`,
 `compare-bar`, `filters-bar`, and the `land-detail-modal` folder), the compare
 components (`compare-content`, `compare-cards`, `compare-table`,
 `compare-empty`), `data/mock-lands.ts` with its four invented parcels,
-`store/lands-search.store.ts`, and `dashboard/shared/stat-card.tsx`. That is 18
+`store/lands-search.store.ts`, and `dashboard/shared/stat-card.tsx`. That is 17
 files. Dead code carrying invented data is how the six invented agents lived
 for months: somebody finds it useful and wires it back.
 
