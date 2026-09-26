@@ -31,6 +31,7 @@ import {
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 import { CorePrismaService } from '../../core/prisma/core-prisma.service';
+import { isOwnUserFileKey, safeFileName, userFileKey } from '../../core/users/storage-keys';
 import { assertInActiveCourse, readActiveCourse } from '../settings/active-course';
 
 @Injectable()
@@ -48,14 +49,18 @@ export class KbsCandidatesService {
 
   // ----- Get CV upload URL ---------------------------------------
   async getCvUploadUrl(userId: string, dto: CvUploadUrlDto) {
-    const timestamp = Date.now();
-    const name = dto.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const key = this.storage.buildKey('kbs', 'candidates', userId, 'cv', `${timestamp}-${name}`);
+    const key = userFileKey(userId, 'cv', Date.now(), safeFileName(dto.filename));
     return this.storage.getUploadUrl(key, dto.contentType);
   }
 
   // ----- Enroll ------------------------------------------
   async enroll(userId: string, dto: EnrollDto) {
+    // A52: a CV is a key the upload route issued to this person, in their CV
+    // folder - the A44/A49 rule - refused before anything is read or written.
+    if (dto.cvUrl && !isOwnUserFileKey(userId, 'cv', dto.cvUrl)) {
+      throw new BadRequestException(this.t('kbs.enrollment.cvNotOwnKey'));
+    }
+
     const existing = await this.prisma.kbsCandidate.findUnique({
       where: { userId },
     });

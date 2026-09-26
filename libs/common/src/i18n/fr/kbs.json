@@ -4,7 +4,8 @@
     "success": "Inscription au KBS réussie",
     "notEnrolled": "Vous n'êtes pas inscrit au KBS",
     "idRequired": "Veuillez d'abord soumettre votre pièce d'identité",
-    "awaitingVerification": "Votre inscription est en attente de validation par un administrateur. Vous aurez accès à la formation dès validation."
+    "awaitingVerification": "Votre inscription est en attente de validation par un administrateur. Vous aurez accès à la formation dès validation.",
+    "cvNotOwnKey": "Le CV doit être envoyé depuis votre compte, avec le bouton de téléversement."
   },
   "course": {
     "notFound": "Cours {id} introuvable",

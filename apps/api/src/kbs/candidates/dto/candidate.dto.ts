@@ -5,7 +5,7 @@ import { z } from 'zod';
 // ----- Enrollment ---------
 export const enrollSchema = z.object({
   sponsorCode: z.string().optional(),
-  cvUrl: z.string().min(1, 'Must be a valid URL').optional(),
+  cvUrl: z.string().min(1).max(300).optional(), // A52: a storage key; KbsCandidatesService.enroll decides whose
   engagementAccepted: z.literal(true, {
     error: 'You must accept the KBS engagement',
   }),
