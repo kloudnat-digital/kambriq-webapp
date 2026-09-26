@@ -42,6 +42,9 @@ const parseDays = (raw: string | null): number | null => {
 
 const ReactivateForm: FC = () => {
   const t = useTranslations('auth');
+  // J12: the schema refuses with a key; the reader sees it in their language.
+  const inReaderLanguage = (error?: { message?: string }) =>
+    error && { message: error.message ? t(`validation.${error.message}` as never) : undefined };
   const { createToast } = useToastStore();
   const days = parseDays(useSearchParams().get('days'));
 
@@ -96,7 +99,7 @@ const ReactivateForm: FC = () => {
                 placeholder="you@example.com"
                 autoComplete="email"
               />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              {fieldState.invalid && <FieldError errors={[inReaderLanguage(fieldState.error)]} />}
             </Field>
           )}
         />
@@ -115,7 +118,7 @@ const ReactivateForm: FC = () => {
                 aria-invalid={fieldState.invalid}
                 autoComplete="current-password"
               />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              {fieldState.invalid && <FieldError errors={[inReaderLanguage(fieldState.error)]} />}
             </Field>
           )}
         />

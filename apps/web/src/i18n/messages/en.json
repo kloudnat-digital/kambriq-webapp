@@ -822,6 +822,19 @@
       "password": "Password",
       "submit": "Reactivate my account",
       "backToLogin": "Back to sign in"
+    },
+    "validation": {
+      "emailInvalid": "Please enter a valid email address.",
+      "passwordRequired": "Password is required.",
+      "passwordTooShort": "Password must be at least 8 characters long.",
+      "passwordNeedsUppercase": "Password must contain at least one uppercase letter.",
+      "passwordNeedsNumber": "Password must contain at least one number.",
+      "passwordNeedsSpecial": "Password must contain at least one special character.",
+      "firstNameTooShort": "First name must be at least 2 characters long.",
+      "lastNameTooShort": "Last name must be at least 2 characters long.",
+      "phoneInvalid": "Enter a valid phone number with its international prefix (e.g. +237 6 95 12 34 56 or +33 6 12 34 56 78).",
+      "confirmPasswordRequired": "Please confirm your password.",
+      "passwordsDoNotMatch": "Passwords do not match."
     }
   },
   "landsHero": {

@@ -21,6 +21,9 @@ const ResetPassword: FC = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const t = useTranslations('auth');
+  // J12: the schema refuses with a key; the reader sees it in their language.
+  const inReaderLanguage = (error?: { message?: string }) =>
+    error && { message: error.message ? t(`validation.${error.message}` as never) : undefined };
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -95,7 +98,7 @@ const ResetPassword: FC = () => {
                   </Button>
                 </InputGroupAddon>
               </InputGroup>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              {fieldState.invalid && <FieldError errors={[inReaderLanguage(fieldState.error)]} />}
             </Field>
           )}
         />
@@ -138,7 +141,7 @@ const ResetPassword: FC = () => {
                   </Button>
                 </InputGroupAddon>
               </InputGroup>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              {fieldState.invalid && <FieldError errors={[inReaderLanguage(fieldState.error)]} />}
             </Field>
           )}
         />
