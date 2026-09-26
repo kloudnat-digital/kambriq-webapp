@@ -1,7 +1,7 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Processor } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { DUNNING_JOBS, QUEUES } from '@kambriq/common';
+import { DUNNING_JOBS, QUEUES, LoudWorkerHost } from '@kambriq/common';
 import { DunningService } from './dunning.service';
 
 /**
@@ -10,7 +10,7 @@ import { DunningService } from './dunning.service';
  * error-handling boundary for Redis tasks.
  */
 @Processor(QUEUES.DUNNING)
-export class DunningProcessor extends WorkerHost {
+export class DunningProcessor extends LoudWorkerHost {
   private readonly logger = new Logger(DunningProcessor.name);
 
   constructor(private readonly dunning: DunningService) {

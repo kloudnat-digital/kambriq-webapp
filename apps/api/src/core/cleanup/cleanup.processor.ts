@@ -1,13 +1,13 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Processor } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { CORE_JOBS, QUEUES } from '@kambriq/common';
+import { CORE_JOBS, QUEUES, LoudWorkerHost } from '@kambriq/common';
 import { CorePrismaService } from '../prisma/core-prisma.service';
 import { ContactService } from '../contact/contact.service';
 import { StorageService } from '@kambriq/common';
 
 @Processor(QUEUES.CORE)
-export class CoreCleanupProcessor extends WorkerHost {
+export class CoreCleanupProcessor extends LoudWorkerHost {
   private readonly logger = new Logger(CoreCleanupProcessor.name);
 
   constructor(

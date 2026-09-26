@@ -1,16 +1,17 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Processor } from '@nestjs/bullmq';
 import { ConfigService } from '@nestjs/config';
 import { I18nService } from 'nestjs-i18n';
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import { Logger } from '@nestjs/common';
 import { NOTIFICATIONS_JOBS, QUEUES } from '../constants/queue';
 import { Job } from 'bullmq';
+import { LoudWorkerHost } from '../queue/loud-worker-host';
 import { EmailJobPayload } from './email.service';
 import { buildEmail } from './templates';
 import { SupportedLanguage } from '../constants/i18n';
 
 @Processor(QUEUES.NOTIFICATIONS)
-export class EmailProcessor extends WorkerHost {
+export class EmailProcessor extends LoudWorkerHost {
   private readonly logger = new Logger(EmailProcessor.name);
   private readonly sesClient: SESv2Client | null;
   private readonly fromAddress: string;

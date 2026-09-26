@@ -183,6 +183,7 @@ listed here first.
 | `A18`                         | `PROUVE LOCALEMENT` | queue counts and failed payloads on `/health/queues`, ADMIN_GLOBAL. `failed` 0->1 observed through the endpoint against a real Redis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `L1-contact`                  | `PROUVE LOCALEMENT` | the public contact form sent nothing behind a success toast. Now persisted, announced, acknowledged in the page's locale; consent stored with its timestamp                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `L2-contact`                  | `PROUVE LOCALEMENT` | a daily digest on the existing core queue, sent even at zero, so its absence is the alarm. **On dev it failed every morning, silently, until 26 September**: `CONTACT_INBOX_EMAIL` was unset, the job threw, BullMQ kept it as a failed job and no line was logged (16 failed jobs on the core queue, names not read). First send on dev: 26 September 07:00 UTC, count 0. Delivery can only be seen in `contact@`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `A54`                         | `EN COURS`          | a failed queue job now writes an error-level line (every processor, by a shared base class, pinned by a guard), and the API refuses to start without `CONTACT_INBOX_EMAIL`. Pending: the deploy starting with the variable required, and the first failure seen as a line on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `L1-contact` f-up             | `A DECIDER`         | infra owes `/kambriq/{env}/api/CONTACT_INBOX_EMAIL`. Until it exists dev stores every request and announces none, loudly                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | naming                        | `A DECIDER`         | the brief's `L1`/`L2` collide with this register's logging `L2`/`L3`. Entries above are `L1-contact`/`L2-contact`; somebody should decide which series keeps the bare letter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `A31`                         | `EN COURS`          | develop red on journeys 4 and 5 from 08:22 UTC on 14 Sept: the seed kept payment-carrying reservations, reset their parcels to AVAILABLE anyway (8 on dev), and the first available parcel answered 409. Fixed in the seed and proved locally. Pending: merge, one seed run on dev, a green journeys run on develop. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -6611,6 +6612,66 @@ over a typed currency. `middleware-matcher.spec.ts` now asks Next's own
 which removes a second implementation of somebody else's parser; note that the
 Next 16.3.6 documentation calls it `unstable_doesProxyMatch`, **a name that
 appears nowhere in the shipped build**.
+
+### A54 - the contact digest failed every morning without writing a line - `EN COURS`
+
+**Cost impact: None.** A few log lines, on failure only.
+
+**What failed was the silence, not the design.** Visquis decided on 26
+September that the digest stays: no alert. The digest had never left dev,
+because `CONTACT_INBOX_EMAIL` was unset, and **fourteen mornings in a row**
+(12 to 25 September, 07:00:15 UTC each time, read from
+`/health/queues/core/failed`) the job threw "CONTACT_INBOX_EMAIL is not set"
+and BullMQ kept it as a failed job. BullMQ logs nothing when a job fails, and
+no processor listened, so the dev log held nothing at all.
+
+**A failed job writes an error line (extends A18).** A18 made queue state
+readable on request, behind ADMIN_GLOBAL. This makes a failure announce itself.
+`LoudWorkerHost` (`libs/common/src/queue/`) is the base class of all five
+processors: its `@OnWorkerEvent('failed')` handler writes "Queue job failed" at
+`error` with the queue, job name, id, attempt and error message. **The payload
+is left out on purpose**: it can carry personal data, which is why A18's
+payload route is ADMIN_GLOBAL.
+
+**The API refuses to start without `CONTACT_INBOX_EMAIL`**, instead of failing
+once a day at 07:00. It was `z.email().optional()`. An empty value was already
+refused; only an absent one passed. `.env.example` now carries a reserved,
+undeliverable address (`inbox@example.test`). Dev has had the variable since
+infra #66. **prd will need it on its first deploy**, which belongs on ADR-005's
+bootstrap list.
+
+**Proof, red first:**
+
+- `failed-jobs-are-logged.spec.ts` (the four API processors) and
+  `email-processor-is-loud.spec.ts` (the one in `libs/common`) replay
+  `BullExplorer`'s own discovery (`MetadataScanner.scanFromPrototype` and the
+  bullmq metadata accessor) over the real processor classes. Against develop,
+  none had a "failed" handler. There is no local Redis, so this is how the
+  handler's registration is shown rather than asserted: it is the explorer's
+  code path, run. A guard reads the source for every `@Processor(` class and
+  requires `LoudWorkerHost`, so a sixth processor is covered the day it is
+  written;
+- `contact-inbox-required.spec.ts`: absent is refused, naming the variable.
+  Against develop that test failed, and the empty case already passed (kept as
+  a pin);
+- mutations, each watched failing on the assertion meant: the handler removed
+  (every processor fails), `warn` instead of `error` (the call count), the
+  payload added (the exact fields), the message dropped (the fields), a second
+  line (the call count), the message text changed (the message), and a
+  processor back on `WorkerHost` (its discovery, and the guard). A separate "no
+  payload" assertion was removed, because the exact fields and the single call
+  already refuse it and it could never fail alone.
+
+**The sixteen dead jobs are kept.** Fourteen are the digest (above). The other
+two are older and unrelated: `core.purge-deleted-users` and
+`core.cleanup-expired-tokens`, both failed on **26 February 2026** with "User
+was denied access on the database `kambriq_core`". Nothing is deleted; that is
+Visquis's call. They stay readable at `/health/queues/core/failed` and age out
+only when 200 newer failures accumulate (`removeOnFail: 200`).
+
+**Pending:** the deploy starting with the variable now required, and the first
+real failed job seen as a line in the dev log. That needs a failure, and none
+will be manufactured on dev.
 
 ### G19 - a 170 000 deposit beside a 1 631 830 000 balance - `A DECIDER`
 

@@ -121,6 +121,7 @@ export {
 
 // ----- Email -----
 export { EmailModule } from './email/email.module';
+export { LoudWorkerHost } from './queue/loud-worker-host';
 export { EmailService } from './email/email.service';
 export * from './email/templates';
 

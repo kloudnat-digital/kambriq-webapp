@@ -1141,6 +1141,20 @@ Two things this cost that are worth keeping:
 
 ---
 
+### A job that throws is not a job that says so
+
+From `A54`. "Throw, never return quietly" was the lesson of the dunning
+processor, and it is necessary, not sufficient: a throw marks a BullMQ job
+failed **in Redis**, and BullMQ writes nothing to the log. The contact digest
+threw every morning for fourteen days on dev and the log held nothing, so a
+design whose signal was "the digest stopped arriving" alerted nobody - nobody
+had seen it arrive yet.
+
+Every processor extends `LoudWorkerHost`, whose `failed` handler writes an
+error line (never the payload), and a guard refuses a processor that does not.
+And a variable without which the process cannot do its job is **required at
+startup**: a deploy is watched, 07:00 is not.
+
 ### Every layer tested, and the seam between two of them not
 
 From `A17`. G11 added `paidBy` to the DTO, the service, the CHECK constraint
