@@ -7519,6 +7519,33 @@ there until one is.
 
 **Read on dev, 26 September, on `sha-1489db8`:** migration `20260926210000_g20_payment_purpose` finished at 15:28:39 UTC; `Payment.purpose` reads `ACOMPTE` on **all 38** rows; the column has **no default** (dropped, as designed). The Bertoua purchase answers `money` with `balanceExpected` 3 230 000 while its deposit is unconfirmed. **Still pending:** a balance created and settled on dev - no reservation there is past step 3.
 
+### Payment purpose in back office - `EN COURS`
+
+**Cost impact: None.**
+
+G20 gave every payment a purpose, `ACOMPTE` or `SOLDE`, and the balance gate
+reads it; but the back office, where a person validates one, showed neither.
+A deposit and a balance of one reservation carry the same client, the same
+parcel and close amounts - exactly the confusion G20 exists to prevent, moved
+to the one place where the decision is taken. Found during the seventh round's
+G20 proof, which had to read the column from the database.
+
+- **API:** the four back-office reads return `purpose` - the payment list, the
+  payment detail, the request queue and the overdue queue (no screen reads the
+  last one yet; it carries it so the first one does not have to come back).
+- **Web:** `PaymentPurposeLabel` ("Acompte" / "Solde", the back office's French,
+  like the state badge), in its own "Nature" column on the list and the queue,
+  and beside the state badge on the detail.
+
+**Proof, red first:** `purpose-in-back-office.spec.ts` (API, three reads) and a
+new test in `dunning.spec.ts` (the overdue queue) failed to compile - the field
+did not exist on any of the four. `payments-purpose-in-back-office.spec.tsx` (web, beside the `payments-admin` folder: `payment-format.spec.ts` rightly scans every file inside it for a written currency, and a fixture carries one) failed
+on all three screens, then passed. A mutation swapping the two labels fails the
+list test.
+
+**Pending:** the deployed back office read on dev, a deposit and a balance side
+by side.
+
 ### Land price integer money - `PROUVE`
 
 **Cost impact: None.**

@@ -165,6 +165,7 @@ export class DunningService {
       return {
         id: p.id,
         reference: p.reference,
+        purpose: p.purpose,
         clientName: reservation?.clientName ?? null,
         subject: reservation?.land.title ?? null,
         state: p.state,

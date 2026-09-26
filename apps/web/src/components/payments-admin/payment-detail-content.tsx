@@ -1,6 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { HumanDate, HumanDateTime, Money } from './payment-money';
 import { PaymentStateBadge } from './payment-state-badge';
+import { PaymentPurposeLabel } from './payment-purpose-label';
 import { AdvancePaymentAction } from './advance-payment-action';
 import { SendInstructionsAction } from './send-instructions-action';
 import { ChannelLabel } from './channel-label';
@@ -34,7 +35,10 @@ export const PaymentDetailContent = ({
           <HumanDate at={payment.expiresAt} />
         </p>
       </div>
-      <PaymentStateBadge state={payment.state} />
+      <div className="flex items-center gap-2">
+        <PaymentPurposeLabel purpose={payment.purpose} />
+        <PaymentStateBadge state={payment.state} />
+      </div>
     </header>
 
     <Card>
