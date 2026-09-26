@@ -144,7 +144,7 @@ export const createPaymentFixture = async (
       clientUserId: `client-${tag}`,
       clientName: 'Fixture Client',
       clientEmail: `a17-${tag}@example.test`,
-      downPaymentAmount: 750_000,
+      downPaymentAmount: 750_000n,
     },
   });
 

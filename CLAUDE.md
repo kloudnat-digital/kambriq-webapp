@@ -1964,8 +1964,8 @@ stored beside it.** `BigInt`, never `Float`. **XAF has no minor unit** - one uni
 is one franc, not a centime, which is the thing people get wrong. An amount
 without its currency is a number, not money.
 `no-float-money.spec.ts` fails on any monetary field declared `Float`, `Decimal`,
-`Double` or `Real` across all four schemas; two pre-existing columns remain
-quarantined there (`downPaymentAmount`, `KamnetCommission.amount`) with the
+`Double` or `Real` across all four schemas; one pre-existing column remains
+quarantined there (`KamnetCommission.amount`) with the
 reason each is not yet converted, and the list is pinned in both directions so
 it cannot rot into a lie. **A `BigInt` leaves the API through the response
 envelope** (`TransformResponseInterceptor`), as an exact number, or as a string

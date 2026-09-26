@@ -211,9 +211,9 @@ model LandReservation {
   clientPhone  String?
   status       LandReservationStatus @default(PENDING)
 
-  /// Legacy down payment amount (XAF).
-  /// Preserved as Float to maintain consistency with Land.totalPrice and ledger projections.
-  downPaymentAmount    Float?
+  /// Legacy down payment amount, whole XAF (G1 deprecates it; the deposit Payment
+  /// carries the amount due). Integer money since 27 September, like Land.totalPrice.
+  downPaymentAmount    BigInt?
   /// Indicates ledger confirmation of the down payment.
   /// Modified strictly upon Payment validation to project ledger state.
   downPaymentConfirmed Boolean   @default(false)

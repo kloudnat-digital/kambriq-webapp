@@ -33,7 +33,7 @@ const reservation = (over: Record<string, unknown> = {}) => ({
   clientUserId: CLIENT,
   clientName: 'Awono Test Client',
   status: 'PENDING',
-  downPaymentAmount: 400000,
+  downPaymentAmount: 400000n,
   payments: [],
   land: { title: 'Parcelle Douala Akwa' },
   ...over,
@@ -182,11 +182,11 @@ describe('G9 - the payment entry point', () => {
       expect(signature).toContain("@Param('id')");
     });
 
-    it('rounds the Float acompte the same way the G1 migration did', async () => {
-      // `downPaymentAmount` is the quarantined Float. A payment created here and
-      // a payment backfilled by the migration must agree on the whole franc.
+    it('takes the acompte exactly as stored, in whole francs', async () => {
+      // `downPaymentAmount` is integer money since 27 September; the rounding the
+      // G1 backfill applied is now done once, by the migration that converted it.
       prisma.landReservation.findUnique.mockResolvedValue(
-        reservation({ downPaymentAmount: 400000.6 }),
+        reservation({ downPaymentAmount: 400_001n }),
       );
       const res = await service.requestPaymentForReservation(CLIENT, RESERVATION);
       expect(res.amountDue).toBe('400001');

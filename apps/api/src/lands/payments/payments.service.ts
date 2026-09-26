@@ -352,16 +352,8 @@ export class PaymentsService {
       );
     }
 
-    /**
-     * `Math.round`, and it is deliberate.
-     *
-     * `downPaymentAmount` is a `Float` - the defect G1 exists to end, quarantined
-     * rather than converted because converting it means converting `Land.totalPrice`
-     * with it. The G1 migration rounded it exactly this way when it backfilled,
-     * so a payment created here and a payment backfilled there agree.
-     * XAF has no minor unit: one indivisible unit is one franc.
-     */
-    const amountDue = BigInt(Math.round(reservation.downPaymentAmount));
+    // Integer money since 27 September: the deposit's amount due is the column itself.
+    const amountDue = reservation.downPaymentAmount;
 
     const validityDays = this.config.get<number>('PAYMENT_VALIDITY_DAYS', 30);
     const expiresAt = new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000);
