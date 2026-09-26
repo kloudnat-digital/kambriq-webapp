@@ -440,7 +440,7 @@
         },
         "network": {
           "title": "Accès au réseau KAMNET™",
-          "description": "Rejoignez le réseau exclusif d'agents KAMBRIQ et accédez au catalogue vérifié KAMBRIQ LANDS™."
+          "description": "Le certificat KCA vous permet de candidater au réseau KAMNET™ : vous accompagnez vos clients avec la méthode KAMBRIQ, sur des terrains qui ont passé les 7 contrôles KAMBRIQ VERIFY™."
         },
         "expertise": {
           "title": "Expertise KAMBRIQ TFL™ / VEFL™ / VEFIL™",
@@ -576,7 +576,7 @@
         },
         "step5": {
           "title": "Statut Agent Junior",
-          "description": "Démarrez votre activité avec le statut d'Agent Junior et premiers accès au catalogue"
+          "description": "Démarrez votre activité avec le statut d'Agent Junior et présentez vos premiers terrains vérifiés à vos clients."
         },
         "step6": {
           "title": "Accompagnement par le parrain",
