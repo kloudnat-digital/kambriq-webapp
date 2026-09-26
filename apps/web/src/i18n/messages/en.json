@@ -2276,5 +2276,58 @@
       "sending": "Sending…",
       "error": "The application was not recorded: {message}"
     }
+  },
+  "myPayment": {
+    "amountDue": "Amount due",
+    "received": "Already received",
+    "dueBy": "Pay by",
+    "preferred": "You said you would prefer:",
+    "howToPay": "How to pay - {channel}",
+    "referenceBefore": "Quote the reference",
+    "referenceAfter": "as the reference of your payment. A payment without this reference cannot be matched to your file.",
+    "chosenOther": "We chose {channel} rather than your preference. If that does not suit you, write to us: we can agree on something else.",
+    "communicated": "Sent on {date}. Keep your receipt: you will be asked for it.",
+    "waitingTitle": "Your payment details",
+    "waitingIdentity": "We first need to verify your identity document. Bank details are only given to someone we have recognised. Upload your document from your profile if you have not already; we will come back to you as soon as it is verified.",
+    "waitingPreparing": "Your request has arrived. We are preparing the details of the payment method that suits you, and they will appear here. You will receive an email as soon as they are available.",
+    "fields": {
+      "bankName": "Bank",
+      "bankAccountName": "Account holder",
+      "bankIban": "Account number / IBAN",
+      "bankSwift": "SWIFT / BIC code",
+      "orangeMoneyNumber": "Orange Money number",
+      "orangeMoneyName": "Account name",
+      "mtnMoneyNumber": "MTN Mobile Money number",
+      "mtnMoneyName": "Account name",
+      "notaryName": "Notary",
+      "notaryPhone": "Phone",
+      "notaryAddress": "Address",
+      "supportEmail": "Our email",
+      "supportPhone": "Our phone"
+    },
+    "channels": {
+      "VIR": "Bank transfer",
+      "DEPO": "Cash deposit into our account",
+      "OMO": "Orange Money",
+      "MOMO": "MTN Mobile Money",
+      "ESP": "Cash in hand",
+      "NOTA": "Payment at the notary's",
+      "HIST": "Historical, channel unknown"
+    },
+    "request": {
+      "title": "Pay the deposit",
+      "amountLabel": "Amount due:",
+      "notOnline": "KAMBRIQ does not take payments online: you will receive a reference to quote on your bank transfer, your mobile money payment or at the notary's.",
+      "create": "Get my payment reference",
+      "creating": "Creating…",
+      "recorded": "Your request is recorded under the reference below. We verify your identity, then reply with the payment method that suits you.",
+      "amount": "Amount:",
+      "preferenceLabel": "Which payment method suits you? (optional)",
+      "noPreference": "- no preference -",
+      "preferenceHelp": "We take it into account. Depending on the amount or the origin of the funds, we may suggest something else - we will tell you.",
+      "follow": "Follow my request",
+      "refused": "The request was refused.",
+      "preferenceNotSaved": "The preference was not saved."
+    }
   }
 }

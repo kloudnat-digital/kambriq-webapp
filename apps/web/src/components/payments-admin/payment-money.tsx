@@ -25,7 +25,10 @@ export const Money = ({ amount, currency }: { amount: string; currency: string }
   <span className="tabular-nums">{formatMoney(BigInt(amount), currency)}</span>
 );
 
-export const HumanDate = ({ at }: { at: string | null }) => <span>{formatHumanDate(at)}</span>;
+/** `locale` defaults to the back office's French; a client screen passes the reader's. */
+export const HumanDate = ({ at, locale }: { at: string | null; locale?: string }) => (
+  <span>{formatHumanDate(at, locale)}</span>
+);
 
 export const HumanDateTime = ({ at }: { at: string | null }) => (
   <span>{formatHumanDateTime(at)}</span>

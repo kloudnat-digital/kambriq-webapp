@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { requestPaymentAction, setPreferredChannelAction } from '@/lib/actions/lands';
 import { Money } from '@/components/payments-admin/payment-money';
 import { selectableChannels } from '@/components/payments-admin/channel-label';
+import { Link } from '@/i18n/navigation';
 
 type Created = { id: string; reference: string; amountDue: string; currency: string };
 
@@ -39,6 +41,8 @@ export const RequestPaymentCard = ({
   amountDue: number;
   currency?: string;
 }) => {
+  const t = useTranslations('myPayment');
+  const r = useTranslations('myPayment.request');
   const [payment, setPayment] = useState<Created | null>(null);
   const [preferred, setPreferred] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +53,7 @@ export const RequestPaymentCard = ({
       const res = await requestPaymentAction(reservationId);
       // Says what went wrong. A button that quietly does nothing is the silent
       // mechanism A10-A12 exist to remove.
-      if (!res.success) throw new Error(res.error ?? 'La demande a été refusée.');
+      if (!res.success) throw new Error(res.error ?? r('refused'));
       return res.data as Created;
     },
     onSuccess: (p) => setPayment(p),
@@ -60,7 +64,7 @@ export const RequestPaymentCard = ({
     mutationFn: async ({ paymentId, channel }: { paymentId: string; channel: string }) => {
       setError(null);
       const res = await setPreferredChannelAction(paymentId, channel || null);
-      if (!res.success) throw new Error(res.error ?? "La preference n'a pas ete enregistree.");
+      if (!res.success) throw new Error(res.error ?? r('preferenceNotSaved'));
       return res.data;
     },
     onError: (e: Error) => setError(e.message),
@@ -68,12 +72,12 @@ export const RequestPaymentCard = ({
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <h3 className="font-semibold text-gray-900">Régler l&apos;acompte</h3>
+      <h3 className="font-semibold text-gray-900">{r('title')}</h3>
 
       {!payment ? (
         <>
           <p className="mt-1 text-sm text-gray-600">
-            Montant à régler :{' '}
+            {r('amountLabel')}{' '}
             <span className="font-semibold">
               {/* `downPaymentAmount` is the quarantined Float; rounded to the
                   whole franc exactly as the API rounds it when it creates the
@@ -81,8 +85,7 @@ export const RequestPaymentCard = ({
                   cannot disagree. */}
               <Money amount={String(Math.round(amountDue))} currency={currency} />
             </span>
-            . KAMBRIQ n&apos;encaisse pas en ligne : vous recevrez une référence à indiquer sur
-            votre virement, votre paiement mobile money ou chez le notaire.
+            . {r('notOnline')}
           </p>
           <button
             type="button"
@@ -90,20 +93,17 @@ export const RequestPaymentCard = ({
             onClick={() => create.mutate()}
             className="mt-3 rounded bg-emerald-700 px-4 py-2 text-sm font-medium text-white disabled:bg-gray-300"
           >
-            {create.isPending ? 'Création…' : 'Obtenir ma référence de paiement'}
+            {create.isPending ? r('creating') : r('create')}
           </button>
         </>
       ) : (
         <>
-          <p className="mt-1 text-sm text-gray-600">
-            Votre demande est enregistrée sous la référence ci-dessous. Nous vérifions votre
-            identité puis nous vous répondons avec le moyen de paiement qui vous convient.
-          </p>
+          <p className="mt-1 text-sm text-gray-600">{r('recorded')}</p>
           <p className="mt-3 font-mono text-2xl font-bold tracking-wider text-gray-900">
             {payment.reference}
           </p>
           <p className="mt-1 text-sm text-gray-600">
-            Montant : <Money amount={payment.amountDue} currency={payment.currency} />
+            {r('amount')} <Money amount={payment.amountDue} currency={payment.currency} />
           </p>
 
           {/* v03 4c: the client states what suits them. It binds nothing, and
@@ -111,9 +111,7 @@ export const RequestPaymentCard = ({
               decision taken before the identification, which is the wrong
               place. */}
           <label className="mt-3 block text-sm">
-            <span className="mb-1 block font-medium">
-              Quel moyen de paiement vous arrange ? (facultatif)
-            </span>
+            <span className="mb-1 block font-medium">{r('preferenceLabel')}</span>
             <select
               className="w-full rounded border px-3 py-2"
               value={preferred}
@@ -122,25 +120,22 @@ export const RequestPaymentCard = ({
                 savePreference.mutate({ paymentId: payment.id, channel: e.target.value });
               }}
             >
-              <option value="">— sans préférence —</option>
+              <option value="">{r('noPreference')}</option>
               {selectableChannels.map((c) => (
                 <option key={c.code} value={c.code}>
-                  {c.label}
+                  {t(`channels.${c.code}` as 'channels.VIR')}
                 </option>
               ))}
             </select>
-            <span className="mt-1 block text-xs text-gray-500">
-              Nous en tenons compte. Selon le montant ou l&apos;origine des fonds, nous pouvons vous
-              proposer autre chose — nous vous le dirons.
-            </span>
+            <span className="mt-1 block text-xs text-gray-500">{r('preferenceHelp')}</span>
           </label>
 
-          <a
+          <Link
             href={`/mylands/payment/${payment.id}`}
             className="mt-3 inline-block rounded bg-emerald-700 px-4 py-2 text-sm font-medium text-white"
           >
-            Suivre ma demande
-          </a>
+            {r('follow')}
+          </Link>
         </>
       )}
 

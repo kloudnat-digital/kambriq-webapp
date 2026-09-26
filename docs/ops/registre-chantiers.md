@@ -6302,6 +6302,38 @@ is Visquis's alone. The merge also went in under the PR's title rather than a
 lowercase commit subject, because my merge script took the wrong field; the
 script is corrected.
 
+### I43 follow-up - the client payment screens read in the customer's language - `EN COURS`
+
+**Cost impact: None.**
+
+**Pending:** the payment page read on dev in English.
+
+`components/mylands/my-payment-content.tsx` (the client's payment page) and
+`request-payment-card.tsx` (the card that issues the payment reference) were
+French only and on I43's hardcoded-copy debt list. They are read by customers,
+many in the diaspora, and an English speaker paying a deposit read "Montant à
+régler". These two are off the list; **28 debt entries remain**, all back-office
+or public-page copy.
+
+**The strings were not the whole of it.** Translating the sentences alone
+would have left an English reader with French channel names (from the shared
+`PAYMENT_CHANNELS` labels, via `ChannelLabel`) and French coordinate labels (a
+`FIELD_LABELS` table in the component). Both now come from `myPayment` on these
+client screens. The shared admin component is untouched. `HumanDate` takes an
+optional locale, French by default as before, and the client screens pass the
+reader's. The "follow my request" link goes through the locale-aware `Link`.
+
+**For Visquis:** the French keeps today's wording, with accents the shared
+labels lacked ("Dépôt d'espèces", "Espèces en main propre"), and the error "La
+preference n'a pas ete enregistree" gained its accents too. The English is mine.
+Amounts are formatted as before, and **no price or currency is touched** (P28).
+
+**Proof:** `client-payment-screens.spec.tsx` renders the payment page (with
+coordinates, and waiting for identity) and the request card (before and after a
+reference) in both languages, and checks that the English render holds none
+of the namespace's French-only strings. Against develop's components: the three
+English tests fail and the French ones pass. `next-intl-mock` gains `t.has`.
+
 ---
 
 ## Proven
