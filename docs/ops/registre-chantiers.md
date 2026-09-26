@@ -6156,8 +6156,9 @@ whoever clicks".**
   instructions email (and the reminder after it, `paymentReminder`) listed
   every channel's coordinates, and went to the
   signed-in client who requested a payment on their own reservation. It was
-  not open to "whoever": the recipient was authenticated, and the payment was
-  their own. On dev the coordinates are deliberately fictitious
+  not open to "whoever": the code refused unless `reservation.clientUserId` was
+  the caller (read at `230b827~1`), so the recipient was authenticated and the
+  payment was their own. On dev the coordinates are deliberately fictitious
   (`DEV-COMPTE-FICTIF-NE-PAS-UTILISER`, see CLAUDE.md), and no production
   environment exists. So what was sent was the design error v03 corrected:
   every channel instead of the chosen one, to the right person, with fake
