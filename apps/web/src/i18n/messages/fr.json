@@ -2220,7 +2220,9 @@
       "preferenceHelp": "Nous en tenons compte. Selon le montant ou l'origine des fonds, nous pouvons vous proposer autre chose - nous vous le dirons.",
       "follow": "Suivre ma demande",
       "refused": "La demande a été refusée.",
-      "preferenceNotSaved": "La préférence n'a pas été enregistrée."
+      "preferenceNotSaved": "La préférence n'a pas été enregistrée.",
+      "balanceTitle": "Régler le solde",
+      "balanceDiffers": "Le solde annoncé à la réservation était de"
     }
   }
 }

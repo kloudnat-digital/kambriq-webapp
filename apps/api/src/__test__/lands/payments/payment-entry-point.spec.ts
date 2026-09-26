@@ -9,6 +9,7 @@ import {
   PaymentState,
   StorageService,
   UnnamedActorError,
+  PaymentPurpose,
 } from '@kambriq/common';
 import { PaymentsService } from '../../../lands/payments/payments.service';
 import { PaymentChannelsService } from '../../../lands/payments/payment-channels.service';
@@ -113,6 +114,7 @@ describe('G9 - the payment entry point', () => {
     it('refuses to create a payment for a system actor', async () => {
       await expect(
         service.createPayment({
+          purpose: PaymentPurpose.ACOMPTE,
           reservationId: RESERVATION,
           amountDue: 400_000n,
           currency: 'XAF',
@@ -130,6 +132,7 @@ describe('G9 - the payment entry point', () => {
     it('refuses to create a payment with no reason', async () => {
       await expect(
         service.createPayment({
+          purpose: PaymentPurpose.ACOMPTE,
           reservationId: RESERVATION,
           amountDue: 400_000n,
           currency: 'XAF',
@@ -229,7 +232,12 @@ describe('G9 - the payment entry point', () => {
       prisma.landReservation.findUnique.mockResolvedValue(
         reservation({
           payments: [
-            { id: 'pay-existing', reference: 'KBQ-2609-ABCDE-F', state: 'INSTRUCTIONS_ENVOYEES' },
+            {
+              id: 'pay-existing',
+              reference: 'KBQ-2609-ABCDE-F',
+              state: 'INSTRUCTIONS_ENVOYEES',
+              purpose: 'ACOMPTE',
+            },
           ],
         }),
       );
@@ -249,28 +257,27 @@ describe('G9 - the payment entry point', () => {
       expect(prisma.$queryRaw).not.toHaveBeenCalled();
     });
 
-    it('a settled payment blocks a new one - VALIDE is terminal but it is not replaceable', async () => {
+    it('a settled deposit never opens a second deposit - VALIDE is terminal but it is not replaceable', async () => {
       /**
        * The first version of this check used `TERMINAL_STATES`, which contains
-       * `VALIDE`. A client whose acompte was already settled could then create a
-       * second payment and be asked to pay twice.
+       * `VALIDE`, and a client whose acompte was settled could create a second
+       * one. Since G20 a settled deposit leads to the balance instead, which
+       * is not due before the documents step: the request is refused and
+       * nothing is created (the balance itself is in balance-on-ledger.spec.ts).
        */
       prisma.landReservation.findUnique.mockResolvedValue(
         reservation({
-          payments: [{ id: 'pay-paid', reference: 'KBQ-2609-ABCDE-F', state: 'VALIDE' }],
+          payments: [
+            { id: 'pay-paid', reference: 'KBQ-2609-ABCDE-F', state: 'VALIDE', purpose: 'ACOMPTE' },
+          ],
+          documentsReceivedAt: null,
+          land: { title: 'Parcelle Douala Akwa', totalPrice: 8_000_000 },
         }),
       );
-      prisma.payment.findUnique.mockResolvedValue({
-        id: 'pay-paid',
-        reference: 'KBQ-2609-ABCDE-F',
-        amountDue: 400_000n,
-        currency: 'XAF',
-        state: 'VALIDE',
-      });
 
-      const res = await service.requestPaymentForReservation(CLIENT, RESERVATION);
-
-      expect(res.id).toBe('pay-paid');
+      await expect(service.requestPaymentForReservation(CLIENT, RESERVATION)).rejects.toThrow(
+        BadRequestException,
+      );
       expect(prisma.payment.create).not.toHaveBeenCalled();
     });
 
@@ -278,7 +285,11 @@ describe('G9 - the payment entry point', () => {
       'a payment that ended in %s does not block a new one',
       async (state) => {
         prisma.landReservation.findUnique.mockResolvedValue(
-          reservation({ payments: [{ id: 'pay-dead', reference: 'KBQ-2609-ABCDE-F', state }] }),
+          reservation({
+            payments: [
+              { id: 'pay-dead', reference: 'KBQ-2609-ABCDE-F', state, purpose: 'ACOMPTE' },
+            ],
+          }),
         );
 
         const res = await service.requestPaymentForReservation(CLIENT, RESERVATION);

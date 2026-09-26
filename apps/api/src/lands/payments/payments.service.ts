@@ -30,6 +30,7 @@ import {
   channelLabel,
   requiresPaidBy,
   sumReceipts,
+  PaymentPurpose,
   ageInDays,
   withOldestWaiting,
 } from '@kambriq/common';
@@ -132,6 +133,8 @@ export class PaymentsService {
    */
   async createPayment(input: {
     reservationId: string;
+    /** What this payment pays for (G20). Required: the gates ask by purpose. */
+    purpose: PaymentPurpose;
     amountDue: bigint;
     currency: string;
     expiresAt?: Date;
@@ -184,6 +187,7 @@ export class PaymentsService {
             data: {
               reference,
               reservationId: input.reservationId,
+              purpose: input.purpose,
               amountDue: input.amountDue,
               currency: input.currency,
               expiresAt: input.expiresAt ?? null,
@@ -271,7 +275,10 @@ export class PaymentsService {
   ): Promise<{ id: string; reference: string; amountDue: string; currency: string }> {
     const reservation = await this.prisma.landReservation.findUnique({
       where: { id: reservationId },
-      include: { payments: { select: { id: true, reference: true, state: true } } },
+      include: {
+        payments: { select: { id: true, reference: true, state: true, purpose: true } },
+        land: { select: { totalPrice: true } },
+      },
     });
 
     if (!reservation) throw new NotFoundException(`Reservation ${reservationId} not found`);
@@ -304,10 +311,11 @@ export class PaymentsService {
      * money did *not* arrive allow a fresh attempt, which is exactly what those
      * exits are for.
      */
-    const existing = reservation.payments.find(
-      (p) => !REPLACEABLE_STATES.has(p.state as PaymentState),
-    );
-    if (existing) {
+    const live = (purpose: PaymentPurpose) =>
+      reservation.payments.find(
+        (p) => p.purpose === purpose && !REPLACEABLE_STATES.has(p.state as PaymentState),
+      );
+    const returnExisting = async (existing: { id: string }) => {
       const row = await this.findOrThrow(existing.id);
       this.logger.log('Payment already exists for reservation %o', {
         reservationId,
@@ -320,6 +328,20 @@ export class PaymentsService {
         amountDue: row.amountDue.toString(),
         currency: row.currency,
       };
+    };
+
+    /**
+     * G20 - which payment is due is the server's answer, not the client's. The
+     * deposit first; the balance once the deposit is settled (`VALIDE`) and the
+     * documents are received (step 3). A live payment of the purpose due is
+     * returned rather than duplicated.
+     */
+    const deposit = live(PaymentPurpose.ACOMPTE);
+    if (deposit && deposit.state !== PaymentState.VALIDE) return returnExisting(deposit);
+    if (deposit) {
+      const balance = live(PaymentPurpose.SOLDE);
+      if (balance) return returnExisting(balance);
+      return this.createBalance(clientUserId, reservation, deposit.id);
     }
 
     if (reservation.downPaymentAmount === null) {
@@ -346,6 +368,7 @@ export class PaymentsService {
 
     const created = await this.createPayment({
       reservationId,
+      purpose: PaymentPurpose.ACOMPTE,
       amountDue,
       currency: 'XAF',
       expiresAt,
@@ -358,6 +381,49 @@ export class PaymentsService {
       amountDue: amountDue.toString(),
       currency: 'XAF',
     };
+  }
+
+  /**
+   * G20 - the balance: the parcel's total minus what the deposit RECEIVED,
+   * summed over its ledger rows (Visquis, 26 September). Not minus the deposit
+   * that was due: a deposit validated short (mobile-money ceilings, transfers in
+   * tranches) leaves its shortfall here, visible, instead of a hole nobody sees
+   * until reconciliation. Receipts on other purposes are not the land's price
+   * and are not counted.
+   */
+  private async createBalance(
+    clientUserId: string,
+    reservation: { id: string; documentsReceivedAt: Date | null; land: { totalPrice: number } },
+    depositPaymentId: string,
+  ): Promise<{ id: string; reference: string; amountDue: string; currency: string }> {
+    if (!reservation.documentsReceivedAt) {
+      throw new BadRequestException(
+        'The balance is not due yet: the deposit is settled, and the balance opens ' +
+          'once KAMBRIQ has validated the documents.',
+      );
+    }
+
+    const receipts = await this.prisma.paymentReceipt.findMany({
+      where: { paymentId: { in: [depositPaymentId] } },
+      select: { amount: true },
+    });
+    // XAF has no minor unit; `totalPrice` is still a Float until it is converted.
+    const amountDue = BigInt(Math.round(reservation.land.totalPrice)) - sumReceipts(receipts);
+    if (amountDue <= 0n) {
+      throw new BadRequestException('Nothing remains to be paid on this reservation.');
+    }
+
+    const validityDays = this.config.get<number>('PAYMENT_VALIDITY_DAYS', 30);
+    const created = await this.createPayment({
+      reservationId: reservation.id,
+      purpose: PaymentPurpose.SOLDE,
+      amountDue,
+      currency: 'XAF',
+      expiresAt: new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000),
+      createdBy: clientUserId,
+      reason: `Balance requested by the client for reservation ${reservation.id}.`,
+    });
+    return { ...created, amountDue: amountDue.toString(), currency: 'XAF' };
   }
 
   /**

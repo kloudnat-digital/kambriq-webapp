@@ -22,7 +22,9 @@ import {
   LandReservationStatus,
   LandStatus,
   PaginationQuery,
+  PaymentPurpose,
   PaymentState,
+  sumReceipts,
   QUEUES,
   SaleCompletedJobPayload,
   StorageService,
@@ -265,15 +267,32 @@ export class LandReservationsService {
    * Errors include detailed state of existing payments to guide operator action.
    */
   private async assertAcompteIsValidated(reservationId: string): Promise<void> {
+    return this.assertPaymentIsValidated(
+      reservationId,
+      PaymentPurpose.ACOMPTE,
+      'lands.reservation.acompteNotValidated',
+    );
+  }
+
+  /**
+   * G20 - a step that projects money asks the ledger for a VALIDE payment of
+   * ITS purpose. Asking for any VALIDE payment would let a settled balance
+   * confirm a deposit.
+   */
+  private async assertPaymentIsValidated(
+    reservationId: string,
+    purpose: PaymentPurpose,
+    refusalKey: string,
+  ): Promise<void> {
     const payments = await this.prisma.payment.findMany({
-      where: { reservationId },
+      where: { reservationId, purpose },
       select: { reference: true, state: true },
     });
 
     if (payments.some((payment) => payment.state === PaymentState.VALIDE)) return;
 
     throw new ForbiddenException(
-      this.t('lands.reservation.acompteNotValidated', 'fr', {
+      this.t(refusalKey, 'fr', {
         payments: payments.length
           ? payments.map((p) => `${p.reference ?? '?'} (${p.state})`).join(', ')
           : '-',
@@ -319,11 +338,9 @@ export class LandReservationsService {
 
   // ----- Admin: Confirm Remaining Payment (Step 4) ----- //
   /**
-   * Admin step 4: record that the balance was received.
-   *
-   * Currently updates the reservation state independently of the payment ledger.
-   * This is a known architectural gap, as secondary balance payments are not yet modeled
-   * in the `Payment` ledger.
+   * Admin step 4: record that the balance was received. Like the deposit step,
+   * it follows the ledger (G20): it refuses unless the reservation carries a
+   * VALIDE payment whose purpose is the balance.
    */
   async confirmRemainingPayment(reservationId: string, adminUserId: string) {
     const reservation = await this.findByIdOrThrow(reservationId);
@@ -334,6 +351,12 @@ export class LandReservationsService {
     if (reservation.remainingPaymentConfirmedAt) {
       throw new ConflictException(this.t('lands.reservation.stepAlreadyDone'));
     }
+
+    await this.assertPaymentIsValidated(
+      reservationId,
+      PaymentPurpose.SOLDE,
+      'lands.reservation.soldeNotValidated',
+    );
 
     await this.prisma.landReservation.update({
       where: { id: reservationId },
@@ -617,6 +640,7 @@ export class LandReservationsService {
 
     return {
       ...enriched,
+      money: await this.moneyForClient(reservation),
       currentStep: this.computeStep(reservation),
       land: {
         ...enriched.land,
@@ -624,6 +648,42 @@ export class LandReservationsService {
       },
       clientDocuments: clientDocumentsWithUrls,
       requiredDocuments,
+    };
+  }
+
+  /**
+   * G20 - what the client expected to pay and what is actually still owed, both
+   * read from the ledger: a sum over the receipts of the live payments, never a
+   * stored total. A deposit validated short shows as a balance larger than the
+   * one announced, instead of disappearing. Whole francs; XAF has no minor unit.
+   */
+  private async moneyForClient(reservation: {
+    id: string;
+    downPaymentAmount: number | null;
+    land: { totalPrice: number };
+  }) {
+    const live = await this.prisma.payment.findMany({
+      where: {
+        reservationId: reservation.id,
+        state: { notIn: [PaymentState.REJETE, PaymentState.EXPIRE, PaymentState.ANNULE] },
+      },
+      select: { purpose: true, receipts: { select: { amount: true } } },
+    });
+    const received = (purpose: PaymentPurpose) =>
+      live
+        .filter((p) => p.purpose === purpose)
+        .reduce((sum, p) => sum + sumReceipts(p.receipts), 0n);
+
+    const total = BigInt(Math.round(reservation.land.totalPrice));
+    const depositDue = BigInt(Math.round(reservation.downPaymentAmount ?? 0));
+    const depositReceived = received(PaymentPurpose.ACOMPTE);
+    const balanceReceived = received(PaymentPurpose.SOLDE);
+    return {
+      totalPrice: Number(total),
+      depositDue: Number(depositDue),
+      depositReceived: Number(depositReceived),
+      balanceExpected: Number(total - depositDue),
+      balanceOwed: Number(total - depositReceived - balanceReceived),
     };
   }
 

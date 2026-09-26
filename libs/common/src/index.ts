@@ -15,6 +15,7 @@ export {
   formatReferenceWithChannel,
 } from './payments/payment-channels';
 export type { ChannelDefinition } from './payments/payment-channels';
+export { PaymentPurpose } from './payments/payment-purpose';
 export {
   PaymentState,
   PAYMENT_TRANSITIONS,

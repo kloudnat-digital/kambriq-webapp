@@ -2220,7 +2220,9 @@
       "preferenceHelp": "We take it into account. Depending on the amount or the origin of the funds, we may suggest something else - we will tell you.",
       "follow": "Follow my request",
       "refused": "The request was refused.",
-      "preferenceNotSaved": "The preference was not saved."
+      "preferenceNotSaved": "The preference was not saved.",
+      "balanceTitle": "Pay the balance",
+      "balanceDiffers": "The balance announced at reservation was"
     }
   }
 }
