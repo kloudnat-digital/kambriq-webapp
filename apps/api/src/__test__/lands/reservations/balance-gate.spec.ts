@@ -128,7 +128,7 @@ describe('G20 - what the client is told they owe', () => {
       clientUserId: 'client-1',
       agentUserId: 'agent-1',
       status: 'CONFIRMED',
-      downPaymentAmount: 170000,
+      downPaymentAmount: 170000n,
       land: { totalPrice: 3_400_000n, documents: [] },
       landClientDocuments: [],
     });

@@ -87,10 +87,9 @@ export const RequestPaymentCard = ({
           <p className="mt-1 text-sm text-gray-600">
             {r('amountLabel')}{' '}
             <span className="font-semibold">
-              {/* `downPaymentAmount` is the quarantined Float; rounded to the
-                  whole franc exactly as the API rounds it when it creates the
-                  payment, so the figure here and the figure on the reference
-                  cannot disagree. */}
+              {/* Whole francs from the API (`downPaymentAmount` is integer
+                  money since 27 September); the rounding only guards a
+                  figure that should never arrive fractional. */}
               <Money amount={String(Math.round(amountDue))} currency={currency} />
             </span>
             . {r('notOnline')}

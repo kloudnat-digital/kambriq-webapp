@@ -24,7 +24,7 @@ const reservation = (over: Record<string, unknown> = {}) => ({
   clientUserId: CLIENT,
   clientName: 'Awono Test Client',
   status: 'CONFIRMED',
-  downPaymentAmount: 170000,
+  downPaymentAmount: 170000n,
   documentsReceivedAt: new Date('2026-09-20T10:00:00Z'),
   land: { title: 'Parcelle Bertoua Nkolbikon', totalPrice: 3_400_000n },
   payments: [],

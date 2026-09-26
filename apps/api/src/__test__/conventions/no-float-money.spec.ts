@@ -51,17 +51,11 @@ const NOT_MONEY = new Set([
  *
  * `Land.totalPrice` and its price history were converted to `BigInt` on 26
  * September; the response envelope turns a BigInt into an exact number (or a
- * string past that range), which is what made the conversion small. Two remain.
- *
- * `downPaymentAmount` is here for a second reason: G1 deprecates it rather than
- * dropping it, so it must survive this PR unchanged.
+ * string past that range), which is what made the conversion small.
+ * `LandReservation.downPaymentAmount` followed on 27 September - still
+ * deprecated by G1, still kept, now integer. One remains.
  */
 const QUARANTINED: ReadonlyArray<{ module: string; field: string; why: string }> = [
-  {
-    module: 'lands',
-    field: 'downPaymentAmount',
-    why: 'deprecated by G1, deliberately not dropped in the G1 PR',
-  },
   {
     module: 'kamnet',
     field: 'amount',
@@ -147,6 +141,6 @@ describe('money is never a floating-point type', () => {
       expect(found).toBeDefined();
       expect(FLOATING.has(found?.type ?? '')).toBe(true);
     }
-    expect(QUARANTINED).toHaveLength(2);
+    expect(QUARANTINED).toHaveLength(1);
   });
 });
