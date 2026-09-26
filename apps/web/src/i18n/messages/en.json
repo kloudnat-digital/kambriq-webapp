@@ -826,7 +826,7 @@
   },
   "landsHero": {
     "badge": "KAMBRIQ LANDS™",
-    "title": "Verified lands, a clear label on every property",
+    "title": "A verified method, a clear label, a certified agent at your side",
     "subtitle": "Every land proposed by KAMBRIQ goes through 7 verifications. Every property receives a label that tells you exactly where you stand.",
     "cta": "Talk to a KAMNET™ agent",
     "cta2": "Verify a land",
@@ -854,6 +854,38 @@
       "description": "Payments, administrative steps, signature, obtaining the title deed."
     }
   },
+  "landsDossier": {
+    "title": "What your agent hands you",
+    "subtitle": "For each land in your selection, a file in seven sections.",
+    "items": [
+      {
+        "title": "The land",
+        "detail": "Type, area, compatible uses"
+      },
+      {
+        "title": "Location and access",
+        "detail": "Landmarks, distances, travel times"
+      },
+      {
+        "title": "Legal status",
+        "detail": "Land tenure status, verified legal owner, boundary survey, encumbrances and disputes"
+      },
+      {
+        "title": "The file's documents",
+        "detail": "Title deed or certificate, boundary plan, geotagged photos and video, ownership history"
+      },
+      {
+        "title": "The surroundings",
+        "detail": "Physical characteristics, access roads, utilities and amenities"
+      },
+      {
+        "title": "The KAMBRIQ label and availability"
+      },
+      {
+        "title": "The price and payment terms"
+      }
+    ]
+  },
   "whyBuyAtKambriq": {
     "title": "Why buy through KAMBRIQ?",
     "subtitle": "Each service addresses a specific step in your land project",
@@ -861,7 +893,7 @@
     "cta2": "Verify a land",
     "legalSecurity": {
       "title": "Verified legal security",
-      "description": "Every land goes through 7 KAMBRIQ VERIFY™ checks before entering our catalogue. Clear label on every property."
+      "description": "Every land an agent presents to you has passed KAMBRIQ VERIFY™'s 7 checks and carries a clear label."
     },
     "payment": {
       "title": "Instalment payments with KAMBRIQ PLAN™",
@@ -880,14 +912,12 @@
     "title": "Our 3 labels",
     "subtitle": "Every land receives a KAMBRIQ label that clearly indicates its legal status",
     "clientAdvantages": "What this means for you",
-    "agentAdvantages": "KAMNET™ Agent advantages",
     "kambriqCommitment": "KAMBRIQ commitment",
     "tfl": {
       "name": "KAMBRIQ TFL™ - Titre Foncier Loti",
       "description": "Registration is complete and subdivision is done. Ownership is transferred immediately.",
       "advantages": {
         "client": "You become the owner upon notarial signature. No additional administrative procedures.",
-        "agent": "Fast commission, simplified process, secured client.",
         "commitment": "Authentic title deed verified by KAMBRIQ VERIFY™, cadastral compliance confirmed."
       }
     },
@@ -896,7 +926,6 @@
       "description": "Registration is complete - the land title exists. Subdivision is in progress. Ownership is transferred after subdivision is complete.",
       "advantages": {
         "client": "The existing title deed secures your purchase. You will receive an individual title once subdivision is complete. Shorter timelines than VEFIL™.",
-        "agent": "Good price/timeline balance, controlled support.",
         "commitment": "Title deed verified by KAMBRIQ VERIFY™, approved subdivision plan, KAMBRIQ milestone tracking."
       }
     },
@@ -905,7 +934,6 @@
       "description": "The land is still undergoing registration. Subdivision will follow. Ownership is transferred after both registration and subdivision are complete. This is the longest process.",
       "advantages": {
         "client": "You are NOT the owner upon signing. You must wait for both land registration AND subdivision to complete. More attractive price, higher risk.",
-        "agent": "Long-term accompaniment, strong client retention potential.",
         "commitment": "Additional verification milestones required by KAMBRIQ. Full monitoring of the registration process."
       }
     }
@@ -920,7 +948,7 @@
       "landInfo": "I'd like information on available lands",
       "verifyService": "I'd like to know more about KAMBRIQ VERIFY™",
       "kbsFormation": "How to become a certified KAMNET™ Agent via KBS?",
-      "kamnetAgent": "How to join the KAMNET™ network and earn commissions?",
+      "kamnetAgent": "How to join the KAMNET™ network?",
       "pricing": "What are your rates and payment terms?",
       "buyingProcess": "How does the purchase process work from abroad?",
       "documentation": "What documents are needed to buy land?",

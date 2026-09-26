@@ -1386,6 +1386,27 @@ that only checks for no `<li>` lets the same promise come back as a subtitle.
 The placeholder test compares the screen's entire text with the three strings it
 may say.
 
+### "Does not contain" passes on an empty page
+
+From `P10`. The render test of `/products/lands` asserted the page contained no
+"catalogue" and no agent commission, and it passed against copy that said both.
+The render was EMPTY: the page's sections are async server components, and
+Testing Library renders nothing for an async component nested in a tree. Every
+absence held, because nothing was there.
+
+**A negative assertion needs a positive one beside it that proves the thing was
+read.** The test now awaits each section, renders it, and first asserts the page
+holds its real text. The same file then let two more through: `\b` never
+matches after `²` or `€`, which are not word characters, and `textContent`
+glues one section's last word to the next heading ("12 000 €Pourquoi"). Read a
+page one text node per line, and mutate a ban with each shape it bans.
+
+**And a sweep over a hand-picked list covers the list, not the site.** P21's pin
+read named namespaces, and its only word-level ban read two of them. "Commission
+rapide" sat on the lands page, unread by any test about words. Like the proxy
+matcher (`P3`), the pin now runs the other way: every namespace is public unless
+declared private with its reason, so a new page is covered the day it is added.
+
 ### A guard written before anything can use it
 
 `callbackUrl` is written in four places in this app and **read in none**:
