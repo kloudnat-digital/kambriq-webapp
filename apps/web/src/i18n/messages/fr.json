@@ -2276,5 +2276,58 @@
       "sending": "Envoi…",
       "error": "La candidature n'a pas été enregistrée : {message}"
     }
+  },
+  "myPayment": {
+    "amountDue": "Montant à régler",
+    "received": "Déjà reçu",
+    "dueBy": "À régler avant le",
+    "preferred": "Vous avez indiqué préférer :",
+    "howToPay": "Comment régler - {channel}",
+    "referenceBefore": "Indiquez la référence",
+    "referenceAfter": "en motif de votre paiement. Un versement sans cette référence ne peut pas être rattaché à votre dossier.",
+    "chosenOther": "Nous avons retenu {channel} plutôt que votre souhait. Si cela ne vous convient pas, écrivez-nous : nous pouvons en convenir autrement.",
+    "communicated": "Communiquées le {date}. Conservez votre reçu : il vous sera demandé.",
+    "waitingTitle": "Vos coordonnées de paiement",
+    "waitingIdentity": "Nous devons d'abord vérifier votre pièce d'identité. Les coordonnées bancaires ne se donnent qu'à quelqu'un que nous avons reconnu. Déposez votre pièce depuis votre profil si ce n'est pas déjà fait ; nous revenons vers vous dès qu'elle est vérifiée.",
+    "waitingPreparing": "Votre demande est bien arrivée. Nous préparons les coordonnées du moyen de paiement qui vous convient et elles apparaîtront ici. Vous recevrez un email dès qu'elles sont disponibles.",
+    "fields": {
+      "bankName": "Banque",
+      "bankAccountName": "Titulaire du compte",
+      "bankIban": "Numéro de compte / IBAN",
+      "bankSwift": "Code SWIFT / BIC",
+      "orangeMoneyNumber": "Numéro Orange Money",
+      "orangeMoneyName": "Nom du compte",
+      "mtnMoneyNumber": "Numéro MTN Mobile Money",
+      "mtnMoneyName": "Nom du compte",
+      "notaryName": "Notaire",
+      "notaryPhone": "Téléphone",
+      "notaryAddress": "Adresse",
+      "supportEmail": "Notre email",
+      "supportPhone": "Notre téléphone"
+    },
+    "channels": {
+      "VIR": "Virement bancaire",
+      "DEPO": "Dépôt d'espèces sur notre compte",
+      "OMO": "Orange Money",
+      "MOMO": "MTN Mobile Money",
+      "ESP": "Espèces en main propre",
+      "NOTA": "Paiement chez le notaire",
+      "HIST": "Historique, canal inconnu"
+    },
+    "request": {
+      "title": "Régler l'acompte",
+      "amountLabel": "Montant à régler :",
+      "notOnline": "KAMBRIQ n'encaisse pas en ligne : vous recevrez une référence à indiquer sur votre virement, votre paiement mobile money ou chez le notaire.",
+      "create": "Obtenir ma référence de paiement",
+      "creating": "Création…",
+      "recorded": "Votre demande est enregistrée sous la référence ci-dessous. Nous vérifions votre identité puis nous vous répondons avec le moyen de paiement qui vous convient.",
+      "amount": "Montant :",
+      "preferenceLabel": "Quel moyen de paiement vous arrange ? (facultatif)",
+      "noPreference": "- sans préférence -",
+      "preferenceHelp": "Nous en tenons compte. Selon le montant ou l'origine des fonds, nous pouvons vous proposer autre chose - nous vous le dirons.",
+      "follow": "Suivre ma demande",
+      "refused": "La demande a été refusée.",
+      "preferenceNotSaved": "La préférence n'a pas été enregistrée."
+    }
   }
 }

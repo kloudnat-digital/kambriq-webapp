@@ -56,6 +56,8 @@ const makeTranslator = (namespace?: string) => {
     return interpolate(value, args);
   };
   translate.rich = translate;
+  /** Whether a message exists - next-intl's `t.has`, over the real catalogue. */
+  translate.has = (key: string): boolean => typeof resolve(`${prefix}${key}`) === 'string';
   return translate;
 };
 
