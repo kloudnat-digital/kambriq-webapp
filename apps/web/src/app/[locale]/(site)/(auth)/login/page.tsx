@@ -22,6 +22,9 @@ const Login: FC = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const t = useTranslations('auth');
+  // J12: the schema refuses with a key; the reader sees it in their language.
+  const inReaderLanguage = (error?: { message?: string }) =>
+    error && { message: error.message ? t(`validation.${error.message}` as never) : undefined };
   const { createToast } = useToastStore();
 
   const methods = useForm<LoginSchema>({
@@ -69,7 +72,7 @@ const Login: FC = () => {
             placeholder="you@example.com"
             autoComplete="email"
           />
-          {errors.email && <FieldError errors={[errors.email]} />}
+          {errors.email && <FieldError errors={[inReaderLanguage(errors.email)]} />}
         </Field>
 
         <Field data-invalid={!!errors.password}>
@@ -100,7 +103,7 @@ const Login: FC = () => {
               </Button>
             </InputGroupAddon>
           </InputGroup>
-          {errors.password && <FieldError errors={[errors.password]} />}
+          {errors.password && <FieldError errors={[inReaderLanguage(errors.password)]} />}
         </Field>
 
         <div className="flex items-center justify-between">

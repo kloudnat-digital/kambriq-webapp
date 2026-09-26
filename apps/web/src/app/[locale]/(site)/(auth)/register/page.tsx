@@ -22,6 +22,9 @@ const Register: FC = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const t = useTranslations('auth');
+  // J12: the schema refuses with a key; the reader sees it in their language.
+  const inReaderLanguage = (error?: { message?: string }) =>
+    error && { message: error.message ? t(`validation.${error.message}` as never) : undefined };
   const locale = useLocale();
   const { createToast } = useToastStore();
   const router = useRouter();
@@ -76,7 +79,7 @@ const Register: FC = () => {
                   placeholder={t('register.firstNamePlaceholder')}
                   autoComplete="given-name"
                 />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                {fieldState.invalid && <FieldError errors={[inReaderLanguage(fieldState.error)]} />}
               </Field>
             )}
           />
@@ -94,7 +97,7 @@ const Register: FC = () => {
                   placeholder={t('register.lastNamePlaceholder')}
                   autoComplete="family-name"
                 />
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                {fieldState.invalid && <FieldError errors={[inReaderLanguage(fieldState.error)]} />}
               </Field>
             )}
           />
@@ -115,7 +118,7 @@ const Register: FC = () => {
                 placeholder="you@example.com"
                 autoComplete="email"
               />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              {fieldState.invalid && <FieldError errors={[inReaderLanguage(fieldState.error)]} />}
             </Field>
           )}
         />
@@ -135,7 +138,7 @@ const Register: FC = () => {
                 placeholder={t('register.phonePlaceholder')}
                 autoComplete="tel"
               />
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              {fieldState.invalid && <FieldError errors={[inReaderLanguage(fieldState.error)]} />}
             </Field>
           )}
         />
@@ -176,7 +179,7 @@ const Register: FC = () => {
                   </Button>
                 </InputGroupAddon>
               </InputGroup>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              {fieldState.invalid && <FieldError errors={[inReaderLanguage(fieldState.error)]} />}
             </Field>
           )}
         />
