@@ -3,6 +3,7 @@ import {
   assertMinted,
   assertOwnedByThisRun,
   call,
+  exactMoney,
   findTokenInMailbox,
   login,
   uniqueEmail,
@@ -538,6 +539,26 @@ describe('journey 4 - an agent reserves a parcel and the client reaches the port
     expect(purchases.length).toBeGreaterThan(0);
     expect(purchases[0].landId).toBe(available[0].id);
 
+    // The client's own money, through the same envelope: the deposit column and
+    // the land total are integer money, and the summary is built from both.
+    const reservationIdForMoney = reserved.json<{ data: { id: string } }>().data.id;
+    const detail = await call('GET', `/lands/client/purchases/${reservationIdForMoney}`, {
+      token: client,
+    });
+    expect(detail.status).toBe(200);
+    const bought = detail.json<{
+      data: {
+        downPaymentAmount: unknown;
+        money: { totalPrice: unknown; depositDue: unknown; balanceExpected: unknown };
+      };
+    }>().data;
+    expect(exactMoney(bought.downPaymentAmount)).toBe(true);
+    expect(exactMoney(bought.money.totalPrice)).toBe(true);
+    expect(bought.money.depositDue).toBe(bought.downPaymentAmount);
+    expect((bought.money.depositDue as number) + (bought.money.balanceExpected as number)).toBe(
+      bought.money.totalPrice,
+    );
+
     /**
      * Give the parcel back.
      *
@@ -607,6 +628,35 @@ describe('journey 4 - an agent reserves a parcel and the client reaches the port
  * `ADMIN_GLOBAL` on dev is a stray privileged account, which is the thing this
  * whole block exists to avoid creating.
  */
+/**
+ * The price of a parcel, read signed in, arrives exact.
+ *
+ * `Land.totalPrice` is a BigInt since 26 September; its proof rested on a
+ * database read and on these journeys passing, because every lands route needs
+ * a session. This reads it directly: a JSON number, whole, and the same figure
+ * the database used - `pricePerM2` is a column Postgres generates from the
+ * stored total, so it only matches if the API sent the stored total unchanged.
+ */
+describe("journey 6 - a parcel's price reaches a signed-in reader exact", () => {
+  it('lists and details a parcel with its total in whole francs', async () => {
+    const listed = await call('GET', '/lands?limit=50', { token: agent });
+    expect(listed.status).toBe(200);
+    const lands = listed.json<{ data: Array<{ id: string; totalPrice: unknown }> }>().data;
+    expect(lands.length).toBeGreaterThan(0);
+    for (const l of lands) expect(exactMoney(l.totalPrice)).toBe(true);
+
+    const res = await call('GET', `/lands/${lands[0].id}`, { token: agent });
+    expect(res.status).toBe(200);
+    const land = res.json<{ data: { totalPrice: unknown; sizeM2: number; pricePerM2: number } }>()
+      .data;
+    expect(exactMoney(land.totalPrice)).toBe(true);
+    expect(land.totalPrice).toBe(lands[0].totalPrice);
+    expect(land.pricePerM2).toBe(Math.round((land.totalPrice as number) / land.sizeM2));
+  });
+});
+
+// ---------------------------------------------------------------------------
+
 describe('journey 5 - a passwordless super admin activates through the ordinary flow', () => {
   const email = uniqueEmail('j5.superadmin');
   const mailbox = email.split('@')[0];
