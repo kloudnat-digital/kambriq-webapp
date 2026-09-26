@@ -220,6 +220,7 @@ listed here first.
 | Audit 2026-09-23, wave 2      | `EN COURS`          | `GET /kbs/me` scoped to the active course, `no-console`, `strict` on the API, two seed preconditions. Unmerged; pending proof is `GET /kbs/me` read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | Audit 2026-09-23, wave 3      | `PROUVE`            | the wave of #155 to #162 folded in, the Open table de-duplicated, the states declared, `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Audit 2026-09-23, wave 4      | `EN COURS`          | the acompte step reads the payment ledger instead of answering for it. Unmerged; pending proof is one acompte carried end to end on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `G19`                         | `A DECIDER`         | one column, two units: the API and the seed read `Land.price` as the parcel's total, the web reads it as a price per m² and multiplies by the surface. Diagnosis only; the unit is Visquis's decision, and it must be made before C16 loads the real catalogue                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `confirmRemainingPayment`     | `A FAIRE`           | step 4 records the balance on the reservation alone: nothing creates a payment for it, so it cannot be gated the way the acompte now is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `A52`                         | `PROUVE`            | a KBS candidate's CV is a key in their own CV folder, refused otherwise at enrolment, by the A44/A49 rule in `core/users/storage-keys.ts`; proven on dev at `sha-d5fd78e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `A53`                         | `PROUVE`            | the unrendered land search and compare components, `MOCK_LANDS`, their store and `StatCard` are deleted; the I44 pin keeps the invented values as literals. Proven by develop's run on `844cf32` (after #199): Quality, deploy, journeys and E2E green. The two namespaces only they read, `landSearch` and `landsCompare`, are removed, with a guard that every namespace is read                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -6610,6 +6611,63 @@ over a typed currency. `middleware-matcher.spec.ts` now asks Next's own
 which removes a second implementation of somebody else's parser; note that the
 Next 16.3.6 documentation calls it `unstable_doesProxyMatch`, **a name that
 appears nowhere in the shipped build**.
+
+### G19 - a 170 000 deposit beside a 1 631 830 000 balance - `A DECIDER`
+
+**Cost impact: None.** Diagnosis only; nothing was changed.
+
+**The answer: the computation, not the seed, and not a factor of a hundred.**
+One column carries two units. `Land.price` is read as the parcel's **total** by
+the API and the seed, and as a **price per m²** by the web.
+
+Measured on dev, 26 September, on the parcel the gap was seen on
+(`Parcelle Bertoua Nkolbikon`, reservation `380d2626-…`):
+
+| Value              | Where it comes from                                                          | Result            |
+| ------------------ | ---------------------------------------------------------------------------- | ----------------- |
+| `price`            | `prisma/seed.ts`, `price: 3400000`                                           | 3 400 000         |
+| `sizeM2`           | `prisma/seed.ts`, `sizeM2: 480`                                              | 480               |
+| deposit            | API, `reservations.service.ts:106`, `price × DOWN_PAYMENT_PERCENT / 100` (5) | **170 000**       |
+| "total" on the web | `purchase-detail-content.tsx:48`, `price × sizeM2`                           | 1 632 000 000     |
+| balance shown      | the web's total minus the deposit                                            | **1 631 830 000** |
+
+The ratio between the two readings is exactly the surface, 480, which is also
+why it looked "roughly five hundredfold".
+
+**Who reads which unit:**
+
+- **total** - the Prisma schema ("Selling price in XAF"), the create and update
+  DTOs ("In XAF", an integer), the seed (3.4 million for 480 m² in Bertoua is a
+  total, about 7 000 per m²), the deposit, and so the payment the ledger is
+  asked for (`payments.service.ts:342` takes `downPaymentAmount`);
+- **per m²** - five web places: the app land card (`…/m²`), the land info panel
+  ("price" `…/m²` and "total price" `price × sizeM2`), the reservation card
+  (`F/m²`), the reservation summary (`price × sizeM2`), and the client purchase
+  page (`price × sizeM2`). Four translation keys say "Prix / m²";
+- **ambiguous** - the back-office form label is just "Prix", so the person
+  typing a price is not told which one.
+
+**The Float lead does not hold.** `downPaymentAmount` and `Land.price` are
+`Float`, and XAF has no minor unit, but every value in this chain is an integer
+and nothing divides or multiplies by 100. The Float quarantine is still a real
+debt (`no-float-money.spec.ts` lists it); it is not this gap.
+
+**Money that moved is consistent; what the customer reads is not.** The
+payment a client is asked for is the API's 5 % of `price`, and the ledger holds
+that. The balance on the purchase page is display only, computed in the
+browser, and nothing is charged from it. But the app's land card and info panel
+show the total as a price per m², 480 times too high on this parcel, and the
+purchase page promises a balance nobody will ever be asked for.
+
+**Why it is not closed by C16, and why it is a decision.** If the real catalogue
+is loaded with totals, the web is wrong on every parcel exactly as here. If it
+is loaded with prices per m², which is how land is often quoted, the web becomes
+right and **the API becomes wrong**: the deposit would be 5 % of a per-m² price,
+480 times too small on a parcel like this one, and that is the amount the
+ledger would ask a real client to pay. Either way one side is wrong until the
+unit is chosen. **The unit is Visquis's call, before C16 loads anything**:
+total or per m², then one reading everywhere, the back-office label saying
+which, and a test that multiplies nothing the column does not mean.
 
 ### Locale switcher coverage - `PROUVE`
 
