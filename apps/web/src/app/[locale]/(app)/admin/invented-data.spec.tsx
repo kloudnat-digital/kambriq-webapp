@@ -1,19 +1,10 @@
 jest.mock('next-intl/server', () => require('@/test-utils/next-intl-mock'));
 jest.mock('next-intl', () => require('@/test-utils/next-intl-mock'));
 jest.mock('@/i18n/navigation', () => require('@/test-utils/navigation-mock'));
-// A stand-in: the real loader refuses remote hosts under Jest, and a crash
-// would make the search and compare tests fail without reading a single value.
-jest.mock('next/image', () => ({
-  __esModule: true,
-  // Its alt text is all these tests read; a span carries it without an image.
-  default: ({ src, alt }: { src: string; alt: string }) => <span data-src={src}>{alt}</span>,
-}));
 
 import { isValidElement, type ReactElement } from 'react';
 import { render } from '@testing-library/react';
 import { setTestLocale } from '@/test-utils/next-intl-mock';
-import { MOCK_LANDS } from '@/data/mock-lands';
-import { useLandsSearchStore } from '@/store/lands-search.store';
 import { PlaceholderPage } from '@/components/placeholder-page';
 import LandsSearchPage from './lands/search/page';
 import CompareLandsPage from './lands/compare/page';
@@ -22,7 +13,7 @@ import VerifyAdminPage from './verify/page';
 /**
  * I44 - the administration screens show no invented data.
  *
- * `/admin/lands/search` and `/admin/lands/compare` rendered `MOCK_LANDS` -
+ * `/admin/lands/search` and `/admin/lands/compare` rendered `data/mock-lands.ts` (deleted in A53) -
  * parcels with invented titles, prices and title numbers - and `/admin/verify`
  * rendered four invented verification requests under invented statistics
  * (4 pending, 3 in progress, 18 completed this month, 2 rejected). An
@@ -45,9 +36,19 @@ const INVENTED_REQUESTS = [
   'Douala, Bonanjo',
 ];
 const INVENTED_STATISTICS = ['En attente', 'En cours', 'Terminées (mois)', 'Rejetées (mois)'];
-const INVENTED_PARCELS = MOCK_LANDS.flatMap((land) =>
-  [land.title, land.tfNumber].filter((v): v is string => Boolean(v)),
-);
+/**
+ * The parcels `data/mock-lands.ts` invented. The file is gone (A53), so they are
+ * written out here, the way `/agent/network`'s spec keeps its six names.
+ */
+const INVENTED_PARCELS = [
+  'Terrain Dibamba',
+  'Terrain Yaoundé Bastos',
+  'Terrain Bafoussam',
+  'Terrain Kribi Bord de Mer',
+  'TF 421/WB',
+  'TF 89/MF',
+  'TF 34/OC',
+];
 
 /** A page that returns a placeholder element is rendered through it; the element is async. */
 const renderPage = async (Page: () => unknown) => {
@@ -59,13 +60,7 @@ const renderPage = async (Page: () => unknown) => {
 };
 
 describe.each(['fr', 'en'] as const)('I44 - administration screens (%s)', (locale) => {
-  beforeEach(() => {
-    setTestLocale(locale);
-    // What an administrator arriving from search has: two parcels picked for
-    // comparison. With nothing picked the compare screen showed nothing, and a
-    // test of it would pass on the mock.
-    useLandsSearchStore.setState({ compareIds: MOCK_LANDS.slice(0, 2).map((l) => l.id) });
-  });
+  beforeEach(() => setTestLocale(locale));
 
   it('reads the invented values it pins, so the pin is not vacuous', () => {
     expect(INVENTED_PARCELS.length).toBeGreaterThan(4);

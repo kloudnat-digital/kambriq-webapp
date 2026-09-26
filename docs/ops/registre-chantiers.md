@@ -222,6 +222,7 @@ listed here first.
 | Audit 2026-09-23, wave 4      | `EN COURS`          | the acompte step reads the payment ledger instead of answering for it. Unmerged; pending proof is one acompte carried end to end on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `confirmRemainingPayment`     | `A FAIRE`           | step 4 records the balance on the reservation alone: nothing creates a payment for it, so it cannot be gated the way the acompte now is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `A52`                         | `EN COURS`          | a KBS candidate's CV is a key in their own CV folder, refused otherwise at enrolment, by the A44/A49 rule in `core/users/storage-keys.ts`. Pending: a CV uploaded end to end on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `A53`                         | `EN COURS`          | the unrendered land search and compare components, `MOCK_LANDS`, their store and `StatCard` are deleted; the I44 pin keeps the invented values as literals. Pending: develop's build, journeys and E2E green after the merge                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `A51`                         | `PROUVE`            | the Firefox language-switch E2E test failed inside its own style injection, blocked by the CSP; rewritten to switch from the keyboard with no injection, 10/10 in Firefox against dev; proven on develop's own run, first attempt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `I44`                         | `PROUVE`            | `/admin/lands/search`, `/admin/lands/compare` and `/admin/verify` showed invented parcels, requests and statistics; each now says it is not built, and a test pins the invented values out; proven on dev at `sha-d90e9cb`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `J11`                         | `PROUVE`            | the typeface's stylesheet and font hosts reach `style-src` and `font-src` from the same module as the image hosts, and the layout links it from there; proven on dev at `sha-87b1d13`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
@@ -6245,6 +6246,37 @@ climbing out of its folder) all enrolled the candidate. Three mutations each
 failed: no check, the CV folder widened to the whole candidate folder (which
 then refuses the legitimate key), and a check against the wrong folder. A44's
 and A49's specs still pass, so the rule is shared, not forked.
+
+### A53 - dead code that still carried the invented data I44 took off the screens - `EN COURS`
+
+**Cost impact: None.** Less code in the web bundle's source.
+
+**Pending:** develop's own run after the merge (image build, deploy, journeys,
+E2E) green. That run is "nothing breaks" measured on the deployed site.
+
+**Removed, because nothing rendered it after I44 and nothing imported it:**
+the land search components (`search-content`, `lands-map`, `land-card`,
+`compare-bar`, `filters-bar`, and the `land-detail-modal` folder), the compare
+components (`compare-content`, `compare-cards`, `compare-table`,
+`compare-empty`), `data/mock-lands.ts` with its four invented parcels,
+`store/lands-search.store.ts`, and `dashboard/shared/stat-card.tsx`. That is 18
+files. Dead code carrying invented data is how the six invented agents lived
+for months: somebody finds it useful and wires it back.
+
+**Kept, and why:** the `landSearch` namespace, which the real admin lands screen
+also reads; Mapbox, which the client land map uses. **Named, not removed:** the
+`landsCompare` namespace is now read by no component. It holds labels, not
+invented data, and removing it would ripple into the copy pin that #174
+rewrites.
+
+**The pin survives its source.** `admin/invented-data.spec.tsx` read the
+invented parcels from `MOCK_LANDS`. It now keeps them as literals ("Terrain
+Dibamba", "TF 421/WB"…), the way `/agent/network`'s spec keeps its six names.
+Mutated: `/admin/lands/search` showing "Terrain Dibamba" again fails it in both
+languages. `brand-palette.spec.ts` lost the entry for the deleted `lands-map.tsx`.
+
+**Proof so far:** the web typecheck is clean with the files gone, the whole web
+suite passes (665 tests), and lint is clean.
 
 ---
 
