@@ -143,9 +143,9 @@ export class LeadFilterDto extends createZodDto(leadFilterSchema) {}
 
 // ----- Network ----- //
 
-// Agent view: depth only
+// Agent view: depth only. Absent means the caller's tier allowance (I32).
 export const networkTreeQuerySchema = z.object({
-  depth: z.coerce.number().int().min(1).max(3).default(1),
+  depth: z.coerce.number().int().min(1).max(3).optional(),
 });
 
 export class NetworkTreeQueryDto extends createZodDto(networkTreeQuerySchema) {}

@@ -234,14 +234,15 @@ export class KamnetAgentController {
   @ApiOperation({
     summary: 'Get my sponsorship network',
     description:
-      'Returns direct referrals (N1). The depth parameter is clamped to KAMNET_MAX_SPONSORSHIP_DEPTH.',
+      "Returns the caller's referrals as deep as their own tier allows (KAMNET_NETWORK_DEPTH_BY_TIER), never beyond KAMNET_MAX_SPONSORSHIP_DEPTH.",
   })
   @ApiQuery({
     name: 'depth',
     required: false,
     type: Number,
     enum: [1, 2, 3],
-    description: 'Query depth, clamped to KAMNET_MAX_SPONSORSHIP_DEPTH. Defaults to 1.',
+    description:
+      "Narrows the depth; it never widens it past the caller's tier. Defaults to the tier allowance.",
   })
   async getMyNetwork(@CurrentUser() user: RequestUser, @Query() query: NetworkTreeQueryDto) {
     return this.networkService.getMyNetwork(user.id, query.depth);

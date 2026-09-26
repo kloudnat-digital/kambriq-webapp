@@ -23,8 +23,7 @@ const sponsors = getMySponsors as jest.MockedFunction<typeof getMySponsors>;
  *
  * Earlier implementations displayed static placeholders if the API was empty.
  * This test ensures that the real API response entirely dictates the page structure.
- * Additionally verifies depth rules according to UX spec section 2.3 and P9:
- * - All tiers (JUNIOR, CONFIRMED, MANAGER) request N1 depth.
+ * Depth is the API's decision since I32; the page asks without one.
  * - Only MANAGER renders network statistics.
  */
 
@@ -163,34 +162,20 @@ describe('/agent/network - the empty state is deliberate', () => {
 describe('/agent/network - depth and statistics follow the tier', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('asks for N1 only when the agent is JUNIOR', async () => {
-    answers('JUNIOR', []);
+  /**
+   * I32: the page no longer decides a depth. It asks, and the API answers by
+   * the caller's tier. Every tier asks the same way, with no depth.
+   */
+  it.each(['JUNIOR', 'CONFIRMED', 'MANAGER'])(
+    'a %s asks for the network without choosing a depth',
+    async (tier) => {
+      answers(tier, []);
 
-    await renderPage();
+      await renderPage();
 
-    expect(network).toHaveBeenCalledWith(1);
-  });
-
-  it('asks for N1 only when the agent is CONFIRMED, per UX 2.3', async () => {
-    // Per UX spec 2.3, CONFIRMED is restricted to N1 depth.
-    answers('CONFIRMED', []);
-
-    await renderPage();
-
-    expect(network).toHaveBeenCalledWith(1);
-  });
-
-  it('asks for N1 even when the agent is MANAGER, since P9', async () => {
-    /**
-     * P9 overrides earlier spec: depth is always clamped at N1.
-     * Asserts literal `1` to catch regressions if depth logic diverges.
-     */
-    answers('MANAGER', []);
-
-    await renderPage();
-
-    expect(network).toHaveBeenCalledWith(1);
-  });
+      expect(network).toHaveBeenCalledWith();
+    },
+  );
 
   it('shows network statistics to a MANAGER', async () => {
     answers('MANAGER', [
