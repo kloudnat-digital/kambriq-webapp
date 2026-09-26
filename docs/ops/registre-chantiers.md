@@ -6278,6 +6278,19 @@ languages. `brand-palette.spec.ts` lost the entry for the deleted `lands-map.tsx
 **Proof so far:** the web typecheck is clean with the files gone, the whole web
 suite passes (665 tests), and lint is clean.
 
+**Develop went red, and it was mine.** The merge (`54e9e50`) failed develop's
+Quality job on `role-code-literals.spec.ts`: an API convention test that reads
+web files had an exemption for the deleted `land-detail-modal/dialogs.tsx`, and
+an exemption that matches nothing fails, by design. **My local gate for A53 ran
+the web suite, web typecheck and lint, and not the API suite** where that test
+lives. That is the whole cause, and the rule it breaks is in this file ("full
+gate"). The fix removes the exemption. Because the red run never reached the
+delivery journeys, the CI Gate refuses every pull request until develop's head
+is green again, the fix included, so the fix needs `merge-on-red-develop`, which
+is Visquis's alone. The merge also went in under the PR's title rather than a
+lowercase commit subject, because my merge script took the wrong field; the
+script is corrected.
+
 ---
 
 ## Proven
