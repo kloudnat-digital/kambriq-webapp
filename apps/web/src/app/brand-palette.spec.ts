@@ -5,11 +5,10 @@ import { join } from 'node:path';
  * Step 0 of the agent launch wave: the brand palette is the anchor of the
  * design system, and no component may carry a colour of its own.
  *
- * Visquis reversed the earlier arbitration on 17 September 2026. The brand
- * palette wins and the code aligns - navy, teal, gold, cream - while the
- * STRUCTURE of `globals.css` is kept whole: the same four eleven-step
- * families, the same semantic role tokens, the same six radii, the same three
- * shadows, the same two fonts. Only the anchor values change.
+ * The brand palette is authoritative and the code aligns to it - navy, teal,
+ * gold, cream - while the STRUCTURE of `globals.css` is kept whole: the same
+ * four eleven-step families, the same semantic role tokens, the same six radii,
+ * the same three shadows, the same two fonts. Only the anchor values change.
  *
  * Written as a test rather than left to review because the failure mode is
  * silent. A hex typed into a component renders correctly on the day it is
@@ -18,9 +17,9 @@ import { join } from 'node:path';
  * `#0D1B2A` before this PR: the right colour, in the wrong place, agreeing
  * with the new palette by accident.
  *
- * The mapping, decided by Visquis: teal is the action colour and therefore
- * `primary`; navy is chrome and takes `accent`, whose anchor sits at step 800
- * because navy is a dark value; gold and cream keep their families.
+ * The mapping: teal is the action colour and therefore `primary`; navy is
+ * chrome and takes `accent`, whose anchor sits at step 800 because navy is a
+ * dark value; gold and cream keep their families.
  */
 const ROOT = join(__dirname, '..', '..', '..', '..');
 const GLOBALS = join(ROOT, 'apps', 'web', 'src', 'app', 'globals.css');

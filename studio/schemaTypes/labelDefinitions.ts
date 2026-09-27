@@ -6,11 +6,9 @@ import { defineField, defineType } from 'sanity';
  * The text comes from `libs/common/src/kbs/label-definitions.ts` and is rendered
  * by the site. It is not editable in the Studio on purpose: the KBS question
  * bank is pinned to those same values, and a definition an editor could reword
- * would be the same fact recorded twice with nothing comparing the two. The
- * definitions were already corrected twice and regenerated wrong a third time -
- * see that file.
+ * would be the same fact recorded twice with nothing comparing the two.
  *
- * So this block chooses a POSITION, not a wording.
+ * This block chooses a position, not a wording.
  */
 export const labelDefinitions = defineType({
   name: 'labelDefinitions',

@@ -158,9 +158,9 @@ describe('KCA1 loader - course structure', () => {
   });
 
   /**
-   * The markers are slots Visquis will fill. Counting them per lesson is what
-   * lets him be told which lesson a video belongs to without anybody re-reading
-   * the document.
+   * Markers are slots the content author fills. Counting them per lesson is
+   * what identifies which lesson a given video belongs to, without re-reading
+   * the source document.
    */
   it('counts the marker families per lesson, including the accented one', async () => {
     const course = parseCourseHtml(await fixtureHtml());
@@ -224,9 +224,9 @@ describe('KCA1 loader - media slots (A3)', () => {
   });
 
   /**
-   * The label is what tells Visquis which video he is producing. A slot that
-   * says only "VIDEO" would send him back to the document, which is the thing
-   * making slots addressable was meant to avoid.
+   * The label identifies which video is to be produced. A slot carrying only
+   * "VIDEO" would require re-reading the source document, which is what making
+   * slots addressable exists to avoid.
    */
   it('carries what the marker said, without the bracketed prefix', async () => {
     const course = parseCourseHtml(await fixtureHtml());

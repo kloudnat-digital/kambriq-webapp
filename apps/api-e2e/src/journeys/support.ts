@@ -2,8 +2,8 @@
  * Shared helpers for the delivery journeys.
  *
  * These run against a **deployed** environment, not a local process. That is the
- * point: every defect this week that mattered was invisible to unit tests and
- * visible on the first real request — a null SES client, an unsigned S3 URL, a
+ * point: the defects that mattered were invisible to unit tests and visible on
+ * the first real request - a null SES client, an unsigned S3 URL, a
  * `?token=[object Promise]`, a quiz scored out of the wrong denominator. Proof by
  * execution rather than by inspection.
  */
@@ -168,9 +168,9 @@ export const message = async (mailbox: string, id: string): Promise<string> => {
 /**
  * Finds a token in ANY message in the mailbox, not the first one.
  *
- * Reading `inbox[0]` and concluding "there is no link" is how a non-defect nearly
- * got filed this week: the reservation flow sends two emails, and the invite was
- * the second. Reading the first element of a list is not reading the list.
+ * Reading `inbox[0]` and concluding "there is no link" is wrong: the reservation
+ * flow sends two emails and the invite is the second. Reading the first element
+ * of a list is not reading the list.
  */
 export const findTokenInMailbox = async (
   mailbox: string,

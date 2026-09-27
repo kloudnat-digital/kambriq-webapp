@@ -199,13 +199,13 @@ describe('wave 7 - the content the migration produced', () => {
      * is readable only with a token, and the delivery client deliberately sends
      * none.
      *
-     * This cost a full round trip to find. The first id scheme was
-     * `legalPolicy.legal-privacy.fr`: the import succeeded, the Studio listed
-     * all sixteen documents with their content, `sanity documents query` showed
-     * them, and every page on the site answered 404 - because the only caller
-     * without a token saw an empty dataset. Proved with a control rather than
-     * from the documentation: a dotless document written into the same dataset
-     * was readable anonymously in the same second that a dotted one was not.
+     * The first id scheme was `legalPolicy.legal-privacy.fr`: the import
+     * succeeded, the Studio listed all sixteen documents with their content,
+     * `sanity documents query` showed them, and every page on the site answered
+     * 404 - because the only caller without a token saw an empty dataset. Proved
+     * with a control rather than from the documentation: a dotless document
+     * written into the same dataset was readable anonymously in the same second
+     * that a dotted one was not.
      */
     const dotted = (id: string) => id.includes('.');
 

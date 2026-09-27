@@ -33,7 +33,7 @@ const renderPage = async () => render(await AgentProfilePage());
  * The subject asked for the control "on their profile screen" and there was no
  * profile screen: `(app)/profile` and `(app)/agent/dashboard` are both
  * `PlaceholderPage`, an "under construction" card listing features that do not
- * exist. Visquis chose a minimal real screen on 22 September.
+ * exist. This is a minimal real screen instead.
  *
  * What is worth testing here is the fork, not the layout, and the fork has
  * THREE branches rather than two.
@@ -42,7 +42,7 @@ const renderPage = async () => render(await AgentProfilePage());
  * would 404 on use. But a failed read is a different thing entirely, and the
  * first version of this page treated the two as one: both rendered "Vous
  * n'etes pas agent KAMNET", so a real agent was told they were not an agent
- * whenever the API was down. Visquis caught it on 22 September.
+ * whenever the API was down.
  *
  * The test below that asserted that behaviour is INVERTED rather than deleted -
  * it was accurate about the code and wrong about the requirement, which is the

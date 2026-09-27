@@ -33,7 +33,7 @@ let agent: string;
  * The sha gate.
  *
  * A live proof taken against the wrong build proves nothing about the change it
- * was meant to certify. That happened this week: a deploy was gated on the ECS
+ * was meant to certify. That has happened: a deploy was gated on the ECS
  * revision number reaching 106, the number advanced for an unrelated merge, and
  * a fix appeared to fail against a build that did not contain it. **A monotonic
  * counter says something changed, not what is running.**

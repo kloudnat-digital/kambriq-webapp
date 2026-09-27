@@ -8,8 +8,8 @@ import { buildUserResponse, mockI18n } from '../../utils';
 /**
  * P9 - sponsorship stops at the direct sponsor.
  *
- * Visquis arbitrated on 20 September: a sale pays the agent who made it
- * (level 0) and their direct sponsor (level 1), and nobody beyond.
+ * A sale pays the agent who made it (level 0) and their direct sponsor
+ * (level 1), and nobody beyond.
  * `KAMNET_MAX_SPONSORSHIP_DEPTH` is what enforces that, and it is read by both
  * directions of the tree - walking DOWN through `getMyNetwork` and UP through
  * `getMySponsorChain`.

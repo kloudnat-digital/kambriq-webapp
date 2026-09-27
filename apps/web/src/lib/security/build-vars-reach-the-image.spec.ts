@@ -9,11 +9,10 @@
  * empty - and every one of these is designed to fail closed, so the symptom is
  * a feature that is quietly off rather than a build that fails.
  *
- * That is not hypothetical. `NEXT_PUBLIC_MAPBOX_TOKEN` was declared in
+ * Two shapes this has already taken: `NEXT_PUBLIC_MAPBOX_TOKEN` was declared in
  * `Dockerfile.web` and passed by neither workflow, so every deployed image ran
  * the map widget with an empty token; and `SANITY_STUDIO_ORIGIN` was read by
- * `next.config.ts` with no `ARG` to carry it at all. Both were found by writing
- * this file.
+ * `next.config.ts` with no `ARG` to carry it at all.
  *
  * Pinned in both directions: an `ARG` the builder stage declares and this list
  * does not name fails too, so a new build variable cannot be added without

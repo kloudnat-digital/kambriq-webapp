@@ -26,8 +26,8 @@ export async function generateMetadata() {
  * `PlaceholderPage` - an "under construction" card listing features that do not
  * exist. Bolting a live switch onto one of those would put a working control
  * inside a page that announces itself as unbuilt, which is worse than either.
- * Visquis chose a minimal real screen carrying only the consent control, on
- * 22 September; the rest of an agent's profile remains its own subject.
+ * This is a minimal real screen carrying only the consent control; the rest of
+ * an agent's profile remains its own subject.
  *
  * No routing change was needed. `/agent` is already in `PROTECTED_PREFIXES` and
  * in `ROLE_GATES` as `[AGENT, ADMIN_GLOBAL]`, so the middleware guards this the
@@ -42,11 +42,10 @@ export async function generateMetadata() {
  * the page says so in words rather than rendering a control that would 404 on
  * use.
  *
- * **A failed read is NOT that state**, and the first version of this page said
- * it was. Both branches rendered "Vous n'etes pas agent KAMNET", so a real
- * agent opening this screen while the API was down was told they were not an
- * agent - a false statement about them, made by us, at the moment we could not
- * check. Visquis caught it on 22 September.
+ * **A failed read is NOT that state.** Rendering "Vous n'etes pas agent KAMNET"
+ * on a failed read tells a real agent, while the API is unreachable, that they
+ * are not an agent - a false statement about the reader, made at the one moment
+ * it cannot be checked.
  *
  * So there are three states, not two. The action `nullOn404`s a 404 and
  * RETHROWS everything else, and `createAction` rethrows anything that is not a
@@ -117,14 +116,14 @@ const NotAnAgent = ({ title, message }: { title: string; message: string }) => (
 );
 
 /**
- * We could not read the profile, and this says only that.
+ * Renders only that the profile could not be read.
  *
  * Deliberately not `NotAnAgent` with different words: the two are different
  * claims about the reader. One says "you are not an agent", which is a
  * statement about them; this says "we cannot check", which is a statement about
- * us. Rendering the first when the second is true is what Visquis caught, and
- * the grey seal rather than the primary one is part of saying so - nothing here
- * is a finding about the person.
+ * the system. Rendering the first when the second is true is the defect this
+ * component exists to prevent, and the grey seal rather than the primary one is
+ * part of saying so - nothing here is a finding about the person.
  *
  * "Rien n'a changé" is in the copy because the reader's likely next thought is
  * that their listing has been dropped. It has not: the register was simply not

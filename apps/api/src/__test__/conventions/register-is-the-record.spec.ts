@@ -82,9 +82,9 @@ const hasEntry = (chantier: string): boolean =>
  * with no entry fails because it is not here, and writing an entry without
  * removing its line fails too, so the list cannot rot into a lie.
  *
- * The three groups are different problems. The `I` and `A` rows are the
- * 18 September wave and earlier, whose detail lives in Visquis's tracker outside
- * this repository. `G1`, `G10`, `P4`, `P5`, `Q1` are rows summarising work whose
+ * The three groups are different problems. The `I` and `A` rows predate the
+ * current register, and their detail lives in a tracker outside this
+ * repository. `G1`, `G10`, `P4`, `P5`, `Q1` are rows summarising work whose
  * entry was never written. `naming`, `rename` and `register` are decisions about
  * this document rather than chantiers.
  */

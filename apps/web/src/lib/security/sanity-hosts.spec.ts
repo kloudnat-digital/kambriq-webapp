@@ -57,10 +57,9 @@ describe('the Sanity hosts the browser may reach', () => {
 
   describe('next.config.ts names no Sanity host of its own', () => {
     /**
-     * Comments are stripped first. The comment beside the directive explains
-     * why there is no Sanity entry, and a sweep for the substring counts the
-     * explanation as a violation - which is how this assertion failed the first
-     * time it ran.
+     * Comments are stripped first. The comment beside the directive explains why
+     * there is no Sanity entry, and a substring sweep would count that
+     * explanation as a violation.
      */
     const directives = NEXT_CONFIG.replace(/^\s*\/\/.*$/gm, '');
 
@@ -83,11 +82,10 @@ describe('the Sanity hosts the browser may reach', () => {
     it('grants no browser connection to Sanity, because nothing makes one', () => {
       expect(directives).not.toMatch(/connect-src[^;]*sanity/);
       /**
-       * Matched by SHAPE, not by substring. The docstring in that file explains
-       * why `next-sanity` is not used, and a sweep for the name counts the
-       * explanation as a violation - which is how this assertion failed the
-       * first time it ran, for the fifth time in this repository. An import
-       * opens its own line; a mention of one cannot.
+       * Matched by shape, not by substring: the docstring in that file explains
+       * why `next-sanity` is not used, and a sweep for the name would count the
+       * explanation as a violation. An import opens its own line; a mention of
+       * one cannot.
        */
       const web = readFileSync(join(__dirname, '../cms/client.ts'), 'utf8');
       expect(web).toMatch(/^import .* from '@sanity\/client';$/m);

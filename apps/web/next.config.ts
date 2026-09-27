@@ -55,9 +55,7 @@ const nextConfig: WithNxOptions = {
   // The proxy could not do the same job. Its matcher is a positive list, so it
   // never sees a URL the site does not serve - and a 404 is exactly where the
   // header matters most, because a 404 is what a crawler finds when it follows
-  // a stale link. (This said "the matcher runs on protected prefixes only",
-  // which stopped being true when locale routing widened it to the public
-  // paths; the conclusion was unchanged and the reason was not.)
+  // a stale link.
   async headers() {
     return [
       {

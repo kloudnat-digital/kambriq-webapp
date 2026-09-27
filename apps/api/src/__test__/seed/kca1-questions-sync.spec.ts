@@ -54,8 +54,8 @@ describe('KCA1 question load - a replay changes nothing and says so', () => {
   });
 
   /**
-   * The whole point of the outcome: the reason is readable by Visquis, and it
-   * says replay is not implemented rather than implying the pool was checked
+   * The outcome exists so the reason is readable by the operator: it says
+   * replay is not implemented rather than implying the pool was checked
    * and found correct. A load that says "left untouched" without saying why
    * reads as "verified", which is a claim nothing here makes.
    */

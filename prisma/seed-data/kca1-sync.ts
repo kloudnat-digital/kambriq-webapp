@@ -196,7 +196,7 @@ export const decideQuestionLoad = (args: {
 };
 
 /**
- * The decision as a sentence Visquis can act on.
+ * The decision as a sentence the operator can act on.
  *
  * It never says the pool is correct, because nothing in this file reads a
  * single question. "Left untouched" and "verified" are different claims, and a
