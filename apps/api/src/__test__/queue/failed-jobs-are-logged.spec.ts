@@ -57,11 +57,8 @@ describe('A54 - every processor announces a failed job', () => {
       data: { email: 'someone@example.test' },
     } as unknown as Job;
 
-    (Object.create(Probe.prototype) as Probe).onFailed.call(
-      new Probe(),
-      job,
-      new Error('CONTACT_INBOX_EMAIL is not set. Cannot send daily contact digest.'),
-    );
+    const failure = new Error('CONTACT_INBOX_EMAIL is not set. Cannot send daily contact digest.');
+    (Object.create(Probe.prototype) as Probe).onFailed.call(new Probe(), job, failure);
 
     // Exact fields and a single call: the payload's address has nowhere to ride.
     expect(error).toHaveBeenCalledTimes(1);
@@ -73,7 +70,9 @@ describe('A54 - every processor announces a failed job', () => {
       id: 'repeat:abc:1790406000000',
       attempt: 1,
       maxAttempts: 1,
-      error: 'CONTACT_INBOX_EMAIL is not set. Cannot send daily contact digest.',
+      // Under `err`, the one key whose Error keeps its type, message and stack
+      // in the written line (log-errors-in-err.spec.ts).
+      err: failure,
     });
     error.mockRestore();
   });
