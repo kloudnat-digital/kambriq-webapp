@@ -1,4 +1,4 @@
-import { test as setup, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { authSlot } from './support/auth-budget';
 import {
@@ -14,8 +14,8 @@ import {
  * them. Three sign-ins for the whole run instead of one per test that needs a
  * role.
  */
-setup('sign in once per role', async ({ page, request }) => {
-  setup.setTimeout(180_000);
+test('sign in once per role', async ({ page, request }) => {
+  test.setTimeout(180_000);
   mkdirSync(SESSIONS_DIR, { recursive: true });
 
   const tokens: Record<string, string> = {};
