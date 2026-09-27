@@ -238,6 +238,11 @@ jobs:
             echo "Migration task failed with exit code ${EXIT_CODE}" >&2; exit 1
           fi
 
+          # Exit 0 is the task's claim. run-migrations.js prints this line only
+          # after every schema migrated; the step fails when it never appears.
+          bash scripts/ci/await-task-tally.sh "${NEW_TASK_DEF_ARN}" "${CONTAINER_NAME}" \
+            "${TASK_ARN}" "Kambriq migrations complete" 90
+
       # -- Seed: opt-in only (run_seed=true), first-deploy use-case ------------
       - name: Run database seed
         id: run-seed

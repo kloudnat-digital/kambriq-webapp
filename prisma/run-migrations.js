@@ -43,7 +43,8 @@ async function ensureDatabases() {
 
 function runMigrations() {
   const prismaDir = path.join(__dirname);
-  const schemaDirs = fs.readdirSync(prismaDir, { withFileTypes: true })
+  const schemaDirs = fs
+    .readdirSync(prismaDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .filter((name) => fs.existsSync(path.join(prismaDir, name, 'schema.prisma')))
@@ -76,7 +77,9 @@ function runMigrations() {
 
     if (!hasMigrations) {
       if (!allowDbPush) {
-        throw new Error(`No migrations found for ${name}. Set ALLOW_DB_PUSH=true to run prisma db push.`);
+        throw new Error(
+          `No migrations found for ${name}. Set ALLOW_DB_PUSH=true to run prisma db push.`,
+        );
       }
       const pushCmd = `npx prisma db push --accept-data-loss --schema ${schemaPath}${configArg}`;
       console.log(`\n→ ${pushCmd}`);
@@ -88,14 +91,29 @@ function runMigrations() {
     console.log(`\n→ ${cmd}`);
     execSync(cmd, { stdio: 'inherit' });
   }
+  return schemaDirs;
 }
+
+/**
+ * Printed once, after every schema has migrated, and never otherwise. The deploy
+ * step reads it from this task's own log stream after the exit code
+ * (scripts/ci/await-task-tally.sh): a task that exits 0 has declared success,
+ * not achieved it (A9, A54, H2). migration-tally.spec.ts holds both ends.
+ */
+const COMPLETION_LINE = 'Kambriq migrations complete';
+const completionLine = (schemas) =>
+  `${COMPLETION_LINE}: ${schemas.length} schemas (${schemas.join(', ')})`;
 
 async function main() {
   await ensureDatabases();
-  runMigrations();
+  console.log(completionLine(runMigrations()));
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
+
+module.exports = { runMigrations, completionLine, COMPLETION_LINE };
