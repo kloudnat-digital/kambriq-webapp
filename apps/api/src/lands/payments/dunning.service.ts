@@ -8,6 +8,7 @@ import {
   ageInDays,
   ONE_DAY_MS,
   sumReceipts,
+  outstandingOf,
 } from '@kambriq/common';
 import { LandsPrismaService } from '../prisma/lands-prisma.service';
 import { CorePrismaService } from '../../core/prisma/core-prisma.service';
@@ -172,7 +173,7 @@ export class DunningService {
         currency: p.currency,
         amountDue: p.amountDue.toString(),
         amountReceived: received.toString(),
-        outstanding: (p.amountDue - received).toString(),
+        outstanding: outstandingOf(p.state as PaymentState, p.amountDue, received).toString(),
         channel: p.channel,
         createdAt: p.createdAt,
         expiresAt: p.expiresAt,

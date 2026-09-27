@@ -184,3 +184,19 @@ export function assertTransitionIsDeliberate(
 export function sumReceipts(receipts: ReadonlyArray<{ amount: bigint }>): bigint {
   return receipts.reduce((total, r) => total + r.amount, 0n);
 }
+
+/** States in which a payment no longer asks for money (G22). */
+const ASKS_FOR_NOTHING: ReadonlySet<PaymentState> = new Set([
+  PaymentState.ANNULE,
+  PaymentState.REJETE,
+  PaymentState.EXPIRE,
+]);
+
+/**
+ * What a payment still asks for: its amount due less what its ledger received,
+ * or nothing once it was annulled, rejected or expired. Money such a payment
+ * did receive stays on its ledger; returning it is a separate act.
+ */
+export function outstandingOf(state: PaymentState, amountDue: bigint, received: bigint): bigint {
+  return ASKS_FOR_NOTHING.has(state) ? 0n : amountDue - received;
+}
