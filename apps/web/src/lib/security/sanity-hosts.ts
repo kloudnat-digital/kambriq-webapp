@@ -1,24 +1,17 @@
 /**
- * The Sanity hosts the browser is allowed to reach, derived from the project id.
+ * The one Sanity host the browser may reach, derived from the project id and
+ * scoped by path: `https://cdn.sanity.io/images/<projectId>/`. The bare hostname
+ * is every Sanity customer's assets, and the image optimizer hands what it
+ * fetches to sharp, so the path segment is what makes this ours.
  *
- * One of them, and it is project-scoped:
+ * Read at `next build`, because a standalone build freezes `images` and
+ * `headers()` into its manifests: the variable must reach the Docker build, not
+ * the container. Absent, the host is unlisted and the browser refuses it - the
+ * state before a Sanity project exists, and never widened.
  *
- * - the asset CDN, `https://cdn.sanity.io/images/<projectId>/`, where the
- *   project is a path segment. `cdn.sanity.io` on its own is every Sanity
- *   customer's assets, and the image optimizer hands whatever it fetches to
- *   sharp - the same hole `**.amazonaws.com` was, one directive over.
- *
- * Read at `next build`: a standalone build freezes `images` and `headers()`
- * into its manifests, so the variable must reach the Docker build.
- *
- * Missing variable: the host is not listed and the browser refuses it. That is
- * the state before a Sanity project exists, and it is never widened.
- *
- * There is no `connect-src` entry, and that is a statement about the delivery
- * rather than an omission. Documents are fetched by the Next server through
- * `@sanity/client`; nothing in the browser talks to Sanity. `<SanityLive />`
- * would have needed one, and it is not used - see
- * `libs/common/src/cms/delivery.ts` for the measurement that decided that.
+ * No `connect-src` entry, deliberately: documents are fetched by the Next server,
+ * so nothing in the browser talks to Sanity. `<SanityLive />` would need one and
+ * is not used (see `libs/common/src/cms/delivery.ts`).
  */
 
 export const SANITY_PROJECT_ID_VAR = 'NEXT_PUBLIC_SANITY_PROJECT_ID';

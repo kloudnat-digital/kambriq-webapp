@@ -646,9 +646,8 @@ export class UsersService {
     });
 
     const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3001');
-    // I45: the page that consumes a PASSWORD_RESET token is /reset-password; the
-    // /auth/set-password this used to name never existed, and every invitation
-    // led to a 404. emailed-urls-resolve.spec.ts keeps every emailed URL honest.
+    // I45: a PASSWORD_RESET token is consumed by /reset-password, and by no other
+    // path. emailed-urls-resolve.spec.ts asserts every emailed URL resolves.
     const setPasswordUrl = `${frontendUrl}/reset-password?token=${rawToken}`;
 
     await this.emailService.send({

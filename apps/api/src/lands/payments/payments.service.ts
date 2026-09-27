@@ -377,7 +377,7 @@ export class PaymentsService {
 
   /**
    * G20 - the balance: the parcel's total minus what the deposit RECEIVED,
-   * summed over its ledger rows (Visquis, 26 September). Not minus the deposit
+   * summed over its ledger rows. Not minus the deposit
    * that was due: a deposit validated short (mobile-money ceilings, transfers in
    * tranches) leaves its shortfall here, visible, instead of a hole nobody sees
    * until reconciliation. Receipts on other purposes are not the land's price

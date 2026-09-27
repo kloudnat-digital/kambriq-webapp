@@ -16,8 +16,7 @@ import { buildUserResponse, mockI18n } from '../../utils';
 
 /**
  * I32 - the API decides how deep an agent sees their network, by the agent's
- * own tier. The page used to hold that rule and the API served whatever depth
- * was asked, up to the platform maximum. The API is the rule; the page asks.
+ * own tier, clamped to the platform maximum. The API is the rule; the page asks.
  *
  * The caller a1 sponsors b1, who sponsors b2, who sponsors b3: deeper than any
  * answer expected below, so each depth is the clamp and not the data.

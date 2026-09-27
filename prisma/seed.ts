@@ -870,9 +870,9 @@ async function seedLands() {
     verifiedAt?: Date;
     /**
      * Fictitious, in the Cameroonian shape `TF <number>/<department>` (P24).
-     * `WB` (Wouri B) is Visquis's code; `MF` Mfoundi, `FA` Fako, `MI` Mifi and
-     * `BE` Bénoué are inferred for Yaoundé, Buea, Bafoussam and Garoua and wait
-     * for his correction. No number is a real title.
+     * `WB` (Wouri B) is confirmed; `MF` Mfoundi, `FA` Fako, `MI` Mifi and `BE`
+     * Bénoué are inferred for Yaoundé, Buea, Bafoussam and Garoua and await
+     * correction. No number is a real title.
      */
     titleNumber: string | null;
     pv: number;

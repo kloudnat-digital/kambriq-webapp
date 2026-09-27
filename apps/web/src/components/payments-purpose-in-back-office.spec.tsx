@@ -24,9 +24,9 @@ const row = (purpose: PaymentRow['purpose'], id: string): PaymentRow => ({
 const lineOf = (reference: string) => screen.getByText(reference).closest('tr') as HTMLElement;
 
 /**
- * G20 - two payments of one reservation, a deposit and a balance, used to look
- * identical in the back office. Every screen where a person decides on a
- * payment now says which one it is.
+ * G20 - every screen where a person decides on a payment says whether it is the
+ * deposit or the balance. Two payments of one reservation are otherwise
+ * indistinguishable.
  */
 describe('G20 - the back office says deposit or balance', () => {
   it('on the payment list, row by row', () => {

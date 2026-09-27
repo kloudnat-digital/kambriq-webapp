@@ -6,8 +6,7 @@ import { staleExemptions, watchedCopy } from './watched-namespaces';
 
 /**
  * P27 - KAMBRIQ LANDS™, KAMBRIQ VERIFY™ and KAMNET™ carry the mark everywhere,
- * in both languages. KBS does not: it is a school, not a product mark (Visquis,
- * 25 September).
+ * in both languages. KBS does not: it is a school, not a product mark.
  *
  * Measured on develop before this: VERIFY carried it 20 times out of 21, LANDS
  * 0 out of 15, KAMNET 0 out of 53, in each language.

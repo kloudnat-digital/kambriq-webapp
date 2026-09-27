@@ -6,7 +6,7 @@ import { createLandSchema, updateLandSchema } from '../../../lands/dto/lands.dto
  * P24 - a land title number is shaped like a Cameroonian titre foncier.
  *
  * `TF <digits>/<one to three letters>`, the letters naming the department:
- * `TF 4129/M` for Menoua (Visquis, 25 September). Until now nothing was refused -
+ * `TF 4129/M` for Menoua. Until now nothing was refused -
  * `z.string().max(100)` on both DTOs - and the site showed three invented formats.
  *
  * The API is the rule; the web form repeats it as a courtesy. What is checked is

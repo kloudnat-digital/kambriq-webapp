@@ -19,9 +19,9 @@ export const CONTENT_PAGE_TYPE = 'contentPage';
 /**
  * The pages the site renders from the CMS.
  *
- * Each one is a route that exists on disk; `content-pages-have-routes.spec.ts`
- * fails when a slug here has no page, because a slug with no page is content
- * nobody can reach and an editor cannot tell by looking at the Studio.
+ * Each one is a route that exists on disk. `initial-content.spec.ts` fails when a
+ * slug here has no page: a slug with no page is content nobody can reach, and an
+ * editor cannot tell by looking at the Studio.
  */
 export const CONTENT_PAGE_SLUGS = ['about', 'methode', 'plan', 'verify'] as const;
 

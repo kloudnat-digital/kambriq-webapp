@@ -31,7 +31,7 @@ import { Button } from '@/components/ui/button';
  * that matters rather than the words on it. A page that says "not found" over a
  * 200 is worse than no page at all: a crawler indexes it, a monitor reports the
  * site healthy, and every broken URL becomes a soft 404 nobody can count.
- * `not-found.spec.ts` asserts the status, not the copy.
+ * `not-found-and-robots.spec.ts` asserts the status, not the copy.
  *
  * It carries links back into the site because a dead end with no exit is the
  * other half of the same defect.

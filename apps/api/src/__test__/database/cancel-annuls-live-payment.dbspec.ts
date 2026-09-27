@@ -19,7 +19,7 @@ import { createPaymentFixture, openTestDatabase, type TestDatabase } from './lan
 
 /**
  * G21 - cancelling a reservation annuls its live payment, with a written reason
- * (Visquis, 27 September). Against the real lands migrations: the annulment is a
+ * Against the real lands migrations: the annulment is a
  * transition with an actor and a reason, the ledger keeps every receipt, nothing
  * is deleted - and nothing validatable is left behind a cancelled reservation.
  */

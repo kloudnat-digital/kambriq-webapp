@@ -6,7 +6,7 @@
  * include the authenticated application, and a sitemap that lists `/mylands` is
  * an invitation to crawl a login wall.
  *
- * `sitemap-covers-the-public-site.spec.ts` pins it in both directions - every
+ * `sitemap-and-robots.spec.ts` pins it in both directions - every
  * entry resolves to a page, and every public page is either listed here or
  * excluded below with a reason - so the list cannot silently fall behind the
  * routes.

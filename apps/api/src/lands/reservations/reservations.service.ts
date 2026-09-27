@@ -454,7 +454,7 @@ export class LandReservationsService {
     }
 
     /**
-     * G21 (Visquis, 27 September): cancelling annuls every live payment, with a
+     * G21 - cancelling annuls every live payment, with a
      * written reason - a client who withdraws is never left behind a payment
      * that can still be validated. Through `PaymentsService.transition`, the one
      * write path for a payment's state: a transition with an actor and a reason,
