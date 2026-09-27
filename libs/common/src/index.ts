@@ -89,6 +89,7 @@ export {
   type PaginationQuery,
 } from './dto/pagination.dto';
 export { ageInDays, withOldestWaiting, ONE_DAY_MS } from './dto/queue-aging';
+export { sortField, TIMESTAMP_SORTS } from './dto/sort-field';
 
 // ----- Decorators -----
 export { CurrentUser, Roles, ROLES_KEY, Public, IS_PUBLIC_KEY } from './decorators';

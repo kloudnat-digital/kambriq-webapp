@@ -16,18 +16,20 @@ import {
   UpdateCandidateStatusDto,
 } from './dto/candidate.dto';
 import {
-  ageInDays,
-  buildPaginatedResponse,
   CandidateStatus,
   DEFAULT_LANGUAGE,
-  EmailService,
-  withOldestWaiting,
   DEFAULT_QUIZ_QUESTION_COUNT,
+  EmailService,
   MODULE_PASSING_SCORE,
   PaginationQuery,
   RoleCode,
   STATUS_TRANSITIONS,
   StorageService,
+  TIMESTAMP_SORTS,
+  ageInDays,
+  buildPaginatedResponse,
+  sortField,
+  withOldestWaiting,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 import { CorePrismaService } from '../../core/prisma/core-prisma.service';
@@ -563,7 +565,7 @@ export class KbsCandidatesService {
         where,
         skip,
         take: limit,
-        orderBy: { [sort]: order },
+        orderBy: { [sortField(sort, TIMESTAMP_SORTS, 'createdAt')]: order || 'desc' },
         include: {
           progress: { select: { passed: true } },
           certificates: { ...NEWEST_FIRST, take: 1, select: { kcaNumber: true } },

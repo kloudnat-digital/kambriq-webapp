@@ -31,13 +31,15 @@ import {
   RoleCode,
   SUPER_ADMIN_ROLE,
   StorageService,
+  TIMESTAMP_SORTS,
   VerificationTokenType,
+  ageInDays,
   buildPaginatedResponse,
   changedKeys,
   comparePassword,
   hashPassword,
   maskEmail,
-  ageInDays,
+  sortField,
   withOldestWaiting,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
@@ -213,7 +215,7 @@ export class UsersService {
       this.prisma.user.findMany({
         skip,
         take: limit,
-        orderBy: { [sort]: order },
+        orderBy: { [sortField(sort, TIMESTAMP_SORTS, 'createdAt')]: order || 'desc' },
         include: {
           userRoles: {
             include: { role: { select: { code: true, name: true } } },

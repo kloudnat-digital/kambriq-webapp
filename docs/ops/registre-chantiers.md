@@ -267,6 +267,9 @@ listed here first.
 | `A35`                          | `A DECIDER`         | a pull request is still never built into an image: `gate` needs only changes, commitlint, quality and test-db. Build on every PR, or only where an image can break - the `changes` job already computes that shape for `test:db`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `A39`                          | `ARRETE`            | blocked by Visquis on 22 September: the premise is a private repository and both stay public to month end. Reminder 1 October                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `A42`                          | `A DECIDER`         | next 16.3.6 and sharp 0.35.4 landed in `#176`. One question: the before-and-after page comparison cannot be taken, so either today's pages become the reference or the row closes without it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `D28` follow-up                | `PROUVE`            | the request log masked the URL, the query and the referer but not the route params, and `maskUrl` cannot mask a path at all. Params masked, and `no-credential-in-a-route-path.spec.ts` stops the route existing - proved by declaring `@Post('reset/:token')` on a real controller and watching it named                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| envelope BigInt                | `PROUVE`            | `jsonSafe` walked plain objects only, so a BigInt inside a class instance was a **500**, reproduced at 200-vs-500. It now walks any object without its own `toJSON`; a Date is pinned so the fix cannot eat every `createdAt`. Three mutations, one assertion each                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `sort` as a column             | `PROUVE`            | `paginationQuerySchema` accepts any string and 12 sites spread it into `orderBy`, so a client typo was a 500. `sortField` refuses with a 400 naming the allowed set; no caller anywhere passes `sort`, so nothing working stops working. A sweep fails on a 13th site written the old way                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | Audit 2026-09-23, unwaved      | `A FAIRE`           | superseded in part: `/admin/verify` (honest since I44) and `/kamnet/apply` (wired since P5, #193) are no longer mocks. Still open, as recorded: the Mapbox build `ARG` reaches no workflow (the land-search map it named was deleted in A53; whether another map needs it is not checked here); `legal/mentions/{fr,en}.mdx` publishes placeholder company details (`Capital social : XXX XXX XAF`, `N° RCCM : XX / XXX / XX`, and their English forms) on a public page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | register                       | `A FAIRE`           | one row has no `###` entry: `P10`, whose entry is in #174 (held for the LANDS copy). Twenty-one were written on 26 September. The list is pinned in `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
@@ -8946,6 +8949,69 @@ for that address over the run: 24 auth responses - 14 sign-ins (10 accepted, 4
 wrong-password refusals), 4 verifications, a reset, registrations - and **0
 answered 429, on any route**. Mutations: letting one call too many through the
 window fails the concurrency test; a spec without its slots fails the guard.
+
+### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
+
+**Cost impact: None.** Three guards and a 400 where there was a 500.
+
+Reported on 27 September while merging develop, then fixed here. Each was found
+by reading and closed by running.
+
+**A BigInt inside a class instance was a 500.** `jsonSafe`, which every API
+response passes through, walked arrays and plain objects only - the prototype
+check `Object.getPrototypeOf(value) === Object.prototype`. A class instance is
+neither, so its BigInt reached `JSON.stringify`, which throws on one. Reproduced
+before the fix as `Expected: 200, Received: 500`, which is what moved this from
+latent to live: nothing returns a class instance today, and the first one to do
+it would have taken the route down rather than answered wrongly.
+
+The walk now enters any object that does not define its own `toJSON`. That
+exception is the whole care: a `Date` has one, and walking it would have sent
+`{}` where every `createdAt` in the API belongs, so the Date case is pinned
+beside the money case. Three mutations, each failing one assertion: drop the
+`toJSON` guard and the Date test falls; restore the plain-object check and the
+instance test falls; round past 2^53 and the string test falls.
+
+**The request log masked everything but the path.** D28 put the URL, the query
+and the referer through the allowlist. pino-http's serializer also emits route
+`params`, and the spread copied them unmasked. Masked now - and writing the test
+showed the masking closes nothing on its own: the secret was still in
+`req.url`, because `maskUrl` masks the query and the fragment and **not the
+path**. A path cannot be told from a credential by looking at it, and the path is
+what an access log is for.
+
+So what closes it is a guard that stops the route existing:
+`no-credential-in-a-route-path.spec.ts`. Nothing is refused today - all five
+credential-bearing links use `?token=` - and the natural way to add the sixth is
+`@Get('reset/:token')`. Proved by declaring exactly that on
+`auth.controller.ts` and watching it named. **Its first version was wrong in the
+usual direction:** a suffix match on `code` flagged `:roleCode`, which identifies
+a role and grants nothing. `code` and `key` now match only on their own.
+
+**A client typo answered as a server fault.** `paginationQuerySchema` declares
+`sort` as `z.string()`, and twelve sites across nine services spread it into
+`orderBy: { [sort]: order }`. Prisma refuses a column its model has not got, so
+`?sort=nope` was a 500. Nothing is injectable - Prisma validates the key against
+the model - and the defect is the status and the silence.
+
+`sortField(requested, allowed, fallback)` refuses with a 400 that names the
+allowed set. **An allowlist per call site, not one shared list:** `examId` is a
+real column on one model and a 500 on the other eight, so a single union would
+authorise exactly the requests that still fail. It refuses rather than falling
+back, because a list ordered by something other than what was asked for is a
+wrong answer the caller cannot detect.
+
+**Safe by measurement, not by assumption:** no caller in the web, the journeys or
+the e2e suite passes `sort` at all, so every one of the twelve sites has only ever
+received the default. Nothing that works today is refused. A sweep fails if a
+thirteenth site is written the old way, and a second assertion counts the nine
+files it found so the sweep cannot pass by reading nothing.
+
+**Two of the five reported findings are not fixed here, on purpose.** `L3` is
+marked `PROUVE` while naming a pending proof, which is a record correction
+somebody else owns. And a partly received payment is annulled with its receipts
+intact while nothing records that a refund is owed - the code is probably right
+and the comment wrong, but which is a product decision.
 
 ### A1, A13 and A56 - three of the ten tracker chantiers were already closed - `PROUVE`
 
