@@ -260,6 +260,13 @@ listed here first.
 | Built-in 404 above the locale  | `PROUVE`            | P31, decided by Visquis on 26 September: the route group. Every page is in `[locale]/(site)`, whose layout refuses an unknown locale below the branded boundary. Proven on dev (`sha-e1b965f`): `/pricing` and `/de/about` give the branded 404, HTTP 404, in the visitor's language; all seventeen public pages 200 with the language switch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | develop merged into waves 5-6  | `EN COURS`          | develop's 9 commits merged 25 September: 8 text conflicts, six new page files relocated under `[locale]`, three components moved off `next/link`/`next/navigation`, `revalidatePath` calls given their prefix, `image-hosts.spec.ts` unblocked (25 assertions that ran none), `A41` reconciled. Unmerged to develop; pending proof is the routing table and the sitemap read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | Wave 7                         | `EN COURS`          | steps 0-3 done: `PolicySnapshot` append-only by trigger, proved by removal; `POST /cms/webhooks/sanity` writes it, authenticated by HMAC over the raw body; `frame-ancestors` behind a validated `SANITY_STUDIO_ORIGIN`; the Studio, the GROQ contract pinned from both sides, the webhook created by script, and the Sanity hosts scoped by project. the 16 documents converted out of mdx and committed as ndjson, delivery through `@sanity/client` (`next-sanity` refused on a measured 1846-entry install), the KBS labels moved to fields, and consent bound to an archived revision. Step 4 (the blog) deferred by decision of 2026-09-27: a blog is a collection and every type in the Studio is a singleton, so it is a different shape rather than another slug. the delivery path is proved against a throwaway project - 16 documents answering the shipped query with no token, ten routes read over HTTP at 200 with no renderer warning and no contract error. **Decided 2026-09-27: the content is written in the Studio, not imported**, so a new environment's pages answer 404 until somebody writes them. **Pending proof: nothing is deployed.** The project, the two build variables, the Studio deploy and the webhook secret are the owner's actions |
+| `A4`                           | `EN COURS`          | the commissions service has 15 unit tests, 5 mutations watched failing. Pending: nothing computes a commission, so `amount` cannot be checked against `pv` and `tpc` until the formula is decided. Question for Visquis in the entry                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `A5`                           | `EN COURS`          | `#246` added four browser walks. Two of the row's four are still not walked: the candidate's certification path, and an agent creating a reservation. Both are held by the API journeys                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `A21`                          | `EN COURS`          | reproduces on 2 of 4 full-suite runs. `--detectOpenHandles` names no handle and implies `--runInBand`, so it removes the condition. A narrowing to 8 specs was offered and withdrawn. Pending: a cause, measured as a rate                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `A34`                          | `ARRETE`            | CLAUDE.md conflicts on every parallel pair, 3 097 lines against 2 698 in this merge. Closes with `A39`, which Visquis blocked                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `A35`                          | `A DECIDER`         | a pull request is still never built into an image: `gate` needs only changes, commitlint, quality and test-db. Build on every PR, or only where an image can break - the `changes` job already computes that shape for `test:db`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `A39`                          | `ARRETE`            | blocked by Visquis on 22 September: the premise is a private repository and both stay public to month end. Reminder 1 October                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `A42`                          | `A DECIDER`         | next 16.3.6 and sharp 0.35.4 landed in `#176`. One question: the before-and-after page comparison cannot be taken, so either today's pages become the reference or the row closes without it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Audit 2026-09-23, unwaved      | `A FAIRE`           | superseded in part: `/admin/verify` (honest since I44) and `/kamnet/apply` (wired since P5, #193) are no longer mocks. Still open, as recorded: the Mapbox build `ARG` reaches no workflow (the land-search map it named was deleted in A53; whether another map needs it is not checked here); `legal/mentions/{fr,en}.mdx` publishes placeholder company details (`Capital social : XXX XXX XAF`, `N° RCCM : XX / XXX / XX`, and their English forms) on a public page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | register                       | `A FAIRE`           | one row has no `###` entry: `P10`, whose entry is in #174 (held for the LANDS copy). Twenty-one were written on 26 September. The list is pinned in `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
@@ -8939,6 +8946,211 @@ for that address over the run: 24 auth responses - 14 sign-ins (10 accepted, 4
 wrong-password refusals), 4 verifications, a reset, registrations - and **0
 answered 429, on any route**. Mutations: letting one call too many through the
 window fails the concurrency test; a spec without its slots fails the guard.
+
+### A1, A13 and A56 - three of the ten tracker chantiers were already closed - `PROUVE`
+
+**Cost impact: None.** A reading, no change.
+
+These three live in the Drive tracker (`Suivi`, rows 15, 27 and 69) and not in
+this file, which is why nothing here said they were done. Read on 27 September
+against the merge of develop, and each had been closed by work already landed.
+
+**A1 - close L2, structured logging.** The row asks for three things: confirm on
+deployed dev that a log payload arrives as structured JSON fields, remove `%o`
+from about 31 files, and quote a deployed line. The second is no longer the plan:
+`L3` keeps `%o` and lifts the payload in one `hooks.logMethod`, because
+`logging-metadata.spec.ts` already forces every call site into one shape. The
+third landed in `#247`, quoted in the `L2` row:
+
+```
+{"context":"CleanupScheduler","pattern":"0 7 * * *","msg":"Contact digest cron scheduled"}
+```
+
+**One thing left, and it is L3's row rather than A1's.** `L3` reads `PROUVE`
+while naming a pending proof of its own, "a field queried in CloudWatch Insights
+on dev". By the States table that is `EN COURS`. Either the query gets run and
+the clause comes off, or the row changes state. One of the two is wrong today.
+
+**A13 - the five remaining Float money columns.** All five are integer money:
+`Land.totalPrice`, `LandReservation.downPaymentAmount`,
+`LandPriceHistory.previousTotalPrice` and `newTotalPrice`, and
+`KamnetCommission.amount`, all `BigInt`. `no-float-money.spec.ts` carries an
+**empty** quarantine list, pinned at zero in both directions. The Floats that
+remain are the ones the row said should remain: `latitude`, `longitude`,
+`sizeM2`, `pv`, `tpc`.
+
+**A56 - the suite exhausting its own login budget.** `PROUVE` in this file, and
+**a real gap was found and had already closed itself.** Measured at develop
+`e540c86`: `#242` made the emailed-link walks opt-in at 10:14 because they
+overran the limit; `#244` removed the cause at 11:27 and proved it; the opt-in
+was still in place and `RUN_EMAILED_LINKS` was set by no workflow, so those walks
+ran in CI never. `#246` removed the opt-in twenty minutes after the reading. The
+finding was correct when taken and is closed.
+
+**What that leaves worth keeping.** A remedy landing does not undo the mitigation
+somebody put in while it was broken. The two are separate commits and nothing
+links them, so the mitigation outlives its reason and looks deliberate. When a
+chantier's fix lands, the thing to check is not the fix but what was switched off
+waiting for it.
+
+### A4 - the one KAMNET service with no test, and it is the money one - `EN COURS`
+
+**Cost impact: None.** Fifteen unit tests.
+
+**What the row said and what is left of it.** It named five KAMNET business
+services with no unit test. Four now have them: agents, applications, leads and
+network carry eleven specs between them. `commissions.service.ts` had none, and
+a commission is what an agent is paid, so an untested write path there is the
+missing-commission defect in this catalogue waiting to happen again.
+
+**Closed here:** `commissions.service.spec.ts`, 15 tests. Five were watched
+failing, one mutation at a time, each naming its own assertion:
+
+| Mutation                                     | Result                                                      |
+| -------------------------------------------- | ----------------------------------------------------------- |
+| `BigInt(dto.amount)` becomes `dto.amount`    | 1 failed - stores the amount as integer money               |
+| the caller's `agentId` loses to the filter's | 1 failed - keeps the caller when a status filter is added   |
+| `paidAt` stamped on every transition         | 1 failed - stamps paidAt on PAID and on nothing else        |
+| `_sum.amount ?? 0n` becomes the raw null     | 1 failed - answers an empty ledger with integer zero        |
+| the transition guard disabled                | 3 failed - the three transition tests, which all rest on it |
+
+**Pending, and it is an arbitration rather than a test: nothing computes a
+commission.** `tpc` appears in exactly two places outside generated code, the DTO
+bounds and the `create` that stores it verbatim. So `amount` is whatever an
+administrator keys, `pv` and `tpc` are recorded beside it and read by nothing, and
+the two cannot disagree because nothing compares them. The schema says as much:
+"managed manually by administrators, with automated calculation planned". The row
+named "paliers de commission" as the rule to test and **the rule is not in the
+code**, so it is not something a test can be written against without inventing
+it. **Question for Visquis: what is the commission formula, and what is the base
+it applies to?** Until that is answered the spec pins the two factors as stored
+and says in as many words that it does not check them.
+
+### A5 - the four journeys in a browser - `EN COURS`
+
+**Cost impact: None here.** The walks that exist were added by develop.
+
+**The row is out of date and the direction is good.** It was written when
+`apps/web-e2e` held four specs and no journey walk at all. It now holds seven
+plus a session setup, and `#246` added `human-paths.spec.ts`: registration
+through email verification to sign-in, forgotten password through the emailed
+reset to sign-in, KBS enrolment with an identity document, and the back office
+taking a deposit from request to validation. `emailed-links.spec.ts` walks the
+invitation link and the email-change link.
+
+**Two of the row's four are still not walked in a browser:** the candidate's
+certification path, exam to certificate, and an agent creating a reservation.
+The API journeys cover both, which is why this is `EN COURS` and not urgent -
+the row's own argument, that the critical paths are held one layer down, still
+holds for exactly these two.
+
+### A21 - the Jest worker that does not exit - `EN COURS`
+
+**Cost impact: None.** Measurement only. No `forceExit` added, no fix fabricated.
+
+**The row says it no longer reproduces. It does.** Measured 27 September on the
+merge of develop:
+
+| Run configuration                         | Warnings                        |
+| ----------------------------------------- | ------------------------------- |
+| full api suite, default workers           | 2 of 4                          |
+| 8 resource-holding specs, default workers | 1 of 18                         |
+| the same 8, `--maxWorkers=1`              | 0 of 18                         |
+| the same 8, `--detectOpenHandles`         | 0 of 3, and **no handle named** |
+
+**A narrowing offered and withdrawn.** On the first hit in the 8-spec subset this
+was written up as "the handle is in these eight files, and it needs more than one
+worker". Twelve further pairs then gave 0 and 0 in both arms. So the subset rate
+is 1 in 18 against 2 in 4 for the full suite, which argues the opposite of the
+narrowing: whatever this is, those eight specs are probably **not** where it
+lives, or it depends on total load rather than on any one file. The serial arm
+proves nothing either at that sample size.
+
+**What is actually established, and all of it.** The warning is real and current,
+roughly half of full-suite runs. `--detectOpenHandles` reports **no open handle**
+at all - and that flag implies `--runInBand`, so it removes the parallelism the
+warning appears under. The one instrument that would name a handle cannot observe
+the condition. That is why this has been parked twice.
+
+**What not to do, because both are tempting.** Do not add `forceExit`: it hides
+the warning and proves nothing. Do not name a cause from one hit, which is what
+the withdrawn narrowing above did.
+
+**The pending proof is a cause.** The next measurement belongs on the full suite
+across worker counts, with enough runs for a rate rather than an observation - at
+this frequency, six runs of anything can show zero by chance.
+
+### A34 - every pull request conflicts on CLAUDE.md - `ARRETE`
+
+**Cost impact: None.**
+
+**Still true, and worse than the row records.** The row cites 2 003 lines. This
+branch merged develop on 27 September with CLAUDE.md at 3 097 lines on one side
+and 2 698 on the other, both having added a new catalogue section in the same
+place. It conflicted, as every pair of parallel pull requests does, for the
+reason the row gives: the file's own rule says to update it in every pull
+request, so every pull request appends to one file.
+
+**Stopped rather than open**, because it closes with `A39` and `A39` is blocked
+by a decision that is not ours. See that entry.
+
+### A35 - a green pull request never proves the image builds - `A DECIDER`
+
+**Cost impact: the whole argument.** Stated below, unresolved.
+
+**Read on the merged tree, not taken on report.** `.github/workflows/ci.yml`:
+`gate` needs `[changes, commitlint, quality, test-db]`. `build-api` and
+`build-web` both carry `if: github.event_name == 'push' && github.ref ==
+'refs/heads/develop'`. So a pull request is still never built into an image, and
+a change that breaks an image build is discoverable only after the merge. That is
+the row unchanged since 17 September.
+
+**The arbitration the row asks for is still open**, and this entry does not
+choose it. Two shapes:
+
+1. build both images on every pull request;
+2. build them only where an image can break - a change under `docker/`,
+   `prisma/`, `libs/common/`, or a lockfile or workspace change.
+
+**What is worth adding, because it makes the second cheap.** The `changes` job
+already computes a perimeter exactly this way: it has a `db` output that turns
+`test:db` on only for a change under `prisma/` or the database test directory.
+An `image` output beside it is the same five lines. So the second option is not
+new machinery, it is one more filter in a job that exists.
+
+**The cost note in the row needs re-reading before deciding.** It says GitHub
+Actions is unbilled because both repositories are public. `A39` then records, on
+22 September, a plan in "Downgrade pending" with the Actions quota exhausted.
+Whoever answers this should check which is true now, because the whole argument
+in the row rests on it.
+
+### A39 - open the repository to parallel work - `ARRETE`
+
+**Cost impact: None until it resumes.**
+
+**Blocked by Visquis, 22 September, and the block is not technical.** The package
+is built and delivered. What stopped it is that its premise - a private
+repository - is false while both repositories stay public to the end of the
+month. Nothing strategic enters the repository until then. Reminder set for
+1 October.
+
+**Recorded here because `A34` waits on it**, and because this file is the one a
+session loads. Until it resumes, a subject is taken by a draft pull request whose
+title starts with the identifier, and the owner is noted in the tracker.
+
+### A42 - Next 16.3 and sharp 0.35 - `A DECIDER`
+
+**Cost impact: None.**
+
+**The upgrade is done and was not done by this chantier.** `next` 16.3.6 and
+`sharp` 0.35.4 are in the lockfile; the versions landed on 23 September in `#176`
+and Claude Code refused to file a duplicate, which was right.
+
+**One question, and only one.** The row's proof asked for a page-by-page
+comparison before and after the upgrade. It cannot be taken: the earlier build no
+longer exists. So either today's pages become the reference, or the row closes
+without that proof and says so. **Visquis's call.** It is not a code question and
+nothing in the repository can answer it.
 
 ### I45 - the front door: two emailed links led nowhere - `PROUVE`
 
