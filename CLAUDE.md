@@ -1971,6 +1971,13 @@ zero in both directions, so a new entry has to be argued for rather than slip in
 envelope** (`TransformResponseInterceptor`), as an exact number, or as a string
 past `Number.MAX_SAFE_INTEGER` - never rounded, never a `JSON.stringify` crash.
 
+**A request log line never holds a URL as it came (D28).** The API's pino-http
+line and the web proxy's access line both pass the URL, the query and the
+referer through `libs/common/src/logging/url-allowlist.ts` before writing: an
+**allowlist** of query keys keeps its values, every other value is
+`[redacted]`. Add a key there only if an investigation needs its value and it
+can never carry a credential or a person's text.
+
 **A computed total is never a stored column.** `Payment` has no `totalReceived`.
 The total is a sum over `PaymentReceipt`, and a correction appends a signed line
 pointing at the line it corrects - it never edits one. Same reasoning as the

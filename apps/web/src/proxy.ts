@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
 import { authForProxy as auth } from './auth';
 import { routing } from './i18n/routing';
+import { accessLine, writeAccessLine } from './lib/access-log';
 import {
   AUTH_ROUTES,
   getDefaultRoute,
@@ -26,6 +27,10 @@ const intl = createMiddleware(routing);
 
 export default auth((req) => {
   const { nextUrl, auth: session } = req;
+
+  // D28: one access line per page request, URL masked by allowlist. First, so
+  // every branch below - redirect or not - is recorded.
+  writeAccessLine(accessLine(req, session?.user?.id));
 
   /**
    * A pathname with no locale is sent to the prefixed form before any
