@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { authSlot } from './support/auth-budget';
 
 /**
  * A28 - the one journey nothing covered: a login that SUCCEEDS, end to end.
@@ -153,6 +154,8 @@ test.describe('Authentication', () => {
     await expect(page).toHaveURL(/login/);
     await page.locator('input[type="email"]').fill('nobody@example.com');
     await page.locator('input[type="password"]').fill('wrong-password-123');
+    test.setTimeout(120_000);
+    await authSlot('login');
     await page.locator('button[type="submit"]').click();
     // Should stay on login page (no crash/redirect to 500)
     await expect(page).toHaveURL(/login/);
@@ -187,7 +190,9 @@ test.describe('Authentication', () => {
     const email = `${mailbox}@maildrop.cc`;
     const password = 'Test1234!';
 
+    test.setTimeout(180_000);
     // Mint through the API, the #79 way.
+    await authSlot('register');
     const registered = await request.post('/api/v1/auth', {
       data: {
         email,
@@ -201,6 +206,7 @@ test.describe('Authentication', () => {
     expect(registered.status(), 'registration should return 201').toBe(201);
 
     const token = await maildropToken(mailbox, /verify-email\?token=([0-9a-fA-F]+)/);
+    await authSlot('verify-email');
     const verified = await request.post('/api/v1/auth/verify-email', { data: { token } });
     expect(verified.status(), 'email verification should return 200').toBe(200);
 
@@ -208,6 +214,7 @@ test.describe('Authentication', () => {
     await page.goto('/login');
     await page.locator('input[type="email"]').fill(email);
     await page.locator('input[type="password"]').fill(password);
+    await authSlot('login');
     await page.getByRole('button', { name: /connecter|log ?in|sign ?in/i }).click();
 
     // Success is leaving /login for an authenticated page, with a session cookie set.
