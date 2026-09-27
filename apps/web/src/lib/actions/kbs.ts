@@ -142,23 +142,6 @@ export const enrollKbs = createAction(
   },
 );
 
-export const getIdUploadUrl = createAction(
-  async (data: { filename: string; contentType: string }) => {
-    return serverApi.post<PresignedUpload>('/users/me/id-document/upload-url', data);
-  },
-);
-
-export const submitIdDocuments = createAction(async (idDocumentUrls: string[]) => {
-  try {
-    return await serverApi.patch('/users/me/id-document', { idDocumentUrls });
-  } catch (error) {
-    throw new ServerActionError(
-      error instanceof Error ? error.message : 'ID document submission failed.',
-      400,
-    );
-  }
-});
-
 export const getCvUploadUrl = createAction(
   async (data: { filename: string; contentType: string }) => {
     return serverApi.post<PresignedUpload>('/kbs/cv/upload-url', data);

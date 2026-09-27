@@ -12,19 +12,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Spinner } from '@/components/ui/spinner';
 import { useToastStore } from '@/store/toast.store';
-import { enrollKbs, getCvUploadUrl, getIdUploadUrl, submitIdDocuments } from '@/lib/actions/kbs';
+import { enrollKbs, getCvUploadUrl } from '@/lib/actions/kbs';
+import { getIdUploadUrl, submitIdDocuments } from '@/lib/actions/identity';
+import { uploadToS3 } from '@/lib/storage/upload-to-s3';
 import { Alert } from '../ui/alert';
 
 type UploadedFile = { name: string; fileUrl: string };
-
-const uploadToS3 = async (uploadUrl: string, file: File): Promise<void> => {
-  const res = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type },
-    body: file,
-  });
-  if (!res.ok) throw new Error(`Upload failed (${res.status})`);
-};
 
 export const KbsEnrollForm = () => {
   const t = useTranslations('app.kbs.enroll');

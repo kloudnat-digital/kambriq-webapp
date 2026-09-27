@@ -164,27 +164,20 @@ test('I46 - the back office takes a deposit from request to validation through i
       timeout: 30_000,
     });
 
-    // The identity document: through the API - a land buyer has no page to send
-    // one (register, I47). The review of it is walked below.
-    await authSlot('login');
-    const login = await request.post('/api/v1/auth/login', { data: { email, password } });
-    const client = ((await login.json()) as { data: { tokens: { accessToken: string } } }).data
-      .tokens.accessToken;
-    const url = (await (
-      await request.post('/api/v1/users/me/id-document/upload-url', {
-        headers: auth(client),
-        data: { filename: 'cni.txt', contentType: 'text/plain' },
-      })
-    ).json()) as { data: { uploadUrl: string; fileUrl: string } };
-    await fetch(url.data.uploadUrl, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'text/plain' },
-      body: 'id',
+    const payments = (await (
+      await request.get('/api/v1/lands/admin/payments?limit=100', { headers: auth(admin) })
+    ).json()) as { data: Array<{ id: string; reservationId: string; amountDue: string }> };
+    const payment = payments.data.find((p) => p.reservationId === reservationId);
+    if (!payment) throw new Error(`no payment for reservation ${reservationId}`);
+
+    // I47: the identity document, sent from the payment page where it is asked for.
+    await clientPage.goto(`/fr/mylands/payment/${payment.id}`);
+    await clientPage.getByTestId('identity-file').setInputFiles({
+      name: 'cni.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4 identity'),
     });
-    await request.patch('/api/v1/users/me/id-document', {
-      headers: auth(client),
-      data: { idDocumentUrls: [url.data.fileUrl] },
-    });
+    await expect(clientPage.getByTestId('identity-sent')).toBeVisible({ timeout: 30_000 });
 
     // The back office, in the administrator's session for the run.
     const office = await (await browser.newContext({ storageState: ADMIN_STATE })).newPage();
@@ -193,12 +186,6 @@ test('I46 - the back office takes a deposit from request to validation through i
     await expect(office.getByRole('button', { name: "Vérifier l'identité" })).toBeHidden({
       timeout: 30_000,
     });
-
-    const payments = (await (
-      await request.get('/api/v1/lands/admin/payments?limit=100', { headers: auth(admin) })
-    ).json()) as { data: Array<{ id: string; reservationId: string; amountDue: string }> };
-    const payment = payments.data.find((p) => p.reservationId === reservationId);
-    if (!payment) throw new Error(`no payment for reservation ${reservationId}`);
 
     await office.goto(`/fr/admin/payments/${payment.id}`);
     await office.getByLabel('Canal retenu').selectOption('VIR');

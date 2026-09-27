@@ -2195,7 +2195,7 @@
     "chosenOther": "We chose {channel} rather than your preference. If that does not suit you, write to us: we can agree on something else.",
     "communicated": "Sent on {date}. Keep your receipt: you will be asked for it.",
     "waitingTitle": "Your payment details",
-    "waitingIdentity": "We first need to verify your identity document. Bank details are only given to someone we have recognised. Upload your document from your profile if you have not already; we will come back to you as soon as it is verified.",
+    "waitingIdentity": "We first need to verify your identity document: bank details are only given to someone we have recognised. Upload it below; we will come back to you as soon as it is verified.",
     "waitingPreparing": "Your request has arrived. We are preparing the details of the payment method that suits you, and they will appear here. You will receive an email as soon as they are available.",
     "fields": {
       "bankName": "Bank",
@@ -2237,6 +2237,13 @@
       "preferenceNotSaved": "The preference was not saved.",
       "balanceTitle": "Pay the balance",
       "balanceDiffers": "The balance announced at reservation was"
+    },
+    "identity": {
+      "help": "National identity card or passport, as a photo or a PDF.",
+      "button": "Upload my identity document",
+      "sent": "Your identity document has been received. We are checking it, then we will send you the payment details.",
+      "rejected": "Your identity document could not be accepted. Please upload a new one, legible and still valid.",
+      "error": "The upload failed. Please try again."
     }
   }
 }

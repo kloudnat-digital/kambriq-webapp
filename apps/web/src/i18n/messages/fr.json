@@ -2195,7 +2195,7 @@
     "chosenOther": "Nous avons retenu {channel} plutôt que votre souhait. Si cela ne vous convient pas, écrivez-nous : nous pouvons en convenir autrement.",
     "communicated": "Communiquées le {date}. Conservez votre reçu : il vous sera demandé.",
     "waitingTitle": "Vos coordonnées de paiement",
-    "waitingIdentity": "Nous devons d'abord vérifier votre pièce d'identité. Les coordonnées bancaires ne se donnent qu'à quelqu'un que nous avons reconnu. Déposez votre pièce depuis votre profil si ce n'est pas déjà fait ; nous revenons vers vous dès qu'elle est vérifiée.",
+    "waitingIdentity": "Nous devons d'abord vérifier votre pièce d'identité : les coordonnées bancaires ne se donnent qu'à quelqu'un que nous avons reconnu. Déposez-la ci-dessous ; nous revenons vers vous dès qu'elle est vérifiée.",
     "waitingPreparing": "Votre demande est bien arrivée. Nous préparons les coordonnées du moyen de paiement qui vous convient et elles apparaîtront ici. Vous recevrez un email dès qu'elles sont disponibles.",
     "fields": {
       "bankName": "Banque",
@@ -2237,6 +2237,13 @@
       "preferenceNotSaved": "La préférence n'a pas été enregistrée.",
       "balanceTitle": "Régler le solde",
       "balanceDiffers": "Le solde annoncé à la réservation était de"
+    },
+    "identity": {
+      "help": "Carte nationale d'identité ou passeport, en photo ou en PDF.",
+      "button": "Déposer ma pièce d'identité",
+      "sent": "Votre pièce d'identité est reçue. Nous la vérifions, puis nous vous envoyons les coordonnées de paiement.",
+      "rejected": "Votre pièce d'identité n'a pas pu être acceptée. Déposez-en une nouvelle, lisible et en cours de validité.",
+      "error": "L'envoi a échoué. Réessayez."
     }
   }
 }
