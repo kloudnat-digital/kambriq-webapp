@@ -580,11 +580,27 @@ describe('journey 4 - an agent reserves a parcel and the client reaches the port
      * against the database.
      */
     const reservationId = reserved.json<{ data: { id: string } }>().data.id;
+
+    // G21: the client has asked for the deposit, so a live payment exists when
+    // the reservation is cancelled - and must not outlive it.
+    const asked = await call('POST', `/lands/client/purchases/${reservationId}/payment`, {
+      token: client,
+    });
+    expect(asked.status).toBe(201);
+    const paymentId = asked.json<{ data: { id: string } }>().data.id;
+
     const cancelled = await call('POST', `/lands/admin/reservations/${reservationId}/cancel`, {
       token: admin,
       body: { reason: 'automated journey cleanup - returning the fixture parcel' },
     });
     expect(cancelled.status).toBe(200);
+
+    const payment = await call('GET', `/lands/admin/payments/${paymentId}`, { token: admin });
+    const annulled = payment.json<{
+      data: { state: string; transitions: Array<{ toState: string; reason: string }> };
+    }>().data;
+    expect(annulled.state).toBe('ANNULE');
+    expect(annulled.transitions.at(-1)?.reason).toContain('returning the fixture parcel');
 
     const after = await call('GET', '/lands?limit=50', { token: agent });
     const parcel = after

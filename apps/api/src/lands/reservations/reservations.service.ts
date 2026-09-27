@@ -25,6 +25,7 @@ import {
   PaymentPurpose,
   PaymentState,
   sumReceipts,
+  TERMINAL_STATES,
   QUEUES,
   SaleCompletedJobPayload,
   StorageService,
@@ -32,6 +33,7 @@ import {
   maskEmail,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
+import { PaymentsService } from '../payments/payments.service';
 
 /** * *
  * 1. CREATE: Agent reserves a land for a client
@@ -65,6 +67,7 @@ export class LandReservationsService {
     private readonly storageService: StorageService,
     private readonly i18n: I18nService,
     @InjectQueue(QUEUES.KAMNET) private readonly kamnetQueue: Queue<SaleCompletedJobPayload>,
+    private readonly payments: PaymentsService,
   ) {}
 
   // ----- Create Reservation ----- //
@@ -450,6 +453,28 @@ export class LandReservationsService {
       throw new ForbiddenException(this.t('lands.reservation.alreadyCompleted'));
     }
 
+    /**
+     * G21 (Visquis, 27 September): cancelling annuls every live payment, with a
+     * written reason - a client who withdraws is never left behind a payment
+     * that can still be validated. Through `PaymentsService.transition`, the one
+     * write path for a payment's state: a transition with an actor and a reason,
+     * the ledger untouched, nothing deleted. A validated payment is not live and
+     * stays VALIDE - money that arrived is not annulled; a refund is its own act.
+     *
+     * Before the reservation is cancelled, so a refusal leaves both as they were
+     * rather than a cancelled reservation with a payment still open.
+     */
+    const live = await this.prisma.payment.findMany({
+      where: { reservationId, state: { notIn: [...TERMINAL_STATES] } },
+      select: { id: true },
+    });
+    for (const payment of live) {
+      await this.payments.transition(payment.id, PaymentState.ANNULE, {
+        actorUserId: userId,
+        reason: `Reservation ${reservationId} cancelled: ${dto.reason}`,
+      });
+    }
+
     // Cancel reservation + make land available again
     await this.prisma.$transaction([
       this.prisma.landReservation.update({
@@ -487,6 +512,7 @@ export class LandReservationsService {
       landId: reservation.landId,
       reason: dto.reason,
       cancelledBy: userId,
+      paymentsAnnulled: live.length,
     });
 
     return { message: this.t('lands.reservation.cancelled') };

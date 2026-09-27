@@ -30,6 +30,7 @@ const build = (rows: Row[], over: Record<string, unknown> = {}) => {
     mockStorageService() as never,
     mockI18n() as never,
     mockQueue() as never,
+    {} as never,
   );
   const reservation = {
     id: RESERVATION,
@@ -122,6 +123,7 @@ describe('G20 - what the client is told they owe', () => {
       mockStorageService() as never,
       mockI18n() as never,
       mockQueue() as never,
+      {} as never,
     );
     prisma.landReservation.findUnique.mockResolvedValue({
       id: RESERVATION,
