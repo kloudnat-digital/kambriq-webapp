@@ -14,7 +14,7 @@
  *   SANITY_PROJECT_ID=xxxxxxxx \
  *   SANITY_MANAGE_TOKEN=sk... \
  *   SANITY_WEBHOOK_SECRET=... \
- *   KAMBRIQ_API_URL=https://dev.api.kambriq.com \
+ *   KAMBRIQ_API_URL=https://dev.kambriq.com \
  *     npx tsx scripts/sanity/upsert-policy-webhook.ts [--check]
  *
  * The token is a project token with Administrator rights, from the project's

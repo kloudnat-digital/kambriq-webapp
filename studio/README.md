@@ -36,7 +36,7 @@ runs `sanity deploy` from it, at which point editors get a Studio with none of
 these documents in it. `sanity projects create` creates the project and nothing
 else.
 
-`sanity init` writes the project id it created. Put it in `.env`, and in the
+`sanity projects create` prints the project id it created. Put it in `.env`, and in the
 repository's own environment as `NEXT_PUBLIC_SANITY_PROJECT_ID`, with
 `NEXT_PUBLIC_SANITY_DATASET` beside it. The web build reads both: the project
 scopes `https://cdn.sanity.io/images/<projectId>/` in `img-src` and in the image
@@ -50,8 +50,13 @@ guessing `production`.
 ```sh
 pnpm validate            # sanity schema validate
 pnpm dev                 # http://localhost:3333
-pnpm deploy              # https://<SANITY_STUDIO_HOST>.sanity.studio
+pnpm run deploy          # https://<SANITY_STUDIO_HOST>.sanity.studio
 ```
+
+**`run` is required for deploy.** `pnpm deploy` is a pnpm builtin - it deploys a
+workspace package to a directory - so it shadows the script and fails with
+`ERR_PNPM_NOTHING_TO_DEPLOY`. `dev`, `build` and `validate` are not builtins and
+run the script either way.
 
 **`pnpm build` does not validate the schema.** It bundles one. A `divider`
 object with no fields built clean, exited 0, and produced a Studio that showed
@@ -69,7 +74,7 @@ Deliveries are what fill the policy archive. Do not create the webhook by hand:
 ```sh
 cd ..
 SANITY_PROJECT_ID=... SANITY_MANAGE_TOKEN=... SANITY_WEBHOOK_SECRET=... \
-  KAMBRIQ_API_URL=https://dev.api.kambriq.com \
+  KAMBRIQ_API_URL=https://dev.kambriq.com \
   npx tsx scripts/sanity/upsert-policy-webhook.ts
 ```
 
@@ -77,11 +82,22 @@ The filter, the projection and the name come from
 `libs/common/src/cms/legal-policy.ts`, which is also what the API's DTO is built
 from. `--check` reports what is configured without writing anything.
 
-## Loading the initial content
+`KAMBRIQ_API_URL` is the site's own host. The API is served from it under
+`/api/v1`, which `POLICY_WEBHOOK_PATH` already carries, so the value is the bare
+origin and nothing else.
 
-The site's pages used to be mdx under `apps/web/src/content`. Wave 7 converted
-them and deleted the markdown; the conversion is committed as ndjson and is
-loaded once, into a dataset that does not yet hold these documents:
+## The content is written here, not imported
+
+The sixteen documents are written in the Studio. A new project's dataset is
+empty, so the four legal pages and the four editorial pages answer **404 until
+somebody writes them** - the fail-closed default, not a fault.
+
+`scripts/sanity/content/initial-content.ndjson` holds the sixteen documents as
+they were converted out of the old mdx, and is kept for **local development
+only**. No environment loads it. `initial-content.spec.ts` guards it against the
+routes on disk.
+
+To fill a local dataset with it:
 
 ```sh
 cd studio
@@ -89,16 +105,19 @@ npx sanity dataset import ../scripts/sanity/content/initial-content.ndjson \
   --dataset production
 ```
 
-From `studio/`, so the local `sanity` is used rather than one npx downloads, and
-the path resolves. `--dataset` rather than a positional argument, which the CLI
-deprecates.
+From `studio/`, so the local `sanity` is used rather than one npx downloads.
+**Never against a dataset somebody is editing**: an import overwrites, and after
+the first write the dataset is the content.
 
-Sixteen documents, and the import creates them published - so the policy
-webhook fires and the archive gets its first rows, which is how `PolicySnapshot`
-stops being empty.
+## The archive fills itself
 
-**Do not re-import over live documents.** After the first load the dataset is
-the content and that file is only the state it started from.
+The first time a policy is published here, the webhook writes its row into
+`PolicySnapshot`. Nothing has to be backfilled.
+
+Consent binds to `legal-privacy` **per language**, so the two rows that matter
+are the French and the English privacy policy. Until each exists, a consent in
+that language records no version: the API logs at `error` and the daily digest
+counts it. Check both before the contact form is live in prd.
 
 If a load went in under the old dotted ids, remove those documents first - they
 are unreachable by the structure and by delivery, and nothing about them looks

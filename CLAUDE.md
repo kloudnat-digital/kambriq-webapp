@@ -68,6 +68,42 @@ session loads before it knows enough to doubt it.
 So: a chantier that teaches something new adds it here, in the PR that closes the
 chantier. Not afterwards, not in a docs pass, not "once it settles down".
 
+### The README is updated in the same PR as the change that dates it
+
+`README.md` is the only document a newcomer reads before they can run anything,
+and it is the one nobody re-reads afterwards. That is exactly the condition under
+which a document rots without anybody noticing.
+
+**So a technical change to the codebase updates the README in the same PR, when
+the README would otherwise mislead.** The test is not "is this change
+interesting" but **"would a reader following this file now be wrong"**. These are
+the shapes that make it wrong:
+
+- a script added, renamed or removed, or one whose description no longer matches
+  what it runs;
+- an environment variable added, renamed, or made required, and anything that
+  changes what happens when it is absent;
+- a new application, library, Nx project or top-level directory, and any move
+  that changes where something lives;
+- a new test layer, or a change to which job runs an existing one;
+- a route whose path changed, where the README names that path;
+- a version bump in a tool a reader has to install, above all Node and pnpm;
+- a document that moved or was deleted, where the README links to it.
+
+`None` is a valid answer and does not have to be written down: most commits do
+not date the README. What is not acceptable is a change of the shapes above
+shipped with the README left describing the old behaviour.
+
+It was left unmaintained for 98 commits, and what that cost is the measure of the
+rule. Three of its four web commands did not exist, the Node and pnpm
+prerequisites were two majors behind against an `engine-strict=true` install so
+following them produced a refused install, six of the sixteen documented routes
+were gone, the project structure omitted `apps/web` entirely, and it named
+`apps/web/src/content/methode/fr.mdx` as the authoritative source for the label
+definitions - a file deleted when the content moved to Sanity. Every one of those
+is a reader sent somewhere that does not exist, by the document whose only job is
+telling them where things are.
+
 ---
 
 ## 3. Method
@@ -1965,6 +2001,65 @@ containing pipes, which is the one input that would have been silently mangled -
 and an html table has no Portable Text equivalent at all, so it is transcribed
 where a reviewer can see it and every cell checked against the source.
 
+### An event is spent whether or not anybody was listening
+
+From wave 7, and it is the entry that step's own README now opens with.
+
+The sixteen CMS documents were imported into Sanity **published**, which is
+correct - the archive is fed by publish deliveries, and an import that created
+drafts would have fed it nothing. Measured the same evening, three layers down
+the chain did not exist: `POST /api/v1/cms/webhooks/sanity` answered **404** on
+dev because the branch is unmerged, the `PolicySnapshot` migration is not on
+develop so the table is not there either, and the webhook had never been created
+because `SANITY_WEBHOOK_SECRET` is in no task definition.
+
+So the only publish those documents will ever have reached nothing, and
+**nothing reports it**: the documents are right, all sixteen answer the delivery
+query anonymously, ten pages render 200 with their own content, and the archive
+is a table in another system that nobody is looking at.
+
+**It is the SNS topic with no subscription, one property further on.** `D14`
+built a topic that published successfully to nobody, and the rule taken from it
+was that a notification is proven by the message that arrived. That publish
+could be repeated. This one cannot: "do not re-import over live documents" is
+the right rule and it is what closes the door, because after the first load the
+dataset is the content and the file is only the state it started from.
+
+**The rule: when a mechanism is fed by events rather than by state, provision
+the consumer before the producer** - and when the producing action is one-shot,
+that ordering is the only chance there is. Ask what is listening at the moment
+the event fires, not what will be listening later. This is the ordering question
+[from the bootstrap step](#failing-loudly-and-failing-early-are-two-different-properties)
+asked about a subscriber instead of a dependency: _what does this depend on_ is
+not the same question as _what is depending on this having happened_.
+
+**And the recovery is a second CALLER, never a second write path.** What fills
+the archive now is a replay: each published policy POSTed to the real route with
+a valid signature, through the same guard, the same renderer and the same unique
+index. A script that wrote the rows itself would be the `downPaymentConfirmed`
+defect built deliberately.
+
+### A URL in a runbook resolves or it does not, and nothing checks it
+
+Two files told the operator to point `KAMBRIQ_API_URL` at a host with no DNS
+record. Sanity accepts such a webhook, reports it as configured, and delivers
+nothing, so the archive stays empty while every step reports success. Found by
+reading the file.
+
+`kambriq-hosts-are-real.spec.ts` compares every `kambriq.com` host in **URL
+position** against the two the zone answers for. It is **offline** on purpose: a
+lookup that CI cannot make is indistinguishable from a name that does not exist.
+It matches `://` rather than the bare string, or it would forbid any sentence
+naming a host in order to rule it out.
+
+**A guard's own claims are assertions like any other.** Three mutations proved
+it, and two found holes in it first: the character class never matched an
+asterisk, so the wildcard the docstring claimed to refuse went through, and the
+pattern required a label before `kambriq.com`, so it was blind to the apex - the
+one host that will matter in production. Its first three runs also flagged, in
+turn, its own docstring, the prose it depended on elsewhere, and its own test
+fixture.
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope
@@ -2955,6 +3050,16 @@ carried `assert len(out) == len(lines) - 1` and failed loudly the one time it
 matched nothing. Then read which tests failed and how many: the proof here is
 `1 failed, 5 passed`, one assertion falling on its own, which is also what
 separates it from a mutation that breaks everything.
+
+**And confirm it by content, not by a proxy for content.** Proving the host
+guard below, three wrong hostnames were substituted into a runbook and the
+confirmation was `len(src) != before`. `prd.kambriq.com` and `dev.kambriq.com`
+are the same length, so the check called an applied substitution a failure,
+refused to write the file, and the green run that followed was a run of the
+unmutated file. A length is a proxy; `new in src and old not in src` is the
+edit. The first two mutations were confirmed correctly and only the third
+exposed it - which is the usual way a proxy fails, on the one case it cannot
+see.
 
 ### An append-only table makes every test fixture permanent
 
