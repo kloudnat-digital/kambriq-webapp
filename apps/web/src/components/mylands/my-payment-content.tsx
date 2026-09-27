@@ -3,6 +3,7 @@ import { formatHumanDate } from '@kambriq/common/payments/payment-format';
 import { useLocale, useTranslations } from 'next-intl';
 import { REFERENCE_CHANNEL_SEPARATOR } from '@kambriq/common/payments/payment-channels';
 import type { MyPayment } from '@/types/payments';
+import { IdentityDocumentUpload } from '@/components/identity/identity-document-upload';
 
 /**
  * G14 - where the coordinates actually live.
@@ -109,6 +110,9 @@ export const MyPaymentContent = ({ payment }: { payment: MyPayment }) => {
           <p className="mt-1 text-sm text-gray-600">
             {payment.waitingReason === 'identity' ? t('waitingIdentity') : t('waitingPreparing')}
           </p>
+          {payment.waitingReason === 'identity' && (
+            <IdentityDocumentUpload status={payment.identityStatus} />
+          )}
         </div>
       )}
     </div>

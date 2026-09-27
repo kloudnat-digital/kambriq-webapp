@@ -1,5 +1,9 @@
 jest.mock('next-intl', () => require('@/test-utils/next-intl-mock'));
 jest.mock('@/i18n/navigation', () => require('@/test-utils/navigation-mock'));
+jest.mock('@/lib/actions/identity', () => ({
+  getIdUploadUrl: jest.fn(),
+  submitIdDocuments: jest.fn(),
+}));
 jest.mock('@/lib/actions/lands', () => ({
   requestPaymentAction: jest.fn(),
   setPreferredChannelAction: jest.fn(),
