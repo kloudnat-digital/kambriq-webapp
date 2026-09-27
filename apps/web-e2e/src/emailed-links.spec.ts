@@ -178,7 +178,7 @@ test('I45 - a signed-out person confirms an email change from the link, through 
 
   // Every session was revoked; the button signs out and goes to the login page,
   // where the new address works and the old one does not.
-  await page.getByRole('button').click();
+  await page.getByRole('button', { name: /Accéder à la connexion|Go to login/ }).click();
   await page.waitForURL(/\/login/, { timeout: 20_000 });
   await page.locator('input[type="email"]').fill(`${after}@maildrop.cc`);
   await page.locator('input[type="password"]').fill(password);
@@ -188,5 +188,7 @@ test('I45 - a signed-out person confirms an email change from the link, through 
   const old = await request.post('/api/v1/auth/login', {
     data: { email: `${before}@maildrop.cc`, password },
   });
-  expect(old.status()).toBe(401);
+  // The API answers bad credentials with 400 "Email ou mot de passe invalide".
+  expect(old.status()).toBe(400);
+  expect(await old.text()).toMatch(/invalide|invalid/i);
 });
