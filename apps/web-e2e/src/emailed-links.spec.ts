@@ -1,4 +1,6 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
+import { authSlot } from './support/auth-budget';
+import { apiToken } from './support/sessions';
 
 /**
  * I45 - the front door, walked the way a person walks it: from the email.
@@ -72,7 +74,9 @@ const emailedLink = async (
   );
 };
 
-const apiLogin = async (request: APIRequestContext, email: string, password = 'Test1234!') => {
+/** A new person's own sign-in - the one kind that cannot be reused (A56: in budget). */
+const apiLogin = async (request: APIRequestContext, email: string, password: string) => {
+  await authSlot('login');
   const res = await request.post('/api/v1/auth/login', { data: { email, password } });
   expect(res.status()).toBe(200);
   return ((await res.json()) as { data: { tokens: { accessToken: string } } }).data.tokens
@@ -89,7 +93,7 @@ test('I45 - a new client sets a password from the invitation email and signs in'
   const email = `${mailbox}@maildrop.cc`;
   const password = `Inv-${stamp.slice(-6)}-Aa1!`;
 
-  const agent = await apiLogin(request, 'eric.mbou@kambriq.com');
+  const agent = apiToken('fieldAgent');
   const lands = (await (
     await request.get('/api/v1/lands?limit=50', { headers: { authorization: `Bearer ${agent}` } })
   ).json()) as { data: Array<{ id: string; status: string }> };
@@ -117,16 +121,18 @@ test('I45 - a new client sets a password from the invitation email and signs in'
 
     await page.locator('input#password').fill(password);
     await page.locator('input#confirmPassword').fill(password);
+    await authSlot('reset-password');
     await page.locator('button[type="submit"]').click();
     await page.waitForURL(/\/login/, { timeout: 20_000 });
 
     await page.locator('input[type="email"]').fill(email);
     await page.locator('input[type="password"]').fill(password);
+    await authSlot('login');
     await page.getByRole('button', { name: /connecter|log ?in|sign ?in/i }).click();
     await page.waitForURL((url) => !url.toString().includes('/login'), { timeout: 20_000 });
     await expect(page).not.toHaveURL(/login/);
   } finally {
-    const admin = await apiLogin(request, 'admin@kambriq.com');
+    const admin = apiToken('admin');
     await request.post(`/api/v1/lands/admin/reservations/${reservationId}/cancel`, {
       headers: { authorization: `Bearer ${admin}` },
       data: { reason: 'automated invitation-link test - returning the fixture parcel' },
@@ -145,6 +151,7 @@ test('I45 - a signed-out person confirms an email change from the link, through 
   const password = `Chg-${stamp.slice(-6)}-Aa1!`;
 
   // An ordinary verified account, minted through the API (the #79 way).
+  await authSlot('register');
   const registered = await request.post('/api/v1/auth', {
     data: {
       email: `${before}@maildrop.cc`,
@@ -161,6 +168,7 @@ test('I45 - a signed-out person confirms an email change from the link, through 
     /Vérifiez|Verify|Confirmez votre adresse|Confirm your email/,
   );
   const token = new URL(verifyLink).searchParams.get('token');
+  await authSlot('verify-email');
   expect((await request.post('/api/v1/auth/verify-email', { data: { token } })).status()).toBe(200);
 
   const session = await apiLogin(request, `${before}@maildrop.cc`, password);
@@ -180,6 +188,7 @@ test('I45 - a signed-out person confirms an email change from the link, through 
 
   await page.locator('input[type="email"]').fill(`${before}@maildrop.cc`);
   await page.locator('input[type="password"]').fill(password);
+  await authSlot('login');
   await page.getByRole('button', { name: /connecter|log ?in|sign ?in/i }).click();
 
   // Back on the confirmation page, with its token, and confirmed.
@@ -194,9 +203,11 @@ test('I45 - a signed-out person confirms an email change from the link, through 
   await page.waitForURL(/\/login/, { timeout: 20_000 });
   await page.locator('input[type="email"]').fill(`${after}@maildrop.cc`);
   await page.locator('input[type="password"]').fill(password);
+  await authSlot('login');
   await page.getByRole('button', { name: /connecter|log ?in|sign ?in/i }).click();
   await page.waitForURL((url) => !url.toString().includes('/login'), { timeout: 20_000 });
 
+  await authSlot('login');
   const old = await request.post('/api/v1/auth/login', {
     data: { email: `${before}@maildrop.cc`, password },
   });

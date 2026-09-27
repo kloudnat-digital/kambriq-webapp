@@ -61,11 +61,18 @@ export default defineConfig({
 
   ...(webServer ? { webServer } : {}),
 
+  // A56: every run starts from an empty auth budget window.
+  globalSetup: require.resolve('./src/support/global-setup'),
+
   projects: [
+    // A56: one sign-in per role for the whole run, reused by every project.
+    { name: 'sessions', testMatch: /sessions\.setup\.ts/ },
+
     // Chromium (always on, local + CI)
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      dependencies: ['sessions'],
     },
 
     // Firefox and WebKit run in CI only (set CI=true to enable).
@@ -79,8 +86,12 @@ export default defineConfig({
     // Safari is the default browser on the iPhone the diaspora uses.
     ...(process.env['CI']
       ? [
-          { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-          { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+          {
+            name: 'firefox',
+            use: { ...devices['Desktop Firefox'] },
+            dependencies: ['sessions'],
+          },
+          { name: 'webkit', use: { ...devices['Desktop Safari'] }, dependencies: ['sessions'] },
         ]
       : []),
   ],
