@@ -192,7 +192,8 @@ listed here first.
 | `A33`                          | `PROUVE`            | cause named and fixed: the sign-in fields were controlled inputs, and text typed before hydration was wiped by it - WebKit on the runner was the engine slow enough to hydrate late. Fields uncontrolled, every password form POSTs, WebKit back in the matrix. Proven: develop's E2E run on `8637543`, WebKit included, 186 passed, none flaky                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `J12`                          | `PROUVE`            | the five sign-in and account forms refused in English on the French pages; their schemas now carry keys under `auth.validation`, fr and en (#219). Proven on dev (`sha-a19d680`): an empty sign-in shows "Saisissez une adresse email valide." and "Le mot de passe est requis." on `/fr/login`, the English ones on `/en/login`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `A55`                          | `PROUVE`            | did real passwords reach the logs before #214? No server-side record on dev can hold one: no ALB access logs, no CloudFront or WAF, and the web container logs no request URL (the API's request log does, and holds no password or token in any URL: corrected under D28) - my own password-in-URL requests of 26 September are absent (the control). The referer carried the origin only. The one place such a URL can remain is the visitor's own browser history. Rotation stays Visquis's call                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `D28`                          | `EN COURS`          | no HTTP access log answers who called what, when, from where. **Premise corrected:** the API already logs every request (path, query, timing; 7 days), but not the visitor's address or account; the web and the load balancer log nothing. Plan written with masking at write time and retention proposed; nothing switched on. Pending Visquis: the plan and the retention                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `D28`                          | `EN COURS`          | who called what, when, from where. **Decided by Visquis, 27 September:** dev = application logging with an allowlist; production = a WAF (`C17`); retention 7 days dev, 30 days production, stated in the privacy policy. **Dev built:** one allowlist (`libs/common/src/logging/url-allowlist.ts`) applied before any write; the API line gains the visitor's address and the account id; the web proxy writes one JSON line per page request. Pending: the A55-style control on dev                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `C17`                          | `DECIDE, A FAIRE`   | before production opens: a WAF on the load balancer, logging with the query string redacted at write time, 30-day retention stated in the privacy policy (Visquis, 27 September; D28's production half). Production is his                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `A32`                          | `EN COURS`          | Gate reads develop's HEAD sha, then its run (`scripts/ci/develop-gate.sh`): green passes; red, never started or not yet verified refuses; label `merge-on-red-develop` plus re-run releases. v1 read a list and passed #134 on a stale run; 12 stub cases run in every CI Gate. Cost: each develop push blocks merges ~20 min                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `A36`                          | `EN COURS`          | develop red on `70a5e07`: both journey suites run in one `runInBand` process from one runner address and `getTracker` keys on the last X-Forwarded-For entry, so they legitimately share one bucket of 100 requests per 60000 ms - the gap between them decides it (9.33 s PASSED on `1cbde1a`; 0.36 s and 0.35 s FAILED on `70a5e07`). `call()` now waits one full window and retries, bounded at 3 attempts, one log line per wait, still throwing today's sentence after them. The comment claiming CI "never sees it" is replaced by the measurements. `getTracker` had no test and now has 11, watched failing on `parts[0]`. The spec runs in `Quality` via a new `test` target, because `api-e2e` had none and the file would otherwise execute only in the job it repairs. Pending: a green `Delivery journeys (dev)` on develop. Cost: up to 120 s added to a journeys job that is actually throttled, none otherwise |
 | `I19`                          | `PROUVE`            | no user without a role - fixed in code (#132). On dev, 26 September: the three missing role rows (`STAFF_VERIFY`, `STAFF_VALUATION`, `PARTNER_GEO`) added from the seed's own definitions, and the two role-less throwaways of 4 September given `CLIENT`, what registration gives. 11 role rows, 0 users without a role; no reservation touched                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -7966,6 +7967,18 @@ agents. The control above (test requests with a password in the URL appear
 nowhere) is what settled it. Not to be reopened on the same facts. The hole it
 revealed, no HTTP access log at all, is its own subject: D28.
 
+### C17 - a WAF before production opens - `DECIDE, A FAIRE`
+
+**Cost impact: about USD 5 a month for the web ACL plus USD 0.60 per million
+requests and the log ingestion - production's volume, not measured yet.**
+
+Decided by Visquis on 27 September as the production half of D28: a WAF on the
+production load balancer, logging with the **query string redacted by AWS at
+write time** (`RedactedFields`), retention **30 days**, stated in the privacy
+policy. A must-do before opening. Production is his; nothing here is to be
+applied from this register. The dev half - application logging with an
+allowlist - is D28.
+
 ### D28 - no HTTP access log answers who, what, when, from where - `EN COURS`
 
 **Cost impact: none today; the options below cost from USD 0.2 to about 6 a
@@ -8048,6 +8061,43 @@ switching logs on to widening and masking one that exists, plus a web line.
 The standing authorization says to stop on a false premise, and the retention
 is to be decided before the switch, not by the one who switches. **Pending
 Visquis:** the option (application side proposed), and the retention.
+
+**Decided, 27 September (Visquis).** D28 splits in two. **Dev:** application
+logging with an **allowlist** of query keys applied before anything is written -
+never a denylist. **Production:** a WAF, recorded as `C17`, a must-do before
+opening. **Retention:** 7 days on dev, 30 days in production, and the 30 days go
+into the privacy policy - an obligation, not an option.
+
+**Built on dev (27 September):**
+
+- **One allowlist, one module:** `libs/common/src/logging/url-allowlist.ts`,
+  no dependency, imported by the API and by the web proxy. `page`, `limit`,
+  `depth`, `sort`, `order`, `status` keep their value; every other value is
+  written `[redacted]`, and so is any fragment. `q` is not in it: a search box
+  receives whatever a person types, an address included.
+- **API:** `core/logging/access-log.ts` - a pino-http `req` serializer masks the
+  URL, the parsed query and the `referer` (a browser-side call would send the
+  page's full URL, token included; none does today - 0 referers in 230 032
+  lines), and `customProps` adds `visitorIp` (the address the web vouches for
+  under A45, else the load balancer's hop) and `userId`.
+- **Web:** the proxy writes one JSON line per page request - `kind: "access"`,
+  time, method, masked URL, `visitorIp` (last `x-forwarded-for` hop), `userId`,
+  user agent - before any branch, so redirects are recorded too. No status: the
+  proxy runs before the page. Assets are not logged: the proxy's matcher sees
+  only the URLs the site serves.
+- **Retention:** 7 days, what both log groups already have. No infra change.
+
+**Proof, red first:** `url-allowlist.spec.ts` (10), `access-log.spec.ts` (5,
+through the real pino-http over a real socket: the five credentials absent from
+the whole line, the vouched visitor named, the account named, the wiring in
+`app.module.ts`) and `proxy-access-log.spec.ts` (7, the proxy run with the five
+links and a password) all failed before the modules existed. A mutation turning
+the allowlist into a denylist (`token`, `password`) fails two - the login
+`email`, and the key nobody has thought of yet.
+
+**Pending - the control, A55's:** after the deploy, request the five links with
+marker tokens and a `?password=` URL on dev, then search both log groups for the
+markers: absent; and the masked lines present.
 
 ### J12 - the sign-in forms refuse in the reader's language - `PROUVE`
 

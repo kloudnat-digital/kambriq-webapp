@@ -17,9 +17,10 @@ import {
 import { AcceptLanguageResolver, HeaderResolver, I18nModule } from 'nestjs-i18n';
 import { LoggerModule } from 'nestjs-pino';
 import { structuredFieldsHook } from '../core/logging/structured-fields';
-import { IncomingMessage } from 'http';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { REQUEST_LOG_REDACT_PATHS } from '../core/logging/request-log-redaction';
+import { accessLogProps, accessLogSerializers } from '../core/logging/access-log';
+import { readCallerSecret } from '../core/throttler/caller-identity';
 import { ThrottlerBehindProxyGuard } from '../core/throttler/throttler-behind-proxy.guard';
 import { CoreModule } from '../core/core.module';
 import { HealthModule } from '../health/health.module';
@@ -74,11 +75,10 @@ import { NewsletterModule } from '../newsletter/newsletter.module';
           autoLogging: true,
           // L3: a log payload becomes top-level JSON fields. See structured-fields.ts.
           hooks: { logMethod: structuredFieldsHook },
-          customProps: (req: IncomingMessage) => {
-            const header = req.headers['x-correlation-id'];
-            const correlationId = Array.isArray(header) ? header[0] : header;
-            return { correlationId };
-          },
+          // D28: who (visitor address, account) and a URL masked by allowlist.
+          // See access-log.ts.
+          serializers: accessLogSerializers,
+          customProps: accessLogProps(readCallerSecret()),
         },
       }),
     }),
