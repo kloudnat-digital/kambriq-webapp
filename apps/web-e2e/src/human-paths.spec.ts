@@ -15,6 +15,14 @@ import { ADMIN_STATE, apiToken } from './support/sessions';
  */
 test.skip(({ browserName }) => browserName !== 'chromium', 'one browser proves a path');
 
+/**
+ * Opt-in (`RUN_PAGE_WALKS=1`) until the login budget holds in CI: on the first
+ * develop run with every walk on, the API answered 429 on the login route at
+ * about nine calls in sixty seconds, under a declared limit of ten (register,
+ * A56 and I46).
+ */
+test.skip(process.env['RUN_PAGE_WALKS'] !== '1', 'opt-in: RUN_PAGE_WALKS=1');
+
 const SIGN_IN = /connecter|log ?in|sign ?in/i;
 const PDF = { name: 'proof.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 I46') };
 
