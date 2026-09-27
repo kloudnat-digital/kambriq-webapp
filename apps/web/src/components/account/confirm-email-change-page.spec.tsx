@@ -30,7 +30,9 @@ describe('I45 - the email-change confirmation page', () => {
 
   it('says the link may have expired when the API refuses it', async () => {
     mockQuery = 'token=used';
-    jest.mocked(confirmEmailChange).mockResolvedValue({ success: false, error: 'invalid' });
+    jest
+      .mocked(confirmEmailChange)
+      .mockResolvedValue({ success: false, error: 'invalid', status: 400 });
     render(<ConfirmEmailChange />);
     await waitFor(() =>
       expect(screen.getByText(/expired or has already been used/)).toBeInTheDocument(),
