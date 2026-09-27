@@ -161,7 +161,7 @@ listed here first.
 | `A12`                          | `PROUVE`            | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `R1`                           | `EN COURS`          | **a merge can succeed and have no effect.** `#89` merged into a branch consumed 89 s earlier; `#88` was squash-merged, so nothing showed. Pending proof is the three commands in `R1`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `G8`                           | `PROUVE`            | **proven end to end on dev, 27 September** (journey 7, opt-in, `balance-journey.spec.ts`): one reservation, deposit and balance each taken INITIE to VALIDE through the back office - instructions, announcement, verification, a receipt resting on its proof in S3, validation - balance = total minus deposit, nothing owed. The 7 September stop (G11-G14 stranded) was closed by #92                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `G8` follow-up                 | `A DECIDER`         | cancelling a reservation leaves its live payment open: journey 7's first run left an INITIE deposit in the request queue under a CANCELLED reservation (annulled by hand). Whether cancel should annul live payments, or refuse while one is live, is a decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `G21`                          | `EN COURS`          | cancelling a reservation annuls its live payment, with a written reason (Visquis, 27 September - was `G8` follow-up). Built through `PaymentsService.transition`: actor, reason, ledger untouched; a VALIDE payment stays VALIDE. Proven on the real migrations; pending: journey 4 on dev, which now cancels a reservation holding a live deposit                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `G8` blocker                   | `PROUVE`            | the exposure closed on 7 September: `230b827` (#89) merged into a consumed branch and was re-landed the same day as #92 (`5c35aa2`, on develop, code-identical). This row stayed open 19 days after the fix. A test now pins that only the chosen channel's details leave. **G8 itself stays open**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `G10`                          | `PROUVE`            | applied and observed: 16 SecureString parameters none empty, task definition 143 with the three variables and no channel value, 0 AccessDenied                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `G9`                           | `PROUVE LOCALEMENT` | the client creates the payment, from their own purchase page. Creation writes its audit row; sending the instructions is a second act                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
@@ -6735,17 +6735,43 @@ source records work on the Mapbox `ARG` or the mentions placeholders.
 #193) are no longer mocks; the row now says so and keeps the two findings still
 open.
 
-### G8 follow-up - a cancelled reservation keeps its live payment - `A DECIDER`
+### G21 - cancelling a reservation annuls its live payment - `EN COURS`
 
 **Cost impact: None.**
 
-Seen on 27 September (journey 7's first run): `POST /lands/admin/reservations/:id/cancel`
-answered 200 and the reservation's INITIE deposit stayed INITIE, still in the
-back office's request queue under a CANCELLED reservation. Annulled by hand
-with a reason. Two readings, and the choice is not mine: cancel annuls every
-live payment (with the same reason, in the audit trail), or cancel is refused
-while a payment is live and the payment is dealt with first. Money already
-received makes the second safer; nothing on dev has hit it except this run.
+**Was `G8` follow-up** (27 September, journey 7's first run): `POST
+/lands/admin/reservations/:id/cancel` answered 200 and left the reservation's
+INITIE deposit INITIE, in the back office's request queue under a CANCELLED
+reservation.
+
+**Decided by Visquis, 27 September:** cancelling a reservation **annuls** its
+live payment, with a written reason - consistent with G1, nothing disappears and
+everything is traced, and a client who withdraws is never stuck behind a ghost
+payment. Rejected: refusing the cancellation while a payment lives, which
+strands the client behind a back-office action.
+
+**Built:** `LandReservationsService.cancel` finds every payment of the
+reservation that is not in a terminal state and moves each to `ANNULE` through
+`PaymentsService.transition` - the one write path for a payment's state, which
+writes the audit row with the canceller as actor and the reason
+`Reservation <id> cancelled: <the cancellation's reason>`. Before the
+reservation itself, so a refusal leaves both as they were. **What stays:** a
+`VALIDE` payment (money that arrived is not annulled; a refund is its own act),
+and every receipt - the ledger is append-only, and a partly received payment is
+annulled with its receipts still on it. The service now takes `PaymentsService`
+(same module, no cycle).
+
+**Proof, red first:** `cancel-annuls-live-payment.dbspec.ts`, on the real lands
+migrations with the real `PaymentsService`: a live payment ends `ANNULE` with an
+audit row from `INSTRUCTIONS_ENVOYEES`, the canceller as actor and the reason
+readable; the annulled payment then **refuses VALIDE** (nothing validatable left
+behind); a partly received payment keeps its receipt; a VALIDE payment is left
+alone. Red before the change (the service had no way to reach a payment); a
+mutation that finds no live payment fails three of the four.
+
+**Pending:** journey 4 on dev - its client now asks for the deposit before the
+reservation is cancelled, and the journey reads the payment back `ANNULE` with
+the cancellation's reason on its last transition.
 
 ### G1 - the payment model - `PROUVE`
 

@@ -45,6 +45,7 @@ const build = () => {
     storage as never,
     mockI18n() as never,
     mockQueue() as never,
+    {} as never,
   );
   return { prisma, storage, service };
 };
