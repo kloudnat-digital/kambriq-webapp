@@ -8159,6 +8159,27 @@ reason per entry, empty, and itself checked for stale entries.
   **404**; the confirmation's link stayed on `/auth/confirm-email-change`
   instead of reaching the login page.
 
+**First deploy (`33dfe11`), 27 September - the invitation proven, the email
+change not, and develop's E2E red.** In the E2E run after the deploy, **the
+invitation walk passed in Chromium and Firefox**: the link from the delivered
+email, a password set on `/reset-password`, a sign-in. The email-change walk
+failed in every browser, and it found the next defect: after the login detour
+the browser landed on `/en/mylands`, not back on the confirmation. **The login
+never read `callbackUrl`** - `logInAction` signed in with `redirectTo: '/'`, a
+literal, as P3 had written down ("nothing reads it today"); the proxy's
+`callbackUrl`, with or without its query, went nowhere. Every protected link a
+signed-out person follows loses its destination, not only this one. WebKit's
+failures were the rate limit: each walk signs in several times, three browsers
+from one runner address exhausted it, and WebKit's own login test failed with
+them.
+
+**Second change (#240):** the login page passes the URL's `callbackUrl` to
+`logInAction`, which signs in with `redirectTo: safeCallbackUrl(callbackUrl, '/')`
+
+- P3's guard, so only an internal path; `login-callback.spec.ts` (red first:
+  the person was not sent back; four external shapes go home). The emailed-link
+  walks run in Chromium only - one browser proves a link.
+
 **Pending:** the same two browser walks green on dev after the deploy - the
 invitation link, a password set on its page, a sign-in; the confirmation link
 opened signed out, the login detour, the confirmation, the sign-in with the new

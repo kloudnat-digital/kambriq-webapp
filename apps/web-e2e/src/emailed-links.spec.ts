@@ -14,6 +14,13 @@ import { test, expect, type APIRequestContext } from '@playwright/test';
  */
 const MAILDROP = 'https://api.maildrop.cc/graphql';
 
+/**
+ * One browser proves a link. Each walk signs in several times through the API
+ * and the page; in three browsers from one runner address that exhausted the
+ * login rate limit and took WebKit's own login test down with it.
+ */
+test.skip(({ browserName }) => browserName !== 'chromium', 'one browser proves an emailed link');
+
 const maildrop = async (query: string) => {
   const res = await fetch(MAILDROP, {
     method: 'POST',

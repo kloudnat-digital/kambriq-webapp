@@ -3,20 +3,27 @@
 import { AuthError } from 'next-auth';
 import { signIn, signOut } from '@/auth';
 import { api } from '@/lib/api/server';
-import { AUTH_ROUTES } from '@/routes';
+import { AUTH_ROUTES, safeCallbackUrl } from '@/routes';
 import { createAction, ServerActionError } from './create-action';
 import { getAuthErrorCause, parseReactivationSignal } from './utils/auth';
 import { redirect } from '@/i18n/navigation';
 import { currentLocale } from '@/lib/locale';
 
 export const logInAction = createAction(
-  async (credentials: { email: string; password: string; rememberMe: boolean }) => {
+  async (credentials: {
+    email: string;
+    password: string;
+    rememberMe: boolean;
+    callbackUrl?: string | null;
+  }) => {
     try {
       await signIn('credentials', {
         email: credentials.email,
         password: credentials.password,
         rememberMe: String(credentials.rememberMe),
-        redirectTo: '/',
+        // I45: back to where the proxy sent the person from - through P3's
+        // guard, so only an internal path; anything else goes home.
+        redirectTo: safeCallbackUrl(credentials.callbackUrl, '/'),
       });
     } catch (error) {
       if (error instanceof AuthError) {
