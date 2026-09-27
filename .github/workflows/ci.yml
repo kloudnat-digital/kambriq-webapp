@@ -723,6 +723,9 @@ jobs:
       - name: Prove the develop gate's own logic (A32)
         run: bash scripts/ci/develop-gate.test.sh
 
+      - name: Prove the one-off task tally check's own logic (H2 follow-up 2)
+        run: bash scripts/ci/await-task-tally.test.sh
+
       - name: Refuse unless develop's HEAD passed its delivery journeys (A32)
         env:
           GH_TOKEN: ${{ github.token }}
