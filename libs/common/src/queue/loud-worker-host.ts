@@ -22,7 +22,9 @@ export abstract class LoudWorkerHost extends WorkerHost {
       id: job?.id,
       attempt: job?.attemptsMade,
       maxAttempts: job?.opts?.attempts ?? 1,
-      error: error?.message,
+      // Under `err`: the request logger serialises it with its type, message and
+      // stack; under any other key an Error is written as `{}`.
+      err: error,
     });
   }
 }
