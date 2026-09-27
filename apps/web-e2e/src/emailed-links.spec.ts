@@ -21,6 +21,18 @@ const MAILDROP = 'https://api.maildrop.cc/graphql';
  */
 test.skip(({ browserName }) => browserName !== 'chromium', 'one browser proves an emailed link');
 
+/**
+ * **Opt-in** (`RUN_EMAILED_LINKS=1`), not part of every deploy's E2E run. The two
+ * walks sign in seven times between them, and the login is limited to 10 a
+ * minute per visitor; the suite signs in from one runner address, so with them
+ * it ran over (429s in the API log during the run) and the last sign-in to come
+ * failed - Firefox's own login test among them. Proven 2/2 on dev on 27
+ * September; `emailed-urls-resolve.spec.ts` checks every emailed URL on every
+ * pull request. Whether page walks run on every deploy, and at what cost, is the
+ * register's "Journeys bypass the page" decision.
+ */
+test.skip(process.env['RUN_EMAILED_LINKS'] !== '1', 'opt-in: RUN_EMAILED_LINKS=1');
+
 const maildrop = async (query: string) => {
   const res = await fetch(MAILDROP, {
     method: 'POST',

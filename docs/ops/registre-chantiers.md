@@ -8253,6 +8253,17 @@ button signing out, the new address signing in, the old one refused. WebKit's
 own login test is green again (187 passed on `1f09ed7`, the one failure being
 this walk's locator).
 
+**Made opt-in the same day (#242).** On the deploy of `e4fdfd4` the E2E run
+failed again, on sign-ins this time: the API log shows `/auth/login` answering
+**429** during the run (5 between 08:05 and 08:10 UTC). The login is limited to 10
+a minute per visitor, the whole suite signs in from one runner address, and the
+two walks add seven sign-ins - the last sign-in to come failed, Firefox's own
+login test among them. The walks now run with `RUN_EMAILED_LINKS=1`, like
+journey 7; they were proven 2/2 on dev, and `emailed-urls-resolve.spec.ts`
+checks every emailed URL on every pull request. A continuous browser walk costs
+sign-ins the rate limit counts - part of the "Journeys bypass the page"
+decision.
+
 ### Journeys bypass the page - `A DECIDER`
 
 **Cost impact: None.** A finding, asked for by the tenth round.
