@@ -218,7 +218,7 @@ listed here first.
 | `A19`                          | `PROUVE`            | develop linted 1 project of 6 for seven months: the workflow promised "the full set", `pnpm run lint` was `nx lint api`. Widened to `nx run-many -t lint --all`; manifest corrected; proved in both directions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `I32`                          | `PROUVE`            | the API decides the network depth by the caller's own tier (`KAMNET_NETWORK_DEPTH_BY_TIER` in `libs/common`, bounded by `KAMNET_MAX_SPONSORSHIP_DEPTH`); the page asks without a depth. Proven by test with the maximum raised, since on dev every tier and the maximum are 1 and the rule changes no answer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `P10`                          | `EN COURS`          | the agent-page promises of an exclusive catalogue: two replaced with the copy Visquis validated on 26 September (#200); the last two (`products.kbs.advantages.network`, `products.kamnet.agentJourney.step5`) replaced with copy he approved on 26 September, the first with the title "Candidater au réseau KAMNET™" / "Apply to join KAMNET™" (English approved 27 September) - #206. The pin reads both product pages, not named keys - #200's version named three strings and missed a third on the same page. Still open: the LANDS page rewrite (#174, held for his reading of the deployed page)                                                                                                                                                                                                                                                                                                                     |
-| `P21` follow-up                | `A FAIRE`           | the remuneration ban covers a hand-written list of message namespaces and `landTypes` is not in it, so the public LANDS page still carries "Avantages Agent KAMNET / Commission rapide". Derive the list from what the public pages render                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `P21` follow-up                | `EN COURS`          | **premise corrected:** `landTypes` was in the list; the earnings ban read only `products.kamnet`/`products.kbs`, and its pattern missed "Commission rapide" and the infinitive "gagner des commissions" (a second survivor, `quickActions`). Guard rebuilt inverted - every namespace watched unless declared exempt with a reason - and it names both; the words removed (deletion only). Pending: the deployed LANDS page read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `A41`                          | `PROUVE`            | a rate limit each, chosen from 7 days of measured traffic; `auth-anonymous-routes-throttled.spec.ts` reads the @Throttle metadata, red first on five undefined routes, eight mutations each watched failing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `P22`                          | `PROUVE`            | the public directory reads every certificate in one query, not one per agent, and is bounded by `KAMNET_MAX_PUBLIC_DIRECTORY_ENTRIES` with a warning at the cap; proven on dev at `sha-caf8f98`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | Audit 2026-09-23, wave 1       | `EN COURS`          | four security fixes on `chore/audit-remediation`, unmerged. The fifth finding, the API bearer token in the RSC payload, is **closed by wave 5** - `sessionForClient` strips it and `lib/session.spec.ts` plus the login journey pin it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
@@ -4500,6 +4500,47 @@ promise the exclusive catalogue, which is `P10`. `apps/web/src/app/kamnet/apply/
 page.tsx` is a hardcoded French form with no API wiring behind it.
 
 ---
+
+### P21 follow-up - the remuneration that survived, and the guard turned inside out - `EN COURS`
+
+**Cost impact: None.**
+
+**The row said:** the ban covers a hand-written list of namespaces and
+`landTypes` is not in it. **That is half wrong** (tracker correction, 27
+September): `landTypes` was in `PUBLIC_NAMESPACES`. Two things let the text
+survive:
+
+- the **rate** ban needs a percentage beside a remuneration word, and
+  "Commission rapide, processus simplifié, client sécurisé." quotes none;
+- the **earnings** ban read only `products.kamnet.*` and `products.kbs.*` - the
+  enumeration was there, one level down - and its pattern knew "gagnez" but not
+  "gagner", so `quickActions.questions.kamnetAgent` ("Comment rejoindre le réseau
+  KAMNET™ et gagner des commissions ?", the pre-filled WhatsApp question) survived
+  too, in both languages.
+
+**The guard, inverted** (Visquis's instruction, the way P10's is built):
+`public-copy-promises-no-rate.spec.ts` now reads **every string of both message
+files** unless an `EXEMPT` entry covers it, each with its reason - `app` (the
+signed-in spaces, where an agent sees their own commissions, 19 September),
+`landsAdmin` (staff only), `products.kbs.modulesDetail` (the KCA syllabus
+teaches how an agent is paid; it promises nothing). And C14 being unsettled, the
+new rule is wider than a rate: **no public string mentions remuneration at
+all** (word-bounded, so "learn" and "earn your KCA certificate" pass). Two
+guards on the guard: every exemption must name something that exists, and a
+namespace invented in the test ("brandNewPage", "gagnez des commissions") is
+caught without being listed.
+
+**Proof it catches what the old one missed:** the old spec was green on develop
+with both strings present. The new one failed on exactly four entries -
+`landTypes.tfl.advantages.agent` and `quickActions.questions.kamnetAgent`, fr and
+en - and nothing else. A mutation restoring an enumerated list fails the
+"added tomorrow" test.
+
+**The copy, by deletion only** (no new wording, copy is Visquis's):
+"Processus simplifié, client sécurisé." / "Simplified process, secured client.";
+"Comment rejoindre le réseau KAMNET™ ?" / "How to join the KAMNET™ network?".
+
+**Pending:** the deployed LANDS page read on dev.
 
 ### A38 - CI runs on every pull request, whatever its base - `PROUVE`
 
