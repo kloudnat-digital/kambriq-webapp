@@ -196,7 +196,7 @@ listed here first.
 | `A55`                          | `PROUVE`            | did real passwords reach the logs before #214? No server-side record on dev can hold one: no ALB access logs, no CloudFront or WAF, and the web container logs no request URL (the API's request log does, and holds no password or token in any URL: corrected under D28) - my own password-in-URL requests of 26 September are absent (the control). The referer carried the origin only. The one place such a URL can remain is the visitor's own browser history. Rotation stays Visquis's call                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `D28`                          | `PROUVE`            | who called what, when, from where. **Decided by Visquis, 27 September:** dev = application logging with an allowlist; production = a WAF (`C17`); retention 7 days dev, 30 days production, stated in the privacy policy. **Dev built:** one allowlist (`libs/common/src/logging/url-allowlist.ts`) applied before any write; the API line gains the visitor's address and the account id; the web proxy writes one JSON line per page request. Pending: the A55-style control on dev **Proven on dev (7197137), 27 September:** the A55-style control found 0 markers in either log group and every marker request logged as `[redacted]`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `I45`                          | `PROUVE`            | the invitation every new client receives, and the email-change confirmation, linked to pages that did not exist (404 on dev). The invitation now links to `/reset-password`; the confirmation to a new `/account/confirm-email-change` page, and the login detour keeps the token. `emailed-urls-resolve.spec.ts` checks every URL the API builds on `FRONTEND_URL` against the web's pages, inverted. Pending: both links walked from the email in a browser on dev (`emailed-links.spec.ts`) **Proven on dev (`sha-61388d9`), 27 September:** both walks green in Chromium from the delivered emails - the invitation to a password to a sign-in; the confirmation opened signed out, the login detour back to it, confirmed, the new address signing in and the old one refused                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `A56`                          | `EN COURS`          | the E2E suite signs in from one runner address against the API's 10-a-minute login limit, and the page walks pushed it over - a neighbour's sign-in failed. One sign-in per role for the run (`sessions.setup.ts`), and every other auth call takes a slot from a shared window at 80% of the API's own limits (read from `auth.controller.ts`). The limit is not raised. Proven: the full suite on dev with the walks on, 0 x 429 in the API log for the run **Does not hold in CI (27 September):** on the first develop run with every walk on (`d73609d`), the API answered 429 on the login route to the E2E runner at about nine calls in sixty seconds, under a declared limit of ten and a budget of eight. Cause not established; pending Visquis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `A56`                          | `A DECIDER`         | **Answered, 27 September:** the API counts per caller per route on a sliding window, but its in-memory storage (`@nestjs/throttler` 6.5.0) files hit-expiry timers under the throttler NAME, so when any caller's block ends anywhere, every other caller's pending expiries are cancelled and their counts stop falling. Limits never let more through than declared; they refuse legitimate callers below it, cumulatively. Reproduced (#249, draft, red); 6.7.1's storage passes the same test. The upgrade is Visquis's decision before 1 October                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Journeys bypass the page       | `PROUVE`            | the delivery journeys prove by calling the API what a person does through a page: email verification, forgot-password, the invitation (until I45), KBS identity and enrolment, every back-office payment step. By construction the page a human uses is the one path not proven. Which of them deserve a browser walk is a decision, not a fix to squeeze in **Decided by Visquis, 27 September: walk every human path on every deploy** - done as I46                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `I46`                          | `EN COURS`          | the human paths walked through the pages on every deploy, Chromium: registration and email verification, forgotten password, KBS enrolment, the back office taking a deposit from request to validation, and both emailed links (continuous again). Green on dev locally; pending: the first develop E2E run with them, and its API log free of 429 **Held opt-in (`RUN_PAGE_WALKS=1`) the same day** to put develop back to green: continuous waits on A56 holding in CI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `I47`                          | `A DECIDER`         | a land buyer has no page to send an identity document: the client payment page says "upload your document from your profile" and the profile has only an avatar. Sending payment instructions requires a verified identity, so through the site the back office can never answer a buyer who is not also a KBS candidate. Where the upload belongs is a product decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -8922,7 +8922,7 @@ identity review reads. Whether the fix is an upload on the profile, on the
 payment page, or treating the reservation's `ID_CARD` as the identity document
 is a product decision - Visquis's, with Ulrich for the code.
 
-### A56 - the E2E suite's share of the login limit - `EN COURS`
+### A56 - the E2E suite's share of the login limit - `A DECIDER`
 
 **Cost impact: None.** The API's limits are untouched.
 
@@ -8958,6 +8958,71 @@ for that address over the run: 24 auth responses - 14 sign-ins (10 accepted, 4
 wrong-password refusals), 4 verifications, a reset, registrations - and **0
 answered 429, on any route**. Mutations: letting one call too many through the
 window fails the concurrency test; a spec without its slots fails the guard.
+
+**The proof does not hold in CI (27 September, `d73609d`).** The first develop E2E
+run with every walk on failed twice on sign-ins, and the API log shows why: the
+E2E runner's address (`172.208.153.227`) was answered **429** on
+`/api/v1/auth/login` at 10:23:39, 10:23:48 (twice) and 10:24:29. Its calls in
+the sixty seconds before the first refusal were eight (10:22:41, :44, :46, :51,
+10:23:21, :23, :26, :35) - the budget held at eight, as designed - and the ninth
+was refused, while `auth.controller.ts` declares ten. (Each successful sign-in
+logs two lines, the request and an application line; counting lines doubles it.)
+The delivery journeys ran at the same time from another address and do not
+share the bucket.
+
+So something about the API's count or window differs from what its decorator
+says, and the local run's 0 x 429 was true of a lighter, slower suite. **Not
+established, and not guessed at:** lowering the budget until the run is green
+would be tuning a test to an unexplained limit. Pending Visquis: whether to
+investigate the throttler's counting on dev first (A41's limits are measured, so
+this matters beyond the tests), or run the walks opt-in until then.
+
+**Answered, 27 September (twelfth round) - what the API's rate limiter counts.**
+Visquis framed it as a question about the API, not the tests. The answer, from
+the library's source and reproduced against its real storage class:
+
+- **Keyed on:** `sha256(<Controller>-<handler>-<throttler name>-<tracker>)`
+  (`ThrottlerGuard.generateKey`), the tracker being the address the web vouches
+  for or the last `X-Forwarded-For` hop (A45). **One counter per caller per
+  route**: auth routes do not share a counter (hypothesis refuted).
+- **Window:** each hit is forgotten `ttl` after it was made - a **sliding**
+  window, the same shape as the suite's budget (so that hypothesis explains
+  nothing).
+- **Storage:** the default in-memory `ThrottlerStorageService`, one per API
+  process; dev runs one task.
+- **The defect:** in `@nestjs/throttler` **6.5.0** the storage keeps the timers
+  that forget hits in `timeoutIds`, **keyed by throttler name, not by key**. When
+  a blocked caller's block ends, `resetBlockdRequest` calls
+  `clearExpirationTimes(<name>)`, which cancels **every key's** pending timers
+  under that name. From then on, every other caller's recorded hits are never
+  forgotten: their counts only grow, until each of them is blocked and reset in
+  turn - which freezes everyone again. All routes share the name `default`,
+  including the global 100-per-6-seconds throttler.
+
+**The CI refusal, explained to the second** (`d73609d`): the journeys' address
+was refused on `/auth/login` at 10:22:21.9 (its eleventh sign-in); its block
+ended at 10:23:21.9 and its next sign-in at 10:23:23.6 reset it - cancelling the
+E2E runner's pending expiries. The runner's seven hits then held, three more
+arrived (10:23:23, :26, :35), and the next, at 10:23:39, was its eleventh by the
+storage's count and its ninth within sixty seconds by the clock: **429**.
+
+**Reproduction:** `storage-counts-what-it-declares.spec.ts` (#249, draft): a
+caller's eight hits, made at 50 s, are still counted at 111 s because another
+caller's block ended at 61 s - `Expected: 1, Received: 9`. **The same two tests
+pass against 6.7.1's `ThrottlerStorageService`** (read from the published
+package), which keeps each key's own list of hit expiry times.
+
+**What A41's limits mean, therefore:** they never let more calls through than
+declared - the protection holds - but they **refuse legitimate callers below
+the declared rate**, and the effect accumulates for the life of the process:
+after any caller anywhere is blocked and resets, an ordinary visitor's calls on
+a route are counted forever until they reach the limit. In production, where a
+bot being refused is ordinary, real visitors would meet false 429s on login,
+registration, contact and the rest, at rates A41 measured as normal. **Finding
+for Visquis before 1 October:** upgrade `@nestjs/throttler` to 6.7.1 (#249's
+reproduction then goes green and joins the suite) or keep 6.5.0 knowingly. The
+suite's budget and I46's continuous walks wait on it: a budget cannot be set
+against a counter that does not forget.
 
 ### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
 
