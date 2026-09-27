@@ -3,16 +3,16 @@ import { safeCallbackUrl } from './routes';
 /**
  * P3 - `callbackUrl` is constrained to internal paths.
  *
- * **Nothing reads it today**, and that is worth stating rather than hiding:
- * `logInAction` calls `signIn(..., { redirectTo: '/' })`, a hard-coded literal,
- * so there is no open redirect on this site right now. Four places write the
- * parameter and none consumes it.
+ * **Read since I45 (27 September):** `logInAction` signs in with
+ * `redirectTo: safeCallbackUrl(callbackUrl, '/')`. Until then it used the
+ * literal `'/'`, so every `callbackUrl` the proxy wrote was read by nobody, and
+ * a signed-out person following the email-change link came back to their home
+ * page instead of the confirmation.
  *
- * It is one line away from being consumed. The obvious way to make the
- * parameter do what its name says is `redirectTo: searchParams.callbackUrl`,
- * and written that way it is a textbook open redirect immediately after
- * somebody types a password. So the value is constrained where it is written,
- * and the guard is exported so whoever wires the read finds it already there.
+ * Written the obvious way - `redirectTo: searchParams.callbackUrl` - it would
+ * be a textbook open redirect immediately after somebody types a password. So
+ * the value is constrained where it is written AND where it is read, by this
+ * guard; `lib/actions/login-callback.spec.ts` holds the read.
  */
 describe('P3 - safeCallbackUrl', () => {
   describe('accepts internal paths', () => {

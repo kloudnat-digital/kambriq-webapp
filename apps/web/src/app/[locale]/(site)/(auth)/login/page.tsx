@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { useState, type FC } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
@@ -26,6 +27,8 @@ const Login: FC = () => {
   const inReaderLanguage = (error?: { message?: string }) =>
     error && { message: error.message ? t(`validation.${error.message}` as never) : undefined };
   const { createToast } = useToastStore();
+  // I45: the page the proxy sent the person from; the action checks it.
+  const callbackUrl = useSearchParams()?.get('callbackUrl') ?? null;
 
   const methods = useForm<LoginSchema>({
     resolver: zodResolver(LoginResolver),
@@ -41,7 +44,7 @@ const Login: FC = () => {
   const { isSubmitting, errors } = formState;
 
   const handleSubmit = async (data: LoginSchema) => {
-    const result = await logInAction(data);
+    const result = await logInAction({ ...data, callbackUrl });
     if (result && !result.success) {
       createToast({ status: 'error', title: result.error });
     }
