@@ -1,78 +1,17 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
 import { authSlot } from './support/auth-budget';
 import { apiToken } from './support/sessions';
+import { emailedLink } from './support/mail';
 
 /**
- * I45 - the front door, walked the way a person walks it: from the email.
- *
- * An agent reserves a parcel for a new client; the API emails that client an
- * invitation. Until I45 its link led to `/auth/set-password`, a page that did
- * not exist - every new client landed on a 404. The journeys never saw it: they
- * take the token out of the mailbox and call the API, which was always fine.
- *
- * So this opens **the link exactly as the email carries it**, in a browser, sets
- * a password on the page it leads to, and signs in through the login page. It
- * gives the parcel back afterwards, like journey 4.
+ * I45 - each emailed link opened as the email carries it, in a browser: the
+ * invitation leads to a page that sets a password, and the email-change link,
+ * opened signed out, returns through the login page to its confirmation.
+ * The reservation made for the invitation is cancelled afterwards.
  */
-const MAILDROP = 'https://api.maildrop.cc/graphql';
 
-/**
- * One browser proves a link. Each walk signs in several times through the API
- * and the page; in three browsers from one runner address that exhausted the
- * login rate limit and took WebKit's own login test down with it.
- */
+/** One browser proves a link; every walk signs in, and sign-ins are budgeted (A56). */
 test.skip(({ browserName }) => browserName !== 'chromium', 'one browser proves an emailed link');
-
-/**
- * **Opt-in** (`RUN_EMAILED_LINKS=1`), not part of every deploy's E2E run. The two
- * walks sign in seven times between them, and the login is limited to 10 a
- * minute per visitor; the suite signs in from one runner address, so with them
- * it ran over (429s in the API log during the run) and the last sign-in to come
- * failed - Firefox's own login test among them. Proven 2/2 on dev on 27
- * September; `emailed-urls-resolve.spec.ts` checks every emailed URL on every
- * pull request. Whether page walks run on every deploy, and at what cost, is the
- * register's "Journeys bypass the page" decision.
- */
-test.skip(process.env['RUN_EMAILED_LINKS'] !== '1', 'opt-in: RUN_EMAILED_LINKS=1');
-
-const maildrop = async (query: string) => {
-  const res = await fetch(MAILDROP, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ query }),
-  });
-  if (!res.ok) throw new Error(`maildrop unavailable (HTTP ${res.status}) - not a product failure`);
-  return res.json() as Promise<{
-    data?: { inbox?: Array<{ id: string; subject: string }>; message?: { html: string } };
-  }>;
-};
-
-/** The button link of the message whose subject matches, read out of the delivered HTML. */
-const emailedLink = async (
-  mailbox: string,
-  subject: RegExp,
-  timeoutMs = 120_000,
-): Promise<string> => {
-  const deadline = Date.now() + timeoutMs;
-  const subjects: string[] = [];
-  while (Date.now() < deadline) {
-    const list =
-      (await maildrop(`query{inbox(mailbox:"${mailbox}"){id subject}}`)).data?.inbox ?? [];
-    for (const m of list) {
-      subjects.push(m.subject);
-      if (!subject.test(m.subject)) continue;
-      const html =
-        (await maildrop(`query{message(mailbox:"${mailbox}",id:"${m.id}"){html}}`)).data?.message
-          ?.html ?? '';
-      const href = /<a href="([^"]+)" class="btn"/.exec(html)?.[1];
-      if (href) return href.replace(/&amp;/g, '&');
-    }
-    await new Promise((r) => setTimeout(r, 5000));
-  }
-  throw new Error(
-    `no invitation in ${mailbox}. Subjects seen: ${subjects.join(' | ') || '(empty)'}`,
-  );
-};
 
 /** A new person's own sign-in - the one kind that cannot be reused (A56: in budget). */
 const apiLogin = async (request: APIRequestContext, email: string, password: string) => {

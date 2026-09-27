@@ -9,11 +9,7 @@ import {
   tokensFile,
 } from './support/sessions';
 
-/**
- * A56 - sign in once per role, before any test, and hand the result to all of
- * them. Three sign-ins for the whole run instead of one per test that needs a
- * role.
- */
+/** Signs in once per role and stores the result for every test of the run (A56). */
 test('sign in once per role', async ({ page, request }) => {
   test.setTimeout(180_000);
   mkdirSync(SESSIONS_DIR, { recursive: true });

@@ -3,22 +3,15 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 /**
- * A56 - the suite's share of the API's auth rate limits.
+ * Keeps the suite inside the API's per-caller auth rate limits (A56).
  *
- * The API limits each auth route per caller (A41: `login` 10 a minute, measured
- * from real per-caller peaks - it protects a real route and is **not** raised
- * for tests). The whole suite calls from one runner address, so it is one
- * caller. When the emailed-link walks were added, the suite ran over the login
- * limit and the sign-in that came last failed - Firefox's own login test, which
- * had done nothing wrong. A test that breaks its neighbour by consuming a shared
- * resource accuses the wrong culprit.
- *
- * So every auth call a test makes - through a page or through the API - first
- * takes a slot here: a sliding window per route, shared by every worker through
- * a lock directory, kept at 80% of the API's own limit. The limits are read
- * from `auth.controller.ts` itself, so they cannot drift from the API.
- * Reuse comes first (`sessions.setup.ts` signs in once per role); this is what
- * keeps the sign-ins that cannot be reused - a new person's first - in budget.
+ * The suite calls from one address, so it is one caller: every auth request -
+ * through a page or through the API - must first take a slot here. Slots are a
+ * sliding window per route, shared across workers through a lock directory,
+ * at 80% of the limit the API declares in `auth.controller.ts`, which is read
+ * at run time so the two cannot drift. The window is never reset: entries
+ * expire after the route's TTL, as the API's own bucket does, so consecutive
+ * runs stay inside the limit too.
  */
 export type AuthRoute =
   | 'register'
@@ -104,6 +97,3 @@ export const authSlot = async (route: AuthRoute): Promise<number> => {
     throw new Error(`auth-budget: no @Throttle found for '${route}' in auth.controller.ts`);
   return takeSlot(`auth-${route}`, Math.max(1, Math.floor(found.limit * 0.8)), found.ttl);
 };
-
-/** Called once per run (global setup): an empty window. */
-export const resetBudget = (dir = budgetDir()) => rmSync(dir, { recursive: true, force: true });
