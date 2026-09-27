@@ -93,7 +93,7 @@ test('I45 - a new client sets a password from the invitation email and signs in'
   const email = `${mailbox}@maildrop.cc`;
   const password = `Inv-${stamp.slice(-6)}-Aa1!`;
 
-  const agent = apiToken('agent');
+  const agent = apiToken('fieldAgent');
   const lands = (await (
     await request.get('/api/v1/lands?limit=50', { headers: { authorization: `Bearer ${agent}` } })
   ).json()) as { data: Array<{ id: string; status: string }> };

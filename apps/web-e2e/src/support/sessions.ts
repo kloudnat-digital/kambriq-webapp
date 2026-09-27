@@ -15,7 +15,7 @@ const TOKENS = join(SESSIONS_DIR, 'api-tokens.json');
 
 export const FIXTURES = {
   admin: 'admin@kambriq.com',
-  agent: 'eric.mbou@kambriq.com',
+  fieldAgent: 'eric.mbou@kambriq.com',
 } as const;
 export type Role = keyof typeof FIXTURES;
 
