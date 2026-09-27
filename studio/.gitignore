@@ -1,0 +1,7 @@
+node_modules
+dist
+.sanity
+# Sanity's CLI reads these; they hold the project id and are per-machine.
+.env
+.env.local
+.env.*.local

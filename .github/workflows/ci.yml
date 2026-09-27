@@ -130,8 +130,8 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
-          cache: "pnpm"
+          node-version: '24'
+          cache: 'pnpm'
 
       - run: pnpm install --frozen-lockfile
       - run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
@@ -168,8 +168,8 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
-          cache: "pnpm"
+          node-version: '24'
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -206,7 +206,7 @@ jobs:
       # becomes a lie a second time, so narrow the comment with it.
       - name: Lint, typecheck and test
         env:
-          NX_SKIP_NX_CACHE: "false"
+          NX_SKIP_NX_CACHE: 'false'
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -263,8 +263,8 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
-          cache: "pnpm"
+          node-version: '24'
+          cache: 'pnpm'
 
       # postinstall generates the four prisma clients the *.dbspec.ts import.
       - name: Install dependencies
@@ -348,15 +348,13 @@ jobs:
 
       # -- The pushed manifest must be amd64 ----------------------------------
       #
-      # NOT a duplicate of a check that already exists somewhere - a check that
-      # exists NOWHERE on this branch. `scripts/deploy-dev.sh` on develop is
-      # still the stale 145-line orphan; PR #93 replaces it with the pipeline
-      # that carries `assert_amd64`, and #93 is not merged.
+      # Asserted against the registry rather than trusted from the `platforms:`
+      # flag: the flag states what was requested, the registry states what
+      # arrived. An unasserted image is how Fargate gets one it cannot start.
       #
-      # **When #93 lands this step must become a call to that function**, and
-      # #93's own anti-drift test is what will say so - it fails on any workflow
-      # step the script does not implement. Left inline here rather than left
-      # out, because an unasserted image is how Fargate gets one it cannot start.
+      # This check is duplicated inline in three workflow steps. When
+      # `scripts/deploy-dev.sh` carries an `assert_amd64` function, replace each
+      # of them with a call to it.
       #
       # `--verbose`: a single-platform push returns a v2 image manifest with no
       # `.manifests` array AND no top-level `.architecture` - the platform lives
@@ -454,6 +452,10 @@ jobs:
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
             MEDIA_BUCKET_HOST=${{ vars.MEDIA_BUCKET_HOST }}
+            NEXT_PUBLIC_MAPBOX_TOKEN=${{ vars.NEXT_PUBLIC_MAPBOX_TOKEN }}
+            NEXT_PUBLIC_SANITY_PROJECT_ID=${{ vars.NEXT_PUBLIC_SANITY_PROJECT_ID }}
+            NEXT_PUBLIC_SANITY_DATASET=${{ vars.NEXT_PUBLIC_SANITY_DATASET }}
+            SANITY_STUDIO_ORIGIN=${{ vars.SANITY_STUDIO_ORIGIN }}
             GIT_SHA=${{ github.sha }}
             GIT_REF=${{ github.ref_name }}
             BUILD_TIME=${{ env.BUILD_TIME }}
@@ -464,15 +466,13 @@ jobs:
 
       # -- The pushed manifest must be amd64 ----------------------------------
       #
-      # NOT a duplicate of a check that already exists somewhere - a check that
-      # exists NOWHERE on this branch. `scripts/deploy-dev.sh` on develop is
-      # still the stale 145-line orphan; PR #93 replaces it with the pipeline
-      # that carries `assert_amd64`, and #93 is not merged.
+      # Asserted against the registry rather than trusted from the `platforms:`
+      # flag: the flag states what was requested, the registry states what
+      # arrived. An unasserted image is how Fargate gets one it cannot start.
       #
-      # **When #93 lands this step must become a call to that function**, and
-      # #93's own anti-drift test is what will say so - it fails on any workflow
-      # step the script does not implement. Left inline here rather than left
-      # out, because an unasserted image is how Fargate gets one it cannot start.
+      # This check is duplicated inline in three workflow steps. When
+      # `scripts/deploy-dev.sh` carries an `assert_amd64` function, replace each
+      # of them with a call to it.
       #
       # `--verbose`: a single-platform push returns a v2 image manifest with no
       # `.manifests` array AND no top-level `.architecture` - the platform lives
@@ -532,8 +532,8 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
-          cache: "pnpm"
+          node-version: '24'
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -543,7 +543,7 @@ jobs:
         env:
           KAMBRIQ_API_URL: ${{ vars.KAMBRIQ_API_URL || 'https://dev.kambriq.com/api/v1' }}
           EXPECTED_SHA: ${{ github.sha }}
-          CI: "true"
+          CI: 'true'
 
   # -- E2E tests against deployed dev (post-deploy) -----------------------------
   e2e:
@@ -559,8 +559,8 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
-          cache: "pnpm"
+          node-version: '24'
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -583,7 +583,7 @@ jobs:
         run: pnpm test:e2e
         env:
           BASE_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
-          CI: "true"
+          CI: 'true'
 
       - name: Upload Playwright report
         if: always()
@@ -734,4 +734,3 @@ jobs:
           OVERRIDE_LABEL: merge-on-red-develop
           JOURNEYS_JOB: Delivery journeys (dev)
         run: bash scripts/ci/develop-gate.sh
-

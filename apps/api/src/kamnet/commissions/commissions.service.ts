@@ -7,10 +7,12 @@ import {
   UpdateCommissionStatusDto,
 } from '../dto/kamnet.dto';
 import {
-  buildPaginatedResponse,
   KAMNET_VALID_COMMISSION_TRANSITIONS,
   KamnetCommissionStatus,
   PaginationQuery,
+  TIMESTAMP_SORTS,
+  buildPaginatedResponse,
+  sortField,
 } from '@kambriq/common';
 
 /**
@@ -109,7 +111,7 @@ export class KamnetCommissionsService {
         where,
         skip,
         take: limit,
-        orderBy: { [sort || 'createdAt']: order || 'desc' },
+        orderBy: { [sortField(sort, TIMESTAMP_SORTS, 'createdAt')]: order || 'desc' },
       }),
       this.prisma.kamnetCommission.count({ where }),
     ]);
@@ -131,7 +133,7 @@ export class KamnetCommissionsService {
         where,
         skip,
         take: limit,
-        orderBy: { [sort || 'createdAt']: order || 'desc' },
+        orderBy: { [sortField(sort, TIMESTAMP_SORTS, 'createdAt')]: order || 'desc' },
         include: {
           agent: {
             select: { id: true, agentCode: true, userId: true },

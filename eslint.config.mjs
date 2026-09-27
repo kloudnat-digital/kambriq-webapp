@@ -70,17 +70,17 @@ export default [
   },
   {
     /**
-     * The root `prisma/` scripts are command-line tools: seeding, migrations,
-     * the super-admin bootstrap and the KCA1 loaders. Their console output is
-     * what the operator reads, and none of them runs in a container or a
-     * browser.
+     * The root `prisma/` and `scripts/` trees are command-line tools: seeding,
+     * migrations, the super-admin bootstrap, the KCA1 loaders and the Sanity
+     * webhook upsert. Their console output is what the operator reads, and none
+     * of them runs in a container or a browser.
      *
      * Path-anchored deliberately. These files belong to no nx project, so
      * `nx run-many -t lint` never reaches them and this block is only ever
      * evaluated by an eslint run from the repository root, which is what
      * `lint-staged` does.
      */
-    files: ['prisma/**/*.ts', 'prisma/**/*.js'],
+    files: ['prisma/**/*.ts', 'prisma/**/*.js', 'scripts/**/*.ts', 'scripts/**/*.js'],
     rules: {
       'no-console': 'off',
     },

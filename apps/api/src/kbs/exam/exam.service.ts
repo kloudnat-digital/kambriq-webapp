@@ -10,7 +10,6 @@ import { Queue } from 'bullmq';
 import { DateTime } from 'luxon';
 import { InjectQueue } from '@nestjs/bullmq';
 import {
-  buildPaginatedResponse,
   CandidateStatus,
   DEFAULT_EXAM_QUESTION_COUNT,
   EXAM_PASSING_SCORE,
@@ -18,6 +17,9 @@ import {
   KBS_JOBS,
   PaginationQuery,
   QUEUES,
+  TIMESTAMP_SORTS,
+  buildPaginatedResponse,
+  sortField,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 import {
@@ -566,7 +568,7 @@ export class KbsExamService {
         where,
         skip,
         take: limit,
-        orderBy: { [sort]: order },
+        orderBy: { [sortField(sort, TIMESTAMP_SORTS, 'createdAt')]: order || 'desc' },
         include: { candidate: { select: { id: true, userId: true } } },
       }),
       this.prisma.kbsExam.count({ where }),

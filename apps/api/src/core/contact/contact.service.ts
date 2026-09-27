@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  CONSENT_POLICY_SLUG,
   ContactRequestStatus,
   ContactSubject,
   EmailService,
@@ -64,6 +65,7 @@ export class ContactService {
 
     /** Server-side timestamp for consent auditing. */
     const consentGivenAt = new Date();
+    const consentPolicySnapshotId = await this.currentPolicySnapshotId(input.locale);
 
     const created = await this.prisma.contactRequest.create({
       data: {
@@ -75,6 +77,7 @@ export class ContactService {
         locale: input.locale,
         consentGivenAt,
         consentPolicyPath: input.consentPolicyPath,
+        consentPolicySnapshotId,
       },
     });
 
@@ -172,6 +175,7 @@ export class ContactService {
   async sendDailyDigest(now: Date = new Date()): Promise<{
     count: number;
     pending: number;
+    consentsWithoutVersion: number;
     sentTo: string;
   }> {
     const inbox = this.config.get<string>('CONTACT_INBOX_EMAIL');
@@ -184,7 +188,7 @@ export class ContactService {
     const [recent, pending, oldest] = await Promise.all([
       this.prisma.contactRequest.findMany({
         where: { createdAt: { gte: since, lte: now } },
-        select: { subject: true },
+        select: { subject: true, consentPolicySnapshotId: true },
       }),
       this.prisma.contactRequest.count({ where: { status: ContactRequestStatus.NEW } }),
       this.prisma.contactRequest.findFirst({
@@ -197,6 +201,13 @@ export class ContactService {
     const bySubject = new Map<string, number>();
     for (const row of recent) bySubject.set(row.subject, (bySubject.get(row.subject) ?? 0) + 1);
 
+    /**
+     * Consents in the window that could not be bound to an archived revision.
+     * It rides on the digest for the reason the digest exists: an alert fires on
+     * a condition somebody predicted, and this one arrives whatever the number.
+     */
+    const consentsWithoutVersion = recent.filter((row) => !row.consentPolicySnapshotId).length;
+
     await this.email.send({
       to: inbox,
       template: 'contactDigest',
@@ -207,6 +218,7 @@ export class ContactService {
         since: formatHumanDate(since, locale),
         until: formatHumanDate(now, locale),
         pending,
+        consentsWithoutVersion,
         oldest: oldest
           ? `${Math.floor((now.getTime() - oldest.createdAt.getTime()) / 86_400_000)} ${
               lang === 'en' ? 'day(s)' : 'jour(s)'
@@ -221,10 +233,41 @@ export class ContactService {
     this.logger.log('Contact digest sent %o', {
       count: recent.length,
       pending,
+      consentsWithoutVersion,
       windowHours: DIGEST_WINDOW_HOURS,
     });
 
-    return { count: recent.length, pending, sentTo: inbox };
+    return { count: recent.length, pending, consentsWithoutVersion, sentTo: inbox };
+  }
+
+  /**
+   * The archived revision of the privacy policy current right now, or null.
+   *
+   * Read from the archive rather than taken from the request: a version supplied
+   * by a browser is a claim about what somebody was shown, and the record has to
+   * say what the site was serving. Same reasoning as the consent timestamp.
+   *
+   * Null when nothing has been archived for that language, which is the state
+   * until a policy is published. The request is still stored - the lead is the
+   * success criterion - and the gap is reported here and counted in the digest,
+   * so it is a number somebody reads rather than an empty column.
+   */
+  private async currentPolicySnapshotId(locale: 'fr' | 'en'): Promise<string | null> {
+    const snapshot = await this.prisma.policySnapshot.findFirst({
+      where: { slug: CONSENT_POLICY_SLUG, locale },
+      orderBy: { publishedAt: 'desc' },
+      select: { id: true },
+    });
+
+    if (!snapshot) {
+      this.logger.error(
+        `No archived revision of ${CONSENT_POLICY_SLUG} in ${locale}: this consent records the ` +
+          'document and not the wording. Publish the policy in the Studio so the webhook archives it.',
+      );
+      return null;
+    }
+
+    return snapshot.id;
   }
 
   /**

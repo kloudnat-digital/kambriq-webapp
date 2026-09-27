@@ -1,0 +1,4 @@
+# The Sanity Studio is a separate project with its own install and its own
+# lockfile. Its package.json would otherwise make Nx infer a seventh project,
+# putting `sanity` into the graph of a workspace that never builds it.
+studio

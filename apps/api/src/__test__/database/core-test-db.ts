@@ -55,6 +55,12 @@ export const SQLSTATE = {
   CHECK_VIOLATION: '23514',
   /** A NOT NULL column was not supplied. */
   NOT_NULL_VIOLATION: '23502',
+  /** A unique index refused a duplicate. */
+  UNIQUE_VIOLATION: '23505',
+  /** A foreign key refused a row pointing at something that is not there. */
+  FOREIGN_KEY_VIOLATION: '23503',
+  /** An append-only trigger refused the write. Raised by `kambriq_append_only()`. */
+  RESTRICT_VIOLATION: '23001',
 } as const;
 
 /**

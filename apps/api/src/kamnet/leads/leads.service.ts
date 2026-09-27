@@ -11,8 +11,10 @@ import {
   KAMNET_VALID_LEAD_TRANSITIONS,
   KamnetLeadStatus,
   PaginationQuery,
+  TIMESTAMP_SORTS,
   buildPaginatedResponse,
   changedKeys,
+  sortField,
 } from '@kambriq/common';
 import { CreateLeadDto, LeadFilterDto, UpdateLeadDto } from '../dto/kamnet.dto';
 
@@ -124,7 +126,7 @@ export class KamnetLeadsService {
         skip,
         where,
         take: limit,
-        orderBy: { [sort || 'createdAt']: order || 'desc' },
+        orderBy: { [sortField(sort, TIMESTAMP_SORTS, 'createdAt')]: order || 'desc' },
       }),
       this.prisma.kamnetLead.count({ where }),
     ]);

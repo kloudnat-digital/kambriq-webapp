@@ -33,6 +33,18 @@ ARG NEXT_PUBLIC_MAPBOX_TOKEN
 # build time, because a standalone build freezes `images` into its manifest.
 # Unset: the optimizer refuses bucket URLs - it never falls back to a wildcard.
 ARG MEDIA_BUCKET_HOST
+# Wave 7. The Sanity project id. It scopes the asset CSP source,
+# https://cdn.sanity.io/images/<id>/, and it is the project the pages read their
+# content from. Unset: no asset host is allowed and every CMS page answers 404,
+# which is the state before a Sanity project exists.
+ARG NEXT_PUBLIC_SANITY_PROJECT_ID
+# The dataset the pages read. Required once the project id is set: next.config.ts
+# validates the pair, so a project with no dataset fails THIS build rather than
+# the first page somebody opens.
+ARG NEXT_PUBLIC_SANITY_DATASET
+# The Studio origin allowed to frame this site, for Sanity's Presentation tool.
+# Unset: `frame-ancestors 'none'`. A wildcard fails the build.
+ARG SANITY_STUDIO_ORIGIN
 
 RUN cd apps/web && NEXT_TELEMETRY_DISABLED=1 ../../node_modules/.bin/next build
 

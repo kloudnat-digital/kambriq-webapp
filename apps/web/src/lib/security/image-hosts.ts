@@ -17,7 +17,12 @@
  * its URLs. It never falls back to a wildcard. A value that is not a plain
  * S3 virtual-hosted hostname fails the build, because a typo that silently
  * widened or emptied the list is worse than a red build.
+ *
+ * A source may carry a path prefix as well as a host. Sanity's asset CDN is one
+ * hostname for every customer, so `cdn.sanity.io` alone would be a wildcard
+ * wearing a literal name; it is listed as `/images/<projectId>/` instead.
  */
+import { SANITY_CDN_HOST, sanityImagePathPrefix } from './sanity-hosts';
 
 export const MEDIA_BUCKET_HOST_VAR = 'MEDIA_BUCKET_HOST';
 
@@ -38,26 +43,41 @@ export function mediaBucketHost(env: NodeJS.ProcessEnv): string | null {
   return raw;
 }
 
-export function imageHosts(env: NodeJS.ProcessEnv): string[] {
+/** A host, and the path prefix under it that is allowed. */
+export type ImageSource = { hostname: string; pathname?: string };
+
+export function imageSources(env: NodeJS.ProcessEnv): ImageSource[] {
+  const sources: ImageSource[] = STATIC_IMAGE_HOSTS.map((hostname) => ({ hostname }));
+
   const bucket = mediaBucketHost(env);
-  return bucket ? [...STATIC_IMAGE_HOSTS, bucket] : [...STATIC_IMAGE_HOSTS];
+  if (bucket) sources.push({ hostname: bucket });
+
+  const sanityImages = sanityImagePathPrefix(env);
+  if (sanityImages) sources.push({ hostname: SANITY_CDN_HOST, pathname: sanityImages });
+
+  return sources;
+}
+
+export function imageHosts(env: NodeJS.ProcessEnv): string[] {
+  return imageSources(env).map(({ hostname }) => hostname);
 }
 
 /**
- * `port: ''` refuses an explicit port. `pathname` and `search` are left
- * unset, so any path and any query on these hosts match - which the media
- * bucket needs, because its URLs are presigned and every signature differs.
+ * `port: ''` refuses an explicit port. `search` is left unset, so any query
+ * matches - which the media bucket needs, because its URLs are presigned and
+ * every signature differs. `pathname` is set only where a source declares one.
  */
 export function imageRemotePatterns(env: NodeJS.ProcessEnv) {
-  return imageHosts(env).map((hostname) => ({
+  return imageSources(env).map(({ hostname, pathname }) => ({
     protocol: 'https' as const,
     hostname,
     port: '',
+    ...(pathname ? { pathname: `${pathname}**` } : {}),
   }));
 }
 
 export function imgSrcSources(env: NodeJS.ProcessEnv): string[] {
-  return imageHosts(env).map((host) => `https://${host}`);
+  return imageSources(env).map(({ hostname, pathname }) => `https://${hostname}${pathname ?? ''}`);
 }
 
 /**

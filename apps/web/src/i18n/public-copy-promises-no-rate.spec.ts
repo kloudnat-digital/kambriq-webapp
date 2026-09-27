@@ -12,19 +12,15 @@ import en from './messages/en.json';
 type Json = Record<string, unknown>;
 
 /**
- * What is NOT public, each with its reason. **Inverted, on purpose** (P21,
- * 27 September): every namespace of the message files is watched unless it is
- * declared here. The first version listed the namespaces it watched, and its
- * earnings ban read only `products.kamnet` and `products.kbs` - so the LANDS
- * page's `landTypes` kept "Commission rapide" and `quickActions` kept "gagner des
- * commissions" after the page it was written for had been cleaned. A list of
- * what is watched misses whatever is added after it; a list of exemptions has
- * to be argued for, one line at a time.
+ * What is NOT public, each with its reason. **Inverted, on purpose** (P21):
+ * every namespace of the message files is watched unless it is declared here. A
+ * list of what is watched misses whatever is added after it; a list of
+ * exemptions has to be argued for, one line at a time.
  *
  * An entry is a namespace or a dotted key prefix.
  */
 const EXEMPT: Readonly<Record<string, string>> = {
-  app: "the signed-in spaces: an agent's own commissions are shown there, inside their own account (Visquis, 19 September)",
+  app: "the signed-in spaces: an agent's own commissions are shown there, inside their own account",
   landsAdmin: 'the back office, read by staff only',
   'products.kbs.modulesDetail':
     'the KCA syllabus: a lecture on how an agent is paid teaches the rule, it promises nothing',
@@ -66,7 +62,7 @@ const PAYMENT_DELAY = /\b[JD]\s*\+\s*\d+\b/;
 
 /**
  * Any mention of an agent's remuneration. C14 - the scale - is not settled, so
- * no public page speaks of it at all, rate or not (Visquis, 27 September).
+ * no public page speaks of it at all, rate or not.
  * Word-bounded: "learn" and "earn your KCA certificate" are not remuneration.
  */
 const REMUNERATION_MENTION =

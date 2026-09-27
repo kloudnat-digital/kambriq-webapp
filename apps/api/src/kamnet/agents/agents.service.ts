@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
 import {
-  buildPaginatedResponse,
   EmailService,
   KAMNET_MAX_PUBLIC_DIRECTORY_ENTRIES,
   KAMNET_PROMOTION_THRESHOLDS,
@@ -15,6 +14,9 @@ import {
   PaginationQuery,
   RedisService,
   RoleCode,
+  TIMESTAMP_SORTS,
+  buildPaginatedResponse,
+  sortField,
 } from '@kambriq/common';
 import { KamnetPrismaService } from '../prisma/kamnet-prisma.service';
 import { UsersService } from '../../core/users/users.service';
@@ -459,7 +461,7 @@ export class KamnetAgentsService {
         where,
         skip,
         take: limit,
-        orderBy: { [sort || 'createdAt']: order || 'desc' },
+        orderBy: { [sortField(sort, TIMESTAMP_SORTS, 'createdAt')]: order || 'desc' },
         include: {
           _count: {
             select: { referrals: true },

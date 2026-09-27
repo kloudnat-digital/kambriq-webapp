@@ -33,8 +33,8 @@ describe('seed identifiers are valid UUIDs by the API’s own rule', () => {
   const literals = [...SEED.matchAll(UUID_LITERAL)].map((m) => m[1]);
 
   it('finds the hardcoded ids (guards the regex itself, not just the ids)', () => {
-    // A measurement that returns nothing must not read as a pass. Every wrong
-    // number this week came from the measurement, not the thing measured.
+    // A measurement that returns nothing must not read as a pass: this asserts
+    // that the regex found ids at all, not only that the ids it found are valid.
     expect(literals.length).toBeGreaterThan(40);
   });
 

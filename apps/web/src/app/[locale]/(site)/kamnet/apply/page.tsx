@@ -9,9 +9,8 @@ import { ApplyForm } from './apply-form';
 /**
  * P5 - `/kamnet/apply`, wired to the API.
  *
- * It used to be a mock: its submit toasted "Candidature soumise !" and stored
- * nothing. It now reads where the signed-in person stands and says only what is
- * true: they need a certificate first, or their application's real status, or -
+ * It reads where the signed-in person stands and says only what is true: they
+ * need a certificate first, or their application's real status, or -
  * when they may apply - a form that posts to `POST /kamnet/applications`. The
  * API stores the application, emails the applicant, and announces it to the
  * contact inbox. When the standing cannot be read, the page says so rather than

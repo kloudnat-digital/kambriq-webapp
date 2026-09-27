@@ -1,13 +1,13 @@
 import { EXAM_PASSING_SCORE, MODULE_PASSING_SCORE } from '../../constants/kbs';
 
 /**
- * The two KBS thresholds, and the decision behind each.
+ * The two KBS thresholds, and the reason behind each.
  *
- * Decided by Visquis on 18 September 2026: 80 at the exam, 70 at the module
- * quizzes. The reasoning is what makes them two numbers rather than one - the
- * certification document governs what is promised to the candidate, so the exam
- * threshold is the promise; the module quizzes are drilling, and drilling is
- * allowed to be easier than the examination it prepares for.
+ * 80 at the exam, 70 at the module quizzes. The reasoning is what makes them two
+ * numbers rather than one: the certification document governs what is promised
+ * to the candidate, so the exam threshold is the promise; the module quizzes are
+ * drilling, and drilling is allowed to be easier than the examination it
+ * prepares for.
  *
  * Neither constant had a single test before this file. The exam threshold was
  * changed from 75 to 80 with nothing in the suite noticing, which is the whole

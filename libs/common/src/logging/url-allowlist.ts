@@ -1,7 +1,7 @@
 /**
  * D28 - what a request log line may say about a URL, for the API and the web.
  *
- * An **allowlist** (Visquis, 27 September): the query keys below keep their
+ * An **allowlist**: the query keys below keep their
  * value; every other value is written as `[redacted]`, and so is any fragment.
  * Never a denylist - five email links carry a credential in their query
  * (`verify-email`, `reset-password`, `set-password`, `confirm-email-change`,

@@ -40,7 +40,7 @@ const switchToEnglish = async () => {
 const toasts = () => useToastStore.getState().toasts;
 
 /**
- * J4, second half. Visquis, 26 September: someone who switches does not tell
+ * J4, second half. Someone who switches does not tell
  * the page from their account - they switched to English, they expect
  * English, emails included. So the switch writes a signed-in person's account
  * language, and says so where it lands, with the way back.

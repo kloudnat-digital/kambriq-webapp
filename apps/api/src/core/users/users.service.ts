@@ -31,13 +31,15 @@ import {
   RoleCode,
   SUPER_ADMIN_ROLE,
   StorageService,
+  TIMESTAMP_SORTS,
   VerificationTokenType,
+  ageInDays,
   buildPaginatedResponse,
   changedKeys,
   comparePassword,
   hashPassword,
   maskEmail,
-  ageInDays,
+  sortField,
   withOldestWaiting,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
@@ -213,7 +215,7 @@ export class UsersService {
       this.prisma.user.findMany({
         skip,
         take: limit,
-        orderBy: { [sort]: order },
+        orderBy: { [sortField(sort, TIMESTAMP_SORTS, 'createdAt')]: order || 'desc' },
         include: {
           userRoles: {
             include: { role: { select: { code: true, name: true } } },
@@ -646,9 +648,8 @@ export class UsersService {
     });
 
     const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3001');
-    // I45: the page that consumes a PASSWORD_RESET token is /reset-password; the
-    // /auth/set-password this used to name never existed, and every invitation
-    // led to a 404. emailed-urls-resolve.spec.ts keeps every emailed URL honest.
+    // I45: a PASSWORD_RESET token is consumed by /reset-password, and by no other
+    // path. emailed-urls-resolve.spec.ts asserts every emailed URL resolves.
     const setPasswordUrl = `${frontendUrl}/reset-password?token=${rawToken}`;
 
     await this.emailService.send({

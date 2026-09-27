@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import Navbar from '@/components/layout/navbar';
 import Footer from '@/components/layout/footer';
 import QuickActions from '@/components/floating/quick-actions';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { publicPageMetadata } from '@/lib/seo/metadata';
-import { loadContent } from '@/lib/content';
+import { CmsBody } from '@/components/cms/portable-text';
+import { cmsLanguage, fetchContentPage } from '@/lib/cms/documents';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { ArrowRight } from 'lucide-react';
@@ -13,9 +15,13 @@ export const generateMetadata = (): Promise<Metadata> =>
   publicPageMetadata('/methode', 'metadata.methode');
 
 export default async function MethodePage() {
-  const locale = await getLocale();
+  const locale = cmsLanguage(await getLocale());
   const t = await getTranslations('methode');
-  const MethodeContent = await loadContent('methode', locale);
+  const document = await fetchContentPage('methode', locale);
+
+  // 404 rather than a hero with nothing under it: a page whose content is
+  // missing has none, and a soft 404 over a 200 is indexed as a real page.
+  if (!document) notFound();
 
   return (
     <>
@@ -47,10 +53,10 @@ export default async function MethodePage() {
           </div>
         </section>
 
-        {/* MDX content */}
+        {/* Long-form content, from the CMS */}
         <section className="border-t border-border/45 px-6 py-16 sm:px-8">
           <div className="mx-auto max-w-3xl">
-            <MethodeContent />
+            <CmsBody body={document.body} language={locale} />
           </div>
         </section>
       </main>

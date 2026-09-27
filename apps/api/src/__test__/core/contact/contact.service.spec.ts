@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { ContactSubject, EmailService } from '@kambriq/common';
@@ -6,6 +7,9 @@ import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
 import { mockCorePrisma, mockEmailService } from '../../utils';
 
 const INBOX = 'backoffice@contact.test';
+
+/** The archived revision of the privacy policy current at the time of the test. */
+const SNAPSHOT_ID = '5c9f1a20-7b3e-4e1a-9d21-2f0c8a7e4411';
 
 const ROW = {
   id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
@@ -38,6 +42,7 @@ describe('L1 - ContactService', () => {
     prisma = mockCorePrisma();
     email = mockEmailService();
     prisma.contactRequest.create.mockResolvedValue(ROW);
+    prisma.policySnapshot.findFirst.mockResolvedValue({ id: SNAPSHOT_ID });
 
     config = {
       get: jest.fn((key: string, fallback?: string) => {
@@ -71,6 +76,64 @@ describe('L1 - ContactService', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     await build();
+  });
+
+  // ----- WHAT WAS CONSENTED TO, AND WHICH WORDING ----- //
+
+  describe('a consent record names the version, not only the document', () => {
+    it('binds the row to the archived revision current when it was written', async () => {
+      await service.submit(input());
+
+      expect(prisma.policySnapshot.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { slug: 'legal-privacy', locale: 'fr' },
+          orderBy: { publishedAt: 'desc' },
+        }),
+      );
+      expect(prisma.contactRequest.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            consentPolicyPath: '/legal/privacy',
+            consentPolicySnapshotId: SNAPSHOT_ID,
+          }),
+        }),
+      );
+    });
+
+    it('asks for the version in the language of the page', async () => {
+      await service.submit(input({ locale: 'en' }));
+
+      expect(prisma.policySnapshot.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { slug: 'legal-privacy', locale: 'en' } }),
+      );
+    });
+
+    it('resolves the version here rather than taking one from the request', async () => {
+      // A version supplied by a browser is a claim about what somebody was
+      // shown. The record has to say what the site was serving, which is the
+      // same reason the consent timestamp is the server's.
+      await service.submit(input({ consentPolicySnapshotId: 'chosen-by-the-caller' }));
+
+      const data = (prisma.contactRequest.create as jest.Mock).mock.calls[0][0].data;
+      expect(data.consentPolicySnapshotId).toBe(SNAPSHOT_ID);
+    });
+
+    it('still stores the lead when nothing is archived, and says so loudly', async () => {
+      prisma.policySnapshot.findFirst.mockResolvedValue(null);
+      const logged = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
+      const result = await service.submit(input());
+
+      // The lead is the success criterion (L1). Refusing somebody's message
+      // because no policy has been published would be the worse answer.
+      expect(result.id).toBe(ROW.id);
+      expect((prisma.contactRequest.create as jest.Mock).mock.calls[0][0].data).toMatchObject({
+        consentPolicySnapshotId: null,
+      });
+      expect(logged).toHaveBeenCalledWith(expect.stringContaining('legal-privacy'));
+
+      logged.mockRestore();
+    });
   });
 
   // ----- THE ACKNOWLEDGEMENT, IN THE PAGE'S LANGUAGE ----- //

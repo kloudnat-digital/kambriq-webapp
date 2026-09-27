@@ -7,9 +7,6 @@
  * `@smithy/core`, which reads `TextDecoder` at module scope, and jsdom does
  * not provide it. `ReferenceError: TextDecoder is not defined`, zero tests, and
  * a suite that reports nothing reports no defect either.
- *
- * Found on the merge of 25 September and NOT caused by it: reverting the web
- * jest config to develop's own left the failure unchanged.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -27,13 +24,20 @@ import {
   fontSrcSources,
   styleSrcSources,
 } from './image-hosts';
+import { SANITY_PROJECT_ID_VAR } from './sanity-hosts';
 
 const DEV_BUCKET = 'kambriq-media-dev';
 const DEV_REGION = 'eu-central-1';
 const DEV_HOST = `${DEV_BUCKET}.s3.${DEV_REGION}.amazonaws.com`;
 
+const SANITY_PROJECT = '7k3m2q1p';
+
 const withBucket = { [MEDIA_BUCKET_HOST_VAR]: DEV_HOST } as NodeJS.ProcessEnv;
 const withoutBucket = {} as NodeJS.ProcessEnv;
+const withSanity = {
+  [MEDIA_BUCKET_HOST_VAR]: DEV_HOST,
+  [SANITY_PROJECT_ID_VAR]: SANITY_PROJECT,
+} as NodeJS.ProcessEnv;
 
 const NEXT_CONFIG = readFileSync(join(__dirname, '../../../next.config.ts'), 'utf8');
 
@@ -62,6 +66,7 @@ describe('image optimizer hosts', () => {
   describe.each([
     ['with the bucket variable', withBucket],
     ['without it', withoutBucket],
+    ['with the bucket and a Sanity project', withSanity],
   ])('%s', (_label, env) => {
     it('lists only literal hostnames - no wildcard anywhere in the host', () => {
       for (const { hostname } of imageRemotePatterns(env)) {
@@ -70,9 +75,15 @@ describe('image optimizer hosts', () => {
       }
     });
 
-    it('names in the CSP img-src exactly the hosts the optimizer may fetch', () => {
+    it('names in the CSP img-src exactly what the optimizer may fetch, paths included', () => {
+      // A source that carries a path must carry the same path in both, or the
+      // browser and the optimizer disagree about what is allowed.
       expect(imgSrcSources(env)).toEqual(
-        imageRemotePatterns(env).map(({ hostname }) => `https://${hostname}`),
+        imageRemotePatterns(env).map((pattern) =>
+          'pathname' in pattern
+            ? `https://${pattern.hostname}${pattern.pathname.replace(/\*\*$/, '')}`
+            : `https://${pattern.hostname}`,
+        ),
       );
     });
   });
@@ -122,34 +133,43 @@ describe('image optimizer hosts', () => {
     it('refuses our own bucket too when the variable is missing', async () => {
       expect(accepted(withoutBucket, await presignedMediaUrl('users/u1/avatar/x.jpg'))).toBe(false);
     });
-  });
 
-  /**
-   * The variable is read at `next build`, inside the image. If it stops
-   * reaching the build, the optimizer quietly refuses every bucket photo - safe,
-   * and a regression nobody would see until a page lost its pictures.
-   */
-  describe('the bucket variable reaches the image build', () => {
-    const ROOT = join(__dirname, '../../../../..');
-    const read = (path: string) => readFileSync(join(ROOT, path), 'utf8');
+    /**
+     * `cdn.sanity.io` is one hostname for every Sanity customer, and anybody can
+     * create a project on it. Listed as a bare host it is `**.amazonaws.com`
+     * with a literal name, so the project is a path segment and the pattern
+     * carries it.
+     */
+    describe('the Sanity asset CDN', () => {
+      const asset = (path: string) => new URL(`https://cdn.sanity.io${path}`);
 
-    it('is declared in Dockerfile.web before next build runs', () => {
-      const dockerfile = read('docker/Dockerfile.web');
-      const arg = dockerfile.search(/^ARG MEDIA_BUCKET_HOST$/m);
-      const build = dockerfile.search(/^RUN .*next build/m);
-      expect(arg).toBeGreaterThan(-1);
-      expect(build).toBeGreaterThan(arg);
+      it('accepts an image of our own project, with its transform query', () => {
+        expect(
+          accepted(
+            withSanity,
+            asset(`/images/${SANITY_PROJECT}/production/Ab12-300x450.jpg?w=800&auto=format`),
+          ),
+        ).toBe(true);
+      });
+
+      it.each([
+        ["another customer's project", '/images/someoneelse/production/x.jpg'],
+        ['the same host outside the image path', `/files/${SANITY_PROJECT}/production/x.pdf`],
+        ['the bare host', '/'],
+      ])('refuses %s', (_label, path) => {
+        expect(accepted(withSanity, asset(path))).toBe(false);
+      });
+
+      it('refuses our own project when the variable is missing', () => {
+        expect(
+          accepted(withBucket, asset(`/images/${SANITY_PROJECT}/production/Ab12-300x450.jpg`)),
+        ).toBe(false);
+      });
     });
-
-    it.each(['.github/workflows/ci.yml', '.github/workflows/manual-deploy-dev.yml'])(
-      'is passed as a build arg by %s',
-      (workflow) => {
-        expect(read(workflow)).toMatch(
-          /^\s+MEDIA_BUCKET_HOST=\$\{\{ vars\.MEDIA_BUCKET_HOST \}\}$/m,
-        );
-      },
-    );
   });
+
+  // `MEDIA_BUCKET_HOST` reaching the image is asserted with every other
+  // build-time variable, in `build-vars-reach-the-image.spec.ts`.
 
   /**
    * A44 - the browser uploads an avatar straight to the bucket with a presigned

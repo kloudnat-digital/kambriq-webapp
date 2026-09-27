@@ -19,6 +19,9 @@ module.exports = {
     '^.+\\.[tj]s$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.spec.json' }],
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
+  // Same reason as `jest.config.cts`: `@portabletext/*` is ESM-only, and the
+  // lookahead spans the whole remaining path so it holds for a pnpm layout.
+  transformIgnorePatterns: ['node_modules/(?!.*@portabletext)'],
   // Postgres is local, but a first run also applies every migration.
   testTimeout: 30_000,
 };

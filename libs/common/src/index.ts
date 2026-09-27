@@ -89,6 +89,7 @@ export {
   type PaginationQuery,
 } from './dto/pagination.dto';
 export { ageInDays, withOldestWaiting, ONE_DAY_MS } from './dto/queue-aging';
+export { sortField, TIMESTAMP_SORTS } from './dto/sort-field';
 
 // ----- Decorators -----
 export { CurrentUser, Roles, ROLES_KEY, Public, IS_PUBLIC_KEY } from './decorators';
@@ -153,6 +154,54 @@ export { GlobalExceptionFilter } from './filters/global-exception.filter';
 export { PrismaExceptionFilter } from './filters/prisma-exception.filter';
 export { ZodExceptionFilter } from './filters/zod-exception.filter';
 
+// ----- CMS (wave 7) -----
+export {
+  LEGAL_POLICY_TYPE,
+  POLICY_LANGUAGES,
+  POLICY_SLUGS,
+  POLICY_SLUG_PATTERN,
+  POLICY_PUBLISH_FILTER,
+  POLICY_PUBLISH_PROJECTION,
+  POLICY_WEBHOOK_API_VERSION,
+  POLICY_WEBHOOK_NAME,
+  POLICY_WEBHOOK_PATH,
+  CONSENT_POLICY_SLUG,
+  policyDocumentId,
+} from './cms/legal-policy';
+export type { PolicyLanguage, PolicySlug } from './cms/legal-policy';
+export {
+  CONTENT_BLOCK_DECORATORS,
+  CONTENT_BLOCK_LISTS,
+  CONTENT_BLOCK_STYLES,
+  CONTENT_BLOCK_TYPES,
+  CONTENT_PAGE_LANGUAGES,
+  CONTENT_PAGE_ROUTES,
+  CONTENT_PAGE_SLUGS,
+  CONTENT_PAGE_TYPE,
+  contentPageDocumentId,
+} from './cms/content-page';
+export type { ContentBlockType, ContentPageSlug } from './cms/content-page';
+export {
+  CMS_API_VERSION,
+  CMS_REVALIDATE_SECONDS,
+  DELIVERY_PROJECTION,
+  DOCUMENT_BY_ID_QUERY,
+  cmsCacheTag,
+} from './cms/delivery';
+
+// ----- KBS label definitions (wave 7) -----
+export {
+  KBS_LABELS,
+  KBS_LABEL_DEFINITIONS,
+  kbsLabelDefinition,
+  kbsLabelDescriptionText,
+} from './kbs/label-definitions';
+export type {
+  KbsLabelCode,
+  KbsLabelDefinition,
+  KbsLabelLanguage,
+  KbsLabelRun,
+} from './kbs/label-definitions';
 // ----- Lands (P24) -----
 export {
   TITLE_NUMBER_EXAMPLE,

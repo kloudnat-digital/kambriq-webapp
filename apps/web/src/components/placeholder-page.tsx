@@ -4,12 +4,10 @@ import { getTranslations } from 'next-intl/server';
 /**
  * A signed-in screen that is not built yet (I43).
  *
- * It names itself and says it is not built - nothing else. It used to take a
- * `features` list, hardcoded French, and render it as "Fonctionnalités
- * prévues": 38 promises across ten screens, none of them built, read by the
- * agents we were recruiting. A list of what a screen will do is a promise, so
- * this component no longer accepts one, nor a subtitle describing the screen,
- * nor the roles allowed on it. `placeholder-page.spec.tsx` pins the whole text.
+ * It names itself and says it is not built - nothing else. A list of what a
+ * screen will do is a promise, so this component accepts no `features` list, no
+ * subtitle describing the screen and no roles: adding any of them back puts an
+ * unbuilt promise in front of a user. `placeholder-page.spec.tsx` pins the text.
  */
 type PlaceholderPageProps = {
   namespace: string;

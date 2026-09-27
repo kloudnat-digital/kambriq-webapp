@@ -6,13 +6,15 @@ import { UsersService } from '../../core/users/users.service';
 import { readActiveCourse } from '../settings/active-course';
 import { IssueCertificateDto, RevokeCertificateDto } from './dto/certificate.dto';
 import {
-  buildPaginatedResponse,
   CandidateStatus,
   DEFAULT_LANGUAGE,
   EmailService,
   ExamStatus,
   PaginationQuery,
   RoleCode,
+  TIMESTAMP_SORTS,
+  buildPaginatedResponse,
+  sortField,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 import { DateTime } from 'luxon';
@@ -375,7 +377,7 @@ export class KbsCertificatesService {
       this.prisma.kbsCertificate.findMany({
         skip,
         take: limit,
-        orderBy: { [sort]: order },
+        orderBy: { [sortField(sort, TIMESTAMP_SORTS, 'createdAt')]: order || 'desc' },
         include: {
           candidate: {
             select: {

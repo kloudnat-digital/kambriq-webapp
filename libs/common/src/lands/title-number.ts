@@ -2,8 +2,8 @@
  * P24 - the Cameroonian land title number: `TF <digits>/<letters>`.
  *
  * The letters name the department where the title is registered - one, two or
- * three of them: `M` for Menoua, `SM` for Sanaga-Maritime, `WB` for Wouri B
- * (Visquis, 25 September 2026). `TF 4129/M` is well formed.
+ * three of them: `M` for Menoua, `SM` for Sanaga-Maritime, `WB` for Wouri B.
+ * `TF 4129/M` is well formed.
  *
  * **The shape is the rule, never a list of departments.** We do not hold the
  * complete list, and a list missing one department refuses a real person's
@@ -42,8 +42,8 @@ export const parseTitleNumber = (input: string): TitleNumber | null => {
 };
 
 /**
- * Department codes confirmed by Visquis. Empty until his list arrives, and read
- * only by `isUnlistedDepartment` - never by the decision to accept or refuse.
+ * Confirmed department codes. Empty until the authoritative list arrives, and
+ * read only by `isUnlistedDepartment` - never by the decision to accept or refuse.
  */
 export const KNOWN_DEPARTMENT_CODES: ReadonlySet<string> = new Set<string>();
 

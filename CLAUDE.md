@@ -68,6 +68,42 @@ session loads before it knows enough to doubt it.
 So: a chantier that teaches something new adds it here, in the PR that closes the
 chantier. Not afterwards, not in a docs pass, not "once it settles down".
 
+### The README is updated in the same PR as the change that dates it
+
+`README.md` is the only document a newcomer reads before they can run anything,
+and it is the one nobody re-reads afterwards. That is exactly the condition under
+which a document rots without anybody noticing.
+
+**So a technical change to the codebase updates the README in the same PR, when
+the README would otherwise mislead.** The test is not "is this change
+interesting" but **"would a reader following this file now be wrong"**. These are
+the shapes that make it wrong:
+
+- a script added, renamed or removed, or one whose description no longer matches
+  what it runs;
+- an environment variable added, renamed, or made required, and anything that
+  changes what happens when it is absent;
+- a new application, library, Nx project or top-level directory, and any move
+  that changes where something lives;
+- a new test layer, or a change to which job runs an existing one;
+- a route whose path changed, where the README names that path;
+- a version bump in a tool a reader has to install, above all Node and pnpm;
+- a document that moved or was deleted, where the README links to it.
+
+`None` is a valid answer and does not have to be written down: most commits do
+not date the README. What is not acceptable is a change of the shapes above
+shipped with the README left describing the old behaviour.
+
+It was left unmaintained for 98 commits, and what that cost is the measure of the
+rule. Three of its four web commands did not exist, the Node and pnpm
+prerequisites were two majors behind against an `engine-strict=true` install so
+following them produced a refused install, six of the sixteen documented routes
+were gone, the project structure omitted `apps/web` entirely, and it named
+`apps/web/src/content/methode/fr.mdx` as the authoritative source for the label
+definitions - a file deleted when the content moved to Sanity. Every one of those
+is a reader sent somewhere that does not exist, by the document whose only job is
+telling them where things are.
+
 ---
 
 ## 3. Method
@@ -771,11 +807,13 @@ one are the same characters. What separates them is **position**: a decorator
 opens its own line. `/^[ \t]*@Public\(\)/gm` counts positions and cannot match a
 mention.
 
-The same shape has now appeared three times - `payment-money.tsx`'s doc comment
+The same shape has now appeared five times - `payment-money.tsx`'s doc comment
 naming the APIs it bans, `lands-client.controller.ts` explaining that it does not
-send instructions, and this. **When a sweep bans a token, the code that explains
-the ban is the first thing it will flag.** Match the shape, not the substring, and
-prove the sweep still fires afterwards.
+send instructions, this, `sanity-hosts.spec.ts`, whose first run failed on the
+comment explaining the host it was banning, and the same spec again a step later,
+failing on the docstring that explains why `next-sanity` is **not** used. **When a sweep bans a token, the
+code that explains the ban is the first thing it will flag.** Match the shape,
+not the substring, and prove the sweep still fires afterwards.
 
 ### A stacked PR must be re-based when its base merges, or it merges into nothing
 
@@ -1816,6 +1854,251 @@ Two properties of Next.js make this easy to get wrong:
 - a pattern with no `search` matches every query string. Presigned URLs need
   that, and it is a statement about what the entry allows, not a detail.
 
+**And a literal host can still be shared.** `cdn.sanity.io` is one hostname for
+every Sanity customer, so it satisfies "no wildcard" by the letter and is the
+same hole in substance: anybody can create a project there and choose the bytes
+the optimizer decodes. Where the tenant is a path segment, the scope is a path -
+`/images/<projectId>/` - and `image-hosts.ts` carries sources rather than
+hostnames so `img-src` and the optimizer take the same value. **Ask who else can
+be served by a host before deciding that naming it is enough.**
+
+### An `ARG` nobody passes is a variable read as empty
+
+From wave 7 step 2, and it had been true for as long as the map has existed.
+
+`NEXT_PUBLIC_MAPBOX_TOKEN` is declared in `docker/Dockerfile.web` and passed by
+**neither** workflow, so every deployed image has run the map widget with an
+empty token. `SANITY_STUDIO_ORIGIN` is the mirror image: read by
+`next.config.ts` and declared as no `ARG` at all, so it could never have reached
+a build.
+
+Neither is visible, and the reason is the thing worth keeping: **every one of
+these variables is designed to fail closed.** An absent bucket host refuses
+bucket URLs, an absent Studio origin gives `frame-ancestors 'none'`, an absent
+Mapbox token draws no tiles. That is the right default in each case, and it also
+means a variable that never arrives looks exactly like a variable somebody chose
+not to set.
+
+`output: 'standalone'` makes it worse by one step: `images` and `headers()` are
+frozen into the manifests at `next build`, so a value that is only in the task
+definition changes nothing at all.
+
+**The rule: a build-time variable is wired in three places - an `ARG` before
+`next build`, a `build-args` line in every workflow that builds the image, and
+the environment variable that feeds it - and a test asserts all three.**
+`build-vars-reach-the-image.spec.ts` pins them in both directions, so an `ARG`
+the list does not name fails too. Both of the defects above were found by
+writing it, not by reading the files.
+
+### A package.json is an install for everybody who installs
+
+Also wave 7 step 2. The Sanity Studio needs a codebase in the repository, and
+`sanity` with its dependencies is several hundred megabytes.
+
+Added as a pnpm workspace package it would be installed by **every job that
+installs**: both quality jobs, both image builds, the journeys. Added merely as
+a directory with a `package.json`, Nx infers a project from it - measured, not
+assumed: without `.nxignore`, `nx show projects` answers with a seventh project,
+`kambriq-studio`, which then joins `run-many --all`.
+
+So `studio/` is outside `pnpm-workspace.yaml` and named in `.nxignore`, with its
+own lockfile and its own `pnpm install --ignore-workspace`. The cost of that
+choice is a second lockfile and a second install; the cost of the other one is
+paid by every CI minute, and [CI is billed per job, rounded
+up](#ci-is-billed-per-job-rounded-up---so-four-fast-jobs-cost-more-than-one-slow-one).
+
+**Before adding a `package.json` anywhere, ask which jobs will now install it
+and which tool will now infer a project from it.** Both answers are one command
+away, and neither is visible in the file you are adding.
+
+### A peer dependency is your install too
+
+From wave 7 step 3, and it reversed a decision made two steps earlier.
+
+`next-sanity@13.3.4` was chosen for `defineLive`. It declares **`sanity` as a
+non-optional peer**, and pnpm installs peers - so adding one package to a
+`package.json` adds the entire Sanity Studio to the root install that every
+quality job, both image builds and the journeys pay for. Measured with
+`--lockfile-only`, same three direct dependencies each time: 108 lockfile entries
+for `next` + `react` + `react-dom`, **1846** with `next-sanity`, **128** with
+`@sanity/client` + `@portabletext/react`.
+
+Three knobs were tried before reversing the decision, and two of them looked
+right and did nothing: `peerDependencyRules.ignoreMissing` and
+`packageExtensions` both left it at **1846, byte for byte identical**. Only
+`autoInstallPeers: false` removes it - and that changes resolution for every
+package in the repository, which is fixing one dependency by moving a global.
+
+**The rule: read a package's `peerDependencies` before adding it, and treat a
+non-optional peer as a direct dependency, because that is what your installer
+will make it.** `npm view <pkg> peerDependencies` is one command; the lockfile
+diff is the proof.
+
+And the corollary about knobs: **a setting that does not change the measurement
+did not apply.** The first attempt at `autoInstallPeers: false` went into
+`.npmrc`, where pnpm 11 no longer reads it - the lockfile still said
+`autoInstallPeers: true` at the top, which is what caught it. Read the output the
+setting is supposed to change, not the file you wrote it in.
+
+### A renderer you cannot make strict is a renderer to constrain upstream
+
+Also wave 7 step 3. `@portabletext/react` throws on an unknown block **type**
+once `onMissingComponent` is replaced - the same treatment `policy-render.ts`
+already gives `@portabletext/to-html`. An unknown block **STYLE** does not reach
+that handler at all: `mergeComponents` puts the library's own block map under
+ours, so `h5` resolves to its default heading, renders unstyled, and nothing is
+called.
+
+Measured rather than assumed - the spec renders an `h5` and asserts
+`className === ''`, which is the whole cost of the gap written down as a number.
+
+So the guard moved to where it can fire: the Studio declares the five styles,
+three marks and two list kinds the site renders, and a spec pins that list to the
+contract in both directions. **When a library will not let you refuse an input,
+stop the input being produced.** A guard at the wrong layer is the "reports
+success by saying nothing" family wearing a render.
+
+### An identifier can carry a permission, and nothing in its shape says so
+
+From wave 7 step 3, on the first real import. Document ids were designed as
+`legalPolicy.legal-privacy.fr` - type, slug, language, deterministic, readable,
+and fetched by id rather than by a filter so that two documents could never both
+match. Every property of that scheme was right except one character.
+
+**In a public Sanity dataset, a document whose `_id` contains a period is
+private.** It is the same rule that hides `drafts.*`, applied to any dot. So the
+sixteen documents imported, the Studio listed them with their content,
+`sanity documents query` returned all of them - and every page on the site
+answered **404**, because the delivery client is the one caller that sends no
+token.
+
+**Every layer said yes and the only anonymous reader said no.** That is what made
+it expensive: the failure was at the last hop, and each check before it was a
+check made with credentials.
+
+**Two wrong diagnoses first, both from reading instead of measuring.** "The
+dataset is private" - `dataset visibility get` answers `public`. "They are
+drafts" - there are zero drafts and twenty-eight published documents. What
+settled it was a **control**: one dotless document written into the same dataset,
+readable anonymously in the same second that a dotted one was not. A search
+summary had already given the right answer, and it was not worth acting on until
+it had been reproduced.
+
+**The rule: when a store gives identifiers meaning, find out what it reserves
+before choosing a format** - a prefix, a separator, a character class. And test
+a read path with the credentials the real caller will have, which here is none.
+An authenticated check of an anonymous route proves the data exists and nothing
+about who can see it.
+
+### A build that bundles is not a build that checks
+
+Wave 7 step 2 accepted the Sanity Studio on the standard "it was built, not just
+written": `sanity build` exited 0 and the bundle carried the new types. Step 3
+added a `divider` object with `fields: []`, and that built clean too - then the
+Studio showed **Schema errors** on the first page load: _Object should have at
+least one field_.
+
+`sanity build` bundles a schema. `sanity schema validate` is a different command
+and it named the one error in the whole schema; with the field added it reports
+0 errors and 0 warnings. **Both directions, in one sitting, which is what makes
+it a gate rather than a command that happened to pass.**
+
+**The general shape, and it is not about Sanity.** A toolchain usually has more
+than one thing that can be run against the same artefact, and they answer
+different questions - compile, bundle, validate, lint, deploy. "It built" is
+evidence about the bundler. Before treating a build as acceptance, ask what else
+the tool offers to run, and whether the property you actually care about is one
+the build was ever checking.
+
+And the cheap habit that follows: the validator is `pnpm validate` in
+`studio/package.json` and named in the README, because
+[a check that never runs looks exactly like a check that passes](#a-check-that-never-runs-looks-exactly-like-a-check-that-passes).
+
+### A migration is proved by reading the bytes back
+
+Wave 7 step 3 converted sixteen markdown files into Portable Text and deleted
+them. Three transforms were deliberate - the `# Title` line became a field, the
+"last updated" line became `publishedAt`, the three label sections became one
+code-rendered block - and each was checked against the source rather than
+trusted: the date must agree with the field, and the label constants must
+reproduce the markdown **character for character** or the conversion refuses.
+
+The whole was then checked by **reading it back**: 180 fragments of the sources
+found in the converted documents, 0 missing, with the markdown restored from
+`HEAD` for the length of the check. That is `cmp` applied to a transform rather
+than to a copy, and it is the same rule as "two write paths to one destination":
+placing a file and asserting you placed it are different claims.
+
+**Convert with a real parser, refuse what it cannot map, and prove the result
+against the input before deleting the input.** The refusal is the half people
+skip: a converter that drops a node produces a document that looks complete, and
+the omission is permanent.
+
+Two things the refusal found here, neither of which was in the plan. A GFM pipe
+table is invisible to the CommonMark core - it comes back as paragraphs
+containing pipes, which is the one input that would have been silently mangled -
+and an html table has no Portable Text equivalent at all, so it is transcribed
+where a reviewer can see it and every cell checked against the source.
+
+### An event is spent whether or not anybody was listening
+
+From wave 7, and it is the entry that step's own README now opens with.
+
+The sixteen CMS documents were imported into Sanity **published**, which is
+correct - the archive is fed by publish deliveries, and an import that created
+drafts would have fed it nothing. Measured the same evening, three layers down
+the chain did not exist: `POST /api/v1/cms/webhooks/sanity` answered **404** on
+dev because the branch is unmerged, the `PolicySnapshot` migration is not on
+develop so the table is not there either, and the webhook had never been created
+because `SANITY_WEBHOOK_SECRET` is in no task definition.
+
+So the only publish those documents will ever have reached nothing, and
+**nothing reports it**: the documents are right, all sixteen answer the delivery
+query anonymously, ten pages render 200 with their own content, and the archive
+is a table in another system that nobody is looking at.
+
+**It is the SNS topic with no subscription, one property further on.** `D14`
+built a topic that published successfully to nobody, and the rule taken from it
+was that a notification is proven by the message that arrived. That publish
+could be repeated. This one cannot: "do not re-import over live documents" is
+the right rule and it is what closes the door, because after the first load the
+dataset is the content and the file is only the state it started from.
+
+**The rule: when a mechanism is fed by events rather than by state, provision
+the consumer before the producer** - and when the producing action is one-shot,
+that ordering is the only chance there is. Ask what is listening at the moment
+the event fires, not what will be listening later. This is the ordering question
+[from the bootstrap step](#failing-loudly-and-failing-early-are-two-different-properties)
+asked about a subscriber instead of a dependency: _what does this depend on_ is
+not the same question as _what is depending on this having happened_.
+
+**And the recovery is a second CALLER, never a second write path.** What fills
+the archive now is a replay: each published policy POSTed to the real route with
+a valid signature, through the same guard, the same renderer and the same unique
+index. A script that wrote the rows itself would be the `downPaymentConfirmed`
+defect built deliberately.
+
+### A URL in a runbook resolves or it does not, and nothing checks it
+
+Two files told the operator to point `KAMBRIQ_API_URL` at a host with no DNS
+record. Sanity accepts such a webhook, reports it as configured, and delivers
+nothing, so the archive stays empty while every step reports success. Found by
+reading the file.
+
+`kambriq-hosts-are-real.spec.ts` compares every `kambriq.com` host in **URL
+position** against the two the zone answers for. It is **offline** on purpose: a
+lookup that CI cannot make is indistinguishable from a name that does not exist.
+It matches `://` rather than the bare string, or it would forbid any sentence
+naming a host in order to rule it out.
+
+**A guard's own claims are assertions like any other.** Three mutations proved
+it, and two found holes in it first: the character class never matched an
+asterisk, so the wildcard the docstring claimed to refuse went through, and the
+pattern required a label before `kambriq.com`, so it was blind to the apex - the
+one host that will matter in production. Its first three runs also flagged, in
+turn, its own docstring, the prose it depended on elsewhere, and its own test
+fixture.
+
 ### A write to a stored preference, caused by a click read as temporary, is said out loud
 
 From J4's second half. Switching the page language now also sets a signed-in
@@ -2237,12 +2520,24 @@ certificate confers. Grading must never grant `KCA_CERTIFIED` — that role gate
 the KAMNET agent routes, and granting it on a score made somebody an agent with
 no certificate and no human in the loop.
 
-### `fr.mdx` is the single authoritative source for TFL, VEFL and VEFIL
+### TFL, VEFL and VEFIL are fields in code, not prose anywhere
 
-`apps/web/src/content/methode/fr.mdx`, for the question bank **and** for
-editorial content. `kbs-label-definitions.spec.ts` fails when the bank
-contradicts it and when the mdx itself moves. The bank had reproduced an error
-this repo already corrected twice.
+`libs/common/src/kbs/label-definitions.ts`. Four booleans per label - title
+exists, registration complete, subdivision complete, owner at signature - plus
+the description as runs, so the bold on "PAS" and "NOT" survives.
+`kbs-label-definitions.spec.ts` fails when the question bank contradicts them and
+when a definition itself moves. The bank had reproduced an error this repo
+already corrected twice.
+
+**They stopped being prose when the content moved to Sanity, and that is why the
+guard still exists.** The authoritative statement used to be
+`apps/web/src/content/methode/fr.mdx`; a Sanity document cannot be read by a
+test, because CI has no token and giving it one to guard three sentences is a
+poor trade. Left as prose in the CMS, the definitions would have been the same
+fact in two places with nothing comparing them. The `methode` page renders them
+through a `labelDefinitions` block that carries no text of its own, and the
+migration refused to run until the constants reproduced the mdx character for
+character in both languages.
 
 **The KBS question bank has had no editorial or legal validation pass.** It is fit
 to prove the engine and the journey; it is not fit to teach.
@@ -2683,6 +2978,195 @@ until both branches held it. **A convention introduced on a long-lived branch is
 not in force until that branch merges**, and the window is exactly as long as the
 branch is unmerged - which is the argument for merging often rather than for
 writing louder banners.
+
+### A wildcard in `frame-ancestors` is the image-host defect, one directive over
+
+From wave 7. Sanity's Presentation tool shows the live site inside the Studio,
+so the Studio's origin has to be allowed to frame us. Several published guides
+give this:
+
+```
+frame-ancestors 'self' https://*.sanity.studio
+```
+
+**Anybody can create a Sanity project and be handed a subdomain there.** That
+directive therefore lets any Sanity customer's Studio frame this site, which is
+`A40`'s `**.amazonaws.com` wearing a different header. The wildcard is not a
+convenience in either case: it is a list of everyone who can register a name.
+
+`SANITY_STUDIO_ORIGIN` is read through `lib/security/studio-origin.ts`, the same
+shape `MEDIA_BUCKET_HOST` already had: **unset means `'none'`**, a literal origin
+is allowed, and anything else - a wildcard, a path, plain http, another host -
+**fails the build** naming the variable. Proved in all three states rather than
+asserted: `'none'` served, the literal origin served, and
+`SANITY_STUDIO_ORIGIN='https://*.sanity.studio' nx build web` exiting 1.
+
+**And the default has a direction.** Presentation is not in use, so the header is
+not weakened for it. A security header relaxed before anything needs it is
+relaxed for nothing, and the day it is needed nobody re-examines it.
+
+### A comment can state the requirement correctly and the value meet half of it
+
+Also wave 7, and it is a gentler failure than the ones above because nothing
+here was careless.
+
+`ContactRequest.consentPolicyPath` carries this in its own migration:
+
+> _"What was consented TO. Consent is to a document and documents change; a row
+> that records agreement without naming what was agreed to says nothing."_
+
+Exactly right. What it stores is `'/legal/privacy'` - which names the
+**document** and not the **version**, so every consent row on dev records
+agreement to a page whose words nobody can reproduce. The comment is not wrong;
+it describes a guarantee one step stronger than the column delivers, and reading
+it is what makes the column look finished.
+
+**This is the past-tense trap's quieter sibling.** There, a comment describing
+work that had not been done read as evidence it had. Here, a comment describing
+the requirement reads as evidence the requirement was met. Both survive review
+for the same reason: the sentence is true, and it is about something adjacent to
+what the code does.
+
+**When a comment states a requirement, check the value against the sentence**,
+not the sentence against the intent.
+
+### A reference expires; bytes do not
+
+The same chantier, and the reason the archive stores rendered HTML rather than a
+pointer. Sanity's `_rev` identifies a revision and can be resolved through its
+History API - for **3 days** on the plan this project uses. A consent record has
+to answer in ten years.
+
+So `_rev` is kept as provenance and is never the retrieval path, and `rendered`
+holds the document as it was served. It is produced by `@portabletext/to-html`
+rather than the React renderer on purpose: an archive that must outlive the
+component tree cannot be rendered through it.
+
+**Before storing a reference, ask how long the thing it points at is guaranteed
+to exist**, and compare that to how long the record is expected to answer. Where
+they differ, store the thing.
+
+### A renderer's default is to produce something, and something is not everything
+
+From wave 7, step 1, and it is the entry that step exists for.
+
+`@portabletext/to-html` does not fail on a node it has no component for. An
+unknown block **type** renders as `<div style="display:none">` carrying a
+warning, and an unknown block **style** flattens to `<p>`. Read from its source
+rather than inferred: `onMissingComponent` defaults to `printWarning`, which
+writes to `console.warn` and returns, and rendering then continues with
+`DefaultUnknownType`.
+
+So the output is a complete-looking document with a clause missing, and there is
+no exception, no non-2xx, and nothing in the stored bytes that says anything was
+dropped. For the archive of what somebody consented to, that is the worst
+available outcome - worse than failing, because a failure is retried and a
+silent omission is quoted back in ten years as the policy.
+
+`onMissingComponent` throws. A block type added in Sanity therefore needs a
+renderer here before it can be archived, which is the right coupling: the set of
+types is ours and small. **And the library's default is asserted in the suite**,
+so the reason for the throw is a measurement rather than a claim about a default
+nobody checked:
+
+```
+it('would otherwise have hidden the content instead of failing')
+  expect(html).toContain('display:none')
+```
+
+**The general rule: a rendering library's failure mode is a design decision it
+made for you, and its default is almost always to produce output.** Before
+trusting one with a record that must be faithful, find the handler it calls when
+it does not understand something, and decide for yourself whether that is a
+warning or a refusal.
+
+### A driver's error shape is not an API, and the database can be asked directly
+
+Also wave 7 step 1. `PolicyArchiveService` decides "this revision is already
+archived" from the unique index refusing the insert. The first version read
+Prisma's `meta.target` to check **which** index refused, because asserting the
+constraint by name rather than by SQLSTATE is this repository's own rule.
+
+`meta.target` does not exist. Prisma 7 with the pg driver adapter reports:
+
+```
+meta: { modelName: 'PolicySnapshot',
+        driverAdapterError: { cause: { originalCode: '23505',
+          kind: 'UniqueConstraintViolation',
+          constraint: { fields: ['"documentId"', 'revision'] } } } }
+```
+
+Three things worth keeping. The columns are nested four levels inside a
+**driver-adapter** error, so any reader of them is coupled to the adapter rather
+than to Prisma. The first field arrives **with literal double quotes in the
+string**. And the unit spec, which built the error by hand from what I expected,
+passed the whole time - it proved the branch and nothing about the shape. The
+db-backed test is what failed, with `Received promise rejected instead of
+resolved`, and that failure is the only reason the shape was ever read.
+
+The service now catches `P2002` and **asks the database** whether that document
+and revision are on the ledger. A P2002 with no such row is rethrown. Nothing
+parses an error message, nothing reaches into an adapter, and the check survives
+Prisma changing its mind.
+
+**The rule: when an error tells you something the database can be asked, ask the
+database.** `code` is a contract; everything hanging off `meta` is an
+implementation. And a test that constructs the error it expects has tested its
+own expectation.
+
+### A mutation that did not apply reports green
+
+The sibling of the entry about a mutation that stops the suite compiling, and it
+cost two false negatives in one sitting.
+
+A redaction path was removed with `perl -0pi -e` to watch the new assertion fail.
+The suite came back **green**, twice, with two different substitutions - because
+neither substitution matched. The line was
+`` `req.headers["${SIGNATURE_HEADER_NAME}"]`, `` and both patterns mis-escaped
+the template braces or the inner quotes. Nothing errored: `perl -pi` and a
+filtered rewrite both succeed perfectly well when they change nothing.
+
+Read carelessly, that green run says the assertion is worthless. It says nothing
+at all. The mutation had not been run yet.
+
+**The rule: a mutation is not evidence until you have confirmed the file
+changed.** Assert the edit, not the intention - the rewrite that finally worked
+carried `assert len(out) == len(lines) - 1` and failed loudly the one time it
+matched nothing. Then read which tests failed and how many: the proof here is
+`1 failed, 5 passed`, one assertion falling on its own, which is also what
+separates it from a mutation that breaks everything.
+
+**And confirm it by content, not by a proxy for content.** Proving the host
+guard below, three wrong hostnames were substituted into a runbook and the
+confirmation was `len(src) != before`. `prd.kambriq.com` and `dev.kambriq.com`
+are the same length, so the check called an applied substitution a failure,
+refused to write the file, and the green run that followed was a run of the
+unmutated file. A length is a proxy; `new in src and old not in src` is the
+edit. The first two mutations were confirmed correctly and only the third
+exposed it - which is the usual way a proxy fails, on the one case it cannot
+see.
+
+### An append-only table makes every test fixture permanent
+
+From wave 7 step 1, found by running the database suite a second time.
+
+`archives one row per revision` created a row with a **fixed** `documentId` and
+revision, then sent a duplicate as raw SQL and asserted the refusal. It passed on
+the first run. On every run after that the fixed row was still in the database -
+`PolicySnapshot` carries a `BEFORE UPDATE OR DELETE` trigger, so no cleanup can
+remove it, and no reset short of `pnpm test:db:reset` will either - so the
+**setup** write was the one refused and the test failed before reaching its
+assertion.
+
+The ordinary version of this defect is a test that leaves residue. Here the
+residue cannot be swept up by anything, which turns a tidiness problem into a
+correctness one: a fixture written into an immutable table is a permanent part of
+the database.
+
+**The rule: a test against an append-only table mints its own identifiers, and
+the suite is run twice with no reset before it is believed.** Second run, 131
+passing, is the evidence - and it is the same question as asking what a
+postcondition's third run does.
 
 ## 9. Code Comments and Documentation Tone
 

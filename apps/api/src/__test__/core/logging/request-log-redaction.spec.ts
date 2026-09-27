@@ -2,6 +2,7 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { Writable } from 'node:stream';
 import pinoHttp from 'pino-http';
+import { SIGNATURE_HEADER_NAME } from '@sanity/webhook';
 import { REQUEST_LOG_REDACT_PATHS } from '../../../core/logging/request-log-redaction';
 
 /**
@@ -16,6 +17,7 @@ const BEARER = 'Bearer a46.header.value-that-must-not-be-logged';
 const COOKIE = 'session=a46-cookie-value-that-must-not-be-logged';
 const SET_COOKIE = 'refresh=a46-set-cookie-value-that-must-not-be-logged; HttpOnly';
 const CALLER_SECRET = 'a46-caller-secret-value-that-must-not-be-logged-0123';
+const WEBHOOK_SIGNATURE = 't=1758800000000,v1=a46-webhook-signature-that-must-not-be-logged';
 
 describe('A46 - no credential reaches a request log line', () => {
   let server: Server;
@@ -46,6 +48,7 @@ describe('A46 - no credential reaches a request log line', () => {
         authorization: BEARER,
         cookie: COOKIE,
         'x-kambriq-caller-secret': CALLER_SECRET,
+        [SIGNATURE_HEADER_NAME]: WEBHOOK_SIGNATURE,
         'user-agent': 'a46-test',
       },
     });
@@ -75,5 +78,11 @@ describe('A46 - no credential reaches a request log line', () => {
 
   it('never writes the caller secret', () => {
     expect(line).not.toContain(CALLER_SECRET);
+  });
+
+  it('never writes the Sanity webhook signature', () => {
+    // An HMAC beside a published payload is material for attacking the secret,
+    // and the scheme never checks the timestamp's age, so it does not expire.
+    expect(line).not.toContain(WEBHOOK_SIGNATURE);
   });
 });

@@ -10,12 +10,14 @@ import {
   GetLandUploadUrlDto,
 } from './dto/lands.dto';
 import {
-  buildPaginatedResponse,
   LandMediaType,
   LandReservationStatus,
   LandStatus,
   PaginationQuery,
   StorageService,
+  TIMESTAMP_SORTS,
+  buildPaginatedResponse,
+  sortField,
 } from '@kambriq/common';
 import { LandsPrismaService } from './prisma/lands-prisma.service';
 
@@ -217,7 +219,7 @@ export class LandsService {
         where,
         skip,
         take: limit,
-        orderBy: { [sort || 'createdAt']: order || 'desc' },
+        orderBy: { [sortField(sort, TIMESTAMP_SORTS, 'createdAt')]: order || 'desc' },
         include: {
           label: { select: { code: true, name: true } },
           media: {
@@ -268,7 +270,7 @@ export class LandsService {
         where,
         skip,
         take: limit,
-        orderBy: { [sort || 'createdAt']: order || 'desc' },
+        orderBy: { [sortField(sort, TIMESTAMP_SORTS, 'createdAt')]: order || 'desc' },
         include: {
           media: {
             select: {

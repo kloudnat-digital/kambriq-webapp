@@ -40,7 +40,7 @@ const deposit = (state: PaymentState, id = 'pay-acompte') => ({
 
 /**
  * G20 - the balance is a payment on the ledger, and it is what is still owed:
- * the total minus what was RECEIVED on the deposit (Visquis, 26 September), not
+ * the total minus what was RECEIVED on the deposit, not
  * minus the deposit that was due. A deposit that arrived short leaves its
  * shortfall in the balance instead of a hole nobody sees.
  */

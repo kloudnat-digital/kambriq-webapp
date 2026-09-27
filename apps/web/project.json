@@ -9,6 +9,17 @@
       "options": {
         "args": "--port 3001"
       }
+    },
+    "test": {
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/docker/Dockerfile.web",
+        "{workspaceRoot}/.github/workflows/ci.yml",
+        "{workspaceRoot}/.github/workflows/manual-deploy-dev.yml",
+        "{workspaceRoot}/libs/common/src/i18n/**/*.json",
+        "{workspaceRoot}/scripts/sanity/content/initial-content.ndjson"
+      ]
     }
   }
 }

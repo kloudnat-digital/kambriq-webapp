@@ -64,6 +64,19 @@ export const mockCorePrisma = () => ({
     count: fn(),
     update: fn(),
   },
+  /**
+   * Wave 7 - the policy archive a consent record points at.
+   *
+   * A method missing from this mock does not fail a test that never reaches it,
+   * which is how `kbsCandidate.updateMany` went unnoticed. `ContactService`
+   * reads it on every submit, so its absence broke twelve tests at once.
+   */
+  policySnapshot: {
+    create: fn(),
+    findFirst: fn(),
+    findUnique: fn(),
+    count: fn(),
+  },
   $transaction: jest.fn((args: Promise<unknown>[] | ((client: unknown) => Promise<unknown>)) =>
     Array.isArray(args) ? Promise.all(args) : args(mockCorePrisma()),
   ),

@@ -15,7 +15,6 @@ import {
   LandReservationFilterDto,
 } from '../dto/lands.dto';
 import {
-  depositFor,
   EmailService,
   KAMNET_JOBS,
   LandClientDocumentType,
@@ -24,13 +23,16 @@ import {
   PaginationQuery,
   PaymentPurpose,
   PaymentState,
-  sumReceipts,
-  TERMINAL_STATES,
   QUEUES,
   SaleCompletedJobPayload,
   StorageService,
+  TERMINAL_STATES,
+  TIMESTAMP_SORTS,
   buildPaginatedResponse,
+  depositFor,
   maskEmail,
+  sortField,
+  sumReceipts,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 import { PaymentsService } from '../payments/payments.service';
@@ -454,7 +456,7 @@ export class LandReservationsService {
     }
 
     /**
-     * G21 (Visquis, 27 September): cancelling annuls every live payment, with a
+     * G21 - cancelling annuls every live payment, with a
      * written reason - a client who withdraws is never left behind a payment
      * that can still be validated. Through `PaymentsService.transition`, the one
      * write path for a payment's state: a transition with an actor and a reason,
@@ -591,7 +593,7 @@ export class LandReservationsService {
         where,
         skip,
         take: limit,
-        orderBy: { [sort || 'createdAt']: order || 'desc' },
+        orderBy: { [sortField(sort, TIMESTAMP_SORTS, 'createdAt')]: order || 'desc' },
         include: {
           land: {
             select: { id: true, title: true, totalPrice: true, pricePerM2: true, status: true },
@@ -770,7 +772,7 @@ export class LandReservationsService {
         where,
         skip,
         take: limit,
-        orderBy: { [sort || 'createdAt']: order || 'desc' },
+        orderBy: { [sortField(sort, TIMESTAMP_SORTS, 'createdAt')]: order || 'desc' },
         include: {
           land: {
             select: {

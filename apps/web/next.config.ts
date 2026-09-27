@@ -1,7 +1,6 @@
 import { composePlugins, withNx } from '@nx/next';
 import type { WithNxOptions } from '@nx/next/plugins/with-nx';
 import createNextIntlPlugin from 'next-intl/plugin';
-import createMDX from '@next/mdx';
 import { robotsHeaders } from './src/lib/seo/robots';
 import {
   imageRemotePatterns,
@@ -10,6 +9,8 @@ import {
   fontSrcSources,
   styleSrcSources,
 } from './src/lib/security/image-hosts';
+import { frameAncestors } from './src/lib/security/studio-origin';
+import { sanityDataset } from './src/lib/security/sanity-hosts';
 
 // next-intl plugin - path is relative.
 // - When NX's project-graph plugin analyses this file (CWD = workspace root),
@@ -19,17 +20,24 @@ import {
 // Absolute paths are intentionally avoided: Turbopack rejects them.
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
-// MDX plugin - enables .mdx files as React components throughout the app.
-// Note: remark/rehype plugins with function values are not supported by Turbopack
-// (options must be serializable). Add plugins only when switching to webpack builds.
-const withMDX = createMDX({});
+/**
+ * The CMS variables, read for their validation.
+ *
+ * `NEXT_PUBLIC_SANITY_DATASET` is used at runtime by `lib/cms/client.ts` and
+ * nothing here needs its value - but a standalone build freezes what it reads,
+ * and a project configured without a dataset would otherwise surface as a 500 on
+ * the first page somebody opened. Failing here names the variable instead.
+ */
+sanityDataset(process.env);
 
 const nextConfig: WithNxOptions = {
   // NX-specific options - controls monorepo build behaviour
   nx: {},
 
-  // Tell Next.js to treat .md and .mdx files as pages/components
-  pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
+  // Pages are TypeScript. Long-form content comes from the CMS, so `md` and
+  // `mdx` were removed with `apps/web/src/content` - leaving them would let a
+  // stray markdown file become a route.
+  pageExtensions: ['ts', 'tsx', 'js', 'jsx'],
 
   // Required for Docker standalone output (copies only the files needed to run)
   output: 'standalone',
@@ -53,9 +61,7 @@ const nextConfig: WithNxOptions = {
   // The proxy could not do the same job. Its matcher is a positive list, so it
   // never sees a URL the site does not serve - and a 404 is exactly where the
   // header matters most, because a 404 is what a crawler finds when it follows
-  // a stale link. (This said "the matcher runs on protected prefixes only",
-  // which stopped being true when locale routing widened it to the public
-  // paths; the conclusion was unchanged and the reason was not.)
+  // a stale link.
   async headers() {
     return [
       {
@@ -78,7 +84,10 @@ const nextConfig: WithNxOptions = {
               "default-src 'self'",
               "base-uri 'self'",
               "object-src 'none'",
-              "frame-ancestors 'none'",
+              // `'none'` unless SANITY_STUDIO_ORIGIN names a literal Studio
+              // origin, which Sanity's Presentation tool needs in order to frame
+              // this site. A wildcard is refused: see src/lib/security/studio-origin.ts.
+              frameAncestors(process.env),
               "form-action 'self'",
               "script-src 'self' 'unsafe-inline' blob:",
               // J11. The typeface's stylesheet and its files, from the same list.
@@ -91,6 +100,11 @@ const nextConfig: WithNxOptions = {
               "worker-src 'self' blob:",
               // A44. The bucket, from the same variable as img-src, for the
               // browser's presigned avatar PUT - refused on dev until this line.
+              //
+              // No Sanity entry: CMS documents are fetched by the Next server,
+              // so nothing in the browser connects to Sanity. A source listed
+              // for a connection nothing makes is a permission granted for
+              // nothing.
               `connect-src 'self' ${uploadConnectSources(process.env).join(' ')} https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com`,
             ].join('; '),
           },
@@ -120,8 +134,6 @@ const nextConfig: WithNxOptions = {
 const plugins = [
   // withNextIntl must come before withNx so Next.js picks up the plugin hooks first
   withNextIntl,
-  // withMDX compiles .mdx files; must come before withNx
-  withMDX,
   withNx,
 ];
 

@@ -80,6 +80,12 @@ const PUBLIC_SURFACE: Record<string, number> = {
   // reason the newsletter is: an unauthenticated write is a mailbox anybody
   // can address.
   'core/contact/contact.controller.ts': 1,
+  // Wave 7: the Sanity webhook receiver, one route. `@Public()` here removes the
+  // JWT requirement only - the caller is authenticated by `SanityWebhookGuard`,
+  // which verifies an HMAC over the raw body and refuses when the secret is
+  // absent. Throttled at 30/minute: a bulk publish of every policy in both
+  // languages is eight deliveries, each retried twice.
+  'cms/cms-webhooks.controller.ts': 1,
   'health/health.controller.ts': 3,
   // P11: the public directory of certified agents, one route. A buyer deciding
   // whether to trust an agent has no account and is the person this exists for,
