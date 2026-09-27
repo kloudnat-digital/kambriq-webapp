@@ -61,11 +61,8 @@ export default defineConfig({
 
   ...(webServer ? { webServer } : {}),
 
-  // A56: every run starts from an empty auth budget window.
-  globalSetup: require.resolve('./src/support/global-setup'),
-
   projects: [
-    // A56: one sign-in per role for the whole run, reused by every project.
+    // One sign-in per role for the run, reused by every browser project (A56).
     { name: 'sessions', testMatch: /sessions\.setup\.ts/ },
 
     // Chromium (always on, local + CI)

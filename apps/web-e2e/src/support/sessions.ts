@@ -2,12 +2,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * A56 - one sign-in per role per run, reused by every test.
- *
- * `sessions.setup.ts` signs in once for each seeded test role and writes what
- * the tests reuse here: an API bearer token per role, and the administrator's
- * browser session (Playwright storage state). The accounts are the seed's own
- * fixtures (`prisma/seed.ts`) - test accounts on dev, never a real person's.
+ * Per-role credentials shared by the whole run (A56): an API bearer token for
+ * each seeded fixture role, and the administrator's browser storage state,
+ * written once by `sessions.setup.ts`. The accounts are the seed's test
+ * fixtures (`prisma/seed.ts`).
  */
 export const SESSIONS_DIR = join(__dirname, '../../../../dist/.playwright/apps/web-e2e/.sessions');
 export const ADMIN_STATE = join(SESSIONS_DIR, 'admin.json');
