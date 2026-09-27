@@ -148,7 +148,7 @@ listed here first.
 | `H4`                           | `PROUVE`            | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `A7`                           | `PROUVE`            | inventory swept 2026-09-06, output in `docs/ops/a7-standards-inventory.md`: 6 findings (2 closed on sight), 7 classes clean, 2 defects in the sweep                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `H2` follow-up 1               | `EN COURS`          | **tracker correction, 27 September:** the row described the state before #116 (A9, `95b4e69`, 14 September), which made the seed step call `prisma/seed.ts` by name; `--seed` exists nowhere now. A9's proof was taken on a **manual** one-off task, not on the deployment step. Pending: a deploy with `run_seed=true` - which clears the seeded parcels' reservations that carry no payment, so it waits for Visquis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `H2` follow-up 2               | `A DECIDER`         | the bootstrap deploy step checks the exit code and never that the tally line appeared - the same gap the seed step has                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `H2` follow-up 2               | `EN COURS`          | the bootstrap deploy step now requires its task's tally line in the task's own log stream after the exit code (`scripts/ci/await-task-tally.sh`, proven against a fake `aws`); the deploy role may read that one log group (infra #67, applied on dev 27 September). Pending: one develop deploy printing the tally from the step                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `H5`                           | `PROUVE`            | journey 5's address guard was a detector, not a barrier: it reported and let the run continue into a real inbox. Moved to `beforeAll`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `H6`                           | `PROUVE`            | the same run's `afterAll` revoked a real administrator's role. Every write audited, role restored 16:05:26, guard made structural                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `H7`                           | `PROUVE`            | nothing tested the bootstrap's role assignment - journey 5 granted it to itself. Decision extracted and covered, 11 tests, 3 mutations                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
@@ -8060,6 +8060,48 @@ server-side, so a rotation would protect against nothing and disturb ten
 agents. The control above (test requests with a password in the URL appear
 nowhere) is what settled it. Not to be reopened on the same facts. The hole it
 revealed, no HTTP access log at all, is its own subject: D28.
+
+### H2 follow-up 2 - the bootstrap step reads its tally, not only its exit code - `EN COURS`
+
+**Cost impact: None.**
+
+**The row:** the bootstrap deploy step checks the task's exit code and never
+that its tally line appeared. Same family as A9 (a seed step that seeded
+nothing and exited 0) and A54 (failed jobs that logged nothing): **a step that
+exits zero has declared success, not achieved it.**
+
+`prisma/bootstrap-admins.ts` prints `Kambriq super-admin bootstrap complete:
+<n> created, <n> updated, <n> unchanged` only after its postcondition passed
+(read on dev: `0 created, 0 updated, 2 unchanged`, stream `api/api/<task id>` of
+`/ecs/kambriq-dev-api`).
+
+**Built:**
+
+- `scripts/ci/await-task-tally.sh <task-def> <container> <task-arn> <line>
+[timeout]` - reads the log group and stream prefix **from the task
+  definition** (not assumed), builds `<prefix>/<container>/<task id>`, waits a
+  bounded while for the line, prints it, and fails saying "the task exited 0 but
+  never printed …" when it does not come. A task definition with no awslogs
+  configuration is a failure, not a pass.
+- `deploy-dev.yml`: the bootstrap step calls it after the exit code, with the
+  line above and 90 s; the deploy job checks out `scripts/ci` only (sparse).
+- `ci.yml`: the CI Gate job runs `await-task-tally.test.sh` next to the develop
+  gate's own test, on every pull request.
+- **Infra #67** (applied on dev, 27 September, "0 added, 1 changed"): the
+  webapp deploy role `kambriq-dev-github-actions` gains `ReadOneOffTaskLogs` -
+  `logs:FilterLogEvents` and `logs:GetLogEvents` on the API service's log group
+  only. Before it the simulator answered `implicitDeny`; after, `allowed`. It
+  was applied **before** this change landed: the other order fails every deploy.
+
+**Proof, red first:** `await-task-tally.test.sh` against a fake `aws` - the
+tally found; the stream built from the task definition's prefix; exit 0 with no
+tally refused; no log configuration refused. A mutant that trusts the exit code
+(`exit 0`) fails all four.
+
+**Not in this change:** the migration and the (opt-in) seed steps have the same
+shape; the seed's own proof stays manual (A9, Visquis 27 September).
+
+**Pending:** one develop deploy whose bootstrap step prints the tally it read.
 
 ### H2 follow-up 1 / A9 - the seed step, and where its proof was taken - `EN COURS`
 

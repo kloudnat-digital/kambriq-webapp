@@ -122,6 +122,12 @@ jobs:
       WEB_IMAGE_TAG: ${{ inputs.web_image_tag }}
 
     steps:
+      # H2 follow-up 2: the bootstrap step reads its task's tally through
+      # scripts/ci/await-task-tally.sh. Only that folder is checked out.
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/ci
+
       - name: Configure AWS credentials
         id: aws-credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -428,6 +434,12 @@ jobs:
           if [[ "${EXIT_CODE}" != "0" ]]; then
             echo "Bootstrap task failed with exit code ${EXIT_CODE}" >&2; exit 1
           fi
+
+          # H2 follow-up 2: exit 0 is the task's claim, not its result. The line
+          # below is printed only after the postcondition passed; the step fails
+          # when it never appears in the task's own log stream.
+          bash scripts/ci/await-task-tally.sh "${NEW_TASK_DEF_ARN}" "${CONTAINER_NAME}" \
+            "${TASK_ARN}" "Kambriq super-admin bootstrap complete" 90
 
       # -- Smoke test -----------------------------------------------------------
       - name: Smoke test
