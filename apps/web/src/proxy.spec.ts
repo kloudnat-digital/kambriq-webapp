@@ -129,6 +129,17 @@ describe('proxy: unauthenticated', () => {
   });
 
   /**
+   * I45 - a link that carries its token keeps it through the login detour.
+   * The email-change confirmation is behind /account; the proxy used to put
+   * only the pathname in callbackUrl, so a signed-out person clicking it came
+   * back from the login page without the token the page needs.
+   */
+  it('keeps the query in the callbackUrl', () => {
+    const path = '/account/confirm-email-change?token=abc123';
+    expect(run(path, null)).toEqual({ kind: 'redirect', url: loginWithCallback(path) });
+  });
+
+  /**
    * P3, as an outcome rather than as a property of the matcher.
    *
    * The old gate was `!isPublic(pathname)`, and it was safe only because the

@@ -126,7 +126,9 @@ run('journey 7 - a reservation from a validated deposit to a validated balance',
 
     const token = await findTokenInMailbox(
       email.split('@')[0],
-      /set-password\?token=([0-9a-f]{64})/,
+      /\/reset-password\?token=([0-9a-f]{64})/,
+      undefined,
+      /Définissez votre mot de passe|Set your password/,
     );
     await call('POST', '/auth/reset-password', { body: { token, newPassword: PASSWORD } });
     client = await login(email);

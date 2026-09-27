@@ -523,7 +523,13 @@ describe('journey 4 - an agent reserves a parcel and the client reaches the port
     expect(created.json<{ data: { roles: string[] } }>().data.roles).toContain('CLIENT');
 
     // The invite is not the only mail this flow sends; search the whole mailbox.
-    const token = await findTokenInMailbox(mailbox, /set-password\?token=([0-9a-f]{64})/);
+    // The invitation (I45: it links to /reset-password, like the reset email).
+    const token = await findTokenInMailbox(
+      mailbox,
+      /\/reset-password\?token=([0-9a-f]{64})/,
+      undefined,
+      /Définissez votre mot de passe|Set your password/,
+    );
     const set = await call('POST', '/auth/reset-password', {
       body: { token, newPassword: PASSWORD },
     });
@@ -752,12 +758,12 @@ describe('journey 5 - a passwordless super admin activates through the ordinary 
      * `?token=[object Promise]`. **A send is not a signup.**
      */
     /**
-     * `/reset-password`, and deliberately NOT `/auth/set-password`.
+     * The forgot-password email, and deliberately NOT the invitation.
      *
      * By this point the mailbox holds **two** valid PASSWORD_RESET tokens for
-     * this user: the reservation invite sent
-     * `${FRONTEND_URL}/auth/set-password?token=` when the account was created,
-     * and forgot-password has just sent `${FRONTEND_URL}/reset-password?token=`.
+     * this user: the invitation sent when the account was created, and the one
+     * forgot-password has just sent. Since I45 both link to `/reset-password`,
+     * so the message is chosen by its subject.
      * Both work. A pattern matching either would activate the account and leave
      * the journey unable to say which of the two paths it proved - two
      * candidate explanations producing identical output, which is not a choice
@@ -765,7 +771,12 @@ describe('journey 5 - a passwordless super admin activates through the ordinary 
      *
      * H3 is about the forgot-password path, so only that link counts.
      */
-    const token = await findTokenInMailbox(mailbox, /\/reset-password\?token=([0-9a-f]{64})/);
+    const token = await findTokenInMailbox(
+      mailbox,
+      /\/reset-password\?token=([0-9a-f]{64})/,
+      undefined,
+      /Réinitialisez votre mot de passe|Reset your KAMBRIQ password/,
+    );
     expect(token).toMatch(/^[0-9a-f]{64}$/);
 
     const reset = await call('POST', '/auth/reset-password', {

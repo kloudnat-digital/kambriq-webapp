@@ -194,7 +194,8 @@ listed here first.
 | `J12`                          | `PROUVE`            | the five sign-in and account forms refused in English on the French pages; their schemas now carry keys under `auth.validation`, fr and en (#219). Proven on dev (`sha-a19d680`): an empty sign-in shows "Saisissez une adresse email valide." and "Le mot de passe est requis." on `/fr/login`, the English ones on `/en/login`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `A55`                          | `PROUVE`            | did real passwords reach the logs before #214? No server-side record on dev can hold one: no ALB access logs, no CloudFront or WAF, and the web container logs no request URL (the API's request log does, and holds no password or token in any URL: corrected under D28) - my own password-in-URL requests of 26 September are absent (the control). The referer carried the origin only. The one place such a URL can remain is the visitor's own browser history. Rotation stays Visquis's call                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `D28`                          | `PROUVE`            | who called what, when, from where. **Decided by Visquis, 27 September:** dev = application logging with an allowlist; production = a WAF (`C17`); retention 7 days dev, 30 days production, stated in the privacy policy. **Dev built:** one allowlist (`libs/common/src/logging/url-allowlist.ts`) applied before any write; the API line gains the visitor's address and the account id; the web proxy writes one JSON line per page request. Pending: the A55-style control on dev **Proven on dev (7197137), 27 September:** the A55-style control found 0 markers in either log group and every marker request logged as `[redacted]`                                                                                                                                                                                                                                                                                     |
-| Invitation link 404            | `A FAIRE`           | two emailed links point at web pages that do not exist: `/auth/set-password?token=` (the invitation every client reserved by an agent receives, and `POST /lands/admin/invite`) and `/auth/confirm-email-change?token=` - both 404 on dev. The journeys never saw it: they take the token from the mailbox and call the API. Found by D28's control, 27 September                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `I45`                          | `EN COURS`          | the invitation every new client receives, and the email-change confirmation, linked to pages that did not exist (404 on dev). The invitation now links to `/reset-password`; the confirmation to a new `/account/confirm-email-change` page, and the login detour keeps the token. `emailed-urls-resolve.spec.ts` checks every URL the API builds on `FRONTEND_URL` against the web's pages, inverted. Pending: both links walked from the email in a browser on dev (`emailed-links.spec.ts`)                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Journeys bypass the page       | `A DECIDER`         | the delivery journeys prove by calling the API what a person does through a page: email verification, forgot-password, the invitation (until I45), KBS identity and enrolment, every back-office payment step. By construction the page a human uses is the one path not proven. Which of them deserve a browser walk is a decision, not a fix to squeeze in                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `C17`                          | `DECIDE, A FAIRE`   | before production opens: a WAF on the load balancer, logging with the query string redacted at write time, 30-day retention stated in the privacy policy (Visquis, 27 September; D28's production half). Production is his                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `A32`                          | `EN COURS`          | Gate reads develop's HEAD sha, then its run (`scripts/ci/develop-gate.sh`): green passes; red, never started or not yet verified refuses; label `merge-on-red-develop` plus re-run releases. v1 read a list and passed #134 on a stale run; 12 stub cases run in every CI Gate. Cost: each develop push blocks merges ~20 min                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `A36`                          | `EN COURS`          | develop red on `70a5e07`: both journey suites run in one `runInBand` process from one runner address and `getTracker` keys on the last X-Forwarded-For entry, so they legitimately share one bucket of 100 requests per 60000 ms - the gap between them decides it (9.33 s PASSED on `1cbde1a`; 0.36 s and 0.35 s FAILED on `70a5e07`). `call()` now waits one full window and retries, bounded at 3 attempts, one log line per wait, still throwing today's sentence after them. The comment claiming CI "never sees it" is replaced by the measurements. `getTracker` had no test and now has 11, watched failing on `parts[0]`. The spec runs in `Quality` via a new `test` target, because `api-e2e` had none and the file would otherwise execute only in the job it repairs. Pending: a green `Delivery journeys (dev)` on develop. Cost: up to 120 s added to a journeys job that is actually throttled, none otherwise |
@@ -8079,27 +8080,83 @@ non-test source file of `apps/api/src` and `libs/common/src` - no module list -
 and fails on any DTO class name declared twice. Planting A15's defect back
 (`GetCourseUploadUrlDto` renamed to `GetLandUploadUrlDto`) fails it.
 
-### Invitation link 404 - two emailed links lead nowhere - `A FAIRE`
+### I45 - the front door: two emailed links led nowhere - `EN COURS`
 
 **Cost impact: None.**
 
-Found on 27 September by D28's control, which requested each credential link
-the API emails. `users.service.ts` builds
-`${FRONTEND_URL}/auth/set-password?token=…` (the `inviteUser` email: every client
-an agent reserves for, and the admin invitation) and
-`${FRONTEND_URL}/auth/confirm-email-change?token=…`. The web has neither page -
-its auth pages are `forgot-password`, `login`, `reactivate`, `register`,
-`reset-password`, `verify-email` - so on dev both answer **404**, prefixed or not
-(`/reset-password?token=` for comparison redirects to `/fr/reset-password`).
+**The defect** (found by D28's control, 26-27 September): `users.service.ts`
+emailed `${FRONTEND_URL}/auth/set-password?token=` - the invitation every
+client an agent reserves for receives, and every invited account - and
+`${FRONTEND_URL}/auth/confirm-email-change?token=`. Neither page existed; both
+answered **404** on dev. A new client clicked, and landed on an error.
 
-**A new client cannot set a password from the invitation.** Nothing noticed
-because the journeys read the token out of the mailbox and call
-`POST /auth/reset-password` directly - the API is sound, the link is not.
+**Why nobody saw it** (Visquis, 27 September): the journeys take the token out
+of the mailbox and call the API, which was always fine. The exact path a person
+takes is the one path the proofs did not touch - by construction.
 
-What it needs: the invitation's token is a `PASSWORD_RESET` token, which the
-existing `/reset-password` page already consumes; the email change needs a page
-that calls `POST /users/me/email/confirm`. Not done in the ninth round - no brief
-covered it.
+**The fix:**
+
+- **Invitation:** links to `/reset-password?token=`, the page that already
+  consumes a `PASSWORD_RESET` token (the invitation's type) and posts it to
+  `POST /auth/reset-password`, which also marks the address verified (R2).
+- **Email change:** a new page, `/account/confirm-email-change`, behind the
+  `/account` prefix because the API binds the token to the account that asked.
+  It posts the token through the existing `confirmEmailChange` action (written,
+  never called by any page), and on success - the API has revoked every
+  session - its button signs out and goes to the login page, for the new
+  address. Its words are `auth.verifyEmail`'s: no new copy.
+- **The login detour keeps the query.** The proxy put only the pathname in
+  `callbackUrl`, so a signed-out person clicking the confirmation came back
+  without its token. It now passes `pathname + search` through the same
+  `safeCallbackUrl`; D28's allowlist writes `callbackUrl=[redacted]`.
+- **The journeys** found the invitation by `set-password?token=`; now both the
+  invitation and the reset email link to `/reset-password`, so
+  `findTokenInMailbox` takes an optional subject, and journey 5 still proves the
+  forgot-password email and not the invitation.
+
+**The guard, inverted:** `emailed-urls-resolve.spec.ts` finds every URL built on
+`FRONTEND_URL` in the API and `libs/common` by reading the source (7 today:
+`verify-email` twice, `reset-password` twice, `mylands/payment/:id` twice, and
+the confirmation), and checks each against the web's `page.tsx` tree - route
+groups dropped, `[id]` as one segment. No list of URLs; an `EXEMPT` map with a
+reason per entry, empty, and itself checked for stale entries.
+
+**Proof, red first:**
+
+- the guard failed naming exactly `/auth/set-password` and
+  `/auth/confirm-email-change`;
+- `proxy.spec.ts` "keeps the query in the callbackUrl" failed without the proxy
+  change;
+- the page's spec (token posted, success, refusal, no token);
+- **in a browser, against dev before the fix** (`apps/web-e2e/src/emailed-links.spec.ts`,
+  Chromium): the invitation's link, read out of the delivered email, answered
+  **404**; the confirmation's link stayed on `/auth/confirm-email-change`
+  instead of reaching the login page.
+
+**Pending:** the same two browser walks green on dev after the deploy - the
+invitation link, a password set on its page, a sign-in; the confirmation link
+opened signed out, the login detour, the confirmation, the sign-in with the new
+address and the old one refused. They join the E2E suite that runs after every
+deploy (each run cancels the reservation it made).
+
+### Journeys bypass the page - `A DECIDER`
+
+**Cost impact: None.** A finding, asked for by the tenth round.
+
+Visquis asked whether any other journey proves something by calling the API on
+a path a person reaches through a page. **Several:**
+
+| What the journey proves                                      | How it proves it                                                 | The page a person uses                                |
+| ------------------------------------------------------------ | ---------------------------------------------------------------- | ----------------------------------------------------- |
+| email verification (journeys 1, 2, 3; web `auth.spec` login) | token from the mailbox, `POST /auth/verify-email`                | `/verify-email`                                       |
+| forgot-password (journey 5)                                  | token from the mailbox, `POST /auth/reset-password`              | `/forgot-password`, `/reset-password`                 |
+| the invitation (journeys 4, 7)                               | same                                                             | `/reset-password` - **walked in a browser since I45** |
+| KBS identity document and enrolment (journey 3)              | presigned PUT, `PATCH /users/me/id-document`, `POST /kbs/enroll` | the candidate pages                                   |
+| every back-office payment step (journey 7)                   | `POST /lands/admin/payments/:id/...`                             | the payment screens                                   |
+
+Each API path is proven; none of those pages is. I45 was the case where the
+difference was a 404. Which of the others deserve a browser walk - and at what
+cost in run time and dev data - is a decision, not a fix squeezed into I45.
 
 ### C17 - a WAF before production opens - `DECIDE, A FAIRE`
 
