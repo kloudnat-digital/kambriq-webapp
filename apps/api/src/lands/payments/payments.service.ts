@@ -30,6 +30,7 @@ import {
   channelLabel,
   requiresPaidBy,
   sumReceipts,
+  outstandingOf,
   PaymentPurpose,
   ageInDays,
   withOldestWaiting,
@@ -533,7 +534,11 @@ export class PaymentsService {
       currency: payment.currency,
       amountDue: payment.amountDue.toString(),
       amountReceived: received.toString(),
-      outstanding: (payment.amountDue - received).toString(),
+      outstanding: outstandingOf(
+        payment.state as PaymentState,
+        payment.amountDue,
+        received,
+      ).toString(),
       expiresAt: payment.expiresAt,
       /** The wish. Shown whether or not the back office has decided. */
       preferredChannel: payment.preferredChannel,
@@ -993,7 +998,7 @@ export class PaymentsService {
           currency: p.currency,
           amountDue: p.amountDue.toString(),
           amountReceived: received.toString(),
-          outstanding: (p.amountDue - received).toString(),
+          outstanding: outstandingOf(p.state as PaymentState, p.amountDue, received).toString(),
           expiresAt: p.expiresAt,
           createdAt: p.createdAt,
         };
@@ -1044,7 +1049,11 @@ export class PaymentsService {
       currency: payment.currency,
       amountDue: payment.amountDue.toString(),
       amountReceived: received.toString(),
-      outstanding: (payment.amountDue - received).toString(),
+      outstanding: outstandingOf(
+        payment.state as PaymentState,
+        payment.amountDue,
+        received,
+      ).toString(),
       expiresAt: payment.expiresAt,
       createdAt: payment.createdAt,
       // v03 4c: both, always, and separately. The screen shows the wish beside
@@ -1162,7 +1171,7 @@ export class PaymentsService {
     });
     return {
       state: result.state,
-      outstanding: (payment.amountDue - sumReceipts(receipts)).toString(),
+      outstanding: outstandingOf(result.state, payment.amountDue, sumReceipts(receipts)).toString(),
     };
   }
 

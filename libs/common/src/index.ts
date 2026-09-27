@@ -31,6 +31,7 @@ export {
   EvidenceRequiredError,
   assertTransitionIsEvidenced,
   sumReceipts,
+  outstandingOf,
 } from './payments/payment-state';
 
 export {
