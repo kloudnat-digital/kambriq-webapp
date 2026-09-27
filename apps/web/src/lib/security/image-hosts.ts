@@ -79,3 +79,37 @@ export function imageRemotePatterns(env: NodeJS.ProcessEnv) {
 export function imgSrcSources(env: NodeJS.ProcessEnv): string[] {
   return imageSources(env).map(({ hostname, pathname }) => `https://${hostname}${pathname ?? ''}`);
 }
+
+/**
+ * A44 - the CSP `connect-src` sources for the browser's presigned uploads. The
+ * avatar goes straight from the browser to the bucket with a PUT, and a
+ * `connect-src` that did not name the bucket refused it. Only the bucket: the
+ * browser uploads nowhere else, so no other image host is opened for writing.
+ * Missing variable, no source - never a wider one.
+ */
+export function uploadConnectSources(env: NodeJS.ProcessEnv): string[] {
+  const bucket = mediaBucketHost(env);
+  return bucket ? [`https://${bucket}`] : [];
+}
+
+/**
+ * J11 - the site's typeface, Switzer, served by fontshare: a stylesheet from
+ * one host that loads its font files from another. The CSP named neither, so
+ * the browser refused the stylesheet on every page and the site has always
+ * rendered in the fallback. The layout links `FONT_STYLESHEET_URL`, and the CSP
+ * takes `style-src` and `font-src` from the functions below - the one list,
+ * beside the image hosts, never a second one written into `next.config.ts`.
+ */
+export const FONT_STYLESHEET_URL =
+  'https://api.fontshare.com/css?f%5B%5D=switzer@400,500,600,700,800&display=swap';
+
+/** Where the stylesheet's `@font-face` rules fetch the files from (read from its `src:` urls). */
+const FONT_FILE_HOST = 'cdn.fontshare.com';
+
+export function styleSrcSources(): string[] {
+  return [`https://${new URL(FONT_STYLESHEET_URL).host}`];
+}
+
+export function fontSrcSources(): string[] {
+  return [`https://${FONT_FILE_HOST}`];
+}

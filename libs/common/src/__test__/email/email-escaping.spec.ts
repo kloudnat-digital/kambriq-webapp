@@ -167,3 +167,25 @@ describe('the escaping primitives', () => {
     expect(() => trustedMarkup('<b>x</b>', '')).toThrow(/reason/);
   });
 });
+
+/**
+ * P5 - a KAMNET application is written by the applicant and read in the
+ * contact inbox, so its motivation and name carry no markup there either.
+ */
+describe('a KAMNET application cannot carry markup into the contact inbox', () => {
+  const args = {
+    name: PAYLOAD,
+    email: 'ada@example.com',
+    phone: '+237600000000',
+    kcaNumber: 'KCA-20250101-0001',
+    sponsorCode: 'AGT-2025-0001',
+    motivation: PAYLOAD,
+    receivedAt: '26 septembre 2026',
+  };
+
+  it('escapes the motivation and the name', () => {
+    const { html: body } = buildEmail('kamnetApplicationNotification', 'fr', args, i18n);
+    expect(body).not.toContain('<a href="https://phish.example/reset">');
+    expect(body).toContain('&lt;a href=&quot;https://phish.example/reset&quot;&gt;');
+  });
+});

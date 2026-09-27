@@ -176,6 +176,7 @@ export const findTokenInMailbox = async (
   mailbox: string,
   pattern: RegExp,
   timeoutMs = 120_000,
+  subject?: RegExp,
 ): Promise<string> => {
   const deadline = Date.now() + timeoutMs;
   const seen: string[] = [];
@@ -183,6 +184,9 @@ export const findTokenInMailbox = async (
     const messages = await inbox(mailbox);
     for (const m of messages) {
       seen.push(m.subject);
+      // I45: the invitation and the reset both link to /reset-password now, so a
+      // journey that must prove one of them names it by its subject.
+      if (subject && !subject.test(m.subject)) continue;
       const found = pattern.exec(await message(mailbox, m.id));
       if (found?.[1]) return found[1];
     }
@@ -266,3 +270,13 @@ export const assertOwnedByThisRun = async (
     );
   }
 };
+
+/**
+ * An amount of money as the API must send it: a JSON number, whole, inside the
+ * range a number holds exactly. Money is integer XAF in the database (G1) and
+ * the response envelope turns a BigInt into a number only when that is exact,
+ * into a string otherwise - so a string, a fraction or an unsafe number each
+ * mean the chain broke somewhere.
+ */
+export const exactMoney = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;

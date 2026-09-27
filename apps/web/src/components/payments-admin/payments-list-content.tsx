@@ -4,6 +4,7 @@ import { Link } from '@/i18n/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Money, HumanDate } from './payment-money';
 import { PaymentStateBadge } from './payment-state-badge';
+import { PaymentPurposeLabel } from './payment-purpose-label';
 import type { PaymentRow } from '@/types/payments';
 
 interface Props {
@@ -40,6 +41,7 @@ export const PaymentsListContent = ({ rows, meta }: Props) => (
               <thead className="border-b bg-gray-50 text-left text-xs text-gray-500 uppercase">
                 <tr>
                   <th className="px-4 py-3">Référence</th>
+                  <th className="px-4 py-3">Nature</th>
                   <th className="px-4 py-3">État</th>
                   <th className="px-4 py-3 text-right">Dû</th>
                   <th className="px-4 py-3 text-right">Reçu</th>
@@ -57,6 +59,9 @@ export const PaymentsListContent = ({ rows, meta }: Props) => (
                       >
                         {p.reference ?? '— (antérieur à G2)'}
                       </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <PaymentPurposeLabel purpose={p.purpose} />
                     </td>
                     <td className="px-4 py-3">
                       <PaymentStateBadge state={p.state} />

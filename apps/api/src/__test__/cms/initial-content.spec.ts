@@ -14,6 +14,7 @@ import {
   policyDocumentId,
 } from '@kambriq/common';
 import { renderPolicyHtml, type PolicyBody } from '../../cms/policy-render';
+import { WEB_PAGES } from './web-pages';
 
 /**
  * The wave 7 import file: the content the site used to compile from mdx.
@@ -150,11 +151,13 @@ describe('wave 7 - the content the migration produced', () => {
   it('has a page on disk for every editorial slug', () => {
     // A slug with no page is content nobody can reach, and an editor cannot
     // tell by looking at the Studio.
+    // A route group is invisible in the URL, so the page is looked up by the URL
+    // it answers rather than by a path spelled out here. See web-pages.ts.
+    expect(WEB_PAGES.size).toBeGreaterThan(20);
     for (const [slug, route] of Object.entries(CONTENT_PAGE_ROUTES)) {
-      const page = join(ROOT, 'apps/web/src/app/[locale]', route, 'page.tsx');
-      expect({ slug, exists: readFileSync(page, 'utf8').length > 0 }).toEqual({
+      expect({ slug, page: WEB_PAGES.has(route.replace(/^\//, '')) }).toEqual({
         slug,
-        exists: true,
+        page: true,
       });
     }
   });

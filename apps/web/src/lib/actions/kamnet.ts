@@ -176,18 +176,17 @@ export const getCommissionSummary = createAction(async () => {
  * Since P9 that constant is 1, so every request resolves to N1 whatever the
  * caller asks for.
  *
- * Note what this function does NOT do: it does not decide which depth a tier is
- * entitled to. `GET /kamnet/network` never reads the caller's tier, so that
- * rule lives nowhere on the server today and the page applies it. That is a
- * presentation choice over an unenforced endpoint, not a security boundary, and
- * it is reported as such.
+ * Without a depth it asks for none, and `GET /kamnet/network` answers with
+ * the caller's tier allowance: which depth a tier is entitled to is the API's
+ * rule (I32), not this module's.
  */
 export const getMyNetwork = createAction(async (depth?: number) => {
   // `depth?: number` rather than `depth = 1`. A default parameter makes
   // `createAction`'s `Args` generic infer as `[]`, so the body sees `Args[0]`
   // and `tsc` refuses it. `kbs.ts` has the same shape everywhere it takes an
   // optional argument - `params?:`, `flagged?:` - and this follows it.
-  const safeDepth = Math.min(Math.max(depth ?? 1, 1), KAMNET_MAX_SPONSORSHIP_DEPTH);
+  if (depth === undefined) return nullOn404(() => serverApi.get<NetworkNode>('/kamnet/network'));
+  const safeDepth = Math.min(Math.max(depth, 1), KAMNET_MAX_SPONSORSHIP_DEPTH);
   return nullOn404(() => serverApi.get<NetworkNode>(`/kamnet/network?depth=${safeDepth}`));
 });
 
@@ -290,3 +289,87 @@ export const setMyPublicListing = createAction(async (listed: boolean) => {
     throw error;
   }
 });
+
+// ==== Applications: joining KAMNET (P5) ====
+
+/** A person's own KAMNET application, as the API stores it. */
+export type MyKamnetApplication = {
+  id: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  kcaNumber: string;
+  sponsorCode: string | null;
+  motivation: string | null;
+  reviewNote?: string | null;
+  createdAt: string;
+};
+
+/**
+ * Where the signed-in person stands before applying.
+ *
+ * Only a holder of a valid KCA certificate may apply (the API refuses anybody
+ * else). "No certificate" - a 404, or the 403 somebody who never enrolled in KBS
+ * gets - is an answer, and the page says what to do. Anything else is
+ * `unavailable`: an outage must not read as "you are not certified", which is a
+ * false statement to the very person the page is recruiting.
+ */
+export type ApplicationStanding =
+  | { state: 'unavailable' }
+  | { state: 'not-certified' }
+  | { state: 'can-apply'; kcaNumber: string }
+  | { state: 'applied'; application: MyKamnetApplication };
+
+export const getMyApplicationStanding = createAction(async (): Promise<ApplicationStanding> => {
+  let kcaNumber: string;
+  try {
+    const certificate = await serverApi.get<{ kcaNumber: string }>('/kbs/certificate/me');
+    kcaNumber = certificate.kcaNumber;
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 404 || error.status === 403)) {
+      return { state: 'not-certified' };
+    }
+    logger.error('KamnetApplicationStandingUnavailable', { step: 'certificate' });
+    return { state: 'unavailable' };
+  }
+  try {
+    const application = await nullOn404(() =>
+      serverApi.get<MyKamnetApplication>('/kamnet/applications/me'),
+    );
+    return application ? { state: 'applied', application } : { state: 'can-apply', kcaNumber };
+  } catch {
+    logger.error('KamnetApplicationStandingUnavailable', { step: 'application' });
+    return { state: 'unavailable' };
+  }
+});
+
+/**
+ * `POST /kamnet/applications`. The KCA number is read here, on the server, from
+ * the applicant's own certificate - never taken from the browser - so the form
+ * asks only for what the API cannot know: a sponsor code and a motivation.
+ */
+export const submitKamnetApplication = createAction(
+  async (input: { sponsorCode?: string; motivation: string }) => {
+    let kcaNumber: string;
+    try {
+      kcaNumber = (await serverApi.get<{ kcaNumber: string }>('/kbs/certificate/me')).kcaNumber;
+    } catch (error) {
+      throw new ServerActionError(
+        error instanceof Error ? error.message : 'No valid KCA certificate.',
+        403,
+      );
+    }
+    try {
+      const application = await serverApi.post<MyKamnetApplication>('/kamnet/applications', {
+        kcaNumber,
+        sponsorCode: input.sponsorCode?.trim() || undefined,
+        motivation: input.motivation.trim(),
+      });
+      await revalidateLocalisedPath('/kamnet/apply');
+      return application;
+    } catch (error) {
+      throw new ServerActionError(
+        error instanceof Error ? error.message : 'The application could not be submitted.',
+        error instanceof ApiError ? error.status : 400,
+      );
+    }
+  },
+);

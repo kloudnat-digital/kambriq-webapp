@@ -25,5 +25,11 @@
     "noDocument": "Aucun document en attente de vérification",
     "notPending": "Le document est dans le statut « {status} », non éligible à une révision",
     "statusUpdated": "Statut de vérification d'identité mis à jour : {status}"
+  },
+  "avatar": {
+    "notOwnKey": "La photo de profil doit être envoyée depuis votre compte, avec le bouton de téléversement."
+  },
+  "idDocument": {
+    "notOwnKey": "Les pièces d'identité doivent être envoyées depuis votre compte, avec le bouton de téléversement."
   }
 }

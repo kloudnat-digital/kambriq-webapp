@@ -23,4 +23,4 @@ export enum LandMediaCategory {
   DOCUMENT = 'DOCUMENT',
 }
 
-export const DOWN_PAYMENT_PERCENT = 5 as const; // 5% of land price
+export { DOWN_PAYMENT_PERCENT, depositFor } from '../../payments/deposit';

@@ -10,10 +10,12 @@ import { KamnetPrismaService } from '../prisma/kamnet-prisma.service';
 import { UsersService } from '../../core/users/users.service';
 import { KbsCandidatesService } from '../../kbs/candidates/candidates.service';
 import { I18nService } from 'nestjs-i18n';
+import { ConfigService } from '@nestjs/config';
 import {
   buildPaginatedResponse,
   DEFAULT_LANGUAGE,
   EmailService,
+  formatHumanDateTime,
   KamnetAgentTier,
   KamnetApplicationStatus,
   PaginationQuery,
@@ -47,6 +49,7 @@ export class KamnetApplicationsService {
     private readonly candidatesService: KbsCandidatesService,
     private readonly emailService: EmailService,
     private readonly i18n: I18nService,
+    private readonly config: ConfigService,
   ) {}
 
   // ----- Submit Application----- //
@@ -100,19 +103,68 @@ export class KamnetApplicationsService {
     });
 
     const user = await this.usersService.findById(userId);
-    await this.emailService.send({
-      to: user.email,
-      template: 'applicationSubmitted',
-      lang: user.language || 'fr',
-      args: { firstName: user.firstName || user.email },
-    });
 
     this.logger.log('New KAMNET application submitted %o', {
       userId,
       kcaNumber: dto.kcaNumber,
     });
 
+    // P5: stored first - that is the success - then announced. A failed mail is
+    // logged loudly and never fails the request: the application exists, and an
+    // error here would send the applicant back to a 409 (L1's rule).
+    await this.trySend(application.id, 'applicant confirmation', () =>
+      this.emailService.send({
+        to: user.email,
+        template: 'applicationSubmitted',
+        lang: user.language || 'fr',
+        args: { firstName: user.firstName || user.email },
+      }),
+    );
+
+    const inbox = this.config.get<string>('CONTACT_INBOX_EMAIL');
+    if (!inbox) {
+      this.logger.error(
+        `KAMNET application ${application.id} stored but not announced: CONTACT_INBOX_EMAIL is not set.`,
+      );
+    } else {
+      const lang =
+        this.config.get<string>('CONTACT_BACKOFFICE_LOCALE', 'fr') === 'en' ? 'en' : 'fr';
+      const none = this.t('kamnet.application.none', lang);
+      await this.trySend(application.id, 'back-office notification', () =>
+        this.emailService.send({
+          to: inbox,
+          template: 'kamnetApplicationNotification',
+          lang,
+          args: {
+            name: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email,
+            email: user.email,
+            phone: user.phone || none,
+            kcaNumber: dto.kcaNumber,
+            sponsorCode: dto.sponsorCode || none,
+            motivation: dto.motivation || none,
+            receivedAt: formatHumanDateTime(
+              application.createdAt ?? new Date(),
+              lang === 'en' ? 'en-GB' : 'fr-FR',
+            ),
+          },
+        }),
+      );
+    }
+
     return application;
+  }
+
+  /** A mail that fails after the application is stored is an error in the log, never a failed request. */
+  private async trySend(applicationId: string, what: string, send: () => Promise<unknown>) {
+    try {
+      await send();
+    } catch (error) {
+      this.logger.error(
+        `KAMNET application ${applicationId}: the ${what} could not be sent (${
+          error instanceof Error ? error.message : String(error)
+        }).`,
+      );
+    }
   }
 
   // ----- Get My Application ----- //

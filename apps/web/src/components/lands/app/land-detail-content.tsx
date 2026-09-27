@@ -1,5 +1,6 @@
 'use client';
 
+import { depositFor } from '@kambriq/common/payments/deposit';
 import type { FC } from 'react';
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -44,10 +45,7 @@ const LandDetailContent: FC<LandDetailContentProps> = ({
 
   const media = useMemo(() => [...(land?.media ?? [])].sort((a, b) => a.order - b.order), [land]);
 
-  const deposit = useMemo(
-    () => Math.round(((land?.price ?? 0) * (land?.sizeM2 ?? 0) * 5) / 100),
-    [land],
-  );
+  const deposit = useMemo(() => depositFor(land?.totalPrice ?? 0), [land]);
 
   if (isPending) {
     return (

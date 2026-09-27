@@ -59,6 +59,21 @@ describe('the newsletter form', () => {
     );
   });
 
+  /**
+   * P25 - the consent label is a flex container (the shared `Label`), and the
+   * sentence was handed to it as five loose children: text, link, text, link.
+   * Flex laid each out as its own column, so on dev the sentence read as four
+   * side-by-side fragments with "politique de / confidentialité" squeezed into
+   * 80 px. One inline element keeps it one sentence. The layout itself is proved
+   * by screenshot; this pins the structure that decides it.
+   */
+  it('hands the consent sentence to its label as one element, links inside', () => {
+    render(<NewsletterSignup />);
+    const label = document.querySelector(`label[for="${consentBox().id}"]`);
+    expect(label?.childNodes).toHaveLength(1);
+    expect(label?.firstElementChild?.querySelectorAll('a')).toHaveLength(2);
+  });
+
   it('links the consent to the privacy policy and to the RGPD page', () => {
     render(<NewsletterSignup />);
     expect(screen.getByRole('link', { name: 'politique de confidentialité' })).toHaveAttribute(

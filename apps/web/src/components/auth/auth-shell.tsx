@@ -1,14 +1,13 @@
 'use client';
 
 import { ArrowLeft, Globe } from 'lucide-react';
-import { Link } from '@/i18n/navigation';
-import { usePathname, useRouter } from '@/i18n/navigation';
-import type { Locale } from '@/i18n/routing';
-import { useLocale, useTranslations } from 'next-intl';
-import { useTransition, type ReactNode } from 'react';
+import { Link, usePathname } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
+import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { KambriqLogo } from '@/components/ui/kambriq-logo';
+import { useSwitchLanguage } from '@/hooks/use-switch-language';
 
 type AccountLink = { text: string; href: string; linkText: string };
 
@@ -75,26 +74,9 @@ function getRouteConfig(
 export const AuthShell = ({ children }: { children: ReactNode }) => {
   const t = useTranslations('auth');
   const pathname = usePathname();
-  const locale = useLocale() as Locale;
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const { locale, switchLanguage, isPending } = useSwitchLanguage();
 
   const { title, subtitle, accountLink, showBackToHome } = getRouteConfig(pathname, t);
-
-  /**
-   * Switching language is a navigation, not a stored preference.
-   *
-   * It replaces the current URL with its counterpart under the other locale,
-   * so the address bar, the rendered language and what a crawler would index
-   * all agree. Writing a cookie and refreshing, which is what this did, left
-   * one URL serving two languages.
-   */
-  const handleLocaleToggle = () => {
-    const next: Locale = locale === 'fr' ? 'en' : 'fr';
-    startTransition(() => {
-      router.replace(pathname, { locale: next });
-    });
-  };
 
   return (
     <div className="relative flex min-h-svh flex-col justify-center bg-background py-12 sm:px-6 lg:px-8">
@@ -103,7 +85,7 @@ export const AuthShell = ({ children }: { children: ReactNode }) => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={handleLocaleToggle}
+          onClick={switchLanguage}
           disabled={isPending}
           className="gap-1.5 text-muted-foreground hover:bg-transparent hover:text-foreground"
         >

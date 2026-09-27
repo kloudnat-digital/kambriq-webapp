@@ -3,6 +3,7 @@ import {
   assertMinted,
   assertOwnedByThisRun,
   call,
+  exactMoney,
   findTokenInMailbox,
   login,
   uniqueEmail,
@@ -522,7 +523,13 @@ describe('journey 4 - an agent reserves a parcel and the client reaches the port
     expect(created.json<{ data: { roles: string[] } }>().data.roles).toContain('CLIENT');
 
     // The invite is not the only mail this flow sends; search the whole mailbox.
-    const token = await findTokenInMailbox(mailbox, /set-password\?token=([0-9a-f]{64})/);
+    // The invitation (I45: it links to /reset-password, like the reset email).
+    const token = await findTokenInMailbox(
+      mailbox,
+      /\/reset-password\?token=([0-9a-f]{64})/,
+      undefined,
+      /Définissez votre mot de passe|Set your password/,
+    );
     const set = await call('POST', '/auth/reset-password', {
       body: { token, newPassword: PASSWORD },
     });
@@ -537,6 +544,26 @@ describe('journey 4 - an agent reserves a parcel and the client reaches the port
     const purchases = portal.json<{ data: Array<{ landId: string }> }>().data;
     expect(purchases.length).toBeGreaterThan(0);
     expect(purchases[0].landId).toBe(available[0].id);
+
+    // The client's own money, through the same envelope: the deposit column and
+    // the land total are integer money, and the summary is built from both.
+    const reservationIdForMoney = reserved.json<{ data: { id: string } }>().data.id;
+    const detail = await call('GET', `/lands/client/purchases/${reservationIdForMoney}`, {
+      token: client,
+    });
+    expect(detail.status).toBe(200);
+    const bought = detail.json<{
+      data: {
+        downPaymentAmount: unknown;
+        money: { totalPrice: unknown; depositDue: unknown; balanceExpected: unknown };
+      };
+    }>().data;
+    expect(exactMoney(bought.downPaymentAmount)).toBe(true);
+    expect(exactMoney(bought.money.totalPrice)).toBe(true);
+    expect(bought.money.depositDue).toBe(bought.downPaymentAmount);
+    expect((bought.money.depositDue as number) + (bought.money.balanceExpected as number)).toBe(
+      bought.money.totalPrice,
+    );
 
     /**
      * Give the parcel back.
@@ -553,11 +580,27 @@ describe('journey 4 - an agent reserves a parcel and the client reaches the port
      * against the database.
      */
     const reservationId = reserved.json<{ data: { id: string } }>().data.id;
+
+    // G21: the client has asked for the deposit, so a live payment exists when
+    // the reservation is cancelled - and must not outlive it.
+    const asked = await call('POST', `/lands/client/purchases/${reservationId}/payment`, {
+      token: client,
+    });
+    expect(asked.status).toBe(201);
+    const paymentId = asked.json<{ data: { id: string } }>().data.id;
+
     const cancelled = await call('POST', `/lands/admin/reservations/${reservationId}/cancel`, {
       token: admin,
       body: { reason: 'automated journey cleanup - returning the fixture parcel' },
     });
     expect(cancelled.status).toBe(200);
+
+    const payment = await call('GET', `/lands/admin/payments/${paymentId}`, { token: admin });
+    const annulled = payment.json<{
+      data: { state: string; transitions: Array<{ toState: string; reason: string }> };
+    }>().data;
+    expect(annulled.state).toBe('ANNULE');
+    expect(annulled.transitions.at(-1)?.reason).toContain('returning the fixture parcel');
 
     const after = await call('GET', '/lands?limit=50', { token: agent });
     const parcel = after
@@ -607,6 +650,35 @@ describe('journey 4 - an agent reserves a parcel and the client reaches the port
  * `ADMIN_GLOBAL` on dev is a stray privileged account, which is the thing this
  * whole block exists to avoid creating.
  */
+/**
+ * The price of a parcel, read signed in, arrives exact.
+ *
+ * `Land.totalPrice` is a BigInt since 26 September; its proof rested on a
+ * database read and on these journeys passing, because every lands route needs
+ * a session. This reads it directly: a JSON number, whole, and the same figure
+ * the database used - `pricePerM2` is a column Postgres generates from the
+ * stored total, so it only matches if the API sent the stored total unchanged.
+ */
+describe("journey 6 - a parcel's price reaches a signed-in reader exact", () => {
+  it('lists and details a parcel with its total in whole francs', async () => {
+    const listed = await call('GET', '/lands?limit=50', { token: agent });
+    expect(listed.status).toBe(200);
+    const lands = listed.json<{ data: Array<{ id: string; totalPrice: unknown }> }>().data;
+    expect(lands.length).toBeGreaterThan(0);
+    for (const l of lands) expect(exactMoney(l.totalPrice)).toBe(true);
+
+    const res = await call('GET', `/lands/${lands[0].id}`, { token: agent });
+    expect(res.status).toBe(200);
+    const land = res.json<{ data: { totalPrice: unknown; sizeM2: number; pricePerM2: number } }>()
+      .data;
+    expect(exactMoney(land.totalPrice)).toBe(true);
+    expect(land.totalPrice).toBe(lands[0].totalPrice);
+    expect(land.pricePerM2).toBe(Math.round((land.totalPrice as number) / land.sizeM2));
+  });
+});
+
+// ---------------------------------------------------------------------------
+
 describe('journey 5 - a passwordless super admin activates through the ordinary flow', () => {
   const email = uniqueEmail('j5.superadmin');
   const mailbox = email.split('@')[0];
@@ -702,12 +774,12 @@ describe('journey 5 - a passwordless super admin activates through the ordinary 
      * `?token=[object Promise]`. **A send is not a signup.**
      */
     /**
-     * `/reset-password`, and deliberately NOT `/auth/set-password`.
+     * The forgot-password email, and deliberately NOT the invitation.
      *
      * By this point the mailbox holds **two** valid PASSWORD_RESET tokens for
-     * this user: the reservation invite sent
-     * `${FRONTEND_URL}/auth/set-password?token=` when the account was created,
-     * and forgot-password has just sent `${FRONTEND_URL}/reset-password?token=`.
+     * this user: the invitation sent when the account was created, and the one
+     * forgot-password has just sent. Since I45 both link to `/reset-password`,
+     * so the message is chosen by its subject.
      * Both work. A pattern matching either would activate the account and leave
      * the journey unable to say which of the two paths it proved - two
      * candidate explanations producing identical output, which is not a choice
@@ -715,7 +787,12 @@ describe('journey 5 - a passwordless super admin activates through the ordinary 
      *
      * H3 is about the forgot-password path, so only that link counts.
      */
-    const token = await findTokenInMailbox(mailbox, /\/reset-password\?token=([0-9a-f]{64})/);
+    const token = await findTokenInMailbox(
+      mailbox,
+      /\/reset-password\?token=([0-9a-f]{64})/,
+      undefined,
+      /Réinitialisez votre mot de passe|Reset your KAMBRIQ password/,
+    );
     expect(token).toMatch(/^[0-9a-f]{64}$/);
 
     const reset = await call('POST', '/auth/reset-password', {

@@ -9,7 +9,8 @@ import { formatXAF } from '@/lib/money';
 interface Props {
   land: {
     id: string;
-    price: number;
+    totalPrice: number;
+    pricePerM2: number | null;
     sizeM2: number;
   };
 }
@@ -23,7 +24,9 @@ export const ReservationLandSummaryCard: FC<Props> = ({ land }) => {
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-slate-400">{t('pricePerSqm')}</span>
-          <span className="font-medium text-slate-900">{formatXAF(land.price)}</span>
+          <span className="font-medium text-slate-900">
+            {land.pricePerM2 === null ? '—' : formatXAF(land.pricePerM2)}
+          </span>
         </div>
         <div className="flex justify-between">
           <span className="text-slate-400">{t('size')}</span>
@@ -31,7 +34,7 @@ export const ReservationLandSummaryCard: FC<Props> = ({ land }) => {
         </div>
         <div className="flex justify-between border-t border-slate-100 pt-2">
           <span className="text-slate-400">{t('total')}</span>
-          <span className="font-bold text-slate-900">{formatXAF(land.price * land.sizeM2)}</span>
+          <span className="font-bold text-slate-900">{formatXAF(land.totalPrice)}</span>
         </div>
       </div>
       <Button asChild size="sm" variant="outline" className="mt-3 w-full">

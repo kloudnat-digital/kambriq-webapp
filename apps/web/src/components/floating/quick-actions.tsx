@@ -1,12 +1,11 @@
 'use client';
 
 import { Globe, MessageCircleQuestionMark } from 'lucide-react';
-import { usePathname, useRouter } from '@/i18n/navigation';
-import type { Locale } from '@/i18n/routing';
-import { useLocale, useTranslations } from 'next-intl';
-import { useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
+import { useState } from 'react';
 
 import { siteConfig } from '@/config/site.config';
+import { useSwitchLanguage } from '@/hooks/use-switch-language';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -31,12 +30,8 @@ const WHATSAPP_QUESTIONS = [
 
 function QuickActions() {
   const t = useTranslations('quickActions');
-  const router = useRouter();
-  const pathname = usePathname();
   const [showDialog, setShowDialog] = useState(false);
-  const [isPending, startTransition] = useTransition();
-
-  const currentLocale = useLocale() as Locale;
+  const { locale: currentLocale, switchLanguage, isPending } = useSwitchLanguage();
 
   const openWhatsApp = (message?: string) => {
     const { number, message: defaultMsg } = siteConfig.contact.whatsapp;
@@ -44,21 +39,6 @@ function QuickActions() {
     const url = `https://wa.me/${number.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
     setShowDialog(false);
-  };
-
-  /**
-   * Switching language is a navigation, not a stored preference.
-   *
-   * It replaces the current URL with its counterpart under the other locale,
-   * so the address bar, the rendered language and what a crawler would index
-   * all agree. Writing a cookie and refreshing, which is what this did, left
-   * one URL serving two languages.
-   */
-  const handleLocaleToggle = () => {
-    const next: Locale = currentLocale === 'fr' ? 'en' : 'fr';
-    startTransition(() => {
-      router.replace(pathname, { locale: next });
-    });
   };
 
   return (
@@ -83,7 +63,7 @@ function QuickActions() {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              onClick={handleLocaleToggle}
+              onClick={switchLanguage}
               size="icon"
               variant="outline"
               disabled={isPending}

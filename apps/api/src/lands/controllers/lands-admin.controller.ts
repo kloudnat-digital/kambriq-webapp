@@ -126,16 +126,16 @@ export class LandsAdminController {
     description: 'Filter by land classification',
   })
   @ApiQuery({
-    name: 'minPrice',
+    name: 'minTotalPrice',
     required: false,
     type: Number,
-    description: 'Minimum price in XAF',
+    description: 'Minimum total price of the parcel, in XAF',
   })
   @ApiQuery({
-    name: 'maxPrice',
+    name: 'maxTotalPrice',
     required: false,
     type: Number,
-    description: 'Maximum price in XAF',
+    description: 'Maximum total price of the parcel, in XAF',
   })
   @ApiQuery({
     name: 'status',
@@ -204,7 +204,7 @@ export class LandsAdminController {
   @ApiOperation({
     summary: 'Update a land parcel',
     description:
-      'Updates land fields. If price changes, a price history record is created automatically.',
+      'Updates land fields. If the total price changes, a price history record is created automatically.',
   })
   @ApiParam({ name: 'id', description: 'Land ID' })
   async updateLand(

@@ -1,4 +1,5 @@
 import { CAMEROON_REGIONS } from '@/constants/country';
+import { parseTitleNumber } from '@kambriq/common/lands/title-number';
 import * as z from 'zod';
 import { phoneRequired } from './phone';
 
@@ -11,11 +12,19 @@ export const CreateLandFormResolver = z.object({
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   sizeM2: z.number().int().positive({ error: 'Size must be a positive integer' }),
-  price: z.number().int().positive({ error: 'Price must be positive' }),
+  totalPrice: z.number().int().positive({ error: 'Total price must be positive' }),
   labelId: z.string().min(1, { error: 'Select a label' }),
   pv: z.number().min(0.1).max(2.0),
   ownerType: z.enum(['KAMBRIQ', 'PARTNER']),
-  titleNumber: z.string().optional(),
+  /**
+   * P24 - the shape of a titre foncier, checked by the parser the API uses. A
+   * courtesy: the API refuses the same input and is the rule. The message is a
+   * key the form translates, so the refusal reads in the person's language.
+   */
+  titleNumber: z
+    .string()
+    .optional()
+    .refine((v) => !v?.trim() || parseTitleNumber(v) !== null, { error: 'titleNumberInvalid' }),
   isPublished: z.boolean(),
   isVerified: z.boolean(),
 });
@@ -36,7 +45,7 @@ export const CREATE_LAND_DEFAULTS: CreateLandFormSchema = {
   city: '',
   neighborhood: '',
   sizeM2: 0,
-  price: 0,
+  totalPrice: 0,
   labelId: '',
   pv: 1.0,
   ownerType: 'KAMBRIQ',

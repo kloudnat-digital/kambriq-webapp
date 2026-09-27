@@ -62,14 +62,14 @@ than passing quietly.
 
 ## Dated decisions — somebody must act on these
 
-| When                                    | What                                                                                                                                                                                                                                                                                                                                                                                                                                | How                                                                                                                                                                                                                                                       |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Tuesday 8 September 2026**            | Deactivate `AKIAQYAF4F4JH34UGKU5` (`kambriq-app-dev`). It is the only key left Active besides `vmiaff`'s, and unlike the three deactivated on 4 September it **has** been used — `s3`, 2026-08-27, before `S1` moved storage onto the task role                                                                                                                                                                                     | **Check first, then act.** `aws iam get-access-key-last-used --access-key-id AKIAQYAF4F4JH34UGKU5`. Still 2026-08-27 or older → `update-access-key --status Inactive`. **Anything more recent → stop** and find out what used it before touching anything |
-| **When prd exists**                     | RDS `BackupRetentionPeriod` is **0 on dev, deliberately** — what a backup protects is reproducible from `migrate deploy` ×4 plus a restorative seed. **Every word of that argument dies with the first real user account.** Belongs on the `ADR-005` bootstrap checklist as an explicit decision, not a default carried over                                                                                                        | Set a retention period before prd takes traffic                                                                                                                                                                                                           |
-| **Next time the RDS module is touched** | `/aws/rds/instance/kambriq-postgres-dev/postgresql` is capped at 7 days, set **outside Terraform** because RDS creates that group itself. It is undeclared state — nothing drifts today, and the next person reading the Terraform will believe every log group is described there                                                                                                                                                  | Move it into `modules/rds-postgres`                                                                                                                                                                                                                       |
-| **Before an agent is paid anything**    | `C15` - the council's opinion on **when a commission is acquired**. Reserved to Visquis, in the "avant ouverture" set beside the legal items. Recorded here on 24 September from the 2026-09-21 entry of `ops_kambriq_base-comprehension_v01.md`, because nothing in this repository carried it                                                                                                                                     | Visquis asks the council. `C14` cannot be settled first, because the answer **is** the calculation base                                                                                                                                                   |
-| **After `C15`**                         | `C14` - the **commission grid, which does not exist**. The parcel spreadsheet computes on TPC = 6 %, the UX specification announced 3 % on the sale and 1 % on the reservation, and the platform has no rate at all: 5 % lives in three seed literals and a comment. Visquis decided on 19 September that the grid is **never on the public site** and is visible only inside an agent's own space, which is what `P21` implemented | Settle the grid, then implement it once in code rather than in literals. Until then **no surface may state a rate** - that is what `P21` enforces                                                                                                         |
-| **Not scheduled**                       | `X2` — the NAT gateway, roughly **$39/month**, the largest line in the bill. Option 2 was decided and deliberately **not applied** before delivery: a shared-state network change days before a delivery trades $35/month against a broken dev                                                                                                                                                                                      | Apply after delivery, with a plan reviewed first                                                                                                                                                                                                          |
+| When                                 | What                                                                                                                                                                                                                                                                                                                                                                                                                                | How                                                                                                                                                                                                                                                       |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tuesday 8 September 2026**         | Deactivate `AKIAQYAF4F4JH34UGKU5` (`kambriq-app-dev`). It is the only key left Active besides `vmiaff`'s, and unlike the three deactivated on 4 September it **has** been used — `s3`, 2026-08-27, before `S1` moved storage onto the task role                                                                                                                                                                                     | **Check first, then act.** `aws iam get-access-key-last-used --access-key-id AKIAQYAF4F4JH34UGKU5`. Still 2026-08-27 or older → `update-access-key --status Inactive`. **Anything more recent → stop** and find out what used it before touching anything |
+| **When prd exists**                  | RDS `BackupRetentionPeriod` is **0 on dev, deliberately** — what a backup protects is reproducible from `migrate deploy` ×4 plus a restorative seed. **Every word of that argument dies with the first real user account.** Belongs on the `ADR-005` bootstrap checklist as an explicit decision, not a default carried over                                                                                                        | Set a retention period before prd takes traffic                                                                                                                                                                                                           |
+| **Done, 27 September**               | `/aws/rds/instance/kambriq-postgres-dev/postgresql` is capped at 7 days, set **outside Terraform** because RDS creates that group itself. It is undeclared state — nothing drifts today, and the next person reading the Terraform will believe every log group is described there                                                                                                                                                  | Declared in `modules/rds-postgres` (both export groups, `postgresql` and `upgrade`, 7 days) and imported on dev - infra #68 applied ("1 imported, 1 added, 1 changed, 0 destroyed"), import block removed by #69, plan "No changes"                       |
+| **Before an agent is paid anything** | `C15` - the council's opinion on **when a commission is acquired**. Reserved to Visquis, in the "avant ouverture" set beside the legal items. Recorded here on 24 September from the 2026-09-21 entry of `ops_kambriq_base-comprehension_v01.md`, because nothing in this repository carried it                                                                                                                                     | Visquis asks the council. `C14` cannot be settled first, because the answer **is** the calculation base                                                                                                                                                   |
+| **After `C15`**                      | `C14` - the **commission grid, which does not exist**. The parcel spreadsheet computes on TPC = 6 %, the UX specification announced 3 % on the sale and 1 % on the reservation, and the platform has no rate at all: 5 % lives in three seed literals and a comment. Visquis decided on 19 September that the grid is **never on the public site** and is visible only inside an agent's own space, which is what `P21` implemented | Settle the grid, then implement it once in code rather than in literals. Until then **no surface may state a rate** - that is what `P21` enforces                                                                                                         |
+| **Not scheduled**                    | `X2` — the NAT gateway. **Applied on 12 September** as infra D15 (dev has no NAT gateway); this line said "not applied" until 26 September. See the X2 entry                                                                                                                                                                                                                                                                        | Nothing to apply. The net saving, after per-task public IPv4 hours, is read on the bill (Visquis)                                                                                                                                                         |
 
 ---
 
@@ -131,104 +131,137 @@ table: `Z1`, `D2`, `X1` and `X4` carry commands, numbers or reversal steps that
 are longer than a table row and are still needed. Everything genuinely open is
 listed here first.
 
-| Entry                         | State               | What it needs                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| ----------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
-| `L2`                          | `EN COURS`          | one deployed log line carrying its interpolated metadata, quoted                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `L3`                          | `DECIDE, A FAIRE`   | migrate logging to `PinoLogger` structured fields — deliberately **not** shipped before delivery                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `F1`                          | `A DECIDER`         | coverage ratchet: a floor, and what happens when a PR drops below it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `P1`                          | `A DECIDER`         | SES contact list, one per account per region — the prd constraint                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `X2`                          | `DECIDE, A FAIRE`   | NAT option 2, decided, deliberately unapplied before delivery                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `M1`                          | `DECIDE, A FAIRE`   | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `Q1` follow-up                | `A DECIDER`         | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `D3`                          | `EN COURS`          | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `H1`                          | `PROUVE`            | `ADMIN_GLOBAL` is the super admin; no second role created. ADR-008 + `super-admin.spec.ts`, five mutations quoted below                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `H2`                          | `PROUVE`            | proven on dev on `f91289f`: `2 created, 0 updated, 0 unchanged`, exit 0, tally read from the task's own log stream                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `H3`                          | `EN COURS`          | journey 5 green on dev under the sha gate; **pending proof is the two real holders activating their own accounts**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `H4`                          | `PROUVE`            | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `A7`                          | `PROUVE`            | inventory swept 2026-09-06, output in `docs/ops/a7-standards-inventory.md`: 6 findings (2 closed on sight), 7 classes clean, 2 defects in the sweep                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `H2` follow-up 1              | `A DECIDER`         | `deploy-dev.yml` passes `--seed` to `run-migrations.js`, which never reads `process.argv`: the seed step has never seeded anything                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `H2` follow-up 2              | `A DECIDER`         | the bootstrap deploy step checks the exit code and never that the tally line appeared - the same gap the seed step has                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `H5`                          | `PROUVE`            | journey 5's address guard was a detector, not a barrier: it reported and let the run continue into a real inbox. Moved to `beforeAll`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `H6`                          | `PROUVE`            | the same run's `afterAll` revoked a real administrator's role. Every write audited, role restored 16:05:26, guard made structural                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `H7`                          | `PROUVE`            | nothing tested the bootstrap's role assignment - journey 5 granted it to itself. Decision extracted and covered, 11 tests, 3 mutations                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `H8`                          | `EN COURS`          | the bootstrap sent no email; a stray test made it look as though it had. Fixed and proven locally; pending the re-send to `contact@` on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `H8` follow-up                | `A DECIDER`         | per-address SES delivery is not observable: no configuration set, no event destination. Needed to answer "did THIS address receive it"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `H9`                          | `PROUVE`            | the bootstrap's provenance check failed a whole deploy and skipped every later step. Postcondition scoped; step moved after the web deploy                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `B1`                          | `PROUVE`            | payment code audited against the design: 0 payments ever processed, no payment table, G3/G4 partly built, six of eight not started                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `A10`                         | `PROUVE`            | the identity-review queue did not exist - the route and the role did. Queue route + `idSubmittedAt`; the back-office screen stays open                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `A11`                         | `PROUVE`            | 13 sites, 15 messages, 12 transactional. `sendUpdate` returns an outcome and throws on a transactional template                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `A12`                         | `PROUVE`            | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `R1`                          | `EN COURS`          | **a merge can succeed and have no effect.** `#89` merged into a branch consumed 89 s earlier; `#88` was squash-merged, so nothing showed. Pending proof is the three commands in `R1`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `G8`                          | `ARRETE`            | **G11-G14 is not on develop and not deployed**: #89 merged into the G9 branch 89s after that branch merged to develop. 51 files stranded at `230b827`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `G8` blocker                  | `A FAIRE`           | re-land `230b827` on develop (**not** conflict-free - see `R1`), deploy, then re-run G8. Until then dev emails every channel's coordinates to whoever clicks                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `G10`                         | `PROUVE`            | applied and observed: 16 SecureString parameters none empty, task definition 143 with the three variables and no channel value, 0 AccessDenied                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `G9`                          | `PROUVE LOCALEMENT` | the client creates the payment, from their own purchase page. Creation writes its audit row; sending the instructions is a second act                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `G9` follow-up                | `A DECIDER`         | `PAYMENT_VALIDITY_DAYS` is 30 because a month is the shape of a diaspora transfer. The design gives no number - this one needs deciding                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `G10` (webapp)                | `PROUVE`            | an absent channel prefix now fails the boot exactly as an empty parameter does; disabling is `PAYMENT_CHANNELS_TRANSPORT=disabled`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `G10` (infra)                 | `PLAN PRET`         | twelve parameters + the prefix into terraform. Plan run and shown, **nothing applied**. Correction-without-deploy proved on a running process                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |     |
-| `G4`                          | `PROUVE`            | the back office and its screen. Five defects only a real request could see; `db:seed` unbroken; deployed-dev pass deferred to `G8`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `G4` follow-up                | `A DECIDER`         | `GetUploadUrlDto` is declared twice with different schemas (lands + kbs); the API logs `Duplicate DTO detected` on every boot                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `V1` follow-up                | `PROUVE`            | the commission lookup throws now but has never run: 0 sales completed, all 5 commissions seeded. Closed by inspection only                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `B2`                          | `PROUVE`            | V1 inventory finished: WhatsApp preference reads nothing, `sendUpdate` skips indistinguishably and defaults off, `RedisService` unused                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `B3`                          | `PROUVE`            | 56 dev parameters against 0 on prd; only 7 injected as secrets, so 49 need an apply to take effect. One confirmed unread, the rest candidates                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `B4`                          | `PROUVE`            | 4 journeys: VERIFY does not exist; reactivation and block/unblock never run; 57 identity documents queued for a review that has never run                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `G1`                          | `EN COURS`          | payment model in `lands`: BigInt money, 9-state machine, append-only ledger and audit. Pending proof is G8, one payment end to end on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `G2`                          | `PROUVE`            | the reference generator: 29-char derived alphabet, mod-29 check character, sequence-backed so collision-free by construction                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `G3`                          | `PROUVE`            | the instruction and reminder messages, channel details from SSM at runtime, send-before-transition. Real email read out of a mailbox                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `G10b` (infra)                | `PLAN PRET`         | sixteen channel parameters; the twelve existing ones imported so `ignore_changes` bites on the first apply. **Apply before merging #88**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `G10b` follow-up              | `EN COURS`          | D9: `MOBILE_MONEY_OPERATOR/NUMBER/NAME` dropped from `FIELDS`, proved locally (boot on the nine, mutation names the MISSING one). Pending: deploy, API task steady and `/health` answering without them; then infra #51 (step 4, three destroys) with validation. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `G11-G14`                     | `PROUVE LOCALEMENT` | six channels, the identification gate, A14's review screen, coordinates in the platform. Email carries none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `G11` follow-up               | `A DECIDER`         | infra owes `ORANGE_MONEY_*` and `MTN_MONEY_*`: v03 splits mobile money in two but keeps twelve parameters with one number                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `G11` follow-up 2             | `A DECIDER`         | v03 section 5's example uses a hyphen between reference and channel, which section 4b forbids. 4b implemented                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `A18`                         | `PROUVE LOCALEMENT` | queue counts and failed payloads on `/health/queues`, ADMIN_GLOBAL. `failed` 0->1 observed through the endpoint against a real Redis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `L1-contact`                  | `PROUVE LOCALEMENT` | the public contact form sent nothing behind a success toast. Now persisted, announced, acknowledged in the page's locale; consent stored with its timestamp                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `L2-contact`                  | `PROUVE LOCALEMENT` | a daily digest on the existing core queue, sent even at zero, so its absence is the alarm. Exercised once end to end with a forced zero count                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `L1-contact` f-up             | `A DECIDER`         | infra owes `/kambriq/{env}/api/CONTACT_INBOX_EMAIL`. Until it exists dev stores every request and announces none, loudly                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| naming                        | `A DECIDER`         | the brief's `L1`/`L2` collide with this register's logging `L2`/`L3`. Entries above are `L1-contact`/`L2-contact`; somebody should decide which series keeps the bare letter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `A31`                         | `EN COURS`          | develop red on journeys 4 and 5 from 08:22 UTC on 14 Sept: the seed kept payment-carrying reservations, reset their parcels to AVAILABLE anyway (8 on dev), and the first available parcel answered 409. Fixed in the seed and proved locally. Pending: merge, one seed run on dev, a green journeys run on develop. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `verify-cert`                 | `EN COURS`          | `/verify-certificate` said "valide" for any number; the API ignored `revokedAt` and handed strangers the holder's UUID. Pending proof on dev: seeded number valid, fake number non reconnu, revoked number révoqué. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `A33`                         | `EN COURS`          | **Safari is not tested.** WebKit removed from the E2E matrix: its login test failed on 4 of 8 develop runs with E2E since A28 (a fifth passed only on retry), the click sending no request; 20 local WebKit runs passed and the cause was not established in the bounded hour. Owed: the cause, then WebKit back. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `A32`                         | `EN COURS`          | Gate reads develop's HEAD sha, then its run (`scripts/ci/develop-gate.sh`): green passes; red, never started or not yet verified refuses; label `merge-on-red-develop` plus re-run releases. v1 read a list and passed #134 on a stale run; 12 stub cases run in every CI Gate. Cost: each develop push blocks merges ~20 min                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `A36`                         | `EN COURS`          | develop red on `70a5e07`: both journey suites run in one `runInBand` process from one runner address and `getTracker` keys on the last X-Forwarded-For entry, so they legitimately share one bucket of 100 requests per 60000 ms - the gap between them decides it (9.33 s PASSED on `1cbde1a`; 0.36 s and 0.35 s FAILED on `70a5e07`). `call()` now waits one full window and retries, bounded at 3 attempts, one log line per wait, still throwing today's sentence after them. The comment claiming CI "never sees it" is replaced by the measurements. `getTracker` had no test and now has 11, watched failing on `parts[0]`. The spec runs in `Quality` via a new `test` target, because `api-e2e` had none and the file would otherwise execute only in the job it repairs. Pending: a green `Delivery journeys (dev)` on develop. Cost: up to 120 s added to a journeys job that is actually throttled, none otherwise                                                                                                                                                                                                                                                                                                                                               |
-| `I19`                         | `EN COURS`          | no user without a role: registration refused a missing CLIENT row silently, an existing user reserved as a client got no CLIENT, the seed wrote 8 role rows of 11. Fixed, red then green locally. Pending: merge through the gate, then one seed run on dev showing 11 rows. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `I15`                         | `EN COURS`          | the certificate is the truth: CERTIFIED only by issuance, `isUserCertified` reads revocation and decides at KAMNET submit and approval, KCA_CERTIFIED not settable by hand, a daily sweep withdraws it on expiry. Dev: 60 holders, 0 without certificate, 0 expired. Pending: merge, first sweep on dev. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `I18`                         | `EN COURS`          | one definition of the roles: the literal ban now scans `apps/web` and the e2e suite; 8 codes in 14 web files moved to `RoleCode`. The layout's own ROOT check is deleted (decided 15 Sept); the proxy is the one gate, proven by mutation. Pending: merge through the gate. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `I20`                         | `EN COURS`          | any logged-in account read KBS lessons, drafts and outlines through the API (the web never called those routes). Lesson now needs a verified candidate record and a published course; lists and outlines are published-only. Pending: merge, then a no-record call on dev answering 404. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `I7`                          | `EN COURS`          | VERIFY is operated by STAFF_VERIFY; ADMIN_GLOBAL now inherits it (one level, listed on ADMIN_GLOBAL itself), pinned before any route uses it. Every super admin therefore reaches identity documents and titles, and no record says which one read what (ADR-008). Pending: merge. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `I16`                         | `EN COURS`          | CLIENT in its own right first: dev one-off wrote 5 rows, 5/5 agents now hold CLIENT directly; approval grants it. Then suspension and revocation remove AGENT, lifting returns it if still certified; commissions read by ownership. Pending: merge. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `I15` renewal                 | `EN COURS`          | a renewal issues a new certificate (candidateId no longer unique, migration drops one index); the old one stays verifiable. Proven locally through the real API and page: old numbers still Expiré / Révoqué, new ones Valide. Pending: merge, migration on dev. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `I21`                         | `EN COURS`          | an exam accepted answers on any pool question: 60 correct answers on a 20-question exam graded 300%, a fail became a certificate, then AGENT. Now the served questions are recorded at start and only those answerable; score capped at 100; late submit refused. Red first on the exploit. Pending: merge via gate. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `I31` seuils                  | `EN COURS`          | exam threshold 75 -> 80, module quizzes stay 70 (Visquis, 18 Sept): the certification document governs what is promised to the candidate, the quizzes stay drilling. Neither constant had a single test before - 4 now pin them, and `scheduleExam` is pinned to write the exam constant onto the row, watched failing. Cost: none, verified rather than assumed - `KbsExam.passingScore` is stamped per row at schedule time and `gradeExam` judges that stored column, so no past verdict moves; dev holds 75 exam rows (74 PASSED, 1 FAILED), 0 SCHEDULED or IN_PROGRESS, and 20 certificates each with an exam row behind it. The note saying `KbsExam` was empty and that five certificates had no exam behind them is false on both halves. `prisma/kbs/schema.prisma` still defaults the column to 75, unreachable while `scheduleExam` always writes the constant; left to the KBS foundation subject. Pending: merge                                                                                                                                                                                                                                                                                                                                                |
-| `G6`                          | `PROUVE LOCALEMENT` | the dunning queue, reminders at J-7 and J-1, EXPIRE at the term. Found and fixed a processor collision that silently ate a reminder email                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `R4`                          | `EN COURS`          | back to hosted runners under a spending cap. Baseline measured: 27 billed minutes, of which the quality matrix billed 5 to do 102s of checking                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `R3`                          | `EN COURS`          | CI moved to the self-hosted `kambriq-ci` runner. No `services:` anywhere, so macOS is viable. Exposed three image builds pinning no platform - amd64 held by accident of `ubuntu-latest`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `A17`                         | `PROUVE LOCALEMENT` | a database-backed suite, `pnpm test:db`: 51 tests against a real Postgres; both append-only triggers and all five CHECKs proved sharp by removal and restoration                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `G7`                          | `PROUVE LOCALEMENT` | `evidenceReceiptId` filled end to end; NULL deliberate and documented for the other states; the single write path to `Payment.state` pinned, mutation red                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `G5`                          | `PROUVE LOCALEMENT` | a correction entered from the back-office screen: three movements, total 500 000 over four lines, original line unchanged. Correction carries its own reason and author                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `G11` follow-up 3             | `PROUVE`            | the controller never forwarded `paidBy`: a DEPO keyed on the screen was refused by the service. Fixed and pinned here                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `P3`                          | `PROUVE LOCALEMENT` | the auth middleware was a global net: every unknown URL redirected to /login and nothing could 404. Positive matcher, real 404 page, route table proved unchanged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `P4`                          | `PROUVE LOCALEMENT` | X-Robots-Tag noindex outside production, on the existing headers() block. Reads APP_ENV: NODE_ENV is 'production' on every environment and cannot tell them apart. Second half (API responses): PROUVE on dev 23/09; P4 stays below 100 % until D13                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `P5`                          | `A FAIRE`           | public product pages link at /kamnet/apply and /kbs/enroll, both behind the login wall. Kept protected by P3 deliberately: widening is a product change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| rename                        | `A DECIDER`         | `L1-contact`/`L2-contact` -> `P1`/`P2` was asked for in P3's brief; those ids exist only on PR #98's branch, which the same brief puts out of scope. Not done - see PR                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `A19`                         | `PROUVE`            | develop linted 1 project of 6 for seven months: the workflow promised "the full set", `pnpm run lint` was `nx lint api`. Widened to `nx run-many -t lint --all`; manifest corrected; proved in both directions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `I32`                         | `A FAIRE`           | `getMyNetwork` never reads the caller's tier; the rule lives in the page. `P9` clamped everyone to N1, so the gap is no longer observable from outside - a narrowed blast radius, not a fix                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `P10`                         | `A FAIRE`           | `whyKbs.network.description` and `whyAgent.exclusiveAccess.description` still promise an exclusive catalogue reserved to agents                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `P21` follow-up               | `A FAIRE`           | the remuneration ban covers a hand-written list of message namespaces and `landTypes` is not in it, so the public LANDS page still carries "Avantages Agent KAMNET / Commission rapide". Derive the list from what the public pages render                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `A41`                         | `PROUVE`            | a rate limit each, chosen from 7 days of measured traffic; `auth-anonymous-routes-throttled.spec.ts` reads the @Throttle metadata, red first on five undefined routes, eight mutations each watched failing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `P22`                         | `A FAIRE`           | batch the certificate read behind the public directory and bound its page size. Opened by `P11`'s self-review on 22 September, not started                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| Audit 2026-09-23, wave 1      | `EN COURS`          | four security fixes on `chore/audit-remediation`, unmerged. The fifth finding, the API bearer token in the RSC payload, is **closed by wave 5** - `sessionForClient` strips it and `lib/session.spec.ts` plus the login journey pin it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| Audit 2026-09-23, wave 2      | `EN COURS`          | `GET /kbs/me` scoped to the active course, `no-console`, `strict` on the API, two seed preconditions. Unmerged; pending proof is `GET /kbs/me` read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| Audit 2026-09-23, wave 3      | `PROUVE`            | the wave of #155 to #162 folded in, the Open table de-duplicated, the states declared, `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| Audit 2026-09-23, wave 4      | `EN COURS`          | the acompte step reads the payment ledger instead of answering for it. Unmerged; pending proof is one acompte carried end to end on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `confirmRemainingPayment`     | `A FAIRE`           | step 4 records the balance on the reservation alone: nothing creates a payment for it, so it cannot be gated the way the acompte now is                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| Audit 2026-09-23, wave 5      | `EN COURS`          | locale-prefixed routing: every page under `[locale]`, `localePrefix: 'always'`, the proxy gate asked positively, the RSC token leak closed, 48 `next/link` and 35 `next/navigation` imports moved to `@/i18n/navigation`, `revalidatePath` given its prefix. Proved locally over HTTP (`/` -> 307 `/fr`, `/pricing` -> 404 not a login redirect, `/de/about` -> 404, `/fr/mylands` -> `/fr/login`) and by 55 browser tests. Unmerged; pending proof is the same table read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| Audit 2026-09-23, wave 6      | `EN COURS`          | SEO: `app/sitemap.ts` (30 URLs, hreflang + x-default), `app/robots.ts`, canonical and alternates on all 15 public pages, JSON-LD where there was none, metadata on the four legal pages and `robots: noindex` on the six auth pages. Both files read `APP_ENV`, never `NODE_ENV`. Unmerged; pending proof is `/robots.txt` and `/sitemap.xml` read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| Locale switcher coverage      | `A FAIRE`           | `QuickActions` carries the only language control and is mounted **per page**, on 8 of the 15 public pages. `/contact`, `/about`, `/faq` and the four legal pages have none. It predates wave 5 and matters more under it: a cookie carried the choice between pages and a URL does not, so a visitor who lands on `/fr/contact` from a search result cannot switch. Moving it into shared chrome is a design decision, so it was not made silently                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Built-in 404 above the locale | `A FAIRE`           | a `notFound()` thrown from the root layout has no boundary above it, so an unconfigured FIRST segment (`/pricing`, `/de/about`) is served Next's built-in 404 rather than the branded one. The status is 404 in both cases. Closing it needs `experimental.globalNotFound`, off by default in Next 16.3.6; pinned as a difference in `locale-routing.spec.ts` rather than left to be discovered                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| develop merged into waves 5-6 | `EN COURS`          | develop's 9 commits merged 25 September: 8 text conflicts, six new page files relocated under `[locale]`, three components moved off `next/link`/`next/navigation`, `revalidatePath` calls given their prefix, `image-hosts.spec.ts` unblocked (25 assertions that ran none), `A41` reconciled. Unmerged to develop; pending proof is the routing table and the sitemap read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| Wave 7                        | `EN COURS`          | steps 0-3 done: `PolicySnapshot` append-only by trigger, proved by removal; `POST /cms/webhooks/sanity` writes it, authenticated by HMAC over the raw body; `frame-ancestors` behind a validated `SANITY_STUDIO_ORIGIN`; the Studio, the GROQ contract pinned from both sides, the webhook created by script, and the Sanity hosts scoped by project. the 16 documents converted out of mdx and committed as ndjson, delivery through `@sanity/client` (`next-sanity` refused on a measured 1846-entry install), the KBS labels moved to fields, and consent bound to an archived revision. Step 4 (the blog) deferred by decision of 2026-09-27: a blog is a collection and every type in the Studio is a singleton, so it is a different shape rather than another slug. the delivery path is proved against a throwaway project - 16 documents answering the shipped query with no token, ten routes read over HTTP at 200 with no renderer warning and no contract error. **Decided 2026-09-27: the content is written in the Studio, not imported**, so a new environment's pages answer 404 until somebody writes them. **Pending proof: nothing is deployed.** The project, the two build variables, the Studio deploy and the webhook secret are the owner's actions |
-| Audit 2026-09-23, unwaved     | `A FAIRE`           | `/admin/verify` and `/kamnet/apply` are mocks behind real roles that toast success and write nothing; the Mapbox build `ARG` reaches no workflow, so the land-search map is dark in every image; `legal/mentions/{fr,en}.mdx` publishes `Capital social : XXX XXX XAF` and `N° RCCM : XX / XXX / XX` on a public page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| register                      | `A FAIRE`           | twenty-eight rows above have no `###` entry in this file - their detail lives in the tracker or in a wave note. The list is pinned in `register-is-the-record.spec.ts`; writing an entry means removing its line there                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Entry                          | State               | What it needs                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `L2`                           | `PROUVE`            | one deployed log line carrying its interpolated metadata, quoted **Tracker correction, 27 September:** the pending proof is on dev since L3 - e.g. `{"context":"CleanupScheduler","pattern":"0 7 * * *","msg":"Contact digest cron scheduled"}`, metadata carried and queryable                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `L3`                           | `PROUVE`            | log payloads are top-level JSON fields: one pino `hooks.logMethod` (`core/logging/structured-fields.ts`) lifts the single `%o` object every call site passes, instead of rewriting 161 calls. Pending: a field queried in CloudWatch Insights on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Errors logged under err        | `EN COURS`          | an error object is logged under `err`, where pino-http writes its type, message and stack. Thirteen call sites lost it (ten dropped it, three wrote `{}`), against the seventh round's "no call site does it"; fixed, and `log-errors-in-err.spec.ts` refuses both shapes. Pending: one error line read on dev with its message and stack                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `F1`                           | `A DECIDER`         | coverage ratchet: a floor, and what happens when a PR drops below it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `P1`                           | `A DECIDER`         | SES contact list, one per account per region — the prd constraint                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `X2`                           | `PROUVE`            | NAT option 2 - **already applied on 12 September** as infra D15 (dev has no NAT gateway, tasks in public subnets); the "unapplied" state here was stale. No live NAT gateway on 26 September. The net saving is partly taken back by per-task public IPv4 hours and is read on the bill (Visquis)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `M1`                           | `DECIDE, A FAIRE`   | mutualisation of dev and future prd, with per-resource saving and blast radius                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `Q1` follow-up                 | `A DECIDER`         | `generateKcaNumber` says _sequential per day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and gates nothing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `D3`                           | `PROUVE`            | the four Prisma baselines, deleted by `d099cd1` and restored here - pending proof is one deploy from this branch whose migration task exits 0 **Tracker correction, 27 September:** every deploy since the restore has run the migration task on the four baselines and passed; today's task (stream `api/api/24022681…`) reads `5 / 3 / 3 / 9 migrations found`, `No pending migrations to apply` for core, kamnet, kbs, lands                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `H1`                           | `PROUVE`            | `ADMIN_GLOBAL` is the super admin; no second role created. ADR-008 + `super-admin.spec.ts`, five mutations quoted below                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `H2`                           | `PROUVE`            | proven on dev on `f91289f`: `2 created, 0 updated, 0 unchanged`, exit 0, tally read from the task's own log stream                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `H3`                           | `EN COURS`          | journey 5 green on dev under the sha gate; **pending proof is the two real holders activating their own accounts**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `H4`                           | `PROUVE`            | the last active super admin cannot be removed through any of four doors - live 409 on each, four mutations quoted below                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `A7`                           | `PROUVE`            | inventory swept 2026-09-06, output in `docs/ops/a7-standards-inventory.md`: 6 findings (2 closed on sight), 7 classes clean, 2 defects in the sweep                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `H2` follow-up 1               | `EN COURS`          | **tracker correction, 27 September:** the row described the state before #116 (A9, `95b4e69`, 14 September), which made the seed step call `prisma/seed.ts` by name; `--seed` exists nowhere now. A9's proof was taken on a **manual** one-off task, not on the deployment step. Pending: a deploy with `run_seed=true` - which clears the seeded parcels' reservations that carry no payment, so it waits for Visquis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `H2` follow-up 2               | `PROUVE`            | the bootstrap deploy step now requires its task's tally line in the task's own log stream after the exit code (`scripts/ci/await-task-tally.sh`, proven against a fake `aws`); the deploy role may read that one log group (infra #67, applied on dev 27 September). Pending: one develop deploy printing the tally from the step **Proven on dev:** the deploy of `61388d9` printed `Kambriq super-admin bootstrap complete: 0 created, 0 updated, 2 unchanged`, read by the step from the task's own log stream                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Migration step tally           | `EN COURS`          | the migration deploy step checked only its task's exit code. `run-migrations.js` now prints `Kambriq migrations complete: <n> schemas (...)` after every schema migrated and never otherwise, and the step reads it with `await-task-tally.sh`. Pending: one develop deploy printing it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `H5`                           | `PROUVE`            | journey 5's address guard was a detector, not a barrier: it reported and let the run continue into a real inbox. Moved to `beforeAll`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `H6`                           | `PROUVE`            | the same run's `afterAll` revoked a real administrator's role. Every write audited, role restored 16:05:26, guard made structural                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `H7`                           | `PROUVE`            | nothing tested the bootstrap's role assignment - journey 5 granted it to itself. Decision extracted and covered, 11 tests, 3 mutations                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `H8`                           | `EN COURS`          | the bootstrap sent no email; a stray test made it look as though it had. Fixed and proven locally; pending the re-send to `contact@` on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `H8` follow-up                 | `A DECIDER`         | per-address SES delivery is not observable: no configuration set, no event destination. Needed to answer "did THIS address receive it"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `H9`                           | `PROUVE`            | the bootstrap's provenance check failed a whole deploy and skipped every later step. Postcondition scoped; step moved after the web deploy                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `B1`                           | `PROUVE`            | payment code audited against the design: 0 payments ever processed, no payment table, G3/G4 partly built, six of eight not started                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `A10`                          | `PROUVE`            | the identity-review queue did not exist - the route and the role did. Queue route + `idSubmittedAt`; the back-office screen stays open                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `A11`                          | `PROUVE`            | 13 sites, 15 messages, 12 transactional. `sendUpdate` returns an outcome and throws on a transactional template                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `A12`                          | `PROUVE`            | the WhatsApp preference removed from the API and the web, the column kept. A test fails if it returns, or if a sender appears                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `R1`                           | `EN COURS`          | **a merge can succeed and have no effect.** `#89` merged into a branch consumed 89 s earlier; `#88` was squash-merged, so nothing showed. Pending proof is the three commands in `R1`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `G8`                           | `PROUVE`            | **proven end to end on dev, 27 September** (journey 7, opt-in, `balance-journey.spec.ts`): one reservation, deposit and balance each taken INITIE to VALIDE through the back office - instructions, announcement, verification, a receipt resting on its proof in S3, validation - balance = total minus deposit, nothing owed. The 7 September stop (G11-G14 stranded) was closed by #92                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `G21`                          | `PROUVE`            | cancelling a reservation annuls its live payment, with a written reason (Visquis, 27 September - was `G8` follow-up). Built through `PaymentsService.transition`: actor, reason, ledger untouched; a VALIDE payment stays VALIDE. Proven on the real migrations; pending: journey 4 on dev, which now cancels a reservation holding a live deposit **Proven on dev:** the delivery journeys on `b063685` (29 passed, 6 opt-in skipped), journey 4 reading its deposit back `ANNULE` with the cancellation reason                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `G8` blocker                   | `PROUVE`            | the exposure closed on 7 September: `230b827` (#89) merged into a consumed branch and was re-landed the same day as #92 (`5c35aa2`, on develop, code-identical). This row stayed open 19 days after the fix. A test now pins that only the chosen channel's details leave. **G8 itself stays open**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `G10`                          | `PROUVE`            | applied and observed: 16 SecureString parameters none empty, task definition 143 with the three variables and no channel value, 0 AccessDenied                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `G9`                           | `PROUVE LOCALEMENT` | the client creates the payment, from their own purchase page. Creation writes its audit row; sending the instructions is a second act                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `G9` follow-up                 | `A DECIDER`         | `PAYMENT_VALIDITY_DAYS` is 30 because a month is the shape of a diaspora transfer. The design gives no number - this one needs deciding                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `G10` (webapp)                 | `PROUVE`            | an absent channel prefix now fails the boot exactly as an empty parameter does; disabling is `PAYMENT_CHANNELS_TRANSPORT=disabled`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `G10` (infra)                  | `PROUVE`            | twelve parameters and the prefix, applied: on 26 September the running API (`kambriq-dev-api:250`) carries `PAYMENT_CHANNELS_SSM_PREFIX`, and 13 SecureString parameters exist under `/kambriq/dev/api/payment-channels` (names and types read, no value). The row said "nothing applied"; `G10` and G8 Part 1 had recorded the apply (revision 143)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `G4`                           | `PROUVE`            | the back office and its screen. Five defects only a real request could see; `db:seed` unbroken; deployed-dev pass deferred to `G8`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `G4` follow-up                 | `PROUVE`            | **tracker correction, 27 September:** done on 14 September by #119 (A15, `ccafc87`) - `GetLandUploadUrlDto` and `GetCourseUploadUrlDto`, two contracts, not merged; dev's API log holds 0 "Duplicate DTO" lines in 7 days. What was missing was a guard: `dto-names-unique.spec.ts` reads every source file and fails on a name declared twice (A15's defect planted back fails it)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `V1` follow-up                 | `PROUVE`            | the commission lookup throws now but has never run: 0 sales completed, all 5 commissions seeded. Closed by inspection only                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `B2`                           | `PROUVE`            | V1 inventory finished: WhatsApp preference reads nothing, `sendUpdate` skips indistinguishably and defaults off, `RedisService` unused                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `B3`                           | `PROUVE`            | 56 dev parameters against 0 on prd; only 7 injected as secrets, so 49 need an apply to take effect. One confirmed unread, the rest candidates                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `B4`                           | `PROUVE`            | 4 journeys: VERIFY does not exist; reactivation and block/unblock never run; 57 identity documents queued for a review that has never run                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `G1`                           | `PROUVE`            | payment model in `lands`: BigInt money, 9-state machine, append-only ledger and audit. Proven on dev by G8's end-to-end run, 27 September                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `G2`                           | `PROUVE`            | the reference generator: 29-char derived alphabet, mod-29 check character, sequence-backed so collision-free by construction                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `G3`                           | `PROUVE`            | the instruction and reminder messages, channel details from SSM at runtime, send-before-transition. Real email read out of a mailbox                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `G10b` (infra)                 | `PLAN PRET`         | sixteen channel parameters; the twelve existing ones imported so `ignore_changes` bites on the first apply. **Apply before merging #88**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `G10b` follow-up               | `EN COURS`          | D9: `MOBILE_MONEY_OPERATOR/NUMBER/NAME` dropped from `FIELDS`, proved locally (boot on the nine, mutation names the MISSING one). Pending: deploy, API task steady and `/health` answering without them; then infra #51 (step 4, three destroys) with validation. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `G11-G14`                      | `PROUVE LOCALEMENT` | six channels, the identification gate, A14's review screen, coordinates in the platform. Email carries none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `G11` follow-up                | `A DECIDER`         | infra owes `ORANGE_MONEY_*` and `MTN_MONEY_*`: v03 splits mobile money in two but keeps twelve parameters with one number                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `G11` follow-up 2              | `A DECIDER`         | v03 section 5's example uses a hyphen between reference and channel, which section 4b forbids. 4b implemented                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `A18`                          | `PROUVE LOCALEMENT` | queue counts and failed payloads on `/health/queues`, ADMIN_GLOBAL. `failed` 0->1 observed through the endpoint against a real Redis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `L1-contact`                   | `PROUVE LOCALEMENT` | the public contact form sent nothing behind a success toast. Now persisted, announced, acknowledged in the page's locale; consent stored with its timestamp                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `L2-contact`                   | `PROUVE LOCALEMENT` | a daily digest on the existing core queue, sent even at zero, so its absence is the alarm. **On dev it failed every morning, silently, until 26 September**: `CONTACT_INBOX_EMAIL` was unset, the job threw, BullMQ kept it as a failed job and no line was logged (16 failed jobs on the core queue, names not read). First send on dev: 26 September 07:00 UTC, count 0. Delivery can only be seen in `contact@`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `A54`                          | `EN COURS`          | a failed queue job writes an error-level line (every processor, by a shared base class, pinned by a guard), and the API refuses to start without `CONTACT_INBOX_EMAIL`. Proven on dev: `sha-603e6ab` started with the variable required. Pending: the first real failure seen as a line                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `L1-contact` f-up              | `A DECIDER`         | infra owes `/kambriq/{env}/api/CONTACT_INBOX_EMAIL`. Until it exists dev stores every request and announces none, loudly                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| naming                         | `A DECIDER`         | the brief's `L1`/`L2` collide with this register's logging `L2`/`L3`. Entries above are `L1-contact`/`L2-contact`; somebody should decide which series keeps the bare letter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `A31`                          | `PROUVE`            | the seed kept payment-carrying reservations and reset their parcels to AVAILABLE; fixed in #126. Read on dev, 26 September: 0 parcels AVAILABLE under a live reservation, and develop's journeys green all day. The seed itself has not run on dev since (opt-in) - the state it protects holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `verify-cert`                  | `EN COURS`          | `/verify-certificate` said "valide" for any number; the API ignored `revokedAt` and handed strangers the holder's UUID. Pending proof on dev: seeded number valid, fake number non reconnu, revoked number révoqué. Cost: none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `A33`                          | `PROUVE`            | cause named and fixed: the sign-in fields were controlled inputs, and text typed before hydration was wiped by it - WebKit on the runner was the engine slow enough to hydrate late. Fields uncontrolled, every password form POSTs, WebKit back in the matrix. Proven: develop's E2E run on `8637543`, WebKit included, 186 passed, none flaky                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `J12`                          | `PROUVE`            | the five sign-in and account forms refused in English on the French pages; their schemas now carry keys under `auth.validation`, fr and en (#219). Proven on dev (`sha-a19d680`): an empty sign-in shows "Saisissez une adresse email valide." and "Le mot de passe est requis." on `/fr/login`, the English ones on `/en/login`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `A55`                          | `PROUVE`            | did real passwords reach the logs before #214? No server-side record on dev can hold one: no ALB access logs, no CloudFront or WAF, and the web container logs no request URL (the API's request log does, and holds no password or token in any URL: corrected under D28) - my own password-in-URL requests of 26 September are absent (the control). The referer carried the origin only. The one place such a URL can remain is the visitor's own browser history. Rotation stays Visquis's call                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `D28`                          | `PROUVE`            | who called what, when, from where. **Decided by Visquis, 27 September:** dev = application logging with an allowlist; production = a WAF (`C17`); retention 7 days dev, 30 days production, stated in the privacy policy. **Dev built:** one allowlist (`libs/common/src/logging/url-allowlist.ts`) applied before any write; the API line gains the visitor's address and the account id; the web proxy writes one JSON line per page request. Pending: the A55-style control on dev **Proven on dev (7197137), 27 September:** the A55-style control found 0 markers in either log group and every marker request logged as `[redacted]`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `I45`                          | `PROUVE`            | the invitation every new client receives, and the email-change confirmation, linked to pages that did not exist (404 on dev). The invitation now links to `/reset-password`; the confirmation to a new `/account/confirm-email-change` page, and the login detour keeps the token. `emailed-urls-resolve.spec.ts` checks every URL the API builds on `FRONTEND_URL` against the web's pages, inverted. Pending: both links walked from the email in a browser on dev (`emailed-links.spec.ts`) **Proven on dev (`sha-61388d9`), 27 September:** both walks green in Chromium from the delivered emails - the invitation to a password to a sign-in; the confirmation opened signed out, the login detour back to it, confirmed, the new address signing in and the old one refused                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `A56`                          | `PROUVE`            | the E2E suite signs in from one runner address against the API's 10-a-minute login limit, and the page walks pushed it over - a neighbour's sign-in failed. One sign-in per role for the run (`sessions.setup.ts`), and every other auth call takes a slot from a shared window at 80% of the API's own limits (read from `auth.controller.ts`). The limit is not raised. Proven: the full suite on dev with the walks on, 0 x 429 in the API log for the run                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Journeys bypass the page       | `PROUVE`            | the delivery journeys prove by calling the API what a person does through a page: email verification, forgot-password, the invitation (until I45), KBS identity and enrolment, every back-office payment step. By construction the page a human uses is the one path not proven. Which of them deserve a browser walk is a decision, not a fix to squeeze in **Decided by Visquis, 27 September: walk every human path on every deploy** - done as I46                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `I46`                          | `EN COURS`          | the human paths walked through the pages on every deploy, Chromium: registration and email verification, forgotten password, KBS enrolment, the back office taking a deposit from request to validation, and both emailed links (continuous again). Green on dev locally; pending: the first develop E2E run with them, and its API log free of 429                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `I47`                          | `A DECIDER`         | a land buyer has no page to send an identity document: the client payment page says "upload your document from your profile" and the profile has only an avatar. Sending payment instructions requires a verified identity, so through the site the back office can never answer a buyer who is not also a KBS candidate. Where the upload belongs is a product decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `C17`                          | `DECIDE, A FAIRE`   | before production opens: a WAF on the load balancer, logging with the query string redacted at write time, 30-day retention stated in the privacy policy (Visquis, 27 September; D28's production half). Production is his                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `A32`                          | `EN COURS`          | Gate reads develop's HEAD sha, then its run (`scripts/ci/develop-gate.sh`): green passes; red, never started or not yet verified refuses; label `merge-on-red-develop` plus re-run releases. v1 read a list and passed #134 on a stale run; 12 stub cases run in every CI Gate. Cost: each develop push blocks merges ~20 min                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `A36`                          | `PROUVE`            | develop red on `70a5e07`: both journey suites run in one `runInBand` process from one runner address and `getTracker` keys on the last X-Forwarded-For entry, so they legitimately share one bucket of 100 requests per 60000 ms - the gap between them decides it (9.33 s PASSED on `1cbde1a`; 0.36 s and 0.35 s FAILED on `70a5e07`). `call()` now waits one full window and retries, bounded at 3 attempts, one log line per wait, still throwing today's sentence after them. The comment claiming CI "never sees it" is replaced by the measurements. `getTracker` had no test and now has 11, watched failing on `parts[0]`. The spec runs in `Quality` via a new `test` target, because `api-e2e` had none and the file would otherwise execute only in the job it repairs. Pending: a green `Delivery journeys (dev)` on develop. Cost: up to 120 s added to a journeys job that is actually throttled, none otherwise **Tracker correction, 27 September:** the pending green `Delivery journeys (dev)` on develop has been had on every develop run of the day - `b063685`, `61388d9`, `e4fdfd4`, `daddcd9` among them (29 passed each) - with `call()` waiting out the throttle window as built                                                                   |
+| `I19`                          | `PROUVE`            | no user without a role - fixed in code (#132). On dev, 26 September: the three missing role rows (`STAFF_VERIFY`, `STAFF_VALUATION`, `PARTNER_GEO`) added from the seed's own definitions, and the two role-less throwaways of 4 September given `CLIENT`, what registration gives. 11 role rows, 0 users without a role; no reservation touched                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `I15`                          | `PROUVE`            | the certificate is the truth (#133). Read on dev, 26 September: the expiry sweep runs every night at 02:30 UTC - 'Expired certifications withdrawn' logged on 22, 23, 24, 25 and 26 September, 0 to withdraw each time                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `I18`                          | `PROUVE`            | one definition of the roles (#134, #140); the proxy is the one gate. Read on dev, 26 September: unauthenticated `/fr/admin/payments`, `/en/agent/network` and `/fr/account` answer 307 to the sign-in page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `I20`                          | `PROUVE`            | lessons need a candidate record (#136). Read on dev, 26 September: the admin fixture, which holds CANDIDATE_KBS by inheritance and never enrolled, gets 404 'You are not enrolled in KBS' on a lesson; a client without the role gets 403; no session, 401                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `I7`                           | `PROUVE`            | ADMIN_GLOBAL inherits STAFF_VERIFY (#137), pinned by test before any route uses it. Nothing on dev to observe yet: no route is gated by STAFF_VERIFY, and dev has no STAFF_VERIFY role row (see I19)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `I16`                          | `PROUVE`            | CLIENT in its own right (#138). Read on dev, 26 September: 5 of 5 users holding AGENT also hold CLIENT                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `I15` renewal                  | `PROUVE`            | a renewal issues a new certificate (#139). Read on dev, 26 September: migration `20260915160000_i15_certificate_renewal` applied on dev on 15 September 18:08:22 UTC, not rolled back                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `I21`                          | `PROUVE`            | an exam is answered only on the questions it served (#143). Read on dev, 26 September: 148 graded exams, highest score 100; no exam holds more answers than questions served                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `I31` seuils                   | `PROUVE`            | exam threshold 80, quizzes 70 (#150). Read on dev, 26 September: all 73 exams created since the merge carry passingScore 80                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `G6`                           | `PROUVE LOCALEMENT` | the dunning queue, reminders at J-7 and J-1, EXPIRE at the term. Found and fixed a processor collision that silently ate a reminder email                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `R4`                           | `EN COURS`          | back to hosted runners under a spending cap. Baseline measured: 27 billed minutes, of which the quality matrix billed 5 to do 102s of checking                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `R3`                           | `EN COURS`          | CI moved to the self-hosted `kambriq-ci` runner. No `services:` anywhere, so macOS is viable. Exposed three image builds pinning no platform - amd64 held by accident of `ubuntu-latest`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `A17`                          | `PROUVE LOCALEMENT` | a database-backed suite, `pnpm test:db`: 51 tests against a real Postgres; both append-only triggers and all five CHECKs proved sharp by removal and restoration                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `G7`                           | `PROUVE LOCALEMENT` | `evidenceReceiptId` filled end to end; NULL deliberate and documented for the other states; the single write path to `Payment.state` pinned, mutation red                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `G5`                           | `PROUVE LOCALEMENT` | a correction entered from the back-office screen: three movements, total 500 000 over four lines, original line unchanged. Correction carries its own reason and author                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `G11` follow-up 3              | `PROUVE`            | the controller never forwarded `paidBy`: a DEPO keyed on the screen was refused by the service. Fixed and pinned here                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `P3`                           | `PROUVE LOCALEMENT` | the auth middleware was a global net: every unknown URL redirected to /login and nothing could 404. Positive matcher, real 404 page, route table proved unchanged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `P4`                           | `PROUVE`            | X-Robots-Tag noindex outside production, on the existing headers() block. Reads APP_ENV: NODE_ENV is 'production' on every environment and cannot tell them apart. Second half (API responses): PROUVE on dev 23/09; P4 stays below 100 % until D13                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `P5`                           | `EN COURS`          | `/kamnet/apply` is wired to `POST /kamnet/applications` (#193), the floor first (#192); proven on dev in a real browser - stored, page shows the real status, applicant mailed, `contact@` notification accepted by SES once `CONTACT_INBOX_EMAIL` was set (kambriq-infra #66). Pending: Visquis confirms that notification arrived in `contact@`. No admin screen lists applications. The login wall stays (P3)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| rename                         | `A DECIDER`         | `L1-contact`/`L2-contact` -> `P1`/`P2` was asked for in P3's brief; those ids have since reached develop with PR #98 (`L1-contact`, `L2-contact` entries). Not done - see PR                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `A19`                          | `PROUVE`            | develop linted 1 project of 6 for seven months: the workflow promised "the full set", `pnpm run lint` was `nx lint api`. Widened to `nx run-many -t lint --all`; manifest corrected; proved in both directions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `I32`                          | `PROUVE`            | the API decides the network depth by the caller's own tier (`KAMNET_NETWORK_DEPTH_BY_TIER` in `libs/common`, bounded by `KAMNET_MAX_SPONSORSHIP_DEPTH`); the page asks without a depth. Proven by test with the maximum raised, since on dev every tier and the maximum are 1 and the rule changes no answer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `P10`                          | `EN COURS`          | the agent-page promises of an exclusive catalogue: two replaced with the copy Visquis validated on 26 September (#200); the last two (`products.kbs.advantages.network`, `products.kamnet.agentJourney.step5`) replaced with copy he approved on 26 September, the first with the title "Candidater au réseau KAMNET™" / "Apply to join KAMNET™" (English approved 27 September) - #206. The pin reads both product pages, not named keys - #200's version named three strings and missed a third on the same page. Still open: the LANDS page rewrite (#174, held for his reading of the deployed page) **#206 merged 27 September (79e4569); read on dev:** /fr/products/kbs shows "Candidater au réseau KAMNET™", /en/products/kbs "Apply to join KAMNET™"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `P21` follow-up                | `PROUVE`            | **premise corrected:** `landTypes` was in the list; the earnings ban read only `products.kamnet`/`products.kbs`, and its pattern missed "Commission rapide" and the infinitive "gagner des commissions" (a second survivor, `quickActions`). Guard rebuilt inverted - every namespace watched unless declared exempt with a reason - and it names both; the words removed (deletion only). Pending: the deployed LANDS page read on dev **Proven on dev (96edf6c):** /fr, /en, /fr and /en/products/lands, /fr/products/kamnet carry the new wording and none of the old                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `A41`                          | `PROUVE`            | a rate limit each, chosen from 7 days of measured traffic; `auth-anonymous-routes-throttled.spec.ts` reads the @Throttle metadata, red first on five undefined routes, eight mutations each watched failing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `P22`                          | `PROUVE`            | the public directory reads every certificate in one query, not one per agent, and is bounded by `KAMNET_MAX_PUBLIC_DIRECTORY_ENTRIES` with a warning at the cap; proven on dev at `sha-caf8f98`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Audit 2026-09-23, wave 1       | `EN COURS`          | four security fixes on `chore/audit-remediation`, unmerged. The fifth finding, the API bearer token in the RSC payload, is **closed by wave 5** - `sessionForClient` strips it and `lib/session.spec.ts` plus the login journey pin it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Audit 2026-09-23, wave 2       | `EN COURS`          | `GET /kbs/me` scoped to the active course, `no-console`, `strict` on the API, two seed preconditions. Unmerged; pending proof is `GET /kbs/me` read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Audit 2026-09-23, wave 3       | `PROUVE`            | the wave of #155 to #162 folded in, the Open table de-duplicated, the states declared, `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Audit 2026-09-23, wave 4       | `EN COURS`          | the acompte step reads the payment ledger instead of answering for it. Unmerged; pending proof is one acompte carried end to end on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `G19`                          | `PROUVE`            | decided by Visquis on 26 September and applied (#210): `Land.totalPrice` is the source of truth, `Land.pricePerM2` is generated by the database from it and cannot drift; nothing multiplies by the surface. Proven on dev: the 480 m2 parcel reads 3 400 000 total, 7 083 per m2, deposit 170 000, balance 3 230 000                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Land price integer money       | `PROUVE`            | `Land.totalPrice` and the price history move from Float to BigInt (whole XAF), the last land price held as a floating-point number; the response envelope turns a BigInt into an exact number. Pending: the migration read back on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Payment purpose in back office | `PROUVE`            | G20's purpose (`ACOMPTE` or `SOLDE`) was only visible in the database; the four back-office payment reads now return it and the payment list, the payment detail and the request queue show it. API proven on dev (all four reads); the screens read on dev with a balance beside a deposit still pending - dev holds no balance payment yet. **Row restored 26 September:** #225 merged without it - the register conflict resolver kept only rows whose id is in backticks **27 September:** dev now holds one (G8, reservation `474807f6-…`, deposit and balance VALIDE); the screen read needs a signed-in browser on the back office **Tenth round:** the signed-in browser read on dev stays Visquis's - not worked around with a scripted admin sign-in **Proven 27 September** in the back office on dev, signed in as the seeded test administrator: list, both details and the request queue (screenshots)                                                                                                                                                                                                                                                                                                                                                         |
+| Deposit integer money          | `PROUVE`            | `LandReservation.downPaymentAmount` from Float to BigInt (whole XAF), still deprecated by G1 and kept; the float-money quarantine drops to one (`KamnetCommission.amount`). Pending: the migration read back on dev Proven on dev 26 September: `bigint`, deposits unchanged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Signed-in price smoke          | `PROUVE`            | the gap Land price integer money left: its proof rested on a database read and the journeys, since every lands route needs a session. The delivery journeys now read a parcel signed in and require its total to arrive as a whole, exact JSON number matching the database's own `pricePerM2`, and the client's deposit and money summary likewise. Pending: the first develop run with it green Proven: delivery journeys 29/29 on `6193d29` under the sha gate                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Commission integer money       | `PROUVE`            | `KamnetCommission.amount` from Float to BigInt (whole XAF), the last monetary Float in the four schemas: the float-money quarantine is empty, pinned at zero. Pending: the migration read back on dev Proven on dev 26 September: `bigint`, 6 commissions, sum 2 270 000 unchanged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `confirmRemainingPayment`      | `EN COURS`          | G20, built (#218): every payment states its purpose, one live payment per reservation and purpose, each money step asks for its own, the balance is the total minus what the deposit received. Read on dev, 26 September: all 38 payments `ACOMPTE`, the default dropped. Pending: a balance exercised on dev, once a reservation reaches step 4                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `A52`                          | `PROUVE`            | a KBS candidate's CV is a key in their own CV folder, refused otherwise at enrolment, by the A44/A49 rule in `core/users/storage-keys.ts`; proven on dev at `sha-d5fd78e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `A53`                          | `PROUVE`            | the unrendered land search and compare components, `MOCK_LANDS`, their store and `StatCard` are deleted; the I44 pin keeps the invented values as literals. Proven by develop's run on `844cf32` (after #199): Quality, deploy, journeys and E2E green. The two namespaces only they read, `landSearch` and `landsCompare`, are removed, with a guard that every namespace is read                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `A51`                          | `PROUVE`            | the Firefox language-switch E2E test failed inside its own style injection, blocked by the CSP; rewritten to switch from the keyboard with no injection, 10/10 in Firefox against dev; proven on develop's own run, first attempt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `I44`                          | `PROUVE`            | `/admin/lands/search`, `/admin/lands/compare` and `/admin/verify` showed invented parcels, requests and statistics; each now says it is not built, and a test pins the invented values out; proven on dev at `sha-d90e9cb`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `J11`                          | `PROUVE`            | the typeface's stylesheet and font hosts reach `style-src` and `font-src` from the same module as the image hosts, and the layout links it from there; proven on dev at `sha-87b1d13`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `P29`                          | `PROUVE`            | the API's catalogues - every email and notification - carry the product marks, read by P27's own guard; proven on dev with delivered mail                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `A48`                          | `PROUVE`            | every API behaviour decision reads `APP_ENV` through `libs/common/src/config/app-env.ts`; SQL is logged only where `APP_ENV=local`; a guard refuses a new `NODE_ENV` read; proven on dev at `sha-3425132`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `A49`                          | `PROUVE`            | an identity document is a key in its owner's `id-documents` folder, refused otherwise, through the A44 rule now shared in `core/users/storage-keys.ts`; proven on dev at `sha-23a2b97`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `P27`                          | `PROUVE`            | KAMBRIQ LANDS™, KAMBRIQ VERIFY™ and KAMNET™ carry the mark everywhere on the website, KBS does not; a guard watches every namespace and every MDX file; proven on dev at `sha-e059503`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `A44`                          | `PROUVE`            | an avatar is a key in the caller's own storage folder, refused otherwise on both write paths; `connect-src` names the bucket so the browser may upload; proven on dev at `sha-689bd2e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `A43`                          | `PROUVE`            | Swagger is served only where `APP_ENV=local` is declared, never from `NODE_ENV`; the local start scripts declare it; proven on dev at `sha-7ec907b`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `P24`                          | `PROUVE`            | the land title number is shaped `TF <number>/<department>` and validated by shape in the web form and the API; invented formats replaced; proven on dev at `sha-85c8966`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `P25`                          | `PROUVE`            | the verify price table was the only MDX element outside the component map; two consent sentences were split into columns by a flex label; proven on dev at `sha-828c509`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `I43`                          | `PROUVE`            | ten signed-in screens promised 38 unbuilt features in hardcoded French; the promise is removed and a guard reads every `.tsx`; proven on dev at `sha-383828e`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Audit 2026-09-23, wave 5       | `EN COURS`          | locale-prefixed routing: every page under `[locale]`, `localePrefix: 'always'`, the proxy gate asked positively, the RSC token leak closed, 48 `next/link` and 35 `next/navigation` imports moved to `@/i18n/navigation`, `revalidatePath` given its prefix. Proved locally over HTTP (`/` -> 307 `/fr`, `/pricing` -> 404 not a login redirect, `/de/about` -> 404, `/fr/mylands` -> `/fr/login`) and by 55 browser tests. Unmerged; pending proof is the same table read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Audit 2026-09-23, wave 6       | `EN COURS`          | SEO: `app/sitemap.ts` (30 URLs, hreflang + x-default), `app/robots.ts`, canonical and alternates on all 15 public pages, JSON-LD where there was none, metadata on the four legal pages and `robots: noindex` on the six auth pages. Both files read `APP_ENV`, never `NODE_ENV`. Unmerged; pending proof is `/robots.txt` and `/sitemap.xml` read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Locale switcher coverage       | `PROUVE`            | J4 / P16: `QuickActions` on every public page, guarded by default (#197); the switch also sets a signed-in person's account language, announced with the way back, and a visitor changes only the page (#201). Proven on dev, web `sha-65521db`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Built-in 404 above the locale  | `PROUVE`            | P31, decided by Visquis on 26 September: the route group. Every page is in `[locale]/(site)`, whose layout refuses an unknown locale below the branded boundary. Proven on dev (`sha-e1b965f`): `/pricing` and `/de/about` give the branded 404, HTTP 404, in the visitor's language; all seventeen public pages 200 with the language switch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| develop merged into waves 5-6  | `EN COURS`          | develop's 9 commits merged 25 September: 8 text conflicts, six new page files relocated under `[locale]`, three components moved off `next/link`/`next/navigation`, `revalidatePath` calls given their prefix, `image-hosts.spec.ts` unblocked (25 assertions that ran none), `A41` reconciled. Unmerged to develop; pending proof is the routing table and the sitemap read on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Wave 7                         | `EN COURS`          | steps 0-3 done: `PolicySnapshot` append-only by trigger, proved by removal; `POST /cms/webhooks/sanity` writes it, authenticated by HMAC over the raw body; `frame-ancestors` behind a validated `SANITY_STUDIO_ORIGIN`; the Studio, the GROQ contract pinned from both sides, the webhook created by script, and the Sanity hosts scoped by project. the 16 documents converted out of mdx and committed as ndjson, delivery through `@sanity/client` (`next-sanity` refused on a measured 1846-entry install), the KBS labels moved to fields, and consent bound to an archived revision. Step 4 (the blog) deferred by decision of 2026-09-27: a blog is a collection and every type in the Studio is a singleton, so it is a different shape rather than another slug. the delivery path is proved against a throwaway project - 16 documents answering the shipped query with no token, ten routes read over HTTP at 200 with no renderer warning and no contract error. **Decided 2026-09-27: the content is written in the Studio, not imported**, so a new environment's pages answer 404 until somebody writes them. **Pending proof: nothing is deployed.** The project, the two build variables, the Studio deploy and the webhook secret are the owner's actions |
+| Audit 2026-09-23, unwaved      | `A FAIRE`           | superseded in part: `/admin/verify` (honest since I44) and `/kamnet/apply` (wired since P5, #193) are no longer mocks. Still open, as recorded: the Mapbox build `ARG` reaches no workflow (the land-search map it named was deleted in A53; whether another map needs it is not checked here); `legal/mentions/{fr,en}.mdx` publishes placeholder company details (`Capital social : XXX XXX XAF`, `N° RCCM : XX / XXX / XX`, and their English forms) on a public page                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| register                       | `A FAIRE`           | one row has no `###` entry: `P10`, whose entry is in #174 (held for the LANDS copy). Twenty-one were written on 26 September. The list is pinned in `register-is-the-record.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 ### H1 - `ADMIN_GLOBAL` is the super admin, and there is no second one - `PROUVE`
 
@@ -1235,6 +1268,32 @@ than by inspecting the code. Both messages now format their dates.
 
 As `L1-contact`'s.
 
+**On dev, 26 September - the digest had never been sent, and nothing said so.**
+The dev log from 19 September (the oldest line it still holds for this) to 25
+September has the schedule line at every task start and **nothing at 07:00 UTC
+on any day** (each of 21 to 25 September read minute by minute): no "Contact digest sent", and no
+error either. `CONTACT_INBOX_EMAIL` was unset on dev (it was set by infra #66 on
+26 September, found by P5), so `sendDailyDigest` threw
+`DigestUndeliverableError`, BullMQ recorded a failed job, and the processor
+logs nothing when a job fails. `GET /health/queues` shows 16 failed jobs on the
+`core` queue, consistent with one per morning (their names were not read) -
+the only place it was visible, and only to somebody asking.
+**A design whose alarm is the absence of a message had its message absent, and
+nobody was expecting it yet**, so the absence alarmed nobody.
+
+The first digest on dev left at **26 September 07:00:00 UTC**:
+`Contact digest sent {"count":0,"pending":0,"windowHours":48}`. Whether it
+arrived is visible only in `contact@`, and this entry stays `PROUVE LOCALEMENT`
+until Visquis sees it there.
+
+**The fourth round's subject 4 asked for "an alert when the volume stays at zero
+for 48 hours" as P1's last piece.** Not built. `P1` in this register is the SES
+contact-list question, and the 48-hour zero case is this entry, where the
+decision was a digest rather than an alert. An alert would reverse that
+decision, which is his to make. Two smaller things that are not decisions,
+also not built: logging a failed core job at `error`, and `CONTACT_INBOX_EMAIL`
+being required at startup rather than at 07:00.
+
 ### P3 - the auth middleware was a global net, and nothing could 404 - `PROUVE LOCALEMENT`
 
 **Cost impact: None.** No resource, no dependency. One matcher, one page, one
@@ -2049,6 +2108,51 @@ sharp by adding a real `@Public()` to the new route - expected 3, received 4 -
 and removing it again.
 
 ---
+
+### G8 - end to end on dev, deposit and balance - `PROUVE`
+
+**Cost impact: None.** One parcel consumed on dev, on purpose.
+
+**27 September, ninth round.** The two stops below (7 and 11 September) were
+about code that had not reached dev; it did with #92. What remained was the
+run. `apps/api-e2e/src/journeys/balance-journey.spec.ts` - **journey 7, opt-in**
+(`RUN_BALANCE_JOURNEY=1`), because it consumes a parcel and leaves two
+validated payments behind, which is not something every deploy should do.
+
+Run against dev (image with #229) through the API a person would use:
+
+1. the agent reserves an available parcel for a new client, who sets a
+   password from the emailed link and signs in;
+2. the client sends an identity document and the back office marks it
+   verified - sending instructions refuses otherwise (v03 4d);
+3. the client asks for the deposit; the back office sends instructions (VIR),
+   moves it to announced and to verification, uploads a receipt's proof to S3,
+   records the receipt for the whole amount, moves it to partly received on that
+   receipt and **validates** it (ADMIN_GLOBAL); the reservation is confirmed on
+   it (the deposit gate);
+4. the client uploads the two required documents; the back office marks them
+   received (the balance gate);
+5. the client asks again and gets the **balance** (`SOLDE`), whose amount plus
+   the deposit's equals the parcel's total; the same six steps; the remaining
+   payment is confirmed on it;
+6. the client's summary owes **0**, as an exact number; the back office's
+   payment list holds `ACOMPTE:VALIDE` and `SOLDE:VALIDE` for that reservation.
+
+**6 of 6 green.** Reservation `474807f6-a078-4441-8e79-124fee91dcfd`, deposit
+`601b5fcf-b3b2-4f69-9c9b-d2184e7eae69`, balance
+`a43f9d04-3386-4f13-8461-88dfe043169d` - left in place, so the back office has a
+deposit and a balance side by side (the screen check #225 lacked).
+
+**The first run failed, and why:** the test expected `purpose` on the client's
+"request a payment" answer, which returns id, reference, amount and currency
+only - by design; the purpose is read from the back office now. Its reservation
+(`ff93951d-…`) was cancelled and its INITIE deposit annulled by hand, both
+through the admin API with a reason. That surfaced `G8` follow-up: **cancelling
+a reservation does not close its live payment.**
+
+**Also:** checking that the file skips by default ran the regular journey suite
+against dev once from a laptop (29 passed) - the suite CI runs after each
+deploy, which cleans up after itself.
 
 ### G8 - second attempt, stopped again at Part 0 - `ARRETE`
 
@@ -3610,7 +3714,14 @@ does. Not decided here.
 
 ---
 
-### D3 - The four Prisma baselines were deleted by a docs commit - `EN COURS`
+### D3 - The four Prisma baselines were deleted by a docs commit - `PROUVE`
+
+**Tracker correction, 27 September - proven by every deploy since.** The pending
+proof was one deploy whose migration task exits 0 on the restored baselines; the
+deploy fails on anything else, and every develop deploy since has passed. Today's
+migration task (stream `api/api/24022681e25c4a47bfaa4c76029a67d1`) reads, for
+core, kamnet, kbs and lands: `5 / 3 / 3 / 9 migrations found in
+prisma/migrations`, `No pending migrations to apply` - no `db push`.
 
 `d099cd1`, subject **"docs: retract the mount-instability finding, and keep the
 retraction (#74)"**, added 35 lines to `CLAUDE.md` and deleted 783 lines of
@@ -3652,7 +3763,14 @@ so its absence is pre-existing and not part of this regression.
 
 **Cost impact:** None.
 
-### L2 — Logging drops metadata at 106 call sites — `EN COURS`
+### L2 — Logging drops metadata at 106 call sites — `PROUVE`
+
+**Tracker correction, 27 September - proven since L3.** The pending proof, "one
+deployed log line carrying its interpolated metadata, quoted", has been on dev
+since L3 lifted the payload into fields:
+`{"context":"CleanupScheduler","pattern":"0 7 * * *","msg":"Contact digest cron scheduled"}`
+(CloudWatch Insights `filter ispresent(pattern)` matches it). Nobody closed the
+row.
 
 `nestjs-pino`'s `Logger.call` takes the **last** optional param as context and
 passes the rest as pino format arguments. Nest's `Logger` appends the class name
@@ -3710,7 +3828,7 @@ rotated under a new deploy and the stream name moved with it. That is worth
 knowing before the next attempt: the stream is `api/api/<task-id>` and the task
 id changes on every deploy._
 
-### L3 — Migrate logging to PinoLogger structured fields — `DECIDE, A FAIRE`
+### L3 — Log payloads as queryable fields — `PROUVE`
 
 `%o` makes payloads **readable** but not **queryable**: the object is serialised
 into the message string, so CloudWatch Insights cannot filter on `userId` or
@@ -3720,6 +3838,86 @@ top level of the JSON, which is what the migration buys.
 **Decision:** do it later, as its own chantier. Roughly 102 call sites plus DI
 changes, and it should not ride along with a change whose value is that it is
 mechanical. **Cost: none.**
+
+**Done, 26 September - by a different method than the one recorded, for the
+same result.** The decision was to move about 102 call sites to
+`PinoLogger.info(obj, msg)` so the payload lands at the top level of the JSON.
+Counted again: **161** logger calls, 119 with `%o`. But
+`logging-metadata.spec.ts` already forces every one of them into one shape - a
+message ending in `%o` and a single object - and nestjs-pino hands that to pino
+as `({ context }, 'Contact digest sent %o', { count, pending })`. So one
+`hooks.logMethod` in the API's pino options lifts that object into top-level
+fields and keeps the words as the message: `{"context":"ContactService",
+"msg":"Contact digest sent","count":0,"pending":0}`. **Same outcome, one point
+of change, and no call site touched** - which also keeps Ulrich's code as it
+is. If Visquis wanted the call sites rewritten anyway, say so and it is a
+mechanical follow-up.
+
+- A payload key that would overwrite one of pino's own fields (`msg`, `level`,
+  `time`, `context`, `req`, `err`...) goes under `data` instead.
+- An Error, an array, or anything but a plain object is left to pino exactly as
+  before - and that surfaced a fact worth writing down: **pino prints an `Error`
+  passed through `%o` as `{}`**. No call site does it today (checked).
+  **Tracker correction, 26 September (eighth round): that check was wrong.** It
+  looked for an Error passed as the whole payload; it missed an Error inside the
+  payload (`{ error }`, three sites, written `{}`) and an Error passed without a
+  placeholder (ten sites, dropped outright). See "Errors logged under err".
+- **Proof, red first:** `structured-fields.spec.ts` runs the real pino-http
+  logger: the payload becomes fields, a colliding key goes under `data`, non-plain
+  payloads come out identical to pino alone, and without the hook the payload is
+  text inside `msg` (the defect, pinned). A fifth test requires `app.module.ts`
+  to carry the hook. Mutations: no lifting (fails two), no collision guard (fails
+  one), the hook unwired (fails the wiring test).
+
+**Proven on dev, 26 September (after `7bb28ee` deployed).** The CloudWatch
+Insights query `filter ispresent(pattern) | fields context, pattern, msg` on
+`/ecs/kambriq-dev-api` matched 6 records: `CleanupScheduler`, `pattern` =
+`0 7 * * *`, `msg` = `Contact digest cron scheduled` (and the dunning and
+certificate-expiry schedulers alike). The same line from the previous image,
+read the same way, was `"msg":"Contact digest cron scheduled {\"pattern\":\"0 7 * * *\"}"`
+
+- the payload was text in the message, now it is a field.
+
+### Errors logged under err - `EN COURS`
+
+**Cost impact: None.**
+
+**The brief:** the logging library prints an error object as `{}`; no code does
+it today, so put the rule in before the first time it hides a real error.
+
+**The premise was mine, and it was wrong.** The seventh round wrote "no call
+site does it today (checked)"; the check only looked for an Error passed as the
+whole payload. Measured on 26 September, from nestjs-pino's `Logger.call` and
+the L3 hook, two other shapes lose an error, and **13 call sites used them**:
+
+- `logger.error('Core database connection failed', error)` - no placeholder,
+  so pino **drops the argument**: no message, no stack. Eight Prisma service
+  handlers (connect and disconnect, four databases), the readiness check, and
+  the Redis client's `error` event. `logging-metadata.spec.ts` never saw the
+  Prisma ones: it skips every folder named `prisma`, generated or not.
+- `logger.warn('clientDocumentUploaded email failed %o', { error })` - L3 lifts
+  the payload, and pino writes an Error under any key but `err` as **`{}`**.
+  Three email-failure warnings in `reservations.service.ts`.
+
+**The fix:**
+
+- **`err` is the one key that keeps an error.** pino-http serialises a top-level
+  `err` as `{ type, message, stack }`. The L3 hook treated `err` as reserved and
+  moved it under `data`, where it became `{}` too; it now passes an Error under
+  `err` through.
+- **The 13 sites** now log `'... %o', { err: error }`.
+- **`log-errors-in-err.spec.ts`** (libs/common, beside the metadata rule) refuses
+  an error-named identifier (`error`, `err`, `e`, `exception`, `cause`) passed as
+  a bare argument, or as a payload value under any key but `err`. It walks the
+  hand-written `prisma/` service folders and skips only the generated clients.
+
+**Proof, red first:** the static spec listed exactly the 13 sites; the hook test
+("an Error under `err` is written with its type, message and stack") failed with
+the error under `data`, then passed. A second test pins the old defect: an Error
+under `error` is `{}`. API suite 1 114 and common 378 green.
+
+**Pending:** one real error line on dev read with its message and stack - the
+next failed email or dropped connection.
 
 ### Z1 — Three never-used access keys, one of them full admin — `PROUVE`, applied 2026-09-04
 
@@ -4013,7 +4211,7 @@ there.
 
 **Cost: a small reduction**, and it stops an unbounded one.
 
-### X2 — NAT gateway — `DECIDE, A FAIRE`, option 2
+### X2 — NAT gateway — `PROUVE`, option 2 applied 12 September (infra D15)
 
 Priced against the X1 baseline. One NAT gateway, two private subnets in
 `eu-central-1a` / `1b`, **zero VPC endpoints today**.
@@ -4050,6 +4248,31 @@ now rather than after prd exists**, and it belongs to `M1` as much as here.
 **Prepare the PR, do not apply**, until the S1 and B3 blockers are proven: it
 touches shared state and two things should not move at once. Implementation is
 Ulrich's, on his own PR.
+
+**26 September - the seventh round asked for the apply, and it was not made.**
+The round's brief said: read the plan, report it, apply on dev under the
+standing authorization. This entry says, in its last paragraph, that
+**implementation is Ulrich's, on his own PR**. Of its two preconditions, S1 and
+B3 are now both `PROUVE`; the ownership line still stands. The standing
+authorization is explicit that when a brief and the register disagree, the
+disagreement is reported rather than resolved by choosing. **Pending Visquis:**
+whether this is now his to hand over, or Ulrich's PR to wait for. Nothing was
+planned or applied. D15 is a tracker ID with no row here.
+
+**Tracker correction, 26 September - the premise was false, and the hold was
+right for a reason neither side saw.** Visquis's eighth-round brief: the
+architecture document has said since 15 September that dev runs without a NAT,
+and the bill shows no NAT line on 13 and 14 September. Checked rather than
+taken on trust: `kambriq-infra` CLAUDE.md, "D15 - dev has no NAT gateway, and
+the tasks are in public subnets", **applied 12 September 2026**; and
+`aws ec2 describe-nat-gateways` for `available` or `pending` returns nothing.
+This entry was never updated after the apply, so it still read "deliberately
+unapplied". Nothing was applied on 26 September and nothing is to be.
+
+**What remains is on the bill, and the bill is Visquis's:** the NAT's address
+went away, but each Fargate task now holds one, so public-IPv4 hours go from
+about 72 a day to 96-98. The net saving is smaller than option 2's -$35.34 and
+is read on the invoice, not estimated here.
 
 ### M1 — Mutualisation of dev and future prd — `DECIDE, A FAIRE`
 
@@ -4345,6 +4568,51 @@ promise the exclusive catalogue, which is `P10`. `apps/web/src/app/kamnet/apply/
 page.tsx` is a hardcoded French form with no API wiring behind it.
 
 ---
+
+### P21 follow-up - the remuneration that survived, and the guard turned inside out - `PROUVE`
+
+**Cost impact: None.**
+
+**The row said:** the ban covers a hand-written list of namespaces and
+`landTypes` is not in it. **That is half wrong** (tracker correction, 27
+September): `landTypes` was in `PUBLIC_NAMESPACES`. Two things let the text
+survive:
+
+- the **rate** ban needs a percentage beside a remuneration word, and
+  "Commission rapide, processus simplifié, client sécurisé." quotes none;
+- the **earnings** ban read only `products.kamnet.*` and `products.kbs.*` - the
+  enumeration was there, one level down - and its pattern knew "gagnez" but not
+  "gagner", so `quickActions.questions.kamnetAgent` ("Comment rejoindre le réseau
+  KAMNET™ et gagner des commissions ?", the pre-filled WhatsApp question) survived
+  too, in both languages.
+
+**The guard, inverted** (Visquis's instruction, the way P10's is built):
+`public-copy-promises-no-rate.spec.ts` now reads **every string of both message
+files** unless an `EXEMPT` entry covers it, each with its reason - `app` (the
+signed-in spaces, where an agent sees their own commissions, 19 September),
+`landsAdmin` (staff only), `products.kbs.modulesDetail` (the KCA syllabus
+teaches how an agent is paid; it promises nothing). And C14 being unsettled, the
+new rule is wider than a rate: **no public string mentions remuneration at
+all** (word-bounded, so "learn" and "earn your KCA certificate" pass). Two
+guards on the guard: every exemption must name something that exists, and a
+namespace invented in the test ("brandNewPage", "gagnez des commissions") is
+caught without being listed.
+
+**Proof it catches what the old one missed:** the old spec was green on develop
+with both strings present. The new one failed on exactly four entries -
+`landTypes.tfl.advantages.agent` and `quickActions.questions.kamnetAgent`, fr and
+en - and nothing else. A mutation restoring an enumerated list fails the
+"added tomorrow" test.
+
+**The copy, by deletion only** (no new wording, copy is Visquis's):
+"Processus simplifié, client sécurisé." / "Simplified process, secured client.";
+"Comment rejoindre le réseau KAMNET™ ?" / "How to join the KAMNET™ network?".
+
+**Proven on dev (`96edf6c`, 27 September):** /fr, /en, /fr/products/lands,
+/en/products/lands and /fr/products/kamnet carry "Processus simplifié, client
+sécurisé" / "Simplified process, secured client" and "Comment rejoindre le
+réseau KAMNET™ ?" / "How to join the KAMNET™ network?", and none of the old
+wording.
 
 ### A38 - CI runs on every pull request, whatever its base - `PROUVE`
 
@@ -5197,6 +5465,1756 @@ after the proxy ran on public pages:
 
 No measurable change.
 
+### I43 - a screen that is not built says so, and promises nothing - `PROUVE`
+
+**Cost impact: None.** Copy, one component, two test files.
+
+**Proven on dev** at `sha-383828e` (#177, develop run `36148357376`, journeys
+and E2E green), 25 September. Signed in as the seeded `admin@kambriq.com`, which
+reaches all ten screens, each was read over HTTP in both languages. Every one
+answered 200, and its `<main>` held exactly three things, e.g.:
+
+- `/fr/agent/commissions`: `Commissions | Pas encore disponible | Cet écran n'est pas encore construit.`
+- `/en/agent/commissions`: `Commissions | Not available yet | This screen has not been built yet.`
+
+The other nine read the same, each under its own title. No list, no subtitle,
+no roles, no French on an English page.
+
+**Measured on develop (`de40c29`), and the count holds.** Ten signed-in screens
+render `PlaceholderPage`: `/settings`, `/profile`, `/welcome`, `/client/verify`,
+`/admin/escalations`, `/admin/reservations`, `/admin/kamnet`,
+`/agent/dashboard`, `/agent/commissions`, `/agent/escalation/new`. Their
+`features` lists hold 38 strings, all hardcoded French, all features that do not
+exist. The ten KAMNET agents about to sign in for the first time would have read
+"Export des relevés" and "Graphique des commissions (6 derniers mois)".
+
+**The component promised on its own too, as the brief suspected.** Above every
+list, the card said "En construction - Cette page est en cours de
+développement": a claim that somebody is building it. Under the list, "Rôles
+autorisés" showed `ROOT` and `OPS`, two roles the platform does not have (`I18`
+removed `ROOT`), and `/profile` and `/welcome` added "Tous les utilisateurs
+authentifiés", in French whatever the language. Each screen also carried a
+subtitle describing what it would do: "Suivi de vos commissions et revenus"
+over a screen that tracks nothing.
+
+**What changed.** `PlaceholderPage` takes a namespace and a title, nothing else.
+It renders the screen's name and "Pas encore disponible - Cet écran n'est pas
+encore construit." (en: "Not available yet - This screen has not been built
+yet."), both from the translations. The ten screens pass only those two props.
+Removed from both catalogues because nothing reads them any more:
+`app.underConstruction`, `app.underConstructionDesc`, `app.features`,
+`app.authorizedRoles`, the nine placeholder subtitles, and every
+`app.agentDashboard` key but `title` - a dashboard's worth of strings
+("Commissions (6 derniers mois)", a sales pipeline) that no component read. No
+screen was built.
+
+**New copy for Visquis to approve:** `app.notBuilt.title` and
+`app.notBuilt.description`, fr and en, as quoted above.
+
+**Two guards, one for each defect.**
+
+- `components/placeholder-page.spec.tsx` finds the placeholder screens by
+  reading `src/app` for the import and renders each in both languages. It
+  asserts the WHOLE text of the screen: its name and the two statements, nothing
+  else, and no list item. A list, a subtitle or a row of roles cannot come back
+  under a new name. The ten screens are pinned by path, so an eleventh is a
+  decision somebody reads.
+- `i18n/no-hardcoded-copy.spec.ts` is P21's sibling. P21 reads the catalogues
+  and could see none of the 38, because they never entered one. The sibling reads
+  every `.tsx` under `apps/web/src`, new files included. It parses the TypeScript
+  and finds prose written into JSX: text, a string given to a prop, or strings in
+  an array or a conditional handed to JSX. Only a file declared in
+  `HARDCODED_COPY_DEBT`, with its reason, may hold any. An entry whose file no
+  longer owes anything fails. **Its limit, stated in the file:** a string kept in
+  a constant and passed to JSX by name is not seen.
+
+**Proof, all watched red before green:**
+
+- against develop, the sibling named exactly the ten screens and their strings,
+  and the render test showed the whole promise on each, e.g. `Received:
+"EscaladesGestion des incidents et signalements.En constructionCette page est
+en cours de développement.Fonctionnalités prévues• Liste de toutes les
+escalades…Rôles autorisésOPSADMIN_GLOBALROOT"`;
+- a hardcoded `features` list put back on `/agent/commissions`: the sibling
+  fails, naming the file and the string;
+- a translated list put back in the component: the render test fails on every
+  screen;
+- a second line of copy under the title: the render test fails;
+- the statement hardcoded in French: the English render fails;
+- a new file with hardcoded prose: the sibling fails;
+- a debt entry for a file that owes nothing: the stale-entry test fails.
+
+**Two defects in the guard's first version, found by running it.** Its prose
+pattern allowed only spaces between words, so "Catégories d'escalade (litige,
+fraude, blocage)" passed. It now allows punctuation between words. And the image
+`sizes` prop read as prose; it is on the list of props nobody reads.
+
+**Found, not fixed - larger than I43.** 30 files still hold hardcoded copy. All
+are declared, and most are the payments back office (G4, G9), the identity queue
+(A10), KBS admin (in English) and the public certificate verdict. Each reads in
+one language to a reader of the other. Each is a translation subject of its own,
+and the list shrinks one entry at a time.
+
+### P24 - a land title number is shaped like a Cameroonian one - `PROUVE`
+
+**Cost impact: None.**
+
+**Proven on dev** at `sha-85c8966` (#178), 25 September:
+
+- `/fr/products/verify` and `/en/products/verify` show `TF 4129/M` on the card;
+- `PATCH /lands/admin/:id` with `TF-12345-ABCD` answered **400** with "A land
+  title number is shaped TF <number>/<department letters>, e.g. TF 4129/M", and
+  the stored title was unchanged;
+- the eight seeded fixtures still held the invented titles, and were rewritten
+  through the same route from phone-typed input, each stored canonical:
+  `tf1187 / wb` -> `TF 1187/WB`, `TF-3462-WB` -> `TF 3462/WB`, `TF N° 4803/WB`
+  -> `TF 4803/WB`, `tf 912/mi` -> `TF 912/MI`, `TF 6075 / MF` -> `TF 6075/MF`,
+  and three more. Each answered 200.
+
+**A premise of mine, corrected.** The entry said the seed rewrites the titles on
+every run, and that is true of a run. **No deploy runs it**: the seed step in
+`deploy-dev.yml` is opt-in (`run_seed`, meant for a first deploy). So dev kept
+the invented titles after the deploy. I did not run the seed to fix that,
+because it deletes reservations on seeded parcels, and a deletion on dev is
+Visquis's decision. The fixtures were written through the API instead, which is
+also the proof above.
+
+The first develop run after the merge went red on journey 1: maildrop answered
+HTTP 520 and the journey could not read its verification mail. The journey says
+so itself ("not a product failure"). The failed job was re-run once maildrop
+answered 200, and it passed.
+
+**The business fact is Visquis's (25 September).** A titre foncier is written
+`TF <number>/<letters>`. The letters are one to three and name the department:
+`M` Menoua, `SM` Sanaga-Maritime, `WB` Wouri B. `TF 4129/M` is well formed.
+
+**The brief's three findings, confirmed, and two more it did not have:**
+
+1. `products/verify/hero.tsx` rendered `TF-12345-ABCD`, hardcoded, on the public
+   verify page;
+2. `prisma/seed.ts` invented `TF-CM-LT-2025-001` and seven more like it;
+3. nothing validated a title: `z.string().optional()` on the web,
+   `z.string().max(100)` on both API DTOs;
+4. **not in the brief:** the admin land form's placeholder was
+   `TF/MFOUNDI/2024/0421`, a fourth format, and the VERIFY back-office table and
+   `data/mock-lands.ts` carried the same `TF/<REGION>/<year>/<n>` shape;
+5. **not in the brief:** the seed's `update` restored status, publication, price
+   and label, but not `titleNumber`. Rewriting only the seed's values would have
+   left dev showing the invented titles for ever, since `create` runs once. This
+   is the "idempotent is not restorative" defect again.
+
+Measured on dev before the change: 20 lands, 8 carrying the seed's invented
+titles and 12 carrying none. No other title exists there, so the new rule
+refuses no stored value once the seed has rewritten them.
+
+**The rule: the shape, never a list.** `libs/common/src/lands/title-number.ts`
+is one parser used by the web form (a courtesy) and by both API DTOs (the rule).
+It accepts `TF`, one to six digits, a slash or hyphen, and one to three letters.
+It forgives case, spaces and `N°`, and stores `TF 4129/M`. The digits are a
+range because a title's number is its rank in its registry. Empty stays
+accepted: the field is optional. `KNOWN_DEPARTMENT_CODES` is kept apart and
+empty. `isUnlistedDepartment` may one day warn from it, and returns `false`
+while it is empty. Nothing reads it to accept or refuse.
+
+**The refusal says the shape, with an example.** The title field rendered no
+error at all, which cost nothing while nothing was refused. It now renders the
+translated message under the field, tied by `aria-describedby`. The API refuses
+the same input with the same example, in English, like its other DTO messages.
+
+**Copy and data for Visquis to check:**
+
+- `products.verify.heroCard.tfExample` = `TF 4129/M` (his example), fr and en;
+- `landsAdmin.form.titleNumberInvalid`, fr: "Un numéro de titre foncier s'écrit
+  TF, le numéro, une barre oblique, puis une à trois lettres du département -
+  par exemple TF 4129/M." / en: "A land title number is written TF, the number,
+  a slash, then one to three department letters - for example TF 4129/M.";
+- `landsAdmin.form.titleNumberPlaceholder`: "Ex. TF 4129/M" / "e.g. TF 4129/M";
+- the seeded and mock titles are fictitious. `WB` for the Douala parcels is his
+  code. **`MF` (Mfoundi, Yaoundé), `FA` (Fako, Buea), `MI` (Mifi, Bafoussam),
+  `BE` (Bénoué, Garoua) and `OC` (Océan, Kribi) are my inference** and wait for
+  his correction. The numbers are invented.
+
+**Proof, all watched red before green.** Against develop, the DTO tests failed
+on the refusals and on the canonical form, and the seed test on the missing
+restore. Then eleven mutations, each observed failing its own test:
+
+- the API accepting anything;
+- exactly four digits;
+- a closed department list deciding;
+- an empty title refused;
+- storing the title as typed;
+- a warning while the list is empty;
+- `TF-12345-ABCD` back in the hero (caught by a sweep over every title-shaped
+  literal in the web source);
+- the seed no longer restoring the title;
+- an invented seed title back;
+- the web form accepting anything;
+- an invented example in the `en` catalogue.
+
+A twelfth mutation hid the field error, and the render test failed in both
+languages. One mutation first broke the syntax instead of the rule, so the suite
+crashed rather than failed. It was redone as a clean change.
+
+**Found, not fixed:**
+
+- `/admin/lands/search` and `/admin/lands/compare` render `MOCK_LANDS`: invented
+  parcels, with invented prices, shown to administrators as if they were real;
+- the VERIFY back-office table renders four invented requests the same way.
+
+Only their title format is changed here.
+
+### P27 - the product marks, everywhere on the website - `PROUVE`
+
+**Cost impact: None.**
+
+**Proven on dev** at `sha-e059503` (#179, develop run `36154067949`, journeys
+and E2E green), 25 September. Twelve public pages were read in both languages, as
+rendered text with scripts removed: the home page, the four product pages, the
+directory, the plan, about, method, terms, FAQ and contact. **Every page: 0
+unmarked names, 0 `KBS™`.** Marked names per page: 14 on the home page, 20 on
+LANDS, 10 on VERIFY, 15 on KAMNET, 27 on KBS, 4 in the terms, and the rest
+between 6 and 8. French and English counts match.
+
+**Decided by Visquis on 25 September:** KAMBRIQ LANDS, KAMBRIQ VERIFY and KAMNET
+carry `™` everywhere, in both languages. KBS does not: it is a school, not a
+product mark.
+
+**Measured on develop before the change, in each language:** VERIFY carried the
+mark 20 times out of 21, LANDS 0 out of 15, KAMNET 0 out of 53. The brief counted
+18 of 19 and 0 of 49; develop had moved since. The one unmarked VERIFY is a KBS
+syllabus line naming the ecosystem, "KAMBRIQ / LANDS / KAMNET / KBS / VERIFY".
+The decision applies there too, and KBS stays bare.
+
+**What changed:** every string value in both catalogues (68 per language, keys
+never), four MDX files (the plan page and the terms of use, fr and en, each
+naming KAMNET once), and three hardcoded strings that render: the KAMNET
+application page twice and the KAMNET back office's title. **The terms of use
+are a legal document**, so their one-word change is named here for Visquis.
+
+**The guard reads everything, and its list is of exceptions.**
+`trademark-marks.spec.ts` watches every namespace unless it is declared in
+`EXEMPT_NAMESPACES`, which is empty and fails when it names a namespace that no
+longer exists. It also reads every MDX file under `src/content`. The brief asked
+to reuse P21's inverted list, but on develop P21 still reads a hand-kept list:
+the inversion exists only in #174 (P10), which is not merged. So the mechanism
+is now `i18n/watched-namespaces.ts`, shared, for P21 to use when #174 lands,
+instead of a second copy of it.
+
+**The trap, tested before the rule.** A mark after every `LANDS` would double
+`KAMBRIQ LANDS™` and fire inside a URL. The check is "a name not followed by
+`™`", read outside URLs and paths. A separate test refuses a double mark and a
+marked KBS.
+
+**Proof, all watched red before green.** Against develop: 68 unmarked strings
+per language, and the MDX. Then six mutations, each failing its own test:
+
+- one unmarked LANDS in `fr`;
+- a fresh `en` namespace carrying "Join KAMNET", with the guard untouched;
+- a double mark;
+- `KBS™`;
+- an unmarked KAMNET in an MDX file;
+- a stale exemption.
+
+**Found, not fixed - outside the website.** The API's email and notification
+copy names KAMNET without the mark: 16 strings per language in
+`libs/common/src/i18n/*/email.json` and 4 in `kamnet.json`. The decision says
+everywhere. The emails are their own subject, with their own tests. The
+hardcoded-copy debt files of `I43` are not read by this guard, and after this
+change none of them names a product unmarked.
+
+### P25 - one unstyled MDX table, and two consent sentences split into columns - `PROUVE`
+
+**Cost impact: None.**
+
+**Proven on dev** at `sha-828c509` (#180, journeys green), 25 September, with
+the same Playwright scripts as the "before" set (iPhone 13 emulation and a
+1280 px desktop, fr and en):
+
+|                             | before                                                                | after                              |
+| --------------------------- | --------------------------------------------------------------------- | ---------------------------------- |
+| verify table, cell padding  | 0 px everywhere                                                       | 16 px everywhere                   |
+| verify table, desktop width | 369 / 405 px, columns touching                                        | 768 px, header row, separated rows |
+| newsletter consent links    | block columns, 39 px tall ("politique de / confidentialité" in 80 px) | inline in the sentence, 15 px tall |
+| contact consent label       | 3 flex children, link 46 px tall                                      | 1 child, link 17 px tall           |
+
+Read as pictures too: the price sits in its own padded column, and each consent
+reads as one sentence that wraps like prose. The screenshots are kept out of the
+repository.
+
+**The report, and the hypothesis measured rather than believed.** Visquis saw the
+price table on `/products/verify` render "Vérification externe (terrain trouvé
+par vous)99 €". The brief suspected Next was not finding
+`apps/web/mdx-components.tsx`, which would leave all eight MDX pages unstyled.
+
+**The hypothesis is false.** The deployed HTML on dev (`sha-383828e`) is its own
+sentinel: every MDX heading carries the mapping's classes (`mt-10 mb-4 text-xl
+font-semibold text-gray-900`), and so does the rule. Only `<table>`, `<th>` and
+`<td>` came out bare: cell padding measured 0 px at both widths, in both
+languages. `@next/mdx` looks for the file at the project root, which is where it
+is, and the Next docs agree.
+
+**The cause:** MDX runs the component map over elements it builds from Markdown.
+A lowercase tag written literally, as the verify table was, is emitted as it
+stands. It was the only literal HTML in the sixteen MDX files. Markdown table
+syntax would need GFM. `remark-gfm` is a declared dependency but not enabled, and
+enabling it would change how all eight pages parse (autolinks, strikethrough),
+which is its own decision. So each table renderer is now defined once in
+`mdx-components.tsx` and offered under two names, `table` for Markdown and
+`Table` for MDX written as tags. MDX resolves capitalised tags through the same
+map. The verify table uses `<Table>`, `<Th>` and `<Td>`.
+
+**The footer, looked at before changing it.** At both widths and in both
+languages, the newsletter consent read as four side-by-side fragments. At phone
+width in French: the sentence, then "politique de / confidentialité" squeezed
+into 80 px, then "et au", then "RGPD". Nothing was clipped. The shared `Label` is
+a flex container, and the sentence was handed to it as loose children, so flex
+made each fragment a column. The contact form's consent had the same structure
+and the same defect: at phone width in English, "privacy policy" sat in 47 px.
+Both sentences are now one inline element inside the label.
+
+**Guards, watched red on develop first:**
+
+- `content/mdx-literal-html.spec.tsx` reads every MDX file and refuses any tag
+  the map styles, written literally. On develop it named the twelve tags of the
+  verify table, fr and en. It also pins each capitalised alias to the same
+  renderer as its lowercase element;
+- the newsletter and contact specs pin the label to a single child holding the
+  links. Both failed against develop's components (7 and 3 children).
+
+**Screenshots, "before", from dev** (Playwright, iPhone 13 emulation and a
+1280 px desktop; kept out of the repository): the verify table, the footer and
+the contact consent, fr and en, phone and desktop.
+
+**Found, not changed:** every price on the public site is in euros only: `99 €`
+on the verify page and `249€` in the KBS enrolment notice, in both languages, for
+services sold in Cameroon. As the brief says, naming these is useful and
+changing them is not ours to do.
+
+### A44 - an avatar is a key in the caller's own storage, and the browser may upload it - `PROUVE`
+
+**Cost impact: None.**
+
+**Proven on dev** at `sha-689bd2e` (#181), 25 September, in Chromium
+(Playwright), signed in as the seeded admin, with the same script that measured
+the refusal before:
+
+- the page's `connect-src` now names `https://kambriq-media-dev.s3.eu-central-1.amazonaws.com`;
+- choosing a PNG on `/fr/account`: the presigned **PUT answered 200**, no CSP
+  error in the console, and the page then loaded the avatar from the bucket
+  (GET 200) into its `<img>`;
+- `GET /users/me` returns it presigned, so what is stored is a key that storage
+  resolved, not an address;
+- `PATCH /users/me` with `https://evil.example/tracker.png` answered **400**:
+  "La photo de profil doit être envoyée depuis votre compte, avec le bouton de
+  téléversement."
+
+The "before" run of the same script printed a presigned URL, with its
+temporary session token, into the operator's console. Every later capture strips
+query strings, and no signature or token is written here.
+
+**Both premises verified before anything was built, and both hold.**
+
+1. **The address was not checked, and on more paths than the brief named.**
+   `PATCH /users/me` took `avatarUrl: z.string()`, anything at all. The KAMNET
+   agent profile took any URL (`z.url()`). `StorageService.getDownloadUrl`
+   hands back an `http(s)` value as it stands. And
+   `kamnet/agents/public-listing.ts` carries `avatarUrl` into the public
+   directory's API response. A foreign address would therefore have travelled
+   to anonymous readers, which is the brief's point about a stored value outliving
+   the one surface a CSP guards.
+2. **The upload was already broken on dev, and nobody had noticed.** Measured in
+   Chromium (Playwright) on 25 September, signed in as the seeded admin: choosing
+   a PNG on `/fr/account` made the browser refuse the presigned PUT with
+   "violates the following Content Security Policy directive: connect-src 'self'
+   https://api.mapbox.com …". No request left the page. On dev, 0 of the 699
+   users has an avatar stored.
+
+**What "KAMBRIQ's own storage" means here, decided.** The upload route issues
+`users/<id>/avatar/<timestamp>-<name>` and the web sends that key back.
+Storage resolves keys. **No URL is legitimate, not even one on our own bucket**,
+because a second accepted form is a second way in. So the rule is a shape bound
+to the caller: `core/users/avatar-key.ts` defines the key once, for the upload
+route and for the check, and `updateMe` refuses anything else before writing.
+Both write paths end in `updateMe`. The KAMNET DTO took a URL and so refused the
+real key: it now takes a string and leaves the decision to the service. Empty
+still removes the photo. The refusal is translated: "La photo de profil doit
+être envoyée depuis votre compte, avec le bouton de téléversement."
+
+**No host list is written for the API**, because no host is accepted. The
+brief's "same single source" applies to the web half: `connect-src` gets the
+bucket from `uploadConnectSources`, beside `imgSrcSources` in
+`lib/security/image-hosts.ts`, from the same variable. It gets the bucket only:
+the browser uploads nowhere else, so no other image host is opened for writing.
+
+**Stored addresses that would now be refused: none.** No avatar exists on dev,
+so nothing was changed.
+
+**Proof so far, all watched red before green:**
+
+- against develop, the five refusals (a foreign site, our bucket as a URL,
+  another person's key, the caller's own identity document, a key climbing out
+  of its folder) all stored the value, and the KAMNET DTO refused the real key;
+  the `connect-src` tests failed;
+- seven mutations, each failing its own test: the check removed, any person's
+  folder, anything under the folder, our bucket's URL accepted, removal refused,
+  every image host opened for upload, `connect-src` back to Mapbox only;
+- `users.service.spec.ts` stored `https://img.test/avatar.jpg` as its example
+  profile write. That is a test encoding the defect, and it now uses a key.
+
+**Found, not fixed:**
+
+- in the same browser session, the Switzer stylesheet from `api.fontshare.com`
+  is refused by `style-src 'self' 'unsafe-inline'`, so the site's intended
+  typeface never loads on dev;
+- ~~identity-document addresses are stored as full `https://` URLs (seen in the
+  admin user list)~~ **Retracted by A49, 25 September.** The admin list signs
+  every stored key on the way out, and I read its output as stored addresses.
+  All 241 documents on dev are keys in their owner's folder. What was true: the
+  write path accepted any string. A49 closes that.
+
+### A43 - the API's documentation is served only where it is declared local - `PROUVE`
+
+**Cost impact: None.**
+
+**Proven on dev** through the deployed environment, anonymously, 25 September:
+
+| request                    | before (`sha-689bd2e`)        | after (`sha-7ec907b`, #182)             |
+| -------------------------- | ----------------------------- | --------------------------------------- |
+| `GET /api/v1/docs`         | 200, the Swagger UI           | **404**, "Cannot GET /api/v1/docs"      |
+| `GET /api/v1/docs-json`    | 200, 145 303 bytes of OpenAPI | **404**, "Cannot GET /api/v1/docs-json" |
+| `GET /api/v1/health/ready` | 200                           | 200                                     |
+
+The 404s come in the API's own envelope, so the routes are simply not mounted.
+
+**The premise, verified.** `main.ts` mounted Swagger whenever
+`NODE_ENV !== 'production'`, and the dev API runs with `NODE_ENV=development`.
+Measured anonymously on dev on 25 September, before the change:
+
+- `GET /api/v1/docs`: **200**, the Swagger page;
+- `GET /api/v1/docs-json`: **200**, 145 286 bytes, **145 paths**, the whole API
+  with its schemas and examples.
+
+**Decided: not served on an open environment**, rather than served behind
+authentication. The API's JWT travels in a header, which a browser opening
+`/docs` never sends, so an authenticated docs page would have taken Swagger away
+from every developer.
+
+**The signal is `APP_ENV`, as for the robots header, and the default is the
+opposite one.** `APP_ENV` is set nowhere today: not in `kambriq-infra`, not in
+the workflows, not in the API image. So dev and a laptop both have it absent,
+and both have `NODE_ENV=development`. Absence therefore cannot mean "serve", or
+dev would still serve. `servesApiDocs` in `libs/common/src/config/api-docs.ts`
+answers yes only for an explicit `local`. `pnpm start` and `start:dev` declare it
+with `APP_ENV=${APP_ENV:-local}`, which a developer can still override, and
+`.env.example` documents it. No deployed image runs those scripts
+(`start:prod` does not declare it). An environment that forgot to declare
+itself serves nothing, which is the safe direction to be wrong in.
+
+**Proof so far, all watched red before green.** Against develop, the `main.ts`
+and start-script pins failed. Four mutations each failed their own test:
+absence meaning open, an exact-spelling-only match, `main.ts` back on
+`NODE_ENV`, and the start script no longer declaring `local`. The first version
+of the `main.ts` pin banned the word `NODE_ENV` and so failed on the comment
+explaining why it is not read. It now bans reading it.
+
+**Other places that gate on `NODE_ENV` when they mean the environment - named,
+not fixed, as the brief asks:**
+
+- `app/app.module.ts`: the pino log level (`debug` unless `production`) and its
+  pretty-printing: dev logs at debug level;
+- `core`, `kbs`, `kamnet` and `lands` `*-prisma.service.ts`: Prisma query
+  logging when `development`, **so dev logs every SQL query**;
+- `health/build-info.ts`: `env` in `/api/v1/health/version` reports `NODE_ENV`,
+  so dev reports itself as `development`, which says how it was built, not
+  where it runs;
+- `libs/common/src/config/env.validation.ts`: `NODE_ENV` defaults to
+  `development` when unset.
+
+`kambriq-infra/kamtech-ws-context.md` still says Swagger is served "in
+non-production". That line is now stale and lives in the infra repository.
+
+### P22 - the public directory at scale - `PROUVE`
+
+**Cost impact: None.** One query where there were N, fewer connections held.
+
+**Proven on dev** at `sha-caf8f98` (#183), 25 September. The directory on dev
+was empty before and after the deploy, because nobody has consented yet (`P23`).
+An empty list returns before the grouped query, so that proved nothing. The
+seeded agent fixture `eric.mbou@kambriq.com` therefore consented through
+`PATCH /kamnet/agents/me/public-listing`, and the anonymous
+`GET /kamnet/public/agents` answered **one entry**: Eric Mbou, paired with his
+own certificate `KCA-20250101-0001`, certified since 2025-01-01, seven fields.
+The consent was then withdrawn: **0 entries**, and dev is as it was.
+
+**The finding, confirmed in the code.** `listPublicDirectory` read the
+consenting agents with no bound, then asked the KBS database for each agent's
+newest certificate with `findNewestCertificateFacts(userId)`, one per agent, all
+at once inside a `Promise.all`, against a pool of ten connections. Harmless at
+ten agents, and linear in the number of agents after that.
+
+**What changed:**
+
+- `KbsCandidatesService.findNewestCertificateFactsForUsers(userIds)` answers for
+  every user in **one** Prisma call and keys the newest certificate by its owner.
+  The owner is spread last, so no field of the certificate row can overwrite the
+  pairing that `toPublicDirectoryEntry` checks. The per-user method had no
+  other caller and is gone.
+- The agents are read with `take: KAMNET_MAX_PUBLIC_DIRECTORY_ENTRIES` (100),
+  oldest consent first. This is the convention `KAMNET_MAX_FULL_TREE_ROOTS`
+  already set, and when the cap is reached the log says so at `warn`.
+
+**Bounded rather than paginated, decided.** The web reads this endpoint as a
+bare array and treats any other shape as "register unavailable"
+(`getPublicAgentDirectory`). The admin list's `{ data, meta }` would change a
+public contract and the page with it. With ten agents today, a cap of a hundred
+is news when it is reached, and the warning makes it seen.
+
+**Proof, watched red before green.** The test counts the shape of the access,
+not its speed. On develop, the certificate lookups for 3 agents and for 12
+agents were **`[3, 12]`**, one per agent. They are now `[1, 1]`. Seven mutations,
+each failing its own test:
+
+- one lookup per agent again;
+- no bound;
+- the cap logged at `log` instead of `warn`;
+- a warning one short of the cap;
+- one Prisma call per user inside the lookup;
+- certificates keyed to the wrong user;
+- a query for nobody.
+
+**Its limit, stated.** The test counts calls into the certificate layer and
+Prisma calls inside it, not SQL statements: Prisma may load a relation in two
+statements. That number is also constant in N. The directory's database suite
+re-implements the queries rather than calling the service, so it could not
+count them. Wiring the service across three databases and Redis for one count
+was more than this subject.
+
+A first version of the lookup test left an `ownerUserId: undefined` on the
+certificate fixture, and the spread order let it erase the owner. The fixture
+now matches what the select returns, and the owner is spread last.
+
+### A48 - no behaviour in the API is decided on `NODE_ENV` - `PROUVE`
+
+**Cost impact: a saving.** Half of the dev API's log volume goes away (below),
+and CloudWatch ingestion is billed per GB.
+
+**Proven on dev** at `sha-3425132` (#185), 25 September.
+`/api/v1/health/version` reports `env: development` (how the image was built)
+and `appEnv: undeclared` (where it runs). The API's CloudWatch stream was read
+for the first ten minutes after the deploy, each line attributed to its task:
+
+- **the new task: 293 lines, all JSON at level 30 (`info`), no `prisma:query`,
+  nothing pretty-printed**;
+- the one `prisma:query` line and five pretty lines in that window came from
+  the previous task, draining during the rolling deploy (last event 20:22:01);
+- eleven more non-JSON lines came from a one-off migration task (`npm notice`);
+- the hour before the deploy held 300 `prisma:query` lines.
+
+**Third time, so the whole class in one pass.** P4 moved the robots header to
+`APP_ENV`, and A43 moved the Swagger documentation. Everything else that decided
+on `NODE_ENV` in `apps/api` and `libs/common`:
+
+| where                                                  | decision                                   | on dev, before                    |
+| ------------------------------------------------------ | ------------------------------------------ | --------------------------------- |
+| `core`, `kbs`, `kamnet`, `lands` `*-prisma.service.ts` | Prisma logs every query when `development` | every SQL statement logged        |
+| `app/app.module.ts`                                    | pino level `debug` unless `production`     | debug level                       |
+| `app/app.module.ts`                                    | pino-pretty transport unless `production`  | pretty-printed, multi-field lines |
+
+All of them now read `libs/common/src/config/app-env.ts`: `prismaLogLevels`,
+`apiLogLevel` and `prettyLogs`, beside `servesApiDocs`, which now shares
+`isLocalEnvironment` with them. Only an explicit `APP_ENV=local` turns the
+conveniences on, and `pnpm start` declares it (A43). `APP_ENV` is set on no
+deployed environment today, so dev gets the quiet behaviour.
+
+**Measured on dev before the change** (CloudWatch, `/ecs/kambriq-dev-api`, 25
+September):
+
+- in the last hour, **360 of 720** log events were `prisma:query` lines;
+- over 24 hours, of the first 3,000 `prisma:query` lines, **2,993 were the
+  health check's `SELECT 1`**. The rest were full statements: certificate and
+  agent reads, and `DELETE`s of refresh and verification tokens.
+
+**The brief's premise, corrected on one point.** "Queries carry values": in
+this log format they do not. Prisma prints statements with `$n` placeholders,
+and **none** of those lines contained a literal value. What was exposed is the
+schema and the traffic pattern (which tables, which columns, which rows get
+deleted), not customer data. It was one log option away from values.
+
+**What still reads `NODE_ENV`, and why that is allowed:**
+
+- `health/build-info.ts` reports it as `env`, which is how the image was built.
+  It decides nothing. It now reports `appEnv` beside it (`undeclared` on dev
+  today), and its docstring says which is which;
+- `config/env.validation.ts` declares the variable's schema and default; it is
+  not a read.
+
+**The web, named and not converted.** The web image sets `NODE_ENV=production`
+on every environment, so there it genuinely means "how the code was built":
+React Query devtools (`providers.tsx`), the logger level (`lib/logger.ts`), the
+dev-only API URL checks (`lib/api/server.ts`) and `images.unoptimized`
+(`next.config.ts`) all distinguish `next dev` from a production build.
+
+**The guard, so there is no fourth time.** `no-node-env-gates.spec.ts` reads
+every source file in `apps/api/src` and `libs/common/src` (132, generated
+Prisma clients excluded), with comments stripped so an explanation cannot trip
+it, and refuses any `NODE_ENV` read outside `MAY_READ_NODE_ENV`. An exemption
+that is no longer used fails too. **Watched red on develop:** it named exactly the
+five files above.
+
+**Mutations, each failing its own test:**
+
+- one Prisma service back on `NODE_ENV`;
+- SQL logged everywhere;
+- debug level everywhere;
+- pretty printing everywhere;
+- nothing declared counting as local;
+- comments no longer stripped;
+- an unused exemption.
+
+My own guess of "over 300 files" for the sweep's floor was wrong. The true count
+is 132, and the floor is 120.
+
+### J11 - the site's typeface was refused by the CSP, and had never loaded - `PROUVE`
+
+**Cost impact: None.**
+
+**Proven on dev** at `sha-87b1d13` (#186), 25 September, with the same script as
+the "before" set (home page, 1280 px and iPhone 13, fr and en):
+
+|                                   | before                                    | after                                                         |
+| --------------------------------- | ----------------------------------------- | ------------------------------------------------------------- |
+| CSP errors in the console         | 1 on every load (`style-src`)             | **0**                                                         |
+| Switzer faces in `document.fonts` | none                                      | 400, 500, 600, 700 loaded; 800 registered                     |
+| served `style-src` / `font-src`   | `'self' 'unsafe-inline'` / `'self' data:` | `+ https://api.fontshare.com` / `+ https://cdn.fontshare.com` |
+
+The 800 face stays `unloaded` because the home page sets no text at that
+weight, and a browser fetches a face when text first needs it. The screenshots
+side by side show different letterforms, wider-set headings, and the navigation
+spacing shifted. That is the site's typeface, rendered for the first time. They
+are kept out of the repository.
+
+**Measured on dev before the change** (Chromium through Playwright, home page,
+1280 px and iPhone 13, fr and en, 25 September): every load logged "Loading the
+stylesheet 'https://api.fontshare.com/css?…' violates the following Content
+Security Policy directive: style-src 'self' 'unsafe-inline'". `document.fonts`
+held **no Switzer face at all**, so text asked for `Switzer, system-ui,
+sans-serif` rendered in `system-ui`. `document.fonts.check('16px Switzer')`
+returned `true` all the same, because it reports "nothing to wait for" when no
+face exists. The empty face list is the signal, not that call.
+
+**Two hosts, not one.** The stylesheet comes from `api.fontshare.com` (for
+`style-src`), and its `@font-face` rules load the files from
+`cdn.fontshare.com` (for `font-src`, which allowed `'self' data:` only). This
+was read from the stylesheet's own `src:` URLs.
+
+**One list, as A40 taught.** `lib/security/image-hosts.ts`, already the CSP's
+source for `img-src` and `connect-src`, now also holds `FONT_STYLESHEET_URL`,
+`styleSrcSources()` and `fontSrcSources()`. The layout links the stylesheet and
+preconnects from those. `next.config.ts` builds `style-src` and `font-src` from
+them, and neither file names a fontshare host any more.
+
+**Proof so far, watched red first.** The layout and `next.config.ts` pins failed
+against develop. Four mutations each failed their own test: `style-src` without
+the host, the font host written into `next.config.ts`, the layout linking its
+own URL, and the wrong file host.
+
+### A49 - an identity document is a key in its owner's storage, nothing else - `PROUVE`
+
+**Cost impact: None.**
+
+**Proven on dev** at `sha-23a2b97` (#187), 25 September:
+
+- develop run `36188370177`: delivery journeys and E2E green. Journey 2 uploads a
+  real document and attaches it through `PATCH /users/me/id-document`, so a
+  legitimate key still passes;
+- `PATCH /users/me/id-document` with `https://evil.example/cni.png`, signed in as
+  the seeded agent: **400**, "Les pièces d'identité doivent être envoyées depuis
+  votre compte, avec le bouton de téléversement." It is refused before anything
+  is read or written.
+
+**The premise, corrected first: it was mine.** A44's entry said identity
+documents "are stored as full `https://` URLs". Measured properly on dev on 25
+September: **241 documents, all keys** in their owner's own folder
+(`users/<id>/id-documents/<timestamp>-<name>`), all written by the delivery
+journeys' throwaway accounts. The admin user list signs every stored key on the
+way out (`getDownloadUrl`), and I had read those signed URLs as stored values.
+All 241 came back signed, and a stored address would come back unsigned. **So no
+stored document needs a decision.** That line in A44 is struck through and
+retracted.
+
+**What was true, and is closed here.** `PATCH /users/me/id-document` took
+`z.string().min(1)` (any string) and stored it. `getDownloadUrl` hands an
+`http(s)` value back as it stands, so an address on anybody's server would have
+travelled into the identity-review queue as a customer's identity document.
+
+**A44's mechanism, reused rather than copied.** `core/users/avatar-key.ts`
+became `core/users/storage-keys.ts`: one `userFileKey` for the upload routes and
+one `isOwnUserFileKey(userId, folder, value)` for the write paths, with the folder
+(`avatar` or `id-documents`) part of the rule. `submitIdDocument` refuses before
+reading anything when any document is not a key the upload route could have
+issued to this person in their `id-documents` folder. The refusal is translated.
+The DTO message "Must be a valid URL", which invited the defect, is gone.
+
+**Tests that encoded the defect, corrected.** `users.service.spec.ts` submitted
+`https://s3.example.com/...` and `pending-id-documents.spec.ts` submitted
+`s3://a.pdf` as their examples. Both now use keys. The "already verified" test
+asserted only `rejects.toThrow()`, so it would have passed on the new refusal
+instead of the `Forbidden` it exists for. It now asserts `ForbiddenException`.
+
+**Proof so far, watched red first.** On develop, all five refusals stored the
+value: a foreign site, our bucket as a URL, another person's document, this
+person's avatar, a key climbing out of its folder. Three mutations each failed
+their own test: no check, any folder of the person (which also fails A44's
+test, proof that the rule is shared), and only the first document checked.
+
+**Found, not fixed:** the KBS candidate's `cvUrl` has the same defect, with
+`z.string().min(1, 'Must be a valid URL')` stored unchanged. It is the next field
+for this rule, and not this brief's.
+
+### A51 - the language-switch E2E test depended on a style injection that the CSP refuses - `PROUVE`
+
+**Cost impact: None.**
+
+**Proven on develop** at `ad56d1a` (#190), run `36190495431`, **attempt 1**:
+E2E green, `✓ [firefox] › locale-routing.spec.ts:109 › switching language keeps
+the visitor on the same page` passed first time, and the run reported 118 passed
+with nothing failed, flaky or retried.
+
+**The cause, named.** `locale-routing.spec.ts` › "switching language keeps the
+visitor on the same page" called `page.addStyleTag` before each click, to hide
+the TanStack Query devtools' launcher. In Firefox that call itself failed:
+"Content-Security-Policy: The page's settings blocked a JavaScript eval
+(script-src) … (Missing 'unsafe-eval')". The page's CSP rightly has no
+`'unsafe-eval'`. It failed on develop runs `36163313789` and `36184349270`, and the
+first went green only through a re-run.
+
+**Its premise was false as well.** The comment said the devtools render because
+the suite runs against a `development` build. CI runs it against the deployed
+dev site, and the web image is a production build on every environment (A48
+lists the web's `NODE_ENV` gates). So on dev there was nothing to hide, and the
+only thing the injection did was fail.
+
+**The rewrite.** No injection. The switcher is focused and activated with
+Enter, which is what a keyboard user does. A key press is not intercepted by an
+element drawn over the button, so the same test also holds against `next dev`,
+where the launcher does exist.
+
+**Measured, against dev, retries forced to 0** (`CI=1`, `--repeat-each=10`):
+
+- before: **2 failed of 10** in Firefox, both inside `addStyleTag`;
+- after: **20 passed of 20**, ten in Chromium and ten in Firefox.
+
+Playwright's Firefox build was installed locally for this, the same install CI
+runs.
+
+### P29 - the product marks in the emails and notifications - `PROUVE`
+
+**Cost impact: None.**
+
+**Proven on dev with delivered mail**, 25 September, at `sha-abfacdb` (#188).
+Develop run `36192076554` had journey 4 create the throwaway client
+`j4.portal.…@maildrop.cc`. Its inbox, read through maildrop's public API, held
+four messages from `KAMBRIQ <noreply@kambriq.com>`:
+
+- "Bienvenue sur votre portail client KAMBRIQ": "…Votre agent **KAMNET™** :
+  Eric Mbou…";
+- "Votre réservation a été annulée": "…veuillez contacter votre agent
+  **KAMNET™**…";
+- **0 unmarked product names** across them.
+
+No reservation or account was created for the proof.
+
+**Visquis's decision of 25 September was about the mark, not a surface.** P27
+applied it to the website. The API writes its emails and notifications from its
+own catalogues, `libs/common/src/i18n/{fr,en}/*.json`, which named KAMNET
+without the mark in **20 strings per language**: 16 in `email.json` and 4 in
+`kamnet.json`. They cover nine templates: `clientPortalAccess`,
+`applicationSubmitted`, `applicationApproved`, `applicationRejected`,
+`agentPromotion`, `agentSuspended`, `agentReactivated`, `certificateIssued` and
+`reservationCancelled`. LANDS and VERIFY appear in none.
+
+**P27's guard extended, no second rule.** `trademark-marks.spec.ts` now also
+reads every file in the API's catalogues as a namespace, watched unless declared
+in `API_EXEMPT_NAMESPACES` (empty, with stale entries failing). It uses the same
+`unmarked` rule and the same refusal of a double mark and of `KBS™`.
+Code strings that name KAMNET (internal error messages and Swagger summaries)
+are not copy a customer reads, and are left as they are.
+
+**Proof so far, watched red first.** On develop, the extended test failed on 20
+strings per language. Two mutations each failed it: one email string unmarked,
+and a new API catalogue file naming KAMNET with the guard untouched.
+`email.templates.spec.ts` pinned the sentence "Votre agent KAMNET : Eric Mbou"
+to prove the agent's name is printed. It follows the decision, now "KAMNET™".
+
+### I44 - the administration screens show no invented data - `PROUVE`
+
+**Cost impact: None.**
+
+**Proven on dev** at `sha-d90e9cb` (#189), 26 September, signed in as the seeded
+administrator, each screen read over HTTP:
+
+| route                  | fr                                                      | en                                                  |
+| ---------------------- | ------------------------------------------------------- | --------------------------------------------------- |
+| `/admin/lands/search`  | Recherche de terrains · Pas encore disponible           | Land search · Not available yet                     |
+| `/admin/lands/compare` | Comparaison de terrains · Pas encore disponible         | Land comparison · Not available yet                 |
+| `/admin/verify`        | Administration KAMBRIQ VERIFY™ · Pas encore disponible | KAMBRIQ VERIFY™ administration · Not available yet |
+
+None of the invented parcels, clients or statistics is rendered. The words "En
+attente" do occur in the French page source, but every occurrence is inside the
+translation catalogue next-intl ships to the browser (for example
+`depositPending`), not in rendered text, and none of them is the invented
+statistic.
+
+**The finding, confirmed.** `/admin/lands/search` and `/admin/lands/compare`
+rendered `data/mock-lands.ts`: parcels with invented titles ("Terrain Dibamba"),
+prices and title numbers. `/admin/verify` rendered four invented verification
+requests (Jean Dupont, Alphonse Biya, Sandra Njoh, Roland Fouda) under invented
+statistics (4 pending, 3 in progress, 18 completed this month, 2 rejected). An
+administrator read them as the business. It is the same lie as I43 and as the six
+invented agents on `/agent/network`, moved to the back office.
+
+**Honest empty state, not real data, decided.** None of the three has a real
+source: VERIFY has no backend yet, and the search and compare screens were built
+over the mock (map, filters, comparison table). Wiring real data would be
+building those features. So each is now I43's placeholder, its translated name
+and "not built" and nothing else, and I43's own test covers them. Its pinned list
+of placeholder screens grew from ten to thirteen, which is the review that pin
+exists to force. `verify-requests-table.tsx`, invented rows and nothing else, is
+deleted, and its two entries leave I43's hardcoded-copy debt list, paid.
+
+**The pin, like `/agent/network`'s.** `admin/invented-data.spec.tsx` renders the
+three screens in both languages and refuses every invented value: the four
+requests and their places, the four statistic labels, and every title and title
+number in `MOCK_LANDS`, read from the file so the list cannot drift. **Two
+defects in the test's first version, found by running it:**
+
+- compare passed on develop, because with nothing selected the screen showed
+  nothing. The test now selects two mock parcels first, as an administrator
+  arriving from search would have;
+- search and compare failed on a crash, because `next/image` refuses remote
+  hosts under Jest, and not on a value. `next/image` is now a plain `img` in
+  this spec. The red is then "Terrain Dibamba" on both screens.
+
+**Proof so far:** red on develop for all three screens, fr and en. Three
+mutations each failed: search back on the mock, compare back on the mock, and
+verify's invented statistics back without the table.
+
+**Found, not changed:** the search and compare components and `MOCK_LANDS`
+remain in the repository, rendered by no route, as the base for wiring real
+data. `StatCard` is now used by nothing.
+
+### P5 - the KAMNET application form stored nothing and said it had - `EN COURS`
+
+**Cost impact: None.**
+
+**The finding, confirmed.** `/kamnet/apply` rendered a form whose submit
+waited 800 ms and toasted "Candidature soumise !", and whose "Brouillon" button
+toasted "Brouillon sauvegardé". Nothing was sent and nothing was stored. With
+recruiting live, every submission was a real person told they had applied.
+
+**The API already had the real flow, and the page never called it.**
+`POST /kamnet/applications` stores a `KamnetApplication` for the signed-in user.
+It requires an active KCA certificate whose number matches, emails the applicant
+(`applicationSubmitted`), and the administration can list and review
+(`GET /kamnet/admin/applications`, `POST …/:id/review`). What was missing: the
+web call, a notification to KAMBRIQ, and any screen listing applications
+(`/admin/kamnet` is an I43 placeholder).
+
+**The floor, landed first as its own PR.** The page now says, in both
+languages, that online applications are not open and that no form on it records
+anything. It sends people to the contact form, whose "Devenir agent KAMNET™"
+subject is stored and notified since L1. It goes through the translations, so it
+leaves I43's hardcoded-copy debt list. The copy is mine, for Visquis:
+`kamnetApply.closed.*`.
+
+**The real thing, on top of the floor.** The page reads where the signed-in
+person stands (`getMyApplicationStanding`) and shows one of four states, each
+from the API:
+
+- **no valid certificate** (a 404, or the 403 somebody who never enrolled in
+  KBS gets): no form, a link to the KBS training and one to the contact page;
+- **standing unreadable**: it says so, and never says "not certified", which
+  would be a false statement to the very person being recruited;
+- **an application exists**: its real status and date;
+- **may apply**: a form that posts to `POST /kamnet/applications`.
+
+The form never claims success itself. A stored application re-renders the page
+from the API, and a refusal is shown where it happened.
+
+**Visquis's defaults, and where I departed from them:**
+
+- _Store with the data the form already collects, do not enlarge it._ I shrank
+  it. The old form asked for name, email, phone and address, which the account
+  already holds and the API does not take. Collecting them to drop them would
+  have been a smaller version of the same lie. It now asks for a sponsor code
+  (optional) and a motivation (50 to 1000 characters, as before). The KCA
+  number the API requires is read on the server from the applicant's own
+  certificate, never typed and never taken from the browser;
+- _Notify by email to `contact@kambriq.com`_: done, through `CONTACT_INBOX_EMAIL`
+  as the contact form does, in the back office's language, with a new
+  `kamnetApplicationNotification` template (name, email, phone, certificate,
+  sponsor code, motivation). As in L1, the record is the success. Both mails,
+  the applicant's confirmation and the inbox notification, are logged loudly on
+  failure and never fail the request. Before this, a failed confirmation mail
+  failed the request after the application was stored, and sent the applicant
+  back to a 409;
+- _A minimal back-office list if natural_: **not built.** `GET
+/kamnet/admin/applications` and `POST …/:id/review` already exist, but
+  `/admin/kamnet` is an I43 placeholder, and a list there is a screen of its own.
+  **The list is missing.** Applications are seen through the notification and
+  the API;
+- _I26 shares a storage shape?_ I26 is not in this repository's register. The
+  application is `KamnetApplication`, which the API already defined, so no new
+  shape was invented.
+
+**Proof so far.** The page states and the actions were tested on their own (the
+L1 lesson, since the page tests mock the actions). The notification cases:
+announced, stored when the announcement fails, stored when the applicant's mail
+fails, and loud when no inbox is configured. Escaping of the new template is
+tested. Four mutations each failed their own test: any failure read as "not
+certified", the browser's KCA number trusted, the inbox given the wrong mail,
+and the applicant's mail able to fail the request.
+
+**New copy for Visquis:** `kamnetApply.*` and
+`email.kamnetApplicationNotification.*`.
+
+**Proven on dev**, 26 September, in Chromium (Playwright), signed in as the
+delivery journeys' throwaway certified accounts (`j3.kbs.…@maildrop.cc`, never a
+person):
+
+- before submitting, the page showed the form and the account's own
+  certificate (`KCA-20260925-1VZK`). After submitting, it re-rendered from the
+  API: "Candidature en attente de revue - Votre candidature a été enregistrée le
+  26 septembre 2026 à 06:19", and a reload shows the same;
+- **stored**: `GET /kamnet/admin/applications` lists it, `PENDING`;
+- **the applicant's mail received**: each inbox holds "Demande KAMNET™ reçue"
+  from `noreply@kambriq.com`, at the second of submission.
+
+**The notification was not being sent, and the logs said so.** The first two
+submissions logged, at `error`, "stored but not announced: CONTACT_INBOX_EMAIL
+is not set". L1 had recorded that infra follow-up on its own day ("until then
+dev stores every request and announces none, loudly") and it was never done,
+so **no contact request had ever been announced on dev either**. Added in
+kambriq-infra #66 as a dev environment variable of the API task
+(`contact@kambriq.com`, not a secret). The plan was read first (the API task
+definition replaced, nothing else) and applied under the standing
+authorization: `1 added, 0 changed, 1 destroyed`. The 1 destroyed is revision
+204, which nothing ran. The variable reached the running task at the next
+develop deploy (revision 233, `sha-d917d42`). The third submission then logged
+`Email sent to contact@kambriq.com messageId=010701a0dc6fbbca-cbb891ef-41cf-46fd-af79-998b8386f0cd-000000
+subject="Nouvelle candidature KAMNET™ - Journey Three"`.
+
+**What I cannot show is that message arriving in `contact@`.** That is D19's
+blind spot: the mailbox is not observable from here, and SES accepting a send
+is not receipt. **Visquis confirms it** by finding the message above in
+`contact@`.
+
+**The login wall stays.** The register's own P5 row records that the public
+product pages link to `/kamnet/apply` behind the login wall, kept deliberately
+(P3): widening it is a product change.
+
+### G8 blocker - only the chosen channel's details leave - `PROUVE`
+
+**Cost impact: None.**
+
+**The row was stale for 19 days, and the exposure it described was closed on
+7 September.** The row said "re-land `230b827` … until then dev emails every
+channel's coordinates to whoever clicks". Measured on 26 September:
+
+- `230b827` is PR #89's G11–G14 work, and it is **not** in develop's history;
+- **it did not need to be**: `5c35aa2`, "fix: re-land the G11-G14 work on
+  develop (#92)", is, and its code is identical to `230b827`'s (an empty diff
+  across `apps`, `libs` and `prisma`).
+
+**How it was lost - the process defect, named.** #89 was stacked on #88, with
+`feat/g9-payment-entry-point` as its base. #88 merged at 09:59:41 on 7
+September, and #89 merged into the already-consumed branch at 10:01:10,
+**89 seconds later**. GitHub called it merged, and nothing reached develop. It
+was found and re-landed as #92 at 14:36 the same day. CLAUDE.md has recorded
+this rule since then ("a stacked PR must be re-based when its base merges, or it
+merges into nothing"). **What went wrong after that is the register itself**:
+this row was never updated, so it described an open exposure for 19 days after
+the fix. That is the stale-record defect `register-is-the-record` exists for,
+surviving because it was a row about a single commit.
+
+**What was actually exposed, and to whom - narrower than "every channel to
+whoever clicks".**
+
+- _Before_ the re-land (v02, until #92 deployed on 7 September): the
+  instructions email (and the reminder after it, `paymentReminder`) listed
+  every channel's coordinates, and went to the
+  signed-in client who requested a payment on their own reservation. It was
+  not open to "whoever": the code refused unless `reservation.clientUserId` was
+  the caller (read at `230b827~1`), so the recipient was authenticated and the
+  payment was their own. On dev the coordinates are deliberately fictitious
+  (`DEV-COMPTE-FICTIF-NE-PAS-UTILISER`, see CLAUDE.md), and no production
+  environment exists. So what was sent was the design error v03 corrected:
+  every channel instead of the chosen one, to the right person, with fake
+  values;
+- _Since #92_: `sendInstructions` takes the one channel the back office chose,
+  after the client's identity is verified. It fetches only that channel
+  (`detailsFor(by.channel)`) and stores what was communicated. **The email
+  carries no coordinates at all** (`no-coordinates-in-email.spec.ts`), and the
+  client reads them on their own authenticated page. KAMBRIQ's support phone
+  and email ride along by design, so the client has somebody to call.
+
+**The test the brief asked for.** `payment-instructions.spec.ts` proved that
+`sendInstructions` asks for one channel, but it mocks `detailsFor`, so nothing
+proved what `detailsFor` hands back. `one-channel-leaves.spec.ts` runs the real
+service with every channel's parameters present, the worst case, and requires,
+for each selectable channel, exactly its own fields plus the named support
+contact, and no value belonging to another channel. **My own first version was
+wrong**: it failed on the support contact, which is by design and not a
+leak. The allowed set now names it. Mutations: sending every channel's fields
+failed six cases, and adding one foreign field failed five (all but OMO, whose
+own field it is).
+
+**G8 stays open.** It carries the deferred dev proofs of eleven other
+subjects. Only this blocker is closed.
+
+### A52 - a KBS candidate's CV is a key in their own folder, nothing else - `PROUVE`
+
+**Cost impact: None.**
+
+**Proven on dev** at `sha-d5fd78e` (#195), 26 September, in Chromium, signed in
+as an E2E throwaway account (`e2e-login.…@maildrop.cc`) that had not enrolled:
+
+- on `/fr/kbs`, an identity image and a PDF CV were chosen. Both presigned PUTs
+  answered **200**, to `users/<id>/id-documents/…` and
+  `kbs/candidates/<id>/cv/1790406285517-a52-cv.pdf`. The page moved to
+  "Inscription en attente de validation";
+- the admin candidate detail returns the CV **signed**, so what is stored is a
+  key, the one issued in the owner's CV folder;
+- the same account posting `https://evil.example/cv.pdf` to `POST /kbs/enroll`:
+  **400**, "Le CV doit être envoyé depuis votre compte, avec le bouton de
+  téléversement.", refused before anything is read.
+
+**Same defect as A49, one field further.** `enroll` took `cvUrl:
+z.string().min(1, 'Must be a valid URL')`, which is any string, and stored it,
+and `getDownloadUrl` returns an address as it stands.
+
+**Counted before concluding, as A49 taught.** On dev: **136 candidates, none
+with a CV stored.** The detail route returns `cvUrl` (the key is present and
+`null` in every one), so the count is not a missing field read as absence.
+**No stored record would be refused.** The journeys ask for a CV upload URL but
+never enrol with one.
+
+**One rule, not a third.** `core/users/storage-keys.ts` now names each folder by
+its own path (`users/<id>/avatar`, `users/<id>/id-documents`,
+`kbs/candidates/<id>/cv`), and one `isOwnUserFileKey(userId, folder, value)`
+answers for all three. The CV upload route issues its key through the same
+`userFileKey`. `enroll` refuses a CV that is not a key issued to this person in
+their CV folder, before anything is read or written, with a translated message.
+
+**Proof so far, red first.** On develop, the five refusals (a foreign site, our
+bucket as a URL, another candidate's CV, this person's identity document, a key
+climbing out of its folder) all enrolled the candidate. Three mutations each
+failed: no check, the CV folder widened to the whole candidate folder (which
+then refuses the legitimate key), and a check against the wrong folder. A44's
+and A49's specs still pass, so the rule is shared, not forked.
+
+### A53 - dead code that still carried the invented data I44 took off the screens - `PROUVE`
+
+**Cost impact: None.** Less code in the web bundle's source.
+
+**Proven, 26 September:** develop's own run on `844cf32`, the first head after
+the merge whose run finished (#199 repaired the red below), run `36226927320`:
+Quality (lint, both typechecks, the web and API suites), database suite, both
+images, deploy to dev, delivery journeys and E2E, all green. That run is
+"nothing breaks" measured on the deployed site.
+
+**Removed, because nothing rendered it after I44 and nothing imported it:**
+the land search components (`search-content`, `lands-map`, `land-card`,
+`compare-bar`, `filters-bar`, and the `land-detail-modal` folder), the compare
+components (`compare-content`, `compare-cards`, `compare-table`,
+`compare-empty`), `data/mock-lands.ts` with its four invented parcels,
+`store/lands-search.store.ts`, and `dashboard/shared/stat-card.tsx`. That is 17
+files. Dead code carrying invented data is how the six invented agents lived
+for months: somebody finds it useful and wires it back.
+
+**Kept, and why:** ~~the `landSearch` namespace, which the real admin lands
+screen also reads~~ (retracted below); Mapbox, which the client land map uses. **Named, not removed:** the
+`landsCompare` namespace is now read by no component. It holds labels, not
+invented data, and removing it would ripple into the copy pin that #174
+rewrites.
+
+**The pin survives its source.** `admin/invented-data.spec.tsx` read the
+invented parcels from `MOCK_LANDS`. It now keeps them as literals ("Terrain
+Dibamba", "TF 421/WB"…), the way `/agent/network`'s spec keeps its six names.
+Mutated: `/admin/lands/search` showing "Terrain Dibamba" again fails it in both
+languages. `brand-palette.spec.ts` lost the entry for the deleted `lands-map.tsx`.
+
+**Proof so far:** the web typecheck is clean with the files gone, the whole web
+suite passes (665 tests), and lint is clean.
+
+**Retraction, 26 September: `landSearch` was never read by the admin screen.**
+The admin lands screen reads `landsAdmin`. Its search box keeps its state in a
+variable called `landSearch`, and a text search for the name found the variable
+and I took it for a reader. The only readers were the components this chantier
+deleted. So `landSearch` was as dead as `landsCompare`, and kept on a false
+reason.
+
+**Both namespaces are removed** (148 lines per language), with their two
+entries in the P21 copy sweep's namespace list. `every-namespace-is-read.spec.ts`
+now fails on any top-level namespace no source file names; watched red on
+develop, it named exactly `landSearch` and `landsCompare`. The removal touches
+one line #174 also rewrites (that list, which #174 replaces as a whole); the
+catalogue hunks do not overlap.
+
+**Develop went red, and it was mine.** The merge (`54e9e50`) failed develop's
+Quality job on `role-code-literals.spec.ts`: an API convention test that reads
+web files had an exemption for the deleted `land-detail-modal/dialogs.tsx`, and
+an exemption that matches nothing fails, by design. **My local gate for A53 ran
+the web suite, web typecheck and lint, and not the API suite** where that test
+lives. That is the whole cause, and the rule it breaks is in this file ("full
+gate"). The fix removes the exemption. Because the red run never reached the
+delivery journeys, the CI Gate refuses every pull request until develop's head
+is green again, the fix included, so the fix needs `merge-on-red-develop`, which
+is Visquis's alone. The merge also went in under the PR's title rather than a
+lowercase commit subject, because my merge script took the wrong field; the
+script is corrected.
+
+### I43 follow-up - the client payment screens read in the customer's language - `PROUVE`
+
+**Cost impact: None.**
+
+**Proven on dev, 26 September, in Firefox, against web `sha-cf56bc1`**, signed
+in as the G8 throwaway client `g8.client.1789151649764@maildrop.cc`, read only:
+`/en/mylands/payment/449d7584-…` (validated, bank transfer), `/en/mylands/payment/cdbebecc-…`
+(requested, details not yet sent) and `/en/mylands/purchase/380d2626-…` (the
+request card) read in English throughout: "AMOUNT DUE", "How to pay - Bank
+transfer (VIR)", "Account number / IBAN", "Keep your receipt", "Your request has
+arrived", "Pay the deposit", "Get my payment reference". What is still French is
+data, not copy: parcel names, and the deliberately fake dev channel values from
+SSM ("DEV - aucune banque reelle").
+
+**The first reading was of the wrong build, and it said French.** I waited for
+the API's `/api/v1/health/version` to report the new sha, and the deploy
+rolls the API out first: the web was still the old image. The web answers its
+own identity at `/health`. The second reading waited for that.
+
+**Found, not changed:** the purchase page writes the same deposit as "170 000
+XAF" in the card and "170 000 FCFA" in the journey, and shows a remaining
+payment of "1 631 830 000 FCFA" on that parcel. P28 says touch no price, so it
+is named here.
+
+`components/mylands/my-payment-content.tsx` (the client's payment page) and
+`request-payment-card.tsx` (the card that issues the payment reference) were
+French only and on I43's hardcoded-copy debt list. They are read by customers,
+many in the diaspora, and an English speaker paying a deposit read "Montant à
+régler". These two are off the list; **28 debt entries remain**, all back-office
+or public-page copy.
+
+**The strings were not the whole of it.** Translating the sentences alone
+would have left an English reader with French channel names (from the shared
+`PAYMENT_CHANNELS` labels, via `ChannelLabel`) and French coordinate labels (a
+`FIELD_LABELS` table in the component). Both now come from `myPayment` on these
+client screens. The shared admin component is untouched. `HumanDate` takes an
+optional locale, French by default as before, and the client screens pass the
+reader's. The "follow my request" link goes through the locale-aware `Link`.
+
+**For Visquis:** the French keeps today's wording, with accents the shared
+labels lacked ("Dépôt d'espèces", "Espèces en main propre"), and the error "La
+preference n'a pas ete enregistree" gained its accents too. The English is mine.
+Amounts are formatted as before, and **no price or currency is touched** (P28).
+
+**Proof:** `client-payment-screens.spec.tsx` renders the payment page (with
+coordinates, and waiting for identity) and the request card (before and after a
+reference) in both languages, and checks that the English render holds none
+of the namespace's French-only strings. Against develop's components: the three
+English tests fail and the French ones pass. `next-intl-mock` gains `t.has`.
+
+### A19 - develop linted one project of six - `PROUVE`
+
+**Cost impact: not recorded in the sources.**
+
+The row: _"develop linted 1 project of 6 for seven months: the workflow promised
+"the full set", `pnpm run lint` was `nx lint api`. Widened to `nx run-many -t
+lint --all`; manifest corrected; proved in both directions"_.
+
+The commit is `44e27a2 fix(a19): lint every project on develop, and make the
+manifest true` (11 September). It touches `ci.yml`, `package.json`,
+`libs/common/package.json` and `libs/common/eslint.config.mjs`.
+
+CLAUDE.md, "A check that never runs looks exactly like a check that passes",
+records the detail. `libs/common` had two undeclared dependencies, `ioredis` and
+`@jest/globals`. The defect surfaced when `#98` touched `libs/common`. The proof
+in both directions was: _"`nx lint api` succeeds against the reintroduced defect
+and `nx run-many -t lint --all` fails naming both errors"_.
+
+### A31 - the seed left parcels AVAILABLE under a reservation - `PROUVE`
+
+**Cost impact: none (the row: _"Cost: none"_).**
+
+The row: develop went red on journeys 4 and 5 from 08:22 UTC on 14 September.
+_"The seed kept payment-carrying reservations, reset their parcels to AVAILABLE
+anyway (8 on dev), and the first available parcel answered 409. Fixed in the
+seed and proved locally."_ **Pending, per the row: "merge, one seed run on dev,
+a green journeys run on develop".**
+
+`3734818 fix(seed): a parcel held by a reservation the seed kept stays held
+(a31) (#126)` is on develop (15 September). It adds
+`prisma/seed-data/parcel-status.ts` and
+`apps/api/src/__test__/seed/parcel-status.spec.ts`. No source quotes the seed
+run on dev or the journeys run that the row names as the proof.
+
+CLAUDE.md, "A postcondition that counts a word has not checked the thing", says
+four merges went in on top of the red. The old postcondition counted eighteen
+AVAILABLE rows and passed. The new check asks that _"no seeded parcel is
+AVAILABLE while a reservation holds it"_. It was proved on develop's seed with
+only the new check added: the count passes and _"the new check alone refuses,
+naming the parcels"_.
+
+**Row corrected, 26 September:** it said the merge was pending; the commit
+above is on develop, so the row now names only the dev-side proof, which no
+source quotes yet.
+
+**Proven, 26 September.** Read in `kambriq_lands` on dev: **0** parcels `AVAILABLE` while a reservation other than `CANCELLED` holds them - the state the fix protects, and the one that turned develop red. Develop's delivery journeys were green on every run that day (for example `36246336133`). The seed has not been observed running on dev since #126 (it is opt-in and deletes reservations); what is proven is the state, not a seed run.
+
+### A32 - the CI gate reads develop at its head - `EN COURS`
+
+**Cost impact: each push to develop blocks merges for about 20 minutes (the
+row: _"each develop push blocks merges ~20 min"_).**
+
+The row: _"Gate reads develop's HEAD sha, then its run
+(`scripts/ci/develop-gate.sh`): green passes; red, never started or not yet
+verified refuses; label `merge-on-red-develop` plus re-run releases. v1 read a
+list and passed #134 on a stale run; 12 stub cases run in every CI Gate."_ The
+row names no pending proof.
+
+Two commits, both 15 September: `23af837 ci(a32): the gate refuses while develop
+is red on the journeys (#130)` (v1), and `4a4b349 fix(ci): the develop gate reads
+develop's head by sha (a32) (#141)`. The second adds
+`scripts/ci/develop-gate.sh` and `scripts/ci/develop-gate.test.sh`.
+
+CLAUDE.md, "A gate that only sees the pull request cannot see develop", records
+why. On 14 September six pull requests merged on a red develop. On 15 September
+the list-based v1 _"answered #134 with a run six merges old"_. The gate fails
+closed, and it _"stops the stacking, not the breaking"_. Labels are read live
+through the API, because a re-run replays the original event.
+
+The gate is recorded in use twice. The wave note, "P11 merged - #162, 23
+September", has _"`merge-on-red-develop` was not used"_. The `A53` entry has
+_"the CI Gate refuses every pull request until develop's head is green again
+... the fix needs `merge-on-red-develop`, which is Visquis's alone"_.
+
+### A36 - the journey client waits out a 429 - `PROUVE`
+
+**Tracker correction, 27 September:** proven by every develop run since - the
+delivery journeys green on `b063685`, `61388d9`, `e4fdfd4` and `daddcd9`, all from
+one runner address, `call()` waiting out the throttle window as built. The web
+E2E suite met the same shared budget on the login route the same day (I45,
+#242).
+
+**Cost impact: up to 120 s added to a journeys job that is actually throttled,
+none otherwise (the row).**
+
+The row: develop went red on `70a5e07`. Both journey suites run in one
+`runInBand` process from one runner address, and `getTracker` keys on the last
+X-Forwarded-For entry. So they _"legitimately share one bucket of 100 requests
+per 60000 ms"_: 9.33 s apart PASSED on `1cbde1a`, 0.36 s and 0.35 s apart
+FAILED on `70a5e07`. `call()` now waits one full window and retries, at most 3
+attempts. `getTracker` has 11 tests. The spec runs in `Quality` through a new
+`test` target. **Pending, per the row: "a green `Delivery journeys (dev)` on
+develop".**
+
+The commit is `8f84b4f fix(journeys): wait for the throttle window on a 429, and
+the exam passing score is 80 (#150)` (18 September). It adds
+`apps/api-e2e/jest.unit.config.cts`,
+`apps/api-e2e/src/unit/support.call.spec.ts` and
+`throttler-behind-proxy.guard.spec.ts`. It also carries `I31`.
+
+Three CLAUDE.md sections come from A36:
+
+- "A prose guarantee is a claim, and the system is not obliged to keep it" (the
+  comment _"In CI the suite runs once per deploy and never sees it"_, run
+  `35306506751`, and the two fixes that were refused);
+- "A test has to live somewhere that runs, and a project can have nowhere";
+- "The code that decides who owns the bucket had no test" (the `parts[0]`
+  mutation fails five).
+
+No source quotes the pending journeys run.
+
+### Audit 2026-09-23, unwaved - findings with no wave assigned - `A FAIRE`
+
+**Cost impact: not recorded in the sources.**
+
+The row lists three findings. `/admin/verify` and `/kamnet/apply` are _"mocks
+behind real roles that toast success and write nothing"_. The Mapbox build `ARG`
+_"reaches no workflow, so the land-search map is dark in every image"_.
+`legal/mentions/{fr,en}.mdx` publishes _"`Capital social : XXX XXX XAF` and
+`N° RCCM : XX / XXX / XX` on a public page"_.
+
+The same list is in the `Audit 2026-09-23, wave 2 - correctness` entry, under
+_"Still open from the same audit, none of it started"_. There it also names the
+RSC bearer token, which the wave 1 row says wave 5 closed, and it places the
+Mapbox `ARG` in `Dockerfile.web`. The `Audit 2026-09-23, wave 6 - SEO` entry
+says the structured data _"carries no RCCM number and no share capital"_,
+because _"the public mentions légales still serves `XXX XXX XAF"`_.
+
+Later rows cover two of the three findings: `I44` (`PROUVE`) for `/admin/verify`
+and `P5` (`EN COURS`) for `/kamnet/apply`. See contradiction 3 at the top. No
+source records work on the Mapbox `ARG` or the mentions placeholders.
+
+**Row corrected, 26 September:** `/admin/verify` (I44) and `/kamnet/apply` (P5,
+#193) are no longer mocks; the row now says so and keeps the two findings still
+open.
+
+### G21 - cancelling a reservation annuls its live payment - `PROUVE`
+
+**Cost impact: None.**
+
+**Was `G8` follow-up** (27 September, journey 7's first run): `POST
+/lands/admin/reservations/:id/cancel` answered 200 and left the reservation's
+INITIE deposit INITIE, in the back office's request queue under a CANCELLED
+reservation.
+
+**Decided by Visquis, 27 September:** cancelling a reservation **annuls** its
+live payment, with a written reason - consistent with G1, nothing disappears and
+everything is traced, and a client who withdraws is never stuck behind a ghost
+payment. Rejected: refusing the cancellation while a payment lives, which
+strands the client behind a back-office action.
+
+**Built:** `LandReservationsService.cancel` finds every payment of the
+reservation that is not in a terminal state and moves each to `ANNULE` through
+`PaymentsService.transition` - the one write path for a payment's state, which
+writes the audit row with the canceller as actor and the reason
+`Reservation <id> cancelled: <the cancellation's reason>`. Before the
+reservation itself, so a refusal leaves both as they were. **What stays:** a
+`VALIDE` payment (money that arrived is not annulled; a refund is its own act),
+and every receipt - the ledger is append-only, and a partly received payment is
+annulled with its receipts still on it. The service now takes `PaymentsService`
+(same module, no cycle).
+
+**Proof, red first:** `cancel-annuls-live-payment.dbspec.ts`, on the real lands
+migrations with the real `PaymentsService`: a live payment ends `ANNULE` with an
+audit row from `INSTRUCTIONS_ENVOYEES`, the canceller as actor and the reason
+readable; the annulled payment then **refuses VALIDE** (nothing validatable left
+behind); a partly received payment keeps its receipt; a VALIDE payment is left
+alone. Red before the change (the service had no way to reach a payment); a
+mutation that finds no live payment fails three of the four.
+
+**Proven on dev, 27 September:** the delivery journeys on `b063685` - 29 passed,
+6 skipped (journey 7, opt-in) - with journey 4's client asking for the deposit
+before the cancellation, and the payment read back `ANNULE` with
+"automated journey cleanup - returning the fixture parcel" in its last
+transition's reason.
+
+### G1 - the payment model - `PROUVE`
+
+**Proven on dev, 27 September,** by G8's end-to-end run (journey 7): a deposit
+and a balance, each INITIE to VALIDE through the back office, BigInt amounts,
+receipts on the append-only ledger, every step in the audit trail.
+
+**Cost impact: None. Three tables in an existing database, no new resource
+(`docs/ops/g1-payment-model.md`).**
+
+The row: _"payment model in `lands`: BigInt money, 9-state machine, append-only
+ledger and audit. Pending proof is G8, one payment end to end on dev"_. The
+commit is `73931c0 feat(g1): the payment data model and state machine (#82)`
+(6 September).
+
+`docs/ops/g1-payment-model.md` covers the rest:
+
+- The tables are `Payment`, `PaymentReceipt` (the ledger) and
+  `PaymentTransition` (the audit trail). Both append-only tables carry a
+  `BEFORE UPDATE OR DELETE` trigger that raises.
+- The states are `INITIE`, `INSTRUCTIONS_ENVOYEES`, `ANNONCE_CLIENT`,
+  `EN_VERIFICATION`, `PARTIELLEMENT_RECU` (which loops), `VALIDE`, and the exits
+  `REJETE`, `EXPIRE` and `ANNULE`.
+- `assertTransitionIsDeliberate` refuses a committing transition that has no
+  named person and reason. `EXPIRE` is the one automatic exception.
+- The schema is `lands` rather than `core` because there are no cross-database
+  foreign keys.
+- The document's "What is still missing" table leaves one thing undecided:
+  whether, above a threshold, the validator must be a different person from
+  the recorder.
+
+CLAUDE.md "Money, and the three rules that hold it" states the same rules.
+
+The pending proof is G8, and the `G8` row is `ARRETE`. The `G8` blocker row
+(`PROUVE`) ends _"**G8 itself stays open**"_.
+
+### G10 - channel parameters applied - `PROUVE`
+
+**Cost impact: not recorded for G10. The `G10b (infra)` entry records _"None.
+Four additional SSM Standard parameters (free tier is 10 000)"_ for G10b.**
+
+There are three rows. `G10`: _"applied and observed: 16 SecureString parameters
+none empty, task definition 143 with the three variables and no channel value,
+0 AccessDenied"_. `G10` (webapp): _"an absent channel prefix now fails the boot
+exactly as an empty parameter does; disabling is
+`PAYMENT_CHANNELS_TRANSPORT=disabled`"_. `G10` (infra), `PLAN PRET`: _"twelve
+parameters + the prefix into terraform. Plan run and shown, **nothing
+applied**"_.
+
+The observation is in the `G8 - the end-to-end proof on deployed dev` entry,
+"Part 1 - the deployed state, as facts". It has 16 SecureString parameters,
+none empty; task definition revision 143 with `PAYMENT_CHANNELS_SSM_PREFIX`,
+`PAYMENT_CHANNELS_TRANSPORT=ssm` and `PAYMENT_VALIDITY_DAYS=30` and no channel
+value; and 0 `AccessDeniedException` events. It ends _"This part passed, and it
+closes `G10`"_.
+
+The webapp half is in the `G9` entry, section "G10's webapp half - the asymmetry,
+corrected": `payment-channels-config.spec.ts`, 7 tests, and _"Whitespace is
+absence"_. The reader design is in CLAUDE.md "Channel details are configuration,
+and the reader decides whether a fix needs a deploy". The spec's own reason for
+this row is _"entry folded into G10b"_. The `G10` (infra) row and the `G10b`
+entry contradict the bare row; see contradiction 2 at the top.
+
+**Rows corrected, 26 September:** the `G10` (infra) row said "nothing applied".
+Read on dev that day: the running API, `kambriq-dev-api:250`, carries
+`PAYMENT_CHANNELS_SSM_PREFIX`, and 13 SecureString parameters exist under
+`/kambriq/dev/api/payment-channels` (names and types only, no value). The row
+now says `PROUVE`.
+
+### I15 - the certificate is the truth, and renewal - `PROUVE`
+
+**Cost impact: none (both rows: _"Cost: none"_).**
+
+The `I15` row: _"CERTIFIED only by issuance, `isUserCertified` reads revocation
+and decides at KAMNET submit and approval, KCA_CERTIFIED not settable by hand, a
+daily sweep withdraws it on expiry. Dev: 60 holders, 0 without certificate, 0
+expired. Pending: merge, first sweep on dev."_ The `I15` renewal row: _"a
+renewal issues a new certificate (candidateId no longer unique, migration drops
+one index); the old one stays verifiable. Proven locally through the real API
+and page ... Pending: merge, migration on dev."_
+
+Both are on develop, 15 September: `f79d4bb fix(kbs): the certificate is the
+source of truth, kca_certified reflects it (i15) (#133)` and `ed60327 feat(kbs):
+a renewal issues a new certificate, the old one stays verifiable (i15) (#139)`.
+No source quotes the first sweep or the migration on dev.
+
+CLAUDE.md, "A role that projects a record is not a setting", states the rule and
+tags it `(I15)`. `record-derived-roles.ts` closes the admin doors, and the role
+is withdrawn on revocation and on expiry. "Is this person certified" is asked of
+`findActiveCertificate`, not of the role. CLAUDE.md "A barrier guards a table"
+calls the wave 4 acompte fix _"`I15`'s rule at one boundary further out"_.
+
+**Row corrected, 26 September:** it said the merge was pending; the commit
+above is on develop, so the row now names only the dev-side proof, which no
+source quotes yet.
+
+**Proven, 26 September.** The dev API log holds the daily sweep: `Expired certifications withdrawn {"count":0,"renewedAndKept":0}` at 02:30 UTC on 22, 23, 24, 25 and 26 September (seven-day retention). Nothing to withdraw, and the sweep that would is running. The renewal row is proven with it: migration `20260915160000_i15_certificate_renewal` was applied on dev on 15 September at 18:08:22 UTC and never rolled back.
+
+### I16 - CLIENT in its own right, suspension removes AGENT - `PROUVE`
+
+**Cost impact: none (the row: _"Cost: none"_).**
+
+The row: _"CLIENT in its own right first: dev one-off wrote 5 rows, 5/5 agents
+now hold CLIENT directly; approval grants it. Then suspension and revocation
+remove AGENT, lifting returns it if still certified; commissions read by
+ownership. Pending: merge."_
+
+The commit is `657f241 fix(kamnet): suspension removes agent, and client is held
+in its own right (i16) (#138)` (15 September).
+
+The wave note, "P11 - the public directory of certified agents", under
+"Reported, not fixed", has an item headed _"I16 withdrawn."_ It records that
+the two `/kamnet/commissions` routes carry no `@Roles` on purpose: _"suspending
+an agent removes `AGENT`, which would have hidden commissions already earned, so
+ownership via `findByUserId` is the guard"_.
+
+**Row corrected, 26 September:** it named the merge as the only pending step;
+the commit above is on develop. No source quotes a reading on dev, so the state
+stays `EN COURS` rather than being moved without a proof.
+
+**Proven on dev, 26 September:** in `kambriq_core`, 5 users hold `AGENT` and **0** of them lack `CLIENT`.
+
+### I18 - one definition of the roles - `PROUVE`
+
+**Cost impact: none (the row: _"Cost: none"_).**
+
+The row: _"the literal ban now scans `apps/web` and the e2e suite; 8 codes in 14
+web files moved to `RoleCode`. The layout's own ROOT check is deleted (decided
+15 Sept); the proxy is the one gate, proven by mutation. Pending: merge through
+the gate."_
+
+Two commits, both 15 September: `a4f403b fix(web): one definition of the roles
+(i18) (#134)` and `1145add fix(web): one gate for /admin/kbs, the proxy (i18)
+(#140)`.
+
+CLAUDE.md, "A string literal where a constant exists", says
+`role-code-literals.spec.ts` now covers `apps/web/src` and the e2e suite. It had
+covered only three trees, _"which is how a role that does not exist, `ROOT`,
+came to guard a real layout (`I18`)"_. The web imports the enum once, through
+`apps/web/src/lib/roles.ts`. The `I43` entry and the `I32` entry both refer back
+to I18's shape.
+
+**Row corrected, 26 September:** it named the merge as the only pending step;
+the commit above is on develop. No source quotes a reading on dev, so the state
+stays `EN COURS` rather than being moved without a proof.
+
+**Proven on dev, 26 September:** with no session, `/fr/admin/payments`, `/en/agent/network` and `/fr/account` each answer **307** to `/<locale>/login?callbackUrl=...`. The literal ban is a test on every PR.
+
+### I19 - no user without a role - `PROUVE`
+
+**Cost impact: none (the row: _"Cost: none"_).**
+
+The row: _"registration refused a missing CLIENT row silently, an existing user
+reserved as a client got no CLIENT, the seed wrote 8 role rows of 11. Fixed, red
+then green locally. Pending: merge through the gate, then one seed run on dev
+showing 11 rows."_
+
+The commit is `32c9dd7 fix(core): no user without a role (i19) (#132)` (15
+September). No source quotes the seed run on dev showing 11 rows.
+
+**Row corrected, 26 September:** it said the merge was pending; the commit
+above is on develop, so the row now names only the dev-side proof, which no
+source quotes yet.
+
+**Read on dev, 26 September - the proof does not hold yet, and why.** `Role` holds **8 rows**: every code but `STAFF_VERIFY`, `STAFF_VALUATION` and `PARTNER_GEO` - exactly the "8 role rows of 11" this chantier fixed in the seed, and the fix only reaches dev through a seed run, which is opt-in and deletes reservations, so it was not run. **2 active users hold no role at all**: both `@maildrop.cc` throwaways created on 4 September at 10:38 and 10:39, eleven days before #132 - the registration defect this fixed, left behind in the data. No new roleless user since. Neither the seed run nor a hand-written role upsert is mine to choose: **pending Visquis**.
+
+**Visquis, 26 September: the three rows, not the seed.** The seed deletes
+reservations, and would have destroyed the 200 dev reservations and the payment
+history G20 was proven on. **Done on dev the same evening**, through ECS exec, in
+one transaction on `kambriq_core` that aborted unless it found what had been
+read:
+
+- The three rows inserted with the seed's own ids, codes, names and
+  descriptions (`prisma/seed-data/roles.ts`); the transaction refused if any id
+  or code already existed.
+- The role-less users re-read inside the transaction (not deleted, no role):
+  exactly two, both `@maildrop.cc`, both created on 4 September - otherwise
+  rollback. Each was given **`CLIENT`**, with `grantedBy` empty as registration
+  leaves it. **Why `CLIENT`:** it is what `auth.service.ts` gives every account at
+  registration, and what these two would hold had they registered after #132;
+  it grants the client portal only, nothing I16 or I18 restrict (no AGENT, no
+  admin, no ROOT path). Leaving them role-less was the defect; suspending them
+  would have been a decision about test accounts that are not mine to delete or
+  retire.
+
+**Read back after commit:** 11 role rows (every `RoleCode`), **0** live users
+without a role, the two grants dated 2026-09-26 17:56 UTC. The lands database was
+not opened: no reservation or payment touched.
+
+### I20 - training content only to an enrolment that permits it - `PROUVE`
+
+**Cost impact: none (the row: _"Cost: none"_).**
+
+The row: _"any logged-in account read KBS lessons, drafts and outlines through
+the API (the web never called those routes). Lesson now needs a verified
+candidate record and a published course; lists and outlines are published-only.
+Pending: merge, then a no-record call on dev answering 404."_
+
+The commit is `97aefee fix(kbs): serve training content only to an enrolment
+that permits it (i20) (#136)` (15 September). No source quotes the no-record call
+on dev.
+
+**Row corrected, 26 September:** it said the merge was pending; the commit
+above is on develop, so the row now names only the dev-side proof, which no
+source quotes yet.
+
+**Proven on dev, 26 September.** `GET /kbs/lesson/0c18de43-…` (a lesson of the published KCA course): as `admin@kambriq.com`, which holds CANDIDATE_KBS through ADMIN_GLOBAL and has no candidate record, **404 "You are not enrolled in KBS"**; as a client throwaway without the role, 403; with no session, 401.
+
+### I21 - an exam is answered only on the questions it served - `PROUVE`
+
+**Cost impact: none (the row: _"Cost: none"_).**
+
+The row: _"60 correct answers on a 20-question exam graded 300%, a fail became a
+certificate, then AGENT. Now the served questions are recorded at start and only
+those answerable; score capped at 100; late submit refused. Red first on the
+exploit. Pending: merge via gate."_
+
+The commit is `70d79e1 fix(kbs): an exam is answered only on the questions it
+served (i21) (#143)` (15 September).
+
+CLAUDE.md, "An exam records which questions it served, not how many", gives the
+proof: in `exam-integrity.dbspec.ts`, against the real kbs migrations, the
+exploit gave `{ refused: 0, score: 300 }` before and `{ refused: 40, score: 100 }`
+after. There is one empty `KbsExamAnswer` slot per served question. Past the
+deadline plus 30 s the exam is closed on what was saved in time. The wave note,
+"Step 1 - I38", under "Changed", cites I21 as the reason display paths allow an
+absent settings row.
+
+**Row corrected, 26 September:** it named the merge as the only pending step;
+the commit above is on develop. No source quotes a reading on dev, so the state
+stays `EN COURS` rather than being moved without a proof.
+
+**Proven on dev, 26 September:** in `kambriq_kbs`, 148 graded exams, **maximum score 100**, and **0** exams with more answer rows than `totalQuestions` - the exploit's two signatures (300 %, answers outside the served set) are absent. The journeys pass an exam on every develop run.
+
+### I31 - exam and quiz thresholds - `PROUVE`
+
+**Cost impact: none, "verified rather than assumed" (the row).**
+
+The row: the exam threshold goes from 75 to 80 and module quizzes stay at 70
+(Visquis, 18 September). _"the certification document governs what is promised
+to the candidate, the quizzes stay drilling"_. Four tests now pin the two
+constants, and `scheduleExam` is pinned to write the exam constant onto the row.
+
+Also from the row: _"`KbsExam.passingScore` is stamped per row at schedule time
+and `gradeExam` judges that stored column, so no past verdict moves; dev holds
+75 exam rows (74 PASSED, 1 FAILED), 0 SCHEDULED or IN_PROGRESS"_.
+`prisma/kbs/schema.prisma` still defaults the column to 75, and this is _"left to
+the KBS foundation subject"_. **Pending, per the row: "merge".**
+
+`8f84b4f fix(journeys): wait for the throttle window on a 429, and the exam
+passing score is 80 (#150)` is on develop (18 September). It touches
+`libs/common/src/constants/kbs/index.ts` and adds
+`kbs-passing-scores.spec.ts`. It also carries `A36`.
+
+**Row corrected, 26 September:** it named the merge as the only pending step;
+the commit above is on develop. No source quotes a reading on dev, so the state
+stays `EN COURS` rather than being moved without a proof.
+
+**Proven on dev, 26 September:** every one of the **73** exams created since the merge (18 September 06:05 UTC) carries `passingScore` 80.
+
+### I7 - ADMIN_GLOBAL inherits STAFF_VERIFY - `PROUVE`
+
+**Cost impact: none (the row: _"Cost: none"_).**
+
+The row: _"VERIFY is operated by STAFF_VERIFY; ADMIN_GLOBAL now inherits it (one
+level, listed on ADMIN_GLOBAL itself), pinned before any route uses it. Every
+super admin therefore reaches identity documents and titles, and no record says
+which one read what (ADR-008). Pending: merge."_
+
+The commit is `d58a79a feat(roles): admin_global inherits staff_verify (i7)
+(#137)` (15 September).
+
+The `H1` entry says `STAFF_VERIFY` is _"in the enum, [has] no row in the
+database, and [appears] in no decorator"_, and that _"the guard fails the day
+one of them does"_.
+
+**Row corrected, 26 September:** it named the merge as the only pending step;
+the commit above is on develop. No source quotes a reading on dev, so the state
+stays `EN COURS` rather than being moved without a proof.
+
+**Closed, 26 September, on its test.** The merge was the only pending step. No route is gated by `STAFF_VERIFY` yet (`grep` over `apps/api/src`), so dev has nothing to show, and dev's `Role` table has no `STAFF_VERIFY` row at all (I19). The inheritance is pinned in `super-admin.spec.ts`.
+
+### P4 - X-Robots-Tag outside production - `PROUVE`
+
+**Cost impact: None for the second half (register section "P4, second half").
+The first half names one: _"prd must set `APP_ENV=production` when it is first
+built"_ (register section "P4 - `NODE_ENV` could not have answered this").**
+
+The row: _"X-Robots-Tag noindex outside production, on the existing headers()
+block. Reads APP_ENV: NODE_ENV is 'production' on every environment and cannot
+tell them apart. Second half (API responses): PROUVE on dev 23/09; P4 stays below
+100 % until D13"_.
+
+The first half shipped inside the `P3` entry, sections "P4 - `NODE_ENV` could not
+have answered this, and that was the trap" and "Follow-ups". `docker/Dockerfile.web`
+sets `NODE_ENV=production` for every environment. `APP_ENV` is introduced, and
+absent means noindex. The P3 commit is `6358f71 feat(p3): scope the auth
+middleware, serve a real 404, keep dev unindexable`. The P3 "Gate - LOCAL ONLY"
+section says _"No CI run has confirmed any of it"_. CLAUDE.md "`NODE_ENV` cannot
+tell dev from prd in this repository" records the rule.
+
+The second half is `f0e8819 P4 - the API sends X-Robots-Tag from the same
+APP_ENV decision as the web (#165)`. Both the register section "P4, second half"
+and the wave note section "P4 - proven on dev" quote dev at `sha-f0e8819`, 23
+September 19:38 UTC: `noindex, nofollow` on `/api/v1/health/version` (200),
+`/api/v1/kamnet/public/agents` (200), `/api/v1/no-such-route` (404) and
+`/api/v1/users/me` (401). The same table has `/` and `/legal/privacy` as
+_"(unchanged)"_. **Moved to `PROUVE` on 26 September**, read on dev at `sha-8637543`'s
+predecessors (web `sha-e1b965f`): `X-Robots-Tag: noindex, nofollow` on `/`,
+`/fr`, `/fr/legal/privacy` and `/api/v1/health`, and `robots.txt` answers
+`Disallow: /`. Both halves are now observed on a deployed build; the row had
+kept `PROUVE LOCALEMENT` after the second half was proven.
+
+The part still open is D13 (access authentication). Dev _"answers 200 to
+anonymous callers"_ (both sections). The ADR-005 follow-up: _"prd must set
+`APP_ENV=production` on **both**"_.
+
+### Q1 - the certification follow-up - `A DECIDER`
+
+**Cost impact: not recorded in the sources.**
+
+This is the row `` `Q1` follow-up ``: _"`generateKcaNumber` says \_sequential per
+day_ and emits a random suffix; `CANDIDATE_KBS` is granted self-service and
+gates nothing"\_. The row does not say what arbitration is missing.
+
+The second half is in the register section "Role-grant inventory - read-only,
+folded into V1", under "Three things the sweep turned up anyway", item 2.
+_"`POST /kbs/enroll` grants it to the caller with no human in the loop. There is
+no `@Roles(RoleCode.CANDIDATE_KBS)` anywhere in the codebase ... Harmless today,
+and worth knowing before somebody gates something on it."_ The wave note,
+"P11 - the public directory of certified agents", has an item on the number
+format: KCA numbers are _"`KCA-YYYYMMDD-XXXX`, a date and four hex characters,
+65,536 per issue date"_. No source was found for the "sequential per day" half
+beyond the row.
+
+The parent is the delivery-week `Q1` in `## Proven`: _"`CERTIFIED` was set by
+grading, on the score alone"_. The fix was `4be405b fix(kbs): passing an exam
+earns exam_passed, issuing a certificate confers certified (#54)`, and it was
+proven on dev per `5390c8a docs(register): q1 proven on dev ... (#55)`.
+
+### verify-cert - the public verdict page - `EN COURS`
+
+**Cost impact: none (the row: _"Cost: none"_).**
+
+The row: _"`/verify-certificate` said "valide" for any number; the API ignored
+`revokedAt` and handed strangers the holder's UUID."_ **Pending, per the row:
+"proof on dev: seeded number valid, fake number non reconnu, revoked number
+révoqué".**
+
+The commit is `c7b297c fix(kbs): verify-certificate reads the register instead
+of a mock (#125)` (15 September). It adds `apps/web/src/lib/certificate-verdict.ts`
+and `page-through-the-bff.spec.tsx`. CLAUDE.md, "A public verdict says yes only
+on an explicit, complete yes", records the rule. A positive verdict needs an
+explicit, complete yes from the source, and _"cannot verify" is its own
+answer_. It was proved by mutation at three layers.
+
+Two related facts are recorded elsewhere. The wave note section "The second
+addition: the verifier is throttled now" puts `@Throttle({ default: { limit: 30,
+ttl: 60_000 } })` on `GET /kbs/public/verify/:kcaNumber`. The `I43 follow-up -
+the public certificate verdict reads in the visitor's language` entry
+(`PROUVE`) quotes dev at `sha-06cf797` on 26 September: a real number reads
+"Valid certificate" and `KCA-00000000-FAKE` reads "Certificate not recognised".
+That covers two of the three pending cases. No source quotes a revoked number
+read on dev.
+
+**26 September - the revoked-number proof is not taken, and why.** No
+certificate on dev has ever been revoked: all 145 read through the admin API
+carry `revokedAt: null`. The proof therefore needs a revocation first, on a
+delivery-journey throwaway (`j3.kbs.…@maildrop.cc`, never a person). That write
+was refused by the session's permission layer as a change to a shared resource,
+and was not worked around. **Pending:** Visquis's go-ahead for the revocation of
+one throwaway certificate (or his own revocation of one), then
+`/en/verify-certificate/<that number>` read on dev.
+
+### naming - which ID series keeps the bare letter - `A DECIDER`
+
+**Cost impact: not recorded in the sources.**
+
+The decision, from the row: _"the brief's `L1`/`L2` collide with this register's
+logging `L2`/`L3`. Entries above are `L1-contact`/`L2-contact`; somebody should
+decide which series keeps the bare letter"_. The row names nobody. Under the
+States table, `A DECIDER` means _"Stop and report. Do not choose."_
+
+The register's `## Proven` section says a wider collision is already live:
+_"Eleven ids mean two different things depending on which half of the document
+you are reading"_. It chose not to rename, and it states the ambiguity instead.
+
+### register - rows with no entry - `A FAIRE`
+
+**Cost impact: None.**
+
+The row asked for an entry for every open chantier whose detail lived in the
+tracker or in a wave note; `register-is-the-record.spec.ts` pins the ones still
+missing in `NO_ENTRY_YET`. **On 26 September twenty-one were written**, from
+the row, the frozen wave note (`docs/ops/waves/2026-09-20-wave.md`), CLAUDE.md
+and the commits on develop - facts with their source named, nothing inferred.
+
+**One remains: `P10`**, whose entry is written in #174, which Visquis holds open
+for the LANDS page copy. Writing it here as well would put two `### P10`
+headings in the file the day #174 merges. The inventory goes to zero with
+#174.
+
+### rename - L1-contact and L2-contact to P1 and P2 - `A DECIDER`
+
+**Cost impact: not recorded in the sources.**
+
+The decision, from the row: _"`L1-contact`/`L2-contact` -> `P1`/`P2` was asked
+for in P3's brief; those ids exist only on PR #98's branch, which the same brief
+puts out of scope. Not done - see PR"_. The row names nobody.
+
+The `P3` entry, under "Follow-ups", repeats it: the IDs exist only on
+`feat/l1-contact-lead-pipeline` (PR #98, 8 occurrences), and the rename is
+_"Named rather than resolved; see the PR body for the command"_. The register's
+`## Proven` section calls `rename` _"the related open decision"_ to the id
+collision. See contradiction 5: those IDs are now on develop.
+
 ---
 
 ## Proven
@@ -5268,6 +7286,10 @@ trigger and the grant.
 | 8   | `users.controller.ts:289` / `:313` → any role               | admin grants or revokes directly           | `@Roles(ADMIN_GLOBAL)` only                                                        | Fine                           |
 | 9   | `users.service.ts:257` → replaces the whole role set        | admin updates a user with `roleCodes`      | `@Roles(ADMIN_GLOBAL)`                                                             | Fine                           |
 | —   | `grading-processor.ts:183` → `KCA_CERTIFIED`                | **nothing enqueues it any more**           | —                                                                                  | Dormant — see below            |
+
+**Row corrected, 26 September:** the ids `L1-contact` and `L2-contact` reached
+develop with PR #98; the row no longer says they exist only on its branch. The
+decision itself - whether to rename them - is still Visquis's.
 
 ### Wave 7 - CMS - `EN COURS`
 
@@ -6022,7 +8044,1238 @@ which removes a second implementation of somebody else's parser; note that the
 Next 16.3.6 documentation calls it `unstable_doesProxyMatch`, **a name that
 appears nowhere in the shipped build**.
 
-### Locale switcher coverage - `A FAIRE`
+### I32 - the network depth is the API's rule, by the caller's tier - `PROUVE`
+
+**Cost impact: None.**
+
+**The finding, I18's shape.** `GET /kamnet/network` served whatever depth was
+asked, up to `KAMNET_MAX_SPONSORSHIP_DEPTH`, and never read the caller's tier.
+The tier rule (`DEPTH_FOR_TIER`) lived in `/agent/network`'s page. Anybody
+calling the API directly got the platform maximum whatever their tier. P9 set
+that maximum to 1 and every tier to 1, so the gap stopped being observable: a
+narrowed blast radius, not a fix.
+
+**Now:** the table is `KAMNET_NETWORK_DEPTH_BY_TIER` in `libs/common`, and
+`getMyNetwork` serves `min(requested, table[tier], maximum)`. A tier the table
+does not name reads one level. With no depth asked, the answer is the tier's
+allowance; the query DTO no longer defaults the depth to 1 (which would have
+hidden the allowance). The page asks without a depth and renders what comes
+back; the web action keeps its harmless clamp when a depth is given. The admin
+tree is unchanged.
+
+**Proof, red first.** `network-tier.spec.ts` raises the maximum to 3 and gives
+the tiers 1, 2 and 3, because with today's values the rule changes no answer.
+Against develop, a JUNIOR asking for 3 levels got 3. Seven mutations, each
+failing its own test: the tier ignored, an unknown tier widened to the maximum,
+the request ignored, an absent depth read as 1, the DTO default of 1 restored,
+the page choosing a depth again, and the action defaulting one.
+
+**Not observable on dev**, and said rather than papered over: every tier and
+the maximum are 1 there, so each agent's answer is what it was. The proof is
+the test, with the maximum raised.
+
+### A54 - the contact digest failed every morning without writing a line - `EN COURS`
+
+**Cost impact: None.** A few log lines, on failure only.
+
+**What failed was the silence, not the design.** Visquis decided on 26
+September that the digest stays: no alert. The digest had never left dev,
+because `CONTACT_INBOX_EMAIL` was unset, and **fourteen mornings in a row**
+(12 to 25 September, 07:00:15 UTC each time, read from
+`/health/queues/core/failed`) the job threw "CONTACT_INBOX_EMAIL is not set"
+and BullMQ kept it as a failed job. BullMQ logs nothing when a job fails, and
+no processor listened, so the dev log held nothing at all.
+
+**A failed job writes an error line (extends A18).** A18 made queue state
+readable on request, behind ADMIN_GLOBAL. This makes a failure announce itself.
+`LoudWorkerHost` (`libs/common/src/queue/`) is the base class of all five
+processors: its `@OnWorkerEvent('failed')` handler writes "Queue job failed" at
+`error` with the queue, job name, id, attempt and error message. **The payload
+is left out on purpose**: it can carry personal data, which is why A18's
+payload route is ADMIN_GLOBAL.
+
+**The API refuses to start without `CONTACT_INBOX_EMAIL`**, instead of failing
+once a day at 07:00. It was `z.email().optional()`. An empty value was already
+refused; only an absent one passed. `.env.example` now carries a reserved,
+undeliverable address (`inbox@example.test`). Dev has had the variable since
+infra #66. **prd will need it on its first deploy**, which belongs on ADR-005's
+bootstrap list.
+
+**Proof, red first:**
+
+- `failed-jobs-are-logged.spec.ts` (the four API processors) and
+  `email-processor-is-loud.spec.ts` (the one in `libs/common`) replay
+  `BullExplorer`'s own discovery (`MetadataScanner.scanFromPrototype` and the
+  bullmq metadata accessor) over the real processor classes. Against develop,
+  none had a "failed" handler. There is no local Redis, so this is how the
+  handler's registration is shown rather than asserted: it is the explorer's
+  code path, run. A guard reads the source for every `@Processor(` class and
+  requires `LoudWorkerHost`, so a sixth processor is covered the day it is
+  written;
+- `contact-inbox-required.spec.ts`: absent is refused, naming the variable.
+  Against develop that test failed, and the empty case already passed (kept as
+  a pin);
+- mutations, each watched failing on the assertion meant: the handler removed
+  (every processor fails), `warn` instead of `error` (the call count), the
+  payload added (the exact fields), the message dropped (the fields), a second
+  line (the call count), the message text changed (the message), and a
+  processor back on `WorkerHost` (its discovery, and the guard). A separate "no
+  payload" assertion was removed, because the exact fields and the single call
+  already refuse it and it could never fail alone.
+
+**The sixteen dead jobs: read, recorded, then cleared (Visquis, 26
+September: clear them all, after reading the two nobody had explained).**
+Fourteen are the digest (above). The other two, read in full through
+`/health/queues/core/failed` on 26 September before anything was deleted:
+
+| Job                           | Repeat slot (UTC)   | Scheduled at             | Failed at                | Attempts |
+| ----------------------------- | ------------------- | ------------------------ | ------------------------ | -------- |
+| `core.cleanup-expired-tokens` | 2026-02-26 03:00:00 | 2026-02-25 18:44:37.653Z | 2026-02-26 03:00:15.442Z | 3        |
+| `core.purge-deleted-users`    | 2026-02-26 04:00:00 | 2026-02-25 18:44:37.751Z | 2026-02-26 04:00:15.242Z | 3        |
+
+Both failed at the first Prisma call (`refreshToken.deleteMany`,
+`user.deleteMany`) with **"User was denied access on the database
+`kambriq_core`"** - Prisma's refusal when the connecting role may not use that
+database - with empty payloads. The trace shows the purge as a single
+`deleteMany`, the code before the S3-aware purge: the original build.
+
+**What they were, as far as the evidence reaches.** The API first started on
+25 February at 18:44 and scheduled both crons; at their first slot, that night,
+its database role could not use `kambriq_core`; and **neither job has failed
+since**: no later failure of either name is in the failed set, which keeps up
+to 200. That is a one-night condition on
+dev's first night - the register's `B3` places the seed's single run on 26
+February, the same day. **What cannot be shown any more, and is not claimed:**
+why the role was refused. CloudWatch keeps seven days, and the databases were
+dropped and rebuilt for `S2` (`kambriq_core`'s first migration now reads 4
+September 2026), so nothing from February remains outside these two Redis
+entries. The cause is inferred, not proven: the role or its grants were not in
+place yet when the API began scheduling.
+
+**Cleared, 26 September, shortly before 12:29 UTC**, from inside the running API task (ECS
+exec, BullMQ `Queue('core').clean(0, 1000, 'failed')`): the failed set held
+exactly the sixteen read above (fourteen `core.contact-digest`, one of each
+February job); `removed 16`; the failed count then read **0**, confirmed
+through `/health/queues` (`core: 0`). A full copy of the sixteen as read was
+kept outside the repository before the deletion.
+
+**Not touched:** the one failed job on `kamnet`, `kamnet.definitely-unknown-job`
+of 4 September (payload `{probe}`) - a deliberate probe of the kind S9 and A18
+used to show an unknown job lands on the failed set. It is not one of the
+sixteen, so it stays.
+
+**Proven on dev, 26 September:** the API at `sha-603e6ab` (read from
+`/api/v1/health/version`) logged "Nest application successfully started" at
+10:36:48 UTC with no configuration error, so the variable now required is
+present where it runs.
+
+**Pending:** the first real failed job seen as a line in the dev log. That needs
+a failure, and none will be manufactured on dev.
+
+### I43 follow-up - the public certificate verdict reads in the visitor's language - `PROUVE`
+
+**Cost impact: None.**
+
+`/verify-certificate/[n]` is read by strangers: a buyer checking an agent before
+ever meeting KAMBRIQ. Every verdict (valid, revoked, expired, not recognised,
+cannot verify) was French only, and the page was on I43's hardcoded-copy debt
+list. It now reads from `verifyCertificate`, fr and en, with dates in the
+reader's locale. The number the visitor asked about is still shown back to
+them, set apart in monospace, through a `t.rich` tag. `next-intl-mock` gains
+real tag rendering for `t.rich` to test that. **24 debt entries remain.**
+
+**The verdict logic is untouched** (`lib/certificate-verdict.ts`): the
+translation changes the words, never which verdict is given. Both existing
+specs pass unchanged in French.
+
+**Proof, red first.** `page-in-english.spec.tsx` renders each of the five
+verdicts in English and requires no French word in the page; against develop's
+page, all five fail. Two more tests require the requested number in its own
+element, as pins. Mutations: the number no longer set apart fails both pins;
+the home link hardcoded back in French fails all five.
+
+**The English copy is mine, for Visquis:** `verifyCertificate.*`. The French
+keeps today's wording.
+
+**Proven on dev, 26 September, in Firefox, against web `sha-06cf797`:**
+`/en/verify-certificate/KCA-20260925-1VZK` reads "Valid certificate - This KCA
+certificate was issued by KAMBRIQ and is currently valid. KCA number … Issued on
+25 Sept 2026 Valid until 25 Sept 2028 Back to home";
+`/en/verify-certificate/KCA-00000000-FAKE` reads "Certificate not recognised - No
+certificate issued by KAMBRIQ matches the number KCA-00000000-FAKE"; and the
+French page for the same real number is unchanged ("Certificat valide … Délivré
+le 25 sept. 2026").
+
+### confirmRemainingPayment - the balance on the ledger - `EN COURS`
+
+**Cost impact: None.** Not started; this entry is why.
+
+G1's model is that a total is a sum over ledger rows. Step 4
+(`confirmRemainingPayment`) stamps `remainingPaymentConfirmedAt` on the
+reservation, with no payment behind it. The shape that closes it is G1's own:
+one `Payment` for the balance, its instalments looping through
+`PARTIELLEMENT_RECU`, and step 4 refusing unless that payment is `VALIDE`, as
+the deposit step already does.
+
+**Stopped before building, for two decisions that are not mine:**
+
+- **the amount.** The balance's `amountDue` is the price minus the deposit, and
+  what `Land.price` means is G19, `A DECIDER`: a total to the API, a price per
+  m² to the web. Writing `price - deposit` would decide G19 by implementation;
+- **telling a deposit from a balance.** `Payment` has no field saying which it
+  is. The deposit gate asks for "a payment in `VALIDE`" on the reservation, so a
+  validated balance payment would satisfy it. A purpose column is a schema
+  change to the ledger G1 designed.
+
+**Historical rows are not the obstacle.** Counted on dev through the admin API,
+26 September: 200 reservations (191 `CANCELLED`, 8 `PENDING`, 1 `CONFIRMED`),
+**0** with `remainingPaymentConfirmedAt`, 0 with `documentsReceivedAt`. Nothing
+recorded outside the ledger would need migrating.
+
+**G20, 26 September - as far as the amount, then stopped as asked.**
+
+**The amount.** `balanceFor(totalPrice)` in `libs/common/src/payments/deposit.ts`,
+beside `depositFor`: the total minus the deposit, so the two add up to the total
+exactly whatever the deposit's rounding. The diagnosis parcel: 3 400 000 gives
+3 230 000. Red first (the function did not exist), and a balance computed with
+its own rounding (`Math.floor`) fails the "adds up to the total" test alone.
+
+**The purpose field - the change, written out, not made:**
+
+- **Column:** `enum PaymentPurpose { ACOMPTE SOLDE }` in `prisma/lands`, and
+  `Payment.purpose PaymentPurpose NOT NULL`.
+- **Migration:** add the column with `DEFAULT 'ACOMPTE'`, which backfills the
+  existing rows truthfully - **all 38 payments on dev are deposits**, each with
+  `amountDue` equal to its reservation's `downPaymentAmount` (checked through the
+  admin API, 26 September) - then `DROP DEFAULT`, so no new payment can be
+  created without stating what it pays.
+- **Constraint:** a partial unique index, one live payment per reservation and
+  purpose (`UNIQUE (reservationId, purpose) WHERE state NOT IN ('ANNULE',
+'REJETE', 'EXPIRE')`), so a second deposit or a second balance cannot open
+  beside a live one. Whether the data allows it needs checking first:
+  cancelled payments share reservations today.
+- **The triggers:** **none is touched, and the brief's premise needs a
+  correction here.** `Payment` itself carries no trigger - only CHECKs on the
+  reference format and the currency. The append-only triggers are on
+  `PaymentReceipt`, `PaymentTransition` and `PaymentReminder`. The migration
+  writes no receipt, transition or reminder and changes none, so the ledger's
+  guarantee is not crossed.
+- **Code:** `confirmDownPayment` asks for a `VALIDE` payment **with purpose
+  `ACOMPTE`**; `confirmRemainingPayment` asks for a `VALIDE` payment with
+  purpose `SOLDE`; `createPayment` takes the purpose, and a `SOLDE` payment's
+  `amountDue` is `balanceFor(land.totalPrice)`.
+- **A second decision it carries:** whether the balance is the total minus the
+  deposit **due** (what `balanceFor` computes) or minus what was actually
+  received on the deposit - they differ only if a deposit is validated with a
+  different amount, which the ledger allows through a corrective line.
+
+**Both decisions settled by Visquis, 26 September, and built.**
+
+- **The balance is the total minus what was RECEIVED on the deposit**, summed
+  over its ledger rows - not minus the deposit due. His reasons: G1 already
+  says the total is a sum over the ledger and nothing else;
+  `PARTIELLEMENT_RECU` exists because payments arrive short; and the client
+  keeps predictability because the page announces what was expected AND shows
+  what is still owed. **One refinement of mine, argued before building:**
+  received on the DEPOSIT, not on every payment of the reservation - a third
+  purpose (a fee) would otherwise count against the land's price.
+- **The purpose is an enum**, `PaymentPurpose { ACOMPTE SOLDE }`, required. The
+  migration adds it with `DEFAULT 'ACOMPTE'`, which backfills the existing rows
+  truthfully (all 38 on dev are deposits), then drops the default. A partial
+  unique index, `Payment_one_live_per_purpose`, allows one live payment per
+  reservation and purpose; the three exits where money never arrived free the
+  slot. Checked first on dev: 9 live payments, never two on one reservation.
+
+**What changed in the code:**
+
+- `createPayment` requires the purpose. The client's request stays one button
+  with nothing on the wire: **the server decides which payment is due** - the
+  deposit first; the balance once the deposit is `VALIDE` and the documents are
+  received (`BadRequest` before that). A live payment of the purpose due is
+  returned, never duplicated. **This fixed a defect the new purpose exposed:**
+  the request returned any live payment it found, so a client asking for the
+  balance would have been handed back the settled deposit.
+- The balance's `amountDue` is `totalPrice - receipts on the deposit payment`.
+- Step 2 asks the ledger for a `VALIDE` **`ACOMPTE`**, and step 4 for a
+  `VALIDE` **`SOLDE`** (it asked nothing before). One helper,
+  `assertPaymentIsValidated(reservationId, purpose, refusal)`.
+- The client's purchase detail returns `money`, read from the ledger:
+  `totalPrice`, `depositDue`, `depositReceived`, `balanceExpected`,
+  `balanceOwed`. The journey's balance line shows the expected balance until
+  the deposit is confirmed, then what is actually owed. At step 4 a balance
+  card offers the reference, and when a short deposit made the owed figure
+  differ from the announced one, it shows both.
+
+**Proof, red first:**
+
+- `balance-on-ledger.spec.ts` (6): the deposit created as the deposit; the
+  balance created at 3 230 000 on the diagnosis parcel; **160 000 received on a
+  170 000 deposit gives a balance of 3 240 000**; receipts read from the
+  deposit payment only; nothing before the documents; a live balance returned.
+  Mutations: the balance minus the deposit DUE fails the short-deposit test;
+  receipts from every payment fails the "deposit only" test;
+- `balance-gate.spec.ts` (8): a validated balance does not confirm a deposit;
+  step 4 refuses without a validated balance, even beside a validated deposit,
+  and refuses `PARTIELLEMENT_RECU`; the page's `money` for a full, a short and
+  a part-paid balance. Red: three gate tests failed against the old gates; a
+  mutation of `balanceOwed` to use the deposit due fails the short case;
+- `payment-purpose.dbspec.ts` (4), against the real migrations: a payment with
+  no purpose is refused (`23502`), a second live deposit is refused by
+  `Payment_one_live_per_purpose`, a balance beside a live deposit and a fresh
+  deposit after an `ANNULE` are accepted. All four fail without the migration;
+  keeping the default, dropping the index's `WHERE`, and dropping the index each
+  fail their own test;
+- `balance-card.spec.tsx` (3): the card's title, and the announced balance
+  shown only when it differs; two mutations, each failing alone.
+
+Three older tests encoded the old behaviour and were updated to the decision:
+the fixtures now carry a purpose, the convention test reads the shared ledger
+helper, and "a settled payment blocks a new one" became "a settled deposit
+never opens a second deposit".
+
+**Found, not changed:** the back-office payment screens do not show a payment's
+purpose yet; the admin validating a payment reads its reference and amount.
+
+**Pending:** the migration on dev, read back: the 38 payments carry `ACOMPTE`.
+No reservation on dev is past step 3, so a real balance cannot be exercised
+there until one is.
+
+**Read on dev, 26 September, on `sha-1489db8`:** migration `20260926210000_g20_payment_purpose` finished at 15:28:39 UTC; `Payment.purpose` reads `ACOMPTE` on **all 38** rows; the column has **no default** (dropped, as designed). The Bertoua purchase answers `money` with `balanceExpected` 3 230 000 while its deposit is unconfirmed. **Still pending:** a balance created and settled on dev - no reservation there is past step 3.
+
+### Payment purpose in back office - `PROUVE`
+
+**Cost impact: None.**
+
+G20 gave every payment a purpose, `ACOMPTE` or `SOLDE`, and the balance gate
+reads it; but the back office, where a person validates one, showed neither.
+A deposit and a balance of one reservation carry the same client, the same
+parcel and close amounts - exactly the confusion G20 exists to prevent, moved
+to the one place where the decision is taken. Found during the seventh round's
+G20 proof, which had to read the column from the database.
+
+- **API:** the four back-office reads return `purpose` - the payment list, the
+  payment detail, the request queue and the overdue queue (no screen reads the
+  last one yet; it carries it so the first one does not have to come back).
+- **Web:** `PaymentPurposeLabel` ("Acompte" / "Solde", the back office's French,
+  like the state badge), in its own "Nature" column on the list and the queue,
+  and beside the state badge on the detail.
+
+**Proof, red first:** `purpose-in-back-office.spec.ts` (API, three reads) and a
+new test in `dunning.spec.ts` (the overdue queue) failed to compile - the field
+did not exist on any of the four. `payments-purpose-in-back-office.spec.tsx` (web, beside the `payments-admin` folder: `payment-format.spec.ts` rightly scans every file inside it for a written currency, and a fixture carries one) failed
+on all three screens, then passed. A mutation swapping the two labels fails the
+list test.
+
+**API proven on dev, 26 September** (signed in as the seeded admin, image
+`sha-e77abc4`): the list answers 38 payments, the request queue 6, the overdue
+queue 0, and the detail - each row carrying `purpose`, all `ACOMPTE`.
+
+**Pending:** the screens read on dev with a balance beside a deposit. Dev holds
+no balance payment yet (none of the 244 reservations has reached one), and
+signing in to the back office in a browser on dev is not mine to do; the three
+screens are covered by `payments-purpose-in-back-office.spec.tsx`.
+
+**Row restored, 26 September.** #225 reached develop with this entry but
+without its row in the table: its rebase over #224 conflicted in the table, and
+the register resolver used by the landing script re-added only rows whose id is
+written in backticks. The resolver now matches both forms and refuses to finish
+if the branch's row is gone. No other row of this round was lost (checked
+against each merge).
+
+**Proven in the back office, 27 September (eleventh round),** signed in on dev
+as the seeded test administrator under the standing authorization's new
+section, through a Playwright session (no credential typed or printed):
+
+- **the payment list:** `KBQ-2609-8ZEEH-Z` **Acompte** · Validé · 445 000 and
+  `KBQ-2609-KZBM9-J` **Solde** · Validé · 8 455 000 - reservation
+  `474807f6-…`, side by side, in the "Nature" column;
+- **the details:** each header carries its badge beside the state, Solde ·
+  Validé on the balance, Acompte · Validé on the deposit;
+- **the request queue:** the "Nature" column on its six live requests, all
+  **Acompte**. It cannot show a Solde today: the only balance on dev is
+  validated, and the queue lists requests still waiting.
+
+Two observations from those screens, not acted on: five deposit requests from
+4 September still wait in the queue under journey reservations cancelled before
+G21 (a cancellation now annuls them; these predate it), and annulled payments
+show their whole amount under "Reste", as if still owed.
+
+### Commission integer money - `PROUVE`
+
+**Cost impact: None.**
+
+The last of the three pre-existing monetary `Float` columns. **The quarantine
+list in `no-float-money.spec.ts` is now empty**, and pinned at zero in both
+directions: a new monetary Float fails, and so does a new entry that is not
+argued for.
+
+**Recounted before starting:** **one API service**, `commissions.service.ts`:
+`create` writes the amount from an admin DTO that already accepts only a whole
+positive number (`z.number().int().positive()`), and `getSummary` sums it in
+three aggregates. The seed writes four; the web only displays. The quarantine's
+stated reason ("moves with `Land.totalPrice`, which it is derived from") no
+longer held once the total was converted, and the amount is not computed from
+it in code - it is entered by an administrator.
+
+- **The migration:** `ALTER ... TYPE BIGINT USING ROUND(...)::BIGINT`.
+- `pv` and `tpc` stay `Float`: a coefficient and a rate, not money.
+- The summary's empty sums are `0n` instead of `0`; the envelope sends both as
+  the number 0.
+
+**Proof, red first:** the spec without the line failed naming
+`kamnet/schema.prisma:150 amount Float`; after the migration it passes with the
+list pinned at zero. API 1 112, common 376, database 130 green.
+
+**Read on dev before the migration, 26 September:** 6 commissions, **0
+fractional**, sum 2 270 000, largest 750 000, column `double precision`.
+
+**Proven on dev after `f5ee3b5` deployed** (migration finished 20:07 UTC):
+column `bigint`, 6 commissions, sum 2 270 000, largest 750 000 - unchanged.
+
+### Deposit integer money - `PROUVE`
+
+**Cost impact: None.**
+
+`LandReservation.downPaymentAmount` was the second of three pre-existing
+monetary `Float` columns quarantined in `no-float-money.spec.ts`.
+
+**Recounted before starting, as asked:** the arithmetic is in **two API
+services** - `reservations.service.ts` writes it from `depositFor(totalPrice)`
+and reads it into the client's money summary; `payments.service.ts` reads it
+into a deposit payment's amount due. The web only displays it (four places,
+none computing). No email and no queue job carries it, so no path serialises it
+outside the response envelope, which already turns a BigInt into an exact number.
+
+- **G1 is kept, not contradicted.** G1 deprecated the column and deliberately
+  did not drop it; the quarantine note said it "must survive this PR unchanged",
+  meaning the G1 PR. It is still deprecated and still kept; only its type moves.
+- **The migration** is one `ALTER ... TYPE BIGINT USING ROUND(...)::BIGINT` - the
+  same rounding the G1 backfill applied when it read the column, so a deposit
+  payment backfilled then and one created now still agree.
+- **Two `Math.round` calls disappear** from the API: the amount is the column.
+  The unit test that fed a fractional deposit (400000.6) now feeds 400 001 as
+  stored.
+
+**Proof, red first:** `no-float-money.spec.ts` without the line failed naming
+`lands/schema.prisma:216 downPaymentAmount Float`; after the migration it passes
+with the list pinned at one. API suite 1 111 green (the one local failure is the
+`.env` NODE_ENV test), database suite 130 green against the real migrations.
+
+**Read on dev before the migration, 26 September:** 238 reservations, 238 with a
+deposit, **0 fractional**, sum 97 250 000, column `double precision`.
+
+**Proven on dev after `3956c16` deployed** (migration finished 19:07 UTC):
+column `bigint`; 244 reservations, 244 with a deposit, 0 fractional, sum
+99 920 000. The six rows since the baseline are the journeys' reservations at
+445 000 each: 97 250 000 + 6 × 445 000 = 99 920 000, so every earlier deposit
+kept its value. Two of the six were written after the migration, by the new
+code, into the `bigint` column.
+
+### Signed-in price smoke - `PROUVE`
+
+**Cost impact: None.**
+
+**The gap, named in the seventh round's report:** `Land price integer money` was
+proven by a database read and by the journeys passing; "a direct read of a land
+from the API was not taken: every lands route needs a session".
+
+**Closed inside the delivery journeys** (`apps/api-e2e`), which already sign in
+as the seeded agent and admin on every develop deploy:
+
+- **Journey 6 (new):** the agent lists parcels and opens one. Every listed
+  `totalPrice`, and the detail's, must be a whole JSON number in the exact range
+  - not a string (what the envelope makes of a BigInt past that range), not a
+    fraction (what a Float lets through). And the detail's `pricePerM2` must equal
+    `round(totalPrice / sizeM2)`: Postgres generates that column from the stored
+    total, so the two agree only if the API sent the stored figure unchanged.
+- **Journey 4 (extended):** the new client reads their own purchase: the
+  deposit (`downPaymentAmount`, integer since this round) and the money summary
+  are exact, the summary's deposit is the column, and deposit plus expected
+  balance equals the total.
+- **The check itself is tested:** `exactMoney` in `support.ts`, with a unit test
+  under `src/unit/` (it runs in `Quality` on every pull request, not only after
+  deploy). Red first: the test failed before the helper existed; a mutation
+  that checks only `typeof` fails two of its four cases.
+
+**Run against dev on 26 September** (journey 6 alone, read-only): green.
+
+**Proven:** the delivery journeys on `6193d29` (the merge of this change),
+under the sha gate, **29 passed of 29** - one more than before, journey 6 - with
+journey 4's new money checks inside.
+
+### Land price integer money - `PROUVE`
+
+**Cost impact: None.**
+
+G1's rule is that money is an integer in its indivisible unit, and
+`no-float-money.spec.ts` quarantined `Land.price` because converting it meant
+"51 call sites" and a response serialiser. **Counted again on 26 September,
+after G19: the arithmetic lives in three API services** (price history,
+deposit, balance and the client's money summary); the web only displays the
+figure.
+
+- **BigInt, not `Int`.** An `integer` would cap a parcel at 2 147 483 647 XAF
+  (about 3.3 million euros), a ceiling a real catalogue could meet. `BigInt` is
+  G1's type.
+- **The migration** drops the generated `pricePerM2` (Postgres will not change
+  the type of a column a generated column reads), converts `totalPrice` with
+  `ROUND(...)::BIGINT`, and re-creates `pricePerM2` from the integer total with
+  the same result. `previousTotalPrice` and `newTotalPrice` move with it.
+- **The serialiser is one point:** `TransformResponseInterceptor` walks plain
+  objects and arrays and turns a BigInt into a number when it is a safe integer,
+  a string otherwise - never rounded, never a `JSON.stringify` crash. The web
+  keeps receiving numbers and needed no change.
+- **The quarantine drops to two** (`downPaymentAmount`, `KamnetCommission.amount`).
+
+**Proof, red first:** `no-float-money.spec.ts` with the three entries removed
+failed naming exactly the three columns, then passed after the migration.
+`bigint-response.spec.ts`: a BigInt total serialises as a number, nested ones
+too, one past the exact range leaves as a string, dates untouched - three of
+four failed before the interceptor changed; a mutation that always converts to
+a number fails the "never rounds" test. The API suite (1 103) and the database
+suite (130, including G19's generated-column tests against the new column) are
+green.
+
+**Proven on dev, 26 September (after `e97fb0d` deployed),** read-only through
+ECS exec: migration `20260926230000_total_price_integer_money` finished at
+16:47 UTC; `Land.totalPrice`, `LandPriceHistory.previousTotalPrice` and
+`newTotalPrice` are `bigint`; `pricePerM2` is still a generated `integer`. The
+seeded lands keep their figures: 8 000 000 over 300 m2 gives 26 667, 12 500 000
+over 450 m2 gives 27 778, 15 000 000 over 250 m2 gives 60 000. The E2E and
+delivery journeys on that deploy passed, and they go through the API routes
+that now serialise a BigInt. A direct read of a land from the API was not
+taken: every lands route needs a session.
+
+### G19 - a 170 000 deposit beside a 1 631 830 000 balance - `PROUVE`
+
+**Cost impact: None.** Diagnosis only; nothing was changed.
+
+**The answer: the computation, not the seed, and not a factor of a hundred.**
+One column carries two units. `Land.price` is read as the parcel's **total** by
+the API and the seed, and as a **price per m²** by the web.
+
+Measured on dev, 26 September, on the parcel the gap was seen on
+(`Parcelle Bertoua Nkolbikon`, reservation `380d2626-…`):
+
+| Value              | Where it comes from                                                          | Result            |
+| ------------------ | ---------------------------------------------------------------------------- | ----------------- |
+| `price`            | `prisma/seed.ts`, `price: 3400000`                                           | 3 400 000         |
+| `sizeM2`           | `prisma/seed.ts`, `sizeM2: 480`                                              | 480               |
+| deposit            | API, `reservations.service.ts:106`, `price × DOWN_PAYMENT_PERCENT / 100` (5) | **170 000**       |
+| "total" on the web | `purchase-detail-content.tsx:48`, `price × sizeM2`                           | 1 632 000 000     |
+| balance shown      | the web's total minus the deposit                                            | **1 631 830 000** |
+
+The ratio between the two readings is exactly the surface, 480, which is also
+why it looked "roughly five hundredfold".
+
+**Who reads which unit:**
+
+- **total** - the Prisma schema ("Selling price in XAF"), the create and update
+  DTOs ("In XAF", an integer), the seed (3.4 million for 480 m² in Bertoua is a
+  total, about 7 000 per m²), the deposit, and so the payment the ledger is
+  asked for (`payments.service.ts:342` takes `downPaymentAmount`);
+- **per m²** - five web places: the app land card (`…/m²`), the land info panel
+  ("price" `…/m²` and "total price" `price × sizeM2`), the reservation card
+  (`F/m²`), the reservation summary (`price × sizeM2`), and the client purchase
+  page (`price × sizeM2`). Four translation keys say "Prix / m²";
+- **ambiguous** - the back-office form label is just "Prix", so the person
+  typing a price is not told which one.
+
+**The Float lead does not hold.** `downPaymentAmount` and `Land.price` are
+`Float`, and XAF has no minor unit, but every value in this chain is an integer
+and nothing divides or multiplies by 100. The Float quarantine is still a real
+debt (`no-float-money.spec.ts` lists it); it is not this gap.
+
+**Money that moved is consistent; what the customer reads is not.** The
+payment a client is asked for is the API's 5 % of `price`, and the ledger holds
+that. The balance on the purchase page is display only, computed in the
+browser, and nothing is charged from it. But the app's land card and info panel
+show the total as a price per m², 480 times too high on this parcel, and the
+purchase page promises a balance nobody will ever be asked for.
+
+**Why it is not closed by C16, and why it is a decision.** If the real catalogue
+is loaded with totals, the web is wrong on every parcel exactly as here. If it
+is loaded with prices per m², which is how land is often quoted, the web becomes
+right and **the API becomes wrong**: the deposit would be 5 % of a per-m² price,
+480 times too small on a parcel like this one, and that is the amount the
+ledger would ask a real client to pay. Either way one side is wrong until the
+unit is chosen. **The unit is Visquis's call, before C16 loads anything**:
+total or per m², then one reading everywhere, the back-office label saying
+which, and a test that multiplies nothing the column does not mean.
+
+**Decided by Visquis, 26 September: both figures, each in its own column.**
+Applied with **one source of truth and the other derived**, not two stored
+columns with a CHECK. The brief offered both; the choice and its reason:
+
+- `Land.totalPrice` (renamed from `price`) is the source of truth. It is the
+  contractual amount, what the deposit is computed from, what the ledger asks
+  for, and what the price history records (`previousTotalPrice`,
+  `newTotalPrice`, renamed with it).
+- `Land.pricePerM2` is a Postgres `GENERATED ALWAYS ... STORED` column,
+  `ROUND(totalPrice / NULLIF(sizeM2, 0))::integer`: whole francs, never
+  written by anyone, recomputed by the database on every change to either
+  input. A direct write is refused (`428C9`).
+- **Why not both stored with a CHECK:** the surface is fractional (`sizeM2` is
+  a Float) and XAF amounts are whole francs, so an integer price per m2 times a
+  fractional surface cannot in general equal an integer total. The constraint
+  would either refuse honest rows or need a tolerance - and a tolerance is the
+  ambiguity this chantier removes.
+- **Integer, not Float:** the price per m2 is money, and money is never a
+  floating-point type. A `BigInt` would break the JSON serialisation of every
+  land response, so it is a Postgres `integer`; a value past 2 147 483 647 per
+  m2 would fail loudly on write. `totalPrice` stays in the Float quarantine,
+  under its new name: converting it is still its own chantier.
+
+**Nothing multiplies by the surface anymore.** The five web places now read the
+field that says what it is. The deposit has one home, `depositFor(totalPrice)`
+in `libs/common`, used by the API that charges it and the page that estimates
+it. The back-office form and table say "Prix total" / "Total price" (copy for
+Visquis).
+
+**Correction to this entry's diagnosis: there were six web places, not five.**
+The land detail page estimated the deposit as `price x sizeM2 x 5 %`
+(`land-detail-content.tsx:48`), so it showed a deposit 480 times too large on
+the same parcel. Four of the six multiplied by the surface; the land card and
+the reservation card printed the total as a price per m2 without multiplying.
+
+**Proof, red first:**
+
+- `land-price-units.dbspec.ts`, against the real migrations: 3 400 000 over
+  480 m2 reads `pricePerM2` 7 083; changing the total to 4 800 000 reads 10 000;
+  changing the surface to 500 reads 6 800; a direct UPDATE of `pricePerM2` is
+  refused. Against develop's migrations all four fail (the column does not
+  exist). The mutation that matters, the option refused in the brief (a plain
+  stored column, nothing enforcing the relation), fails all four;
+- `deposit-for.spec.ts`: the diagnosis parcel gives **170 000**, not
+  1 631 830 000 and not 480 times less. A divisor of 10 instead of 100 fails
+  both tests;
+- `no-price-times-surface.spec.ts` reads the web, the API, `libs/common` and
+  the seed for a price multiplied by `sizeM2`. Against develop it names the
+  four multiplying sites; now it names none.
+
+**Proven on dev, 26 September, on `sha-7507331`** (the migration ran with the
+deploy). `GET /lands/client/purchases/380d2626-…` as the G8 throwaway client:
+`Parcelle Bertoua Nkolbikon`, `totalPrice` 3 400 000, `pricePerM2` **7 083**
+(generated), `sizeM2` 480, `downPaymentAmount` **170 000**, and no `price` field
+any more. The purchase page, read in Firefox, says "Amount due: 170 000 XAF",
+"Deposit of 170 000" and **"3 230 000 FCFA remaining"**, where it said
+1 631 830 000.
+
+### A55 - did a password in a URL reach any log? - `PROUVE`
+
+**Cost impact: None.** Read-only.
+
+**The question.** Before #214, a tap before the page's scripts loaded submitted
+six forms as a native GET, so `/fr/login?email=...&password=...` (and the same
+on register, reactivate, reset-password and two account forms) could be sent
+by a real visitor. Dev is public and the ten KAMNET agents have real accounts on
+it. Visquis, 26 September: search the logs now, before retention erases them.
+
+**What was searched, 26 September ~15:10 UTC.** Every place on dev that could
+record the URL of a web request:
+
+- the load balancer `kambriq-dev-alb`: `access_logs.s3.enabled = false`,
+  `connection_logs.s3.enabled = false`;
+- CloudFront, WAF: none exist on the account for this site;
+- `/ecs/kambriq-dev-web` (7-day retention, oldest event kept 19 September) and
+  `/ecs/kambriq-dev-api` (7 days), Logs Insights over 8 days for
+  `[?&](password|newPassword|currentPassword|confirmPassword)=`: **0 matches**
+  in 4 829 and 229 074 records.
+
+**The zero is not a clean bill by itself, and the control says why.** My own A33
+reproduction sent exactly such requests to dev that afternoon
+(`/fr/login?email=nobody@example.com&password=wrong-password-123`, several
+between about 13:00 and 14:05 UTC). **None of them is in the web log either.**
+The web container logs its start and its errors, never a request line, and the
+API never received those GETs. So the answer is structural rather than a
+search result: **no server log on dev records the URL of a web request, so none
+can hold a password sent that way** - not in the seven days kept, and not
+before. Retention was never the limit; the window of the defect (since the
+sign-in page existed, 16 April) is not covered by any log because nothing
+logged it.
+
+**The other channels, measured:**
+
+- **referer:** the site sends `Referrer-Policy: strict-origin-when-cross-origin`
+  (explicit since 19 April, and the browsers' own default before that). The
+  sign-in page's only third-party request, `api.fontshare.com`, carries
+  `referer: https://dev.kambriq.com/` - the origin, never the path or the query;
+- **in transit:** HTTPS encrypts the query string;
+- **what remains, and cannot be checked from here:** the visitor's own browser
+  history and address-bar suggestions, on their own device. That matters only
+  on a shared device.
+
+**The consequence is Visquis's.** No credential appears anywhere a server
+wrote. Whether to ask the ten agents to change their passwords anyway - for the
+shared-device case - is his decision; nothing was rotated.
+
+**Decision, Visquis, 26 September: rotate nothing.** Nothing was written
+server-side, so a rotation would protect against nothing and disturb ten
+agents. The control above (test requests with a password in the URL appear
+nowhere) is what settled it. Not to be reopened on the same facts. The hole it
+revealed, no HTTP access log at all, is its own subject: D28.
+
+### H2 follow-up 2 - the bootstrap step reads its tally, not only its exit code - `PROUVE`
+
+**Cost impact: None.**
+
+**The row:** the bootstrap deploy step checks the task's exit code and never
+that its tally line appeared. Same family as A9 (a seed step that seeded
+nothing and exited 0) and A54 (failed jobs that logged nothing): **a step that
+exits zero has declared success, not achieved it.**
+
+`prisma/bootstrap-admins.ts` prints `Kambriq super-admin bootstrap complete:
+<n> created, <n> updated, <n> unchanged` only after its postcondition passed
+(read on dev: `0 created, 0 updated, 2 unchanged`, stream `api/api/<task id>` of
+`/ecs/kambriq-dev-api`).
+
+**Built:**
+
+- `scripts/ci/await-task-tally.sh <task-def> <container> <task-arn> <line>
+[timeout]` - reads the log group and stream prefix **from the task
+  definition** (not assumed), builds `<prefix>/<container>/<task id>`, waits a
+  bounded while for the line, prints it, and fails saying "the task exited 0 but
+  never printed …" when it does not come. A task definition with no awslogs
+  configuration is a failure, not a pass.
+- `deploy-dev.yml`: the bootstrap step calls it after the exit code, with the
+  line above and 90 s; the deploy job checks out `scripts/ci` only (sparse).
+- `ci.yml`: the CI Gate job runs `await-task-tally.test.sh` next to the develop
+  gate's own test, on every pull request.
+- **Infra #67** (applied on dev, 27 September, "0 added, 1 changed"): the
+  webapp deploy role `kambriq-dev-github-actions` gains `ReadOneOffTaskLogs` -
+  `logs:FilterLogEvents` and `logs:GetLogEvents` on the API service's log group
+  only. Before it the simulator answered `implicitDeny`; after, `allowed`. It
+  was applied **before** this change landed: the other order fails every deploy.
+
+**Proof, red first:** `await-task-tally.test.sh` against a fake `aws` - the
+tally found; the stream built from the task definition's prefix; exit 0 with no
+tally refused; no log configuration refused. A mutant that trusts the exit code
+(`exit 0`) fails all four.
+
+**Not in this change:** the migration and the (opt-in) seed steps have the same
+shape; the seed's own proof stays manual (A9, Visquis 27 September).
+
+**Proven on dev, 27 September:** the deploy of `61388d9` ran
+`await-task-tally.sh` after the exit code and printed `Kambriq super-admin
+bootstrap complete: 0 created, 0 updated, 2 unchanged`, read from the task's own
+log stream; the deploy passed.
+
+### Migration step tally - `EN COURS`
+
+**Cost impact: None.**
+
+Same family as A9, A54 and H2 follow-up 2: the "Run Prisma migrations" deploy
+step checked its task's exit code and nothing else, and `run-migrations.js`
+printed each `migrate deploy` command but no line saying it had finished - so
+there was nothing to read.
+
+**Built:** the script prints `Kambriq migrations complete: 4 schemas (core,
+kamnet, kbs, lands)` once, after the last schema, and never when one fails
+(`main` only prints what `runMigrations` returned). It runs only when executed
+(`require.main === module`) and exports its pieces, so it can be tested. The
+deploy step calls `await-task-tally.sh` for that line after the exit code, as
+the bootstrap step does.
+
+**Proof, red first:** `apps/api/src/__test__/deploy/migration-tally.spec.ts` -
+the four schemas migrated and named; no completion line when a schema fails;
+and the step waits for **exactly** the line the script prints, read from both
+files, so they cannot drift. Red before: requiring the script ran it and exited.
+
+**Pending:** one develop deploy whose migration step prints the line it read.
+
+### H2 follow-up 1 / A9 - the seed step, and where its proof was taken - `EN COURS`
+
+**Cost impact: None.** Read-only.
+
+**The ninth round's premise:** `run-migrations.js` never reads `--seed`, so A9
+("the deployment's seed step has never seeded anything") is contradicted by the
+code. **Checked: the defect was real and was fixed.** `95b4e69` - _fix(ci): make
+the seed step actually seed (a9) (#116)_, 14 September - replaced
+`node prisma/run-migrations.js --seed` with
+`npx tsx --tsconfig tsconfig.base.json prisma/seed.ts` in `deploy-dev.yml`; the
+bootstrap step's comment records the same history. `--seed` appears nowhere in
+the repository today. The `H2` follow-up row simply predated the fix.
+
+**Of the two readings asked for, the first is true:** the wiring did not exist
+and was not lost - it was built by #116 - and **A9's proof was taken on a manual
+run**: its commit message says "proven by running the corrected command as a
+one-off task against dev" (exit 0, rows restored, 37 payment-carrying
+reservations kept). The deployment step itself has never been exercised with
+`run_seed=true`.
+
+**Why the deployment proof is not taken here:** it means a deploy with
+`run_seed=true`, and the seed clears the seeded parcels' reservations that carry
+no payment. On 26 September Visquis refused a seed run for I19 on exactly that
+ground ("we do not break a proof for three rows"). **Pending Visquis:** a go for
+one deploy with `run_seed=true` (the journeys' reservations and G8's, which
+carries payments, would survive; the payment-less ones on seeded parcels would
+not), or a decision that the manual proof stands.
+
+### G4 follow-up - two DTOs named alike, and nothing keeping them apart - `PROUVE`
+
+**Cost impact: None.**
+
+**Tracker correction, 27 September:** the row said `GetUploadUrlDto` is declared
+twice and the API warns on every boot. Both were renamed on 14 September by
+#119 (A15, `ccafc87`): `GetLandUploadUrlDto` (a media `category`) and
+`GetCourseUploadUrlDto` (`moduleId`/`lessonId`) - two contracts, deliberately
+not merged. Dev's API log: **0** "Duplicate DTO" lines in 7 days. The proposal
+that put this in the ninth round was mine, made from the row without reading
+the code.
+
+**What was missing was the guard:** `dto-names-unique.spec.ts` reads every
+non-test source file of `apps/api/src` and `libs/common/src` - no module list -
+and fails on any DTO class name declared twice. Planting A15's defect back
+(`GetCourseUploadUrlDto` renamed to `GetLandUploadUrlDto`) fails it.
+
+### I46 - every human path, walked through the pages on every deploy - `EN COURS`
+
+**Cost impact: about a minute of E2E time per deploy** (the four walks ran in
+45 s against dev, the emailed links in 34 s). No infrastructure.
+
+**Decided by Visquis, 27 September:** once A56 lands, walk every human path
+continuously, not opt-in - "an optional walk is not proved on the day it would
+have mattered".
+
+**Built** (`apps/web-e2e/src/human-paths.spec.ts`, Chromium, every deploy):
+
+1. **Registration and email verification:** `/register` filled and submitted,
+   the verification link opened from the delivered email, the success page,
+   its link to the login page, a sign-in.
+2. **Forgotten password:** `/forgot-password`, the reset link from the email,
+   a new password set on `/reset-password`, a sign-in with it.
+3. **KBS enrolment:** `/kbs/enroll` - identity file, engagement, submit - by
+   the same person, signed in.
+4. **The back office taking a deposit from request to validation:** the client
+   asks for the deposit on the purchase page; the administrator (the run's one
+   session) verifies the identity on `/admin/identities/:id`, then on the
+   payment's screen sends instructions (VIR), moves it to announced and to
+   verification, records a receipt with its proof uploaded, moves it to partly
+   received on that receipt, and validates it: the header reads **Acompte**,
+   **Validé**. The reservation is cancelled afterwards (G21 leaves the payment
+   validated).
+
+And `emailed-links.spec.ts` runs on every deploy again - it was opt-in for a day
+because it overran the login limit; A56 budgets it.
+
+**What stays proved through the API, each with its reason:**
+
+| Path                                                                 | Proved by                            | Why not through the page                                                                                          |
+| -------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| A land buyer sending an identity document                            | journeys 4, 7; the walk above        | **no page exists** - I47                                                                                          |
+| An agent reserving a parcel for a client                             | journeys 4, 7 and every walk's setup | not walked yet: the agent's reservation screens are the next walk to add                                          |
+| A candidate's quizzes, the 20-question exam, the certificate's issue | journey 3                            | not walked yet: forty clicks per run on answers the journey already proves; the exam screen deserves its own walk |
+| The client's own balance request and documents upload                | journey 7 (opt-in)                   | the deposit walk covers the same screens; a balance needs documents received first                                |
+| A super administrator's activation                                   | journey 5                            | same pages as the forgotten-password walk, which is walked                                                        |
+| Reading a parcel's price                                             | journeys 4, 6                        | the catalogue pages render it on every E2E public-route check                                                     |
+
+**Proof so far:** the four walks green against dev (`5 passed`, with the
+sessions setup), the emailed links green, the full suite 193 passed with 0 x 429
+(A56). **Pending:** the first develop E2E run with all of them, and its API log
+read for 429 on the auth routes.
+
+### I47 - a land buyer has no page to send an identity document - `A DECIDER`
+
+**Cost impact: None to decide.**
+
+Found building I46's payment walk. `myPayment.waitingIdentity` tells a client
+whose payment waits on identity to "upload your document from your profile".
+The profile page offers an avatar and nothing else; the only identity upload on
+the site is inside the KBS enrolment form. `sendInstructions` refuses unless the
+client's identity is **verified** (v03 4d), so **through the site, the back
+office can never answer a land buyer who is not also a KBS candidate** - the
+request waits forever with a message pointing at a control that is not there.
+The journeys never saw it: they submit the document through the API.
+
+The purchase page's own uploads (`ID_CARD`, `PROOF_OF_ADDRESS`) are reservation
+documents, a different record from `UserProfile.idDocumentUrls` that the
+identity review reads. Whether the fix is an upload on the profile, on the
+payment page, or treating the reservation's `ID_CARD` as the identity document
+is a product decision - Visquis's, with Ulrich for the code.
+
+### A56 - the E2E suite's share of the login limit - `PROUVE`
+
+**Cost impact: None.** The API's limits are untouched.
+
+**The defect** (27 September, found making I45's walks continuous): the API
+limits each auth route per caller - `login` 10 a minute, set by A41 from
+measured per-caller peaks. The E2E suite calls from one runner address, so it
+is one caller. Before the walks it sat just inside the limit (two attempts per
+browser, three browsers); the two emailed-link walks added seven sign-ins, the
+API answered 429 during the run, and the sign-in that came last failed -
+Firefox's own login test. A test that breaks its neighbour by consuming a shared
+resource accuses the wrong culprit.
+
+**Built (#244), without raising the limit:**
+
+- **Reuse:** a `sessions` setup project, which every browser project depends
+  on, signs in **once per role** for the whole run - an API token for the agent
+  and administrator fixtures, and the administrator's browser session (storage
+  state) for the back-office walks. The accounts are the seed's test fixtures.
+- **Budget:** `support/auth-budget.ts` - every auth call a test makes, through
+  a page or through the API, first takes a slot from a sliding window per route,
+  shared by every worker through a lock directory, at 80% of the API's limit for
+  that route. The limits are **read from `auth.controller.ts`** at run time, so
+  they cannot drift from the API.
+- **Guard, inverted:** `auth-budget.spec.ts` reads every spec and setup file and
+  fails on any auth call - an API call to an auth route, a sign-in button, a
+  submit button - without a slot taken just before it. Against the old
+  `auth.spec.ts` it named its three unslotted calls.
+
+**Proof - the absence of 429, not a green run:** the full suite against dev,
+three browsers and two workers as in CI, **with the walks on**
+(`RUN_EMAILED_LINKS=1`), from one address, 09:16-09:18 UTC: 193 passed. The API log
+for that address over the run: 24 auth responses - 14 sign-ins (10 accepted, 4
+wrong-password refusals), 4 verifications, a reset, registrations - and **0
+answered 429, on any route**. Mutations: letting one call too many through the
+window fails the concurrency test; a spec without its slots fails the guard.
+
+### I45 - the front door: two emailed links led nowhere - `PROUVE`
+
+**Cost impact: None.**
+
+**The defect** (found by D28's control, 26-27 September): `users.service.ts`
+emailed `${FRONTEND_URL}/auth/set-password?token=` - the invitation every
+client an agent reserves for receives, and every invited account - and
+`${FRONTEND_URL}/auth/confirm-email-change?token=`. Neither page existed; both
+answered **404** on dev. A new client clicked, and landed on an error.
+
+**Why nobody saw it** (Visquis, 27 September): the journeys take the token out
+of the mailbox and call the API, which was always fine. The exact path a person
+takes is the one path the proofs did not touch - by construction.
+
+**The fix:**
+
+- **Invitation:** links to `/reset-password?token=`, the page that already
+  consumes a `PASSWORD_RESET` token (the invitation's type) and posts it to
+  `POST /auth/reset-password`, which also marks the address verified (R2).
+- **Email change:** a new page, `/account/confirm-email-change`, behind the
+  `/account` prefix because the API binds the token to the account that asked.
+  It posts the token through the existing `confirmEmailChange` action (written,
+  never called by any page), and on success - the API has revoked every
+  session - its button signs out and goes to the login page, for the new
+  address. Its words are `auth.verifyEmail`'s: no new copy.
+- **The login detour keeps the query.** The proxy put only the pathname in
+  `callbackUrl`, so a signed-out person clicking the confirmation came back
+  without its token. It now passes `pathname + search` through the same
+  `safeCallbackUrl`; D28's allowlist writes `callbackUrl=[redacted]`.
+- **The journeys** found the invitation by `set-password?token=`; now both the
+  invitation and the reset email link to `/reset-password`, so
+  `findTokenInMailbox` takes an optional subject, and journey 5 still proves the
+  forgot-password email and not the invitation.
+
+**The guard, inverted:** `emailed-urls-resolve.spec.ts` finds every URL built on
+`FRONTEND_URL` in the API and `libs/common` by reading the source (7 today:
+`verify-email` twice, `reset-password` twice, `mylands/payment/:id` twice, and
+the confirmation), and checks each against the web's `page.tsx` tree - route
+groups dropped, `[id]` as one segment. No list of URLs; an `EXEMPT` map with a
+reason per entry, empty, and itself checked for stale entries.
+
+**Proof, red first:**
+
+- the guard failed naming exactly `/auth/set-password` and
+  `/auth/confirm-email-change`;
+- `proxy.spec.ts` "keeps the query in the callbackUrl" failed without the proxy
+  change;
+- the page's spec (token posted, success, refusal, no token);
+- **in a browser, against dev before the fix** (`apps/web-e2e/src/emailed-links.spec.ts`,
+  Chromium): the invitation's link, read out of the delivered email, answered
+  **404**; the confirmation's link stayed on `/auth/confirm-email-change`
+  instead of reaching the login page.
+
+**First deploy (`33dfe11`), 27 September - the invitation proven, the email
+change not, and develop's E2E red.** In the E2E run after the deploy, **the
+invitation walk passed in Chromium and Firefox**: the link from the delivered
+email, a password set on `/reset-password`, a sign-in. The email-change walk
+failed in every browser, and it found the next defect: after the login detour
+the browser landed on `/en/mylands`, not back on the confirmation. **The login
+never read `callbackUrl`** - `logInAction` signed in with `redirectTo: '/'`, a
+literal, as P3 had written down ("nothing reads it today"); the proxy's
+`callbackUrl`, with or without its query, went nowhere. Every protected link a
+signed-out person follows loses its destination, not only this one. WebKit's
+failures were the rate limit: each walk signs in several times, three browsers
+from one runner address exhausted it, and WebKit's own login test failed with
+them.
+
+**Second change (#240):** the login page passes the URL's `callbackUrl` to
+`logInAction`, which signs in with `redirectTo: safeCallbackUrl(callbackUrl, '/')`
+
+- P3's guard, so only an internal path; `login-callback.spec.ts` (red first:
+  the person was not sent back; four external shapes go home). The emailed-link
+  walks run in Chromium only - one browser proves a link.
+
+**Third change (#241), and proven.** After #240 the email-change walk reached
+the confirmation and failed on the test's own locator (two buttons on the page -
+the app shell has its own) and then on the old address's refusal, which the API
+answers **400** "Email ou mot de passe invalide", not 401. Both corrected in the
+test. **Proven on dev (`sha-61388d9`), 27 September, Chromium, from the
+delivered emails: 2 of 2** - the invitation's link, a password set on
+`/reset-password`, a sign-in; the confirmation's link opened signed out, the
+login page, back to `/account/confirm-email-change?token=…`, confirmed, the
+button signing out, the new address signing in, the old one refused. WebKit's
+own login test is green again (187 passed on `1f09ed7`, the one failure being
+this walk's locator).
+
+**Made opt-in the same day (#242).** On the deploy of `e4fdfd4` the E2E run
+failed again, on sign-ins this time: the API log shows `/auth/login` answering
+**429** during the run (5 between 08:05 and 08:10 UTC). The login is limited to 10
+a minute per visitor, the whole suite signs in from one runner address, and the
+two walks add seven sign-ins - the last sign-in to come failed, Firefox's own
+login test among them. The walks now run with `RUN_EMAILED_LINKS=1`, like
+journey 7; they were proven 2/2 on dev, and `emailed-urls-resolve.spec.ts`
+checks every emailed URL on every pull request. A continuous browser walk costs
+sign-ins the rate limit counts - part of the "Journeys bypass the page"
+decision.
+
+### Journeys bypass the page - `A DECIDER`
+
+**Cost impact: None.** A finding, asked for by the tenth round.
+
+Visquis asked whether any other journey proves something by calling the API on
+a path a person reaches through a page. **Several:**
+
+| What the journey proves                                      | How it proves it                                                 | The page a person uses                                |
+| ------------------------------------------------------------ | ---------------------------------------------------------------- | ----------------------------------------------------- |
+| email verification (journeys 1, 2, 3; web `auth.spec` login) | token from the mailbox, `POST /auth/verify-email`                | `/verify-email`                                       |
+| forgot-password (journey 5)                                  | token from the mailbox, `POST /auth/reset-password`              | `/forgot-password`, `/reset-password`                 |
+| the invitation (journeys 4, 7)                               | same                                                             | `/reset-password` - **walked in a browser since I45** |
+| KBS identity document and enrolment (journey 3)              | presigned PUT, `PATCH /users/me/id-document`, `POST /kbs/enroll` | the candidate pages                                   |
+| every back-office payment step (journey 7)                   | `POST /lands/admin/payments/:id/...`                             | the payment screens                                   |
+
+Each API path is proven; none of those pages is. I45 was the case where the
+difference was a 404. Which of the others deserve a browser walk - and at what
+cost in run time and dev data - is a decision, not a fix squeezed into I45.
+
+### C17 - a WAF before production opens - `DECIDE, A FAIRE`
+
+**Cost impact: about USD 5 a month for the web ACL plus USD 0.60 per million
+requests and the log ingestion - production's volume, not measured yet.**
+
+Decided by Visquis on 27 September as the production half of D28: a WAF on the
+production load balancer, logging with the **query string redacted by AWS at
+write time** (`RedactedFields`), retention **30 days**, stated in the privacy
+policy. A must-do before opening. Production is his; nothing here is to be
+applied from this register. The dev half - application logging with an
+allowlist - is D28.
+
+### D28 - no HTTP access log answers who, what, when, from where - `PROUVE`
+
+**Cost impact: none today; the options below cost from USD 0.2 to about 6 a
+month on dev.** Nothing was switched on.
+
+**The brief, eighth round:** no access logs on the load balancer, no
+CloudFront, no WAF, and the containers do not log requests; on the day of an
+incident, who called what, when, from where and how many times cannot be
+answered. Two reservations: every sensitive parameter masked **at write time**,
+with the control taken afterwards; and the retention decided **before** anything
+is switched on.
+
+**The premise is half right, read on dev on 26 September.**
+
+- **The API already has a request log**, and has had one since before this
+  round: `pinoHttp` with `autoLogging: true` writes one line per request into
+  `/ecs/kambriq-dev-api` (7-day retention): method, path, query, route params,
+  status, response time, correlation id, headers with `authorization`, `cookie`
+  and the caller secret redacted (A46). A55's row said "the containers log no
+  request URL"; that is true of the web container only, and the row is corrected.
+- **Its seven days hold nothing sensitive in a URL.** Logs Insights over
+  232 115 lines: the query strings are `limit`, `page` and `depth` and nothing
+  else; the only URL matching `passw|token=|secret|code=` are the paths
+  `/api/v1/auth/reset-password` and `/api/v1/auth/forgot-password`, with no
+  query string. A55's conclusion stands.
+- **But it cannot say who, or from where.** `remoteAddress` is the load
+  balancer's private address and `x-forwarded-for` is the **web task's** public
+  address, because every call reaches the API from the web server, not from the
+  visitor. No user id is written.
+- **The web and the load balancer log nothing** - the web log group holds
+  263 KB, all application lines.
+- **Five email links carry a credential in a web URL:** `verify-email?token=`
+  (twice), `reset-password?token=`, `auth/set-password?token=` and
+  `auth/confirm-email-change?token=`. Any web access log that writes the raw
+  URL writes them - a reset link is an account, for as long as it is valid.
+
+**Volume:** the dev load balancer served **175 625 requests** in the seven days
+to 26 September (about 760 000 a month); the API log group stores 51.5 MB.
+
+**The options, against the two reservations.**
+
+| Option                                                                   | Masked at write time?                                                                                                         | Who / from where                                                                          | Dev cost a month                                                   |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| ALB access logs to S3                                                    | **No** - the load balancer writes the raw URL, tokens included; masking would be a later pass, which the reservation excludes | client IP, status, bytes                                                                  | cents                                                              |
+| WAF on the ALB, count only, logging with `RedactedFields` = query string | Yes, by AWS, at write time                                                                                                    | client IP, country, method, path, headers (no status)                                     | about USD 5.5 (web ACL 5, 0.60 per million requests) + 0.6 of logs |
+| **In the application (proposed)**                                        | Yes - the line is built by our code with an allowlist of query keys                                                           | visitor IP (A45 already vouches for it), account id, method, path, status on the API side | about USD 0.2 of log ingestion                                     |
+
+**Proposed plan (application side, no new AWS resource):**
+
+1. **API:** the request line gains the visitor's address (the one A45 already
+   vouches for with `WEB_CALLER_SECRET`) and the account id once authenticated,
+   and its `query` and `url` are rewritten by a serializer that keeps an
+   allowlist of keys (`page`, `limit`, `depth`, `sort`, `order`, `q`...) and
+   writes every other value as `[redacted]`. The existing log gets safer on the
+   way.
+2. **Web:** one line per page request from the proxy: time, method, path, the
+   same masked query, visitor address (first `x-forwarded-for` hop, set by the
+   ALB), user agent, correlation id - the id the API line carries, so the two
+   join. The five token links are then written `token=[redacted]`.
+3. **The control, as A55's:** request each of the five links and a
+   `?password=` URL on dev, then search both log groups for the raw values and
+   show they are absent - and show the masked line present.
+4. **Red first:** a spec per side feeding a URL with a token and a password and
+   asserting the written line holds neither; a mutation that drops the
+   allowlist fails it.
+
+**Retention proposed (for decision before anything is switched on):**
+
+- **Dev: 7 days**, what both log groups already have - no change, no new store.
+- **Production: 30 days.** Long enough for an incident noticed at the end of a
+  month (and for a bill question), short enough to limit a store of IP
+  addresses, which are personal data. It is also a line the privacy policy
+  should state - copy, Visquis's.
+- Not proposed: the load balancer's own logs, until the five token links stop
+  carrying their token in the query (a change to the auth flows, Ulrich's).
+
+**Why stopped at the plan:** the brief's premise ("the containers do not log
+requests") is false for the API, which changes what the subject is - from
+switching logs on to widening and masking one that exists, plus a web line.
+The standing authorization says to stop on a false premise, and the retention
+is to be decided before the switch, not by the one who switches. **Pending
+Visquis:** the option (application side proposed), and the retention.
+
+**Decided, 27 September (Visquis).** D28 splits in two. **Dev:** application
+logging with an **allowlist** of query keys applied before anything is written -
+never a denylist. **Production:** a WAF, recorded as `C17`, a must-do before
+opening. **Retention:** 7 days on dev, 30 days in production, and the 30 days go
+into the privacy policy - an obligation, not an option.
+
+**Built on dev (27 September):**
+
+- **One allowlist, one module:** `libs/common/src/logging/url-allowlist.ts`,
+  no dependency, imported by the API and by the web proxy. `page`, `limit`,
+  `depth`, `sort`, `order`, `status` keep their value; every other value is
+  written `[redacted]`, and so is any fragment. `q` is not in it: a search box
+  receives whatever a person types, an address included.
+- **API:** `core/logging/access-log.ts` - a pino-http `req` serializer masks the
+  URL, the parsed query and the `referer` (a browser-side call would send the
+  page's full URL, token included; none does today - 0 referers in 230 032
+  lines), and `customProps` adds `visitorIp` (the address the web vouches for
+  under A45, else the load balancer's hop) and `userId`.
+- **Web:** the proxy writes one JSON line per page request - `kind: "access"`,
+  time, method, masked URL, `visitorIp` (last `x-forwarded-for` hop), `userId`,
+  user agent - before any branch, so redirects are recorded too. No status: the
+  proxy runs before the page. Assets are not logged: the proxy's matcher sees
+  only the URLs the site serves.
+- **Retention:** 7 days, what both log groups already have. No infra change.
+
+**Proof, red first:** `url-allowlist.spec.ts` (10), `access-log.spec.ts` (5,
+through the real pino-http over a real socket: the five credentials absent from
+the whole line, the vouched visitor named, the account named, the wiring in
+`app.module.ts`) and `proxy-access-log.spec.ts` (7, the proxy run with the five
+links and a password) all failed before the modules existed. A mutation turning
+the allowlist into a denylist (`token`, `password`) fails two - the login
+`email`, and the key nobody has thought of yet.
+
+**Proven on dev, 27 September (image `sha-7197137`, API and web).** The
+control, A55's method, with unique markers (`D28M-n-1790485495`):
+
+- web: the five links (`verify-email`, `reset-password`, `auth/set-password`,
+  `auth/confirm-email-change`, each `?token=<marker>`), `/fr/login?email=…&password=<marker>`
+  and `/fr/lands?page=2&zzz=<marker>`;
+- API: `/api/v1/lands?limit=5&token=<marker>`, and a call whose `Referer` was
+  `/fr/reset-password?token=<marker>`.
+
+**Markers found afterwards: 0 in `/ecs/kambriq-dev-web`, 0 in
+`/ecs/kambriq-dev-api`** (`filter-log-events`, pattern `"D28M"`). And every one
+of those requests **is** in the logs, masked: `/fr/verify-email?token=[redacted]`,
+`/fr/login?email=[redacted]&password=[redacted]`, `/fr/lands?page=2&zzz=[redacted]`,
+`/api/v1/lands?limit=5&token=[redacted]`, referer
+`https://dev.kambriq.com/fr/reset-password?token=[redacted]` - each with the
+caller's address in `visitorIp`. A signed-in API line reads, for instance,
+`PATCH /api/v1/users/me/id-document userId=da29c88a-… visitorIp=4.154.40.4
+status=200 196 ms`: who, what, when, from where, and how it ended. Insights
+lagged ingestion by several minutes and first showed 0 records scanned on the
+web group; the search that counts was made directly on the log events.
+
+**Found by the control:** `/fr/auth/set-password` and
+`/fr/auth/confirm-email-change` answered **404** - see "Invitation link 404".
+
+### J12 - the sign-in forms refuse in the reader's language - `PROUVE`
+
+**Cost impact: None.**
+
+Found by A33: the French sign-in page answered an empty submission with "Please
+enter a valid email address" and "Password is required". The five forms under
+`(auth)` - login, register, forgot-password, reset-password, reactivate - took
+their refusals from `validations/schema/auth.ts`, written in English.
+
+**Now the schemas carry keys, never sentences** - the pattern the contact form
+(L1) already used - and the eleven keys live in both catalogues under
+`auth.validation`. Each form renders a refusal through `t('validation.<key>')`.
+The register form's phone refusal, which came from `phone.ts`'s English
+default, is keyed too. **The French copy is mine, for Visquis.**
+
+**Proof, red first:** `auth-messages.spec.ts` drives every refusal the five
+schemas can produce and requires each to be a key in both catalogues - against
+develop it failed in both languages. `refusals-in-reader-language.spec.tsx`
+submits the sign-in page empty: "Saisissez une adresse email valide." in French,
+"Please enter a valid email address." in English; with develop's page and
+schema put back, both fail; with the translation wrapper removed on sign-in,
+both fail.
+
+**Not in this subject:** `phone.ts`'s English default still serves the
+signed-in account and prospect forms, and the rest of I43's hardcoded-copy
+debt stays on its list.
+
+**Proven on dev, 26 September, web `sha-a19d680`** (four `/health` samples of four), in Firefox: submitting `/fr/login` empty shows "Saisissez une adresse email valide." and "Le mot de passe est requis."; `/en/login` shows "Please enter a valid email address." and "Password is required.".
+
+### A33 - Safari is tested again, with its cause - `PROUVE`
+
+**Cost impact: small.** WebKit adds one browser to the E2E job on develop runs.
+
+**The cause, named before anything changed.** WebKit's sign-in test failed on 4
+of 8 develop runs, the click sending no request, while 20 local runs passed. The
+old traces had expired, so it was reproduced instead, the way A51 named
+Firefox's: hold the page's scripts, type, release them. In **both WebKit and
+Chromium**, against dev on 26 September, the two fields went from filled to
+empty when the page hydrated; the click then showed "Password is required" and
+sent nothing. The fields were controlled inputs (`Controller`, defaults `''`),
+and hydration writes the state over the DOM. WebKit on the CI runner was simply
+the engine slow enough to hydrate after Playwright had typed; locally everything
+hydrated first. **Not a WebKit defect, and not the test's: a product defect**,
+and a real one - somebody on a slow iPhone who types before the page is ready
+loses what they typed and the button appears to do nothing.
+
+**And a worse one beside it.** A tap on the button before hydration is a native
+submission, and the form had no `method`: WebKit sent
+`GET /fr/login?email=...&password=...`. The password in the address bar, the
+history and every access log. Six forms holding a password had no `method`.
+
+**The fix, not a re-run:**
+
+- the sign-in email and password are uncontrolled (`register`), with no default
+  for either - a default is written into the field when it registers, which
+  would erase the typed text again;
+- every form that holds a password declares `method="post"` (six); a hydrated
+  page is unchanged, its handler preventing the native submission, and a tap
+  before hydration is now a POST to the page, with nothing in the URL;
+- `password-forms-post.spec.ts` fails on a password form without it (red: it
+  named the six);
+- two e2e tests hold the scripts: what is typed before hydration survives it,
+  and a tap before hydration never puts the password in a URL. **Against dev's
+  old form both fail in all three engines; against a local production build of
+  this branch all six pass;**
+- WebKit is back in the CI matrix, with the cause written at the line.
+
+**Found, not changed:** the validation messages on the French sign-in page are
+English ("Please enter a valid email address", "Password is required").
+
+**Proven, 26 September:** develop's own run on `8637543` (#214), run
+`36246336133`, E2E job: 62 WebKit tests ran, including both ordering tests and
+the sign-in that failed on 4 of 8 runs in September; 186 passed, none flaky, no
+retry. **One run is not a flake rate**: the deterministic ordering tests are the
+proof of the cause, and the next develop runs will show whether anything else
+remains.
+
+### Locale switcher coverage - `PROUVE`
 
 **Cost impact: None.** A component already in the tree, mounted in one more
 place.
@@ -6042,7 +9295,82 @@ chrome changes the public site's layout on fifteen pages, which is a design
 decision rather than a routing fix, and making it silently while renaming every
 route would have buried it.
 
-### Built-in 404 above the locale - `A FAIRE`
+**J4 / P16, 26 September - repaired without the design decision.** The
+component is mounted where it was missing, exactly as the other pages mount it:
+beside the footer on `/contact`, `/about`, `/faq` and the certificate verdict,
+and once in `legal/layout.tsx` for the four legal pages. The floating control
+is not moved into shared chrome, which is the layout decision this entry set
+aside. `language-switcher-coverage.spec.ts` walks every page under
+`app/[locale]` outside `(app)` and `(auth)`, and requires `QuickActions` in the
+page or a layout above it, unless the page is declared exempt with its reason
+(the catch-all 404; `/kamnet/apply`, behind the login wall). **Watched red on
+develop:** it named exactly the eight pages. Removing the legal layout's mount
+fails it on the four legal pages.
+
+**J4's other half, as first left (superseded below): emails.** Emails follow the account's
+`preferredLanguage`, which the account preferences card already sets
+(`account-preferences-card.tsx`). The floating switch only changes the page's
+language. Making it also rewrite the account's stored preference would change a
+setting the person did not touch where it lives, and it would mean nothing for
+the anonymous visitor this repair is for. So the two stay separate: a person who
+wants English mail sets it on their account. If Visquis wants the page switch to
+carry to email, it is a product decision about a stored preference.
+
+**J4's second half - Visquis, 26 September: the switch carries to the
+account.** His reasoning: someone who switches does not tell the page from their
+account. They switched to English; they expect English, and that includes the
+mail. So the paragraph above is overruled, and it stays as the reasoning he
+decided against.
+
+- `followLanguage` (`lib/actions/account.ts`) reads the session first. No
+  session, or one that can no longer be refreshed, is a visitor: nothing is read
+  or written, and a language switch never becomes a sign-in redirect. A
+  signed-in person whose account already has the language is not written
+  either.
+- `useSwitchLanguage` (`hooks/use-switch-language.ts`) is the only switch on the
+  public site and on the sign-in screens. It asks the account to follow, then
+  navigates. **A write to a stored preference caused by a click read as
+  temporary is made visible**: on the page the switch lands on, in its
+  language, a toast says the account and its emails are now in that language,
+  with a "My profile" action to the preferences card where it is undone. A
+  failed write is said as well, never passed over: the page changes, the
+  account does not, and the person is told which.
+- The notice crosses the navigation in `sessionStorage`, keyed to the locale
+  switched to. Keying it is not tidiness: without it the effect re-ran on the
+  old page and showed the notice in the old language. The spec caught exactly
+  that when the effect gained its full dependencies.
+- `quick-actions.spec.tsx` also fails when any source file other than the hook
+  and the profile card switches the locale, so a new switcher cannot change the
+  page and silently not the emails.
+
+Tests: `follow-language.spec.ts` (5) and `quick-actions.spec.tsx` (7). **Fourteen mutations, each watched failing:** no session check, a stale
+session trusted, always writing, "saved" without writing, a failure reported as
+saved, the page not following, the wrong language sent, a visitor announced, an
+unchanged account announced, a save not announced, a failure silent, the
+profile link wrong, a switcher bypassing the hook, and the notice read without
+its locale.
+
+**Cost impact: None.**
+
+**Proven on dev, 26 September, in Firefox, against web `sha-65521db`** (read
+from the web's own `/health`, six samples out of six):
+
+- **a visitor**, on `/fr/contact` and `/fr/legal/privacy`: the switch lands on
+  `/en/contact` and `/en/legal/privacy`, `<html lang="en">`, and no notice;
+- **signed in** as the throwaway `e2e-login.1790405064949.4715@maildrop.cc`,
+  whose stored language read `fr` through `GET /users/me` before: on
+  `/fr/contact` the switch lands on `/en/contact`, the notice reads "Your
+  account is now in English - Our emails to you will be in English too. You can
+  change this in your profile. - My profile", and the stored language reads
+  `en`. On `/fr/legal/privacy` the switch lands in English with **no** notice,
+  because the account already had it - stored still `en`;
+- **the way back**: `/en/account`, "French" on the preferences card, and the
+  stored language reads `fr` again. The throwaway is left as it was found.
+
+The coverage half alone was also used on dev as a visitor on `sha-2fbfc5b`,
+before #201, with the same landings.
+
+### Built-in 404 above the locale - `PROUVE`
 
 **Cost impact: None.**
 
@@ -6063,6 +9391,75 @@ Next 16.3.6 - read from `server/config-shared.d.ts`, not assumed. An experimenta
 flag that changes 404 handling is not worth a prettier page while the status code
 is already right. `locale-routing.spec.ts` pins the difference in both
 directions, so it is a known bound rather than something somebody rediscovers.
+
+**Measured on 26 September, and the flag does not close it.** A production
+build with `experimental.globalNotFound: true` and an `app/global-not-found.tsx`,
+served by the standalone server with its static files, read in Firefox (the
+404 page is rendered by the browser from the React payload, so `curl` sees
+neither page): `/pricing` and `/de/about` in French and English still showed the
+built-in "404", and `/fr/zzz-does-not-exist` the branded page, exactly as dev
+does. Adding `dynamicParams = false` on `[locale]` changed nothing either. The
+built `_not-found` route does load the global page; **`/pricing` never reaches
+it, because every single-segment URL matches `[locale]`** and is answered
+through that segment. The branch was discarded; nothing shipped.
+
+**What would close it, and why each is a decision:**
+
+- a route group under `[locale]` whose layout refuses an unknown locale, so the
+  branded `not-found.tsx` above it catches the refusal - which means moving every
+  page (about 70) into the group, the kind of move the catalogue warns about;
+- a redirect of `/pricing` to `/fr/pricing` in the proxy - which P3's positive
+  matcher never sees without widening it, and which turns a direct 404 into a
+  307 then a 404.
+
+Until one is chosen the status is right and the page is plain.
+
+**P31 - Visquis chose the route group, 26 September.** His reason, recorded: a
+real 404 stays a real 404, which matters to search engines and to the site's
+honesty, and the proxy keeps the short explicit path list A47 gave it.
+
+**Done in one PR.** All 101 files under `app/[locale]` except the root layout
+and `not-found.tsx` moved into `app/[locale]/(site)/` with `git mv` (73 pages;
+a route group changes no URL). `(site)/layout.tsx` calls `notFound()` for an
+unknown locale: it sits below `[locale]/not-found.tsx`, so the throw is caught
+and the branded page renders, with HTTP 404. The root layout no longer refuses:
+it renders any segment, in the visitor's language - `localeForSegment` in
+`lib/locale.ts`: a known segment, else the locale cookie (their last explicit
+choice), else `Accept-Language`, else French. `i18n/request.ts` uses the same
+function, and reads the headers only on that branch.
+
+**Proof, red first.** On dev before the change (26 September, Firefox):
+`/pricing` and `/de/about` showed the built-in "404". On a local production
+build of this branch, served standalone and read in Firefox:
+
+| Visitor | `/pricing`                                   | `/de/about`            | `/fr/zzz-does-not-exist`          |
+| ------- | -------------------------------------------- | ---------------------- | --------------------------------- |
+| `fr-FR` | 404, `lang="fr"`, "Cette page n'existe pas"  | 404, `lang="fr"`, same | 404, French                       |
+| `en-GB` | 404, `lang="en"`, "This page does not exist" | 404, `lang="en"`, same | 404, French (the URL says French) |
+
+with links back into the site in the page's language. **The pages that moved
+still work:** all seventeen public pages under `/fr` answered 200 with their
+heading and the language switch present; the switch took `/fr/contact`,
+`/fr/legal/privacy` and `/fr/products/lands` to their `/en` counterparts with
+`lang="en"`; `/fr/login` and `/en/register` answered 200, and `/fr/account`,
+`/fr/admin/payments` and `/fr/agent/network` still redirect to the login.
+
+`every-page-refuses-an-unknown-locale.spec.ts` fails on a page placed beside
+the group (moved out: fails), on the group layout losing its refusal (fails),
+and on the root layout refusing again (develop's layout put back: fails). The
+e2e spec that pinned the built-in page is inverted, and asks for the English
+404 at `/pricing` with an English `Accept-Language`. Five unit specs that named
+page paths follow the move.
+
+**Proven on dev, 26 September, web `sha-e1b965f`** (four samples of `/health`
+out of four), in Firefox: `/pricing` and `/de/about` answer 404 with "Cette page
+n'existe pas" for `fr-FR` and "This page does not exist" with `lang="en"` for
+`en-GB`, links back into the site in that language; `/fr/zzz-does-not-exist` is
+the French 404. All seventeen public pages under `/fr` answer 200 with their
+heading and the language switch, and the switch takes `/fr/contact`,
+`/fr/legal/privacy` and `/fr/products/lands` to `/en`. The inverted e2e spec and its
+English case passed in Chromium and Firefox in develop's E2E job after the
+merge (run `36244235400`, 120 passed).
 
 ### Audit 2026-09-23, wave 6 - SEO - `EN COURS`
 

@@ -147,6 +147,13 @@ against a build that did not contain it.
 
 `/api/v1/health/version` returns `gitSha`, `imageTag` and `buildTime`. Use it.
 
+**Ask the component the proof is about.** The deploy rolls the API out before
+the web, so the API reporting the new sha says nothing about the page you are
+about to read: a payment screen was read in French on 26 September against the
+old web image while the API already answered the new sha. The web answers its
+own identity at `/health`; a web proof waits for that one, and during a
+rollout samples it more than once, because both tasks answer.
+
 ### A claim is unproven until its failure has been watched
 
 If you have not seen the guard fail, you have a claim, not a guard. _"Would have
@@ -1172,6 +1179,20 @@ Two things this cost that are worth keeping:
 
 ---
 
+### A job that throws is not a job that says so
+
+From `A54`. "Throw, never return quietly" was the lesson of the dunning
+processor, and it is necessary, not sufficient: a throw marks a BullMQ job
+failed **in Redis**, and BullMQ writes nothing to the log. The contact digest
+threw every morning for fourteen days on dev and the log held nothing, so a
+design whose signal was "the digest stopped arriving" alerted nobody - nobody
+had seen it arrive yet.
+
+Every processor extends `LoudWorkerHost`, whose `failed` handler writes an
+error line (never the payload), and a guard refuses a processor that does not.
+And a variable without which the process cannot do its job is **required at
+startup**: a deploy is watched, 07:00 is not.
+
 ### Every layer tested, and the seam between two of them not
 
 From `A17`. G11 added `paidBy` to the DTO, the service, the CHECK constraint
@@ -1384,6 +1405,24 @@ every public page, listed one page at a time and never gating them. Pages read
 the session with a configuration that never refreshes. The same-request handoff
 goes through `globalThis`. A module-level singleton is not a process singleton
 under Turbopack.
+
+### A guard that reads the catalogues cannot see copy that never entered one
+
+From `I43`. P21 banned promises across every translation namespace, and ten
+signed-in screens went on promising 38 features, because the promises were
+French strings written straight into the components. The guard was right about
+everything it read. It could not read them.
+
+**A ban on words needs a second reach: the source files where words bypass the
+catalogue.** `no-hardcoded-copy.spec.ts` parses every `.tsx` and fails on prose
+in JSX, unless the file is declared as debt with its reason. It works the same
+way as P21 and the proxy matcher: everything is covered by default, and an
+exemption is a line somebody wrote.
+
+**And pin a placeholder's whole text, not the absence of one list.** A test
+that only checks for no `<li>` lets the same promise come back as a subtitle.
+The placeholder test compares the screen's entire text with the three strings it
+may say.
 
 ### A guard written before anything can use it
 
@@ -2060,6 +2099,35 @@ one host that will matter in production. Its first three runs also flagged, in
 turn, its own docstring, the prose it depended on elsewhere, and its own test
 fixture.
 
+### A write to a stored preference, caused by a click read as temporary, is said out loud
+
+From J4's second half. Switching the page language now also sets a signed-in
+person's account language, so their emails follow. That is a write to a profile
+from a control people read as affecting only what they are looking at, and a
+silent one is how somebody ends up receiving mail in a language they did not
+choose. So the write is announced on the page it lands on, in that page's
+language, with the way to undo it; a failed write is announced too; and a
+visitor, who has no account, changes nothing but the page.
+
+**A notice carried across a navigation is keyed to where it lands.** Left
+unkeyed, the effect that reads it ran once more on the page being left and
+showed it in the old language. The test that reads the toast's words caught it;
+a test that only counted toasts would not have.
+
+### A flaky test in one browser can be a product defect every browser has
+
+From `A33`. WebKit's sign-in test failed every other run and never locally, so
+WebKit came out of the matrix. The cause was in the page: controlled inputs,
+whose empty state hydration writes over whatever was typed before it. Holding
+the page's scripts reproduced it in Chromium as well. WebKit on the runner was
+only the engine slow enough to lose the race, and a person on a slow phone loses
+it too.
+
+**Before blaming a browser, reproduce the ORDER the slow run took**, not the
+browser: hold the scripts, act, release. And a form holding a password declares
+`method="post"`: before hydration a tap is a native submission, and without a
+method that is a GET with the password in the URL (`password-forms-post.spec.ts`).
+
 ## 5. Invariants somebody will otherwise break
 
 ### The response envelope
@@ -2179,9 +2247,19 @@ stored beside it.** `BigInt`, never `Float`. **XAF has no minor unit** - one uni
 is one franc, not a centime, which is the thing people get wrong. An amount
 without its currency is a number, not money.
 `no-float-money.spec.ts` fails on any monetary field declared `Float`, `Decimal`,
-`Double` or `Real` across all four schemas; five pre-existing columns are
-quarantined there with the reason each is not yet converted, and the list is
-pinned in both directions so it cannot rot into a lie.
+`Double` or `Real` across all four schemas. **Its quarantine list is empty**
+since 27 September (`Land.totalPrice`, `downPaymentAmount` and
+`KamnetCommission.amount` were converted to `BigInt`), and it stays, pinned at
+zero in both directions, so a new entry has to be argued for rather than slip in. **A `BigInt` leaves the API through the response
+envelope** (`TransformResponseInterceptor`), as an exact number, or as a string
+past `Number.MAX_SAFE_INTEGER` - never rounded, never a `JSON.stringify` crash.
+
+**A request log line never holds a URL as it came (D28).** The API's pino-http
+line and the web proxy's access line both pass the URL, the query and the
+referer through `libs/common/src/logging/url-allowlist.ts` before writing: an
+**allowlist** of query keys keeps its values, every other value is
+`[redacted]`. Add a key there only if an investigation needs its value and it
+can never carry a credential or a person's text.
 
 **A computed total is never a stored column.** `Payment` has no `totalReceived`.
 The total is a sum over `PaymentReceipt`, and a correction appends a signed line
@@ -2340,7 +2418,7 @@ API until the version nibble became `4` and the variant `8`.
 ### Every URL carries its locale, and the gate is asked positively
 
 `localePrefix: 'always'`, configured once in `apps/web/src/i18n/routing.ts`.
-Every page lives under `app/[locale]/`, which is also the **root layout** - there
+Every page lives under `app/[locale]/(site)/` (P31), and `app/[locale]/` is the **root layout** - there
 is deliberately no `app/layout.tsx`, because two files rendering `<html>` is
 invalid and the locale has to be readable where `lang` is set.
 
@@ -2541,7 +2619,8 @@ outright. Where the proof needs a deployed environment, the closing PR sets
 `EN COURS` and **names the pending proof explicitly**; a follow-up commit moves
 it to `PROUVE` with the proof quoted.
 
-The four states, and what each demands of you:
+The main states, and what each demands of you (the register's `### States` table
+declares all eight, including `PROUVE LOCALEMENT` and `PLAN PRET`):
 
 | State             | Meaning                                                               |
 | ----------------- | --------------------------------------------------------------------- |
@@ -2709,10 +2788,16 @@ Two separate causes, and the first hid the second:
   unmatched URL under a matched dynamic segment triggers nothing, so it falls
   through to the built-in page. `[locale]/[...rest]/page.tsx` calling
   `notFound()` is what closes it.
-- A `notFound()` thrown **from the root layout** has no boundary above it. So an
-  unconfigured first segment still gets the built-in page, and closing that needs
-  `experimental.globalNotFound`, which is off by default. It is left open, with
-  the difference pinned in both directions so it is a known bound.
+- A `notFound()` thrown **from the root layout** has no boundary above it, so an
+  unconfigured first segment got the built-in page. **`experimental.globalNotFound`
+  does not close it** - measured in a production build: `/pricing` matches
+  `[locale]`, so the global page is never reached. What closes it (P31) is
+  moving the refusal one level down: every page sits in `[locale]/(site)`,
+  whose layout calls `notFound()` for an unknown locale, below
+  `[locale]/not-found.tsx`. The root layout renders any segment, in the
+  visitor's language (`localeForSegment`), and never refuses.
+  `every-page-refuses-an-unknown-locale.spec.ts` fails on a page placed beside
+  the group instead of inside it.
 
 **The status code was 404 throughout, which is why nothing reported it.** The
 assertion the suite already had - and the right one - is about the status; the

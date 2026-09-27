@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { prismaLogLevels } from '@kambriq/common';
 import { PrismaClient } from '@kambriq/common/prisma/lands-client/client';
 
 @Injectable()
@@ -14,7 +15,8 @@ export class LandsPrismaService extends PrismaClient implements OnModuleInit, On
     const pool = new Pool({ connectionString });
     const adapter = new PrismaPg(pool);
     super({
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn', 'info'] : ['error'],
+      // A48: SQL is logged only where APP_ENV=local - never on dev.
+      log: prismaLogLevels(),
       adapter,
     });
     this.pool = pool;
@@ -25,7 +27,7 @@ export class LandsPrismaService extends PrismaClient implements OnModuleInit, On
       await this.$connect();
       this.logger.log('LANDS database connected');
     } catch (error) {
-      this.logger.error('LANDS database connection failed', error);
+      this.logger.error('LANDS database connection failed %o', { err: error });
       throw error;
     }
   }
@@ -36,7 +38,7 @@ export class LandsPrismaService extends PrismaClient implements OnModuleInit, On
       await this.pool.end();
       this.logger.log('LANDS database disconnected');
     } catch (error) {
-      this.logger.error('LANDS database disconnection failed', error);
+      this.logger.error('LANDS database disconnection failed %o', { err: error });
     }
   }
 }

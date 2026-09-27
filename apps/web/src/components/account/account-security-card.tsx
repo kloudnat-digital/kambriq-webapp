@@ -49,7 +49,7 @@ export const AccountSecurityCard = () => {
         <CardDescription>{t('subtitle')}</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form method="post" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Controller
             name="currentPassword"
             control={control}

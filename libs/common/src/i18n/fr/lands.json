@@ -42,6 +42,7 @@
     "alreadyActive": "Cette réservation a déjà un acompte confirmé",
     "notPending": "Seules les réservations en attente peuvent être confirmées",
     "acompteNotValidated": "L'acompte n'a pas ete valide, donc cette etape ne peut pas enregistrer qu'il l'a ete. Paiements sur cette reservation : {payments}. Enregistrez l'encaissement puis validez le paiement depuis le back-office : cette etape suit le journal, elle ne regle pas l'argent.",
+    "soldeNotValidated": "Le solde n'a pas ete valide, donc cette etape ne peut pas enregistrer qu'il l'a ete. Paiements du solde sur cette reservation : {payments}. Enregistrez l'encaissement puis validez le paiement depuis le back-office : cette etape suit le journal, elle ne regle pas l'argent.",
     "notConfirmed": "Seules les réservations confirmées peuvent progresser",
     "stepAlreadyDone": "Cette étape a déjà été enregistrée",
     "previousStepRequired": "L'étape précédente doit être complétée en premier",

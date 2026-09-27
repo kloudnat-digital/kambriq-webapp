@@ -148,7 +148,7 @@ describe('EmailService: identifiers where a name belongs', () => {
     to: 'client@kambriq.com',
     template: 'clientPortalAccess' as const,
     lang: 'fr',
-    args: { clientName: 'Alice', landTitle: 'Parcelle Kribi', price: '8000000', agentName },
+    args: { clientName: 'Alice', landTitle: 'Parcelle Kribi', totalPrice: '8000000', agentName },
   });
 
   it('refuses to queue an email whose name field is a uuid', async () => {

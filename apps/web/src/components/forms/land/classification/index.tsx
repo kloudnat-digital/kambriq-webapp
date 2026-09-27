@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { useTranslations } from 'next-intl';
 import type { LandLabel } from '@/types/lands';
+import { TITLE_NUMBER_EXAMPLE } from '@kambriq/common/lands/title-number';
 
 interface LandClassificationProps<T extends FieldValues> {
   control: Control<T>;
@@ -92,8 +93,8 @@ export function LandClassificationFields<T extends FieldValues>({
       <Controller
         name={fields.titleNumber.name}
         control={control}
-        render={({ field }) => (
-          <Field>
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
             <FieldLabel htmlFor="f-tf">{fields.titleNumber.label}</FieldLabel>
             <Input
               {...field}
@@ -101,7 +102,15 @@ export function LandClassificationFields<T extends FieldValues>({
               placeholder={fields.titleNumber.placeholder}
               className="font-mono"
               disabled={isSubmitting}
+              aria-invalid={fieldState.invalid}
+              aria-describedby={fieldState.invalid ? 'f-tf-error' : undefined}
             />
+            {/* P24: the refusal says the expected shape, with an example. */}
+            {fieldState.invalid && (
+              <FieldError id="f-tf-error">
+                {t('form.titleNumberInvalid', { example: TITLE_NUMBER_EXAMPLE })}
+              </FieldError>
+            )}
           </Field>
         )}
       />

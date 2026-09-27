@@ -9,6 +9,7 @@ import { I18nService } from 'nestjs-i18n';
 import {
   buildPaginatedResponse,
   EmailService,
+  KAMNET_MAX_PUBLIC_DIRECTORY_ENTRIES,
   KAMNET_PROMOTION_THRESHOLDS,
   KamnetAgentTier,
   PaginationQuery,
@@ -167,20 +168,33 @@ export class KamnetAgentsService {
       where: { publicListingConsentAt: { not: null }, suspendedAt: null },
       select: { userId: true, publicListingConsentAt: true, suspendedAt: true },
       orderBy: { publicListingConsentAt: 'asc' },
+      // P22: bounded the way the full tree is, and never silently.
+      take: KAMNET_MAX_PUBLIC_DIRECTORY_ENTRIES,
     });
 
     if (agents.length === 0) return [];
+    if (agents.length === KAMNET_MAX_PUBLIC_DIRECTORY_ENTRIES) {
+      this.logger.warn('Public directory capped %o', {
+        cap: KAMNET_MAX_PUBLIC_DIRECTORY_ENTRIES,
+        note: 'agents who consented after the cap are not listed',
+      });
+    }
 
     // One query for every name, rather than one per agent: see
     // `UsersService.findDirectoryUsers` for why `findById` is wrong here.
     const users = await this.usersService.findDirectoryUsers(agents.map((a) => a.userId));
     const byUserId = new Map(users.map((user) => [user.id, user]));
 
-    const entries = await Promise.all(
-      agents.map(async (agent) => {
-        const certificate = await this.candidatesService.findNewestCertificateFacts(agent.userId);
-        return toPublicDirectoryEntry(agent, byUserId.get(agent.userId) ?? null, certificate);
-      }),
+    // P22: one query for every certificate too, not one per agent.
+    const certificates = await this.candidatesService.findNewestCertificateFactsForUsers(
+      agents.map((a) => a.userId),
+    );
+    const entries = agents.map((agent) =>
+      toPublicDirectoryEntry(
+        agent,
+        byUserId.get(agent.userId) ?? null,
+        certificates.get(agent.userId) ?? null,
+      ),
     );
 
     return entries.filter((entry): entry is PublicDirectoryEntry => entry !== null);

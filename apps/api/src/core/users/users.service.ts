@@ -44,6 +44,8 @@ import { I18nService } from 'nestjs-i18n';
 import crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 
+import { isOwnUserFileKey, safeFileName, userFileKey } from './storage-keys';
+
 @Injectable()
 export class UsersService {
   private logger = new Logger(UsersService.name);
@@ -63,6 +65,14 @@ export class UsersService {
 
   // ----- Update Me ---------------------------------------
   async updateMe(userId: string, dto: UpdateProfileDto): Promise<UserResponse> {
+    // A44: an avatar is a key the upload route issued to this person, or empty
+    // to remove it. Refused before anything is written, on both paths that end
+    // here - `PATCH /users/me` and the KAMNET agent profile.
+    if (dto.avatarUrl && !isOwnUserFileKey(userId, 'avatar', dto.avatarUrl)) {
+      const lang = dto.language ?? (await this.findByIdOrThrow(userId)).preferredLanguage ?? 'fr';
+      throw new BadRequestException(this.t('user.avatar.notOwnKey', lang));
+    }
+
     const userFields: Record<string, unknown> = {};
     const profileFields: Record<string, unknown> = {};
 
@@ -97,17 +107,13 @@ export class UsersService {
 
   // ----- Get avatar upload URL ---------------------------------------
   async getAvatarUploadUrl(userId: string, dto: AvatarUploadUrlDto) {
-    const timestamp = Date.now();
-    const name = dto.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const key = this.storage.buildKey('users', userId, 'avatar', `${timestamp}-${name}`);
+    const key = userFileKey(userId, 'avatar', Date.now(), safeFileName(dto.filename));
     return this.storage.getUploadUrl(key, dto.contentType);
   }
 
   // ----- Get ID Document upload URL ---------------------------------------
   async getIdDocumentUploadUrl(userId: string, dto: IdDocumentUploadUrlDto) {
-    const timestamp = Date.now();
-    const name = dto.filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const key = this.storage.buildKey('users', userId, 'id-documents', `${timestamp}-${name}`);
+    const key = userFileKey(userId, 'id-documents', Date.now(), safeFileName(dto.filename));
     return this.storage.getUploadUrl(key, dto.contentType);
   }
 
@@ -640,7 +646,10 @@ export class UsersService {
     });
 
     const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3001');
-    const setPasswordUrl = `${frontendUrl}/auth/set-password?token=${rawToken}`;
+    // I45: the page that consumes a PASSWORD_RESET token is /reset-password; the
+    // /auth/set-password this used to name never existed, and every invitation
+    // led to a 404. emailed-urls-resolve.spec.ts keeps every emailed URL honest.
+    const setPasswordUrl = `${frontendUrl}/reset-password?token=${rawToken}`;
 
     await this.emailService.send({
       to: newUser.email,
@@ -704,7 +713,9 @@ export class UsersService {
     ]);
 
     const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3001');
-    const confirmUrl = `${frontendUrl}/auth/confirm-email-change?token=${rawToken}`;
+    // I45: behind /account, so a person who is not signed in is sent to log in
+    // and brought back - the confirmation is bound to their account.
+    const confirmUrl = `${frontendUrl}/account/confirm-email-change?token=${rawToken}`;
 
     await this.emailService.send({
       to: newEmail,
@@ -790,6 +801,13 @@ export class UsersService {
 
   // ----- Submit ID document (user) --------------------------------
   async submitIdDocument(userId: string, dto: SubmitIdDocumentDto) {
+    // A49: each document is a key the upload route issued to this person, in
+    // their id-documents folder - the A44 rule, refused before anything is read.
+    if (dto.idDocumentUrls.some((key) => !isOwnUserFileKey(userId, 'id-documents', key))) {
+      const lang = (await this.prisma.user.findUnique({ where: { id: userId } }))
+        ?.preferredLanguage;
+      throw new BadRequestException(this.t('user.idDocument.notOwnKey', lang || 'fr'));
+    }
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { preferredLanguage: true, profile: { select: { idVerificationStatus: true } } },

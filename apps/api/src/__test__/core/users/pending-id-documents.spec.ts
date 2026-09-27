@@ -154,7 +154,9 @@ describe('the identity-review queue', () => {
       profile: { idVerificationStatus: 'pending' },
     });
 
-    await service.submitIdDocument('u1', { idDocumentUrls: ['s3://a.pdf'] }).catch(() => undefined);
+    await service
+      .submitIdDocument('u1', { idDocumentUrls: ['users/u1/id-documents/1-a.pdf'] })
+      .catch(() => undefined);
 
     const call = prisma.userProfile.upsert.mock.calls[0]?.[0] as
       | { create: Record<string, unknown>; update: Record<string, unknown> }

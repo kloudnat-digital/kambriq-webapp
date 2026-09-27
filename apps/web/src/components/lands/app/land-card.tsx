@@ -73,7 +73,9 @@ const LandCard: FC<LandCardProps> = ({ land, href }) => {
           </h3>
           <p className="mb-3 text-sm text-gray-500">{land.city ?? land.region}</p>
           <div className="flex items-end justify-between">
-            <p className="text-lg font-bold text-gray-900">{formatXAFCompact(land.price)}/m²</p>
+            <p className="text-lg font-bold text-gray-900">
+              {land.pricePerM2 === null ? '—' : `${formatXAFCompact(land.pricePerM2)}/m²`}
+            </p>
             <p className="text-sm text-gray-400">{land.sizeM2} m²</p>
           </div>
         </div>

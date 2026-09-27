@@ -51,6 +51,7 @@ const build = () => {
     mockStorageService() as never,
     mockI18n() as never,
     mockQueue() as never,
+    {} as never,
   );
   prisma.landReservation.findUnique.mockResolvedValue(reservation());
   prisma.landReservation.update.mockResolvedValue(reservation({ status: 'CONFIRMED' }));

@@ -20,7 +20,7 @@ export const updateProfileSchema = z.object({
     .refine((v) => !v || PHONE_REGEX.test(v), PHONE_ERROR),
   language: z.enum(SUPPORTED_LANGUAGES).optional(),
 
-  avatarUrl: z.string().optional(),
+  avatarUrl: z.string().max(300).optional(), // A44: a storage key; UsersService.updateMe decides whose
   address: z.string().optional(),
   city: z.string().optional(),
   country: z.string().optional(),
@@ -76,7 +76,7 @@ export class ConfirmEmailChangeDto extends createZodDto(confirmEmailChangeSchema
 // ----- Submit ID document -----
 export const submitIdDocumentSchema = z.object({
   idDocumentUrls: z
-    .array(z.string().min(1, 'Must be a valid URL'))
+    .array(z.string().min(1).max(300)) // A49: storage keys; UsersService.submitIdDocument decides whose
     .min(1, 'At least one ID document is required')
     .max(2, 'At most 2 Id document files are allowed'),
 });

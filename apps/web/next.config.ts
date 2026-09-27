@@ -2,7 +2,13 @@ import { composePlugins, withNx } from '@nx/next';
 import type { WithNxOptions } from '@nx/next/plugins/with-nx';
 import createNextIntlPlugin from 'next-intl/plugin';
 import { robotsHeaders } from './src/lib/seo/robots';
-import { imageRemotePatterns, imgSrcSources } from './src/lib/security/image-hosts';
+import {
+  imageRemotePatterns,
+  imgSrcSources,
+  uploadConnectSources,
+  fontSrcSources,
+  styleSrcSources,
+} from './src/lib/security/image-hosts';
 import { frameAncestors } from './src/lib/security/studio-origin';
 import { sanityDataset } from './src/lib/security/sanity-hosts';
 
@@ -84,18 +90,22 @@ const nextConfig: WithNxOptions = {
               frameAncestors(process.env),
               "form-action 'self'",
               "script-src 'self' 'unsafe-inline' blob:",
-              "style-src 'self' 'unsafe-inline'",
+              // J11. The typeface's stylesheet and its files, from the same list.
+              `style-src 'self' 'unsafe-inline' ${styleSrcSources().join(' ')}`,
               // A40. The image hosts are the optimizer's own list, so the two
               // cannot drift apart. The Mapbox sources are the map widget's
               // tiles, loaded by the browser and never by the optimizer.
               `img-src 'self' data: blob: ${imgSrcSources(process.env).join(' ')} https://api.mapbox.com https://*.tiles.mapbox.com`,
-              "font-src 'self' data:",
+              `font-src 'self' data: ${fontSrcSources().join(' ')}`,
               "worker-src 'self' blob:",
+              // A44. The bucket, from the same variable as img-src, for the
+              // browser's presigned avatar PUT - refused on dev until this line.
+              //
               // No Sanity entry: CMS documents are fetched by the Next server,
               // so nothing in the browser connects to Sanity. A source listed
               // for a connection nothing makes is a permission granted for
               // nothing.
-              "connect-src 'self' https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com",
+              `connect-src 'self' ${uploadConnectSources(process.env).join(' ')} https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com`,
             ].join('; '),
           },
           // Empty in production, `noindex, nofollow` everywhere else. Reads

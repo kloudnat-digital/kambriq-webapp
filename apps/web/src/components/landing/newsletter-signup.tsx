@@ -162,14 +162,17 @@ const NewsletterSignup: FC<NewsletterSignupProps> = ({ className }) => {
               )}
             />
             <Label htmlFor={consentId} className="text-xs leading-relaxed font-normal">
-              {t('consent.text')}{' '}
-              <Link href={PRIVACY_POLICY_PATH} className="underline underline-offset-2">
-                {t('consent.privacyLink')}
-              </Link>{' '}
-              {t('consent.and')}{' '}
-              <Link href={RGPD_PATH} className="underline underline-offset-2">
-                {t('consent.rgpdLink')}
-              </Link>
+              {/* P25: one inline element, or the flex label lays out each fragment as a column. */}
+              <span>
+                {t('consent.text')}{' '}
+                <Link href={PRIVACY_POLICY_PATH} className="underline underline-offset-2">
+                  {t('consent.privacyLink')}
+                </Link>{' '}
+                {t('consent.and')}{' '}
+                <Link href={RGPD_PATH} className="underline underline-offset-2">
+                  {t('consent.rgpdLink')}
+                </Link>
+              </span>
             </Label>
           </div>
           {errors.consent && (

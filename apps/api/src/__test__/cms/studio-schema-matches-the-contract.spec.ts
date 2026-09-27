@@ -1,6 +1,7 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from 'groq-js';
+import { pagesUnder } from './web-pages';
 import {
   CONTENT_BLOCK_DECORATORS,
   CONTENT_BLOCK_LISTS,
@@ -120,12 +121,11 @@ describe('the Studio schema and the API contract', () => {
   it('names only policies the site has a page for', () => {
     // A slug with no page is a document an editor can publish and nobody can
     // read, and the Studio gives no sign of it.
-    const pages = readdirSync(join(ROOT, 'apps/web/src/app/[locale]/legal'), {
-      withFileTypes: true,
-    })
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => `legal-${entry.name}`);
+    // Looked up by the URL each page answers, not by a path spelled out here: a
+    // route group changes the directories and not the URL. See web-pages.ts.
+    const pages = pagesUnder('legal').map((name) => `legal-${name}`);
 
+    expect(pages.length).toBeGreaterThan(3);
     expect(pages).toEqual(expect.arrayContaining([...POLICY_SLUGS]));
   });
 

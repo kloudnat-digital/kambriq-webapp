@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
 import { authForProxy as auth } from './auth';
 import { routing } from './i18n/routing';
+import { accessLine, writeAccessLine } from './lib/access-log';
 import {
   AUTH_ROUTES,
   getDefaultRoute,
@@ -27,6 +28,10 @@ const intl = createMiddleware(routing);
 export default auth((req) => {
   const { nextUrl, auth: session } = req;
 
+  // D28: one access line per page request, URL masked by allowlist. First, so
+  // every branch below - redirect or not - is recorded.
+  writeAccessLine(accessLine(req, session?.user?.id));
+
   /**
    * A pathname with no locale is sent to the prefixed form before any
    * authentication decision is taken.
@@ -46,7 +51,9 @@ export default auth((req) => {
 
   const toLogin = () => {
     const loginUrl = new URL(withLocale(AUTH_ROUTES.LOGIN, locale), nextUrl.origin);
-    loginUrl.searchParams.set('callbackUrl', safeCallbackUrl(nextUrl.pathname));
+    // I45: the query comes along. A link that carries its token (the email-change
+    // confirmation) must still carry it after the detour through the login page.
+    loginUrl.searchParams.set('callbackUrl', safeCallbackUrl(nextUrl.pathname + nextUrl.search));
     return NextResponse.redirect(loginUrl);
   };
 

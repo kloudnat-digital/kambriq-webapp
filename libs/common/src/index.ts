@@ -15,6 +15,7 @@ export {
   formatReferenceWithChannel,
 } from './payments/payment-channels';
 export type { ChannelDefinition } from './payments/payment-channels';
+export { PaymentPurpose } from './payments/payment-purpose';
 export {
   PaymentState,
   PAYMENT_TRANSITIONS,
@@ -121,6 +122,7 @@ export {
 
 // ----- Email -----
 export { EmailModule } from './email/email.module';
+export { LoudWorkerHost } from './queue/loud-worker-host';
 export { EmailService } from './email/email.service';
 export * from './email/templates';
 
@@ -199,3 +201,23 @@ export type {
   KbsLabelLanguage,
   KbsLabelRun,
 } from './kbs/label-definitions';
+// ----- Lands (P24) -----
+export {
+  TITLE_NUMBER_EXAMPLE,
+  KNOWN_DEPARTMENT_CODES,
+  parseTitleNumber,
+  isUnlistedDepartment,
+} from './lands/title-number';
+export type { TitleNumber } from './lands/title-number';
+
+// ----- API documentation (A43) -----
+export { LOCAL_APP_ENV, servesApiDocs } from './config/api-docs';
+
+// ----- Environment (A48) -----
+export {
+  appEnvironment,
+  apiLogLevel,
+  isLocalEnvironment,
+  prettyLogs,
+  prismaLogLevels,
+} from './config/app-env';

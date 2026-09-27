@@ -19,6 +19,10 @@ import {
   imgSrcSources,
   MEDIA_BUCKET_HOST_VAR,
   mediaBucketHost,
+  uploadConnectSources,
+  FONT_STYLESHEET_URL,
+  fontSrcSources,
+  styleSrcSources,
 } from './image-hosts';
 import { SANITY_PROJECT_ID_VAR } from './sanity-hosts';
 
@@ -166,6 +170,59 @@ describe('image optimizer hosts', () => {
 
   // `MEDIA_BUCKET_HOST` reaching the image is asserted with every other
   // build-time variable, in `build-vars-reach-the-image.spec.ts`.
+
+  /**
+   * A44 - the browser uploads an avatar straight to the bucket with a presigned
+   * PUT. `connect-src` named Mapbox only, so on dev Chromium refused the request
+   * ("violates the following Content Security Policy directive: connect-src")
+   * and the upload had never worked. The bucket reaches `connect-src` from the
+   * same variable as `img-src` - and only the bucket: the browser uploads
+   * nowhere else, so no other image host is opened for writing.
+   */
+  describe('the browser may upload to the bucket, and only there', () => {
+    it('names the bucket when the variable is set', () => {
+      expect(uploadConnectSources(withBucket)).toEqual([`https://${DEV_HOST}`]);
+    });
+
+    it('names nothing when it is missing, rather than opening up', () => {
+      expect(uploadConnectSources(withoutBucket)).toEqual([]);
+    });
+
+    it('connect-src in next.config.ts is built from it', () => {
+      const connectSrc = NEXT_CONFIG.match(/[`'"]connect-src [^\n]*/)?.[0] ?? '';
+      expect(connectSrc).toContain('uploadConnectSources(process.env)');
+    });
+  });
+
+  /**
+   * J11 - the site's typeface. The layout linked Switzer from fontshare, and
+   * the CSP allowed neither the stylesheet's host (`style-src`) nor the font
+   * files' host (`font-src`): on dev the browser refused the stylesheet on
+   * every page and no Switzer face was ever registered, so the site has always
+   * rendered in the fallback. The two hosts, and the link itself, come from
+   * here - the same single source as the image hosts.
+   */
+  describe('the typeface: the stylesheet and its font files', () => {
+    it('names the stylesheet host for style-src and the file host for font-src, and nothing else', () => {
+      expect(new URL(FONT_STYLESHEET_URL).protocol).toBe('https:');
+      expect(styleSrcSources()).toEqual([`https://${new URL(FONT_STYLESHEET_URL).host}`]);
+      expect(fontSrcSources()).toEqual(['https://cdn.fontshare.com']);
+    });
+
+    it('the layout links the stylesheet from here, and names no font host itself', () => {
+      const layout = readFileSync(join(__dirname, '../../app/[locale]/layout.tsx'), 'utf8');
+      expect(layout).toMatch(/href=\{FONT_STYLESHEET_URL\}/);
+      expect(layout).not.toMatch(/fontshare\.com/);
+    });
+
+    it('style-src and font-src in next.config.ts are built from it', () => {
+      const directive = (name: string) =>
+        NEXT_CONFIG.match(new RegExp(`[\`'"]${name} [^\\n]*`))?.[0] ?? '';
+      expect(directive('style-src')).toContain('styleSrcSources()');
+      expect(directive('font-src')).toContain('fontSrcSources()');
+      expect(NEXT_CONFIG).not.toMatch(/fontshare\.com/);
+    });
+  });
 
   describe('next.config.ts takes its hosts from here and nowhere else', () => {
     it('declares no hostname of its own', () => {

@@ -124,7 +124,7 @@ describe('the matcher covers every route the app serves', () => {
     expect(ROUTES).toContain('/admin/payments');
     expect(ROUTES.filter((r) => r.includes(LOCALE_SEGMENT))).toEqual([]);
     // The exclusion above is real, not decorative: the file it names must exist.
-    expect(existsSync(join(APP_DIR, LOCALE_SEGMENT, '[...rest]', 'page.tsx'))).toBe(true);
+    expect(existsSync(join(APP_DIR, LOCALE_SEGMENT, '(site)', '[...rest]', 'page.tsx'))).toBe(true);
   });
 
   it('the matcher tester discriminates, rather than answering yes to everything', () => {

@@ -113,7 +113,7 @@ export class HealthController {
     } catch (error) {
       // Throws ServiceUnavailableException so readiness probes (like curl -f)
       // receive a 503 status code when the core database is unreachable.
-      this.logger.error('Readiness check failed: core database unreachable', error);
+      this.logger.error('Readiness check failed: core database unreachable %o', { err: error });
       throw new ServiceUnavailableException({ status: 'error' });
     }
   }

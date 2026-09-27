@@ -13,7 +13,7 @@ interface LandSurfacePriceProps<T extends FieldValues> {
       label: string;
       placeholder?: string;
     };
-    price: {
+    totalPrice: {
       name: Path<T>;
       label: string;
       placeholder?: string;
@@ -56,18 +56,18 @@ export function LandSurfacePriceFields<T extends FieldValues>({
         />
 
         <Controller
-          name={fields.price.name}
+          name={fields.totalPrice.name}
           control={control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="f-price">{fields.price.label} (XAF) *</FieldLabel>
+              <FieldLabel htmlFor="f-total-price">{fields.totalPrice.label} (XAF) *</FieldLabel>
               <Input
                 {...field}
-                id="f-price"
+                id="f-total-price"
                 type="number"
                 min={1}
                 disabled={isSubmitting}
-                placeholder={fields.price.placeholder}
+                placeholder={fields.totalPrice.placeholder}
                 onChange={(e) => field.onChange(e.target.valueAsNumber)}
               />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}

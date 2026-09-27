@@ -157,7 +157,12 @@ describe('the acompte is recorded by one step, and that step reads the ledger', 
 
   it('the ledger read accepts VALIDE and nothing else', () => {
     const src = readFileSync(SERVICE, 'utf8');
-    const start = src.indexOf('private async assertAcompteIsValidated(');
+    // G20: the deposit step asks for its own purpose, and the ledger read is the
+    // shared helper that every money step uses.
+    const acompte = src.indexOf('private async assertAcompteIsValidated(');
+    expect(src.slice(acompte, src.indexOf('\n  }\n', acompte))).toContain('PaymentPurpose.ACOMPTE');
+    const start = src.indexOf('private async assertPaymentIsValidated(');
+    expect(start).toBeGreaterThan(-1);
     const body = src.slice(start, src.indexOf('\n  }\n', start));
 
     // PARTIELLEMENT_RECU is the one an operator would reach for. It means part

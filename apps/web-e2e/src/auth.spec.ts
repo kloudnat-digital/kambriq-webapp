@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { authSlot } from './support/auth-budget';
 
 /**
  * A28 - the one journey nothing covered: a login that SUCCEEDS, end to end.
@@ -103,11 +104,58 @@ test.describe('Authentication', () => {
     await expect(page).toHaveURL(/login/);
   });
 
+  /**
+   * A33 - the cause of WebKit's flaky sign-in. The fields were controlled
+   * inputs: text typed before hydration was overwritten by React's empty state,
+   * validation refused, and no request left the page. WebKit on the CI runner
+   * was simply the engine slow enough to hydrate after the typing. This holds
+   * the page's scripts until the typing is done, so every engine is tested in
+   * the order that failed.
+   */
+  test('what is typed before the page hydrates survives it', async ({ page }) => {
+    const held: Array<() => Promise<void>> = [];
+    let holding = true;
+    await page.route('**/_next/static/chunks/**/*.js', (route) =>
+      holding ? held.push(() => route.continue()) : route.continue(),
+    );
+    await page.goto('/fr/login', { waitUntil: 'domcontentloaded' });
+    await page.locator('input[type="email"]').fill('nobody@example.com');
+    await page.locator('input[type="password"]').fill('wrong-password-123');
+
+    holding = false;
+    for (const release of held) await release();
+    // Hydrated: React has attached itself to the form element.
+    await page.waitForFunction(() => {
+      const form = document.querySelector('form');
+      return !!form && Object.keys(form).some((key) => key.startsWith('__react'));
+    });
+
+    await expect(page.locator('input[type="email"]')).toHaveValue('nobody@example.com');
+    await expect(page.locator('input[type="password"]')).toHaveValue('wrong-password-123');
+  });
+
+  test('a tap before the page hydrates never puts the password in a URL', async ({ page }) => {
+    await page.route('**/_next/static/chunks/**/*.js', () => undefined);
+    await page.goto('/fr/login', { waitUntil: 'domcontentloaded' });
+    await page.locator('input[type="email"]').fill('nobody@example.com');
+    await page.locator('input[type="password"]').fill('wrong-password-123');
+    // Enter in the password field: an implicit, native submission, which is
+    // what a person's submit is before the page has hydrated.
+    const submitted = page.waitForRequest((r) => r.isNavigationRequest());
+    await page.locator('input[type="password"]').press('Enter');
+    const request = await submitted;
+
+    expect(request.url()).not.toContain('password');
+    expect(request.method()).toBe('POST');
+  });
+
   test('invalid credentials show an error without crashing', async ({ page }) => {
     await page.goto('/login');
     await expect(page).toHaveURL(/login/);
     await page.locator('input[type="email"]').fill('nobody@example.com');
     await page.locator('input[type="password"]').fill('wrong-password-123');
+    test.setTimeout(120_000);
+    await authSlot('login');
     await page.locator('button[type="submit"]').click();
     // Should stay on login page (no crash/redirect to 500)
     await expect(page).toHaveURL(/login/);
@@ -142,7 +190,9 @@ test.describe('Authentication', () => {
     const email = `${mailbox}@maildrop.cc`;
     const password = 'Test1234!';
 
+    test.setTimeout(180_000);
     // Mint through the API, the #79 way.
+    await authSlot('register');
     const registered = await request.post('/api/v1/auth', {
       data: {
         email,
@@ -156,6 +206,7 @@ test.describe('Authentication', () => {
     expect(registered.status(), 'registration should return 201').toBe(201);
 
     const token = await maildropToken(mailbox, /verify-email\?token=([0-9a-fA-F]+)/);
+    await authSlot('verify-email');
     const verified = await request.post('/api/v1/auth/verify-email', { data: { token } });
     expect(verified.status(), 'email verification should return 200').toBe(200);
 
@@ -163,6 +214,7 @@ test.describe('Authentication', () => {
     await page.goto('/login');
     await page.locator('input[type="email"]').fill(email);
     await page.locator('input[type="password"]').fill(password);
+    await authSlot('login');
     await page.getByRole('button', { name: /connecter|log ?in|sign ?in/i }).click();
 
     // Success is leaving /login for an authenticated page, with a session cookie set.

@@ -34,9 +34,12 @@ export const LandInfoPanel = ({ land }: LandInfoPanelProps) => {
           <h3 className="text-base font-semibold text-slate-900">{t('infoTitle')}</h3>
         </div>
         <div className="-mx-4 flex w-full flex-col gap-4 border-t border-slate-900/5 p-4">
-          <InfoRow label={t('price')} value={`${formatXAF(land.price)}/m²`} />
+          <InfoRow
+            label={t('price')}
+            value={land.pricePerM2 === null ? '—' : `${formatXAF(land.pricePerM2)}/m²`}
+          />
           <InfoRow label={t('superficie')} value={`${land.sizeM2} m²`} />
-          <InfoRow label={t('totalPrice')} value={formatXAF(land.price * land.sizeM2)} />
+          <InfoRow label={t('totalPrice')} value={formatXAF(land.totalPrice)} />
           <div className="flex items-center justify-between">
             <p className="text-sm/6 text-slate-500">{t('pointValue')}</p>
             <Badge variant="secondary">{land.pv}</Badge>

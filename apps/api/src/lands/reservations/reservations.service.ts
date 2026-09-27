@@ -15,14 +15,17 @@ import {
   LandReservationFilterDto,
 } from '../dto/lands.dto';
 import {
-  DOWN_PAYMENT_PERCENT,
+  depositFor,
   EmailService,
   KAMNET_JOBS,
   LandClientDocumentType,
   LandReservationStatus,
   LandStatus,
   PaginationQuery,
+  PaymentPurpose,
   PaymentState,
+  sumReceipts,
+  TERMINAL_STATES,
   QUEUES,
   SaleCompletedJobPayload,
   StorageService,
@@ -30,6 +33,7 @@ import {
   maskEmail,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
+import { PaymentsService } from '../payments/payments.service';
 
 /** * *
  * 1. CREATE: Agent reserves a land for a client
@@ -63,6 +67,7 @@ export class LandReservationsService {
     private readonly storageService: StorageService,
     private readonly i18n: I18nService,
     @InjectQueue(QUEUES.KAMNET) private readonly kamnetQueue: Queue<SaleCompletedJobPayload>,
+    private readonly payments: PaymentsService,
   ) {}
 
   // ----- Create Reservation ----- //
@@ -102,8 +107,10 @@ export class LandReservationsService {
         throw new ConflictException(this.t('lands.reservation.conflict'));
       }
 
-      // 3. Calculate down payment (5% of land price)
-      const downPaymentAmount = Math.round((land.price * DOWN_PAYMENT_PERCENT) / 100);
+      // 3. Calculate down payment (5% of the parcel's total price, G19)
+      // Both are integer money; `depositFor` works on a number, which holds any
+      // realistic total exactly, and its result is already whole.
+      const downPaymentAmount = BigInt(depositFor(Number(land.totalPrice)));
 
       // 4. Create the reservation
       const reservation = await tx.landReservation.create({
@@ -161,7 +168,7 @@ export class LandReservationsService {
       args: {
         clientName: dto.clientName,
         landTitle: land.title,
-        price: String(land.price),
+        totalPrice: String(land.totalPrice),
         // Empty rather than an id: the template omits the line when there is no
         // name, which is the only honest option if the name cannot be reached.
         agentName,
@@ -178,7 +185,7 @@ export class LandReservationsService {
           firstName: agentUser.firstName || agentUser.email,
           clientName: dto.clientName,
           landTitle: land.title,
-          price: String(land.price),
+          totalPrice: String(land.totalPrice),
         },
       },
       agentUser.profile,
@@ -199,7 +206,8 @@ export class LandReservationsService {
       land: {
         id: land.id,
         title: land.title,
-        price: land.price,
+        totalPrice: land.totalPrice,
+        pricePerM2: land.pricePerM2,
         label: land.label.code,
       },
     };
@@ -264,15 +272,32 @@ export class LandReservationsService {
    * Errors include detailed state of existing payments to guide operator action.
    */
   private async assertAcompteIsValidated(reservationId: string): Promise<void> {
+    return this.assertPaymentIsValidated(
+      reservationId,
+      PaymentPurpose.ACOMPTE,
+      'lands.reservation.acompteNotValidated',
+    );
+  }
+
+  /**
+   * G20 - a step that projects money asks the ledger for a VALIDE payment of
+   * ITS purpose. Asking for any VALIDE payment would let a settled balance
+   * confirm a deposit.
+   */
+  private async assertPaymentIsValidated(
+    reservationId: string,
+    purpose: PaymentPurpose,
+    refusalKey: string,
+  ): Promise<void> {
     const payments = await this.prisma.payment.findMany({
-      where: { reservationId },
+      where: { reservationId, purpose },
       select: { reference: true, state: true },
     });
 
     if (payments.some((payment) => payment.state === PaymentState.VALIDE)) return;
 
     throw new ForbiddenException(
-      this.t('lands.reservation.acompteNotValidated', 'fr', {
+      this.t(refusalKey, 'fr', {
         payments: payments.length
           ? payments.map((p) => `${p.reference ?? '?'} (${p.state})`).join(', ')
           : '-',
@@ -318,11 +343,9 @@ export class LandReservationsService {
 
   // ----- Admin: Confirm Remaining Payment (Step 4) ----- //
   /**
-   * Admin step 4: record that the balance was received.
-   *
-   * Currently updates the reservation state independently of the payment ledger.
-   * This is a known architectural gap, as secondary balance payments are not yet modeled
-   * in the `Payment` ledger.
+   * Admin step 4: record that the balance was received. Like the deposit step,
+   * it follows the ledger (G20): it refuses unless the reservation carries a
+   * VALIDE payment whose purpose is the balance.
    */
   async confirmRemainingPayment(reservationId: string, adminUserId: string) {
     const reservation = await this.findByIdOrThrow(reservationId);
@@ -333,6 +356,12 @@ export class LandReservationsService {
     if (reservation.remainingPaymentConfirmedAt) {
       throw new ConflictException(this.t('lands.reservation.stepAlreadyDone'));
     }
+
+    await this.assertPaymentIsValidated(
+      reservationId,
+      PaymentPurpose.SOLDE,
+      'lands.reservation.soldeNotValidated',
+    );
 
     await this.prisma.landReservation.update({
       where: { id: reservationId },
@@ -424,6 +453,28 @@ export class LandReservationsService {
       throw new ForbiddenException(this.t('lands.reservation.alreadyCompleted'));
     }
 
+    /**
+     * G21 (Visquis, 27 September): cancelling annuls every live payment, with a
+     * written reason - a client who withdraws is never left behind a payment
+     * that can still be validated. Through `PaymentsService.transition`, the one
+     * write path for a payment's state: a transition with an actor and a reason,
+     * the ledger untouched, nothing deleted. A validated payment is not live and
+     * stays VALIDE - money that arrived is not annulled; a refund is its own act.
+     *
+     * Before the reservation is cancelled, so a refusal leaves both as they were
+     * rather than a cancelled reservation with a payment still open.
+     */
+    const live = await this.prisma.payment.findMany({
+      where: { reservationId, state: { notIn: [...TERMINAL_STATES] } },
+      select: { id: true },
+    });
+    for (const payment of live) {
+      await this.payments.transition(payment.id, PaymentState.ANNULE, {
+        actorUserId: userId,
+        reason: `Reservation ${reservationId} cancelled: ${dto.reason}`,
+      });
+    }
+
     // Cancel reservation + make land available again
     await this.prisma.$transaction([
       this.prisma.landReservation.update({
@@ -461,6 +512,7 @@ export class LandReservationsService {
       landId: reservation.landId,
       reason: dto.reason,
       cancelledBy: userId,
+      paymentsAnnulled: live.length,
     });
 
     return { message: this.t('lands.reservation.cancelled') };
@@ -542,7 +594,7 @@ export class LandReservationsService {
         orderBy: { [sort || 'createdAt']: order || 'desc' },
         include: {
           land: {
-            select: { id: true, title: true, price: true, status: true },
+            select: { id: true, title: true, totalPrice: true, pricePerM2: true, status: true },
           },
         },
       }),
@@ -567,7 +619,8 @@ export class LandReservationsService {
             title: true,
             region: true,
             city: true,
-            price: true,
+            totalPrice: true,
+            pricePerM2: true,
             sizeM2: true,
             label: { select: { code: true, name: true } },
             documents: {
@@ -615,6 +668,7 @@ export class LandReservationsService {
 
     return {
       ...enriched,
+      money: await this.moneyForClient(reservation),
       currentStep: this.computeStep(reservation),
       land: {
         ...enriched.land,
@@ -622,6 +676,42 @@ export class LandReservationsService {
       },
       clientDocuments: clientDocumentsWithUrls,
       requiredDocuments,
+    };
+  }
+
+  /**
+   * G20 - what the client expected to pay and what is actually still owed, both
+   * read from the ledger: a sum over the receipts of the live payments, never a
+   * stored total. A deposit validated short shows as a balance larger than the
+   * one announced, instead of disappearing. Whole francs; XAF has no minor unit.
+   */
+  private async moneyForClient(reservation: {
+    id: string;
+    downPaymentAmount: bigint | null;
+    land: { totalPrice: bigint };
+  }) {
+    const live = await this.prisma.payment.findMany({
+      where: {
+        reservationId: reservation.id,
+        state: { notIn: [PaymentState.REJETE, PaymentState.EXPIRE, PaymentState.ANNULE] },
+      },
+      select: { purpose: true, receipts: { select: { amount: true } } },
+    });
+    const received = (purpose: PaymentPurpose) =>
+      live
+        .filter((p) => p.purpose === purpose)
+        .reduce((sum, p) => sum + sumReceipts(p.receipts), 0n);
+
+    const total = reservation.land.totalPrice;
+    const depositDue = reservation.downPaymentAmount ?? 0n;
+    const depositReceived = received(PaymentPurpose.ACOMPTE);
+    const balanceReceived = received(PaymentPurpose.SOLDE);
+    return {
+      totalPrice: Number(total),
+      depositDue: Number(depositDue),
+      depositReceived: Number(depositReceived),
+      balanceExpected: Number(total - depositDue),
+      balanceOwed: Number(total - depositReceived - balanceReceived),
     };
   }
 
@@ -643,7 +733,8 @@ export class LandReservationsService {
               title: true,
               region: true,
               city: true,
-              price: true,
+              totalPrice: true,
+              pricePerM2: true,
               sizeM2: true,
               label: { select: { code: true, name: true } },
             },
@@ -685,7 +776,8 @@ export class LandReservationsService {
             select: {
               id: true,
               title: true,
-              price: true,
+              totalPrice: true,
+              pricePerM2: true,
               status: true,
               sizeM2: true,
               label: { select: { code: true } },
@@ -955,7 +1047,7 @@ export class LandReservationsService {
         agent.profile,
       );
     } catch (error) {
-      this.logger.warn('clientDocumentUploaded email failed %o', { error });
+      this.logger.warn('clientDocumentUploaded email failed %o', { err: error });
     }
   }
 
@@ -1001,7 +1093,7 @@ export class LandReservationsService {
         },
       });
     } catch (error) {
-      this.logger.warn(`${template} email failed %o`, { error });
+      this.logger.warn(`${template} email failed %o`, { err: error });
     }
   }
 
@@ -1034,7 +1126,7 @@ export class LandReservationsService {
         },
       });
     } catch (error) {
-      this.logger.warn('clientDocumentRejected email failed %o', { error });
+      this.logger.warn('clientDocumentRejected email failed %o', { err: error });
     }
   }
 

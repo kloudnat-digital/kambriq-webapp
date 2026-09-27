@@ -82,43 +82,12 @@ const hasEntry = (chantier: string): boolean =>
  * with no entry fails because it is not here, and writing an entry without
  * removing its line fails too, so the list cannot rot into a lie.
  *
- * The three groups are different problems. The `I` and `A` rows predate the
- * current register, and their detail lives in a tracker outside this
- * repository. `G1`, `G10`, `P4`, `P5`, `Q1` are rows summarising work whose
- * entry was never written. `naming`, `rename` and `register` are decisions about
- * this document rather than chantiers.
+ * Twenty-one entries were written on 26 September. `P10` remains: its entry is
+ * written in #174, held open for the LANDS copy, and a second one here would put
+ * two `### P10` headings in the file when #174 merges.
  */
 const NO_ENTRY_YET: ReadonlyArray<{ chantier: string; why: string }> = [
-  { chantier: 'A19', why: 'develop linted one project of six; entry never written' },
-  { chantier: 'A31', why: 'the seed left parcels AVAILABLE under a reservation' },
-  { chantier: 'A32', why: 'the CI gate reads develop at its head' },
-  { chantier: 'A33', why: 'WebKit out of the E2E matrix; Safari is not tested' },
-  { chantier: 'A36', why: 'the journey client waits out a 429' },
-  { chantier: 'Audit 2026-09-23, unwaved', why: 'findings with no wave assigned yet' },
-  { chantier: 'G1', why: 'the payment model; detail is in docs/ops/g1-payment-model.md' },
-  { chantier: 'G10', why: 'channel parameters applied; entry folded into G10b' },
-  { chantier: 'I15', why: 'the 18 September wave, tracked outside this repository' },
-  { chantier: 'I16', why: 'the 18 September wave, tracked outside this repository' },
-  { chantier: 'I18', why: 'the 18 September wave, tracked outside this repository' },
-  { chantier: 'I19', why: 'the 18 September wave, tracked outside this repository' },
-  { chantier: 'I20', why: 'the 18 September wave, tracked outside this repository' },
-  { chantier: 'I21', why: 'the 18 September wave, tracked outside this repository' },
-  { chantier: 'I31', why: 'exam threshold arbitration, tracked outside this repository' },
-  { chantier: 'I32', why: 'getMyNetwork never reads the caller tier; not started' },
-  { chantier: 'I7', why: 'the 18 September wave, tracked outside this repository' },
-  { chantier: 'P10', why: 'the exclusive-catalogue promise; not started' },
-  { chantier: 'P22', why: "opened by P11's self-review, not started" },
-  { chantier: 'P4', why: 'X-Robots-Tag; entry never written' },
-  { chantier: 'P5', why: 'the login wall on the public call to action; not started' },
-  { chantier: 'Q1', why: 'certification follow-up; entry never written' },
-  {
-    chantier: 'confirmRemainingPayment',
-    why: 'the balance has no ledger; described inside the wave 4 entry rather than its own',
-  },
-  { chantier: 'naming', why: 'a decision about this document, not a chantier' },
-  { chantier: 'register', why: 'a decision about this document, not a chantier' },
-  { chantier: 'rename', why: 'a decision about this document, not a chantier' },
-  { chantier: 'verify-cert', why: 'the public verdict page; entry never written' },
+  { chantier: 'P10', why: 'agent-page copy replaced; the LANDS page rewrite waits in #174' },
 ];
 
 /**
@@ -198,7 +167,7 @@ describe('the chantier register is the record, and the only one', () => {
       (q) => q.chantier,
     );
     expect(stale).toEqual([]);
-    expect(NO_ENTRY_YET).toHaveLength(27);
+    expect(NO_ENTRY_YET).toHaveLength(1);
   });
 
   it('is the only file in the repository shaped like a record of work', () => {

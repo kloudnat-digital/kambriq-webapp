@@ -142,7 +142,7 @@ describe('P11 - the public directory lists only agents who may be listed', () =>
    * projection - owner included.
    *
    * `KbsCertificate` carries `candidateId`, not `userId`, so the owner is read
-   * through the relation exactly as `findNewestCertificateFacts` reads it.
+   * through the relation exactly as `findNewestCertificateFactsForUsers` reads it.
    */
   const certificateOf = async (candidateId: string) => {
     const row = await kbs.prisma.kbsCertificate.findFirst({

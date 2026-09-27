@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@kambriq/common/prisma/lands-client/client';
-import { PaymentState } from '@kambriq/common';
+import { PaymentPurpose, PaymentState } from '@kambriq/common';
 import { assertIsTestDatabase, TEST_SCHEMAS, urlFor } from './test-db-url';
 
 /**
@@ -74,6 +74,12 @@ export const SQLSTATE = {
   UNDEFINED_COLUMN: '42703',
   /** A `RAISE EXCEPTION` with no `ERRCODE` - the G6 reminder triggers. */
   RAISE_EXCEPTION: 'P0001',
+  /** A NOT NULL column left empty - `Payment.purpose` has no default (G20). */
+  NOT_NULL_VIOLATION: '23502',
+  /** A unique index refused the row - one live payment per purpose (G20). */
+  UNIQUE_VIOLATION: '23505',
+  /** A write to a `GENERATED ALWAYS` column - `Land.pricePerM2` (G19). */
+  GENERATED_ALWAYS: '428C9',
 } as const;
 
 /**
@@ -126,7 +132,7 @@ export const createPaymentFixture = async (
       description: 'Created by the database-backed suite.',
       region: 'Littoral',
       sizeM2: 500,
-      price: 15_000_000,
+      totalPrice: 15_000_000,
       labelId: label.id,
     },
   });
@@ -138,12 +144,13 @@ export const createPaymentFixture = async (
       clientUserId: `client-${tag}`,
       clientName: 'Fixture Client',
       clientEmail: `a17-${tag}@example.test`,
-      downPaymentAmount: 750_000,
+      downPaymentAmount: 750_000n,
     },
   });
 
   const payment = await prisma.payment.create({
     data: {
+      purpose: PaymentPurpose.ACOMPTE,
       reservationId: reservation.id,
       currency: 'XAF',
       amountDue: over.amountDue ?? 750_000n,

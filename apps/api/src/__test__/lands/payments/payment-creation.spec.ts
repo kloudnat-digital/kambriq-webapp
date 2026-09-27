@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { ConflictException } from '@nestjs/common';
-import { EmailService, validateReference, StorageService } from '@kambriq/common';
+import { EmailService, validateReference, StorageService, PaymentPurpose } from '@kambriq/common';
 import { PaymentsService } from '../../../lands/payments/payments.service';
 import { LandsPrismaService } from '../../../lands/prisma/lands-prisma.service';
 import { PaymentChannelsService } from '../../../lands/payments/payment-channels.service';
@@ -58,6 +58,7 @@ describe('createPayment', () => {
 
   // G9: creation is a named act, so these two are not optional.
   const input = {
+    purpose: PaymentPurpose.ACOMPTE,
     reservationId: 'res-1',
     amountDue: 750_000n,
     currency: 'XAF',

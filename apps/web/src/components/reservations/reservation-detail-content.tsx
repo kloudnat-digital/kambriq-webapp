@@ -172,7 +172,12 @@ const ReservationDetailContent: FC<Props> = ({ id, currentUserId, isAdmin = fals
           />
 
           <ReservationLandSummaryCard
-            land={{ id: r.land.id, price: r.land.price, sizeM2: r.land.sizeM2 }}
+            land={{
+              id: r.land.id,
+              totalPrice: r.land.totalPrice,
+              pricePerM2: r.land.pricePerM2,
+              sizeM2: r.land.sizeM2,
+            }}
           />
 
           {!isCancelled && !isCompleted && canCancel && (

@@ -49,30 +49,15 @@ const NOT_MONEY = new Set([
  * of these without removing its line fails the test too, so the list cannot rot
  * into a lie.
  *
- * They are not converted here because `Land.price` alone has **51 call sites**
- * across the API and the web, and `BigInt` does not survive `JSON.stringify`,
- * so converting it means changing the response serialiser and the web types in
- * the same breath. That is a chantier, not a detail of this one - and shipping
- * half of it silently is worse than shipping none of it.
- *
- * `downPaymentAmount` is here for a second reason: G1 deprecates it rather than
- * dropping it, so it must survive this PR unchanged.
+ * `Land.totalPrice` and its price history were converted to `BigInt` on 26
+ * September; the response envelope turns a BigInt into an exact number (or a
+ * string past that range), which is what made the conversion small.
+ * `LandReservation.downPaymentAmount` followed on 27 September - still
+ * deprecated by G1, still kept, now integer - and `KamnetCommission.amount` the
+ * same day. **The list is empty**: every monetary column in the four schemas is
+ * integer money. It stays, pinned at zero, so a new entry has to be argued for.
  */
-const QUARANTINED: ReadonlyArray<{ module: string; field: string; why: string }> = [
-  { module: 'lands', field: 'price', why: 'Land.price - 51 call sites, needs its own chantier' },
-  { module: 'lands', field: 'previousPrice', why: 'LandPriceHistory - moves with Land.price' },
-  { module: 'lands', field: 'newPrice', why: 'LandPriceHistory - moves with Land.price' },
-  {
-    module: 'lands',
-    field: 'downPaymentAmount',
-    why: 'deprecated by G1, deliberately not dropped in the G1 PR',
-  },
-  {
-    module: 'kamnet',
-    field: 'amount',
-    why: 'KamnetCommission.amount - moves with Land.price, which it is derived from',
-  },
-];
+const QUARANTINED: ReadonlyArray<{ module: string; field: string; why: string }> = [];
 
 type Field = { module: string; name: string; type: string; line: number };
 
@@ -113,7 +98,8 @@ describe('money is never a floating-point type', () => {
     const names = ALL_FIELDS.filter(isMonetary).map((f) => f.name);
     expect(names).toContain('amountDue');
     expect(names).toContain('amount');
-    expect(names).toContain('price');
+    expect(names).toContain('totalPrice');
+    expect(names).toContain('pricePerM2');
   });
 
   it('no monetary field is Float, Decimal, Double or Real', () => {
@@ -151,6 +137,6 @@ describe('money is never a floating-point type', () => {
       expect(found).toBeDefined();
       expect(FLOATING.has(found?.type ?? '')).toBe(true);
     }
-    expect(QUARANTINED).toHaveLength(5);
+    expect(QUARANTINED).toHaveLength(0);
   });
 });

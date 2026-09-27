@@ -71,8 +71,10 @@ export const envSchema = z.object({
   DUNNING_SWEEP_CRON: z.string().default('0 6 * * *'),
 
   // ----- Contact Settings -----
-  // Destination email for inbound contact requests and daily digests.
-  CONTACT_INBOX_EMAIL: z.email().optional(),
+  // Destination email for inbound contact requests and daily digests. Required:
+  // without it every contact request is stored unannounced and the daily digest
+  // fails at 07:00, so the process refuses to start instead.
+  CONTACT_INBOX_EMAIL: z.email('CONTACT_INBOX_EMAIL is required (the contact inbox)'),
 
   /** The cron schedule for the daily contact digest. Defaults to 07:00 UTC. */
   CONTACT_DIGEST_CRON: z.string().default('0 7 * * *'),

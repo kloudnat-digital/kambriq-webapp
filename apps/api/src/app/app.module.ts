@@ -10,13 +10,17 @@ import {
   RedisModule,
   RolesGuard,
   UserLanguageResolver,
+  apiLogLevel,
+  prettyLogs,
   validateEnv,
 } from '@kambriq/common';
 import { AcceptLanguageResolver, HeaderResolver, I18nModule } from 'nestjs-i18n';
 import { LoggerModule } from 'nestjs-pino';
-import { IncomingMessage } from 'http';
+import { structuredFieldsHook } from '../core/logging/structured-fields';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { REQUEST_LOG_REDACT_PATHS } from '../core/logging/request-log-redaction';
+import { accessLogProps, accessLogSerializers } from '../core/logging/access-log';
+import { readCallerSecret } from '../core/throttler/caller-identity';
 import { ThrottlerBehindProxyGuard } from '../core/throttler/throttler-behind-proxy.guard';
 import { CoreModule } from '../core/core.module';
 import { HealthModule } from '../health/health.module';
@@ -51,30 +55,31 @@ import { CmsModule } from '../cms/cms.module';
 
     // ----- Logging (Pino) -----
     LoggerModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
+      useFactory: () => ({
         pinoHttp: {
           // A45, A46. See request-log-redaction.ts.
           redact: { paths: REQUEST_LOG_REDACT_PATHS, censor: '[redacted]' },
-          level: config.get('NODE_ENV') === 'production' ? 'info' : 'debug',
-          transport:
-            config.get('NODE_ENV') !== 'production'
-              ? {
-                  target: 'pino-pretty',
-                  options: {
-                    colorize: true,
-                    translateTime: 'HH:MM:ss.l',
-                    ignore: 'pid,hostname',
-                    singleLine: true,
-                  },
-                }
-              : undefined,
+          // A48: from APP_ENV. Dev logged at debug level, pretty-printed, because it
+          // runs NODE_ENV=development like a laptop.
+          level: apiLogLevel(),
+          transport: prettyLogs()
+            ? {
+                target: 'pino-pretty',
+                options: {
+                  colorize: true,
+                  translateTime: 'HH:MM:ss.l',
+                  ignore: 'pid,hostname',
+                  singleLine: true,
+                },
+              }
+            : undefined,
           autoLogging: true,
-          customProps: (req: IncomingMessage) => {
-            const header = req.headers['x-correlation-id'];
-            const correlationId = Array.isArray(header) ? header[0] : header;
-            return { correlationId };
-          },
+          // L3: a log payload becomes top-level JSON fields. See structured-fields.ts.
+          hooks: { logMethod: structuredFieldsHook },
+          // D28: who (visitor address, account) and a URL masked by allowlist.
+          // See access-log.ts.
+          serializers: accessLogSerializers,
+          customProps: accessLogProps(readCallerSecret()),
         },
       }),
     }),

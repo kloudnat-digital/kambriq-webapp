@@ -1,9 +1,9 @@
 {
   "nav": {
-    "lands": "KAMBRIQ LANDS",
+    "lands": "KAMBRIQ LANDS™",
     "verify": "KAMBRIQ VERIFY™",
     "kbs": "KBS",
-    "kamnet": "KAMNET",
+    "kamnet": "KAMNET™",
     "login": "Sign in",
     "contact": "Contact us",
     "openMenu": "Open main menu",
@@ -37,7 +37,7 @@
     },
     "distance": {
       "title": "A certified agent network",
-      "description": "Every KAMNET agent is trained and certified by KAMBRIQ Business School. Your single point of contact, wherever you are."
+      "description": "Every KAMNET™ agent is trained and certified by KAMBRIQ Business School. Your single point of contact, wherever you are."
     }
   },
   "process": {
@@ -45,7 +45,7 @@
     "subtitle": "Tailored support, from your first contact to your title deed.",
     "step1": {
       "title": "Tell us about your project",
-      "description": "Your KAMNET agent listens to your needs: budget, location, use, timeline."
+      "description": "Your KAMNET™ agent listens to your needs: budget, location, use, timeline."
     },
     "step2": {
       "title": "We verify for you",
@@ -89,7 +89,7 @@
     "title": "Our method: 7 verifications before any proposal",
     "subtitle": "No land enters our catalogue without going through KAMBRIQ VERIFY™.",
     "cta": "Contact us",
-    "cta2": "Discover KAMBRIQ LANDS"
+    "cta2": "Discover KAMBRIQ LANDS™"
   },
   "homeCta": {
     "title": "Do you have a land project in Cameroon?",
@@ -168,11 +168,12 @@
         },
         "q4": {
           "question": "Is the service free if I buy through KAMBRIQ?",
-          "answer": "Yes, if you buy land through KAMBRIQ LANDS with support from your KAMNET agent, KAMBRIQ VERIFY™ is included. Otherwise, the fee is €99."
+          "answer": "Yes, if you buy land through KAMBRIQ LANDS™ with support from your KAMNET™ agent, KAMBRIQ VERIFY™ is included. Otherwise, the fee is €99."
         }
       },
       "heroCard": {
         "tfLabel": "Title deed",
+        "tfExample": "TF 4129/M",
         "verified": "Verified",
         "authenticity": "Title authenticity",
         "authenticityResult": "Compliant",
@@ -187,10 +188,10 @@
     "kbs": {
       "hero": {
         "eyebrow": "Professional training",
-        "title": "Become a certified KAMNET agent",
-        "subtitle": "KAMBRIQ Business School (KBS) is the reference training to master Cameroonian land and join the KAMNET network.",
+        "title": "Become a certified KAMNET™ agent",
+        "subtitle": "KAMBRIQ Business School (KBS) is the reference training to master Cameroonian land and join the KAMNET™ network.",
         "applyNow": "Contact us",
-        "learnMore": "Learn more about KAMNET",
+        "learnMore": "Learn more about KAMNET™",
         "certificateBadge": "Earn your KCA (KAMBRIQ Certified Agent) certificate"
       },
       "program": {
@@ -219,8 +220,8 @@
         "subtitle": "Two entry paths to access the training",
         "sponsorship": {
           "name": "Sponsorship",
-          "title": "KAMNET sponsorship",
-          "description": "If an existing KAMNET Agent recommended you, you can enter their sponsor code when you apply. It is recorded with your application."
+          "title": "KAMNET™ sponsorship",
+          "description": "If an existing KAMNET™ Agent recommended you, you can enter their sponsor code when you apply. It is recorded with your application."
         },
         "freeApplication": {
           "name": "Free Application",
@@ -408,18 +409,18 @@
       },
       "badge": "Certification training",
       "title": "KAMBRIQ Business School",
-      "description": "The reference training to become a certified KAMNET agent. Master the Cameroonian land market.",
+      "description": "The reference training to become a certified KAMNET™ agent. Master the Cameroonian land market.",
       "cta": "Discover KBS",
       "about": {
         "title": "What is KAMBRIQ Business School?",
-        "subtitle": "KAMBRIQ Business School (KBS) is the official training centre to become a certified KAMNET Agent. The KCA1 programme prepares you to master the Cameroonian land market and succeed in the KAMBRIQ agent network.",
+        "subtitle": "KAMBRIQ Business School (KBS) is the official training centre to become a certified KAMNET™ Agent. The KCA1 programme prepares you to master the Cameroonian land market and succeed in the KAMBRIQ agent network.",
         "missionLabel": "Our mission",
         "missionText": "Train competent, ethical professionals able to guide investors (diaspora and local) through their land projects in Cameroon, ensuring legal security and transparency."
       },
       "whoCanRegister": {
         "heading": "Who can apply?",
         "futureAgent": {
-          "title": "Future KAMNET Agents",
+          "title": "Future KAMNET™ Agents",
           "description": "You want to join our certified agent network and develop a commercial activity in land real estate."
         },
         "diaspora": {
@@ -438,8 +439,8 @@
           "description": "Obtain the KCA (KAMBRIQ Certified Agent) certificate, valid 2 years, attesting your expertise."
         },
         "network": {
-          "title": "Access to KAMNET",
-          "description": "Join the exclusive KAMBRIQ agent network and access the verified KAMBRIQ LANDS catalogue."
+          "title": "Apply to join KAMNET™",
+          "description": "The KCA certificate lets you apply to join KAMNET™: you guide your clients with the KAMBRIQ method, on lands that have passed KAMBRIQ VERIFY™'s 7 checks."
         },
         "expertise": {
           "title": "KAMBRIQ TFL™ / VEFL™ / VEFIL™ expertise",
@@ -448,13 +449,13 @@
       },
       "whatYouLearn": {
         "title": "What will you learn?",
-        "subtitle": "A complete training covering all essential aspects to succeed as a KAMNET Agent",
+        "subtitle": "A complete training covering all essential aspects to succeed as a KAMNET™ Agent",
         "chapter1": {
           "name": "Parcours 1",
           "title": "ÉCOSYSTÈME KAMBRIQ",
           "description": "Understand before selling - KAMBRIQ's cultural, ethical and professional filter",
           "item1": "Explain in one clear sentence why KAMBRIQ exists",
-          "item2": "Understand the architecture of the ecosystem (KAMBRIQ / LANDS / KAMNET / KBS / VERIFY / KPVE / KCPI)",
+          "item2": "Understand the architecture of the ecosystem (KAMBRIQ / LANDS™ / KAMNET™ / KBS / VERIFY™ / KPVE / KCPI)",
           "item3": "Present the 3 product labels without confusion or overselling",
           "item4": "Apply the non-negotiable rules and the absolute prohibitions"
         },
@@ -480,7 +481,7 @@
           "name": "Parcours 4",
           "title": "ÉTHIQUE · CONFORMITÉ · MARQUE KAMBRIQ",
           "description": "Land is not sold without moral rigour - ethics is the heart of the business model",
-          "item1": "Sell LANDS within the frame: message, proof and process",
+          "item1": "Sell LANDS™ within the frame: message, proof and process",
           "item2": "Apply the Red List without hesitation: money, documents, price, promises, workarounds",
           "item3": "Tell informing from giving legal advice, reassuring from promising",
           "item4": "Recognise risky situations and apply STOP - TRACE - ESCALATE"
@@ -495,7 +496,7 @@
         "format3": "Minimum score: 80%",
         "afterTitle": "After certification",
         "after1": "Downloadable KCA certificate",
-        "after2": "KAMNET eligibility",
+        "after2": "KAMNET™ eligibility",
         "after3": "Access to the agent network"
       },
       "requirements": {
@@ -507,10 +508,10 @@
       },
       "whyKbs": {
         "title": "Why train?",
-        "subtitle": "KBS training opens the doors to KAMNET and new opportunities",
+        "subtitle": "KBS training opens the doors to KAMNET™ and new opportunities",
         "network": {
-          "title": "Join KAMNET",
-          "description": "Become a certified KAMNET Agent and access our exclusive verified land catalogue."
+          "title": "Join KAMNET™",
+          "description": "The KCA certificate lets you apply to join KAMNET™. As an agent, you guide your clients with the KAMBRIQ method, and every land you present to them has passed KAMBRIQ VERIFY™'s 7 checks."
         },
         "expertise": {
           "title": "Recognised expertise",
@@ -523,7 +524,7 @@
       },
       "process": {
         "title": "How does the journey work?",
-        "subtitle": "4 steps to become a certified KAMNET Agent",
+        "subtitle": "4 steps to become a certified KAMNET™ Agent",
         "step1": {
           "title": "Online training",
           "description": "Complete online programme: theory modules, practical cases, and personalised support."
@@ -537,29 +538,29 @@
           "description": "Obtain your KCA (KAMBRIQ Certified Agent) certificate, valid 2 years."
         },
         "step4": {
-          "title": "KAMNET Agent activation",
-          "description": "Officially join the KAMNET network and start presenting our verified land."
+          "title": "KAMNET™ Agent activation",
+          "description": "Officially join the KAMNET™ network and start presenting our verified land."
         }
       }
     },
     "kamnet": {
       "hero": {
-        "eyebrow": "KAMNET Agent Network",
+        "eyebrow": "KAMNET™ Agent Network",
         "title": "The network of KAMBRIQ certified agents",
-        "subtitle": "KAMNET agents are certified by KAMBRIQ Business School and support buyers at every step. You join the network after obtaining the KCA certification.",
-        "cta": "Apply to KAMNET",
+        "subtitle": "KAMNET™ agents are certified by KAMBRIQ Business School and support buyers at every step. You join the network after obtaining the KCA certification.",
+        "cta": "Apply to KAMNET™",
         "cta2": "Contact us"
       },
       "badge": "Premium",
-      "title": "KAMNET",
+      "title": "KAMNET™",
       "description": "Professional network to connect investors, experts and entrepreneurs in the Cameroonian real estate sector.",
       "cta": "Learn more",
       "agentJourney": {
-        "title": "KAMNET Agent journey",
+        "title": "KAMNET™ Agent journey",
         "subtitle": "From training to professional development",
         "step1": {
           "title": "Sponsorship",
-          "description": "Be sponsored by an existing KAMNET Agent or apply directly for KBS training"
+          "description": "Be sponsored by an existing KAMNET™ Agent or apply directly for KBS training"
         },
         "step2": {
           "title": "KBS training",
@@ -570,12 +571,12 @@
           "description": "Obtain your KAMBRIQ Certified Agent certification after completing the training"
         },
         "step4": {
-          "title": "KAMNET membership application",
+          "title": "KAMNET™ membership application",
           "description": "Submit your file with your sponsorship code to officially join the network"
         },
         "step5": {
           "title": "Junior Agent status",
-          "description": "Start your activity as a Junior Agent with initial access to the catalogue"
+          "description": "Start your activity as a Junior Agent and present your first verified lands to your clients."
         },
         "step6": {
           "title": "Sponsor mentorship",
@@ -590,8 +591,8 @@
         "heading": "Why become a KAMBRIQ Agent?",
         "subheading": "Join a growing professional network",
         "exclusiveAccess": {
-          "title": "Exclusive access to KAMBRIQ LANDS",
-          "description": "Distribute KAMBRIQ TFL™, VEFL™ and VEFIL™ land exclusively and access future KAMBRIQ products."
+          "title": "Verified files for your clients",
+          "description": "For each land you present, you hand your client a KAMBRIQ LANDS™ file: verified legal status, a TFL™, VEFL™ or VEFIL™ label, and the file's documents."
         },
         "training": {
           "title": "KCA certified training (via KBS)",
@@ -599,7 +600,7 @@
         },
         "followUp": {
           "title": "Agent support",
-          "description": "Benefit from your sponsor's support and the KAMNET community to develop your business."
+          "description": "Benefit from your sponsor's support and the KAMNET™ community to develop your business."
         },
         "career": {
           "title": "Stable professional opportunity",
@@ -633,9 +634,9 @@
     "comingSoon": "Coming soon",
     "lands": {
       "badge": "Available",
-      "title": "KAMBRIQ LANDS",
+      "title": "KAMBRIQ LANDS™",
       "description": "Verified lands, with a clear label on their legal status. You know exactly what you are buying.",
-      "cta": "Discover KAMBRIQ LANDS"
+      "cta": "Discover KAMBRIQ LANDS™"
     }
   },
   "faq": {
@@ -647,10 +648,10 @@
     "noResults": "No results found. Try a different search.",
     "categories": {
       "all": "All",
-      "lands": "KAMBRIQ LANDS",
+      "lands": "KAMBRIQ LANDS™",
       "verify": "KAMBRIQ VERIFY™",
       "kbs": "KBS",
-      "kamnet": "KAMNET"
+      "kamnet": "KAMNET™"
     },
     "title": "Frequently Asked Questions",
     "subtitle": "Everything you need to know about KAMBRIQ and our services.",
@@ -663,7 +664,7 @@
       {
         "id": "2",
         "q": "How do I buy land from abroad?",
-        "a": "Contact us on WhatsApp (+33 7 45 90 98 56) or by email (contact@kambriq.com). A certified KAMNET agent guides you from land selection through to obtaining your title deed."
+        "a": "Contact us on WhatsApp (+33 7 45 90 98 56) or by email (contact@kambriq.com). A certified KAMNET™ agent guides you from land selection through to obtaining your title deed."
       },
       {
         "id": "3",
@@ -687,7 +688,7 @@
       },
       {
         "id": "7",
-        "q": "How do I become a KAMNET agent?",
+        "q": "How do I become a KAMNET™ agent?",
         "a": "By completing the KCA certification through KAMBRIQ Business School (KBS). Online training, final exam (minimum score 80%), numbered certificate valid for 2 years. See the KBS page to learn more."
       },
       {
@@ -706,9 +707,9 @@
     "description": "Land strategy advisory in Cameroon.",
     "location": "Douala-Dibamba, Cameroon",
     "productsServices": "Products & Services",
-    "lands": "KAMBRIQ LANDS",
+    "lands": "KAMBRIQ LANDS™",
     "verify": "KAMBRIQ VERIFY™",
-    "kamnet": "KAMNET",
+    "kamnet": "KAMNET™",
     "kbs": "KAMBRIQ Business School",
     "annuaire": "Agent directory",
     "support": "Support",
@@ -821,13 +822,26 @@
       "password": "Password",
       "submit": "Reactivate my account",
       "backToLogin": "Back to sign in"
+    },
+    "validation": {
+      "emailInvalid": "Please enter a valid email address.",
+      "passwordRequired": "Password is required.",
+      "passwordTooShort": "Password must be at least 8 characters long.",
+      "passwordNeedsUppercase": "Password must contain at least one uppercase letter.",
+      "passwordNeedsNumber": "Password must contain at least one number.",
+      "passwordNeedsSpecial": "Password must contain at least one special character.",
+      "firstNameTooShort": "First name must be at least 2 characters long.",
+      "lastNameTooShort": "Last name must be at least 2 characters long.",
+      "phoneInvalid": "Enter a valid phone number with its international prefix (e.g. +237 6 95 12 34 56 or +33 6 12 34 56 78).",
+      "confirmPasswordRequired": "Please confirm your password.",
+      "passwordsDoNotMatch": "Passwords do not match."
     }
   },
   "landsHero": {
-    "badge": "KAMBRIQ LANDS",
+    "badge": "KAMBRIQ LANDS™",
     "title": "Verified lands, a clear label on every property",
     "subtitle": "Every land proposed by KAMBRIQ goes through 7 verifications. Every property receives a label that tells you exactly where you stand.",
-    "cta": "Talk to a KAMNET agent",
+    "cta": "Talk to a KAMNET™ agent",
     "cta2": "Verify a land",
     "indicator1": "7 verifications per land",
     "indicator2": "3 security labels",
@@ -835,9 +849,9 @@
   },
   "howItWorks": {
     "title": "How to buy land through KAMBRIQ",
-    "subtitle": "Tailored support by your certified KAMNET agent",
+    "subtitle": "Tailored support by your certified KAMNET™ agent",
     "step1": {
-      "title": "Contact a KAMNET agent",
+      "title": "Contact a KAMNET™ agent",
       "description": "A certified agent listens to your project: budget, location, use, timeline."
     },
     "step2": {
@@ -856,7 +870,7 @@
   "whyBuyAtKambriq": {
     "title": "Why buy through KAMBRIQ?",
     "subtitle": "Each service addresses a specific step in your land project",
-    "cta": "Talk to a KAMNET agent",
+    "cta": "Talk to a KAMNET™ agent",
     "cta2": "Verify a land",
     "legalSecurity": {
       "title": "Verified legal security",
@@ -871,7 +885,7 @@
       "description": "Complete file, clear label, fixed price. You know exactly what you are buying before committing."
     },
     "kamnetAgent": {
-      "title": "KAMNET Agent support",
+      "title": "KAMNET™ Agent support",
       "description": "From selection to obtaining the title deed, your certified agent guides you at every step."
     }
   },
@@ -879,14 +893,14 @@
     "title": "Our 3 labels",
     "subtitle": "Every land receives a KAMBRIQ label that clearly indicates its legal status",
     "clientAdvantages": "What this means for you",
-    "agentAdvantages": "KAMNET Agent advantages",
+    "agentAdvantages": "KAMNET™ Agent advantages",
     "kambriqCommitment": "KAMBRIQ commitment",
     "tfl": {
       "name": "KAMBRIQ TFL™ - Titre Foncier Loti",
       "description": "Registration is complete and subdivision is done. Ownership is transferred immediately.",
       "advantages": {
         "client": "You become the owner upon notarial signature. No additional administrative procedures.",
-        "agent": "Fast commission, simplified process, secured client.",
+        "agent": "Simplified process, secured client.",
         "commitment": "Authentic title deed verified by KAMBRIQ VERIFY™, cadastral compliance confirmed."
       }
     },
@@ -918,165 +932,58 @@
     "questions": {
       "landInfo": "I'd like information on available lands",
       "verifyService": "I'd like to know more about KAMBRIQ VERIFY™",
-      "kbsFormation": "How to become a certified KAMNET Agent via KBS?",
-      "kamnetAgent": "How to join the KAMNET network and earn commissions?",
+      "kbsFormation": "How to become a certified KAMNET™ Agent via KBS?",
+      "kamnetAgent": "How to join the KAMNET™ network?",
       "pricing": "What are your rates and payment terms?",
       "buyingProcess": "How does the purchase process work from abroad?",
       "documentation": "What documents are needed to buy land?",
       "other": "I have another question"
     }
   },
-  "landSearch": {
-    "verified": "Verified",
-    "details": "View details",
-    "compare": "Compare",
-    "resultsCount": "{count} land(s) found",
-    "noResults": "No lands found",
-    "noResultsHint": "Try adjusting your filters",
-    "filters": {
-      "searchPlaceholder": "Search by name, city…",
-      "regionPlaceholder": "Select a region",
-      "labelPlaceholder": "Select a label type",
-      "allRegions": "All regions",
-      "allTypes": "All types",
-      "minPrice": "Min price",
-      "maxPrice": "Max price",
-      "verifiedOnly": "Verified only",
-      "reset": "Reset"
+  "verifyCertificate": {
+    "home": "Back to home",
+    "labels": {
+      "number": "KCA number",
+      "issued": "Issued on",
+      "validUntil": "Valid until",
+      "revokedOn": "Revoked on",
+      "expiredOn": "Expired on"
     },
-    "compareBar": {
-      "selected": "{count} land(s) selected",
-      "addLand": "Add",
-      "clear": "Clear",
-      "compare": "Compare"
+    "valid": {
+      "title": "Valid certificate",
+      "description": "This KCA certificate was issued by KAMBRIQ and is currently valid."
     },
-    "modal": {
-      "verified": "Verified",
-      "statusAvailable": "Available",
-      "statusReserved": "Reserved",
-      "totalPrice": "Total price",
-      "pricePerSqm": "{price} XAF/m²",
-      "instalments": "Payment by instalments available",
-      "deposit": "Minimum 5% deposit to reserve",
-      "noDescription": "No description available for this land.",
-      "tabs": {
-        "identity": "Identity",
-        "verification": "Verification",
-        "technical": "Technical",
-        "description": "Description",
-        "actions": "Agent Actions"
-      },
-      "actions": {
-        "title": "KAMNET Agent Actions",
-        "description": "Actions available to support your clients on this land.",
-        "createProspect": "Create a prospect for this land",
-        "reserve": "Reserve for a client",
-        "viewDocs": "View verified documents",
-        "requestSupport": "Request KAMBRIQ support",
-        "cancel": "Cancel",
-        "prospect": {
-          "title": "Create a prospect",
-          "name": "Client full name",
-          "phone": "Phone",
-          "email": "Email (optional)",
-          "notes": "Notes",
-          "submit": "Create prospect",
-          "success": "Prospect created successfully"
-        },
-        "reservation": {
-          "title": "Reserve for a client",
-          "clientName": "Client full name",
-          "clientPhone": "Phone",
-          "deposit": "Deposit",
-          "notes": "Notes",
-          "submit": "Confirm reservation",
-          "success": "Reservation recorded successfully"
-        },
-        "docs": {
-          "title": "Verified documents",
-          "description": "Documents available for this land, validated by KAMBRIQ VERIFY™.",
-          "view": "View"
-        },
-        "support": {
-          "title": "Request KAMBRIQ support",
-          "requestType": "Request type",
-          "typePlaceholder": "Select a type",
-          "types": {
-            "legal": "Legal support",
-            "commercial": "Commercial support",
-            "client": "Client management",
-            "other": "Other"
-          },
-          "message": "Message",
-          "messagePlaceholder": "Describe your request…",
-          "submit": "Send request",
-          "success": "Request sent",
-          "successDesc": "The KAMBRIQ team will contact you within 24h"
-        }
-      },
-      "details": {
-        "type": "Type",
-        "size": "Area",
-        "price": "Price",
-        "region": "Region",
-        "city": "City",
-        "neighborhood": "Neighborhood",
-        "tfNumber": "Title deed No."
-      },
-      "verification": {
-        "verified": "Land verified by KAMBRIQ",
-        "notVerified": "Land not yet verified",
-        "verifiedDesc": "This land has been fully checked by our KAMBRIQ VERIFY™ experts before publication.",
-        "notVerifiedDesc": "This land has not yet been submitted for KAMBRIQ verification.",
-        "verifiedAt": "Last verification: {date}",
-        "docsTitle": "Available verification documents:",
-        "docTitle": "Property certificate (< 3 months)",
-        "docVerify": "KAMBRIQ VERIFY™ report",
-        "docBordereau": "Analytical bordereau",
-        "docUrban": "Urban planning certificate",
-        "check1": "Authenticated title deed",
-        "check2": "Cadastral compliance verified",
-        "check3": "Absence of disputes confirmed"
-      },
-      "technical": {
-        "topography": "Topography",
-        "water": "Water access",
-        "electricity": "Electricity",
-        "available": "Available",
-        "unavailable": "Unavailable",
-        "features": "Features"
-      }
+    "revoked": {
+      "title": "Revoked certificate",
+      "description": "This KCA certificate was issued by KAMBRIQ and later revoked. It is no longer valid."
+    },
+    "expired": {
+      "title": "Expired certificate",
+      "description": "This KCA certificate was issued by KAMBRIQ, but its validity period has ended. It no longer attests to a current certification."
+    },
+    "unknown": {
+      "title": "Certificate not recognised",
+      "description": "No certificate issued by KAMBRIQ matches the number <number>{requested}</number>. This number is not recognised."
+    },
+    "unavailable": {
+      "title": "Verification unavailable for now",
+      "description": "We cannot check the number <number>{requested}</number> right now. This page neither confirms nor denies its authenticity: try again in a few minutes."
     }
   },
-  "landsCompare": {
-    "title": "Compare Lands",
-    "subtitle": "Comparing {count} land(s)",
-    "emptyMessage": "Select at least 2 lands from the search to compare them side by side.",
-    "backToSearch": "Back to search",
-    "clearAndRestart": "Clear & restart",
-    "attribute": "Attribute",
-    "actions": "Actions",
-    "verifyLand": "Verify this land",
-    "contact": "Contact an agent",
-    "yes": "Yes",
-    "no": "No",
-    "attrs": {
-      "image": "Photo",
-      "location": "Location",
-      "surface": "Surface area",
-      "price": "Price",
-      "pricePerM2": "Price / m²",
-      "label": "Label",
-      "tfNumber": "Title number",
-      "verified": "Verified",
-      "water": "Water access",
-      "electricity": "Electricity",
-      "topography": "Topography"
-    }
+  "languageSwitch": {
+    "saved": {
+      "title": "Your account is now in English",
+      "description": "Our emails to you will be in English too. You can change this in your profile."
+    },
+    "failed": {
+      "title": "Your account language was not changed",
+      "description": "This page is in English, but our emails stay in your account's language. You can change it in your profile."
+    },
+    "profile": "My profile"
   },
   "landsAdmin": {
     "header": {
-      "title": "KAMBRIQ LANDS - Admin",
+      "title": "KAMBRIQ LANDS™ - Admin",
       "subtitle": "Manage your land catalogue and reservations",
       "newLand": "New land"
     },
@@ -1095,7 +1002,7 @@
       "land": "Land",
       "label": "Label",
       "size": "Size",
-      "price": "Price",
+      "price": "Total price",
       "status": "Status",
       "published": "Published",
       "pv": "PV",
@@ -1180,8 +1087,10 @@
       "selectOwnerType": "Select owner type",
       "partner": "Partner",
       "titleNumber": "Title number (TF)",
+      "titleNumberPlaceholder": "e.g. {example}",
+      "titleNumberInvalid": "A land title number is written TF, the number, a slash, then one to three department letters - for example {example}.",
       "size": "Surface area",
-      "price": "Price",
+      "price": "Total price",
       "pv": "Point Valeur (commission coefficient)",
       "published": "Publish immediately (visible to agents)",
       "verified": "Verified by KAMBRIQ",
@@ -1240,7 +1149,7 @@
           "description": "Introduction of our title deed verification service, protecting diaspora buyers."
         },
         {
-          "title": "KBS & KAMNET Expansion",
+          "title": "KBS & KAMNET™ Expansion",
           "description": "Launch of agent training program and certified agent network across 4 countries."
         }
       ]
@@ -1328,7 +1237,7 @@
       "subjects": {
         "lands": "Lands & acquisition",
         "verify": "Verify a title deed",
-        "kamnet": "Become a KAMNET agent",
+        "kamnet": "Become a KAMNET™ agent",
         "kbs": "KBS training",
         "partnership": "Partnership",
         "other": "Other"
@@ -1351,8 +1260,8 @@
       "description": "Verify the authenticity of a plot in Cameroon before any purchase. 7 checkpoints, detailed report. €99 or free when buying through KAMBRIQ."
     },
     "lands": {
-      "title": "KAMBRIQ LANDS - Verified land in Cameroon",
-      "description": "KAMBRIQ LANDS offers land in Cameroon verified through 7 checkpoints. 3 security labels (TFL™, VEFL™, VEFIL™). Full support by a certified agent."
+      "title": "KAMBRIQ LANDS™ - Verified land in Cameroon",
+      "description": "KAMBRIQ LANDS™ offers land in Cameroon verified through 7 checkpoints. 3 security labels (TFL™, VEFL™, VEFIL™). Full support by a certified agent."
     },
     "plan": {
       "title": "KAMBRIQ PLAN™ - Instalment payments for land in Cameroon",
@@ -1360,11 +1269,11 @@
     },
     "kbs": {
       "title": "KAMBRIQ Business School - Land agent training Cameroon",
-      "description": "Train in Cameroon land law and become a certified KAMNET agent. KCA programme, online training, recognised certification."
+      "description": "Train in Cameroon land law and become a certified KAMNET™ agent. KCA programme, online training, recognised certification."
     },
     "kamnet": {
-      "title": "KAMNET - Certified KAMBRIQ land agent network",
-      "description": "KAMNET is the network of KAMBRIQ-certified agents. Trained by KBS, they guide the diaspora through land projects in Cameroon."
+      "title": "KAMNET™ - Certified KAMBRIQ land agent network",
+      "description": "KAMNET™ is the network of KAMBRIQ-certified agents. Trained by KBS, they guide the diaspora through land projects in Cameroon."
     },
     "annuaire": {
       "title": "Directory of KAMBRIQ certified agents - Cameroon",
@@ -1451,42 +1360,15 @@
         "ops": "KAMBRIQ ops",
         "adminLands": "Lands admin",
         "adminKbs": "KBS admin",
-        "adminKamnet": "KAMNET admin",
-        "agent": "KAMNET agent",
+        "adminKamnet": "KAMNET™ admin",
+        "agent": "KAMNET™ agent",
         "partner": "Partner",
         "client": "Client",
         "user": "User"
       }
     },
     "agentDashboard": {
-      "title": "Agent dashboard",
-      "welcome": "Welcome",
-      "statSales": "Sales this month",
-      "statCommissions": "Commissions (month)",
-      "statClients": "Active clients",
-      "statLevel": "Level",
-      "pipeline": {
-        "title": "Sales pipeline",
-        "subtitle": "Number of prospects per stage",
-        "stage1": "Contacts",
-        "stage2": "Prospected",
-        "stage3": "Visited",
-        "stage4": "Reserved",
-        "stage5": "Sold"
-      },
-      "recentClients": {
-        "title": "Recent clients",
-        "statusInProgress": "In progress",
-        "statusReserved": "Reserved",
-        "statusCompleted": "Sold",
-        "landLabel": "land",
-        "ventes": "sales"
-      },
-      "salesChart": {
-        "title": "Commissions (last 6 months)",
-        "subtitle": "In XAF",
-        "tooltipLabel": "Commissions"
-      }
+      "title": "Agent dashboard"
     },
     "clientDashboard": {
       "greeting": "Hello",
@@ -1733,7 +1615,7 @@
       }
     },
     "network": {
-      "pageTitle": "My KAMNET network",
+      "pageTitle": "My KAMNET™ network",
       "pageSubtitle": "Sponsored agents and network connections",
       "emptyTitle": "You have no referrals yet",
       "emptyMessage": "Your network grows when a candidate signs up with your agent code. Share your code, support the person through to certification, and they will appear here.",
@@ -1780,8 +1662,7 @@
       "verified": "Verified"
     },
     "profile": {
-      "pageTitle": "My profile",
-      "subtitle": "Manage your personal information and preferences."
+      "pageTitle": "My profile"
     },
     "agentProfile": {
       "pageTitle": "My agent profile",
@@ -1796,7 +1677,7 @@
       "savedOn": "You now appear in the public directory.",
       "savedOff": "Your entry has been removed from the public directory.",
       "saveFailed": "Your choice was not saved. Nothing changed: please try again.",
-      "emptyTitle": "You are not a KAMNET agent",
+      "emptyTitle": "You are not a KAMNET™ agent",
       "emptyMessage": "This page is for certified agents. If you have submitted an application, it has to be approved first.",
       "unavailableTitle": "Profile momentarily unavailable",
       "unavailableMessage": "We cannot read your profile right now. Nothing has changed: try again in a few minutes."
@@ -1879,12 +1760,10 @@
       }
     },
     "settings": {
-      "pageTitle": "Settings",
-      "subtitle": "General platform configuration."
+      "pageTitle": "Settings"
     },
     "clientVerify": {
-      "pageTitle": "My verifications",
-      "subtitle": "Track your land verification requests."
+      "pageTitle": "My verifications"
     },
     "prospects": {
       "pageTitle": "My prospects",
@@ -1946,24 +1825,19 @@
       }
     },
     "commissions": {
-      "pageTitle": "Commissions",
-      "subtitle": "Track your commissions and earnings."
+      "pageTitle": "Commissions"
     },
     "escalation": {
-      "pageTitle": "Escalation",
-      "subtitle": "Report an issue or situation to resolve."
+      "pageTitle": "Escalation"
     },
     "adminReservations": {
-      "pageTitle": "Admin reservations",
-      "subtitle": "Global reservation management."
+      "pageTitle": "Admin reservations"
     },
     "adminKamnet": {
-      "pageTitle": "Admin KAMNET",
-      "subtitle": "Agent network management."
+      "pageTitle": "Admin KAMNET™"
     },
     "adminEscalations": {
-      "pageTitle": "Escalations",
-      "subtitle": "Incident and report management."
+      "pageTitle": "Escalations"
     },
     "kbs": {
       "title": "KAMBRIQ Business School",
@@ -2242,13 +2116,21 @@
       }
     },
     "welcome": {
-      "pageTitle": "Welcome",
-      "subtitle": "Welcome to the KAMBRIQ platform."
+      "pageTitle": "Welcome"
     },
-    "underConstruction": "Under construction",
-    "underConstructionDesc": "This page is under development.",
-    "authorizedRoles": "Authorized roles",
-    "features": "Planned features"
+    "notBuilt": {
+      "title": "Not available yet",
+      "description": "This screen has not been built yet."
+    },
+    "adminVerify": {
+      "pageTitle": "KAMBRIQ VERIFY™ administration"
+    },
+    "adminLandsSearch": {
+      "pageTitle": "Land search"
+    },
+    "adminLandsCompare": {
+      "pageTitle": "Land comparison"
+    }
   },
   "a11y": {
     "openMenu": "Open menu",
@@ -2269,6 +2151,92 @@
       "lands": "Our land",
       "contact": "Contact us",
       "faq": "Frequently asked questions"
+    }
+  },
+  "kamnetApply": {
+    "title": "KAMNET™ application",
+    "contact": "Write to KAMBRIQ from the contact page",
+    "unavailable": "We cannot read your standing right now. Try again in a few minutes, or write to us from the contact page.",
+    "notCertified": "Applying to KAMNET™ requires a valid KCA certificate, awarded at the end of the KBS training.",
+    "kbs": "Discover the KBS training",
+    "status": {
+      "PENDING": {
+        "label": "Application awaiting review",
+        "body": "Your application was recorded on {date}. A KAMNET™ administrator is reviewing it; you will receive the decision by email."
+      },
+      "APPROVED": {
+        "label": "Application approved",
+        "body": "Your application of {date} was approved. Welcome to KAMNET™."
+      },
+      "REJECTED": {
+        "label": "Application not accepted",
+        "body": "Your application of {date} was not accepted."
+      }
+    },
+    "form": {
+      "intro": "Your application uses your account details and your certificate {kcaNumber}.",
+      "sponsorLabel": "Sponsor code (optional)",
+      "sponsorHelp": "The code of the KAMNET™ agent sponsoring you, for example AGT-2025-0001.",
+      "motivationLabel": "Motivation",
+      "motivationHelp": "Between 50 and 1000 characters.",
+      "submit": "Send my application",
+      "sending": "Sending…",
+      "error": "The application was not recorded: {message}"
+    }
+  },
+  "myPayment": {
+    "amountDue": "Amount due",
+    "received": "Already received",
+    "dueBy": "Pay by",
+    "preferred": "You said you would prefer:",
+    "howToPay": "How to pay - {channel}",
+    "referenceBefore": "Quote the reference",
+    "referenceAfter": "as the reference of your payment. A payment without this reference cannot be matched to your file.",
+    "chosenOther": "We chose {channel} rather than your preference. If that does not suit you, write to us: we can agree on something else.",
+    "communicated": "Sent on {date}. Keep your receipt: you will be asked for it.",
+    "waitingTitle": "Your payment details",
+    "waitingIdentity": "We first need to verify your identity document. Bank details are only given to someone we have recognised. Upload your document from your profile if you have not already; we will come back to you as soon as it is verified.",
+    "waitingPreparing": "Your request has arrived. We are preparing the details of the payment method that suits you, and they will appear here. You will receive an email as soon as they are available.",
+    "fields": {
+      "bankName": "Bank",
+      "bankAccountName": "Account holder",
+      "bankIban": "Account number / IBAN",
+      "bankSwift": "SWIFT / BIC code",
+      "orangeMoneyNumber": "Orange Money number",
+      "orangeMoneyName": "Account name",
+      "mtnMoneyNumber": "MTN Mobile Money number",
+      "mtnMoneyName": "Account name",
+      "notaryName": "Notary",
+      "notaryPhone": "Phone",
+      "notaryAddress": "Address",
+      "supportEmail": "Our email",
+      "supportPhone": "Our phone"
+    },
+    "channels": {
+      "VIR": "Bank transfer",
+      "DEPO": "Cash deposit into our account",
+      "OMO": "Orange Money",
+      "MOMO": "MTN Mobile Money",
+      "ESP": "Cash in hand",
+      "NOTA": "Payment at the notary's",
+      "HIST": "Historical, channel unknown"
+    },
+    "request": {
+      "title": "Pay the deposit",
+      "amountLabel": "Amount due:",
+      "notOnline": "KAMBRIQ does not take payments online: you will receive a reference to quote on your bank transfer, your mobile money payment or at the notary's.",
+      "create": "Get my payment reference",
+      "creating": "Creating…",
+      "recorded": "Your request is recorded under the reference below. We verify your identity, then reply with the payment method that suits you.",
+      "amount": "Amount:",
+      "preferenceLabel": "Which payment method suits you? (optional)",
+      "noPreference": "- no preference -",
+      "preferenceHelp": "We take it into account. Depending on the amount or the origin of the funds, we may suggest something else - we will tell you.",
+      "follow": "Follow my request",
+      "refused": "The request was refused.",
+      "preferenceNotSaved": "The preference was not saved.",
+      "balanceTitle": "Pay the balance",
+      "balanceDiffers": "The balance announced at reservation was"
     }
   }
 }

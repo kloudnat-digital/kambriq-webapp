@@ -24,7 +24,7 @@ export const updateAgentProfileDto = z.object({
     .refine((v) => !v || PHONE_REGEX.test(v), PHONE_ERROR),
   language: z.enum(SUPPORTED_LANGUAGES).optional(),
 
-  avatarUrl: z.url('Must be a valid URL').optional(),
+  avatarUrl: z.string().max(300).optional(), // A44: a storage key, not a URL - see UsersService.updateMe
   address: z.string().optional(),
   city: z.string().optional(),
   country: z.string().optional(),
@@ -143,9 +143,9 @@ export class LeadFilterDto extends createZodDto(leadFilterSchema) {}
 
 // ----- Network ----- //
 
-// Agent view: depth only
+// Agent view: depth only. Absent means the caller's tier allowance (I32).
 export const networkTreeQuerySchema = z.object({
-  depth: z.coerce.number().int().min(1).max(3).default(1),
+  depth: z.coerce.number().int().min(1).max(3).optional(),
 });
 
 export class NetworkTreeQueryDto extends createZodDto(networkTreeQuerySchema) {}

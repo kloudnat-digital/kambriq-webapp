@@ -208,6 +208,17 @@ describe('G6 - the queue does not chase money that has arrived', () => {
 });
 
 describe('G6 - the queue reports its own backlog', () => {
+  it('says which payment each row is, deposit or balance (G20)', async () => {
+    const { service, prisma } = build();
+    prisma.payment.findMany.mockResolvedValue([payment({ purpose: 'SOLDE', expiresAt: at(-1) })]);
+    prisma.payment.count.mockResolvedValue(1);
+    prisma.payment.findFirst.mockResolvedValue(null);
+    prisma.landReservation.findMany.mockResolvedValue([]);
+
+    const result = await service.listOverdueQueue(page1);
+    expect(result.data[0].purpose).toBe('SOLDE');
+  });
+
   it('is oldest deadline first, and ages both the row and the backlog', async () => {
     const { service, prisma } = build();
     prisma.payment.findMany.mockResolvedValue([

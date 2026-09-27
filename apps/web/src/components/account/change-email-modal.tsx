@@ -63,7 +63,7 @@ export const ChangeEmailModal = ({ open, onOpenChange }: ChangeEmailModalProps) 
           <DialogTitle>{t('title')}</DialogTitle>
           <DialogDescription>{t('subtitle')}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form method="post" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Controller
             name="newEmail"
             control={control}

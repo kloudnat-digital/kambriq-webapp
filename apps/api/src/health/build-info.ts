@@ -1,3 +1,4 @@
+import { appEnvironment } from '@kambriq/common';
 /**
  * Build metadata injected during the Docker build process.
  * These values are used to verify deployments and provide runtime environment context.
@@ -14,8 +15,10 @@ export interface BuildInfo {
   gitRef: string;
   /** ISO 8601 UTC timestamp of the image build. */
   buildTime: string;
-  /** Runtime environment (NODE_ENV). */
+  /** How the image was built (NODE_ENV) - NOT where it runs: dev reports `development` too. */
   env: string;
+  /** Where it runs (APP_ENV), or `undeclared` - the value every A48 decision reads. */
+  appEnv: string;
   /** ISO 8601 UTC timestamp of process start - distinguishes a restart from a redeploy. */
   startedAt: string;
 }
@@ -33,6 +36,7 @@ export function getBuildInfo(): BuildInfo {
     gitRef: process.env.GIT_REF || UNKNOWN,
     buildTime: process.env.BUILD_TIME || UNKNOWN,
     env: process.env.NODE_ENV || UNKNOWN,
+    appEnv: appEnvironment() ?? 'undeclared',
     startedAt: STARTED_AT,
   };
 }
