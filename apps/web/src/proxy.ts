@@ -51,7 +51,9 @@ export default auth((req) => {
 
   const toLogin = () => {
     const loginUrl = new URL(withLocale(AUTH_ROUTES.LOGIN, locale), nextUrl.origin);
-    loginUrl.searchParams.set('callbackUrl', safeCallbackUrl(nextUrl.pathname));
+    // I45: the query comes along. A link that carries its token (the email-change
+    // confirmation) must still carry it after the detour through the login page.
+    loginUrl.searchParams.set('callbackUrl', safeCallbackUrl(nextUrl.pathname + nextUrl.search));
     return NextResponse.redirect(loginUrl);
   };
 

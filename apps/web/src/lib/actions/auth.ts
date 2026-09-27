@@ -53,6 +53,15 @@ export const logOutAction = async (): Promise<void> => {
   await signOut({ redirectTo: '/' });
 };
 
+/**
+ * I45: after an email change is confirmed the API has revoked every session, so
+ * the one this browser holds is stale. Sign it out and go to the login page,
+ * where the person signs in with the new address.
+ */
+export const logOutToLoginAction = async (): Promise<void> => {
+  await signOut({ redirectTo: '/login' });
+};
+
 export const registerAction = createAction(
   async (data: {
     firstName: string;

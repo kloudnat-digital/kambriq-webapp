@@ -646,7 +646,10 @@ export class UsersService {
     });
 
     const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3001');
-    const setPasswordUrl = `${frontendUrl}/auth/set-password?token=${rawToken}`;
+    // I45: the page that consumes a PASSWORD_RESET token is /reset-password; the
+    // /auth/set-password this used to name never existed, and every invitation
+    // led to a 404. emailed-urls-resolve.spec.ts keeps every emailed URL honest.
+    const setPasswordUrl = `${frontendUrl}/reset-password?token=${rawToken}`;
 
     await this.emailService.send({
       to: newUser.email,
@@ -710,7 +713,9 @@ export class UsersService {
     ]);
 
     const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3001');
-    const confirmUrl = `${frontendUrl}/auth/confirm-email-change?token=${rawToken}`;
+    // I45: behind /account, so a person who is not signed in is sent to log in
+    // and brought back - the confirmation is bound to their account.
+    const confirmUrl = `${frontendUrl}/account/confirm-email-change?token=${rawToken}`;
 
     await this.emailService.send({
       to: newEmail,
