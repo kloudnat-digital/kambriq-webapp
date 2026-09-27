@@ -321,8 +321,20 @@ Spec file counts, for scale:
 | `apps/api`     | 99 unit specs, 15 database specs |
 | `libs/common`  | 21                               |
 | `apps/web`     | 41                               |
-| `apps/api-e2e` | 4                                |
-| `apps/web-e2e` | 5                                |
+| `apps/api-e2e` | 6 (2 of them unit)               |
+| `apps/web-e2e` | 8, and one setup file            |
+
+**Two groups of browser and journey tests are opt-in**, and skip unless their
+variable is set:
+
+- `RUN_PAGE_WALKS=1` - the page walks in `apps/web-e2e` (`human-paths.spec.ts`,
+  `emailed-links.spec.ts`), Chromium only. Off on every deploy until the API's
+  rate-limiter defect is settled (register, A56 and I46).
+- `RUN_BALANCE_JOURNEY=1` - journey 7 in `apps/api-e2e`, a deposit and a balance
+  taken to validation. It consumes a parcel on the environment it runs against.
+
+`pnpm test:e2e` signs in once per role for the whole run (`sessions.setup.ts`)
+and keeps every other sign-in inside the API's limits (`support/auth-budget.ts`).
 
 **The unit suite opens no database or network connection.** Everything external
 is mocked.
