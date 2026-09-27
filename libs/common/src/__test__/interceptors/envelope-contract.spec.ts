@@ -35,6 +35,10 @@ export const expectCarriesContent = (payload: unknown): void => {
   }
 };
 
+class MoneyRow {
+  constructor(readonly amount: bigint) {}
+}
+
 @Controller('probe')
 class ProbeController {
   /** What a healthy list looks like. */
@@ -56,6 +60,36 @@ class ProbeController {
   @Get('wrapped')
   wrapped() {
     return { success: true, data: [{ id: '1' }], meta: { total: 1, page: 1 } };
+  }
+
+  /** Money is a BigInt in every schema, and `JSON.stringify` throws on one. */
+  @Get('money')
+  money() {
+    return { amount: 750_000n, nested: { total: 1_500_000n }, list: [42n] };
+  }
+
+  /** Past 2^53 an exact number is impossible, so the value must survive as a string. */
+  @Get('huge')
+  huge() {
+    return { amount: 9_007_199_254_740_993n };
+  }
+
+  /** A Date defines its own toJSON, so the walk must leave it alone. */
+  @Get('dated')
+  dated() {
+    return { createdAt: new Date('2026-09-27T10:00:00.000Z'), amount: 5n };
+  }
+
+  /** A BigInt inside a class instance, which is not a plain object. */
+  @Get('instance')
+  instance() {
+    return { row: new MoneyRow(750_000n) };
+  }
+
+  /** `meta` is part of a pre-wrapped answer and is walked the same way. */
+  @Get('wrapped-money')
+  wrappedMoney() {
+    return { success: true, data: [{ amount: 1n }], meta: { total: 2n } };
   }
 }
 
@@ -125,5 +159,65 @@ describe('response envelope contract', () => {
     expect(body.meta.total).toBe(1);
     expect(body).not.toHaveProperty('data.data'); // not double-wrapped
     expectCarriesContent(body.data);
+  });
+
+  /**
+   * Integer money crossing the wire.
+   *
+   * `JSON.stringify` throws on a BigInt, so without conversion every response
+   * carrying money is a 500. The interceptor converts at the edge; these pin what
+   * it converts to, because the answer differs by magnitude.
+   */
+  describe('integer money', () => {
+    it('sends a BigInt as an exact number, at every depth', async () => {
+      const res = await fetch(`${base}/probe/money`);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        data: { amount: number; nested: { total: number }; list: number[] };
+      };
+
+      expect(body.data).toEqual({ amount: 750000, nested: { total: 1500000 }, list: [42] });
+      expect(typeof body.data.amount).toBe('number');
+    });
+
+    it('sends a value past 2^53 as a string rather than rounding it', async () => {
+      // 9007199254740993 has no exact double. A number here would be off by one,
+      // and money that is off by one is worse than money that is a string.
+      const body = (await (await fetch(`${base}/probe/huge`)).json()) as {
+        data: { amount: unknown };
+      };
+
+      expect(body.data.amount).toBe('9007199254740993');
+    });
+
+    it('converts a BigInt inside meta on a pre-wrapped answer', async () => {
+      const body = (await (await fetch(`${base}/probe/wrapped-money`)).json()) as {
+        data: { amount: number }[];
+        meta: { total: number };
+      };
+
+      expect(body.meta.total).toBe(2);
+      expect(body.data[0].amount).toBe(1);
+    });
+
+    it('leaves a Date to its own toJSON, beside a converted BigInt', async () => {
+      // The walk now enters any object without a toJSON. A Date has one, and
+      // walking it would send {} where every createdAt in the API belongs.
+      const body = (await (await fetch(`${base}/probe/dated`)).json()) as {
+        data: { createdAt: string; amount: number };
+      };
+
+      expect(body.data).toEqual({ createdAt: '2026-09-27T10:00:00.000Z', amount: 5 });
+    });
+
+    it('converts a BigInt held by a class instance', async () => {
+      // The conversion walks arrays and plain objects. A class instance is
+      // neither, so a BigInt inside one reached `JSON.stringify` and threw.
+      const res = await fetch(`${base}/probe/instance`);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { data: { row: { amount: number } } };
+
+      expect(body.data.row.amount).toBe(750000);
+    });
   });
 });
