@@ -14,6 +14,7 @@ import { lastForwardedHop, vouchedVisitor } from '../throttler/caller-identity';
 type SerializedReq = {
   url?: string;
   query?: Record<string, unknown>;
+  params?: Record<string, unknown>;
   headers?: Record<string, unknown>;
   [key: string]: unknown;
 };
@@ -26,6 +27,10 @@ export const accessLogSerializers = {
       ...req,
       url: typeof req.url === 'string' ? maskUrl(req.url) : req.url,
       query: maskQuery(req.query),
+      // pino-http's serializer also emits route params, and the spread copies
+      // them. No route carries a credential in a path segment today; the day one
+      // does, an unmasked `params` writes it to the log group.
+      params: maskQuery(req.params),
       headers,
     };
   },
