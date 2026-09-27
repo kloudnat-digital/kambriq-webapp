@@ -12,34 +12,26 @@ import en from './messages/en.json';
 type Json = Record<string, unknown>;
 
 /**
- * Namespaces served to people with no account, or before one matters.
+ * What is NOT public, each with its reason. **Inverted, on purpose** (P21,
+ * 27 September): every namespace of the message files is watched unless it is
+ * declared here. The first version listed the namespaces it watched, and its
+ * earnings ban read only `products.kamnet` and `products.kbs` - so the LANDS
+ * page's `landTypes` kept "Commission rapide" and `quickActions` kept "gagner des
+ * commissions" after the page it was written for had been cleaned. A list of
+ * what is watched misses whatever is added after it; a list of exemptions has
+ * to be argued for, one line at a time.
  *
- * Deliberately NOT the whole file: `app` and `landsAdmin` are excluded above.
+ * An entry is a namespace or a dotted key prefix.
  */
-const PUBLIC_NAMESPACES = [
-  'about',
-  'auth',
-  'blog',
-  'contact',
-  'faq',
-  'footer',
-  'hero',
-  'homeCta',
-  'howItWorks',
-  'landTypes',
-  'landsHero',
-  'legal',
-  'metadata',
-  'methode',
-  'nav',
-  'notFound',
-  'plan',
-  'process',
-  'products',
-  'quickActions',
-  'why',
-  'whyBuyAtKambriq',
-] as const;
+const EXEMPT: Readonly<Record<string, string>> = {
+  app: "the signed-in spaces: an agent's own commissions are shown there, inside their own account (Visquis, 19 September)",
+  landsAdmin: 'the back office, read by staff only',
+  'products.kbs.modulesDetail':
+    'the KCA syllabus: a lecture on how an agent is paid teaches the rule, it promises nothing',
+};
+
+const isExempt = (key: string) =>
+  Object.keys(EXEMPT).some((e) => key === e || key.startsWith(`${e}.`) || key.startsWith(`${e}[`));
 
 /** Every string under a namespace, with its dotted path, arrays included. */
 const leaves = (value: unknown, prefix: string): Array<[string, string]> => {
@@ -53,8 +45,9 @@ const leaves = (value: unknown, prefix: string): Array<[string, string]> => {
   return [];
 };
 
+/** Every string of the file that no exemption covers. */
 const publicCopy = (messages: unknown): Array<[string, string]> =>
-  PUBLIC_NAMESPACES.flatMap((ns) => leaves((messages as Json)[ns], ns));
+  leaves(messages, '').filter(([k]) => !isExempt(k));
 
 const LOCALES: ReadonlyArray<readonly [string, unknown]> = [
   ['fr', fr],
@@ -72,14 +65,12 @@ const REMUNERATION =
 const PAYMENT_DELAY = /\b[JD]\s*\+\s*\d+\b/;
 
 /**
- * Regex matching specific phrases that promise earnings to an agent.
- * Specifically excludes generic educational mentions of "commission" or "earn".
+ * Any mention of an agent's remuneration. C14 - the scale - is not settled, so
+ * no public page speaks of it at all, rate or not (Visquis, 27 September).
+ * Word-bounded: "learn" and "earn your KCA certificate" are not remuneration.
  */
-const EARNING_PROMISE =
-  /gagnez|earn while|earn (?:commissions?|money|income)|\bearnings\b|commissions? attractives?|attractive commissions?|g[ée]n[ée]rez[^.]*commission|generate[^.]*commission|revenus compl[ée]mentaires|additional income|syst[èe]me de commissionnement|multi-level commission|structure des commissions|commission structure|commissions?[^.]*vers[ée]|commission[^.]*\bpaid\b/i;
-
-/** KCA1 syllabus namespace, excluded from earning promises checks. */
-const SYLLABUS = 'products.kbs.modulesDetail';
+const REMUNERATION_MENTION =
+  /\bcommissions?\b|\bcommissionnement\b|r[ée]mun[ée]ration|\bremuneration\b|\bpayouts?\b|\bgagne[rz]\b|\bearn (?:commissions?|money|income)\b|\bearnings\b|revenus compl[ée]mentaires|additional income/i;
 
 const offenders = (entries: Array<[string, string]>, predicate: (v: string) => boolean) =>
   entries.filter(([, v]) => predicate(v)).map(([k, v]) => `${k} = ${v}`);
@@ -106,23 +97,31 @@ describe('P21 - public copy promises no rate, base or payment deadline', () => {
   });
 
   /**
-   * Decision 1 of the arbitrage: KAMNET no longer sells an earning opportunity
-   * on the public site. Scoped to the two product pages that made the promise,
-   * because "commission" is a legitimate word elsewhere - a FAQ answer about
-   * how the company makes money is not a promise to an agent.
+   * Decision 1 of the arbitrage, widened: KAMNET sells no earning opportunity on
+   * the public site, and no public string mentions remuneration at all.
    */
-  it.each(LOCALES)('%s: the product pages promise no earnings', (_locale, messages) => {
-    const entries = [
-      ...leaves((messages as Json)['products'], 'products').filter(
-        ([k]) => k.startsWith('products.kamnet') || k.startsWith('products.kbs'),
-      ),
-    ];
-    const found = offenders(
-      entries.filter(([k]) => !k.startsWith(SYLLABUS)),
-      (v) => EARNING_PROMISE.test(v),
-    );
+  it.each(LOCALES)('%s: no public string mentions remuneration', (_locale, messages) => {
+    const found = offenders(publicCopy(messages), (v) => REMUNERATION_MENTION.test(v));
 
     expect(found).toEqual([]);
+  });
+
+  /** An exemption that names nothing is a hole waiting for a namespace to fill it. */
+  it.each(LOCALES)('%s: every exemption names something that exists', (_locale, messages) => {
+    const keys = leaves(messages, '').map(([k]) => k);
+    const empty = Object.keys(EXEMPT).filter(
+      (e) => !keys.some((k) => k === e || k.startsWith(`${e}.`) || k.startsWith(`${e}[`)),
+    );
+
+    expect(empty).toEqual([]);
+  });
+
+  /** The inversion itself: a namespace nobody has heard of is read, not skipped. */
+  it('a namespace added tomorrow is watched without anyone listing it', () => {
+    const tomorrow = { brandNewPage: { pitch: 'Rejoignez-nous et gagnez des commissions' } };
+    const found = offenders(publicCopy(tomorrow), (v) => REMUNERATION_MENTION.test(v));
+
+    expect(found).toEqual(['brandNewPage.pitch = Rejoignez-nous et gagnez des commissions']);
   });
 
   /**

@@ -900,7 +900,7 @@
       "description": "L'immatriculation est faite et le lotissement est fait. La propriété vous est transférée immédiatement.",
       "advantages": {
         "client": "Vous devenez propriétaire dès la signature chez le notaire. Aucune procédure administrative supplémentaire.",
-        "agent": "Commission rapide, processus simplifié, client sécurisé.",
+        "agent": "Processus simplifié, client sécurisé.",
         "commitment": "Titre foncier authentique vérifié par KAMBRIQ VERIFY™, conformité cadastrale confirmée."
       }
     },
@@ -933,7 +933,7 @@
       "landInfo": "Je souhaite obtenir des informations sur les terrains disponibles",
       "verifyService": "J'aimerais en savoir plus sur le service KAMBRIQ VERIFY™",
       "kbsFormation": "Comment devenir Agent KAMNET™ Certifié via la formation KBS ?",
-      "kamnetAgent": "Comment rejoindre le réseau KAMNET™ et gagner des commissions ?",
+      "kamnetAgent": "Comment rejoindre le réseau KAMNET™ ?",
       "pricing": "Quels sont vos tarifs et conditions de paiement ?",
       "buyingProcess": "Comment se déroule le processus d'achat depuis l'étranger ?",
       "documentation": "Quels documents sont nécessaires pour acheter un terrain ?",

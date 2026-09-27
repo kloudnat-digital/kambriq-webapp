@@ -900,7 +900,7 @@
       "description": "Registration is complete and subdivision is done. Ownership is transferred immediately.",
       "advantages": {
         "client": "You become the owner upon notarial signature. No additional administrative procedures.",
-        "agent": "Fast commission, simplified process, secured client.",
+        "agent": "Simplified process, secured client.",
         "commitment": "Authentic title deed verified by KAMBRIQ VERIFY™, cadastral compliance confirmed."
       }
     },
@@ -933,7 +933,7 @@
       "landInfo": "I'd like information on available lands",
       "verifyService": "I'd like to know more about KAMBRIQ VERIFY™",
       "kbsFormation": "How to become a certified KAMNET™ Agent via KBS?",
-      "kamnetAgent": "How to join the KAMNET™ network and earn commissions?",
+      "kamnetAgent": "How to join the KAMNET™ network?",
       "pricing": "What are your rates and payment terms?",
       "buyingProcess": "How does the purchase process work from abroad?",
       "documentation": "What documents are needed to buy land?",
