@@ -1,20 +1,13 @@
+/* eslint-disable @nx/enforce-module-boundaries */
 /**
  * Reading what a person receives: the delivered email, from the maildrop.cc
  * inbox the journeys and walks use (TEST_DOMAIN - nothing real lives there).
  */
-const MAILDROP = 'https://api.maildrop.cc/graphql';
-
-const maildrop = async (query: string) => {
-  const res = await fetch(MAILDROP, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ query }),
-  });
-  if (!res.ok) throw new Error(`maildrop unavailable (HTTP ${res.status}) - not a product failure`);
-  return res.json() as Promise<{
-    data?: { inbox?: Array<{ id: string; subject: string }>; message?: { html: string } };
-  }>;
-};
+// The journeys' reader is the one client of maildrop's API: it waits out a 5xx
+// or a network failure and says so (A69, #265). Shared across the two e2e
+// projects rather than copied, so there is one retry to keep right.
+export { inbox, message } from '../../../api-e2e/src/journeys/support';
+import { inbox, message } from '../../../api-e2e/src/journeys/support';
 
 /** The button link of the message whose subject matches, read out of the delivered HTML. */
 export const emailedLink = async (
@@ -25,14 +18,11 @@ export const emailedLink = async (
   const deadline = Date.now() + timeoutMs;
   const subjects: string[] = [];
   while (Date.now() < deadline) {
-    const list =
-      (await maildrop(`query{inbox(mailbox:"${mailbox}"){id subject}}`)).data?.inbox ?? [];
+    const list = await inbox(mailbox);
     for (const m of list) {
       subjects.push(m.subject);
       if (!subject.test(m.subject)) continue;
-      const html =
-        (await maildrop(`query{message(mailbox:"${mailbox}",id:"${m.id}"){html}}`)).data?.message
-          ?.html ?? '';
+      const html = await message(mailbox, m.id);
       const href = /<a href="([^"]+)" class="btn"/.exec(html)?.[1];
       if (href) return href.replace(/&amp;/g, '&');
     }
