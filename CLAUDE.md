@@ -3148,6 +3148,17 @@ edit. The first two mutations were confirmed correctly and only the third
 exposed it - which is the usual way a proxy fails, on the one case it cannot
 see.
 
+### A value that grants access is stored as its digest
+
+From `C27`. Password-reset, verification and email-change tokens were stored
+as the value their link carries, while refresh tokens were already hashed: two
+tables holding the same kind of secret, one of them readable as-is. **Anything
+that grants access by being presented - a reset link, a refresh token, an API
+key - is stored as a digest and compared by digest** (`hashToken` in
+`libs/common`). A random 256-bit token needs no salt, so the lookup stays an
+equality on the unique index. And rows written before the fix can often be
+migrated in place: the values are in the table, which was the problem.
+
 ### A remedy does not switch the mitigation back on
 
 From `A67`, after Ulrich's reading of `A56`. When something breaks, somebody

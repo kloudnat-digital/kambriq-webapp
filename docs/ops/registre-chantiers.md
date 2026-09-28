@@ -202,6 +202,7 @@ listed here first.
 | `C20`                          | `PROUVE`            | SES production access is **granted** in eu-central-1 (review `GRANTED`, case 176441524300857): 50 000 a day, 14 a second, 636 sent in the last 24 h on 28 September. prd is planned in the same account and region, so it inherits it. Account-level suppression on bounce, complaint and optimized; no configuration set, so the API sees no bounce event                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `C24`                          | `PROUVE`            | the application now learns that an address bounced: every SES send names the configuration set, SNS delivers BOUNCE and COMPLAINT events to `POST /email/ses-events`, which verifies the SNS signature and topic and stores one `EmailDeliveryEvent` per recipient, linked to the account; `GET /users/:id` carries the latest. **Proven on dev, 28 September (731d432, infra #71 and #72):** an account registered at the SES mailbox simulator's bounce address showed `BOUNCE Permanent/General` on its admin read 3 seconds after its verification email, the same SES message id in the send and the bounce log lines. Not yet rendered by any screen                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `C26`                          | `EN COURS`          | the bounce C24 stores was shown by no screen. The payment screen, where instructions are sent, now carries the latest bounce or complaint for the client's current address: a permanent bounce or a complaint is shown in red and the send waits for the operator to confirm the client was told another way; a transient bounce is shown in amber without a gate. Warned, not blocked, because the coordinates are published on the client's space and the email only announces them. Pending: the browser proof on dev, which needs a payment whose client's address bounces - no product flow can produce one (see the entry)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `C27`                          | `EN COURS`          | verification, reset and email-change tokens were stored in clear, so anyone reading `VerificationToken` held usable reset links. They are now stored as their SHA-256 digest (`hashToken` in `libs/common`, the digest refresh tokens already used) at all three write sites and three read sites; existing rows are hashed in place by migration, so links already sent keep working. Pending: on dev, a link issued before the migration verifying after it, and the journeys' verify, reset and invitation paths green                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `C22`                          | `A DECIDER`         | Actions minutes, measured for September and **corrected on 28 September**: GitHub lists reused jobs under a re-run's new attempt, and the first count billed them twice. Excluding them, the webapp used 5 738 exact minutes against a bill implying ~5 694 (0.8 % apart; infra 181 against ~346 does not close), so the bill is exact minutes and per-job rounding is not in it. Public repositories are not metered at all (infra `CLAUDE.md`, 16 September). Re-runs were 80 minutes, not 676; PR runs are cancelled when superseded since #95. The private switch is postponed, so the cuts save nothing today                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `#48` prd trust                | `A DECIDER`         | infra #48 extends the APPLY role's trust to `environment:prd`, but since D16 a plan runs under `<env>-plan` with the PLAN role, so it would not make #46's Plan (prd) authenticate: that needs the plan role to trust `environment:prd-plan` and an `AWS_ROLE_ARN` secret in `prd-plan`. A `prd` environment already exists (24 February, no protection rules); nothing on develop can select it. Not merged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Journeys bypass the page       | `PROUVE`            | the delivery journeys prove by calling the API what a person does through a page: email verification, forgot-password, the invitation (until I45), KBS identity and enrolment, every back-office payment step. By construction the page a human uses is the one path not proven. Which of them deserve a browser walk is a decision, not a fix to squeeze in **Decided by Visquis, 27 September: walk every human path on every deploy** - done as I46                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -9497,6 +9498,59 @@ Reading the account's reset token from dev's database through ECS Exec was
 refused by the permission classifier. Found on the way: verification and reset
 tokens are stored in the clear in `VerificationToken.token` - only refresh tokens
 are hashed (`auth.service.ts:635`).
+
+### C27 - verification tokens are stored as digests - `EN COURS`
+
+**Cost impact: None.**
+
+**The gap.** `VerificationToken.token` held the value the email link carries.
+Anyone reading that table - a backup, an export, a read-only credential - held
+working password-reset links, and therefore any account. Only refresh tokens
+were hashed.
+
+**What changed.** `hashToken` in `libs/common/src/auth/verification-token.ts` is
+the one digest (SHA-256, hex), used by refresh tokens and verification tokens
+alike. Written as a digest at the three places a token is created -
+`issueVerificationToken` (verification, reset, the bootstrap script), the
+invitation of a client created by a reservation, and an email change - and
+looked up by digest at the three places one is read: `verifyEmail`,
+`resetPassword`, `confirmEmailChange`.
+
+**Decided, on the three points the brief raised:**
+
+- **Existing rows are hashed in place, not expired.** The brief assumed they
+  could not be hashed without the values; the values are in the table, in
+  clear, which was the defect. Migration `20260928130000_c27_verification_token_digest`
+  runs `encode(sha256(convert_to("token", 'UTF8')), 'hex')` over them, so a link
+  already in somebody's inbox keeps working and nobody mid-flow pays anything.
+  The one window: between the migration and the new tasks taking traffic, an
+  old task looks a raw value up against a digest and says the link is invalid;
+  the link still works a minute later.
+- **Lookup stays an equality on the unique index.** A token carries 256 random
+  bits, so an unsalted digest is safe - a salt protects low-entropy secrets
+  such as passwords - and deterministic, so the digest of the value received is
+  looked up directly. No scan.
+- **The email change loses nothing.** Its token carries no address: the new
+  address is `User.pendingEmail`, and the checks are the owning user, the type,
+  unused, not expired. All still read from the row.
+
+**Proof, local.** Seven tests over an in-memory store that answers only an exact
+match on the stored column, as the index does - red first on the old code (four
+failed: the three stored values equal to the sent ones, and the raw digest
+accepted as a link). Six mutations, each confirmed applied, one per write and
+read site: 3, 1, 2, 1, 1, 1 failures. The register-time test of A3 (a real
+token in the link, not a promise) asserted the link carried the stored value -
+the old behaviour written down - and now asserts the stored value is the
+digest of the linked one. The database suite (149 tests) includes
+`verification-token-digest.dbspec.ts`: Postgres's expression equals Node's
+digest for twenty issued-shape tokens, it is the migration's expression, and a
+row hashed that way is found by the API's lookup; two mutations (the migration
+on `sha224`, the API digest changed) fail it.
+
+**Pending, on dev.** A verification link was issued at 12:21 UTC on 28 September
+to a throwaway maildrop account, before the migration, and kept unconsumed; it
+must verify after the deploy. And the journeys' verify, reset and invitation
+paths must stay green.
 
 ### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
 

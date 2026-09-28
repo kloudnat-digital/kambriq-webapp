@@ -36,6 +36,7 @@ import {
   comparePassword,
   hashPassword,
   issueVerificationToken,
+  hashToken,
   maskEmail,
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
@@ -317,7 +318,7 @@ export class AuthService {
   // ----- Verify Email ------------------------------------------
   async verifyEmail(dto: EmailVerificationDto): Promise<{ message: string }> {
     const tokenRecord = await this.prisma.verificationToken.findUnique({
-      where: { token: dto.token },
+      where: { token: hashToken(dto.token) },
       include: { user: { select: { preferredLanguage: true } } },
     });
 
@@ -417,7 +418,7 @@ export class AuthService {
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
     const { token, newPassword } = dto;
     const tokenRecord = await this.prisma.verificationToken.findUnique({
-      where: { token },
+      where: { token: hashToken(token) },
       include: {
         user: {
           select: {
@@ -633,7 +634,7 @@ export class AuthService {
   }
 
   private hashToken(token: string): string {
-    return crypto.createHash('sha256').update(token).digest('hex');
+    return hashToken(token);
   }
 
   private parseExpiry(expiry: StringValue): number {

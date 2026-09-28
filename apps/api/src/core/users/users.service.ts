@@ -39,6 +39,7 @@ import {
   changedKeys,
   comparePassword,
   hashPassword,
+  hashToken,
   maskEmail,
   sortField,
   withOldestWaiting,
@@ -656,7 +657,7 @@ export class UsersService {
     await this.prisma.verificationToken.create({
       data: {
         userId: newUser.id,
-        token: rawToken,
+        token: hashToken(rawToken),
         type: VerificationTokenType.PASSWORD_RESET,
         expiresAt,
       },
@@ -724,7 +725,12 @@ export class UsersService {
     await this.prisma.$transaction([
       this.prisma.user.update({ where: { id: userId }, data: { pendingEmail: newEmail } }),
       this.prisma.verificationToken.create({
-        data: { userId, token: rawToken, type: VerificationTokenType.EMAIL_CHANGE, expiresAt },
+        data: {
+          userId,
+          token: hashToken(rawToken),
+          type: VerificationTokenType.EMAIL_CHANGE,
+          expiresAt,
+        },
       }),
     ]);
 
@@ -750,7 +756,7 @@ export class UsersService {
     dto: ConfirmEmailChangeDto,
   ): Promise<{ message: string }> {
     const tokenRecord = await this.prisma.verificationToken.findUnique({
-      where: { token: dto.token },
+      where: { token: hashToken(dto.token) },
     });
 
     if (
