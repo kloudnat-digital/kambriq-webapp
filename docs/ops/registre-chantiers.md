@@ -9510,6 +9510,14 @@ through the admin API that day: 369 reservations on dev, 368 on seeded parcels
 payment - a deletion of dev data the brief does not cover - so it was not run. A
 one-account seed script, or C28, are the routes left.
 
+**The one-account script, granted 28 September.** `prisma/c26-bounce-client.ts`
+writes exactly one row - an upsert of one core `User` at
+`bounce+c26@simulator.amazonses.com`, verified, with the fixture password,
+`update: {}` so a re-run changes nothing - and deletes nothing. Run as a one-off
+task. Everything after it goes through product flows: the agent's reservation
+grants the client role (`findOrCreateClientUser`), the client requests the
+payment, and every email to the address bounces for real.
+
 ### C27 - verification tokens are stored as digests - `PROUVE`
 
 **Cost impact: None.**
