@@ -5,6 +5,7 @@ import { text } from 'express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
+import { outliveTheLoadBalancer } from './app/keep-alive';
 import {
   GlobalExceptionFilter,
   PrismaExceptionFilter,
@@ -108,6 +109,7 @@ async function bootstrap() {
   // ----- Start Server ----------
   const port = process.env.PORT || 3000;
   await app.listen(port);
+  outliveTheLoadBalancer(app.getHttpServer());
 
   const logger = app.get(Logger);
   logger.log(`🚀 KAMBRIQ API running on http://localhost:${port}/${prefix}`);
