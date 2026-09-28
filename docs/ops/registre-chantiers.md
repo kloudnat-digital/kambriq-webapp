@@ -203,10 +203,12 @@ listed here first.
 | `A68`                          | `EN COURS`          | `POST /auth/verify-email` answered 502 three times (the 25 September journeys, the E2E runs of 2549233 and f65eed0), each right after the test polled the mailbox for seconds. Nothing set the API server's `keepAliveTimeout` (Node default 5 s) while the load balancer keeps an idle connection 60 s (AWS default; `modules/alb` sets none). The API now outlives the load balancer: `keepAliveTimeout` 65 s, `headersTimeout` 66 s (`app/keep-alive.ts`). Consistent with the three 502s, **not confirmed**: the load balancer's access logs are off. Pending: absence of the 502 over enough develop runs to mean something (see the entry)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `C20`                          | `PROUVE`            | SES production access is **granted** in eu-central-1 (review `GRANTED`, case 176441524300857): 50 000 a day, 14 a second, 636 sent in the last 24 h on 28 September. prd is planned in the same account and region, so it inherits it. Account-level suppression on bounce, complaint and optimized; no configuration set, so the API sees no bounce event                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `C24`                          | `PROUVE`            | the application now learns that an address bounced: every SES send names the configuration set, SNS delivers BOUNCE and COMPLAINT events to `POST /email/ses-events`, which verifies the SNS signature and topic and stores one `EmailDeliveryEvent` per recipient, linked to the account; `GET /users/:id` carries the latest. **Proven on dev, 28 September (731d432, infra #71 and #72):** an account registered at the SES mailbox simulator's bounce address showed `BOUNCE Permanent/General` on its admin read 3 seconds after its verification email, the same SES message id in the send and the bounce log lines. Not yet rendered by any screen                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `C26`                          | `EN COURS`          | the bounce C24 stores was shown by no screen. The payment screen, where instructions are sent, now carries the latest bounce or complaint for the client's current address: a permanent bounce or a complaint is shown in red and the send waits for the operator to confirm the client was told another way; a transient bounce is shown in amber without a gate. Warned, not blocked, because the coordinates are published on the client's space and the email only announces them. Pending: the browser proof on dev, which needs a payment whose client's address bounces - no product flow can produce one (see the entry)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `C25`                          | `A DECIDER`         | take the register out of the public repository, keeping the Drive copy. **Stopped on 28 September: the Drive copy is not current.** `09_OPERATIONS/ops_kambriq_registre-chantiers_v01.md` is 104 896 bytes, last modified 4 September - the extraction from `CLAUDE.md` that day - while this file is 876 964 bytes. Removing it would leave some 770 KB of record reachable only through git history. Needs a current copy on the Drive first (see the entry)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `C26`                          | `PROUVE`            | the payment screen shows the latest bounce or complaint for the client's current address before instructions are sent; a permanent bounce or a complaint holds the send until the operator confirms the client was told another way. **Proven in a browser on dev, 28 September**: a client seeded verified at the SES simulator's bounce address (`prisma/c26-bounce-client.ts`, one upsert, #268), a real reservation, identity review and payment request, a real bounce; the operator screen read `rejetée définitivement depuis le 28 septembre 2026 (Permanent/General)`, the send stayed disabled with a channel and a reason until the box was ticked. Send was not pressed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `C27`                          | `PROUVE`            | verification, reset and email-change tokens were stored in clear, so anyone reading `VerificationToken` held usable reset links. They are now stored as their SHA-256 digest (`hashToken` in `libs/common`, the digest refresh tokens already used) at all three write sites and three read sites; existing rows were hashed in place by migration. **Proven on dev, 28 September (f65eed0, #266):** a verification link issued at 12:21 UTC, before the migration, verified with 200 after it; the same link again 400 (used); a value never issued 400; the journeys' verify, reset and invitation paths green (29 passed)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `C28`                          | `A DECIDER`         | nobody can correct a client's email address. An administrator may change roles only; the client may change it only signed in, with the current password and a link sent to the new address; signing in needs a verified account, and verification goes to the address that bounces. A dead or mistyped address locks the client out for good. Who may correct an address, confirmed where, and recorded how, is Visquis's call - an address is where reset links go (see the entry)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `C29`                          | `EN COURS`          | an agent reserving for a client typed the client's address once, and the set-password link to an account holding the reservation went to whatever was typed - a typo handed it to a stranger. Visquis's decision: confirm before sending, front end only. The reservation form now asks for the address twice (the second cannot be pasted) and reads a matching address back to the agent, who confirms with the client before the invitation goes. Does not close two identical typos. Pending: the form on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `C29`                          | `PROUVE`            | an agent reserving for a client typed the client's address once, and the set-password link to an account holding the reservation went to whatever was typed - a typo handed it to a stranger. Visquis's decision: confirm before sending, front end only. The reservation form now asks for the address twice (the second cannot be pasted) and reads a matching address back to the agent, who confirms with the client before the invitation goes. Does not close two identical typos. Proven on dev 28 September: a mismatch refused, the address read back, "Corriger" returned to the form, no reservation written                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `C30`                          | `A DECIDER`         | a parcel whose reservations are all CANCELLED is listed AVAILABLE and its page shows "Terrain réservé" with a cancelled client's name, email and phone, and no form. Found taking C29's proof. Not fixed: not in the brief                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `C22`                          | `A DECIDER`         | Actions minutes, measured for September and **corrected on 28 September**: GitHub lists reused jobs under a re-run's new attempt, and the first count billed them twice. Excluding them, the webapp used 5 738 exact minutes against a bill implying ~5 694 (0.8 % apart; infra 181 against ~346 does not close), so the bill is exact minutes and per-job rounding is not in it. Public repositories are not metered at all (infra `CLAUDE.md`, 16 September). Re-runs were 80 minutes, not 676; PR runs are cancelled when superseded since #95. The private switch is postponed, so the cuts save nothing today                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `#48` prd trust                | `A DECIDER`         | infra #48 extends the APPLY role's trust to `environment:prd`, but since D16 a plan runs under `<env>-plan` with the PLAN role, so it would not make #46's Plan (prd) authenticate: that needs the plan role to trust `environment:prd-plan` and an `AWS_ROLE_ARN` secret in `prd-plan`. A `prd` environment already exists (24 February, no protection rules); nothing on develop can select it. Not merged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Journeys bypass the page       | `PROUVE`            | the delivery journeys prove by calling the API what a person does through a page: email verification, forgot-password, the invitation (until I45), KBS identity and enrolment, every back-office payment step. By construction the page a human uses is the one path not proven. Which of them deserve a browser walk is a decision, not a fix to squeeze in **Decided by Visquis, 27 September: walk every human path on every deploy** - done as I46                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -9290,6 +9292,24 @@ balancer's, headers not above keep-alive, `main.ts` not calling it).
 Node server, and nothing sets its keep-alive either; no 502 has been attributed
 to it.
 
+**The baseline the proof rests on, measured 28 September.** Every develop CI run
+since 25 September, every attempt of its E2E and journeys jobs - 97 runs, 196 job
+logs - read for a 502 from the API: **5 runs** had one (`de40c29` journeys;
+`e4fdfd4`, `abd2305`, `2549233`, `f65eed0` E2E), about one run in nineteen. Not
+only `verify-email`: `e4fdfd4`'s was a call in `emailed-links.spec.ts`, which
+fits a stale connection after any idle wait. A first scan read 68 of the 97 runs
+and only each run's last attempt, missing the re-run ones; it was discarded.
+At that rate, **about 43 clean runs** are needed before absence means 90 %
+confidence, about 23 for 70 %. After the fix: `86bb8e4` and `235a16e` clean (2 of 43; `31e1f5f` running when this was written).
+
+**Proposed, not made - the load balancer's access logs.** `modules/alb` already
+takes `access_logs_bucket` (empty today). Turning it on for dev needs a small S3
+bucket with the load-balancing log-delivery policy and a 7-day lifecycle, and
+that variable set in `envs/dev`. Cost at dev volume: well under USD 0.50 a month
+(log PUTs and a few MB stored; the load balancer charges nothing for the logs).
+Reversible by emptying the variable. It would turn A68 from consistent into
+confirmed, and it is D28 and C17 ground - Visquis's.
+
 ### A69 - one reader of the mailbox service, with one retry - `PROUVE`
 
 **Cost impact: None.**
@@ -9494,6 +9514,37 @@ dev, at a simulator address. Still rendered by no screen: the operator's payment
 screen (`payment-detail-content.tsx`, where instructions are sent) is the place
 it matters most.
 
+### C25 - the register leaves the public repository - `A DECIDER`
+
+**Cost impact: None.**
+
+**Visquis's decision, 28 September:** take `docs/ops/registre-chantiers.md` out
+of the repository today, keep the Drive copy, do not rewrite history.
+
+**Stopped on its premise, measured the same day.** The Drive copy,
+`09_OPERATIONS/ops_kambriq_registre-chantiers_v01.md`, is **104 896 bytes, last
+modified 4 September 18:24** - byte for byte the size `CLAUDE.md` records for the
+register when it was moved out of that file on 4 September. This file is
+**876 964 bytes**, and carries every entry written since, including the day's
+`C24` to `C29` and `A67` to `A69`, none of which is in the Drive copy. Removing it
+now would leave roughly 770 KB of record reachable only through git history.
+Nothing was removed.
+
+**What the removal needs first:** the current file placed on the Drive as a new
+version (bytes copied and compared, not uploaded through a connector - the rule
+in `CLAUDE.md` about two write paths), and a decision on where the record lives
+from then on, since `CLAUDE.md` rule 4, section 8 and `register-is-the-record.spec.ts`
+all assume it is here. Three references would also move:
+`kambriq-hosts-are-real.spec.ts` names the file as a coverage witness, a comment
+in `append-only.dbspec.ts`, and `README.md` lines 17 and 967.
+
+**Other documents in `docs/` that name gaps, listed and left in place:**
+`docs/ops/b-audit-inventory.md` (43 KB, the read-only audit of 6 September),
+`docs/ops/a7-standards-inventory.md` (12 KB, the standards gaps) and
+`docs/ops/waves/2026-09-20-wave.md` (90 KB, a frozen working note). Outside
+`docs/`, both `CLAUDE.md` files describe security posture in detail - the infra
+one names who can read the Terraform state and what the apply role may do.
+
 ### C26 - the bounce is seen where instructions are sent - `EN COURS`
 
 **Cost impact: None.** One read of the core database per payment detail.
@@ -9564,6 +9615,21 @@ writes exactly one row - an upsert of one core `User` at
 task. Everything after it goes through product flows: the agent's reservation
 grants the client role (`findOrCreateClientUser`), the client requests the
 payment, and every email to the address bounces for real.
+
+**Proven in a browser on dev, 28 September.** The one-row script ran as a one-off
+task on `kambriq-dev-api:307` (exit 0, `C26 client bounce+c26@simulator.amazonses.com
+id=bfd1208a-... verified=true`). Then, through product flows only: the seeded
+agent reserved a parcel for that address (reservation `bb45cad7-...`, which
+granted the client role), the client signed in, uploaded an identity document
+that the seeded administrator verified, and requested the deposit (payment
+`5fc47a06-...`, `INITIE`). SES bounced a message to the address at 14:10:55 UTC and
+the payment's back-office read carried `BOUNCE Permanent/General`. In Chromium,
+as the seeded administrator, the payment screen showed the red warning -
+`L'adresse email de ce client est rejetée définitivement depuis le 28 septembre
+2026 (Permanent/General)` - and with a channel and a reason filled in the send
+button was **disabled**; ticking "J'ai prévenu le client par un autre moyen"
+**enabled** it. Send was not pressed. The reservation and payment are left on dev
+for anyone who wants to look.
 
 ### C27 - verification tokens are stored as digests - `PROUVE`
 
@@ -9670,7 +9736,7 @@ bounce address, and its next email bounces into the account - the honest route.
 If it must be confirmed on the new address, correcting to a dead address never
 completes, and C26's proof still needs a seeded account.
 
-### C29 - the agent confirms the client address before the invitation goes - `EN COURS`
+### C29 - the agent confirms the client address before the invitation goes - `PROUVE`
 
 **Cost impact: None.** Front end only; no migration, no role.
 
@@ -9699,7 +9765,33 @@ addresses refused with nothing sent; a matching address read back with nothing
 sent; sent only after the confirmation, with the typed address; "correct" goes
 back without sending; the confirmation cannot be pasted. Four mutations each
 confirmed applied - no comparison: 1 fails; no read-back: 3; "correct" doing
-nothing: 1; paste allowed: 1. Pending: the form on dev.
+nothing: 1; paste allowed: 1.
+
+**Proof, dev, 28 September.** The web served `31e1f5f` (`/health`, 5 of 5
+samples). Chromium, signed in as the seeded field agent, on the first AVAILABLE
+parcel whose detail carries no reservation (Douala Logbessou): a confirmation
+differing by one letter answered "Les deux adresses ne sont pas identiques." and
+showed no read-back; a matching one showed the read-back with the address; and
+"Corriger l'adresse" returned to the form with the address kept. "Le client
+confirme, envoyer" was never pressed. The two POSTs of the run were both page
+loads, counted before the first click and unchanged after the last, and the
+parcel read back afterwards with 0 reservations. The temporary spec was deleted.
+
+### C30 - a parcel with only cancelled reservations shows as reserved - `A DECIDER`
+
+**Cost impact: None** to find; the repair is front end or one API filter.
+
+Found taking C29's proof. The first AVAILABLE parcel, Bafoussam Tamdja, has five
+reservations on dev and all five are `CANCELLED`. The list says AVAILABLE and the
+API would accept a reservation. The page instead shows "Terrain réservé" with no
+form, because `land-detail-content.tsx` passes `land.reservations[0]` to the
+form whatever its status and `reserve-form.tsx` reads `isReserved =
+Boolean(reservation)`; `findByIdFull` returns the latest five reservations,
+cancelled included. So a cancelled reservation blocks the parcel in the web, and
+the page shows every agent who opens it the cancelled client's name, email and
+phone. Seven parcels are AVAILABLE on dev; one of them shows as reserved this way.
+The choice for Visquis is where to filter: the API returns only live
+reservations, or the web picks the live one. Not fixed: not in the brief.
 
 ### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
 
