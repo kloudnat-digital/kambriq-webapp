@@ -202,7 +202,8 @@ listed here first.
 | `C20`                          | `PROUVE`            | SES production access is **granted** in eu-central-1 (review `GRANTED`, case 176441524300857): 50 000 a day, 14 a second, 636 sent in the last 24 h on 28 September. prd is planned in the same account and region, so it inherits it. Account-level suppression on bounce, complaint and optimized; no configuration set, so the API sees no bounce event                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `C24`                          | `PROUVE`            | the application now learns that an address bounced: every SES send names the configuration set, SNS delivers BOUNCE and COMPLAINT events to `POST /email/ses-events`, which verifies the SNS signature and topic and stores one `EmailDeliveryEvent` per recipient, linked to the account; `GET /users/:id` carries the latest. **Proven on dev, 28 September (731d432, infra #71 and #72):** an account registered at the SES mailbox simulator's bounce address showed `BOUNCE Permanent/General` on its admin read 3 seconds after its verification email, the same SES message id in the send and the bounce log lines. Not yet rendered by any screen                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `C26`                          | `EN COURS`          | the bounce C24 stores was shown by no screen. The payment screen, where instructions are sent, now carries the latest bounce or complaint for the client's current address: a permanent bounce or a complaint is shown in red and the send waits for the operator to confirm the client was told another way; a transient bounce is shown in amber without a gate. Warned, not blocked, because the coordinates are published on the client's space and the email only announces them. Pending: the browser proof on dev, which needs a payment whose client's address bounces - no product flow can produce one (see the entry)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `C27`                          | `EN COURS`          | verification, reset and email-change tokens were stored in clear, so anyone reading `VerificationToken` held usable reset links. They are now stored as their SHA-256 digest (`hashToken` in `libs/common`, the digest refresh tokens already used) at all three write sites and three read sites; existing rows are hashed in place by migration, so links already sent keep working. Pending: on dev, a link issued before the migration verifying after it, and the journeys' verify, reset and invitation paths green                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `C27`                          | `PROUVE`            | verification, reset and email-change tokens were stored in clear, so anyone reading `VerificationToken` held usable reset links. They are now stored as their SHA-256 digest (`hashToken` in `libs/common`, the digest refresh tokens already used) at all three write sites and three read sites; existing rows were hashed in place by migration. **Proven on dev, 28 September (f65eed0, #266):** a verification link issued at 12:21 UTC, before the migration, verified with 200 after it; the same link again 400 (used); a value never issued 400; the journeys' verify, reset and invitation paths green (29 passed)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `C28`                          | `A DECIDER`         | nobody can correct a client's email address. An administrator may change roles only; the client may change it only signed in, with the current password and a link sent to the new address; signing in needs a verified account, and verification goes to the address that bounces. A dead or mistyped address locks the client out for good. Who may correct an address, confirmed where, and recorded how, is Visquis's call - an address is where reset links go (see the entry)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `C22`                          | `A DECIDER`         | Actions minutes, measured for September and **corrected on 28 September**: GitHub lists reused jobs under a re-run's new attempt, and the first count billed them twice. Excluding them, the webapp used 5 738 exact minutes against a bill implying ~5 694 (0.8 % apart; infra 181 against ~346 does not close), so the bill is exact minutes and per-job rounding is not in it. Public repositories are not metered at all (infra `CLAUDE.md`, 16 September). Re-runs were 80 minutes, not 676; PR runs are cancelled when superseded since #95. The private switch is postponed, so the cuts save nothing today                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `#48` prd trust                | `A DECIDER`         | infra #48 extends the APPLY role's trust to `environment:prd`, but since D16 a plan runs under `<env>-plan` with the PLAN role, so it would not make #46's Plan (prd) authenticate: that needs the plan role to trust `environment:prd-plan` and an `AWS_ROLE_ARN` secret in `prd-plan`. A `prd` environment already exists (24 February, no protection rules); nothing on develop can select it. Not merged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Journeys bypass the page       | `PROUVE`            | the delivery journeys prove by calling the API what a person does through a page: email verification, forgot-password, the invitation (until I45), KBS identity and enrolment, every back-office payment step. By construction the page a human uses is the one path not proven. Which of them deserve a browser walk is a decision, not a fix to squeeze in **Decided by Visquis, 27 September: walk every human path on every deploy** - done as I46                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -9499,7 +9500,17 @@ refused by the permission classifier. Found on the way: verification and reset
 tokens are stored in the clear in `VerificationToken.token` - only refresh tokens
 are hashed (`auth.service.ts:635`).
 
-### C27 - verification tokens are stored as digests - `EN COURS`
+**The seed route, measured on 28 September, and stopped.** Visquis chose to seed
+a verified client at the simulator bounce address. The seed can mark an account
+verified (`prisma/seed.ts:286`, `emailVerified: true`). But running it on dev
+does more than add a user: to restore the seeded parcels it deletes every
+reservation on them that carries no payment, other than the two it owns. Read
+through the admin API that day: 369 reservations on dev, 368 on seeded parcels
+(359 cancelled, 8 pending, 1 confirmed). A seed run would delete those without a
+payment - a deletion of dev data the brief does not cover - so it was not run. A
+one-account seed script, or C28, are the routes left.
+
+### C27 - verification tokens are stored as digests - `PROUVE`
 
 **Cost impact: None.**
 
@@ -9551,6 +9562,58 @@ on `sha224`, the API digest changed) fail it.
 to a throwaway maildrop account, before the migration, and kept unconsumed; it
 must verify after the deploy. And the journeys' verify, reset and invitation
 paths must stay green.
+
+**Proven on dev, 28 September (`f65eed0`).** The pre-migration link, issued at
+12:21:41 UTC to `c27-1790598095391@maildrop.cc` and kept unconsumed, answered
+**200** on `POST /auth/verify-email` after the migration ran - the in-place
+digest works on a real row. The same link a second time: **400** (already
+used). A value never issued: **400**. The delivery journeys of that run passed
+(29 passed, 6 skipped - journey 7 is opt-in), which covers journey 1's
+verification, journey 5's reset and the reservation invitation on the new code.
+The kept token was deleted from the machine afterwards.
+
+### C28 - nobody can correct a client's email address - `A DECIDER`
+
+**Cost impact: None until built.** Prepared on 28 September; nothing built.
+
+**Every place an address is written today, with its guard:**
+
+- `POST /auth` (`auth.service.ts:87`): registration, public, lowercased; the
+  account signs in only once the address is verified;
+- `findOrCreateClientUser` (`users.service.ts:641`): the address an agent
+  types when reserving for a client. Nothing checks it beyond format; the
+  invitation's set-password link goes to it, so a typo sends the invitation -
+  and the reservation behind it - to whoever holds the mistyped address;
+- `confirmEmailChange` (`users.service.ts:795`): the client, signed in, having
+  given the current password, clicking a link sent to the new address. Every
+  session is revoked and the old address is told afterwards
+  (`users.service.ts:808`) - not when the change is requested;
+- `prisma/bootstrap-admins.ts:168` and `prisma/seed.ts:286`: operator scripts,
+  keyed on the address itself, so neither can correct one.
+
+`PATCH /users/:id` accepts `roleCodes` only (`users.dto.ts:55`).
+
+**What the back office would need, for Visquis to decide:**
+
+- **who**: `ADMIN_GLOBAL` alone - the role that already administers accounts -
+  or a narrower one; `ADMIN_LANDS`, who meets the client on a payment, cannot
+  today read an account at all;
+- **confirmed where**: on the new address, which cannot complete for a dead
+  one - the case this exists for - or by another proof (a call, a document)
+  recorded with the change; and whether the old address is told, since it is
+  also how a takeover would be noticed;
+- **recorded how**: core keeps no record of administrative acts on accounts -
+  only last-actor columns each act overwrites (`User.deactivatedBy`,
+  `UserRole.grantedBy`, `UserProfile.idVerifiedBy`) and log lines kept 7 or 30
+  days (`users.service.ts:383`, `:407`, `:440`, `:914`). An address correction
+  needs an append-only record - actor, time, reason, old and new address -
+  built the way `PaymentTransition` is in lands.
+
+**And C26's proof.** If a correction may be confirmed by another proof, an
+administrator can move a verified test client with a payment to the simulator
+bounce address, and its next email bounces into the account - the honest route.
+If it must be confirmed on the new address, correcting to a dead address never
+completes, and C26's proof still needs a seeded account.
 
 ### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
 
