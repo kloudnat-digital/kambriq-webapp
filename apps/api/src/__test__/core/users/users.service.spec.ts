@@ -77,6 +77,41 @@ describe('UsersService', () => {
     });
   });
 
+  // ----- ADMIN: FIND BY ID (C24) ----- //
+
+  describe('findById', () => {
+    it('carries the latest bounce or complaint SES reported for the account', async () => {
+      const user = buildUserWithRoles(['CLIENT']);
+      prisma.user.findUnique.mockResolvedValue(user);
+      prisma.emailDeliveryEvent.findFirst.mockResolvedValue({
+        kind: 'BOUNCE',
+        type: 'Permanent',
+        subType: 'General',
+        occurredAt: new Date('2026-09-28T08:00:01.000Z'),
+      });
+
+      const result = await service.findById(user.id);
+
+      expect(prisma.emailDeliveryEvent.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: user.id }, orderBy: { occurredAt: 'desc' } }),
+      );
+      expect(result.emailDelivery).toEqual({
+        kind: 'BOUNCE',
+        type: 'Permanent',
+        subType: 'General',
+        occurredAt: '2026-09-28T08:00:01.000Z',
+      });
+    });
+
+    it('says null when nothing was reported', async () => {
+      const user = buildUserWithRoles(['CLIENT']);
+      prisma.user.findUnique.mockResolvedValue(user);
+      prisma.emailDeliveryEvent.findFirst.mockResolvedValue(null);
+
+      expect((await service.findById(user.id)).emailDelivery).toBeNull();
+    });
+  });
+
   // ----- UPDATE ME ----- //
 
   describe('updateMe', () => {

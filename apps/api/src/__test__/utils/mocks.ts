@@ -55,6 +55,11 @@ export const mockCorePrisma = () => ({
     update: fn(),
     updateMany: fn(),
   },
+  /** C24 - bounces and complaints SES reported. */
+  emailDeliveryEvent: {
+    findFirst: fn(),
+    createMany: fn(),
+  },
   /** L1 - the inbound contact request. */
   contactRequest: {
     create: fn(),

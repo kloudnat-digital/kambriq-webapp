@@ -15,6 +15,8 @@ import { CleanupScheduler } from './cleanup/cleanup.scheduler';
 import { ContactController } from './contact/contact.controller';
 import { ContactService } from './contact/contact.service';
 import { StorageService } from '@kambriq/common';
+import { EmailEventsController } from './email-events/email-events.controller';
+import { EmailEventsService } from './email-events/email-events.service';
 
 @Module({
   imports: [
@@ -30,7 +32,7 @@ import { StorageService } from '@kambriq/common';
       }),
     }),
   ],
-  controllers: [AuthController, UserController, ContactController],
+  controllers: [AuthController, UserController, ContactController, EmailEventsController],
   providers: [
     CorePrismaService,
     AuthService,
@@ -41,6 +43,7 @@ import { StorageService } from '@kambriq/common';
     CleanupScheduler,
     StorageService,
     ContactService,
+    EmailEventsService,
   ],
   // Export services needed by other modules (e.g., KbsModule)
   exports: [UsersService, RolesService, CorePrismaService, ContactService],

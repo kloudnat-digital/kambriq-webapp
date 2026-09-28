@@ -94,6 +94,21 @@ export const envSchema = z.object({
   // Email delivery mechanism. 'console' routes to stdout for local development.
   EMAIL_TRANSPORT: z.enum(['ses', 'console']).default('ses'),
 
+  // ----- SES delivery events (C24) -----
+  // Configuration set named on every SES send, so bounces and complaints are
+  // published. EmailProcessor refuses to start without it when EMAIL_TRANSPORT
+  // is 'ses'.
+  SES_CONFIGURATION_SET: z.string().min(1).optional(),
+  // The only SNS topic whose deliveries the API accepts as SES events. Unset,
+  // the events endpoint refuses every delivery.
+  SES_EVENTS_TOPIC_ARN: z
+    .string()
+    .regex(
+      /^arn:aws:sns:[a-z0-9-]+:\d{12}:[A-Za-z0-9_-]+$/,
+      'SES_EVENTS_TOPIC_ARN is not an SNS topic ARN',
+    )
+    .optional(),
+
   // ----- S3 Bucket configuration -----
   // Required if STORAGE_TRANSPORT='s3'.
   AWS_S3_BUCKET: z.string().default(''),

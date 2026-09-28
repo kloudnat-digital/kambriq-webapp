@@ -111,6 +111,15 @@ export const roleCodeSchema = z.object({
 
 export class RoleCodeDto extends createZodDto(roleCodeSchema) {}
 
+// ----- Email delivery (C24) ----------
+/** The latest bounce or complaint SES reported for the account's address. */
+export interface EmailDeliveryIssue {
+  kind: 'BOUNCE' | 'COMPLAINT';
+  type: string | null;
+  subType: string | null;
+  occurredAt: string;
+}
+
 // ----- Sanitized User Response ----------
 export interface UserResponse {
   id: string;
@@ -134,4 +143,9 @@ export interface UserResponse {
     idVerificationStatus: string;
     idVerifiedAt: string | null;
   } | null;
+}
+
+/** An account as an administrator reads it: the profile plus what delivery to it reported. */
+export interface AdminUserResponse extends UserResponse {
+  emailDelivery: EmailDeliveryIssue | null;
 }

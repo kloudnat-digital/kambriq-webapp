@@ -362,10 +362,12 @@ feature, and a setting nobody consumes is a promise the product has not made.
 checking the total - it is not available at all.
 
 It becomes available only with an SES **configuration set** carrying an event
-destination, and the API sets no `ConfigurationSetName` on any send;
-`list-configuration-sets` returns nothing. Until that exists, the honest signals
-are: a `Bounce` delta around a single known send (usable only because volume is
-low enough to attribute by timing), and the recipient saying so.
+destination. Since `C24` every send names `SES_CONFIGURATION_SET`, whose bounce
+and complaint events reach `POST /email/ses-events` through SNS and are stored
+per address in `EmailDeliveryEvent`, linked to the account when there is one; the
+admin read of an account carries the latest. What is still not observable is a
+**delivery**: only bounces and complaints are published, so silence means "not
+refused", not "read".
 
 `kambriq.com` MX points at Google Workspace, so whether a given local part
 resolves to a mailbox, an alias, a group, or nothing is a Workspace question and
