@@ -324,14 +324,12 @@ Spec file counts, for scale:
 | `apps/api-e2e` | 6 (2 of them unit)               |
 | `apps/web-e2e` | 8, and one setup file            |
 
-**Two groups of browser and journey tests are opt-in**, and skip unless their
-variable is set:
+**One journey is opt-in**, and skips unless its variable is set:
+`RUN_BALANCE_JOURNEY=1` - journey 7 in `apps/api-e2e`, a deposit and a balance
+taken to validation. It consumes a parcel on the environment it runs against.
 
-- `RUN_PAGE_WALKS=1` - the page walks in `apps/web-e2e` (`human-paths.spec.ts`,
-  `emailed-links.spec.ts`), Chromium only. Off on every deploy until the API's
-  rate-limiter defect is settled (register, A56 and I46).
-- `RUN_BALANCE_JOURNEY=1` - journey 7 in `apps/api-e2e`, a deposit and a balance
-  taken to validation. It consumes a parcel on the environment it runs against.
+The page walks in `apps/web-e2e` (`human-paths.spec.ts`, `emailed-links.spec.ts`)
+run on every deploy, Chromium only.
 
 `pnpm test:e2e` signs in once per role for the whole run (`sessions.setup.ts`)
 and keeps every other sign-in inside the API's limits (`support/auth-budget.ts`).
