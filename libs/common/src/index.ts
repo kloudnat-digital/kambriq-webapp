@@ -58,6 +58,7 @@ export {
 } from './payments/payment-format';
 export {
   issueVerificationToken,
+  hashToken,
   verificationTokenExpiryHours,
   type VerificationTokenStore,
 } from './auth/verification-token';

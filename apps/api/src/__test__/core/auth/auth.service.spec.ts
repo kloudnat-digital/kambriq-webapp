@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from '../../../core/auth/auth.service';
 import {
@@ -148,7 +149,7 @@ describe('AuthService', () => {
 
       await service.register(dto);
 
-      // The token the service actually persisted.
+      // The token the service actually persisted: the digest of the linked one (C27).
       const createArg = prisma.verificationToken.create.mock.calls[0]?.[0] as {
         data: { token: string };
       };
@@ -160,8 +161,10 @@ describe('AuthService', () => {
       >;
       const sendArg = sendCalls[0][0];
       const sentUrl = sendArg.args.verificationUrl;
-      expect(sentUrl).toContain(`token=${persisted}`);
       expect(sentUrl).not.toContain('[object');
+      const linked = new URL(sentUrl).searchParams.get('token') ?? '';
+      expect(linked).toMatch(/^[0-9a-f]{64}$/);
+      expect(createHash('sha256').update(linked).digest('hex')).toBe(persisted);
     });
 
     /**

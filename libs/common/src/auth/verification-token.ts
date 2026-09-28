@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { RESET_TOKEN_EXPIRY_HOURS, VerificationTokenType } from '../constants/core';
 import { EMAIL_TOKEN_EXPIRY_HOURS } from '../constants/email';
 
@@ -17,6 +17,18 @@ export type VerificationTokenStore = {
     }): Promise<unknown>;
   };
 };
+
+/**
+ * The stored form of a token: its SHA-256 digest, hex.
+ *
+ * The raw value travels in the link and is never stored, so a read of the table
+ * - a backup, an export, a read-only credential - yields nothing that resets a
+ * password or verifies an address. A token carries 256 random bits, so an
+ * unsalted digest cannot be reversed and keeps the lookup an equality on the
+ * unique index. Refresh tokens are stored the same way (C27).
+ */
+export const hashToken = (token: string): string =>
+  createHash('sha256').update(token).digest('hex');
 
 /** Hours a token of this type stays valid. */
 export const verificationTokenExpiryHours = (type: VerificationTokenType): number =>
@@ -42,7 +54,7 @@ export async function issueVerificationToken(
   await store.verificationToken.create({
     data: {
       userId,
-      token,
+      token: hashToken(token),
       type,
       expiresAt: new Date(Date.now() + verificationTokenExpiryHours(type) * 3_600_000),
     },
