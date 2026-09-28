@@ -201,6 +201,7 @@ listed here first.
 | `A67`                          | `PROUVE`            | a test that an environment variable switches off must run somewhere: `env-switched-tests-run-somewhere.spec.ts` fails on any skip whose condition reads a variable no workflow sets, unless it is declared with its reason (`RUN_BALANCE_JOURNEY` only). From Ulrich's reading of 27 September: `RUN_EMAILED_LINKS` outlived its cause for days, and `RUN_PAGE_WALKS` did the same until #255                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `C20`                          | `PROUVE`            | SES production access is **granted** in eu-central-1 (review `GRANTED`, case 176441524300857): 50 000 a day, 14 a second, 636 sent in the last 24 h on 28 September. prd is planned in the same account and region, so it inherits it. Account-level suppression on bounce, complaint and optimized; no configuration set, so the API sees no bounce event                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `C24`                          | `PROUVE`            | the application now learns that an address bounced: every SES send names the configuration set, SNS delivers BOUNCE and COMPLAINT events to `POST /email/ses-events`, which verifies the SNS signature and topic and stores one `EmailDeliveryEvent` per recipient, linked to the account; `GET /users/:id` carries the latest. **Proven on dev, 28 September (731d432, infra #71 and #72):** an account registered at the SES mailbox simulator's bounce address showed `BOUNCE Permanent/General` on its admin read 3 seconds after its verification email, the same SES message id in the send and the bounce log lines. Not yet rendered by any screen                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `C26`                          | `EN COURS`          | the bounce C24 stores was shown by no screen. The payment screen, where instructions are sent, now carries the latest bounce or complaint for the client's current address: a permanent bounce or a complaint is shown in red and the send waits for the operator to confirm the client was told another way; a transient bounce is shown in amber without a gate. Warned, not blocked, because the coordinates are published on the client's space and the email only announces them. Pending: the browser proof on dev, which needs a payment whose client's address bounces - no product flow can produce one (see the entry)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `C22`                          | `A DECIDER`         | Actions minutes, measured for September and **corrected on 28 September**: GitHub lists reused jobs under a re-run's new attempt, and the first count billed them twice. Excluding them, the webapp used 5 738 exact minutes against a bill implying ~5 694 (0.8 % apart; infra 181 against ~346 does not close), so the bill is exact minutes and per-job rounding is not in it. Public repositories are not metered at all (infra `CLAUDE.md`, 16 September). Re-runs were 80 minutes, not 676; PR runs are cancelled when superseded since #95. The private switch is postponed, so the cuts save nothing today                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `#48` prd trust                | `A DECIDER`         | infra #48 extends the APPLY role's trust to `environment:prd`, but since D16 a plan runs under `<env>-plan` with the PLAN role, so it would not make #46's Plan (prd) authenticate: that needs the plan role to trust `environment:prd-plan` and an `AWS_ROLE_ARN` secret in `prd-plan`. A `prd` environment already exists (24 February, no protection rules); nothing on develop can select it. Not merged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Journeys bypass the page       | `PROUVE`            | the delivery journeys prove by calling the API what a person does through a page: email verification, forgot-password, the invitation (until I45), KBS identity and enrolment, every back-office payment step. By construction the page a human uses is the one path not proven. Which of them deserve a browser walk is a decision, not a fix to squeeze in **Decided by Visquis, 27 September: walk every human path on every deploy** - done as I46                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -9423,6 +9424,54 @@ Permanent, subType: General}` 3 seconds after registration. The account stays on
 dev, at a simulator address. Still rendered by no screen: the operator's payment
 screen (`payment-detail-content.tsx`, where instructions are sent) is the place
 it matters most.
+
+### C26 - the bounce is seen where instructions are sent - `EN COURS`
+
+**Cost impact: None.** One read of the core database per payment detail.
+
+**The gap.** C24 stored the bounce and `GET /users/:id` carried it, for
+`ADMIN_GLOBAL` only, and no screen rendered it. Payment operators are
+`ADMIN_LANDS` and could not have read it at all.
+
+**What was built.** `findForBackOffice` returns `clientEmailDelivery`: the latest
+`EmailDeliveryEvent` for the reservation's client **at the address the client
+uses now** - an event for an address since changed is not a fact about this
+client. `SendInstructionsAction` shows it above the send.
+
+**Decided: warn, never block; a permanent bounce or a complaint needs an
+explicit acknowledgement.** The data supports the distinction: SES's
+`bounceType` Permanent means the address does not exist or refuses mail, and a
+complaint means the person marked us as spam - mail will not arrive in either
+case. Transient means it was refused this time and may arrive. And the send's
+consequence decides the rest: the coordinates are published on the client's
+authenticated space and the email only says they are available (v03, G3), so a
+dead mailbox does not misdirect money. What it does is leave the client
+uninformed while the 30-day period starts. So:
+
+- Permanent or complaint: red, with the date and the SES type, saying the client
+  will not be told by email and the period starts anyway; the send stays
+  disabled until the operator ticks "J'ai prévenu le client par un autre moyen";
+- Transient: amber, the date, no gate;
+- nothing reported: nothing shown.
+
+A block would leave no remedy - nothing in the back office can correct an
+address - and would stop the portal publication the client can still read.
+
+**Proof, local, each mutation confirmed applied:** 4 screen tests rendering the
+real `PaymentDetailContent`, 2 service tests. No acknowledgement gate: 2 fail;
+complaint not treated as undeliverable: 1; transient treated as permanent: 1;
+the screen not passing the issue: 3; the service ignoring the current address:
+1; the service never carrying it: 1.
+
+**Pending, and blocked: the browser proof on dev.** It needs a payment whose
+client's address bounces, and no product flow produces one: a payment is
+requested by its client, who must sign in; an unverified account cannot sign in
+(journey 1 asserts it); the bounced account's verification and reset links go to
+the address that bounces; an administrator can change roles only, never an email.
+Reading the account's reset token from dev's database through ECS Exec was
+refused by the permission classifier. Found on the way: verification and reset
+tokens are stored in the clear in `VerificationToken.token` - only refresh tokens
+are hashed (`auth.service.ts:635`).
 
 ### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
 

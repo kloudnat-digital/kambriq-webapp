@@ -60,6 +60,14 @@ export interface PaymentTransition {
   occurredAt: string;
 }
 
+/** What SES reported about mail sent to an address. */
+export interface EmailDeliveryIssue {
+  kind: 'BOUNCE' | 'COMPLAINT';
+  type: string | null;
+  subType: string | null;
+  occurredAt: string;
+}
+
 export interface PaymentDetail extends PaymentRow {
   /** The client's preferred payment channel. */
   preferredChannel: PaymentChannel | null;
@@ -67,6 +75,8 @@ export interface PaymentDetail extends PaymentRow {
   channel: PaymentChannel | null;
   clientUserId: string | null;
   identityStatus: 'none' | 'pending' | 'verified' | 'rejected';
+  /** The latest bounce or complaint SES reported for the client's current address (C26). */
+  clientEmailDelivery: EmailDeliveryIssue | null;
   receipts: PaymentReceipt[];
   transitions: PaymentTransition[];
 }
