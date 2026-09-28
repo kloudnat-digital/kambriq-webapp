@@ -8973,6 +8973,11 @@ the web); one 429 for the journeys' runner, explained under A56. **The brief's
 proof was "no 429 on the auth routes"; read literally it does not hold, read for
 the walks it does** - left for Visquis.
 
+**Second run, same shape (`99e73b1`, E2E 05:07-05:16 UTC).** All six walks
+pass; nothing fails outside the CMS routes; the API log holds one 429 in the
+whole run, `/auth/login` at 05:09:08, again the journeys' runner (`node`, no
+vouched visitor). Two runs, one caller refused each time, never the walks.
+
 **#255 landed without the full local gate.** Its register edit was not
 prettier-clean; `format:check` stopped the gate before lint, typecheck and
 tests, and the landing script read "no failing test" as green. CI's own jobs
