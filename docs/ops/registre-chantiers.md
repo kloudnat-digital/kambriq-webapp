@@ -8990,6 +8990,21 @@ were green. #256 formatted the row, and the full gate then ran to its end on
 develop plus that fix (four test summaries, the known local `NODE_ENV` case the
 only failure). The script now refuses a gate that did not reach its end.
 
+**The journeys sign in less, 28 September.** The one 429 in each of the two
+walks-on runs was the delivery journeys' own runner signing in an eleventh time
+within sixty seconds. Every spec file signed the same seeded accounts in again
+(admin three times, eric three, sylvie two, jean.kbs once). `sessionFor` in
+`apps/api-e2e/src/journeys/support.ts` keeps one token per seeded account for the
+run, in a directory `global-setup.ts` creates and `global-teardown.ts` removes;
+the API reads roles from the database on every request, so a token taken once
+stays accurate. Minted accounts and the five sign-ins that test signing in keep
+`login`. Unit-tested (`src/unit/session-for.spec.ts`, three mutations each
+confirmed applied: never reusing, no expiry check, one token for every account).
+Measured against dev, the two kamnet files in band: **4 sign-ins where they made
+7**. Run with parallel workers, both files signed in at once and it stayed 7 -
+the target is in band, and the docstring says so. Pending: a develop run whose
+API log holds no 429 on any auth route, for any caller.
+
 ### I47 - a land buyer has no page to send an identity document - `PROUVE`
 
 **Cost impact: None to decide.**

@@ -1,4 +1,4 @@
-import { call, exactMoney, findTokenInMailbox, login, uniqueEmail } from './support';
+import { call, exactMoney, findTokenInMailbox, login, uniqueEmail, sessionFor } from './support';
 
 /**
  * G1 / G8 / G20 end to end on a deployed environment: one reservation, from a
@@ -97,8 +97,8 @@ run('journey 7 - a reservation from a validated deposit to a validated balance',
     }>().data.purpose;
 
   beforeAll(async () => {
-    admin = await login('admin@kambriq.com');
-    agent = await login('eric.mbou@kambriq.com');
+    admin = await sessionFor('admin@kambriq.com');
+    agent = await sessionFor('eric.mbou@kambriq.com');
   });
 
   it('reserves a parcel for a new client, who signs in', async () => {

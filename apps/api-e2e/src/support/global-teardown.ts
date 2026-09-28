@@ -1,3 +1,4 @@
+import { rmSync } from 'node:fs';
 import { killPort } from '@nx/node/utils';
 
 module.exports = async function () {
@@ -5,5 +6,7 @@ module.exports = async function () {
   // Hint: `globalThis` is shared between setup and teardown.
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
   await killPort(port);
+  const sessions = process.env['JOURNEYS_SESSIONS_DIR'];
+  if (sessions) rmSync(sessions, { recursive: true, force: true });
   console.log(globalThis.__TEARDOWN_MESSAGE__);
 };

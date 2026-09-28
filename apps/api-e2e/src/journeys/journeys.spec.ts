@@ -7,6 +7,7 @@ import {
   findTokenInMailbox,
   login,
   uniqueEmail,
+  sessionFor,
 } from './support';
 
 /**
@@ -65,8 +66,8 @@ beforeAll(async () => {
     );
   }
 
-  admin = await login('admin@kambriq.com');
-  agent = await login('eric.mbou@kambriq.com');
+  admin = await sessionFor('admin@kambriq.com');
+  agent = await sessionFor('eric.mbou@kambriq.com');
 });
 
 // ---------------------------------------------------------------------------

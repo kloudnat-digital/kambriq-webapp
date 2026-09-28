@@ -1,4 +1,4 @@
-import { API, call, login } from './support';
+import { API, call, sessionFor } from './support';
 
 /**
  * One agent never sees another agent's network.
@@ -122,8 +122,8 @@ beforeAll(async () => {
     console.log(`sha gate NOT ENFORCED (EXPECTED_SHA unset). Deployed: ${data.imageTag}`);
   }
 
-  eric = await login(ERIC);
-  sylvie = await login(SYLVIE);
+  eric = await sessionFor(ERIC);
+  sylvie = await sessionFor(SYLVIE);
 });
 
 describe('two agents, two networks', () => {
@@ -240,14 +240,14 @@ describe('two agents, two networks', () => {
    *                for it -> 404.
    */
   it('refuses the network with 403 to a role the hierarchy does not give AGENT', async () => {
-    const adminKbs = await login('jean.kbs@kambriq.com');
+    const adminKbs = await sessionFor('jean.kbs@kambriq.com');
     const res = await call('GET', '/kamnet/network?depth=1', { token: adminKbs });
 
     expect(res.status).toBe(403);
   });
 
   it('refuses the network with 404 to the super admin, who clears the guard and has no agent record', async () => {
-    const superAdmin = await login('admin@kambriq.com');
+    const superAdmin = await sessionFor('admin@kambriq.com');
     const res = await call('GET', '/kamnet/network?depth=1', { token: superAdmin });
 
     // Not 200 with an empty tree. "You are not an agent" and "you are an agent

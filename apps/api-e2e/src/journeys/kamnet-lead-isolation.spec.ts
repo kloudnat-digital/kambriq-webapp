@@ -1,4 +1,4 @@
-import { API, call, login } from './support';
+import { API, call, sessionFor } from './support';
 
 /**
  * One agent never sees another agent's prospects.
@@ -77,8 +77,8 @@ beforeAll(async () => {
     console.log(`sha gate NOT ENFORCED (EXPECTED_SHA unset). Deployed: ${data.imageTag}`);
   }
 
-  eric = await login(ERIC);
-  sylvie = await login(SYLVIE);
+  eric = await sessionFor(ERIC);
+  sylvie = await sessionFor(SYLVIE);
 });
 
 describe('two agents, two prospect lists', () => {
@@ -154,7 +154,7 @@ describe('two agents, two prospect lists', () => {
   it('refuses the prospect list to a caller with no agent record', async () => {
     // ADMIN_GLOBAL clears @Roles(AGENT) through ROLE_HIERARCHY, then
     // findByUserId has no record for it: 404, not 200 with an empty list.
-    const superAdmin = await login('admin@kambriq.com');
+    const superAdmin = await sessionFor('admin@kambriq.com');
     const res = await call('GET', '/kamnet/leads', { token: superAdmin });
 
     expect(res.status).toBe(404);

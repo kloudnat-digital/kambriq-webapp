@@ -1,3 +1,7 @@
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 /**
  * Shared helpers for the delivery journeys.
  *
@@ -131,6 +135,48 @@ export const login = async (email: string, password = 'Test1234!'): Promise<stri
     throw new Error(`login failed for ${email}: ${res.status} ${res.body.slice(0, 200)}`);
   }
   return res.json<{ data: { tokens: { accessToken: string } } }>().data.tokens.accessToken;
+};
+
+/** Set by `global-setup.ts`: where `sessionFor` keeps its tokens for the run. */
+export const SESSIONS_DIR_VAR = 'JOURNEYS_SESSIONS_DIR';
+
+/** Whether a JWT's `exp` is more than `marginMs` away. */
+const validFor = (jwt: string, marginMs: number): boolean => {
+  try {
+    const payload = JSON.parse(Buffer.from(jwt.split('.')[1] ?? '', 'base64url').toString()) as {
+      exp?: unknown;
+    };
+    return typeof payload.exp === 'number' && payload.exp * 1000 - Date.now() > marginMs;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * One sign-in per seeded account for the whole run.
+ *
+ * Every spec file signed in as the same seeded accounts again, and the runner
+ * reached eleven sign-ins in sixty seconds against a limit of ten (A56, I46).
+ * Jest gives each spec file its own module registry, so the token is kept in
+ * the run's directory rather than in memory. The API reads roles from the
+ * database on every request, so a token taken once stays accurate for the run.
+ *
+ * Only for accounts no journey changes: a journey that mints an account, or
+ * tests signing in itself, calls `login`. The `journeys` target runs in band;
+ * two files started in parallel workers can each sign the same account in once.
+ */
+export const sessionFor = async (email: string, password = 'Test1234!'): Promise<string> => {
+  const dir = process.env[SESSIONS_DIR_VAR];
+  if (!dir) return login(email, password);
+
+  const file = join(dir, createHash('sha256').update(`${API}\n${email}`).digest('hex'));
+  if (existsSync(file)) {
+    const token = readFileSync(file, 'utf8');
+    if (validFor(token, 120_000)) return token;
+  }
+  const token = await login(email, password);
+  writeFileSync(file, token, { mode: 0o600 });
+  return token;
 };
 
 /**
