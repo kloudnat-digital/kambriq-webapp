@@ -179,35 +179,65 @@ export const sessionFor = async (email: string, password = 'Test1234!'): Promise
   return token;
 };
 
+/** Attempts at a maildrop request, and the waits between them (2 s, 4 s, 8 s). */
+export const MAILDROP_ATTEMPTS = 4;
+export const MAILDROP_FIRST_WAIT_MS = 2_000;
+
 /**
- * Reads a mailbox on maildrop.cc.
+ * One GraphQL request to maildrop.cc, retried on a 5xx or a network failure.
  *
  * A third-party dependency in a test is a liability, and it is carried here on
  * purpose: A3 shipped `?token=[object Promise]` in every verification link
- * precisely because nothing ever opened the email. The failure message says when
- * the mailbox is the problem, so a maildrop outage does not read as a product
- * defect.
+ * precisely because nothing ever opened the email. On 25 September a single
+ * maildrop 520 failed journey 1 on a first attempt while every later mailbox
+ * read of the same run passed, so a short outage is waited out, each wait said
+ * out loud. A 4xx is our own request being wrong and is never retried; an
+ * outage that outlasts the attempts still fails, and says it was maildrop.
  */
+const maildrop = async <T>(query: string): Promise<T> => {
+  for (let attempt = 1; ; attempt++) {
+    let failure: string;
+    try {
+      const res = await fetch('https://api.maildrop.cc/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+      if (res.ok) return (await res.json()) as T;
+      if (res.status < 500) {
+        throw new Error(`maildrop refused the request (HTTP ${res.status}) - our query is wrong`);
+      }
+      failure = `HTTP ${res.status}`;
+    } catch (e) {
+      if (e instanceof Error && e.message.startsWith('maildrop refused')) throw e;
+      failure = `network error: ${(e as Error).message}`;
+    }
+    if (attempt >= MAILDROP_ATTEMPTS) {
+      throw new Error(
+        `maildrop unavailable (${failure}) after ${MAILDROP_ATTEMPTS} attempts - not a product failure`,
+      );
+    }
+    const wait = MAILDROP_FIRST_WAIT_MS * 2 ** (attempt - 1);
+    console.warn(
+      `[journeys] maildrop answered ${failure} (attempt ${attempt} of ${MAILDROP_ATTEMPTS}); ` +
+        `retrying in ${wait} ms - a third-party outage, not a product failure.`,
+    );
+    await clock.sleep(wait);
+  }
+};
+
+/** Reads a mailbox on maildrop.cc. */
 export const inbox = async (mailbox: string): Promise<Array<{ id: string; subject: string }>> => {
-  const res = await fetch('https://api.maildrop.cc/graphql', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: `query{inbox(mailbox:"${mailbox}"){id subject}}` }),
-  });
-  if (!res.ok) throw new Error(`maildrop unavailable (HTTP ${res.status}) - not a product failure`);
-  const parsed = (await res.json()) as {
-    data?: { inbox?: Array<{ id: string; subject: string }> };
-  };
+  const parsed = await maildrop<{ data?: { inbox?: Array<{ id: string; subject: string }> } }>(
+    `query{inbox(mailbox:"${mailbox}"){id subject}}`,
+  );
   return parsed.data?.inbox ?? [];
 };
 
 export const message = async (mailbox: string, id: string): Promise<string> => {
-  const res = await fetch('https://api.maildrop.cc/graphql', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: `query{message(mailbox:"${mailbox}",id:"${id}"){html}}` }),
-  });
-  const parsed = (await res.json()) as { data?: { message?: { html?: string } } };
+  const parsed = await maildrop<{ data?: { message?: { html?: string } } }>(
+    `query{message(mailbox:"${mailbox}",id:"${id}"){html}}`,
+  );
   return parsed.data?.message?.html ?? '';
 };
 

@@ -9013,6 +9013,26 @@ any caller** - 279 requests, `/auth/login` answered 200 twenty-three times, 401
 three and 400 four (the deliberate refusals). The brief's proof now holds as it
 was written.
 
+**The mailbox reader waits out a maildrop outage, 28 September.** The journeys
+read emailed links through maildrop.cc, and `inbox()` threw on any non-OK answer
+while `message()` checked no status at all. `maildrop()` in `support.ts` now
+retries a 5xx or a network failure four times, waiting 2, 4 and 8 seconds, with
+one `[journeys] maildrop answered ...` line per wait; a 4xx is thrown at once,
+because it means our query is wrong; an outage that outlasts the attempts still
+fails, naming maildrop. Five tests in `src/unit/maildrop-retry.spec.ts`, five
+mutations each confirmed applied (no retry, a 4xx retried, silent retries,
+network errors not retried, a fixed wait).
+
+**And a correction to the round-18 reading.** Of the two journey-1 failures on
+25 September, only one was maildrop: run 36151001443 got **HTTP 520** from
+maildrop's front on the run's first mailbox read, while the four later mailbox
+reads of the same run passed - the retry would very likely have carried that
+attempt, though the exact gap is not in the log (Jest ran without per-test
+lines). The other, run 36109278981, read the token successfully and then **our
+own API answered 502** to `POST /auth/verify-email`. The retry does not touch
+that, on purpose: the journey client retries only a 429, and a 5xx from the API
+is a signal about the API.
+
 ### I47 - a land buyer has no page to send an identity document - `PROUVE`
 
 **Cost impact: None to decide.**
