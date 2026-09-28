@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { authSlot } from './support/auth-budget';
+import { inbox, message } from './support/mail';
 
 /**
  * A28 - the one journey nothing covered: a login that SUCCEEDS, end to end.
@@ -17,7 +18,6 @@ import { authSlot } from './support/auth-budget';
  * email, so a test that skipped verification would prove the refusal, not the
  * success.
  */
-const MAILDROP = 'https://api.maildrop.cc/graphql';
 
 async function maildropToken(
   mailbox: string,
@@ -26,25 +26,11 @@ async function maildropToken(
 ): Promise<string> {
   const deadline = Date.now() + timeoutMs;
   const subjects: string[] = [];
-  const q = async (query: string) => {
-    const res = await fetch(MAILDROP, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ query }),
-    });
-    if (!res.ok)
-      throw new Error(`maildrop unavailable (HTTP ${res.status}) - not a product failure`);
-    return res.json() as Promise<{
-      data?: { inbox?: Array<{ id: string; subject: string }>; message?: { html: string } };
-    }>;
-  };
   while (Date.now() < deadline) {
-    const list = (await q(`query{inbox(mailbox:"${mailbox}"){id subject}}`)).data?.inbox ?? [];
+    const list = await inbox(mailbox);
     for (const m of list) {
       subjects.push(m.subject);
-      const html =
-        (await q(`query{message(mailbox:"${mailbox}",id:"${m.id}"){html}}`)).data?.message?.html ??
-        '';
+      const html = await message(mailbox, m.id);
       const found = pattern.exec(html);
       if (found?.[1]) return found[1];
     }
