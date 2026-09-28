@@ -9279,11 +9279,6 @@ minutes per PR. **One merge costs ~38 minutes end to end.** By job: deploy to de
 
 **Redundant - minutes that protect nothing:**
 
-- **Documentation-only merges run the whole delivery.** 37 of 207 develop pushes
-  changed only `*.md` or `docs/`, and spent 878 minutes (23.7 each) rebuilding
-  both images, redeploying the same code and re-running the journeys and three
-  browsers of E2E on it. Quality still has work there (the register guard reads
-  the register); build, deploy, journeys and E2E do not.
 - **Sub-minute jobs billed a full minute.** 1 758 jobs ran under 60 seconds -
   "What changed" 503, commitlint 406, CI Gate 331 and others - billed 1 758
   minutes for 666 minutes of work: ~1 090 minutes of rounding. Folding the small
@@ -9296,6 +9291,16 @@ minutes per PR. **One merge costs ~38 minutes end to end.** By job: deploy to de
   reads the head's run).
 - **Re-run attempts**: 676 minutes, most of them re-runs of whole jobs after a
   flake or an A32 refusal (Quality 176, deploy 89).
+
+**Deliberate, and a decision rather than a redundancy - documentation-only
+merges run the whole delivery.** 37 of 207 develop pushes changed only `*.md` or
+`docs/`, and spent 878 minutes (23.7 each) rebuilding both images, redeploying
+and re-running the journeys and E2E on unchanged code. `ci.yml` does this on
+purpose: "What changed" reports `code=true` on every develop push so that the sha
+dev serves always equals develop's head, which every proof on dev gates on. The
+878 minutes buy that invariant. Keeping it for less is possible - for instance by
+retagging the previous images with the new sha instead of rebuilding - but it is a
+change to what a proof may assume, and not a free cut.
 
 **Expensive and protecting something - not proposed for removal:** the develop
 deploy (9.9 minutes, and it is what every proof reads), the delivery journeys
