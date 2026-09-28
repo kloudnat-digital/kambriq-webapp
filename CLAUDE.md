@@ -3146,6 +3146,21 @@ edit. The first two mutations were confirmed correctly and only the third
 exposed it - which is the usual way a proxy fails, on the one case it cannot
 see.
 
+### A remedy does not switch the mitigation back on
+
+From `A67`, after Ulrich's reading of `A56`. When something breaks, somebody
+switches a test off to keep the pipeline moving - an opt-in variable, a skip, a
+narrower matrix. When the cause is fixed, the fix is one commit and the
+mitigation was another, and nothing links them. `RUN_EMAILED_LINKS` kept the
+emailed-link walks off for days after their cause was removed, and
+`RUN_PAGE_WALKS` did the same a day later. The skipped test reads as a
+deliberate one.
+
+**When a fix lands, check what was switched off waiting for it.** And a skip
+that waits for a variable is only honest if something sets that variable:
+`env-switched-tests-run-somewhere.spec.ts` fails on one that no workflow sets,
+unless it is declared with its reason.
+
 ### An append-only table makes every test fixture permanent
 
 From wave 7 step 1, found by running the database suite a second time.
