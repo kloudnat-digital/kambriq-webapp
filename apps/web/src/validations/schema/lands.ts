@@ -29,11 +29,24 @@ export const CreateLandFormResolver = z.object({
   isVerified: z.boolean(),
 });
 
-export const ReserveLandFormResolver = z.object({
-  name: z.string().min(3, { error: 'Name must be at least 3 characters' }),
-  email: z.email({ error: 'Invalid email address' }),
-  phone: phoneRequired(),
-});
+/**
+ * C29 - the client's address is typed twice before the invitation goes out: the
+ * set-password link, and the reservation behind it, go to whatever is typed.
+ */
+export const sameAddress = (a: string, b: string): boolean =>
+  a.trim().toLowerCase() === b.trim().toLowerCase();
+
+export const ReserveLandFormResolver = z
+  .object({
+    name: z.string().min(3, { error: 'Name must be at least 3 characters' }),
+    email: z.email({ error: 'Invalid email address' }),
+    emailConfirm: z.string(),
+    phone: phoneRequired(),
+  })
+  .refine((d) => sameAddress(d.email, d.emailConfirm), {
+    path: ['emailConfirm'],
+    error: 'mismatch',
+  });
 
 export type CreateLandFormSchema = z.infer<typeof CreateLandFormResolver>;
 export type ReserveLandFormSchema = z.infer<typeof ReserveLandFormResolver>;
@@ -57,6 +70,7 @@ export const CREATE_LAND_DEFAULTS: CreateLandFormSchema = {
 export const RESERVE_LAND_DEFAULTS: ReserveLandFormSchema = {
   name: '',
   email: '',
+  emailConfirm: '',
   phone: '',
 };
 

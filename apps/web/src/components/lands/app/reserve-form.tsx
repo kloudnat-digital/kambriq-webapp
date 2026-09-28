@@ -44,6 +44,7 @@ export const ReserveForm = ({
     ? {
         name: reservation.clientName,
         email: reservation.clientEmail,
+        emailConfirm: reservation.clientEmail,
         phone: reservation.clientPhone,
       }
     : RESERVE_LAND_DEFAULTS;
@@ -57,18 +58,28 @@ export const ReserveForm = ({
   const { isSubmitting } = formState;
 
   const [isCancelOpen, setIsCancelOpen] = useState(false);
+  // C29: a valid form is read back to the client before anything is sent.
+  const [toReadBack, setToReadBack] = useState<ReserveLandFormSchema | null>(null);
+  const [isSending, setIsSending] = useState(false);
 
   const isReserved = Boolean(reservation);
   const isDisabled = isReserved || isSubmitting;
   const canCancel = isAdmin || reservation?.agentUserId === currentUserId;
 
-  const handleReserve = async (data: ReserveLandFormSchema) => {
+  const handleReserve = (data: ReserveLandFormSchema) => {
+    setToReadBack(data);
+  };
+
+  const sendAfterReadBack = async () => {
+    if (!toReadBack) return;
+    setIsSending(true);
     const result = await createReservationAction({
       landId,
-      clientName: data.name,
-      clientEmail: data.email,
-      clientPhone: data.phone,
+      clientName: toReadBack.name,
+      clientEmail: toReadBack.email,
+      clientPhone: toReadBack.phone,
     });
+    setIsSending(false);
 
     if (!result.success) {
       createToast({ status: 'error', title: result.error ?? t('apiError') });
@@ -151,6 +162,31 @@ export const ReserveForm = ({
                 )}
               />
 
+              {!isReserved && (
+                <Controller
+                  name="emailConfirm"
+                  control={methods.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="res-email-confirm">{t('emailConfirm')}</FieldLabel>
+                      <Input
+                        {...field}
+                        id="res-email-confirm"
+                        type="email"
+                        disabled={isDisabled || Boolean(toReadBack)}
+                        aria-invalid={fieldState.invalid}
+                        autoComplete="off"
+                        onPaste={(e) => e.preventDefault()}
+                      />
+                      {fieldState.error && (
+                        <FieldError errors={[{ message: t('emailConfirmMismatch') }]} />
+                      )}
+                      <FieldDescription>{t('emailConfirmHint')}</FieldDescription>
+                    </Field>
+                  )}
+                />
+              )}
+
               <Controller
                 name="phone"
                 control={methods.control}
@@ -178,7 +214,7 @@ export const ReserveForm = ({
             </div>
           </FieldGroup>
 
-          {!isReserved && (
+          {!isReserved && !toReadBack && (
             <Button
               type="submit"
               className="mt-5 h-10 w-full"
@@ -186,6 +222,40 @@ export const ReserveForm = ({
             >
               {isSubmitting ? '…' : t('submit')}
             </Button>
+          )}
+
+          {!isReserved && toReadBack && (
+            <div
+              data-testid="read-back"
+              role="alertdialog"
+              aria-labelledby="read-back-title"
+              className="mt-5 space-y-3 rounded-md bg-amber-50 p-4 ring-1 ring-amber-300"
+            >
+              <p id="read-back-title" className="font-semibold text-amber-900">
+                {t('readBackTitle')}
+              </p>
+              <p className="font-mono text-lg break-all text-gray-900">{toReadBack.email}</p>
+              <p className="text-sm text-amber-900">{t('readBackBody')}</p>
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  className="h-10 flex-1"
+                  disabled={isSending || !canManageReservations}
+                  onClick={sendAfterReadBack}
+                >
+                  {isSending ? '…' : t('readBackConfirm')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 flex-1"
+                  disabled={isSending}
+                  onClick={() => setToReadBack(null)}
+                >
+                  {t('readBackEdit')}
+                </Button>
+              </div>
+            </div>
           )}
         </form>
 
