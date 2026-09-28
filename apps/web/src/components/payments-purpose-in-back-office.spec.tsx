@@ -47,6 +47,7 @@ describe('G20 - the back office says deposit or balance', () => {
       channel: null,
       clientUserId: 'user-1',
       identityStatus: 'verified',
+      clientEmailDelivery: null,
       receipts: [],
       transitions: [],
     };

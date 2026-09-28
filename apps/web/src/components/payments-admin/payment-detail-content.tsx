@@ -89,6 +89,7 @@ export const PaymentDetailContent = ({
         identityVerified={payment.identityStatus === 'verified'}
         identityStatus={payment.identityStatus}
         clientUserId={payment.clientUserId}
+        emailDelivery={payment.clientEmailDelivery}
       />
     )}
 

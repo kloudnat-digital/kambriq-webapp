@@ -1040,6 +1040,7 @@ export class PaymentsService {
         })
       : null;
     const identity = profile?.idVerificationStatus ?? IdVerificationStatus.NONE;
+    const clientEmailDelivery = await this.clientEmailDelivery(reservation?.clientUserId ?? null);
     return {
       id: payment.id,
       reference: payment.reference,
@@ -1062,6 +1063,7 @@ export class PaymentsService {
       channel: payment.channel,
       clientUserId: reservation?.clientUserId ?? null,
       identityStatus: identity,
+      clientEmailDelivery,
       receipts: payment.receipts.map((r) => ({
         id: r.id,
         amount: r.amount.toString(),
@@ -1399,5 +1401,25 @@ export class PaymentsService {
     const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
     if (!payment) throw new NotFoundException(`Payment ${paymentId} not found`);
     return payment;
+  }
+
+  /**
+   * C26 - the latest bounce or complaint SES reported for the client's current
+   * address, so the operator sees it where instructions are sent. An event for
+   * an address the client no longer uses is not a fact about this client.
+   */
+  private async clientEmailDelivery(clientUserId: string | null) {
+    if (!clientUserId) return null;
+    const user = await this.core.user.findUnique({
+      where: { id: clientUserId },
+      select: { email: true },
+    });
+    if (!user) return null;
+    const latest = await this.core.emailDeliveryEvent.findFirst({
+      where: { userId: clientUserId, email: { equals: user.email, mode: 'insensitive' } },
+      orderBy: { occurredAt: 'desc' },
+      select: { kind: true, type: true, subType: true, occurredAt: true },
+    });
+    return latest ? { ...latest, occurredAt: latest.occurredAt.toISOString() } : null;
   }
 }
