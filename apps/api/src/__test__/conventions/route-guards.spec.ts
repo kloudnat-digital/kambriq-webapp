@@ -80,6 +80,11 @@ const PUBLIC_SURFACE: Record<string, number> = {
   // reason the newsletter is: an unauthenticated write is a mailbox anybody
   // can address.
   'core/contact/contact.controller.ts': 1,
+  // C24: SES bounce and complaint events from Amazon SNS, one route. The
+  // caller is authenticated by its SNS signature and topic in
+  // `EmailEventsService`; an unset topic refuses every delivery. Throttled at
+  // 60/minute, since every delivery comes from SNS.
+  'core/email-events/email-events.controller.ts': 1,
   // Wave 7: the Sanity webhook receiver, one route. `@Public()` here removes the
   // JWT requirement only - the caller is authenticated by `SanityWebhookGuard`,
   // which verifies an HMAC over the raw body and refuses when the secret is

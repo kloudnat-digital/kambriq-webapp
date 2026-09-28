@@ -35,8 +35,12 @@ const makeConfig = (values: Record<string, string> = {}) =>
     get: jest.fn((key: string, fallback?: string) => (key in values ? values[key] : fallback)),
   }) as unknown as ConfigService;
 
+/** An SES processor needs its configuration set (C24); tests that are not about it get one. */
 const makeProcessor = (values: Record<string, string> = {}) =>
-  new EmailProcessor(makeConfig(values), {} as I18nService);
+  new EmailProcessor(
+    makeConfig({ SES_CONFIGURATION_SET: 'kambriq-test-api', ...values }),
+    {} as I18nService,
+  );
 
 const sendJob = {
   name: NOTIFICATIONS_JOBS.SEND_EMAIL,
@@ -228,5 +232,27 @@ describe('EmailProcessor: unknown job names', () => {
 
     expect(SendEmailCommandMock).not.toHaveBeenCalled();
     expect(mockSend).not.toHaveBeenCalled();
+  });
+});
+
+describe('EmailProcessor: C24 - every SES send names the configuration set', () => {
+  it('sends through the configured set, so SES publishes its bounces and complaints', async () => {
+    await makeProcessor({ SES_CONFIGURATION_SET: 'kambriq-dev-api' }).process(sendJob);
+
+    expect(SendEmailCommandMock).toHaveBeenCalledWith(
+      expect.objectContaining({ ConfigurationSetName: 'kambriq-dev-api' }),
+    );
+  });
+
+  it('refuses to start on SES without a configuration set', () => {
+    expect(
+      () => new EmailProcessor(makeConfig({ EMAIL_TRANSPORT: 'ses' }), {} as I18nService),
+    ).toThrow(/SES_CONFIGURATION_SET is required/);
+  });
+
+  it('needs no configuration set on the console transport', () => {
+    expect(
+      () => new EmailProcessor(makeConfig({ EMAIL_TRANSPORT: 'console' }), {} as I18nService),
+    ).not.toThrow();
   });
 });

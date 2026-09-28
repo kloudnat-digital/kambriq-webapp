@@ -19,6 +19,7 @@ import {
   SubmitIdDocumentDto,
   UpdateProfileDto,
   UserResponse,
+  AdminUserResponse,
 } from './dto/users.dto';
 import {
   DEFAULT_LANGUAGE,
@@ -235,8 +236,22 @@ export class UsersService {
   }
 
   // ----- Admin: Get User by ID ---------------------------
-  async findById(userId: string): Promise<UserResponse> {
-    return await this.toUserResponse(await this.findByIdOrThrow(userId));
+  /**
+   * C24 - carries the latest bounce or complaint SES reported for the account,
+   * so an administrator about to send it something can see that mail does not
+   * reach it.
+   */
+  async findById(userId: string): Promise<AdminUserResponse> {
+    const user = await this.toUserResponse(await this.findByIdOrThrow(userId));
+    const latest = await this.prisma.emailDeliveryEvent.findFirst({
+      where: { userId },
+      orderBy: { occurredAt: 'desc' },
+      select: { kind: true, type: true, subType: true, occurredAt: true },
+    });
+    return {
+      ...user,
+      emailDelivery: latest ? { ...latest, occurredAt: latest.occurredAt.toISOString() } : null,
+    };
   }
 
   // ----- Internal: Get Users by ID ---------------------------

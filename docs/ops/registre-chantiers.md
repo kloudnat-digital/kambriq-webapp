@@ -200,7 +200,8 @@ listed here first.
 | `A56`                          | `PROUVE`            | `@nestjs/throttler` 6.7.1 in the lockfile (#249, range unchanged). 6.5.0 cancelled every caller's hit expiries when any block ended, refusing legitimate callers below the declared limit, cumulatively; the reproduction is red on 6.5.0 and green on 6.7.1. **Proven on dev, 28 September (7ad301f):** the one 429 on `/auth/login` in the run was the journeys runner's eleventh sign-in in sixty seconds (two of them deliberate 401s) - the limit of ten, counted exactly. The walks' caller got none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `A67`                          | `PROUVE`            | a test that an environment variable switches off must run somewhere: `env-switched-tests-run-somewhere.spec.ts` fails on any skip whose condition reads a variable no workflow sets, unless it is declared with its reason (`RUN_BALANCE_JOURNEY` only). From Ulrich's reading of 27 September: `RUN_EMAILED_LINKS` outlived its cause for days, and `RUN_PAGE_WALKS` did the same until #255                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `C20`                          | `PROUVE`            | SES production access is **granted** in eu-central-1 (review `GRANTED`, case 176441524300857): 50 000 a day, 14 a second, 636 sent in the last 24 h on 28 September. prd is planned in the same account and region, so it inherits it. Account-level suppression on bounce, complaint and optimized; no configuration set, so the API sees no bounce event                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `C22`                          | `A DECIDER`         | Actions minutes, measured for September: webapp 8 030 minutes billed per job rounded up (6 076 exact), infra 478 (182). One merge costs ~38 minutes end to end. At September's rate 2 000 private minutes last ~6 days (out ~7 October); at the last week's pace ~3 days. Redundancies and the guards that cost are in the entry. The cuts are Visquis's                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `C24`                          | `EN COURS`          | the application never learned that an address bounced. Every SES send now names a configuration set whose BOUNCE and COMPLAINT events SNS delivers to `POST /email/ses-events`; the API believes a delivery only when its SNS signature verifies and it comes from the configured topic, stores one `EmailDeliveryEvent` per recipient (linked to the account when there is one), and `GET /users/:id` carries the latest. Infra in two applies (infra #71 first). Pending: the dev proof, a real bounce from the SES mailbox simulator read end to end                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `C22`                          | `A DECIDER`         | Actions minutes, measured for September and **corrected on 28 September**: GitHub lists reused jobs under a re-run's new attempt, and the first count billed them twice. Excluding them, the webapp used 5 738 exact minutes against a bill implying ~5 694 (0.8 % apart; infra 181 against ~346 does not close), so the bill is exact minutes and per-job rounding is not in it. Public repositories are not metered at all (infra `CLAUDE.md`, 16 September). Re-runs were 80 minutes, not 676; PR runs are cancelled when superseded since #95. The private switch is postponed, so the cuts save nothing today                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `#48` prd trust                | `A DECIDER`         | infra #48 extends the APPLY role's trust to `environment:prd`, but since D16 a plan runs under `<env>-plan` with the PLAN role, so it would not make #46's Plan (prd) authenticate: that needs the plan role to trust `environment:prd-plan` and an `AWS_ROLE_ARN` secret in `prd-plan`. A `prd` environment already exists (24 February, no protection rules); nothing on develop can select it. Not merged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Journeys bypass the page       | `PROUVE`            | the delivery journeys prove by calling the API what a person does through a page: email verification, forgot-password, the invitation (until I45), KBS identity and enrolment, every back-office payment step. By construction the page a human uses is the one path not proven. Which of them deserve a browser walk is a decision, not a fix to squeeze in **Decided by Visquis, 27 September: walk every human path on every deploy** - done as I46                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `I46`                          | `EN COURS`          | the human paths walked through the pages on every deploy, Chromium: registration and email verification, forgotten password, KBS enrolment, the payment page's identity upload, the back office taking a deposit from request to validation, and both emailed links. **Continuous since 27 September** (#255), once A56 was fixed. First develop run with them (7ad301f): all six walks pass; the API log holds no 429 for the walks' caller; it holds one for the delivery journeys' own runner, which the journey client absorbs by waiting (A36). Whether that reads as the proof is Visquis's call - the brief said no 429 on the auth routes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -9317,6 +9318,74 @@ which stops at 3 000; consumption ran past it.
 
 **Of that, this repository's own record-keeping is a visible share**: a round's
 closing register PR is a documentation-only merge, and this entry arrived in one.
+
+**Corrected on 28 September, and the correction is mine.** The first count read
+every job listed under a run, and GitHub lists the jobs a re-run **reused** under
+the new attempt with new timestamps although they did not run again. Excluding a
+job whose name, start and end repeat an earlier attempt's:
+
+- webapp: **7 522 minutes rounded, 5 738 exact**; the bill implies ~5 694 - 0.8 %
+  from the exact figure, so **the bill is exact minutes, not per-job rounding**.
+  Infra: 472 rounded, 181 exact, against ~346, which still does not close;
+- re-runs: **80 exact minutes, not 676**. 70 of the re-run runs re-ran only the
+  CI Gate after an A32 refusal (9 minutes in all) - its designed use. The one
+  repeating failure is the delivery journeys failing a first attempt five times
+  (14, 15, 18 and twice on 25 September): a flake to find, not minutes to save;
+- the 1 591 sub-minute jobs did 609 minutes of work; per-job rounding would bill
+  them as 1 591, **only once a repository is private**. The infra brief measured
+  in September that public repositories report `billable.UBUNTU.total_ms = 0`;
+- superseded runs: PR runs are cancelled since #95 (9 September); the four that
+  were not (32 minutes) predate it or were throwaway proofs. Develop is never
+  cancelled, on purpose, because its run migrates, deploys and bootstraps.
+
+So the "about 2 000 free minutes" in the eighteenth queue rested on my first
+count. What folding the small jobs could recover is part of 609 exact minutes, the
+CI Gate cannot be folded without weakening A32 (it must run last, `always()`), and
+with the repositories staying public the saving is USD 0. `ci.yml` is unchanged.
+
+### C24 - the application learns that an address bounced - `EN COURS`
+
+**Cost impact: None measurable.** A configuration set, an SNS topic and HTTPS
+deliveries at dev volume are within the free tier; one table.
+
+**The gap.** The account suppression list stops SES from sending to an address
+that hard-bounced or complained, and nothing told the application: an
+invitation, a reset or a payment instruction sent to a dead mailbox was recorded
+as sent.
+
+**What was built.**
+
+- Infra (`kambriq-infra`, `envs/dev/c24-ses-events.tf`), in two applies so the
+  first event has a listener: the configuration set `kambriq-dev-api` and the
+  topic `kambriq-dev-ses-events` (SES may publish only from that set in this
+  account), the task role allowed to send through the set - SESv2 authorises a
+  send against the set it names, so an API naming a set its role may not use has
+  every send refused - and `SES_CONFIGURATION_SET` and `SES_EVENTS_TOPIC_ARN` on
+  the task (infra #71). Then the BOUNCE and COMPLAINT event destination and the
+  HTTPS subscription, once the endpoint is deployed.
+- **HTTPS, not SQS**: neither CI role holds any `sqs:` permission, and granting it
+  is an `envs/shared` change. The apply role already manages SES and SNS.
+- API: `EmailProcessor` names the set on every send and refuses to start on SES
+  without it. `POST /email/ses-events` (`@Public()`, 60 per minute) takes SNS's
+  `text/plain` body, rebuilds the string SNS signed, verifies it with the
+  certificate from an `https://sns.<region>.amazonaws.com/*.pem` URL only,
+  refuses another topic, confirms a subscription by calling SNS only, and stores
+  one `EmailDeliveryEvent` per recipient - unique on SES feedback id and address,
+  so a redelivery is stored once - linked to the account when the address has
+  one. `GET /users/:id` carries `emailDelivery`, the latest.
+- **Rendered by nothing yet**: the web has no admin screen for an account. The
+  field is on the admin read; a screen is the next step.
+
+**Proof, local, each mutation confirmed applied:** 28 tests on the SNS
+verification and the service, 3 on the processor, 2 on the admin read. Always
+valid signature: 3 fail; no certificate host check: 4; no topic check: 1;
+`skipDuplicates` off: 1; subscription confirmed at any URL: 1; send without the
+set: 1; start without the set: 1 (a first version did not compile and ran no
+test; redone with a mutation that compiles); admin read dropping the issue: 1.
+
+**Pending: the dev proof** - a send to the SES mailbox simulator's bounce address
+from an account on dev, the event arriving through SNS, the row, and the admin
+read of that account.
 
 ### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
 

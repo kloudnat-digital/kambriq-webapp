@@ -39,10 +39,11 @@ model User {
   loginAttempts Int       @default(0)
   lockedUntil   DateTime?
 
-  userRoles          UserRole[]
-  refreshTokens      RefreshToken[]
-  profile            UserProfile?
-  verificationTokens VerificationToken[]
+  userRoles           UserRole[]
+  refreshTokens       RefreshToken[]
+  profile             UserProfile?
+  verificationTokens  VerificationToken[]
+  emailDeliveryEvents EmailDeliveryEvent[]
 }
 
 /// Represents a system role for access control.
@@ -248,4 +249,35 @@ model PolicySnapshot {
   /// "The version of this policy current at that moment", which is the query
   /// consent depends on.
   @@index([slug, locale, publishedAt])
+}
+
+/// What SES reported about a message the API sent: a bounce or a complaint.
+enum EmailDeliveryEventKind {
+  BOUNCE
+  COMPLAINT
+}
+
+/// A bounce or complaint SES published for one recipient of one message (C24).
+/// Written only from a verified SNS delivery; `userId` is set when the address
+/// belongs to an account when the event arrives.
+model EmailDeliveryEvent {
+  id           String                 @id @default(uuid())
+  /// SES feedback id. With `email`, identifies one event, so a redelivered
+  /// notification is stored once.
+  feedbackId   String
+  email        String
+  kind         EmailDeliveryEventKind
+  /// SES `bounceType` (Permanent, Transient, Undetermined) or the complaint feedback type.
+  type         String?
+  /// SES `bounceSubType`, for a bounce.
+  subType      String?
+  /// The SES message the event is about.
+  sesMessageId String
+  occurredAt   DateTime
+  receivedAt   DateTime               @default(now())
+  userId       String?
+  user         User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([feedbackId, email])
+  @@index([userId, occurredAt])
 }

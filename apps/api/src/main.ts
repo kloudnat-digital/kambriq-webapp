@@ -1,6 +1,7 @@
 import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import { text } from 'express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
@@ -34,6 +35,12 @@ async function bootstrap() {
   // web applies, so the whole hostname answers one way. Middleware, before
   // routing, so a 404 and a 401 carry it too; an interceptor would miss both.
   app.use(robotsHeaderMiddleware());
+
+  // ----- SNS deliveries (C24) -----
+  // SNS posts `Content-Type: text/plain`, which the JSON and urlencoded parsers
+  // leave unread. The SES events endpoint verifies the signature over fields of
+  // the parsed JSON, not the bytes, so a string body is all it needs.
+  app.use(text({ type: 'text/plain', limit: '256kb' }));
 
   // ----- Cookie Parser -----
   // Parses Cookie header and populates req.cookies so NestJS can read httpOnly tokens

@@ -452,11 +452,13 @@ address only when the secret is present.
 
 ### Email
 
-| Variable          | Description                 |
-| ----------------- | --------------------------- |
-| `EMAIL_TRANSPORT` | `ses` sends, `console` logs |
-| `EMAIL_FROM`      | Sender address              |
-| `EMAIL_FROM_NAME` | Sender display name         |
+| Variable                | Description                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `EMAIL_TRANSPORT`       | `ses` sends, `console` logs                                                                                        |
+| `EMAIL_FROM`            | Sender address                                                                                                     |
+| `EMAIL_FROM_NAME`       | Sender display name                                                                                                |
+| `SES_CONFIGURATION_SET` | Named on every SES send; required with `ses`                                                                       |
+| `SES_EVENTS_TOPIC_ARN`  | The SNS topic whose bounce and complaint events `POST /email/ses-events` accepts; unset, every delivery is refused |
 
 ### Storage and images
 

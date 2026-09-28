@@ -17,6 +17,7 @@ export class EmailProcessor extends LoudWorkerHost {
   private readonly fromAddress: string;
   private readonly fromName: string;
   private readonly transport: 'ses' | 'console';
+  private readonly configurationSet: string | null;
 
   constructor(
     private readonly config: ConfigService,
@@ -32,10 +33,21 @@ export class EmailProcessor extends LoudWorkerHost {
       this.config.get<string>('EMAIL_TRANSPORT', 'ses') === 'console' ? 'console' : 'ses';
 
     if (this.transport === 'console') {
+      this.configurationSet = null;
       this.sesClient = null;
       this.logger.warn('EMAIL_TRANSPORT=console - emails will be logged, not sent.');
       return;
     }
+
+    // Every SES send names the configuration set, or bounces and complaints are
+    // never published and a send to a dead address reads as delivered (C24).
+    const configurationSet = this.config.get<string>('SES_CONFIGURATION_SET')?.trim();
+    if (!configurationSet) {
+      throw new Error(
+        'SES_CONFIGURATION_SET is required when EMAIL_TRANSPORT=ses: without it SES publishes no bounce or complaint.',
+      );
+    }
+    this.configurationSet = configurationSet;
 
     // Default AWS credential provider chain (ECS task role or local profile).
     this.sesClient = new SESv2Client({ region });
@@ -43,6 +55,7 @@ export class EmailProcessor extends LoudWorkerHost {
       region,
       fromAddress: this.fromAddress,
       fromName: this.fromName,
+      configurationSet: this.configurationSet,
     });
   }
 
@@ -72,6 +85,7 @@ export class EmailProcessor extends LoudWorkerHost {
       const result = await this.sesClient.send(
         new SendEmailCommand({
           FromEmailAddress: `${this.fromName} <${this.fromAddress}>`,
+          ConfigurationSetName: this.configurationSet ?? undefined,
           Destination: { ToAddresses: [to] },
           Content: {
             Simple: {
