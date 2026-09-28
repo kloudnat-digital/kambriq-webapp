@@ -199,6 +199,9 @@ listed here first.
 | `I45`                          | `PROUVE`            | the invitation every new client receives, and the email-change confirmation, linked to pages that did not exist (404 on dev). The invitation now links to `/reset-password`; the confirmation to a new `/account/confirm-email-change` page, and the login detour keeps the token. `emailed-urls-resolve.spec.ts` checks every URL the API builds on `FRONTEND_URL` against the web's pages, inverted. Pending: both links walked from the email in a browser on dev (`emailed-links.spec.ts`) **Proven on dev (`sha-61388d9`), 27 September:** both walks green in Chromium from the delivered emails - the invitation to a password to a sign-in; the confirmation opened signed out, the login detour back to it, confirmed, the new address signing in and the old one refused                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `A56`                          | `PROUVE`            | `@nestjs/throttler` 6.7.1 in the lockfile (#249, range unchanged). 6.5.0 cancelled every caller's hit expiries when any block ended, refusing legitimate callers below the declared limit, cumulatively; the reproduction is red on 6.5.0 and green on 6.7.1. **Proven on dev, 28 September (7ad301f):** the one 429 on `/auth/login` in the run was the journeys runner's eleventh sign-in in sixty seconds (two of them deliberate 401s) - the limit of ten, counted exactly. The walks' caller got none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `A67`                          | `PROUVE`            | a test that an environment variable switches off must run somewhere: `env-switched-tests-run-somewhere.spec.ts` fails on any skip whose condition reads a variable no workflow sets, unless it is declared with its reason (`RUN_BALANCE_JOURNEY` only). From Ulrich's reading of 27 September: `RUN_EMAILED_LINKS` outlived its cause for days, and `RUN_PAGE_WALKS` did the same until #255                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `C20`                          | `PROUVE`            | SES production access is **granted** in eu-central-1 (review `GRANTED`, case 176441524300857): 50 000 a day, 14 a second, 636 sent in the last 24 h on 28 September. prd is planned in the same account and region, so it inherits it. Account-level suppression on bounce, complaint and optimized; no configuration set, so the API sees no bounce event                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `C22`                          | `A DECIDER`         | Actions minutes, measured for September: webapp 8 030 minutes billed per job rounded up (6 076 exact), infra 478 (182). One merge costs ~38 minutes end to end. At September's rate 2 000 private minutes last ~6 days (out ~7 October); at the last week's pace ~3 days. Redundancies and the guards that cost are in the entry. The cuts are Visquis's                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `#48` prd trust                | `A DECIDER`         | infra #48 extends the APPLY role's trust to `environment:prd`, but since D16 a plan runs under `<env>-plan` with the PLAN role, so it would not make #46's Plan (prd) authenticate: that needs the plan role to trust `environment:prd-plan` and an `AWS_ROLE_ARN` secret in `prd-plan`. A `prd` environment already exists (24 February, no protection rules); nothing on develop can select it. Not merged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Journeys bypass the page       | `PROUVE`            | the delivery journeys prove by calling the API what a person does through a page: email verification, forgot-password, the invitation (until I45), KBS identity and enrolment, every back-office payment step. By construction the page a human uses is the one path not proven. Which of them deserve a browser walk is a decision, not a fix to squeeze in **Decided by Visquis, 27 September: walk every human path on every deploy** - done as I46                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `I46`                          | `EN COURS`          | the human paths walked through the pages on every deploy, Chromium: registration and email verification, forgotten password, KBS enrolment, the payment page's identity upload, the back office taking a deposit from request to validation, and both emailed links. **Continuous since 27 September** (#255), once A56 was fixed. First develop run with them (7ad301f): all six walks pass; the API log holds no 429 for the walks' caller; it holds one for the delivery journeys' own runner, which the journey client absorbs by waiting (A36). Whether that reads as the proof is Visquis's call - the brief said no 429 on the auth routes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `I47`                          | `PROUVE`            | **Decided by Visquis, 27 September: in the payment page.** Built: the payment page's "waiting for identity" state carries the upload (`IdentityDocumentUpload`), through the same identity actions as KBS enrolment (moved to `lib/actions/identity.ts`), storing the key (A49). The French and English wording is proposed copy for Visquis. Pending: the chain walked on dev from the page - upload, back-office review, instructions sent **Proven on dev (`sha-8d7084b`), 27 September:** the whole chain walked in Chromium - request on the purchase page, identity document uploaded on the payment page, verified in the back office, instructions sent, receipt recorded, deposit validated                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
@@ -9208,6 +9211,107 @@ green; it was discarded and redone with an edit that asserts it changed the file
 **Not covered, on purpose:** a skip decided by a value read into a local first
 (`const on = process.env.X; test.skip(!on)`), and Playwright project selection in
 `playwright.config.ts`. Neither shape exists in the repository today.
+
+### C20 - SES production access - `PROUVE`
+
+**Cost impact: None.** A reading.
+
+`aws sesv2 get-account` on 28 September: `ProductionAccessEnabled: true`,
+`SendingEnabled: true`, `EnforcementStatus: HEALTHY`, `ReviewDetails.Status:
+GRANTED` (case 176441524300857, mail type `TRANSACTIONAL`, site
+`https://kambriq.com`). Quota 50 000 per 24 hours at 14 per second; 636 sent in
+the previous 24 hours. Production access is per region, and `envs/prd` (unmerged,
+`ops/d2-envs-prd`) is planned in the same account and in `eu-central-1`, so prd
+needs no request. The identity is the `kambriq.com` domain, verified.
+
+**What AWS asks about bounces and complaints, and what we have.** The account
+suppression list is on for `BOUNCE`, `COMPLAINT` and `OPTIMIZED`, so SES stops
+sending to an address that hard-bounced or complained. There is no configuration
+set and no event destination (see "Per-address delivery is not a thing
+CloudWatch can tell you" in `CLAUDE.md`), so the application never learns that
+an address bounced: an invitation to a mistyped address fails silently from the
+product's side. That is the gap to close before real clients, not access.
+
+### #48 prd trust - the trust it adds is not the one the prd plan needs - `A DECIDER`
+
+**Cost impact: None.** Nothing merged, nothing applied.
+
+The seventeenth queue asked to merge infra #48 on the grounds that no job can
+present `environment:prd` until a GitHub environment named `prd` exists. Measured
+on 28 September, both halves of that are different:
+
+- **`prd` exists**, created 24 February, with no protection rules. What keeps
+  the trust unusable today is that nothing on develop can select it: the apply
+  and smoke-test workflows offer `shared` and `dev` only, on develop and on
+  `ops/d2-envs-prd`.
+- **#48 targets the apply role, and the prd plan no longer uses it.** Since D16 a
+  plan job runs under `<env>-plan` and authenticates as
+  `kambriq-infra-github-actions-plan`, whose live trust is `dev-plan` and
+  `shared-plan`. #46's Plan (prd) fails at "Credentials could not be loaded"
+  because `prd-plan` holds no `AWS_ROLE_ARN` secret; the trust would refuse it
+  next. Merging #48 fixes neither, and the trust only changes at a shared apply.
+
+**An environment was created by a push.** `prd-plan` appeared at 21:02:47 UTC on
+27 September, the second a rebased #46 was pushed and its Plan (prd) job
+referenced it: GitHub creates an environment a job names. It is empty. Removing
+it, or giving it the plan role's ARN, is a repository setting and Visquis's.
+
+### C22 - where the Actions minutes go, measured before the private switch - `A DECIDER`
+
+**Cost impact: the subject itself.** Measured, nothing switched off.
+
+**Method.** Every run created in September (to 27 September inclusive) and every
+job attempt (`filter=all`) of both repositories, from the REST API: 560 webapp
+runs and 6 355 jobs, 122 infra runs and 445 jobs. Minutes counted two ways -
+per job rounded up to the minute (how private-repository minutes are billed) and
+exact. **The totals do not close against the billing page**: webapp 8 030
+rounded / 6 076 exact against the $45.55 bill (~5 694 minutes at $0.008), infra
+478 / 182 against $2.77 (~346). The bill is between the two models for both and
+matches neither; the page may lag by a day. What follows uses rounded minutes,
+because that is what October will be charged on.
+
+**Where it goes (webapp).** Pushes to develop: 207 runs, 5 701 minutes (71 %),
+27.5 minutes each. Pull requests: 343 runs, 2 327 minutes, 1.5 runs and 10.5
+minutes per PR. **One merge costs ~38 minutes end to end.** By job: deploy to dev
+2 047, Quality 1 132 (plus 781 for the old four-job matrix, early September), E2E
+825, API image 613, journeys 521, "What changed" 503, web image 458, commitlint
+435, database suite 382, CI Gate 331. Infra: the plan on pull requests is 83 %.
+
+**Redundant - minutes that protect nothing:**
+
+- **Documentation-only merges run the whole delivery.** 37 of 207 develop pushes
+  changed only `*.md` or `docs/`, and spent 878 minutes (23.7 each) rebuilding
+  both images, redeploying the same code and re-running the journeys and three
+  browsers of E2E on it. Quality still has work there (the register guard reads
+  the register); build, deploy, journeys and E2E do not.
+- **Sub-minute jobs billed a full minute.** 1 758 jobs ran under 60 seconds -
+  "What changed" 503, commitlint 406, CI Gate 331 and others - billed 1 758
+  minutes for 666 minutes of work: ~1 090 minutes of rounding. Folding the small
+  decision jobs into a job that runs anyway removes it; this is `CLAUDE.md`'s
+  "billed per job, rounded up" entry, measured.
+- **Superseded runs not cancelled.** 29 runs kept going after a newer run started
+  on the same branch; 243 minutes spent after the newer one began, 215 of them on
+  develop. Ten runs were cancelled in the month. A `concurrency` group with
+  `cancel-in-progress` on pull requests is free; on develop it needs care (A32
+  reads the head's run).
+- **Re-run attempts**: 676 minutes, most of them re-runs of whole jobs after a
+  flake or an A32 refusal (Quality 176, deploy 89).
+
+**Expensive and protecting something - not proposed for removal:** the develop
+deploy (9.9 minutes, and it is what every proof reads), the delivery journeys
+(3.4, what A32's gate reads), E2E (3.9: the walks, I45 and I46), Quality (3.0:
+lint, both typechecks, every unit and convention test), the database suite (2.0:
+the triggers and constraints), the two image builds (2.4 and 2.3).
+
+**The arithmetic.** September averaged 327 rounded minutes a day across both
+repositories; the week of 21-27 September averaged 602. On the free plan's 2 000
+private minutes, that is **6.1 days at September's rate - out around 7 October -
+and 3.3 days at the last week's pace, around 4 October**, well before the 19
+October opening. The "hundred a day" estimate read the included-minutes counter,
+which stops at 3 000; consumption ran past it.
+
+**Of that, this repository's own record-keeping is a visible share**: a round's
+closing register PR is a documentation-only merge, and this entry arrived in one.
 
 ### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
 
