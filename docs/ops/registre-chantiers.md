@@ -9461,7 +9461,12 @@ address - and would stop the portal publication the client can still read.
 real `PaymentDetailContent`, 2 service tests. No acknowledgement gate: 2 fail;
 complaint not treated as undeliverable: 1; transient treated as permanent: 1;
 the screen not passing the issue: 3; the service ignoring the current address:
-1; the service never carrying it: 1.
+1; the service never carrying it: 1. The full gate refused the first version twice, on
+the back office's own rules (`payment-format.spec.ts`): a date formatted with
+`toLocaleDateString` instead of `<HumanDate>`, and the spec placed inside the
+scanned `payments-admin/` surface with an `XAF` in its fixture. Both were fixed
+the way the rules intend - the date through `HumanDate`, the spec beside the
+other back-office spec, outside the surface.
 
 **Pending, and blocked: the browser proof on dev.** It needs a payment whose
 client's address bounces, and no product flow produces one: a payment is

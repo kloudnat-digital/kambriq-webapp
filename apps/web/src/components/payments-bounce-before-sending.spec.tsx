@@ -2,7 +2,7 @@ jest.mock('@/i18n/navigation', () => require('@/test-utils/navigation-mock'));
 jest.mock('@/lib/actions/payments', () => ({ sendInstructions: jest.fn() }));
 
 import { fireEvent, render, screen } from '@testing-library/react';
-import { PaymentDetailContent } from './payment-detail-content';
+import { PaymentDetailContent } from './payments-admin/payment-detail-content';
 import type { EmailDeliveryIssue, PaymentDetail } from '@/types/payments';
 
 const detail = (clientEmailDelivery: EmailDeliveryIssue | null): PaymentDetail => ({

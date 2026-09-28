@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { sendInstructions } from '@/lib/actions/payments';
 import { ChannelLabel, selectableChannels } from './channel-label';
+import { HumanDate } from './payment-money';
 import type { EmailDeliveryIssue, PaymentChannel } from '@/types/payments';
 
 /**
@@ -29,8 +30,6 @@ import type { EmailDeliveryIssue, PaymentChannel } from '@/types/payments';
 export const isUndeliverable = (issue: EmailDeliveryIssue | null): boolean =>
   !!issue && (issue.kind === 'COMPLAINT' || issue.type === 'Permanent');
 
-const reportedOn = (iso: string) =>
-  new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 export const SendInstructionsAction = ({
   paymentId,
   preferredChannel,
@@ -92,9 +91,18 @@ export const SendInstructionsAction = ({
           className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-900"
         >
           <p className="font-medium">
-            {emailDelivery.kind === 'COMPLAINT'
-              ? `Ce client a signalé nos emails comme indésirables le ${reportedOn(emailDelivery.occurredAt)}.`
-              : `L'adresse email de ce client est rejetée définitivement depuis le ${reportedOn(emailDelivery.occurredAt)} (${emailDelivery.type ?? ''}/${emailDelivery.subType ?? ''}).`}
+            {emailDelivery.kind === 'COMPLAINT' ? (
+              <>
+                Ce client a signalé nos emails comme indésirables le{' '}
+                <HumanDate at={emailDelivery.occurredAt} />.
+              </>
+            ) : (
+              <>
+                L&apos;adresse email de ce client est rejetée définitivement depuis le{' '}
+                <HumanDate at={emailDelivery.occurredAt} /> ({emailDelivery.type ?? ''}/
+                {emailDelivery.subType ?? ''}).
+              </>
+            )}
           </p>
           <p className="mt-1">
             Il ne sera pas prévenu par email que les coordonnées sont disponibles, et le délai de 30
@@ -117,8 +125,8 @@ export const SendInstructionsAction = ({
           data-testid="email-uncertain"
           className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
         >
-          Un email à ce client a été refusé temporairement le {reportedOn(emailDelivery.occurredAt)}
-          . Il peut arriver en retard.
+          Un email à ce client a été refusé temporairement le{' '}
+          <HumanDate at={emailDelivery.occurredAt} />. Il peut arriver en retard.
         </div>
       )}
 
