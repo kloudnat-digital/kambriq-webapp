@@ -81,6 +81,12 @@ const makeTranslator = (namespace?: string) => {
   };
   /** Whether a message exists - next-intl's `t.has`, over the real catalogue. */
   translate.has = (key: string): boolean => typeof resolve(`${prefix}${key}`) === 'string';
+  // The raw message - an array or an object - and, like `translate`, loud on a miss.
+  translate.raw = (key: string): unknown => {
+    const value = resolve(`${prefix}${key}`);
+    if (value === undefined) throw new Error(`Missing ${locale} message for "${prefix}${key}".`);
+    return value;
+  };
   return translate;
 };
 
