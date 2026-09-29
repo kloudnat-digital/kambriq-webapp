@@ -201,6 +201,7 @@ listed here first.
 | `A67`                          | `PROUVE`            | a test that an environment variable switches off must run somewhere: `env-switched-tests-run-somewhere.spec.ts` fails on any skip whose condition reads a variable no workflow sets, unless it is declared with its reason (`RUN_BALANCE_JOURNEY` only). From Ulrich's reading of 27 September: `RUN_EMAILED_LINKS` outlived its cause for days, and `RUN_PAGE_WALKS` did the same until #255                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `A69`                          | `PROUVE`            | the browser suite read maildrop through two readers of its own with no retry (`web-e2e/src/support/mail.ts`, and a private copy in `auth.spec.ts`) while the journeys' reader waits out an outage (#265). Both now go through the journeys' `inbox` and `message` - one reader, one retry - and `one-maildrop-client.spec.ts` fails on any second client of the API (it names `auth.spec.ts` when the old copy is put back). `auth.spec.ts`'s verify-then-sign-in test passed on dev through it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `A71`                          | `PROUVE`            | the browser E2E job was red on every develop run since at least 2549233 - 33 failures, the 8 Sanity pages answering 404 on a web built without a Sanity project, in 3 browsers, plus the language switch that starts on one of them - so a new failure could not be seen. Those 11 checks per browser now skip while the build has no Sanity project and dataset, set from the two repository variables; nothing else is exempt. Proven on develop dd86c42: the E2E job green, 164 passed, 53 skipped (the 33 plus 20 skips that predate it)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `A73`                          | `EN COURS`          | a row-level trigger does not fire on TRUNCATE, so every append-only table could be emptied in one statement. Five tables found in the catalog of the four databases, not three: `PolicySnapshot`, `AdministrativeAct`, `PaymentReceipt`, `PaymentTransition`, `PaymentReminder`. Each now refuses TRUNCATE by a statement trigger on `kambriq_append_only()`, and a catalog check refuses the next one that does not. Pending: the migrations applied on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `A68`                          | `EN COURS`          | `POST /auth/verify-email` answered 502 three times (the 25 September journeys, the E2E runs of 2549233 and f65eed0), each right after the test polled the mailbox for seconds. Nothing set the API server's `keepAliveTimeout` (Node default 5 s) while the load balancer keeps an idle connection 60 s (AWS default; `modules/alb` sets none). The API now outlives the load balancer: `keepAliveTimeout` 65 s, `headersTimeout` 66 s (`app/keep-alive.ts`). Consistent with the three 502s, **not confirmed**: the load balancer's access logs are off. Pending: absence of the 502 over enough develop runs to mean something (see the entry)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `C20`                          | `PROUVE`            | SES production access is **granted** in eu-central-1 (review `GRANTED`, case 176441524300857): 50 000 a day, 14 a second, 636 sent in the last 24 h on 28 September. prd is planned in the same account and region, so it inherits it. Account-level suppression on bounce, complaint and optimized; no configuration set, so the API sees no bounce event                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `C24`                          | `PROUVE`            | the application now learns that an address bounced: every SES send names the configuration set, SNS delivers BOUNCE and COMPLAINT events to `POST /email/ses-events`, which verifies the SNS signature and topic and stores one `EmailDeliveryEvent` per recipient, linked to the account; `GET /users/:id` carries the latest. **Proven on dev, 28 September (731d432, infra #71 and #72):** an account registered at the SES mailbox simulator's bounce address showed `BOUNCE Permanent/General` on its admin read 3 seconds after its verification email, the same SES message id in the send and the bounce log lines. Not yet rendered by any screen                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -9373,6 +9374,60 @@ in one browser only). The job's environment printed `E2E_CMS_CONTENT: false`.
 **What it does not fix.** "The two locales serve different text at the same
 route" passes on `/about` today because the two 404 pages differ by language: it
 is green over a page that does not exist. Left running, and listed here.
+
+### A73 - TRUNCATE defeated every append-only table - `EN COURS`
+
+**Cost impact: None.** Five triggers.
+
+**The gap.** Found writing C28 step 1. The append-only tables carried a
+`BEFORE UPDATE OR DELETE ... FOR EACH ROW` trigger. A row trigger does not fire
+on `TRUNCATE`, so each could be emptied in one statement, and every test was
+green because none issued one.
+
+**Enumerated, not assumed.** Every non-internal trigger in the four test
+databases, read from `pg_trigger` after the migrations: **five** tables refuse an
+UPDATE or a DELETE, none refused a TRUNCATE. Four use `kambriq_append_only()` -
+`PolicySnapshot` and `AdministrativeAct` in core, `PaymentReceipt` and
+`PaymentTransition` in lands (G1's ledger is two tables). The fifth,
+`PaymentReminder` (G6), uses its own `payment_reminder_append_only()` and was
+not in the brief; it had the same hole and is fixed with the others. kbs and
+kamnet carry no triggers. Nothing in the code, the scripts or CI truncates any of
+the five; the only TRUNCATEs are on KBS tables in test setup.
+
+**Visquis's decision, 29 September: all of them, together, before the opening.**
+Two migrations (`20260929220000_a73_append_only_refuses_truncate`, core and
+lands) add a `BEFORE TRUNCATE ... FOR EACH STATEMENT` trigger on
+`kambriq_append_only()` to each table - the existing function, including for
+`PaymentReminder`, whose row triggers keep theirs.
+
+**Proof, local.** `append-only-truncate.dbspec.ts`, sent as SQL through `pg`.
+Before the migrations, every TRUNCATE went through, six `Received: null`:
+`PolicySnapshot` (with `CASCADE` - without it the foreign key from
+`ContactRequest` refuses first, and that is not the guarantee; with it the
+archive and every consent pointing at it went together), `AdministrativeAct`,
+`PaymentTransition`, `PaymentReminder`, `PaymentReceipt` (with `CASCADE`, the
+audit trail referencing it) and `TRUNCATE "Payment" CASCADE`, which reached the
+whole ledger from its parent. After: each refused with `restrict_violation` and
+every row still there, twice with no reset; the database suite 163 passed. A
+check per database asks the catalog for every table whose trigger refuses UPDATE
+or DELETE and fails on one that does not refuse TRUNCATE. Mutation, the
+`PaymentReminder` trigger removed: 2 fail, the catalog check naming it.
+Pending: the migrations applied on dev.
+
+**What G1's proof asserted.** G1 was declared `PROUVE` on G8's end-to-end run
+and on A17's database suite, which proved by removal that `PaymentReceipt` and
+`PaymentTransition` refuse UPDATE and DELETE, and that the CHECK constraints
+refuse their rows. It claimed an append-only ledger and proved it against
+editing, not erasure. The rest of what it claimed - the state machine, one
+write path to the state, the evidenced transitions - is about writes that go
+through a row, and has no TRUNCATE-shaped gap. G1 does not need re-proving; its
+guarantee is now what it said.
+
+**Still outside, and listed.** The API connects with the URL the migrations
+use, so it runs as the tables' owner, and an owner can `DROP` a table or
+`ALTER TABLE ... DISABLE TRIGGER`. The triggers hold against a caller that
+writes, not one that alters the schema; a separate migration role would close
+it. Not measured on dev.
 
 ### C20 - SES production access - `PROUVE`
 

@@ -2268,9 +2268,10 @@ The total is a sum over `PaymentReceipt`, and a correction appends a signed line
 pointing at the line it corrects - it never edits one. Same reasoning as the
 coverage denominator: a figure you can edit by hand is a figure that lies one
 day, and the day it lies nothing signals it. Both ledger tables carry a
-`BEFORE UPDATE OR DELETE` trigger that raises, so append-only is a property of
-the database rather than a promise made by a service - a service can be bypassed
-by a script, a console, or the next person in a hurry.
+`BEFORE UPDATE OR DELETE` row trigger and a `BEFORE TRUNCATE` statement trigger
+that raise, so append-only is a property of the database rather than a promise
+made by a service - a service can be bypassed by a script, a console, or the next
+person in a hurry.
 
 **No transition that commits money is automatic.**
 `assertTransitionIsDeliberate` throws when a payment is moved to
@@ -3173,6 +3174,27 @@ deliberate one.
 that waits for a variable is only honest if something sets that variable:
 `env-switched-tests-run-somewhere.spec.ts` fails on one that no workflow sets,
 unless it is declared with its reason.
+
+### An append-only guarantee that covers editing and not erasure
+
+From `A73`. Every append-only table here - the payment ledger, its audit trail,
+the reminders, the policy archive, the record of administrative acts - carried a
+`BEFORE UPDATE OR DELETE ... FOR EACH ROW` trigger, and each was proved by
+removal. **A row trigger does not fire on `TRUNCATE`**, so each table could be
+emptied in one statement, and a `TRUNCATE "Payment" CASCADE` emptied the ledger
+from the table next to it. Every test was green, because every test checked what
+the trigger does and none tried what it does not cover.
+
+Each table now also carries a `BEFORE TRUNCATE ... FOR EACH STATEMENT` trigger on
+the same function, and `append-only-truncate.dbspec.ts` asks the catalog, per
+database, for every table whose trigger refuses an UPDATE or a DELETE and fails
+on one that does not refuse a TRUNCATE - so the next append-only table is held to
+it without anybody listing it.
+
+**Enumerate the ways to remove a row, not the ways you thought of.** What is still
+outside: the API connects as the role that owns the tables (the migrations run on
+the same URL), and an owner can `DROP` a table or `DISABLE TRIGGER`. A trigger
+protects against a caller that writes, not against one that alters the schema.
 
 ### An append-only table makes every test fixture permanent
 
