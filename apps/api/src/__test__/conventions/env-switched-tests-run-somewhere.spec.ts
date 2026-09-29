@@ -24,6 +24,24 @@ const LEFT_TO_A_PERSON: Record<string, string> = {
     'journey 7 takes a deposit and a balance to validation and consumes a parcel on the environment it runs against',
 };
 
+/**
+ * Variables a workflow sets from a condition on the environment under test, each
+ * with why and with the exact expression. The tests they skip run again by
+ * themselves on the first run where the condition holds; nobody has to remember.
+ */
+const SET_FROM_A_CONDITION: Record<string, { reason: string; expression: string }> = {
+  E2E_CMS_CONTENT: {
+    reason:
+      'A71: the pages whose body is a Sanity document answer 404 on a web image built without a Sanity project and dataset',
+    expression:
+      "${{ vars.NEXT_PUBLIC_SANITY_PROJECT_ID != '' && vars.NEXT_PUBLIC_SANITY_DATASET != '' }}",
+  },
+};
+
+/** The routes A71 skips, and the pages that actually render a Sanity document. */
+const CMS_LIST = join(ROOT, 'apps', 'web-e2e', 'src', 'support', 'cms.ts');
+const SITE_PAGES = join(ROOT, 'apps', 'web', 'src', 'app', '[locale]', '(site)');
+
 const SKIP_CALL = /\.(?:skip|fixme)\(([^;]*?process\.env[^;]*?)\)\s*;/g;
 const SKIP_TERNARY =
   /([^;?=]*process\.env[^;?]*)\?\s*[\w.]+\s*:\s*[\w.]*\.skip\b|([^;?=]*process\.env[^;?]*)\?\s*[\w.]*\.skip\s*:/g;
@@ -117,6 +135,33 @@ describe('A67 - a test an environment variable can switch off runs somewhere', (
       ({ name }) => !(name in LEFT_TO_A_PERSON) && !setBySomeWorkflow(name),
     );
     expect(neverSet).toEqual([]);
+  });
+
+  it('every conditional switch is set by a workflow from exactly its declared condition', () => {
+    const wrong = Object.entries(SET_FROM_A_CONDITION)
+      .filter(([name, { expression }]) => {
+        const line = new RegExp(`^\\s*${name}\\s*:\\s*(.+)$`, 'm');
+        const set = WORKFLOW_TEXT.map((w) => stripYamlComments(w).match(line)?.[1].trim()).filter(
+          Boolean,
+        );
+        const read = SWITCHES.some((sw) => sw.name === name);
+        return !read || set.length === 0 || set.some((v) => v !== expression);
+      })
+      .map(([name]) => name);
+    expect(wrong).toEqual([]);
+  });
+
+  it('A71 skips exactly the pages that render a Sanity document, and no other', () => {
+    const listed = [...readFileSync(CMS_LIST, 'utf8').matchAll(/^\s*'(\/[^']*)',$/gm)]
+      .map((m) => m[1])
+      .sort();
+    const reading = walk(SITE_PAGES)
+      .filter((f) => f.endsWith('page.tsx'))
+      .filter((f) => readFileSync(f, 'utf8').includes("'@/lib/cms/documents'"))
+      .map((f) => '/' + relative(SITE_PAGES, f).replace(/\/?page\.tsx$/, ''))
+      .sort();
+    expect(reading.length).toBeGreaterThan(0);
+    expect(listed).toEqual(reading);
   });
 
   it('every declared switch is still read by a test and still set by no workflow', () => {

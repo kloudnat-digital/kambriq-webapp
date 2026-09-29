@@ -584,6 +584,9 @@ jobs:
         env:
           BASE_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
           CI: 'true'
+          # A71: the pages read from Sanity exist only on a build that had both
+          # variables, which this run's web image was built from.
+          E2E_CMS_CONTENT: ${{ vars.NEXT_PUBLIC_SANITY_PROJECT_ID != '' && vars.NEXT_PUBLIC_SANITY_DATASET != '' }}
 
       - name: Upload Playwright report
         if: always()
