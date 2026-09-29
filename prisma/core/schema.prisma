@@ -281,3 +281,32 @@ model EmailDeliveryEvent {
   @@unique([feedbackId, email])
   @@index([userId, occurredAt])
 }
+
+/// An administrative act on an account (C28 step 1): who changed what, when,
+/// why, and from what to what. `User.deactivatedBy`, `UserRole.grantedBy` and
+/// `UserProfile.idVerifiedBy` each hold only the last actor, and log lines are
+/// kept for days; this record is kept for the life of the database.
+///
+/// Append-only at the database, by trigger: a correction is a new row. The
+/// account ids are carried by value, without a foreign key, so the record of an
+/// account outlives the account and deleting a user never has to edit it.
+model AdministrativeAct {
+  id            String   @id @default(uuid())
+  /// The account the act was done to.
+  subjectUserId String
+  /// The administrator who did it.
+  actorUserId   String
+  /// What was done, as a stable code.
+  action        String
+  /// The attribute changed.
+  field         String
+  /// The value before the act; null when there was none.
+  oldValue      String?
+  /// The value after the act; null when the act removed it.
+  newValue      String?
+  /// Why, in the actor's words. Required and never blank.
+  reason        String
+  occurredAt    DateTime @default(now())
+
+  @@index([subjectUserId, occurredAt])
+}
