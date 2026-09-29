@@ -320,7 +320,10 @@ export class LandsService {
         media: { orderBy: { order: 'asc' } },
         documents: { orderBy: { createdAt: 'desc' } },
         priceHistory: { orderBy: { changedAt: 'desc' }, take: 10 },
+        // Live reservations only, by the rule `create` uses to refuse a parcel: a
+        // cancelled one neither holds the parcel nor exposes its client's contact.
         reservations: {
+          where: { status: { notIn: [LandReservationStatus.CANCELLED] } },
           orderBy: { createdAt: 'desc' },
           take: 5,
           select: {
