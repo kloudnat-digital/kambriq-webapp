@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { CMS_SKIP_REASON } from './support/cms';
 
 /**
  * Locale-prefixed routing, asserted over HTTP against a running app.
@@ -41,6 +42,8 @@ for (const path of ['/about', '/contact', '/legal/privacy', '/products/lands']) 
 
 for (const locale of LOCALES) {
   test(`/${locale}/about is served directly, with lang="${locale}"`, async ({ page, request }) => {
+    // `/about` is a Sanity page.
+    test.skip(process.env['E2E_CMS_CONTENT'] !== 'true', CMS_SKIP_REASON);
     const response = await request.get(`/${locale}/about`, { maxRedirects: 0 });
     expect(response.status()).toBe(200);
 
@@ -107,6 +110,8 @@ test('the 404 above a locale speaks the visitor language', async ({ browser }) =
 });
 
 test('switching language keeps the visitor on the same page', async ({ page }) => {
+  // `/plan`, below, is a Sanity page; its 404 carries no switcher.
+  test.skip(process.env['E2E_CMS_CONTENT'] !== 'true', CMS_SKIP_REASON);
   /**
    * The switcher is a navigation now, not a cookie write.
    *

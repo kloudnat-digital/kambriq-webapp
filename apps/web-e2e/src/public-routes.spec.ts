@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { CMS_PAGES, CMS_SKIP_REASON } from './support/cms';
 
 // Every public route that has a real page, so a route that stops being reachable
 // is caught here rather than by a user.
@@ -35,6 +36,10 @@ const localised = (route: string) => new RegExp(`/(fr|en)${route === '/' ? '/?$'
 
 for (const route of [...PUBLIC_ROUTES, ...AUTH_PAGES]) {
   test(`${route} is accessible without authentication, under a locale`, async ({ page }) => {
+    test.skip(
+      process.env['E2E_CMS_CONTENT'] !== 'true' && CMS_PAGES.includes(route),
+      CMS_SKIP_REASON,
+    );
     const response = await page.goto(route);
     const finalUrl = page.url();
 
