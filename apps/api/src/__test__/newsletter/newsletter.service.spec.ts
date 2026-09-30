@@ -1,4 +1,4 @@
-import { ConflictException, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 
 const mockSend = jest.fn();
@@ -96,16 +96,18 @@ describe('NewsletterService: subscribe', () => {
     expect(input['ContactListName']).toBe('kambriq-newsletter');
   });
 
-  it('translates an already-subscribed address into a 409', async () => {
+  /**
+   * C38 - whether an address is already on the list is not said to whoever
+   * types it: an existing subscriber is answered as a new one. The earlier test
+   * here required the 409 - it encoded the enumeration.
+   */
+  it('an already-subscribed address answers as an unknown one - exactly as a new address', async () => {
+    const service = makeService();
+    const fresh = await service.subscribe(subscription('alice@example.com'));
     mockSend.mockRejectedValueOnce(named('AlreadyExistsException'));
-    const service = makeService({});
-
-    await expect(service.subscribe(subscription('alice@example.com'))).rejects.toBeInstanceOf(
-      ConflictException,
-    );
+    await expect(service.subscribe(subscription('alice@example.com'))).resolves.toEqual(fresh);
   });
 
-  // Subscriptions that fail to store must not succeed silently.
   it('propagates AccessDenied rather than resolving quietly', async () => {
     mockSend.mockRejectedValueOnce(
       named('AccessDeniedException', 'not authorized to perform ses:CreateContact'),

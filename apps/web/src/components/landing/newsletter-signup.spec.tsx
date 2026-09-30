@@ -156,26 +156,6 @@ describe('the newsletter form', () => {
     );
   });
 
-  it('names an already-subscribed address, keeps what was typed, and raises no success', async () => {
-    subscribe.mockResolvedValue({
-      success: false,
-      error: 'This email is already subscribed.',
-      status: 409,
-      retryable: false,
-    });
-    const user = userEvent.setup();
-    render(<NewsletterSignup />);
-    await user.type(emailInput(), 'reader@example.test');
-    await user.click(consentBox());
-    await user.click(submitButton());
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Cette adresse email est déjà inscrite à notre newsletter.',
-    );
-    expect(emailInput()).toHaveValue('reader@example.test');
-    expect(toasts().some((t) => t.status === 'success')).toBe(false);
-  });
-
   it('invites a retry, in French, when the server failed', async () => {
     subscribe.mockResolvedValue({ success: false, retryable: true });
     const user = userEvent.setup();

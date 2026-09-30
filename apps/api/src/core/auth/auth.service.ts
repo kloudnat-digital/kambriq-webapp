@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { StringValue } from 'ms';
@@ -376,6 +370,8 @@ export class AuthService {
   }
 
   // ----- Forgot / Reset Password ------------------------------------------
+  // C38: one answer, in the request's language; the email alone varies, and only
+  // the mailbox's holder can see it.
   async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -406,9 +402,9 @@ export class AuthService {
         userId: user.id,
         email: maskEmail(user.email),
       });
-      return { message: this.t('auth.password.resetSent', lang) };
+      return { message: this.t('auth.password.resetSent', this.requestLang()) };
     }
-    return { message: this.t('auth.password.resetSent', lang) };
+    return { message: this.t('auth.password.resetSent', this.requestLang()) };
   }
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
     const { token, newPassword } = dto;
@@ -508,19 +504,20 @@ export class AuthService {
 
     const lang = user?.preferredLanguage || 'fr';
 
-    if (!user) {
-      throw new NotFoundException(this.t('auth.login.invalidCredentials', lang));
-    }
+    // C38: the password first, and every failure before it answered as an
+    // unknown address, in the request's language. Only its holder is told
+    // whether the account can be reactivated.
+    const refused = new InvalidCredentialsException(
+      this.t('auth.login.invalidCredentials', this.requestLang()),
+    );
+    if (!user || !user.passwordHash) throw refused;
+    if (!(await comparePassword(dto.password, user.passwordHash))) throw refused;
+
     if (!user.deletedAt || user.deactivatedBy) {
       throw new BadRequestException(this.t('auth.reactivation.notEligible', lang));
     }
     if (!this.isWithenGracePeriod(user.deletedAt)) {
       throw new BadRequestException(this.t('auth.reactivation.gracePeriodExpired', lang));
-    }
-
-    const isPasswordValid = await comparePassword(dto.password, user.passwordHash);
-    if (!isPasswordValid) {
-      throw new BadRequestException(this.t('auth.login.invalidCredentials', lang));
     }
 
     await this.prisma.user.update({

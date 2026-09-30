@@ -216,6 +216,7 @@ listed here first.
 | `C35`                          | `EN COURS`          | a reset token issued before an account was deleted or deactivated stayed valid for its hour and set a password on an account that cannot sign in - and within the grace period reactivation asks only for that password. `resetPassword` now refuses on `isActive`, the flag sign-in refuses on; `forgotPassword` already sent nothing to an inactive account. Proven locally. Pending: CI, stopped on 30 September                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `C36`                          | `EN COURS`          | the identity-review queue listed, counted and aged documents of accounts deleted by their holders. It now leaves them out. Their files are removed by the daily purge 30 days after deletion; an administrator-deactivated account's are kept indefinitely. Proven locally. Pending: CI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `C37`                          | `EN COURS`          | sign-in answered before checking the password: an unknown address, an unverified, blocked or grace-period account, and an active one with a wrong password each answered differently, and a grace-period account returned its internal id. Now every wrong password answers exactly as an unknown address (400, invalid credentials); the reason is given only once the password is right, and no id is returned. Proven locally. Pending: CI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `C38`                          | `EN COURS`          | the four other public routes that take an address from a stranger, as one family with one rule: forgot-password and reactivate answer every account state exactly as an unknown address, in the request's language (reactivate now checks the password first); the newsletter answers an existing subscriber as a new one; registration's 409 is declared, not equalised. A guard fails on any public route with an `email` body not placed in the family. Proven locally. Pending: CI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `C33`                          | `EN COURS`          | a revoked newest certificate read as current in the candidate's profile and the administrators' candidate list, which returned its number without its revocation. Each now carries the certificate's state (ACTIVE, REVOKED, EXPIRED) from the shared `isActive`; the overview's certificate read, selected and never returned, is removed. The product question - an older standing certificate when the newest is revoked - is Visquis's, and the code keeps today's answer. Pending: the merge (CI refused to start jobs on 30 September)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `I48`                          | `EN COURS`          | the land list's reservation count included cancelled ones; the KAMNET agent read returned the sponsor without its suspension. Both fixed. `linked-records-read-their-status.spec.ts` refuses the next read of a linked record that ignores its standing, with 7 known reads declared by exact count. Pending: the merge                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `C22`                          | `EN COURS`          | Actions minutes before the private switch (C25). Measured 29 September per job: 30 days, 8 714 minutes rounded per job against 6 478 raw; the organisation is on Team (3 000 included), $0.006 a minute. The cut, 30 September: Commitlint becomes steps of What changed, one job fewer per pull-request run, about 387 minutes a month, **about $2**. What changed on push and the CI Gate are kept, for the reasons in the entry. Pending: the merge                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -10476,7 +10477,107 @@ address from a stranger and answer by the account's state:
   accounts).
 
 Resend's work is done only for an unverified address (a token and an email), so
-its answer can take a few milliseconds longer there; listed, not equalised.
+its answer can take a few milliseconds longer there; declared as an accepted gap
+under C38.
+
+### C38 - the other public routes that take an address answer alike - `EN COURS`
+
+**Cost impact: None.**
+
+**The rule, written once.** An unauthenticated route that takes an address from
+a stranger answers the same whatever the account's state, in the request's
+language. Anything that differs by state is given only after proof of holding
+the account (its password), or is delivered to the mailbox, where only its
+holder can read it. C37 closed sign-in and resend-verification one door at a
+time; C38 takes the rest as one family. The rule lives in the guard
+`address-routes-answer-alike.spec.ts` and in the CLAUDE.md catalogue.
+
+**What is equalised, route by route.**
+
+- **`POST /auth/forgot-password`: the response, not the email.** It already had
+  one wording. It was written in the account's language, though, so an English
+  account answered in English and an unknown address in French. It now answers
+  in the request's language for every address. The email still goes only to an
+  address with an account, in that account's language. Only the mailbox's
+  holder can see that difference. The send is queued (`notifQueue.add`), not
+  synchronous, so the time difference is milliseconds (see the declared gap
+  below).
+- **`POST /auth/reactivate`: the response.** It answered 404 for an unknown
+  address, "not eligible" for an account that was not deleted, and "grace
+  period expired", all before the password. The password is now checked first.
+  An unknown address, an account without a password and any wrong password all
+  answer 400 `invalidCredentials` in the request's language. "Not eligible" and
+  "grace period expired" are given only with the right password, to the holder,
+  who is entitled to know why.
+- **`POST /newsletter/subscribe`: the response.** An existing subscriber got
+  409 "already subscribed". SES's `AlreadyExistsException` is now logged and
+  answered exactly as a new subscription. The web's branch that named an
+  already-subscribed address was dead code after this. It is removed, with its
+  message in both catalogues and its two tests.
+- **`POST /auth`, registration: declared, not equalised.** It answers 409
+  "email already exists". Equalising it changes a legitimate client's
+  capability in two ways:
+  - the existing holder is told by email, which needs new copy, instead of on
+    the screen;
+  - the response no longer carries the new user and its tokens, so a genuine
+    newcomer cannot enter until they confirm.
+
+  That is a product arbitration. It is left as it is and declared in the
+  guard's family with that reason. **Visquis's to decide.**
+
+**Proof, local.** Red first: against today's code, the new family tests failed.
+Eight auth cases failed: forgot-password on the language for the active and
+grace-period accounts, and reactivate on each pre-password answer. The
+newsletter case failed with "rejected instead of resolved", its 409. After the
+fix, the auth spec passes 55 of 55 and the newsletter spec all of its own. Mutations,
+each confirmed applied:
+
+- forgot-password answered in the account's language: 2 fail (active, grace);
+- "not eligible" moved back before the password: 2 fail (active, blocked);
+- "grace expired" moved back before the password: 1 fails (past grace);
+- the newsletter refuses an existing subscriber again: 1 fails.
+
+**The guard, and how it was watched failing.** It scans every `@Public()`
+handler whose `@Body()` DTO schema declares `email`, and requires each one to
+be placed in `FAMILY`. There are three placements:
+
+- equalised, naming the spec that proves it, which must contain the words
+  "answers as an unknown";
+- declared, with its reason;
+- reading no account (`POST /contact/requests`).
+
+It found the seven routes. It was watched failing in two ways:
+
+- dropping `POST /auth/forgot-password` from the family gave
+  `1 failed, 3 passed`, with `+ "POST /auth/forgot-password"` received and not
+  placed;
+- on its first run, the newsletter spec did not yet use the phrase, and it
+  failed naming that route and its spec.
+
+**Declared gaps, left as they are.**
+
+- **The timing channel on resend-verification and forgot-password: known,
+  accepted.** For an address that needs work, the route creates a token and
+  queues an email. For the others it does neither. So its answer can take a
+  few milliseconds longer. Visquis's reason, 30 September: a few milliseconds
+  are drowned in the variance of a Cameroonian network, and closing it costs a
+  queue or an artificial delay. No code changed for it. It would be reported
+  again if a synchronous step (hundreds of milliseconds) ever appeared on
+  either path. The newsletter's SES call is synchronous, but it runs for every
+  address, so it does not separate them.
+- **The duplicated-assertion trap: declared, not guarded.** C37 changed
+  journey 3's expected status. Journey 5 made the same check in a second place
+  in `journeys.spec.ts`, and it was not corrected. That turned develop red
+  after the merge, and #289 repairs it. Visquis decided on 30 September that no
+  guard is built for this; this line is the record.
+- **Reactivate does not count wrong passwords.** There is no lock like
+  sign-in's, only the route's throttle. Listed, not changed.
+
+**Found on the way, not fixed, and not yet numbered.** `POST /auth` returns
+access tokens for an account whose address is not verified. The JWT strategy
+checks `isActive` and `deletedAt`, not `emailVerified`. So a caller can
+register with somebody else's address and use a working session without ever
+verifying it. That is outside C38's rule. **Visquis's to number.**
 
 ### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
 

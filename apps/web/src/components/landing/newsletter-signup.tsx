@@ -77,8 +77,7 @@ const NewsletterSignup: FC<NewsletterSignupProps> = ({ className }) => {
 
     if (!result.success) {
       // Nothing is reset: the address stays in the field.
-      if (result.status === 409) setSubmitError(t('errors.alreadySubscribed'));
-      else if (result.retryable || !result.error) setSubmitError(t('errors.submitFailed'));
+      if (result.retryable || !result.error) setSubmitError(t('errors.submitFailed'));
       else setSubmitError(t('errors.submitRefused', { reason: result.error }));
       return;
     }

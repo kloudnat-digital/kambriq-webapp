@@ -9,8 +9,8 @@ import { api, ApiError } from '@/lib/api/server';
  * renders, never a thrown error reaching the page. It passes the API's answer
  * through rather than collapsing every failure into one fixed sentence, and
  * says whether pressing again could help; the form chooses the words from its
- * catalogue. `status` is carried so an already-subscribed
- * address (409) can be named rather than reported as a failure.
+ * catalogue. An already-subscribed address is not a refusal: the API answers it
+ * exactly as a new one (C38).
  */
 export type SubscribeNewsletterResult =
   | { success: true }

@@ -400,6 +400,91 @@ describe('AuthService', () => {
     });
   });
 
+  // ----- C38: THE OTHER ROUTES THAT TAKE AN ADDRESS ----- //
+
+  /**
+   * C38 - an unauthenticated route that takes an address from a stranger
+   * answers the same whatever the account's state, in the request's language.
+   * The translation mock shows the language, and every account prefers
+   * English, so an answer in the account's language is visible here.
+   */
+  describe('C38 - forgot-password and reactivate answer alike for every address', () => {
+    beforeEach(() => {
+      i18n.translate.mockImplementation(
+        (key: string, opts?: { lang?: string }) => `${opts?.lang ?? '?'}|${key}`,
+      );
+    });
+
+    const outcome = (p: Promise<unknown>) =>
+      p.then(
+        (body) => ({ ok: true, body }),
+        (e: { getStatus?: () => number; getResponse?: () => unknown }) => ({
+          ok: false,
+          status: e.getStatus?.(),
+          body: e.getResponse?.(),
+        }),
+      );
+
+    const account = (state: Record<string, unknown> | null) =>
+      state
+        ? buildUserWithRoles(['CLIENT'], {
+            email: 'x@kambriq.com',
+            preferredLanguage: 'en',
+            ...state,
+          })
+        : null;
+
+    const states: Record<string, Record<string, unknown>> = {
+      active: { isActive: true, emailVerified: true },
+      'deleted within the grace period': {
+        isActive: false,
+        deletedAt: new Date(Date.now() - 2 * 86_400_000),
+        deactivatedBy: null,
+      },
+      'deleted past the grace period': {
+        isActive: false,
+        deletedAt: new Date(Date.now() - 40 * 86_400_000),
+        deactivatedBy: null,
+      },
+      blocked: { isActive: false, deletedAt: null, deactivatedBy: 'admin-1' },
+    };
+
+    it.each(Object.keys(states))(
+      'forgot-password: %s answers as an unknown address',
+      async (name) => {
+        prisma.user.findUnique.mockResolvedValue(null);
+        const reference = await outcome(service.forgotPassword({ email: 'x@kambriq.com' }));
+        prisma.user.findUnique.mockResolvedValue(account(states[name]));
+        expect(await outcome(service.forgotPassword({ email: 'x@kambriq.com' }))).toEqual(
+          reference,
+        );
+      },
+    );
+
+    it.each(Object.keys(states))(
+      'reactivate, with a wrong password: %s answers as an unknown address',
+      async (name) => {
+        (comparePassword as jest.Mock).mockResolvedValue(false);
+        prisma.user.findUnique.mockResolvedValue(null);
+        const reference = await outcome(
+          service.reactivateAccount({ email: 'x@kambriq.com', password: 'wrong' }),
+        );
+        prisma.user.findUnique.mockResolvedValue(account(states[name]));
+        expect(
+          await outcome(service.reactivateAccount({ email: 'x@kambriq.com', password: 'wrong' })),
+        ).toEqual(reference);
+      },
+    );
+
+    it('reactivate, with the right password, still tells a holder past the grace period why', async () => {
+      (comparePassword as jest.Mock).mockResolvedValue(true);
+      prisma.user.findUnique.mockResolvedValue(account(states['deleted past the grace period']));
+      await expect(
+        service.reactivateAccount({ email: 'x@kambriq.com', password: 'right' }),
+      ).rejects.toThrow(/gracePeriodExpired/);
+    });
+  });
+
   // ----- RESEND VERIFICATION ----- //
 
   /**
