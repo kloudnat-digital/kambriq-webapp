@@ -289,7 +289,12 @@ export class LandsService {
           },
           label: { select: { code: true, name: true, id: true } },
           _count: {
-            select: { media: true, documents: true, reservations: true },
+            select: {
+              media: true,
+              documents: true,
+              // I48: a cancelled reservation is not one.
+              reservations: { where: { status: { notIn: [LandReservationStatus.CANCELLED] } } },
+            },
           },
         },
       }),

@@ -211,6 +211,8 @@ listed here first.
 | `C28`                          | `EN COURS`          | nobody can correct a client's email address. Visquis's decision, 28 September: a dedicated role, confirmed on the new address, the old address told at request time, and an append-only record first. Step 1 built: `AdministrativeAct` in core, append-only by trigger, written by nothing yet. Steps 2 (the role) and 3 (the correction) not started. Step 1 applied on dev 29 September (`20260929190000_c28_administrative_act`, migration task `7772c266`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `C29`                          | `PROUVE`            | an agent reserving for a client typed the client's address once, and the set-password link to an account holding the reservation went to whatever was typed - a typo handed it to a stranger. Visquis's decision: confirm before sending, front end only. The reservation form now asks for the address twice (the second cannot be pasted) and reads a matching address back to the agent, who confirms with the client before the invitation goes. Does not close two identical typos. Proven on dev 28 September: a mismatch refused, the address read back, "Corriger" returned to the form, no reservation written                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `C32`                          | `PROUVE`            | a parcel whose reservations are all CANCELLED was listed AVAILABLE, and its page showed "Terrain réservé" with the cancelled client's name, email and phone. Numbered C30 on 28 September; C30 is the tracker's VERIFY price, so this is C32. Visquis's decision: fix it in the API. `findByIdFull` now returns live reservations only. Proven on dev 29 September: Bafoussam Tamdja comes back AVAILABLE with no reservation and no trace of its 34 cancelled ones                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `C33`                          | `EN COURS`          | a revoked newest certificate read as current in the candidate's profile and the administrators' candidate list, which returned its number without its revocation. Each now carries the certificate's state (ACTIVE, REVOKED, EXPIRED) from the shared `isActive`; the overview's certificate read, selected and never returned, is removed. The product question - an older standing certificate when the newest is revoked - is Visquis's, and the code keeps today's answer. Pending: the merge (CI refused to start jobs on 30 September)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `I48`                          | `EN COURS`          | the land list's reservation count included cancelled ones; the KAMNET agent read returned the sponsor without its suspension. Both fixed. `linked-records-read-their-status.spec.ts` refuses the next read of a linked record that ignores its standing, with 7 known reads declared by exact count. Pending: the merge                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `C22`                          | `EN COURS`          | Actions minutes before the private switch (C25). Measured 29 September per job: 30 days, 8 714 minutes rounded per job against 6 478 raw; the organisation is on Team (3 000 included), $0.006 a minute. The cut, 30 September: Commitlint becomes steps of What changed, one job fewer per pull-request run, about 387 minutes a month, **about $2**. What changed on push and the CI Gate are kept, for the reasons in the entry. Pending: the merge                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `#48` prd trust                | `A DECIDER`         | infra #48 extends the APPLY role's trust to `environment:prd`, but since D16 a plan runs under `<env>-plan` with the PLAN role, so it would not make #46's Plan (prd) authenticate: that needs the plan role to trust `environment:prd-plan` and an `AWS_ROLE_ARN` secret in `prd-plan`. A `prd` environment already exists (24 February, no protection rules); nothing on develop can select it. Not merged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Journeys bypass the page       | `PROUVE`            | the delivery journeys prove by calling the API what a person does through a page: email verification, forgot-password, the invitation (until I45), KBS identity and enrolment, every back-office payment step. By construction the page a human uses is the one path not proven. Which of them deserve a browser walk is a decision, not a fix to squeeze in **Decided by Visquis, 27 September: walk every human path on every deploy** - done as I46                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -10059,6 +10061,75 @@ reading their status: the three KBS reads of the newest certificate
 is shown as the candidate's; the land list's `_count.reservations` counts
 cancelled ones; the KAMNET agent read selects the sponsor without its status.
 None carries a client's contact details.
+
+### C33 and I48 - a linked record read without its standing - `EN COURS`
+
+**Cost impact: None.**
+
+**Visquis's decision, 29 September: one rule, not four fixes.** The shape, four
+times in a month: a read returning a linked record without looking at whether
+it still stands (C32 the cancelled reservation, fixed; C33; the two I48 reads).
+
+**C33.** Three KBS reads took the newest certificate:
+
+- the candidate's profile (`getMyProfile`) returned its number and dates without
+  `revokedAt`;
+- the administrators' candidate list returned `kcaNumber` alone;
+- the candidate's overview selected it and never returned it - a dead read,
+  removed.
+
+The first two now carry the certificate's `state` (`certificateState`, beside
+`isActive` in `current-certificate.ts`): `ACTIVE`, `REVOKED` or `EXPIRED`. No
+screen renders either field today; the fix makes the API honest for any caller.
+
+**The product question, named and not chosen.** When a candidate's newest
+certificate is revoked and an older one still stands, is the older one current,
+or does the person hold no valid certificate? **Today's code already answers "no
+valid certificate"** everywhere it matters: `findActiveCertificate` (KAMNET
+eligibility, `KCA_CERTIFIED`) and the public directory both judge the newest
+certificate alone (I15: the newest is the current one), so revoking it removes
+the agent from the directory even when an older certificate has not expired.
+This change keeps that answer and makes the display reads say it. If Visquis
+decides the older one becomes current, three readers change together:
+`findActiveCertificate`, `findNewestCertificateFacts` for the directory, and
+these two.
+
+**I48.** The land list's `_count.reservations` counted cancelled reservations;
+it now counts live ones, by the rule `create` and C32 use. The KAMNET agent read
+(`findById`) returned the sponsor without its suspension; it now returns
+`suspended`.
+
+**Proof, local.** `linked-status.dbspec.ts`, against the real kbs, lands and
+kamnet migrations. Red first, 4 of 4, each for its own reason: no `state` on the
+profile's certificate, no `certificateState` on the list row, a count of 2 for
+one live reservation, no `suspended` on the sponsor. Green after, twice with no
+reset.
+
+**The guard - the point of the round.** `linked-records-read-their-status.spec.ts`
+derives the stand-down markers from the four schemas - a `revokedAt`,
+`suspendedAt` or `deletedAt` column, and any field typed by an enum with a
+cancelled, annulled, revoked, suspended, rejected or expired value - and finds
+every relation pointing at such a model. A read of one in `apps/api/src` must
+filter on the marker or return it (or return every scalar); inside `_count` it
+must filter. A first version that counted any `status` flagged 25 reads, most of
+them a payment reading its land's title; the narrowed rule flags the class this
+chantier is about. Mutations, each confirmed applied, each failing one test
+naming the file and relation: the overview's unfiltered certificate read put
+back (a fifth, new read); the land count unfiltered again; the sponsor without
+its suspension again; a declared read fixed with its declaration left stale.
+
+**Seven known reads, declared by exact count, not fixed** - a new one in the same
+file fails as surely as one in a new file:
+
+- `auth.service.ts`, `user` x2: `verifyEmail` reads only a language;
+  **`resetPassword` does not refuse a soft-deleted account** - a finding; login
+  refuses such an account;
+- `users.service.ts`, `user` x2: the identity-review queue does not exclude a
+  deleted account - a finding;
+- `commissions.service.ts`, `agent` x1: a commission list names its agent
+  without its suspension; the commission is still owed;
+- `agents.service.ts`, `referrals` x2: the referral count includes suspended
+  referrals - whether they still count is Visquis's.
 
 ### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
 
