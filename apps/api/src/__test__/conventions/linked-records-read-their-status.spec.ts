@@ -36,14 +36,14 @@ const DECLARED: Record<string, Record<string, { count: number; reason: string }>
     user: {
       count: 2,
       reason:
-        'verifyEmail reads only the language of its error message; resetPassword does not refuse a soft-deleted account - listed as a finding, login refuses such an account',
+        'verifyEmail reads only the language of its error message; resetPassword reads isActive, the flag sign-in refuses on, which covers a deleted account (C35)',
     },
   },
   'apps/api/src/core/users/users.service.ts': {
     user: {
       count: 2,
       reason:
-        'the identity-review queue and review filter on the document, not on the account; a deleted account stays in the queue - listed as a finding',
+        'the identity-review queue filters deleted accounts in its where (C36) while its include selects contact fields; the single review reads the document of the account it is asked for',
     },
   },
   'apps/api/src/kamnet/commissions/commissions.service.ts': {

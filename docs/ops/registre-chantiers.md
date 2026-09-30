@@ -213,6 +213,8 @@ listed here first.
 | `C28`                          | `EN COURS`          | nobody can correct a client's email address. Visquis's decision, 28 September: a dedicated role, confirmed on the new address, the old address told at request time, and an append-only record first. Step 1 built: `AdministrativeAct` in core, append-only by trigger, written by nothing yet. Steps 2 (the role) and 3 (the correction) not started. Step 1 applied on dev 29 September (`20260929190000_c28_administrative_act`, migration task `7772c266`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `C29`                          | `PROUVE`            | an agent reserving for a client typed the client's address once, and the set-password link to an account holding the reservation went to whatever was typed - a typo handed it to a stranger. Visquis's decision: confirm before sending, front end only. The reservation form now asks for the address twice (the second cannot be pasted) and reads a matching address back to the agent, who confirms with the client before the invitation goes. Does not close two identical typos. Proven on dev 28 September: a mismatch refused, the address read back, "Corriger" returned to the form, no reservation written                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `C32`                          | `PROUVE`            | a parcel whose reservations are all CANCELLED was listed AVAILABLE, and its page showed "Terrain réservé" with the cancelled client's name, email and phone. Numbered C30 on 28 September; C30 is the tracker's VERIFY price, so this is C32. Visquis's decision: fix it in the API. `findByIdFull` now returns live reservations only. Proven on dev 29 September: Bafoussam Tamdja comes back AVAILABLE with no reservation and no trace of its 34 cancelled ones                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `C35`                          | `EN COURS`          | a reset token issued before an account was deleted or deactivated stayed valid for its hour and set a password on an account that cannot sign in - and within the grace period reactivation asks only for that password. `resetPassword` now refuses on `isActive`, the flag sign-in refuses on; `forgotPassword` already sent nothing to an inactive account. Proven locally. Pending: CI, stopped on 30 September                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `C36`                          | `EN COURS`          | the identity-review queue listed, counted and aged documents of accounts deleted by their holders. It now leaves them out. Their files are removed by the daily purge 30 days after deletion; an administrator-deactivated account's are kept indefinitely. Proven locally. Pending: CI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `C33`                          | `EN COURS`          | a revoked newest certificate read as current in the candidate's profile and the administrators' candidate list, which returned its number without its revocation. Each now carries the certificate's state (ACTIVE, REVOKED, EXPIRED) from the shared `isActive`; the overview's certificate read, selected and never returned, is removed. The product question - an older standing certificate when the newest is revoked - is Visquis's, and the code keeps today's answer. Pending: the merge (CI refused to start jobs on 30 September)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `I48`                          | `EN COURS`          | the land list's reservation count included cancelled ones; the KAMNET agent read returned the sponsor without its suspension. Both fixed. `linked-records-read-their-status.spec.ts` refuses the next read of a linked record that ignores its standing, with 7 known reads declared by exact count. Pending: the merge                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `C22`                          | `EN COURS`          | Actions minutes before the private switch (C25). Measured 29 September per job: 30 days, 8 714 minutes rounded per job against 6 478 raw; the organisation is on Team (3 000 included), $0.006 a minute. The cut, 30 September: Commitlint becomes steps of What changed, one job fewer per pull-request run, about 387 minutes a month, **about $2**. What changed on push and the CI Gate are kept, for the reasons in the entry. Pending: the merge                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -10203,6 +10205,74 @@ file fails as surely as one in a new file:
   without its suspension; the commission is still owed;
 - `agents.service.ts`, `referrals` x2: the referral count includes suspended
   referrals - whether they still count is Visquis's.
+
+### C35 and C36 - soft-deleted accounts - `EN COURS`
+
+**Cost impact: None.** Visquis's decision, 30 September: both before the opening.
+
+**How sign-in refuses.** `login` refuses on `user.isActive === false`: within the
+30-day grace period (`GRACE_PERIOD_DAYS`) an account deleted by its holder gets
+`requiresReactivation` (the web redirects to `/reactivate` on
+`REACTIVATION_REQUIRED`); past it, or deactivated by an administrator, it gets
+`auth.login.inactiveAccount`.
+
+**C35 - the premise, measured.** Requesting a reset was already refused:
+`forgotPassword` sends nothing to an inactive account and answers exactly as for
+anyone else. The hole was the token: a reset token lives one hour
+(`RESET_TOKEN_EXPIRY_HOURS`) and `deleteMe` does not void it, so a token issued
+before the deletion set a new password - and within the grace period
+`reactivateAccount` asks only for the password. An administrator-deactivated
+account's password could be changed the same way. `resetPassword` now reads
+`isActive` and refuses an inactive account, deleted or deactivated, grace period
+or not - the one flag sign-in refuses on, not a second mechanism.
+
+**What a person in the grace period sees.** A reset link issued before the
+deletion answers "inactive account"; nothing is written. Their route back is
+`/reactivate` with the password they already have, which the refusal leaves
+unchanged. **What they do not have** - before and after this change alike - is a
+route back without that password: `forgotPassword` sends nothing to an inactive
+account, so someone who deleted their account and forgot their password cannot
+reactivate within the grace period. A decision for Visquis, not changed here.
+
+**C35 proof, local.** `auth.service.spec.ts`. Red first: a deleted account and an
+administrator-deactivated account presenting valid tokens, both
+`Received promise resolved instead of rejected`. After, refused with nothing
+written and no email. The request path is pinned as it was (green before and
+after). Three existing tests described an active account without saying so and
+now say `isActive: true`; no assertion changed. Mutations, each confirmed
+applied: the check removed - the 2 refusals fail; the check moved after the write
+
+- both fail on `Expected number of calls: 0`; `forgotPassword` sending to any
+  account - the pin fails.
+
+**C36.** `listPendingIdDocuments` filtered on the document's status only, so
+documents of accounts deleted by their holders were listed, counted and set the
+oldest wait. The one `where` that feeds all three now requires `user.deletedAt`
+null. Administrator-deactivated accounts stay in the queue: they may be
+reinstated, and their holder did not leave.
+
+**C36 proof, local.** `identity-queue-live-accounts.dbspec.ts`, against the core
+migrations: red first, the deleted account's id in the list; green twice with no
+reset. Mutations: the count left unfiltered, `Expected: 7, Received: 8`; the
+oldest wait left unfiltered, `Received: 4000` against `< 4000`.
+
+**Are the documents still stored, and for how long - measured, nothing changed.**
+
+- Identity documents are stored under `users/<id>/id-documents/` in
+  `kambriq-media-dev`.
+- An account deleted by its holder is purged by the daily 04:00 UTC job 30 days
+  after `deletedAt`: its `users/<id>/` prefix is deleted first, then the row, and a
+  failed file deletion keeps the row for the next run. The job ran on 29 and
+  30 September with 0 candidates.
+- **An administrator-deactivated account is never purged** (`deactivatedBy` is
+  excluded), so its documents are kept indefinitely.
+- The bucket's versioning is `Suspended` and no lifecycle rule expires noncurrent
+  versions - which would keep a deleted document forever as an old version. On
+  dev, none is: all 411 identity-document objects are current, every version id
+  is `null` (written after versioning was suspended), and the 81 delete markers
+  left by earlier deletes hide no older copy. That is a property of today's
+  bucket, not a rule: re-enabling versioning without a noncurrent-version
+  expiry would change it.
 
 ### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
 

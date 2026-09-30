@@ -407,6 +407,16 @@ describe('AuthService', () => {
   // ----- FORGOT / RESET PASSWORD ----- //
 
   describe('forgotPassword', () => {
+    it('C35 - sends nothing to a soft-deleted account, and answers as for anyone', async () => {
+      prisma.user.findUnique.mockResolvedValue(
+        buildUser({ isActive: false, deletedAt: new Date(), deactivatedBy: null }),
+      );
+      const result = await service.forgotPassword({ email: 'gone@kambriq.com' });
+      expect(result).toHaveProperty('message');
+      expect(email.send).not.toHaveBeenCalled();
+      expect(prisma.verificationToken.create).not.toHaveBeenCalled();
+    });
+
     it('sends reset email for valid active user', async () => {
       const user = buildUser({ isActive: true });
       prisma.user.findUnique.mockResolvedValue(user);
@@ -438,6 +448,7 @@ describe('AuthService', () => {
           email: 'test@kambriq.com',
           firstName: 'Alice',
           preferredLanguage: 'fr',
+          isActive: true,
         },
       });
       prisma.verificationToken.findUnique.mockResolvedValue(token);
@@ -476,6 +487,7 @@ describe('AuthService', () => {
           email: 'test@kambriq.com',
           firstName: 'Alice',
           preferredLanguage: 'fr',
+          isActive: true,
         },
       });
       prisma.verificationToken.findUnique.mockResolvedValue(token);
@@ -498,6 +510,7 @@ describe('AuthService', () => {
           email: 'test@kambriq.com',
           firstName: 'Alice',
           preferredLanguage: 'fr',
+          isActive: true,
         },
       });
       prisma.verificationToken.findUnique.mockResolvedValue(token);
@@ -509,6 +522,50 @@ describe('AuthService', () => {
       expect(data['passwordHash']).toBeDefined();
       expect(data['loginAttempts']).toBe(0);
       expect(data['lockedUntil']).toBeNull();
+    });
+
+    /**
+     * C35 - a token issued before the account was deleted is refused.
+     *
+     * A reset token lives an hour and deletion does not void it, so without
+     * this a deleted account took a new password - and within the grace period
+     * reactivation asks only for that password.
+     */
+    const inactiveToken = (user: Record<string, unknown>) =>
+      buildVerificationToken({
+        type: VerificationTokenType.PASSWORD_RESET,
+        user: {
+          id: 'u9',
+          email: 'gone@kambriq.com',
+          firstName: 'Gone',
+          preferredLanguage: 'fr',
+          ...user,
+        },
+      });
+
+    it('refuses a valid token held by an account deleted within the grace period, writing nothing', async () => {
+      const token = inactiveToken({
+        isActive: false,
+        deletedAt: new Date(Date.now() - 2 * 86_400_000),
+        deactivatedBy: null,
+      });
+      prisma.verificationToken.findUnique.mockResolvedValue(token);
+
+      await expect(
+        service.resetPassword({ token: token.token, newPassword: 'NewStr0ng!Pass' }),
+      ).rejects.toThrow();
+      expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(email.send).not.toHaveBeenCalled();
+    });
+
+    it('refuses a valid token held by an account an administrator deactivated', async () => {
+      const token = inactiveToken({ isActive: false, deletedAt: null, deactivatedBy: 'admin-1' });
+      prisma.verificationToken.findUnique.mockResolvedValue(token);
+
+      await expect(
+        service.resetPassword({ token: token.token, newPassword: 'NewStr0ng!Pass' }),
+      ).rejects.toThrow();
+      expect(prisma.user.update).not.toHaveBeenCalled();
     });
   });
 
