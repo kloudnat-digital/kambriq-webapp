@@ -760,8 +760,10 @@ describe('journey 5 - a passwordless super admin activates through the ordinary 
 
     // Holding the top role changes nothing about being unable to log in. If it
     // did, there would be a parallel path, which is exactly what H3 denies.
+    // C37: refused as an unknown address is - no password exists, so no password is right.
     const still = await call('POST', '/auth/login', { body: { email, password: PASSWORD } });
-    expect(still.status).toBe(401);
+    expect(still.status).toBe(400);
+    expect(still.body).toMatch(/invalide|invalid/i);
   });
 
   it('activates through the two public routes, with the link read out of the mailbox', async () => {
