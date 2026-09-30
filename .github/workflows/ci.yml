@@ -523,7 +523,14 @@ jobs:
     needs: [deploy-dev]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     environment: dev
+    # A72: when the journeys started - the start of the window the browser job's
+    # last step reads in the API log.
+    outputs:
+      started_ms: ${{ steps.clock.outputs.started_ms }}
     steps:
+      - id: clock
+        run: echo "started_ms=$(date +%s%3N)" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
@@ -553,6 +560,10 @@ jobs:
     # journeys' result, so a red journeys run does not also hide the browser suite.
     needs: [deploy-dev, journeys]
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && !cancelled() && needs.deploy-dev.result == 'success'
+    # A72: the last step reads the API log through the dev role.
+    permissions:
+      id-token: write
+      contents: read
     environment: dev
     steps:
       - uses: actions/checkout@v4
@@ -600,6 +611,25 @@ jobs:
           # report is worse than none, because it looks like evidence and is not.
           if-no-files-found: error
           retention-days: 7
+
+      # A72: the API's own record of this run. The browser's data layer retries a
+      # failed query once, so a transient 500 is invisible to the page and to these
+      # tests; the API log is where it is written. The window runs from the start
+      # of the journeys to now. The role already reads this log group
+      # (ReadOneOffTaskLogs: logs:FilterLogEvents). The script fails closed.
+      - name: Configure AWS credentials for the API log
+        if: always()
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: No P2028 and no 5xx in the API log during the journeys and the browser suite
+        if: always()
+        run: |
+          bash scripts/ci/api-errors-in-window.test.sh
+          bash scripts/ci/api-errors-in-window.sh /ecs/kambriq-dev-api \
+            "${{ needs.journeys.outputs.started_ms }}" "$(date +%s%3N)"
 
   # ---------------------------------------------------------------------------
   # The one required check, and the reason it exists rather than requiring the
