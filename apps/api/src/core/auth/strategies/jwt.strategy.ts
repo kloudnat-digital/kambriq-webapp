@@ -5,6 +5,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { CorePrismaService } from '../../prisma/core-prisma.service';
 import { JwtPayload, RequestUser } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
+import { assertHoldsSession, SESSION_STANDING_SELECT } from '../session-standing';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -36,11 +37,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       select: {
         id: true,
         email: true,
-        isActive: true,
-        deletedAt: true,
-        deactivatedBy: true,
-        lockedUntil: true,
-        emailVerified: true,
+        ...SESSION_STANDING_SELECT,
         preferredLanguage: true,
         userRoles: { include: { role: { select: { code: true } } } },
       },
@@ -51,36 +48,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     const userLang = user.preferredLanguage || lang;
-
-    // Account deactivated by admin
-    if (!user.isActive && user.deactivatedBy) {
-      throw new UnauthorizedException(this.t('auth.jwt.accountSuspended', userLang));
-    }
-
-    // Account self-deleted
-    if (!user.isActive && user.deletedAt) {
-      throw new UnauthorizedException(this.t('auth.jwt.accountDeleted', userLang));
-    }
-
-    // Generic inactive
-    if (!user.isActive) {
-      throw new UnauthorizedException(this.t('auth.jwt.accountInactive', userLang));
-    }
-
-    // Account locked
-    if (user.lockedUntil && user.lockedUntil > new Date()) {
-      throw new UnauthorizedException(this.t('auth.jwt.accountLocked', userLang));
-    }
-
-    // Registration issues tokens before the address is proven, so an unverified
-    // account holds no session here: every authenticated route passes this check.
-    // Tagged like the sign-in refusal so a client can offer a new link.
-    if (!user.emailVerified) {
-      throw new UnauthorizedException({
-        message: this.t('auth.jwt.emailNotVerified', userLang),
-        error: 'EMAIL_NOT_VERIFIED',
-      });
-    }
+    assertHoldsSession(user, (key) => this.t(key, userLang));
 
     return {
       id: user.id,

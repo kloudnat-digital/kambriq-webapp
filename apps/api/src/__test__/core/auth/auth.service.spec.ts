@@ -25,6 +25,7 @@ import {
 } from '@kambriq/common';
 import { I18nService } from 'nestjs-i18n';
 import { ConfigService } from '@nestjs/config';
+import { UnauthorizedException } from '@nestjs/common';
 import { AuthResponse } from '../../../core/auth/dto/auth.dto';
 
 jest.mock('@kambriq/common', () => {
@@ -558,7 +559,9 @@ describe('AuthService', () => {
     });
 
     it('rotates refresh token and issues new pair', async () => {
-      const stored = buildRefreshToken();
+      const stored = buildRefreshToken({
+        user: buildUserWithRoles(['CLIENT'], { emailVerified: true }),
+      });
       prisma.refreshToken.findFirst.mockResolvedValue(stored);
       prisma.refreshToken.update.mockResolvedValue({});
       prisma.refreshToken.create.mockResolvedValue({});
@@ -583,6 +586,31 @@ describe('AuthService', () => {
       });
 
       await expect(service.refreshTokens('bad-token')).rejects.toThrow();
+    });
+
+    // C40 - refresh answers to the same account rule as every access token,
+    // through the one function both call, so the two doors cannot diverge.
+    it.each([
+      ['locked', { lockedUntil: new Date(Date.now() + 600_000) }],
+      ['not verified', { emailVerified: false }],
+      ['suspended by an administrator', { isActive: false, deactivatedBy: 'admin-1' }],
+      ['deleted by its holder', { isActive: false, deletedAt: new Date() }],
+    ])('mints nothing for an account that is %s', async (_state, standing) => {
+      const stored = buildRefreshToken({
+        user: buildUserWithRoles(['CLIENT'], { emailVerified: true, ...standing }),
+      });
+      prisma.refreshToken.findFirst.mockResolvedValue(stored);
+      prisma.refreshToken.update.mockResolvedValue({});
+      prisma.refreshToken.create.mockResolvedValue({});
+
+      await expect(service.refreshTokens('valid-refresh')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+      expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+      // The presented token is spent either way: a refused account keeps nothing.
+      expect(prisma.refreshToken.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { revokedAt: expect.any(Date) } }),
+      );
     });
 
     it('throws when stored token is revoked', async () => {

@@ -34,6 +34,7 @@ import {
   maskEmail,
 } from '@kambriq/common';
 import { I18nContext, I18nService } from 'nestjs-i18n';
+import { assertHoldsSession } from './session-standing';
 
 @Injectable()
 export class AuthService {
@@ -260,14 +261,12 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
 
-    if (!storedToken.user || !storedToken.user.isActive) {
-      throw new UnauthorizedException(
-        this.t(
-          'auth.token.accountInactive',
-          storedToken.user?.preferredLanguage || DEFAULT_LANGUAGE,
-        ),
-      );
+    // The same rule as every access token, from the one function both call.
+    const standingLang = storedToken.user?.preferredLanguage || DEFAULT_LANGUAGE;
+    if (!storedToken.user) {
+      throw new UnauthorizedException(this.t('auth.jwt.userNotFound', standingLang));
     }
+    assertHoldsSession(storedToken.user, (key) => this.t(key, standingLang));
 
     const roles = storedToken.user.userRoles.map((ur) => ur.role.code);
 
