@@ -116,25 +116,22 @@ jobs:
             echo "db=false" >> "$GITHUB_OUTPUT"
           fi
 
-  # -- Commit message validation (PR only) -------------------------------------
-  commitlint:
-    name: Commitlint
-    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
-    timeout-minutes: 5
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      # Commit messages, on pull requests only. C22: these steps were their own
+      # job, 372 a month at 37 s each, every one billed as a whole minute. Here
+      # they share the checkout and still finish inside that minute. A message
+      # that fails fails this job, so the CI Gate refuses the pull request.
+      - if: github.event_name == 'pull_request'
+        uses: pnpm/action-setup@v4
+      - if: github.event_name == 'pull_request'
+        uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile
-      - run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+      - if: github.event_name == 'pull_request'
+        run: pnpm install --frozen-lockfile
+      - name: Commitlint
+        if: github.event_name == 'pull_request'
+        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
 
   # -- Quality: ONE job, not four -----------------------------------------------
   #
@@ -621,7 +618,7 @@ jobs:
   gate:
     name: CI Gate
     runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
-    needs: [changes, commitlint, quality, test-db]
+    needs: [changes, quality, test-db]
     if: always() && github.event_name == 'pull_request'
     timeout-minutes: 5
     # A32 reads develop's runs and this pull request's labels through the API.
@@ -637,7 +634,6 @@ jobs:
           CHANGES_RESULT: ${{ needs.changes.result }}
           CHANGES_CODE: ${{ needs.changes.outputs.code }}
           CHANGES_DB: ${{ needs.changes.outputs.db }}
-          COMMITLINT_RESULT: ${{ needs.commitlint.result }}
           QUALITY_RESULT: ${{ needs.quality.result }}
           TESTDB_RESULT: ${{ needs.test-db.result }}
         run: |
@@ -686,8 +682,8 @@ jobs:
             testdb_may_skip=1
           fi
 
-          # Commitlint runs on every pull request. It has no reason to skip.
-          check "Commitlint"     "$COMMITLINT_RESULT" 0
+          # Commitlint is a step of What changed (C22), so its failure is that
+          # job's failure, refused above.
           check "Quality"        "$QUALITY_RESULT"    "$docs_only"
           check "Database suite" "$TESTDB_RESULT"     "$testdb_may_skip"
 

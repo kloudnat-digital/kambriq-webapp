@@ -100,4 +100,27 @@ describe('A38 - CI runs on every pull request, and still deploys only from devel
   it.each(EXPENSIVE_JOBS)('%s still runs only on a push to develop', (job) => {
     expect(jobBlock(job)).toContain(PUSH_TO_DEVELOP);
   });
+
+  /**
+   * C22 - jobs were merged to stop seconds of work billing whole minutes. The
+   * gate is the one job that must not be merged or narrowed: it runs last, under
+   * `always()`, and needs every job a pull request runs, or a failure in the
+   * job it cannot see merges.
+   */
+  it('the CI Gate runs under always() and needs every job a pull request runs', () => {
+    const jobs = [...CI.slice(CI.search(/^jobs:$/m)).matchAll(/^ {2}([a-z0-9_-]+):$/gm)].map(
+      (m) => m[1],
+    );
+    const gate = jobBlock('gate');
+    const needs = (gate.match(/^ {4}needs: \[([^\]]*)\]$/m)?.[1] ?? '')
+      .split(',')
+      .map((n) => n.trim());
+    const onPullRequests = jobs.filter(
+      (job) => job !== 'gate' && !/^ {4}if: .*github\.event_name == 'push'/m.test(jobBlock(job)),
+    );
+
+    expect(gate).toMatch(/^ {4}if: always\(\) && github\.event_name == 'pull_request'$/m);
+    expect(onPullRequests.length).toBeGreaterThan(0);
+    expect(needs.sort()).toEqual(onPullRequests.sort());
+  });
 });
