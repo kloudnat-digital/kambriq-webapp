@@ -458,7 +458,11 @@ export class UsersService {
    */
   async listPendingIdDocuments(query: PaginationQuery) {
     const { page, limit } = query;
-    const where = { idVerificationStatus: IdVerificationStatus.PENDING };
+    // C36: an account deleted by its holder has left; its document is not queued.
+    const where = {
+      idVerificationStatus: IdVerificationStatus.PENDING,
+      user: { deletedAt: null },
+    };
 
     const [profiles, total, oldest] = await this.prisma.$transaction([
       this.prisma.userProfile.findMany({

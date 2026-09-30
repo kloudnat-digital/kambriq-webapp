@@ -426,6 +426,7 @@ export class AuthService {
             email: true,
             firstName: true,
             preferredLanguage: true,
+            isActive: true,
           },
         },
       },
@@ -435,6 +436,12 @@ export class AuthService {
 
     if (!tokenRecord || tokenRecord.type !== VerificationTokenType.PASSWORD_RESET) {
       throw new BadRequestException(this.t('auth.password.invalidResetToken', lang));
+    }
+    // C35: the flag sign-in refuses on. A token issued before a deletion or a
+    // deactivation stays valid for an hour; it must not set a password on an
+    // account that cannot sign in, since reactivation asks only for that password.
+    if (!tokenRecord.user?.isActive) {
+      throw new BadRequestException(this.t('auth.login.inactiveAccount', lang));
     }
     if (tokenRecord.usedAt) {
       throw new BadRequestException(this.t('auth.email.tokenUsed', lang));

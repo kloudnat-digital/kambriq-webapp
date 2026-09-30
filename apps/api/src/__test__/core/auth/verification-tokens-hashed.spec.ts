@@ -62,6 +62,7 @@ describe('C27 - verification tokens are stored as digests', () => {
     preferredLanguage: 'fr',
     passwordHash: '$2b$10$old',
     pendingEmail: 'ada.new@example.com',
+    isActive: true,
   };
 
   beforeEach(async () => {
