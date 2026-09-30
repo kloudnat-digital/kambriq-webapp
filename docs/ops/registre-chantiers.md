@@ -201,7 +201,8 @@ listed here first.
 | `A67`                          | `PROUVE`            | a test that an environment variable switches off must run somewhere: `env-switched-tests-run-somewhere.spec.ts` fails on any skip whose condition reads a variable no workflow sets, unless it is declared with its reason (`RUN_BALANCE_JOURNEY` only). From Ulrich's reading of 27 September: `RUN_EMAILED_LINKS` outlived its cause for days, and `RUN_PAGE_WALKS` did the same until #255                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `A69`                          | `PROUVE`            | the browser suite read maildrop through two readers of its own with no retry (`web-e2e/src/support/mail.ts`, and a private copy in `auth.spec.ts`) while the journeys' reader waits out an outage (#265). Both now go through the journeys' `inbox` and `message` - one reader, one retry - and `one-maildrop-client.spec.ts` fails on any second client of the API (it names `auth.spec.ts` when the old copy is put back). `auth.spec.ts`'s verify-then-sign-in test passed on dev through it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `A71`                          | `PROUVE`            | the browser E2E job was red on every develop run since at least 2549233 - 33 failures, the 8 Sanity pages answering 404 on a web built without a Sanity project, in 3 browsers, plus the language switch that starts on one of them - so a new failure could not be seen. Those 11 checks per browser now skip while the build has no Sanity project and dataset, set from the two repository variables; nothing else is exempt. Proven on develop dd86c42: the E2E job green, 164 passed, 53 skipped (the 33 plus 20 skips that predate it)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `A73`                          | `EN COURS`          | a row-level trigger does not fire on TRUNCATE, so every append-only table could be emptied in one statement. Five tables found in the catalog of the four databases, not three: `PolicySnapshot`, `AdministrativeAct`, `PaymentReceipt`, `PaymentTransition`, `PaymentReminder`. Each now refuses TRUNCATE by a statement trigger on `kambriq_append_only()`, and a catalog check refuses the next one that does not. Pending: the migrations applied on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `A73`                          | `PROUVE`            | a row-level trigger does not fire on TRUNCATE, so every append-only table could be emptied in one statement. Five tables found in the catalog of the four databases, not three: `PolicySnapshot`, `AdministrativeAct`, `PaymentReceipt`, `PaymentTransition`, `PaymentReminder`. Each now refuses TRUNCATE by a statement trigger on `kambriq_append_only()`, and a catalog check refuses the next one that does not. Applied on dev 29 September on core and lands (migration task 8321e18b); no TRUNCATE was tried on dev                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `A72`                          | `A DECIDER`         | two P2028 in 14 days, in one second, from the journeys and the browser suite running in parallel. Measured 30 September, nothing changed: the pool is pg's default 10 per database per task and Prisma's transaction wait its default 2 s, neither set in code; the database held at most 3 connections at that minute (14-day peak 12) at 3.8 % CPU with full credits; the API task, 0.25 vCPU, was at 93 % CPU. A saturated API, not a saturated pool. Proposals in the entry, for Visquis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `A74`                          | `EN COURS`          | "the two locales serve different text at the same route" passed over two 404 pages, which differ by language. It now asserts each page answers 200 before comparing, and waits for Sanity with the other eleven (A71). Proven against dev. Pending: the merge                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `A68`                          | `EN COURS`          | `POST /auth/verify-email` answered 502 three times (the 25 September journeys, the E2E runs of 2549233 and f65eed0), each right after the test polled the mailbox for seconds. Nothing set the API server's `keepAliveTimeout` (Node default 5 s) while the load balancer keeps an idle connection 60 s (AWS default; `modules/alb` sets none). The API now outlives the load balancer: `keepAliveTimeout` 65 s, `headersTimeout` 66 s (`app/keep-alive.ts`). Consistent with the three 502s, **not confirmed**: the load balancer's access logs are off. Pending: absence of the 502 over enough develop runs to mean something (see the entry)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `C20`                          | `PROUVE`            | SES production access is **granted** in eu-central-1 (review `GRANTED`, case 176441524300857): 50 000 a day, 14 a second, 636 sent in the last 24 h on 28 September. prd is planned in the same account and region, so it inherits it. Account-level suppression on bounce, complaint and optimized; no configuration set, so the API sees no bounce event                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -9305,7 +9306,7 @@ only `verify-email`: `e4fdfd4`'s was a call in `emailed-links.spec.ts`, which
 fits a stale connection after any idle wait. A first scan read 68 of the 97 runs
 and only each run's last attempt, missing the re-run ones; it was discarded.
 At that rate, **about 43 clean runs** are needed before absence means 90 %
-confidence, about 23 for 70 %. After the fix, every attempt of every develop run read, E2E and journeys: `86bb8e4`, `235a16e`, `31e1f5f`, `82115f1`, `d72ce7a` and `dd86c42` clean (**6 of about 43**, 29 September). `82115f1`'s journeys failed once on a 500, not a 502 - a Prisma `P2028` (no connection within the transaction wait) on `GET /lands/client/purchases`, the only two `P2028` lines in 14 days of the API log, both in one second - and passed on re-run.
+confidence, about 23 for 70 %. After the fix, every attempt of every develop run read, E2E and journeys: `86bb8e4`, `235a16e`, `31e1f5f`, `82115f1`, `d72ce7a` and `dd86c42` clean (**6 of about 43**, 29 September; **9 of about 43** on 30 September, with `bb41add`, `1d6659b` and `1995849`; `029cd04` has none, its jobs were never started). `82115f1`'s journeys failed once on a 500, not a 502 - a Prisma `P2028` (no connection within the transaction wait) on `GET /lands/client/purchases`, the only two `P2028` lines in 14 days of the API log, both in one second - and passed on re-run.
 
 **Proposed, not made - the load balancer's access logs.** `modules/alb` already
 takes `access_logs_bucket` (empty today). Turning it on for dev needs a small S3
@@ -9378,7 +9379,7 @@ in one browser only). The job's environment printed `E2E_CMS_CONTENT: false`.
 route" passes on `/about` today because the two 404 pages differ by language: it
 is green over a page that does not exist. Left running, and listed here.
 
-### A73 - TRUNCATE defeated every append-only table - `EN COURS`
+### A73 - TRUNCATE defeated every append-only table - `PROUVE`
 
 **Cost impact: None.** Five triggers.
 
@@ -9415,7 +9416,10 @@ every row still there, twice with no reset; the database suite 163 passed. A
 check per database asks the catalog for every table whose trigger refuses UPDATE
 or DELETE and fails on one that does not refuse TRUNCATE. Mutation, the
 `PaymentReminder` trigger removed: 2 fail, the catalog check naming it.
-Pending: the migrations applied on dev.
+**Applied on dev, 29 September.** The `1995849` deploy's migration task
+(`8321e18b`) applied `20260929220000_a73_append_only_refuses_truncate` to
+`kambriq_core` and `kambriq_lands`. No TRUNCATE was issued on dev: had the
+trigger been missing, the proof would have been the loss.
 
 **What G1's proof asserted.** G1 was declared `PROUVE` on G8's end-to-end run
 and on A17's database suite, which proved by removal that `PaymentReceipt` and
@@ -9455,6 +9459,50 @@ responses. One asserts an absence on a response it never checked:
 `auth.spec.ts:231` reads `/api/auth/session` and asserts it does not contain
 `accessToken`, without asserting a 200 - an error page or an empty body would
 pass it. Listed, not changed.
+
+### A72 - two P2028 in one second, measured - `A DECIDER`
+
+**Cost impact of measuring: None.** Nothing was changed.
+
+**The event.** 28 September 16:18:48 and 16:18:49 UTC, `GET /lands/client/purchases`
+answered 500 twice, each after about 2.5 s, logged as Prisma `P2028` ("Unable
+to start a transaction in the given time") - the only two `P2028` lines in 14
+days of the API log. The two callers were the delivery journeys and the browser
+suite, which run in parallel after a deploy.
+
+**The lead was the pool. The measurement says otherwise.**
+
+- **Pool size:** each of the four Prisma services builds `new Pool({
+connectionString })`; pg-pool defaults `max` to 10 and reads no size from the
+  connection string, so 10 per database per task. Idle connections close after
+  10 s (`idleTimeoutMillis` default), so between bursts the pool is empty.
+- **The 2 s wait:** Prisma's default, `transactionOptions.maxWait ?? 2e3`, set
+  nowhere in this code. A batch `$transaction` must obtain a connection from the
+  pool within it.
+- **Connections in use:** `AWS/RDS DatabaseConnections`, per minute: **3** at
+  16:18, 1 either side; the 14-day hourly peak is 12. Ten busy connections on one
+  pool were never seen. A per-minute sample can miss a burst inside the minute,
+  so this bounds the evidence rather than closes it.
+- **The database:** CPU 3.8 % at that minute, `CPUCreditBalance` 288 (its
+  maximum) on every one of the 14 days.
+- **The API task:** 256 CPU units (0.25 vCPU), 512 MB. `AWS/ECS CPUUtilization`
+  **93 %** at 16:18 and 90 % at 16:19, against 3 % idle; memory 45 %.
+
+**Reading.** The API process was saturated while two suites signed in and read
+in parallel, and a cold pool's new connection - TCP, TLS and authentication, on
+the same starved CPU - did not arrive within 2 s. Widening the pool would move a
+threshold nobody reached.
+
+**Proposals, not made:**
+
+1. **Stop running the two suites in parallel** (the E2E job `needs` the journeys).
+   No cost; adds the journeys' duration, about 2 minutes, to a develop run.
+2. **Keep connections warm** (`idleTimeoutMillis` raised, or a minimum of
+   connections), so a burst does not pay the connection setup. No AWS cost.
+3. **More CPU for the API task** (512 units): of the order of $9 a month on dev
+   at Fargate's list price, a figure not read from the bill and to be checked
+   before deciding.
+4. **Raising `maxWait`** hides the symptom and is not proposed.
 
 ### C20 - SES production access - `PROUVE`
 
