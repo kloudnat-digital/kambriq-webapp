@@ -228,7 +228,9 @@ test.describe('Authentication', () => {
     expect(delivered).not.toContain('accessToken');
 
     // And the session endpoint the client refetches from, which strips it too.
+    // A74's sibling: an absence proves nothing over a failed response.
     const sessionResponse = await page.request.get('/api/auth/session');
+    expect(sessionResponse.status()).toBe(200);
     expect(await sessionResponse.text()).not.toContain('accessToken');
   });
 });

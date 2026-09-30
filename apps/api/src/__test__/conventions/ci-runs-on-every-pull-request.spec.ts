@@ -102,6 +102,17 @@ describe('A38 - CI runs on every pull request, and still deploys only from devel
   });
 
   /**
+   * A72 - the browser suite runs after the journeys, never beside them: in
+   * parallel they saturated the API task. It runs whatever the journeys'
+   * result, and only on a successful deploy.
+   */
+  it('the browser suite waits for the journeys, and runs whatever their result', () => {
+    const e2e = jobBlock('e2e');
+    expect(e2e).toMatch(/^ {4}needs: \[deploy-dev, journeys\]$/m);
+    expect(e2e).toMatch(/^ {4}if: .*!cancelled\(\) && needs\.deploy-dev\.result == 'success'$/m);
+  });
+
+  /**
    * C22 - jobs were merged to stop seconds of work billing whole minutes. The
    * gate is the one job that must not be merged or narrowed: it runs last, under
    * `always()`, and needs every job a pull request runs, or a failure in the
