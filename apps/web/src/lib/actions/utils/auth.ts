@@ -22,7 +22,7 @@ export const getAuthErrorCause = (error: AuthError): string | undefined => {
 export const parseReactivationSignal = (message: string): ReactivationSignal | null => {
   try {
     const parsed = JSON.parse(message) as ReactivationSignal;
-    if (parsed?.code === 'REACTIVATION_REQUIRED' && parsed.userId) return parsed;
+    if (parsed?.code === 'REACTIVATION_REQUIRED') return parsed;
   } catch {
     /* not JSON - plain error message */
   }

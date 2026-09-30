@@ -4,6 +4,5 @@
  */
 declare type ReactivationSignal = {
   code: 'REACTIVATION_REQUIRED';
-  userId: string;
   daysRemaining: number;
 };

@@ -36,7 +36,7 @@ export const logInAction = createAction(
             redirect({
               href: {
                 pathname: AUTH_ROUTES.REACTIVATE,
-                query: { userId: signal.userId, days: String(signal.daysRemaining) },
+                query: { days: String(signal.daysRemaining) },
               },
               locale: await currentLocale(),
             });

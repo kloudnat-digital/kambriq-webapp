@@ -215,6 +215,7 @@ listed here first.
 | `C32`                          | `PROUVE`            | a parcel whose reservations are all CANCELLED was listed AVAILABLE, and its page showed "Terrain réservé" with the cancelled client's name, email and phone. Numbered C30 on 28 September; C30 is the tracker's VERIFY price, so this is C32. Visquis's decision: fix it in the API. `findByIdFull` now returns live reservations only. Proven on dev 29 September: Bafoussam Tamdja comes back AVAILABLE with no reservation and no trace of its 34 cancelled ones                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `C35`                          | `EN COURS`          | a reset token issued before an account was deleted or deactivated stayed valid for its hour and set a password on an account that cannot sign in - and within the grace period reactivation asks only for that password. `resetPassword` now refuses on `isActive`, the flag sign-in refuses on; `forgotPassword` already sent nothing to an inactive account. Proven locally. Pending: CI, stopped on 30 September                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `C36`                          | `EN COURS`          | the identity-review queue listed, counted and aged documents of accounts deleted by their holders. It now leaves them out. Their files are removed by the daily purge 30 days after deletion; an administrator-deactivated account's are kept indefinitely. Proven locally. Pending: CI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `C37`                          | `EN COURS`          | sign-in answered before checking the password: an unknown address, an unverified, blocked or grace-period account, and an active one with a wrong password each answered differently, and a grace-period account returned its internal id. Now every wrong password answers exactly as an unknown address (400, invalid credentials); the reason is given only once the password is right, and no id is returned. Proven locally. Pending: CI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `C33`                          | `EN COURS`          | a revoked newest certificate read as current in the candidate's profile and the administrators' candidate list, which returned its number without its revocation. Each now carries the certificate's state (ACTIVE, REVOKED, EXPIRED) from the shared `isActive`; the overview's certificate read, selected and never returned, is removed. The product question - an older standing certificate when the newest is revoked - is Visquis's, and the code keeps today's answer. Pending: the merge (CI refused to start jobs on 30 September)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `I48`                          | `EN COURS`          | the land list's reservation count included cancelled ones; the KAMNET agent read returned the sponsor without its suspension. Both fixed. `linked-records-read-their-status.spec.ts` refuses the next read of a linked record that ignores its standing, with 7 known reads declared by exact count. Pending: the merge                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `C22`                          | `EN COURS`          | Actions minutes before the private switch (C25). Measured 29 September per job: 30 days, 8 714 minutes rounded per job against 6 478 raw; the organisation is on Team (3 000 included), $0.006 a minute. The cut, 30 September: Commitlint becomes steps of What changed, one job fewer per pull-request run, about 387 minutes a month, **about $2**. What changed on push and the CI Gate are kept, for the reasons in the entry. Pending: the merge                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -10306,6 +10307,56 @@ oldest wait left unfiltered, `Received: 4000` against `< 4000`.
   left by earlier deletes hide no older copy. That is a property of today's
   bucket, not a rule: re-enabling versioning without a noncurrent-version
   expiry would change it.
+
+### C37 - sign-in answered before checking the password - `EN COURS`
+
+**Cost impact: None.** Visquis's decision, 30 September: before the opening.
+
+**The gap, measured on the code.** `login` checked, in order: the address, the
+verification, the account's state, the lock, and only then the password. So a
+caller without the password learned whether an address was unknown (400
+`invalidCredentials`), unverified (401 `emailNotVerified`), blocked (400
+`inactiveAccount`) or deleted within its grace period (200, with the account's
+internal id and the days remaining) - and an active account with a wrong password
+answered 401 "attempts remaining", which enumerates active accounts on its own.
+The web then carried the id into `/reactivate?userId=...`, where the page ignored
+it.
+
+**The shape taken.** The password is checked first. Every wrong password - whatever
+the account's state - and an account with no password answer exactly as an unknown
+address: 400 `invalidCredentials`; attempts are still counted and the lock still
+applies. Only after a correct password does the answer say why the holder cannot
+enter. The id is gone from the API response, from the web's reactivation signal
+and from the redirect's query string.
+
+**What a client in each state now sees:**
+
+- **unknown address, or any wrong password:** "invalid credentials";
+- **unverified, right password:** "email not verified". No screen offers a resend
+  (`resendVerificationAction` has no caller), but "forgot password" works for an
+  active unverified account and consuming the reset link verifies the address - a
+  route exists;
+- **deleted within the grace period, right password:** sent to `/reactivate` with
+  the days remaining, which reactivates on email and password; with a forgotten
+  password, the reset route of the grace-period fix (#285);
+- **blocked by an administrator, right password:** "inactive account";
+- **locked after five failures:** "account locked for N minutes", still answered
+  before the password so a correct guess during the lock is not revealed.
+
+**Proof, local.** Red first: with a wrong password, the unverified, blocked,
+grace-period and active states each answered differently from an unknown address,
+four failures each with its own status or message. After: all four identical to
+the unknown address, and the internal id absent from every answer. Mutations, each
+confirmed applied: the unverified answer moved back before the password - its
+state fails alone; the blocked answer - alone; the grace-period answer - alone;
+"attempts remaining" restored on a wrong password - the four states fail; the id
+returned again - the right-password grace test fails (first as a compile error,
+the type no longer carrying the field; re-run through a spread). The old test
+that reached reactivation without a password now states the password.
+
+**What remains, listed and not changed.** The lock answer reveals an account that
+somebody has already hammered five times. `POST /auth/resend-verification`
+answers "already verified" for a verified address and "sent" for an unknown one.
 
 ### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
 

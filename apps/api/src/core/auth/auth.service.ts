@@ -144,6 +144,33 @@ export class AuthService {
       throw new InvalidCredentialsException(this.t('auth.login.invalidCredentials', lang));
     }
 
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000);
+      throw new UnauthorizedException(
+        this.t('auth.login.accountLocked', lang, { minutes: minutesLeft }),
+      );
+    }
+
+    /**
+     * C37: nothing about the account is said to a caller who has not proved the
+     * password. An account without a password and a wrong password answer
+     * exactly as an unknown address does; attempts are still counted.
+     */
+    if (!user.passwordHash) {
+      this.logger.log('Login refused: no password has ever been set on this account %o', {
+        userId: user.id,
+        email: maskEmail(user.email),
+      });
+      throw new InvalidCredentialsException(this.t('auth.login.invalidCredentials', lang));
+    }
+
+    const isPasswordValid = await comparePassword(dto.password, user.passwordHash);
+    if (!isPasswordValid) {
+      await this.handleFailedLogin({ attempts: user.loginAttempts + 1, userId: user.id });
+      throw new InvalidCredentialsException(this.t('auth.login.invalidCredentials', lang));
+    }
+
+    // The password is right: the holder may now be told why they cannot enter.
     if (!user.emailVerified) {
       throw new UnauthorizedException(this.t('auth.login.emailNotVerified', lang));
     }
@@ -160,7 +187,6 @@ export class AuthService {
 
         return {
           requiresReactivation: true,
-          userId: user.id,
           daysRemaining,
           message: this.t('auth.login.gracePeriodDays', lang, {
             days: daysRemaining,
@@ -169,48 +195,6 @@ export class AuthService {
       }
 
       throw new InvalidCredentialsException(this.t('auth.login.inactiveAccount', lang));
-    }
-
-    if (user.lockedUntil && user.lockedUntil > new Date()) {
-      const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000);
-      throw new UnauthorizedException(
-        this.t('auth.login.accountLocked', lang, { minutes: minutesLeft }),
-      );
-    }
-
-    /**
-     * Handle accounts created without passwords.
-     * Use a generic error message to prevent account enumeration, but log the specific case.
-     */
-    if (!user.passwordHash) {
-      this.logger.log('Login refused: no password has ever been set on this account %o', {
-        userId: user.id,
-        email: maskEmail(user.email),
-      });
-      throw new InvalidCredentialsException(this.t('auth.login.invalidCredentials', lang));
-    }
-
-    const isPasswordValid = await comparePassword(dto.password, user.passwordHash);
-    if (!isPasswordValid) {
-      const attempts = user.loginAttempts + 1;
-      await this.handleFailedLogin({
-        attempts,
-        userId: user.id,
-      });
-
-      const remaining = MAX_LOGIN_ATTEMPTS - attempts;
-
-      if (remaining > 0) {
-        throw new UnauthorizedException(
-          this.t('auth.login.attemptsRemaining', lang, { remaining }),
-        );
-      }
-
-      throw new UnauthorizedException(
-        this.t('auth.login.lockedAfterAttempts', lang, {
-          minutes: LOCK_DURATION_MINUTES,
-        }),
-      );
     }
 
     if (user.loginAttempts > 0 || user.lockedUntil) {

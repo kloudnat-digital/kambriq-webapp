@@ -55,7 +55,6 @@ const authConfig = {
           throw new Error(
             JSON.stringify({
               code: 'REACTIVATION_REQUIRED',
-              userId: data.userId,
               daysRemaining: data.daysRemaining,
             }),
           );
