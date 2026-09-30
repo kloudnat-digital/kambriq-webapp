@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { UsersService } from '../../core/users/users.service';
 import { KbsPrismaService } from '../prisma/kbs-prisma.service';
-import { NEWEST_FIRST } from '../certificates/current-certificate';
+import { certificateState, NEWEST_FIRST } from '../certificates/current-certificate';
 import {
   CvUploadUrlDto,
   EnrollDto,
@@ -141,7 +141,7 @@ export class KbsCandidatesService {
           certificates: {
             ...NEWEST_FIRST,
             take: 1,
-            select: { kcaNumber: true, issueDate: true, validUntil: true },
+            select: { kcaNumber: true, issueDate: true, validUntil: true, revokedAt: true },
           },
         },
       }),
@@ -187,7 +187,10 @@ export class KbsCandidatesService {
         passed: p.passed,
         completedAt: p.completedAt,
       })),
-      certificate: candidate.certificates[0] ?? null,
+      // C33: the newest certificate is the current one (I15), and it says whether it stands.
+      certificate: candidate.certificates[0]
+        ? { ...candidate.certificates[0], state: certificateState(candidate.certificates[0]) }
+        : null,
     };
   }
 
@@ -199,7 +202,6 @@ export class KbsCandidatesService {
       include: {
         progress: true,
         lessonCompletions: { select: { lessonId: true } },
-        certificates: { ...NEWEST_FIRST, take: 1, select: { kcaNumber: true } },
       },
     });
 
@@ -568,7 +570,11 @@ export class KbsCandidatesService {
         orderBy: { [sortField(sort, TIMESTAMP_SORTS, 'createdAt')]: order || 'desc' },
         include: {
           progress: { select: { passed: true } },
-          certificates: { ...NEWEST_FIRST, take: 1, select: { kcaNumber: true } },
+          certificates: {
+            ...NEWEST_FIRST,
+            take: 1,
+            select: { kcaNumber: true, validUntil: true, revokedAt: true },
+          },
         },
       }),
       this.prisma.kbsCandidate.count({ where }),
@@ -592,6 +598,8 @@ export class KbsCandidatesService {
         certifiedAt: c.certifiedAt,
         modulesCompleted: c.progress.filter((p) => p.passed).length,
         kcaNumber: c.certificates[0]?.kcaNumber || null,
+        // C33: a number is shown with whether its certificate still stands.
+        certificateState: c.certificates[0] ? certificateState(c.certificates[0]) : null,
       };
     });
 

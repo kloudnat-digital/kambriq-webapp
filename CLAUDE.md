@@ -3196,6 +3196,22 @@ outside: the API connects as the role that owns the tables (the migrations run o
 the same URL), and an owner can `DROP` a table or `DISABLE TRIGGER`. A trigger
 protects against a caller that writes, not against one that alters the schema.
 
+### A linked record is read with its standing, or not at all
+
+From `C32`, `C33` and `I48`: four times in a month, a read returned a linked
+record without looking at whether it still stood - a cancelled reservation shown
+as holding a parcel, a revoked certificate's number shown as current, a count
+including cancelled reservations, a sponsor returned without its suspension. Each
+was one `include` or `select`, and each looked complete, because the record was
+real and its fields were right; only its standing was missing.
+
+`linked-records-read-their-status.spec.ts` derives the markers from the schemas
+(a `revokedAt`, `suspendedAt` or `deletedAt` column, or an enum with a stand-down
+value) and refuses a read of such a relation that neither filters on its marker
+nor returns it. Known reads are declared by file, relation and exact count.
+**When a read returns a record through a relation, decide whether the reader
+should see it at all, and if it may, give it the standing too.**
+
 ### An append-only table makes every test fixture permanent
 
 From wave 7 step 1, found by running the database suite a second time.

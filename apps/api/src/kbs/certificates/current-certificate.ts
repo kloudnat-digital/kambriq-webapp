@@ -17,3 +17,12 @@ export const isActive = (
   certificate: { revokedAt: Date | null; validUntil: Date },
   now: Date = new Date(),
 ): boolean => !certificate.revokedAt && certificate.validUntil > now;
+
+/** Whether a certificate stands, and if not why: what a read shows beside its number. */
+export type CertificateState = 'ACTIVE' | 'REVOKED' | 'EXPIRED';
+
+export const certificateState = (
+  certificate: { revokedAt: Date | null; validUntil: Date },
+  now: Date = new Date(),
+): CertificateState =>
+  certificate.revokedAt ? 'REVOKED' : isActive(certificate, now) ? 'ACTIVE' : 'EXPIRED';

@@ -102,7 +102,7 @@ export class KamnetAgentsService {
       where: { id: agentId },
       include: {
         sponsor: {
-          select: { id: true, agentCode: true, userId: true },
+          select: { id: true, agentCode: true, userId: true, suspendedAt: true },
         },
         _count: {
           select: { referrals: true },
@@ -127,6 +127,8 @@ export class KamnetAgentsService {
         ? {
             id: agent.sponsor.id,
             agentCode: agent.sponsor.agentCode,
+            // I48: whether the sponsor still stands.
+            suspended: agent.sponsor.suspendedAt !== null,
           }
         : null,
       user: {
