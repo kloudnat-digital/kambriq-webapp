@@ -1,6 +1,7 @@
 import { type NextAuthConfig } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { visitorHeaders } from './lib/api/visitor-headers';
+import { currentLocale } from './lib/locale';
 import { knownSession, refreshSession } from './lib/auth/refresh-session';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'; // fallback for local dev only
@@ -28,7 +29,13 @@ const authConfig = {
 
         const res = await fetch(`${API_URL}/api/v1/auth/login`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...(await visitorHeaders()) },
+          headers: {
+            'Content-Type': 'application/json',
+            // C37: the API answers a refusal in the language of the page, never
+            // in the account's, so the language says nothing about the account.
+            'x-lang': await currentLocale(),
+            ...(await visitorHeaders()),
+          },
           body: JSON.stringify({
             email: credentials.email,
             password: credentials.password,
@@ -41,6 +48,11 @@ const authConfig = {
         const body = await res.json().catch(() => ({}));
 
         if (!res.ok) {
+          // C37: the right password on an unverified account - logInAction turns
+          // this into the screen's resend control.
+          if (body?.error === 'EMAIL_NOT_VERIFIED') {
+            throw new Error(JSON.stringify({ code: 'EMAIL_NOT_VERIFIED', message: body.message }));
+          }
           // Throw the real API error message so logInAction can surface it to the user.
           // Returning null here would silently swallow lock messages, attempt counts, etc.
           throw new Error(body?.message ?? 'Authentication failed');
@@ -55,7 +67,6 @@ const authConfig = {
           throw new Error(
             JSON.stringify({
               code: 'REACTIVATION_REQUIRED',
-              userId: data.userId,
               daysRemaining: data.daysRemaining,
             }),
           );

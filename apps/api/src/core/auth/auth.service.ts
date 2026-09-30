@@ -39,7 +39,7 @@ import {
   hashToken,
   maskEmail,
 } from '@kambriq/common';
-import { I18nService } from 'nestjs-i18n';
+import { I18nContext, I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class AuthService {
@@ -138,14 +138,49 @@ export class AuthService {
       include: { userRoles: { include: { role: true } } },
     });
 
+    // C37: until the password is proven, answers are in the request's language,
+    // never the account's - a language is itself a statement that the account exists.
+    const requestLang = this.requestLang();
     const lang = user?.preferredLanguage || 'fr';
 
     if (!user) {
-      throw new InvalidCredentialsException(this.t('auth.login.invalidCredentials', lang));
+      throw new InvalidCredentialsException(this.t('auth.login.invalidCredentials', requestLang));
     }
 
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000);
+      throw new UnauthorizedException(
+        this.t('auth.login.accountLocked', requestLang, { minutes: minutesLeft }),
+      );
+    }
+
+    /**
+     * C37: nothing about the account is said to a caller who has not proved the
+     * password. An account without a password and a wrong password answer
+     * exactly as an unknown address does; attempts are still counted.
+     */
+    if (!user.passwordHash) {
+      this.logger.log('Login refused: no password has ever been set on this account %o', {
+        userId: user.id,
+        email: maskEmail(user.email),
+      });
+      throw new InvalidCredentialsException(this.t('auth.login.invalidCredentials', requestLang));
+    }
+
+    const isPasswordValid = await comparePassword(dto.password, user.passwordHash);
+    if (!isPasswordValid) {
+      await this.handleFailedLogin({ attempts: user.loginAttempts + 1, userId: user.id });
+      throw new InvalidCredentialsException(this.t('auth.login.invalidCredentials', requestLang));
+    }
+
+    // The password is right: the holder may now be told why they cannot enter.
+    // Tagged so the sign-in screen can offer to resend the link. Reached only
+    // with the right password, so the tag tells nobody else anything.
     if (!user.emailVerified) {
-      throw new UnauthorizedException(this.t('auth.login.emailNotVerified', lang));
+      throw new UnauthorizedException({
+        message: this.t('auth.login.emailNotVerified', lang),
+        error: 'EMAIL_NOT_VERIFIED',
+      });
     }
 
     if (!user.isActive) {
@@ -160,7 +195,6 @@ export class AuthService {
 
         return {
           requiresReactivation: true,
-          userId: user.id,
           daysRemaining,
           message: this.t('auth.login.gracePeriodDays', lang, {
             days: daysRemaining,
@@ -169,48 +203,6 @@ export class AuthService {
       }
 
       throw new InvalidCredentialsException(this.t('auth.login.inactiveAccount', lang));
-    }
-
-    if (user.lockedUntil && user.lockedUntil > new Date()) {
-      const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000);
-      throw new UnauthorizedException(
-        this.t('auth.login.accountLocked', lang, { minutes: minutesLeft }),
-      );
-    }
-
-    /**
-     * Handle accounts created without passwords.
-     * Use a generic error message to prevent account enumeration, but log the specific case.
-     */
-    if (!user.passwordHash) {
-      this.logger.log('Login refused: no password has ever been set on this account %o', {
-        userId: user.id,
-        email: maskEmail(user.email),
-      });
-      throw new InvalidCredentialsException(this.t('auth.login.invalidCredentials', lang));
-    }
-
-    const isPasswordValid = await comparePassword(dto.password, user.passwordHash);
-    if (!isPasswordValid) {
-      const attempts = user.loginAttempts + 1;
-      await this.handleFailedLogin({
-        attempts,
-        userId: user.id,
-      });
-
-      const remaining = MAX_LOGIN_ATTEMPTS - attempts;
-
-      if (remaining > 0) {
-        throw new UnauthorizedException(
-          this.t('auth.login.attemptsRemaining', lang, { remaining }),
-        );
-      }
-
-      throw new UnauthorizedException(
-        this.t('auth.login.lockedAfterAttempts', lang, {
-          minutes: LOCK_DURATION_MINUTES,
-        }),
-      );
     }
 
     if (user.loginAttempts > 0 || user.lockedUntil) {
@@ -349,17 +341,17 @@ export class AuthService {
     return { message: this.t('auth.email.verified', lang) };
   }
 
+  /**
+   * C37: one answer for every address - unknown, verified or not - in the
+   * request's language, so the route cannot say what sign-in no longer says. The
+   * link goes only to an unverified address, in its own language.
+   */
   async resendVerificationEmail(email: string): Promise<{ message: string }> {
+    const answer = { message: this.t('auth.email.verificationSent', this.requestLang()) };
     const user = await this.prisma.user.findUnique({ where: { email } });
-    const lang = user?.preferredLanguage || 'fr';
+    if (!user || user.emailVerified) return answer;
 
-    if (!user) {
-      return { message: this.t('auth.email.verificationSent', lang) };
-    }
-    if (user.emailVerified) {
-      return { message: this.t('auth.email.alreadyVerified', lang) };
-    }
-
+    const lang = user.preferredLanguage || 'fr';
     const token = await this.createVerificationToken(
       user.id,
       VerificationTokenType.EMAIL_VERIFICATION,
@@ -380,7 +372,7 @@ export class AuthService {
       userId: user.id,
       email: maskEmail(user.email),
     });
-    return { message: this.t('auth.email.verificationSent', lang) };
+    return answer;
   }
 
   // ----- Forgot / Reset Password ------------------------------------------
@@ -691,6 +683,11 @@ export class AuthService {
     if (!deletedAt) return false;
     const daysSinceDeletion = (Date.now() - deletedAt.getTime()) / (1_000 * 60 * 60 * 24);
     return daysSinceDeletion <= GRACE_PERIOD_DAYS;
+  }
+
+  /** The language the request asked for (x-lang, then Accept-Language), never the account's. */
+  private requestLang(): string {
+    return I18nContext.current()?.lang ?? 'fr';
   }
 
   private t(key: string, lang = 'fr', args?: Record<string, unknown>): string {

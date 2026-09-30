@@ -99,7 +99,6 @@ export interface AuthResponse {
 
 export interface GracePeriodResponse {
   requiresReactivation: true;
-  userId: string;
   daysRemaining: number;
   message: string;
 }

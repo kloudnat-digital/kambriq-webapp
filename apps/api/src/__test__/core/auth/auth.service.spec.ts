@@ -275,6 +275,8 @@ describe('AuthService', () => {
         deactivatedBy: null,
       });
       prisma.user.findUnique.mockResolvedValue(user);
+      // C37: offered only to the holder of the password.
+      (comparePassword as jest.Mock).mockResolvedValue(true);
 
       const result = await service.login(dto);
       expect(result).toHaveProperty('requiresReactivation', true);
@@ -292,6 +294,156 @@ describe('AuthService', () => {
       prisma.user.findUnique.mockResolvedValue(user);
 
       await expect(service.login(dto)).rejects.toThrow();
+    });
+
+    /**
+     * C37 - sign-in says nothing about an account to somebody who does not hold
+     * its password. With a wrong password, an unknown address and an unverified,
+     * blocked or grace-period account answer identically, and no internal id is
+     * returned to anybody.
+     */
+    describe('C37 - the answer depends on the account only once the password is right', () => {
+      // The translation mock shows which language answered, and every account
+      // below prefers English: an answer in the account's language would tell a
+      // stranger the address exists.
+      beforeEach(() => {
+        i18n.translate.mockImplementation(
+          (key: string, opts?: { lang?: string }) => `${opts?.lang ?? '?'}|${key}`,
+        );
+      });
+
+      const states: Record<string, Record<string, unknown> | null> = {
+        unknown: null,
+        unverified: { emailVerified: false, isActive: true },
+        blocked: {
+          emailVerified: true,
+          isActive: false,
+          deletedAt: null,
+          deactivatedBy: 'admin-1',
+        },
+        'deleted within the grace period': {
+          emailVerified: true,
+          isActive: false,
+          deletedAt: new Date(Date.now() - 5 * 86_400_000),
+          deactivatedBy: null,
+        },
+        'active, wrong password': { emailVerified: true, isActive: true },
+      };
+
+      const answerTo = async (state: Record<string, unknown> | null) => {
+        prisma.user.findUnique.mockResolvedValue(
+          state
+            ? buildUserWithRoles(['CLIENT'], {
+                id: 'internal-id-c37',
+                email: dto.email,
+                preferredLanguage: 'en',
+                ...state,
+              })
+            : null,
+        );
+        (comparePassword as jest.Mock).mockResolvedValue(false);
+        const outcome = await service.login(dto).then(
+          (body) => ({ resolved: true, body }),
+          (e: { getStatus?: () => number; getResponse?: () => unknown }) => ({
+            resolved: false,
+            status: e.getStatus?.(),
+            body: e.getResponse?.(),
+          }),
+        );
+        return outcome;
+      };
+
+      it.each(Object.keys(states))(
+        '%s, with a wrong password, answers as for an unknown address',
+        async (name) => {
+          const reference = await answerTo(states['unknown']);
+          const outcome = await answerTo(states[name]);
+          expect(outcome).toEqual(reference);
+          expect(JSON.stringify(outcome)).not.toContain('internal-id-c37');
+        },
+      );
+
+      it('an unverified account with the right password is told to verify its address', async () => {
+        prisma.user.findUnique.mockResolvedValue(
+          buildUserWithRoles(['CLIENT'], {
+            email: dto.email,
+            emailVerified: false,
+            isActive: true,
+          }),
+        );
+        (comparePassword as jest.Mock).mockResolvedValue(true);
+        await expect(service.login(dto)).rejects.toThrow(/emailNotVerified/);
+      });
+
+      it('a grace-period account with the right password is sent to reactivate, without its internal id', async () => {
+        prisma.user.findUnique.mockResolvedValue(
+          buildUserWithRoles(['CLIENT'], {
+            id: 'internal-id-c37',
+            email: dto.email,
+            ...states['deleted within the grace period'],
+          }),
+        );
+        (comparePassword as jest.Mock).mockResolvedValue(true);
+        const result = await service.login(dto);
+        expect(result).toHaveProperty('requiresReactivation', true);
+        expect(result).toHaveProperty('daysRemaining');
+        expect(JSON.stringify(result)).not.toContain('internal-id-c37');
+      });
+
+      it('a blocked account with the right password is told it is inactive', async () => {
+        prisma.user.findUnique.mockResolvedValue(
+          buildUserWithRoles(['CLIENT'], { email: dto.email, ...states['blocked'] }),
+        );
+        (comparePassword as jest.Mock).mockResolvedValue(true);
+        await expect(service.login(dto)).rejects.toThrow(/inactiveAccount/);
+      });
+    });
+  });
+
+  // ----- RESEND VERIFICATION ----- //
+
+  /**
+   * C37 - resend-verification must not say what sign-in no longer says: a
+   * verified, an unverified and an unknown address get one answer, in the
+   * request's language, whichever the account prefers.
+   */
+  describe('C37 - resend-verification answers alike for every address', () => {
+    beforeEach(() => {
+      i18n.translate.mockImplementation(
+        (key: string, opts?: { lang?: string }) => `${opts?.lang ?? '?'}|${key}`,
+      );
+    });
+
+    const answerFor = async (user: Record<string, unknown> | null) => {
+      prisma.user.findUnique.mockResolvedValue(
+        user ? buildUser({ email: 'r@kambriq.com', preferredLanguage: 'en', ...user }) : null,
+      );
+      return service.resendVerificationEmail('r@kambriq.com').then(
+        (body) => ({ ok: true, body }),
+        (e: { getStatus?: () => number; getResponse?: () => unknown }) => ({
+          ok: false,
+          status: e.getStatus?.(),
+          body: e.getResponse?.(),
+        }),
+      );
+    };
+
+    it.each([
+      ['verified', { emailVerified: true }],
+      ['unverified', { emailVerified: false }],
+    ])('a %s address answers as an unknown one', async (_name, user) => {
+      const reference = await answerFor(null);
+      expect(await answerFor(user)).toEqual(reference);
+    });
+
+    it('sends the link only to an unverified address, in its own language', async () => {
+      await answerFor({ emailVerified: true });
+      await answerFor(null);
+      expect(email.send).not.toHaveBeenCalled();
+      await answerFor({ emailVerified: false });
+      expect(email.send).toHaveBeenCalledWith(
+        expect.objectContaining({ template: 'verification', lang: 'en' }),
+      );
     });
   });
 

@@ -19,7 +19,7 @@ import { useToastStore } from '@/store/toast.store';
 /**
  * `/reactivate` was listed in PUBLIC_PATHS and had no page behind it.
  *
- * `lib/actions/auth.ts` redirects here with `?userId=…&days=…` when the API
+ * `lib/actions/auth.ts` redirects here with `?days=…` when the API
  * signals REACTIVATION_REQUIRED, so a user in the soft-delete grace period -
  * somebody trying to undo a deletion, on a clock - was sent to a 404. The route
  * entry was correct; the page was simply missing.
@@ -29,9 +29,8 @@ import { useToastStore } from '@/store/toast.store';
  * is enforced by the API, which re-checks it on POST /auth/reactivate. A wrong
  * number here misleads; it cannot extend anybody's window.
  *
- * `userId` arrives in the query string too, and is deliberately unused. The API
- * reactivates on email + password, so the user proves who they are rather than
- * the URL asserting it.
+ * No account identifier travels here (C37): the API reactivates on email and
+ * password, so the user proves who they are rather than the URL asserting it.
  */
 const parseDays = (raw: string | null): number | null => {
   if (raw === null) return null;

@@ -5,7 +5,7 @@ import { signIn, signOut } from '@/auth';
 import { api } from '@/lib/api/server';
 import { AUTH_ROUTES, safeCallbackUrl } from '@/routes';
 import { createAction, ServerActionError } from './create-action';
-import { getAuthErrorCause, parseReactivationSignal } from './utils/auth';
+import { getAuthErrorCause, parseReactivationSignal, parseUnverifiedSignal } from './utils/auth';
 import { redirect } from '@/i18n/navigation';
 import { currentLocale } from '@/lib/locale';
 
@@ -36,13 +36,18 @@ export const logInAction = createAction(
             redirect({
               href: {
                 pathname: AUTH_ROUTES.REACTIVATE,
-                query: { userId: signal.userId, days: String(signal.daysRemaining) },
+                query: { days: String(signal.daysRemaining) },
               },
               locale: await currentLocale(),
             });
           }
 
-          // Propagates upstream error context (locked, inactive, attempts).
+          // C37: the right password on an unverified account. 403 is the screen's
+          // cue to offer the verification link again.
+          const unverified = parseUnverifiedSignal(causeMessage);
+          if (unverified) throw new ServerActionError(unverified, 403);
+
+          // Propagates upstream error context (locked, inactive).
           throw new ServerActionError(causeMessage, 401);
         }
 
