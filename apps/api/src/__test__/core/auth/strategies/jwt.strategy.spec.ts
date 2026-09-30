@@ -42,6 +42,7 @@ describe('JwtStrategy', () => {
     deletedAt: null,
     deactivatedBy: null,
     lockedUntil: null,
+    emailVerified: true,
     preferredLanguage: 'fr',
     userRoles: [{ role: { code: 'CLIENT' } }],
   };
@@ -121,6 +122,33 @@ describe('JwtStrategy', () => {
     await expect(strategy.validate(basePayload)).rejects.toThrow(UnauthorizedException);
   });
 
+  // C39 - registration issues tokens before the address is verified, so the
+  // check sits here, where every session passes, and not only at sign-in.
+  it('accepts a session on a verified address', async () => {
+    prisma.user.findUnique.mockResolvedValue(activeUser);
+
+    await expect(strategy.validate(basePayload)).resolves.toMatchObject({ id: 'user-1' });
+  });
+
+  it('refuses a session on an address that is not verified, and says why', async () => {
+    prisma.user.findUnique.mockResolvedValue({ ...activeUser, emailVerified: false });
+
+    const refusal = strategy.validate(basePayload);
+    await expect(refusal).rejects.toThrow(UnauthorizedException);
+    await expect(refusal).rejects.toMatchObject({
+      response: { message: 'auth.jwt.emailNotVerified', error: 'EMAIL_NOT_VERIFIED' },
+    });
+  });
+
+  it('asks the database for the verification, not the token', async () => {
+    prisma.user.findUnique.mockResolvedValue(activeUser);
+    await strategy.validate(basePayload);
+
+    expect(prisma.user.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ select: expect.objectContaining({ emailVerified: true }) }),
+    );
+  });
+
   it('uses preferred language from DB (not from JWT payload)', async () => {
     prisma.user.findUnique.mockResolvedValue({
       id: 'user-1',
@@ -129,6 +157,7 @@ describe('JwtStrategy', () => {
       deactivatedBy: null,
       deletedAt: null,
       lockedUntil: null,
+      emailVerified: true,
       preferredLanguage: 'en',
       userRoles: [{ role: { code: 'CLIENT' } }],
     });
