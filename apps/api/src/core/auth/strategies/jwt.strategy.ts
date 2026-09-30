@@ -40,6 +40,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         deletedAt: true,
         deactivatedBy: true,
         lockedUntil: true,
+        emailVerified: true,
         preferredLanguage: true,
         userRoles: { include: { role: { select: { code: true } } } },
       },
@@ -69,6 +70,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // Account locked
     if (user.lockedUntil && user.lockedUntil > new Date()) {
       throw new UnauthorizedException(this.t('auth.jwt.accountLocked', userLang));
+    }
+
+    // Registration issues tokens before the address is proven, so an unverified
+    // account holds no session here: every authenticated route passes this check.
+    // Tagged like the sign-in refusal so a client can offer a new link.
+    if (!user.emailVerified) {
+      throw new UnauthorizedException({
+        message: this.t('auth.jwt.emailNotVerified', userLang),
+        error: 'EMAIL_NOT_VERIFIED',
+      });
     }
 
     return {

@@ -88,6 +88,13 @@ describe('journey 1 - a new user signs up, verifies, and logs in', () => {
     });
     expect(reg.status).toBe(201);
 
+    // C39: registration answers with tokens before the address is proven. They
+    // open nothing until it is - on every route, not only at sign-in.
+    const issued = reg.json<{ data: { tokens: { accessToken: string } } }>().data.tokens;
+    const me = await call('GET', '/users/me', { token: issued.accessToken });
+    expect(me.status).toBe(401);
+    expect(me.body).toContain('EMAIL_NOT_VERIFIED');
+
     const early = await call('POST', '/auth/login', { body: { email, password: PASSWORD } });
     expect(early.status).toBe(401);
     // Refused for the right reason, not by accident.

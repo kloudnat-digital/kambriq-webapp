@@ -216,6 +216,7 @@ listed here first.
 | `C35`                          | `EN COURS`          | a reset token issued before an account was deleted or deactivated stayed valid for its hour and set a password on an account that cannot sign in - and within the grace period reactivation asks only for that password. `resetPassword` now refuses on `isActive`, the flag sign-in refuses on; `forgotPassword` already sent nothing to an inactive account. Proven locally. Pending: CI, stopped on 30 September                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `C36`                          | `EN COURS`          | the identity-review queue listed, counted and aged documents of accounts deleted by their holders. It now leaves them out. Their files are removed by the daily purge 30 days after deletion; an administrator-deactivated account's are kept indefinitely. Proven locally. Pending: CI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `C37`                          | `EN COURS`          | sign-in answered before checking the password: an unknown address, an unverified, blocked or grace-period account, and an active one with a wrong password each answered differently, and a grace-period account returned its internal id. Now every wrong password answers exactly as an unknown address (400, invalid credentials); the reason is given only once the password is right, and no id is returned. Proven locally. Pending: CI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `C39`                          | `EN COURS`          | registration handed out a session before the address was verified, and the JWT strategy never read `emailVerified`: anybody could hold a working session on somebody else's address. The check is now in `jwt.strategy.ts`, where every session passes; an unverified account's token answers 401 `EMAIL_NOT_VERIFIED`. Blast radius on dev: 13 unverified accounts, 0 live sessions. Proven locally. Pending: CI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `C38`                          | `EN COURS`          | the four other public routes that take an address from a stranger, as one family with one rule: forgot-password and reactivate answer every account state exactly as an unknown address, in the request's language (reactivate now checks the password first); the newsletter answers an existing subscriber as a new one; registration's 409 is declared, not equalised. A guard fails on any public route with an `email` body not placed in the family. Proven locally. Pending: CI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `C33`                          | `EN COURS`          | a revoked newest certificate read as current in the candidate's profile and the administrators' candidate list, which returned its number without its revocation. Each now carries the certificate's state (ACTIVE, REVOKED, EXPIRED) from the shared `isActive`; the overview's certificate read, selected and never returned, is removed. The product question - an older standing certificate when the newest is revoked - is Visquis's, and the code keeps today's answer. Pending: the merge (CI refused to start jobs on 30 September)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `I48`                          | `EN COURS`          | the land list's reservation count included cancelled ones; the KAMNET agent read returned the sponsor without its suspension. Both fixed. `linked-records-read-their-status.spec.ts` refuses the next read of a linked record that ignores its standing, with 7 known reads declared by exact count. Pending: the merge                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -10578,6 +10579,71 @@ access tokens for an account whose address is not verified. The JWT strategy
 checks `isActive` and `deletedAt`, not `emailVerified`. So a caller can
 register with somebody else's address and use a working session without ever
 verifying it. That is outside C38's rule. **Visquis's to number.**
+
+### C39 - registration handed out a session for an unverified address - `EN COURS`
+
+**Cost impact: None.**
+
+**The gap, measured.** `POST /auth` answers with an access token and a refresh
+token as soon as the account is created, before the address is proven.
+`jwt.strategy.ts`, which every authenticated request passes through, checked
+`isActive`, `deletedAt` and the lock, and never `emailVerified`. So anyone could
+register with somebody else's address and use a working session on it without
+ever opening that mailbox. Measured on dev at `e16a0f5`: journey 1, given one
+more step, registered a minted address and called `GET /users/me` with the
+registration's own token - `Expected: 401, Received: 200`.
+
+**A guard on one of two doors guards nothing.** C37 put the "not verified"
+refusal on sign-in, and it was proven. Registration was the other door into the
+same session, and it stood open the whole time. That is the strongest argument
+for why C38 had to be a family rather than a list of routes: a rule checked where
+it was last seen is not a rule, it is a patch on the place it was noticed.
+
+**The shape taken, Visquis's decision.** The check is in `jwt.strategy.ts`, the
+single point every session passes, not in the registration response. An
+unverified account's access token answers 401, tagged `EMAIL_NOT_VERIFIED` like
+the sign-in refusal, with `auth.jwt.emailNotVerified` in the account's language
+(the caller holds the account's token, so this is the holder being told, not a
+stranger). Registration still returns its tokens, as the declared 409 describes;
+they open nothing until the address is verified. `POST /auth/refresh` still
+rotates an unverified account's refresh token, and every access token it mints
+is refused here - noted, not changed.
+
+**Blast radius, counted before shipping (dev, read-only, 30 September, after 12:32Z).**
+1,740 accounts; **13** have `emailVerified` false, all active; **9** of those
+have a password; **0** hold a live refresh token, and 0 have held one of any age
+(494 refresh tokens exist, 429 live, none on an unverified account); 0 had a
+token issued in the last 15 minutes. 12 of the 13 are journey addresses, one is
+not. So the check closes **no session that exists on dev today**. Of 1,184
+accounts registered in the last seven days, 1,178 are verified.
+
+**Who used a session before verifying: nobody legitimate.** The web discards the
+registration tokens and sends the person to the login page with "check your
+inbox"; sign-in refuses an unverified address after the password and, since
+C37, offers "Renvoyer l'email de vérification" beside the refusal. The journeys
+and the browser suites all verify from the mailbox before they use a session.
+
+**The screen: no change needed, and none made.** Someone who has just
+registered was already refused at sign-in until they verified, with a way out.
+C38's rule holds: nothing on the registration or sign-in screens changes, and the
+new refusal is given only to the holder of an account's token, never on an
+answer to a stranger's address.
+
+**Proof, local.** Red first: the new strategy tests failed on today's code - an
+unverified account's session `resolved instead of rejected`, and the user lookup
+did not select `emailVerified`. After: 10 of 10. Mutations, each confirmed
+applied: the check removed - "refuses a session on an address that is not
+verified" fails alone; `emailVerified` dropped from the lookup - first a compile
+error (strict typing refuses the read, so 0 tests ran and the mutation did not
+count), then re-run through a cast - "asks the database for the verification"
+fails alone. **Pending: the journeys against dev after the merge**, where journey
+1's new step is the proof.
+
+**Declared this round, by Visquis's decision: no lockout on reactivate.** Sign-in
+counts wrong passwords and locks the account after five; `POST /auth/reactivate`
+counts nothing and is held only by the route's rate limit. The asymmetry is
+known and accepted as debt, not an oversight: the same password is guarded on one
+route and not the other.
 
 ### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
 

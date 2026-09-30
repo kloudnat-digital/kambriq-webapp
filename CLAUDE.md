@@ -3160,6 +3160,20 @@ key - is stored as a digest and compared by digest** (`hashToken` in
 equality on the unique index. And rows written before the fix can often be
 migrated in place: the values are in the table, which was the problem.
 
+### A check on one door of two guards nothing
+
+From `C39`. C37 made sign-in refuse an unverified address, proved it, and the
+refusal held. Registration answered the same person with an access token before
+the address was proven, and the JWT strategy, which every authenticated request
+passes, never read `emailVerified`. So anybody could hold a working session on
+somebody else's address, and the proven refusal at sign-in protected nothing:
+it guarded the door people were expected to use.
+
+**Put a condition on a session where every session passes** (`jwt.strategy.ts`),
+not where it was noticed. Before shipping a check that closes sessions, count
+them: on dev it closed none (13 unverified accounts, 0 live refresh tokens), and
+that number was read before the change, not after.
+
 ### A remedy does not switch the mitigation back on
 
 From `A67`, after Ulrich's reading of `A56`. When something breaks, somebody
