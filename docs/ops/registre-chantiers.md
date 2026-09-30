@@ -10392,6 +10392,14 @@ refused with any password, expected 401 - the "not verified" answer given before
 the password. It now expects 400 and no verification wording. It runs against
 dev only after the merge, so its first run is the proof.
 
+**And one it did not find, which turned develop red.** Journey 5 made the same
+check a second time - a passwordless super admin logging in, expecting 401 - and
+the search that found journey 3's did not reach it. e16a0f5's journeys failed
+there (`Expected: 401, Received: 400`): C37 working, the assertion stale. The
+repair expects 400 and the invalid-credentials wording; run by hand against dev
+serving e16a0f5 before the pull request, the whole journeys suite passed (29
+passed, 6 skipped). Merging it needs `merge-on-red-develop`, which is Visquis's.
+
 **What remains, listed and not changed.** The lock answer reveals an account that
 somebody has already hammered five times (kept before the password so that a
 correct guess during the lock is not revealed). Other public routes that take an
