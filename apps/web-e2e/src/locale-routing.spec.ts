@@ -55,6 +55,9 @@ for (const locale of LOCALES) {
 }
 
 test('the two locales serve different text at the same route', async ({ page }) => {
+  // A74: `/about` is a Sanity page; without content both locales 404, and two
+  // 404 pages differ by language. Each page must answer 200 before it is compared.
+  test.skip(process.env['E2E_CMS_CONTENT'] !== 'true', CMS_SKIP_REASON);
   /**
    * The property the whole change exists for: one URL, one language.
    *
@@ -62,10 +65,12 @@ test('the two locales serve different text at the same route', async ({ page }) 
    * every edit to the marketing text and still fails if the locale segment
    * stops selecting a catalogue.
    */
-  await page.goto('/fr/about');
+  const frenchResponse = await page.goto('/fr/about');
+  expect(frenchResponse?.status()).toBe(200);
   const french = String(await page.locator('main').textContent());
 
-  await page.goto('/en/about');
+  const englishResponse = await page.goto('/en/about');
+  expect(englishResponse?.status()).toBe(200);
   const english = String(await page.locator('main').textContent());
 
   expect(french.length).toBeGreaterThan(50);
