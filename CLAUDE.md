@@ -3174,6 +3174,20 @@ not where it was noticed. Before shipping a check that closes sessions, count
 them: on dev it closed none (13 unverified accounts, 0 live refresh tokens), and
 that number was read before the change, not after.
 
+### A decision taken is not an action done
+
+From the rounds of 29 and 30 September. A queue said the `merge-on-red-develop`
+label had been applied to #289. It had been decided, not applied: the labels
+read through the API were `[]` at every check, and two rounds waited on a fact
+that did not exist. **An action on GitHub or the infrastructure is proven by
+reading it back, never by the sentence reporting it.**
+
+The label itself is now delegated, under
+`CLAUDE_CODE_AUTH_label-red-develop.md` (workspace root) and its three
+conditions: develop red only on named stale assertions, a pull request repairing
+exactly those, and the affected suite passing by hand against dev on its head.
+Register rule 5 holds the full text.
+
 ### A remedy does not switch the mitigation back on
 
 From `A67`, after Ulrich's reading of `A56`. When something breaks, somebody
