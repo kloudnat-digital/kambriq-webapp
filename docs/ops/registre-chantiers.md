@@ -10242,10 +10242,30 @@ or not - the one flag sign-in refuses on, not a second mechanism.
 **What a person in the grace period sees.** A reset link issued before the
 deletion answers "inactive account"; nothing is written. Their route back is
 `/reactivate` with the password they already have, which the refusal leaves
-unchanged. **What they do not have** - before and after this change alike - is a
-route back without that password: `forgotPassword` sends nothing to an inactive
-account, so someone who deleted their account and forgot their password cannot
-reactivate within the grace period. A decision for Visquis, not changed here.
+unchanged. **What they did not have** - before C35 and after it - was a route back without
+that password: `forgotPassword` sent nothing to an inactive account while
+answering "email sent", and the only way back was an ADMIN_GLOBAL calling
+`POST /users/:id/unblock` on the API, which no screen offers.
+
+**The grace-period route, 30 September.** `forgotPassword` now also serves an
+account deleted by its holder within the grace period, and a reset token issued
+**after** that deletion sets the password and reactivates the account in one
+write. A token issued before the deletion stays refused (C35), as do an account
+past the grace period and one an administrator deactivated - the same rule sign-in
+applies (`isHolderDeletionInGrace`, mirroring `login`). Proof, local: red first,
+the two route tests failing; five mutations, each confirmed applied, each failing
+its own test - forgot for active accounts only; a pre-deletion token accepted;
+the password set and the account left deleted; an administrator's deactivation
+treated as the holder's (which first survived: the fixture had no `deletedAt`, so
+a case carrying both was added); the grace period ignored. The existing pin that
+sent nothing to an account deleted within the grace period encoded the dead end
+and now reads "past its grace period". The I48 guard caught the change: the reset
+read now selects `deletedAt`, so `auth.service.ts` declares one read, not two.
+
+**Found beside it, not fixed.** `login` answers before checking the password: to
+anybody who knows an address it says whether the account is unverified, inactive,
+or deleted within its grace period - and in that last case returns the account's
+internal id and the days remaining.
 
 **C35 proof, local.** `auth.service.spec.ts`. Red first: a deleted account and an
 administrator-deactivated account presenting valid tokens, both

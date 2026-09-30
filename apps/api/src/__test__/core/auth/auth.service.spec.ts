@@ -407,14 +407,57 @@ describe('AuthService', () => {
   // ----- FORGOT / RESET PASSWORD ----- //
 
   describe('forgotPassword', () => {
-    it('C35 - sends nothing to a soft-deleted account, and answers as for anyone', async () => {
+    it('C35 - sends nothing to an account deleted past its grace period, and answers as for anyone', async () => {
       prisma.user.findUnique.mockResolvedValue(
-        buildUser({ isActive: false, deletedAt: new Date(), deactivatedBy: null }),
+        buildUser({
+          isActive: false,
+          deletedAt: new Date(Date.now() - 40 * 86_400_000),
+          deactivatedBy: null,
+        }),
       );
       const result = await service.forgotPassword({ email: 'gone@kambriq.com' });
       expect(result).toHaveProperty('message');
       expect(email.send).not.toHaveBeenCalled();
       expect(prisma.verificationToken.create).not.toHaveBeenCalled();
+    });
+
+    it('sends nothing to an account an administrator deactivated', async () => {
+      prisma.user.findUnique.mockResolvedValue(
+        buildUser({ isActive: false, deletedAt: null, deactivatedBy: 'admin-1' }),
+      );
+      await service.forgotPassword({ email: 'blocked@kambriq.com' });
+      expect(email.send).not.toHaveBeenCalled();
+    });
+
+    /**
+     * The grace period's own route back. Sign-in sends the holder to
+     * /reactivate, which asks for the password; someone who forgot it had no
+     * way back, because this refused every inactive account.
+     */
+    it('sends nothing when a deletion within the grace period also carries an administrator deactivation', async () => {
+      prisma.user.findUnique.mockResolvedValue(
+        buildUser({
+          isActive: false,
+          deletedAt: new Date(Date.now() - 2 * 86_400_000),
+          deactivatedBy: 'admin-1',
+        }),
+      );
+      await service.forgotPassword({ email: 'both@kambriq.com' });
+      expect(email.send).not.toHaveBeenCalled();
+    });
+
+    it('sends a reset link to an account its holder deleted within the grace period', async () => {
+      prisma.user.findUnique.mockResolvedValue(
+        buildUser({
+          isActive: false,
+          deletedAt: new Date(Date.now() - 2 * 86_400_000),
+          deactivatedBy: null,
+        }),
+      );
+      await service.forgotPassword({ email: 'back@kambriq.com' });
+      expect(email.send).toHaveBeenCalledWith(
+        expect.objectContaining({ template: 'passwordReset' }),
+      );
     });
 
     it('sends reset email for valid active user', async () => {
@@ -543,7 +586,7 @@ describe('AuthService', () => {
         },
       });
 
-    it('refuses a valid token held by an account deleted within the grace period, writing nothing', async () => {
+    it('refuses a token issued before the account was deleted, within the grace period, writing nothing', async () => {
       const token = inactiveToken({
         isActive: false,
         deletedAt: new Date(Date.now() - 2 * 86_400_000),
@@ -562,6 +605,51 @@ describe('AuthService', () => {
       const token = inactiveToken({ isActive: false, deletedAt: null, deactivatedBy: 'admin-1' });
       prisma.verificationToken.findUnique.mockResolvedValue(token);
 
+      await expect(
+        service.resetPassword({ token: token.token, newPassword: 'NewStr0ng!Pass' }),
+      ).rejects.toThrow();
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('a token issued after a deletion within the grace period sets the password and reactivates the account', async () => {
+      const deletedAt = new Date(Date.now() - 2 * 86_400_000);
+      const token = buildVerificationToken({
+        type: VerificationTokenType.PASSWORD_RESET,
+        createdAt: new Date(Date.now() - 60_000),
+        user: {
+          id: 'u9',
+          email: 'back@kambriq.com',
+          firstName: 'Back',
+          preferredLanguage: 'fr',
+          isActive: false,
+          deletedAt,
+          deactivatedBy: null,
+        },
+      });
+      prisma.verificationToken.findUnique.mockResolvedValue(token);
+
+      await expect(
+        service.resetPassword({ token: token.token, newPassword: 'NewStr0ng!Pass' }),
+      ).resolves.toHaveProperty('message');
+      const data = (prisma.user.update.mock.calls[0][0] as { data: Record<string, unknown> }).data;
+      expect(data).toMatchObject({ isActive: true, deletedAt: null, deactivatedBy: null });
+    });
+
+    it('refuses a token issued after a deletion past the grace period', async () => {
+      const token = buildVerificationToken({
+        type: VerificationTokenType.PASSWORD_RESET,
+        createdAt: new Date(Date.now() - 60_000),
+        user: {
+          id: 'u9',
+          email: 'late@kambriq.com',
+          firstName: 'Late',
+          preferredLanguage: 'fr',
+          isActive: false,
+          deletedAt: new Date(Date.now() - 40 * 86_400_000),
+          deactivatedBy: null,
+        },
+      });
+      prisma.verificationToken.findUnique.mockResolvedValue(token);
       await expect(
         service.resetPassword({ token: token.token, newPassword: 'NewStr0ng!Pass' }),
       ).rejects.toThrow();

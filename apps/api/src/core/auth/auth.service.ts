@@ -390,7 +390,10 @@ export class AuthService {
     });
     const lang = user?.preferredLanguage || 'fr';
 
-    if (user && user.isActive) {
+    // An account deleted by its holder within the grace period is served too:
+    // its reset link is the route back for a holder who forgot the password,
+    // and consuming it reactivates the account (see resetPassword).
+    if (user && (user.isActive || this.isHolderDeletionInGrace(user))) {
       const token = await this.createVerificationToken(
         user.id,
         VerificationTokenType.PASSWORD_RESET,
@@ -427,6 +430,8 @@ export class AuthService {
             firstName: true,
             preferredLanguage: true,
             isActive: true,
+            deletedAt: true,
+            deactivatedBy: true,
           },
         },
       },
@@ -440,7 +445,15 @@ export class AuthService {
     // C35: the flag sign-in refuses on. A token issued before a deletion or a
     // deactivation stays valid for an hour; it must not set a password on an
     // account that cannot sign in, since reactivation asks only for that password.
-    if (!tokenRecord.user?.isActive) {
+    // An account deleted by its holder within the grace period may come back
+    // through a token issued after the deletion; a token issued before it stays
+    // refused, since reactivation would then rest on a link sent to the account
+    // before its holder chose to leave.
+    const reactivates =
+      !!tokenRecord.user &&
+      this.isHolderDeletionInGrace(tokenRecord.user) &&
+      tokenRecord.createdAt > (tokenRecord.user.deletedAt as Date);
+    if (!tokenRecord.user?.isActive && !reactivates) {
       throw new BadRequestException(this.t('auth.login.inactiveAccount', lang));
     }
     if (tokenRecord.usedAt) {
@@ -459,7 +472,13 @@ export class AuthService {
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: tokenRecord.userId },
-        data: { passwordHash, loginAttempts: 0, lockedUntil: null, emailVerified: true },
+        data: {
+          passwordHash,
+          loginAttempts: 0,
+          lockedUntil: null,
+          emailVerified: true,
+          ...(reactivates ? { isActive: true, deletedAt: null, deactivatedBy: null } : {}),
+        },
       }),
       this.prisma.verificationToken.update({
         where: { id: tokenRecord.id },
@@ -657,6 +676,15 @@ export class AuthService {
     if (!match) return 15 * 864_000_000;
 
     return parseInt(match[1], 10) * (units[match[2]] || 86_400_000);
+  }
+
+  /** Deleted by its holder, not deactivated by an administrator, and still within the grace period. */
+  private isHolderDeletionInGrace(user: {
+    isActive: boolean;
+    deletedAt: Date | null;
+    deactivatedBy: string | null;
+  }): boolean {
+    return !user.isActive && !user.deactivatedBy && this.isWithenGracePeriod(user.deletedAt);
   }
 
   private isWithenGracePeriod(deletedAt: Date | null): boolean {
