@@ -3212,6 +3212,35 @@ nor returns it. Known reads are declared by file, relation and exact count.
 **When a read returns a record through a relation, decide whether the reader
 should see it at all, and if it may, give it the standing too.**
 
+### A public route that takes an address answers alike for every account
+
+From `C37` and `C38`. Sign-in, resend-verification, forgot-password, reactivate
+and the newsletter each told a stranger something about an address: whether it
+had an account, whether that account was verified, blocked or deleted, and, in
+one case, its internal id. The tell was not always the wording. Forgot-password
+gave one sentence to everybody, in the **account's** language, so an English
+account answered in English and an unknown address in French. The language alone
+said the address existed. Each door was found one at a time, and each looked
+closed while its neighbour was open.
+
+**The rule: an unauthenticated route that takes an address from a stranger
+answers the same whatever the account's state, in the request's language.**
+Anything that depends on the state is given only after proof of holding the
+account (the password is checked first), or is sent to the mailbox, where only
+its holder reads it.
+
+`address-routes-answer-alike.spec.ts` finds every `@Public()` handler whose body
+carries an `email` and requires it to be placed:
+
+- equalised, naming the spec that proves every state answers as an unknown
+  address, under a translation mock that shows the language;
+- declared, with the reason it is not (registration's 409, a product decision);
+- reading no account.
+
+A new such route fails the build until somebody decides which one it is. What
+remains is declared rather than closed: a few milliseconds of timing on the
+routes that queue an email for some addresses and not others.
+
 ### An append-only table makes every test fixture permanent
 
 From wave 7 step 1, found by running the database suite a second time.

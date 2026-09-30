@@ -1,5 +1,5 @@
 import { maskEmail } from '@kambriq/common';
-import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SESv2Client, CreateContactCommand } from '@aws-sdk/client-sesv2';
 
@@ -70,8 +70,14 @@ export class NewsletterService {
       );
       this.logger.log('Newsletter subscription registered %o', { email: maskEmail(input.email) });
     } catch (error: unknown) {
+      // C38: an address already on the list is answered as a new one - whether
+      // it is there is not said to whoever types it. The consent already stored
+      // stands; nothing is overwritten.
       if (error instanceof Error && error.name === 'AlreadyExistsException') {
-        throw new ConflictException('This email is already subscribed.');
+        this.logger.log('Newsletter address already subscribed %o', {
+          email: maskEmail(input.email),
+        });
+        return;
       }
       // Propagates other errors. A subscription that fails to store must throw.
       throw error;

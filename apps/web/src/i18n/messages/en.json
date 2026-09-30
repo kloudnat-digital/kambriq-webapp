@@ -743,7 +743,6 @@
       },
       "errors": {
         "title": "Error",
-        "alreadySubscribed": "This email address is already subscribed to our newsletter.",
         "submitFailed": "The subscription did not go through. Your address is kept above: try again in a moment.",
         "submitRefused": "The subscription did not go through: {reason}"
       }

@@ -35,13 +35,13 @@ describe('subscribeNewsletterAction', () => {
     expect(post).toHaveBeenCalledWith('/newsletter/subscribe', input);
   });
 
-  it('reports an already-subscribed address as a refusal the form can name', async () => {
-    post.mockRejectedValue(new ApiError('This email is already subscribed.', 409));
+  it('passes a refusal through with its reason, as not worth retrying', async () => {
+    post.mockRejectedValue(new ApiError('Invalid email address', 400));
 
     await expect(subscribeNewsletterAction(input)).resolves.toEqual({
       success: false,
-      error: 'This email is already subscribed.',
-      status: 409,
+      error: 'Invalid email address',
+      status: 400,
       retryable: false,
     });
   });

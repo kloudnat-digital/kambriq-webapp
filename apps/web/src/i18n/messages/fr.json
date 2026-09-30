@@ -743,7 +743,6 @@
       },
       "errors": {
         "title": "Erreur",
-        "alreadySubscribed": "Cette adresse email est déjà inscrite à notre newsletter.",
         "submitFailed": "L'inscription n'a pas pu aboutir. Votre adresse est conservée ci-dessus : réessayez dans un instant.",
         "submitRefused": "L'inscription n'a pas pu aboutir : {reason}"
       }
