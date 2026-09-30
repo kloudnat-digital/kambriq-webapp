@@ -207,7 +207,7 @@ listed here first.
 | `A68`                          | `EN COURS`          | `POST /auth/verify-email` answered 502 three times (the 25 September journeys, the E2E runs of 2549233 and f65eed0), each right after the test polled the mailbox for seconds. Nothing set the API server's `keepAliveTimeout` (Node default 5 s) while the load balancer keeps an idle connection 60 s (AWS default; `modules/alb` sets none). The API now outlives the load balancer: `keepAliveTimeout` 65 s, `headersTimeout` 66 s (`app/keep-alive.ts`). Consistent with the three 502s, **not confirmed**: the load balancer's access logs are off. Pending: absence of the 502 over enough develop runs to mean something (see the entry)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `C20`                          | `PROUVE`            | SES production access is **granted** in eu-central-1 (review `GRANTED`, case 176441524300857): 50 000 a day, 14 a second, 636 sent in the last 24 h on 28 September. prd is planned in the same account and region, so it inherits it. Account-level suppression on bounce, complaint and optimized; no configuration set, so the API sees no bounce event                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `C24`                          | `PROUVE`            | the application now learns that an address bounced: every SES send names the configuration set, SNS delivers BOUNCE and COMPLAINT events to `POST /email/ses-events`, which verifies the SNS signature and topic and stores one `EmailDeliveryEvent` per recipient, linked to the account; `GET /users/:id` carries the latest. **Proven on dev, 28 September (731d432, infra #71 and #72):** an account registered at the SES mailbox simulator's bounce address showed `BOUNCE Permanent/General` on its admin read 3 seconds after its verification email, the same SES message id in the send and the bounce log lines. Not yet rendered by any screen                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `C25`                          | `DECIDE, A FAIRE`   | take the register and the documents naming gaps out of public view. **Re-decided by Visquis, 29 September: the repositories go private**; nothing is removed from `docs/`. The live register is on the Drive as v02, verified by hash, beside the 4 September copy. The switch is a repository setting and is Visquis's; its cost is C22                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `C25`                          | `PROUVE`            | what the public repository exposes. Decided three times: remove the register (stopped, 28 September - the Drive copy was stale); go private (29 September); **remove three documents, keep the register (30 September)**. Done in f772fcb (#284): `b-audit-inventory`, the 20 September wave note and ADR-004 removed, the SNS test fixtures moved to a placeholder account. Not rotatable, and the history keeps them                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `C26`                          | `PROUVE`            | the payment screen shows the latest bounce or complaint for the client's current address before instructions are sent; a permanent bounce or a complaint holds the send until the operator confirms the client was told another way. **Proven in a browser on dev, 28 September**: a client seeded verified at the SES simulator's bounce address (`prisma/c26-bounce-client.ts`, one upsert, #268), a real reservation, identity review and payment request, a real bounce; the operator screen read `rejetée définitivement depuis le 28 septembre 2026 (Permanent/General)`, the send stayed disabled with a channel and a reason until the box was ticked. Send was not pressed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `C27`                          | `PROUVE`            | verification, reset and email-change tokens were stored in clear, so anyone reading `VerificationToken` held usable reset links. They are now stored as their SHA-256 digest (`hashToken` in `libs/common`, the digest refresh tokens already used) at all three write sites and three read sites; existing rows were hashed in place by migration. **Proven on dev, 28 September (f65eed0, #266):** a verification link issued at 12:21 UTC, before the migration, verified with 200 after it; the same link again 400 (used); a value never issued 400; the journeys' verify, reset and invitation paths green (29 passed)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `C28`                          | `EN COURS`          | nobody can correct a client's email address. Visquis's decision, 28 September: a dedicated role, confirmed on the new address, the old address told at request time, and an append-only record first. Step 1 built: `AdministrativeAct` in core, append-only by trigger, written by nothing yet. Steps 2 (the role) and 3 (the correction) not started. Step 1 applied on dev 29 September (`20260929190000_c28_administrative_act`, migration task `7772c266`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
@@ -3173,7 +3173,7 @@ the job lands on the failed set with its payload intact. `B4` already records th
 ### B1 - the state of the existing payment code - `PROUVE`
 
 **Cost impact: None.** Read-only. Output:
-[`docs/ops/b-audit-inventory.md`](b-audit-inventory.md), section B1.
+`docs/ops/b-audit-inventory.md`, section B1 - removed from the repository on 30 September (C25), kept in its git history.
 
 **No payment has ever been processed, anywhere.** On dev, `sha-1709ec6`: 33
 reservations (27 `CANCELLED`, 5 `PENDING`, 1 `CONFIRMED`), **1** row with
@@ -4930,7 +4930,7 @@ instructions got the wrong answer with the confidence the instruction lends.
 
 Those eight chantiers now have entries above, and the wave note is archived at
 `docs/ops/waves/2026-09-20-wave.md`, frozen, with a banner saying it is not the
-record. It is kept rather than deleted because it carries the working detail an
+record - removed from the repository on 30 September (C25), kept in its git history. It is kept rather than deleted because it carries the working detail an
 entry condenses: the mutation tables, the premises checked one by one, the copy
 approved key by key.
 
@@ -7279,7 +7279,8 @@ you are reading"_. It chose not to rename, and it states the ambiguity instead.
 The row asked for an entry for every open chantier whose detail lived in the
 tracker or in a wave note; `register-is-the-record.spec.ts` pins the ones still
 missing in `NO_ENTRY_YET`. **On 26 September twenty-one were written**, from
-the row, the frozen wave note (`docs/ops/waves/2026-09-20-wave.md`), CLAUDE.md
+the row, the frozen wave note (`docs/ops/waves/2026-09-20-wave.md`, since
+removed, C25), CLAUDE.md
 and the commits on develop - facts with their source named, nothing inferred.
 
 **One remains: `P10`**, whose entry is written in #174, which Visquis holds open
@@ -9780,13 +9781,53 @@ dev, at a simulator address. Still rendered by no screen: the operator's payment
 screen (`payment-detail-content.tsx`, where instructions are sent) is the place
 it matters most.
 
-### C25 - the register leaves public view - `DECIDE, A FAIRE`
+### C25 - what the public repository exposes - `PROUVE`
+
+**Cost impact: None.**
+
+**Third decision, 30 September: remove three documents, keep the register.** After
+the first attempt (removing the register) stopped on a stale Drive copy and the
+second (going private) stopped CI on a spending limit of zero, Visquis kept the
+register and the repositories' visibility his own, and had three documents
+removed. Measured first: seven files reference the register, so removing it would
+break `register-is-the-record.spec.ts`, the host guard, the README and rule 4 of
+`CLAUDE.md`.
+
+**Removed in f772fcb (#284), with the reason for each:**
+
+- `docs/ops/b-audit-inventory.md` (43,354 bytes): SSM parameter paths, including
+  the bootstrap administrators', and the API task role's reach on the production
+  parameters;
+- `docs/ops/waves/2026-09-20-wave.md` (90,495): a frozen note detailing security
+  defects found and fixed;
+- `docs/adr/ADR-004-cicd-github-actions-ecs.md` (30,331): the AWS account id in
+  ECR URLs and the OIDC role layout;
+- the SNS test fixtures (`sns-fixtures.ts` and two specs) now use the AWS example
+  account and a placeholder topic, with the same ARN shape; both specs pass.
+
+After it, the real account id appears in one tracked file, once: the register's
+account audit, kept by decision. The references to the three files - a link and
+five mentions in this register, the ADR index, `deploy-dev.md` and
+`deploy-prd.md` - were closed a round later (they were outside the removal's
+stated scope), each now saying the file was removed and is in the history.
+
+**What it does not achieve.** The account id cannot be rotated, and the public
+history keeps all three files and the id: this closes casual discovery, not a
+determined search. What it does close is easy access to a current list of what is
+still open - which this register itself still carries.
+
+**Rule 4, one round late.** This entry was not written in the removal's commit:
+the scope forbade touching the register, which also forbade the rule that requires
+it. Recorded here rather than left implied.
+
+**The decisions before it are kept below.**
 
 **Cost impact: the repositories' Actions minutes stop being free - see C22.**
 
 **Re-decided by Visquis, 29 September: the repositories go private.** One move
 covers the register, the three other documents that name gaps
-(`b-audit-inventory`, `a7-standards-inventory`, `waves/2026-09-20`) and both
+(`b-audit-inventory`, `a7-standards-inventory`, `waves/2026-09-20` - the first
+and third removed on 30 September, C25) and both
 `CLAUDE.md` files; nothing is removed and no test breaks. The live register is on
 the Drive as v02, verified by hash on both sides, with the 4 September copy left
 beside it. The switch is a repository setting and is Visquis's.
@@ -9814,9 +9855,11 @@ all assume it is here. Three references would also move:
 in `append-only.dbspec.ts`, and `README.md` lines 17 and 967.
 
 **Other documents in `docs/` that name gaps, listed and left in place:**
-`docs/ops/b-audit-inventory.md` (43 KB, the read-only audit of 6 September),
+`docs/ops/b-audit-inventory.md` (43 KB, the read-only audit of 6 September;
+removed on 30 September, C25),
 `docs/ops/a7-standards-inventory.md` (12 KB, the standards gaps) and
-`docs/ops/waves/2026-09-20-wave.md` (90 KB, a frozen working note). Outside
+`docs/ops/waves/2026-09-20-wave.md` (90 KB, a frozen working note; removed on
+30 September, C25). Outside
 `docs/`, both `CLAUDE.md` files describe security posture in detail - the infra
 one names who can read the Terraform state and what the apply role may do.
 

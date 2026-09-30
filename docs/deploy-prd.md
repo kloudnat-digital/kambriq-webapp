@@ -1,6 +1,7 @@
 # Production Deployment
 
-> Full process documented in [ADR-004](./adr/ADR-004-cicd-github-actions-ecs.md).
+> The full process was documented in ADR-004, removed from the repository on 30 September 2026
+> (C25) and kept in its git history.
 
 ## Quick reference
 
