@@ -11,7 +11,7 @@ export const signedNotification = (over: Partial<SnsMessage> = {}, version = '2'
   const base: SnsMessage = {
     Type: 'Notification',
     MessageId: 'm-1',
-    TopicArn: 'arn:aws:sns:eu-central-1:051551940370:kambriq-dev-ses-events',
+    TopicArn: 'arn:aws:sns:eu-central-1:123456789012:example-ses-events',
     Message: '{"eventType":"Bounce"}',
     Timestamp: '2026-09-28T08:00:00.000Z',
     SignatureVersion: version,

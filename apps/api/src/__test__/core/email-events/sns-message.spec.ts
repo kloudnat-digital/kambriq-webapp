@@ -59,7 +59,7 @@ describe('C24 - the signed string is the one SNS signs', () => {
   it('lists a notification without a subject in SNS order, subject omitted', () => {
     expect(stringToSign(signedNotification())).toBe(
       'Message\n{"eventType":"Bounce"}\nMessageId\nm-1\nTimestamp\n2026-09-28T08:00:00.000Z\n' +
-        'TopicArn\narn:aws:sns:eu-central-1:051551940370:kambriq-dev-ses-events\nType\nNotification\n',
+        'TopicArn\narn:aws:sns:eu-central-1:123456789012:example-ses-events\nType\nNotification\n',
     );
   });
 
