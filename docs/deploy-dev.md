@@ -1,6 +1,7 @@
 # Dev Deployment
 
-> Full process documented in [ADR-004](./adr/ADR-004-cicd-github-actions-ecs.md).
+> The full process was documented in ADR-004, removed from the repository on 30 September 2026
+> (C25) and kept in its git history.
 
 ## Quick reference
 
@@ -30,7 +31,7 @@ Same as manual redeploy - supply the previous known-good SHA tags.
 
 ## Required GitHub Environment variables
 
-Set in **Settings → Environments → dev**. See [ADR-004](./adr/ADR-004-cicd-github-actions-ecs.md#github-actions-environment-variables) for the full table.
+Set in **Settings → Environments → dev**. The full table was in ADR-004 (removed, C25).
 
 Key variables: `AWS_REGION`, `ECR_REPO`, `ECR_WEB_REPO`, `ECS_CLUSTER`, `ECS_SERVICE`, `ECS_WEB_SERVICE`, `ECS_TASK_DEFINITION`, `ECS_WEB_TASK_DEFINITION`, `ECS_SUBNETS`, `ECS_SECURITY_GROUPS`, `SMOKE_TEST_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`.
 
