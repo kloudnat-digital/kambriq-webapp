@@ -9521,6 +9521,24 @@ removed. **Not proven by one green run.** To check on the runs that follow: the
 browser job starts after the journeys end, the run's added wall clock (the
 journeys take about 2 minutes), and, over many runs, no `P2028` in the API log.
 
+**Counting from the API log, in CI, 30 September.** The browser's data layer
+retries a failed query once (`retry: 1`), which is what absorbed the 500 of
+30 September at 06:12:43 - the API log shows the same caller answered 200 on the
+same route two seconds later. So a transient 500 is invisible to the page and to
+the browser tests, and the API log is the only complete record. The E2E job's last
+step now reads it: `scripts/ci/api-errors-in-window.sh` counts the lines carrying
+`P2028` or a status of 500 or more between the start of the journeys and the end
+of the browser suite, lists them, and fails the job when there is one. It fails
+closed - a log it cannot read exits 2, so a missing permission cannot pass for a
+clean window. No policy change was needed: the dev role already holds
+`logs:FilterLogEvents` on `/ecs/kambriq-dev-api` (`ReadOneOffTaskLogs`), so the
+step uses filter patterns rather than Logs Insights. It counts every such line in
+the window, the run's own and anybody else's. Proof: its stubbed test (five
+cases, including the fail-closed ones; removing the fail-closed branch fails it),
+and the script itself against the real log - the window holding the P2028 of
+06:12:43 fails, listing it and its 500; the window of f772fcb's sequenced run
+passes with 0. Pending: the step on a develop run.
+
 ### C20 - SES production access - `PROUVE`
 
 **Cost impact: None.** A reading.
