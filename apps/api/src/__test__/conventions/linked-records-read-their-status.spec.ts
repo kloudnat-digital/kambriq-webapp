@@ -34,9 +34,8 @@ const STAND_DOWN_VALUES = /^(CANCELLED|ANNULE|REVOKED|SUSPENDED|REJECTED|REJETE|
 const DECLARED: Record<string, Record<string, { count: number; reason: string }>> = {
   'apps/api/src/core/auth/auth.service.ts': {
     user: {
-      count: 2,
-      reason:
-        'verifyEmail reads only the language of its error message; resetPassword reads isActive, the flag sign-in refuses on, which covers a deleted account (C35)',
+      count: 1,
+      reason: 'verifyEmail reads only the language of its error message',
     },
   },
   'apps/api/src/core/users/users.service.ts': {
