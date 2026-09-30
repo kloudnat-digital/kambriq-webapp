@@ -745,7 +745,9 @@ describe('journey 5 - a passwordless super admin activates through the ordinary 
     const early = await call('POST', '/auth/login', {
       body: { email, password: 'not-the-password-because-there-is-none' },
     });
-    expect(early.status).toBe(401);
+    // C37: refused exactly as an unknown address is, saying nothing of the account.
+    expect(early.status).toBe(400);
+    expect(early.body).not.toContain('vérifier votre adresse email');
   });
 
   it('is made a super admin before it has ever had a password', async () => {

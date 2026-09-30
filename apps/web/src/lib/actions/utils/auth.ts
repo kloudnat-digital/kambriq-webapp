@@ -28,3 +28,17 @@ export const parseReactivationSignal = (message: string): ReactivationSignal | n
   }
   return null;
 };
+
+/**
+ * C37: the message of an EMAIL_NOT_VERIFIED signal from `authorize()`, or null.
+ * The API sends it only after the password was accepted.
+ */
+export const parseUnverifiedSignal = (message: string): string | null => {
+  try {
+    const parsed = JSON.parse(message) as { code?: string; message?: string };
+    if (parsed?.code === 'EMAIL_NOT_VERIFIED') return parsed.message ?? '';
+  } catch {
+    /* not JSON - plain error message */
+  }
+  return null;
+};

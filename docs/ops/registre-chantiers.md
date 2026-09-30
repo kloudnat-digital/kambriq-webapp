@@ -10354,9 +10354,60 @@ returned again - the right-password grace test fails (first as a compile error,
 the type no longer carrying the field; re-run through a spread). The old test
 that reached reactivation without a password now states the password.
 
+**A gap in the first version, found completing it: the language.** Every refusal
+was written in the **account's** language (`user.preferredLanguage`), so an
+English-speaking account was refused in English and an unknown address in French
+
+- the language alone said the address existed. The tests could not see it: the
+  translation mock returned the bare key. They now return `language|key` and give
+  every account English; the four states failed on that alone. Every answer given
+  before the password is proven now uses the request's language (`x-lang`, then
+  `Accept-Language`, via `I18nContext`), never the account's; the web sends its page
+  locale as `x-lang` on sign-in, which it did not send at all - so the API had
+  nothing but the account's language to go on. Mutation: a wrong password answered
+  in the account's language - the four states fail.
+
+**The last door, closed with it.** `POST /auth/resend-verification` answered
+"already verified" for a verified address and "sent" for an unknown one - the
+same enumeration through another route. It now gives one answer for every
+address, in the request's language, and sends the link only to an unverified
+one, in that account's language. Proof: the verified and unverified cases each
+equal to the unknown one. Mutations, each confirmed applied: a verified address
+told so - its case fails alone; an unknown address told so - both cases fail (each
+compares to it); an unverified address answered in its own language - its case
+fails alone.
+
+**The missing button.** `resendVerificationAction` had no caller, so "email not
+verified" left the client in front of a message with no control. The API now tags
+that refusal (`error: EMAIL_NOT_VERIFIED`, reachable only with the right
+password), the web turns it into a 403, and the sign-in screen offers "Renvoyer
+l'email de vérification" beside the message, sending to the address typed. Its
+confirmation is one sentence whatever the API found, as the API's answer is. Web
+proof: after a 403 the control appears and sends to the typed address; after any
+other refusal nothing appears. Mutations: the control after any refusal; the link
+requested for another address - each fails its test.
+
+**A journey that encoded the old order.** Journey 3's passwordless account,
+refused with any password, expected 401 - the "not verified" answer given before
+the password. It now expects 400 and no verification wording. It runs against
+dev only after the merge, so its first run is the proof.
+
 **What remains, listed and not changed.** The lock answer reveals an account that
-somebody has already hammered five times. `POST /auth/resend-verification`
-answers "already verified" for a verified address and "sent" for an unknown one.
+somebody has already hammered five times (kept before the password so that a
+correct guess during the lock is not revealed). Other public routes that take an
+address from a stranger and answer by the account's state:
+
+- `POST /auth` (registration): an existing address gets 409 "email already
+  exists";
+- `POST /auth/forgot-password`: one wording, but in the account's language, and
+  since the grace-period fix an email is sent to some accounts and not others;
+- `POST /auth/reactivate`: 404 for an unknown address, "not eligible" for an
+  account that is not deleted, "grace period expired" - all before the password;
+- `POST /newsletter/subscribe`: 409 "already subscribed" (subscribers, not
+  accounts).
+
+Resend's work is done only for an unverified address (a token and an email), so
+its answer can take a few milliseconds longer there; listed, not equalised.
 
 ### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
 

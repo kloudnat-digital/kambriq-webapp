@@ -764,7 +764,11 @@
       "forgotPassword": "Forgot password?",
       "submit": "Sign in",
       "logIn": "Sign in",
-      "loggingIn": "Signing in..."
+      "loggingIn": "Signing in...",
+      "unverifiedTitle": "Your address has not been verified yet.",
+      "resendVerification": "Send the verification email again",
+      "resendSent": "If this address is waiting for verification, a new link has just been sent to it.",
+      "resendFailed": "The email could not be requested. Try again in a moment."
     },
     "register": {
       "title": "Create your account",

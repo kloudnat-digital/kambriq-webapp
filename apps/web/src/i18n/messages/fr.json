@@ -764,7 +764,11 @@
       "forgotPassword": "Mot de passe oublié ?",
       "submit": "Se connecter",
       "logIn": "Se connecter",
-      "loggingIn": "Connexion en cours..."
+      "loggingIn": "Connexion en cours...",
+      "unverifiedTitle": "Votre adresse n'est pas encore vérifiée.",
+      "resendVerification": "Renvoyer l'email de vérification",
+      "resendSent": "Si cette adresse attend une vérification, un nouveau lien vient d'y être envoyé.",
+      "resendFailed": "L'envoi n'a pas pu être demandé. Réessayez dans un instant."
     },
     "register": {
       "title": "Créez votre compte",

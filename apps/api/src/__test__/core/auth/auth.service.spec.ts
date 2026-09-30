@@ -303,6 +303,15 @@ describe('AuthService', () => {
      * returned to anybody.
      */
     describe('C37 - the answer depends on the account only once the password is right', () => {
+      // The translation mock shows which language answered, and every account
+      // below prefers English: an answer in the account's language would tell a
+      // stranger the address exists.
+      beforeEach(() => {
+        i18n.translate.mockImplementation(
+          (key: string, opts?: { lang?: string }) => `${opts?.lang ?? '?'}|${key}`,
+        );
+      });
+
       const states: Record<string, Record<string, unknown> | null> = {
         unknown: null,
         unverified: { emailVerified: false, isActive: true },
@@ -324,7 +333,12 @@ describe('AuthService', () => {
       const answerTo = async (state: Record<string, unknown> | null) => {
         prisma.user.findUnique.mockResolvedValue(
           state
-            ? buildUserWithRoles(['CLIENT'], { id: 'internal-id-c37', email: dto.email, ...state })
+            ? buildUserWithRoles(['CLIENT'], {
+                id: 'internal-id-c37',
+                email: dto.email,
+                preferredLanguage: 'en',
+                ...state,
+              })
             : null,
         );
         (comparePassword as jest.Mock).mockResolvedValue(false);
@@ -383,6 +397,53 @@ describe('AuthService', () => {
         (comparePassword as jest.Mock).mockResolvedValue(true);
         await expect(service.login(dto)).rejects.toThrow(/inactiveAccount/);
       });
+    });
+  });
+
+  // ----- RESEND VERIFICATION ----- //
+
+  /**
+   * C37 - resend-verification must not say what sign-in no longer says: a
+   * verified, an unverified and an unknown address get one answer, in the
+   * request's language, whichever the account prefers.
+   */
+  describe('C37 - resend-verification answers alike for every address', () => {
+    beforeEach(() => {
+      i18n.translate.mockImplementation(
+        (key: string, opts?: { lang?: string }) => `${opts?.lang ?? '?'}|${key}`,
+      );
+    });
+
+    const answerFor = async (user: Record<string, unknown> | null) => {
+      prisma.user.findUnique.mockResolvedValue(
+        user ? buildUser({ email: 'r@kambriq.com', preferredLanguage: 'en', ...user }) : null,
+      );
+      return service.resendVerificationEmail('r@kambriq.com').then(
+        (body) => ({ ok: true, body }),
+        (e: { getStatus?: () => number; getResponse?: () => unknown }) => ({
+          ok: false,
+          status: e.getStatus?.(),
+          body: e.getResponse?.(),
+        }),
+      );
+    };
+
+    it.each([
+      ['verified', { emailVerified: true }],
+      ['unverified', { emailVerified: false }],
+    ])('a %s address answers as an unknown one', async (_name, user) => {
+      const reference = await answerFor(null);
+      expect(await answerFor(user)).toEqual(reference);
+    });
+
+    it('sends the link only to an unverified address, in its own language', async () => {
+      await answerFor({ emailVerified: true });
+      await answerFor(null);
+      expect(email.send).not.toHaveBeenCalled();
+      await answerFor({ emailVerified: false });
+      expect(email.send).toHaveBeenCalledWith(
+        expect.objectContaining({ template: 'verification', lang: 'en' }),
+      );
     });
   });
 

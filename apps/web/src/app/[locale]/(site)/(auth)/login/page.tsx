@@ -14,13 +14,16 @@ import { Input } from '@/components/ui/input';
 import type { LoginSchema } from '@/validations/schema/auth';
 import { LoginResolver } from '@/validations/schema/auth';
 import { Label } from '@/components/ui/label';
-import { logInAction } from '@/lib/actions/auth';
+import { logInAction, resendVerificationAction } from '@/lib/actions/auth';
 import { useToastStore } from '@/store/toast.store';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
 
 const Login: FC = () => {
   const [showPassword, setShowPassword] = useState(false);
+  // C37: set only when the API accepted the password of an unverified account.
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resend, setResend] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
 
   const t = useTranslations('auth');
   // J12: the schema refuses with a key; the reader sees it in their language.
@@ -46,9 +49,22 @@ const Login: FC = () => {
   const handleSubmit = async (data: LoginSchema) => {
     const result = await logInAction({ ...data, callbackUrl });
     if (result && !result.success) {
-      createToast({ status: 'error', title: result.error });
+      if (result.status === 403) {
+        setUnverifiedEmail(data.email);
+        setResend('idle');
+      } else {
+        createToast({ status: 'error', title: result.error });
+      }
     }
     reset();
+  };
+
+  // The confirmation says the same thing whatever the API found, as the API does.
+  const handleResend = async () => {
+    if (!unverifiedEmail) return;
+    setResend('sending');
+    const result = await resendVerificationAction(unverifiedEmail);
+    setResend(result && !result.success ? 'failed' : 'sent');
   };
 
   const togglePasswordVisibility = () => {
@@ -58,6 +74,25 @@ const Login: FC = () => {
   return (
     <form method="post" className="space-y-6" onSubmit={methods.handleSubmit(handleSubmit)}>
       <FieldGroup>
+        {unverifiedEmail && (
+          <div role="status" className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm">
+            <p className="font-medium">{t('login.unverifiedTitle')}</p>
+            {resend === 'sent' ? (
+              <p className="mt-2">{t('login.resendSent')}</p>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-2"
+                disabled={resend === 'sending'}
+                onClick={handleResend}
+              >
+                {t('login.resendVerification')}
+              </Button>
+            )}
+            {resend === 'failed' && <p className="mt-2">{t('login.resendFailed')}</p>}
+          </div>
+        )}
         {/*
           A33: the email and the password are uncontrolled (`register`), so what
           the visitor typed before hydration survives it. As controlled inputs,
