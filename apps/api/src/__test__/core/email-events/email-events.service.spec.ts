@@ -10,7 +10,7 @@ import { EmailEventsService, parseSesEvent } from '../../../core/email-events/em
 import type { CorePrismaService } from '../../../core/prisma/core-prisma.service';
 import { PEM, signedNotification } from './sns-fixtures';
 
-const TOPIC = 'arn:aws:sns:eu-central-1:051551940370:kambriq-dev-ses-events';
+const TOPIC = 'arn:aws:sns:eu-central-1:123456789012:example-ses-events';
 
 const bounce = (recipients: string[], feedbackId = 'fb-1') =>
   JSON.stringify({
@@ -117,7 +117,7 @@ describe('C24 - a delivery reaches the account only through a verified message f
 
   it('refuses a verified message from another topic', async () => {
     const { service, prisma } = makeService();
-    const other = signedNotification({ TopicArn: 'arn:aws:sns:eu-central-1:051551940370:other' });
+    const other = signedNotification({ TopicArn: 'arn:aws:sns:eu-central-1:123456789012:other' });
     await expect(service.receive(JSON.stringify(other))).rejects.toThrow(ForbiddenException);
     expect(prisma.emailDeliveryEvent.createMany).not.toHaveBeenCalled();
   });
