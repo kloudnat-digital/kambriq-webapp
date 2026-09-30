@@ -547,8 +547,12 @@ jobs:
     name: E2E Tests (dev)
     runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
     timeout-minutes: 15
-    needs: [deploy-dev]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    # A72: after the journeys, never beside them. Run in parallel they saturated
+    # the 0.25 vCPU API task (93 % on 28 September) and a cold pool's connection
+    # missed Prisma's 2 s wait (P2028). `!cancelled()` runs this job whatever the
+    # journeys' result, so a red journeys run does not also hide the browser suite.
+    needs: [deploy-dev, journeys]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && !cancelled() && needs.deploy-dev.result == 'success'
     environment: dev
     steps:
       - uses: actions/checkout@v4
