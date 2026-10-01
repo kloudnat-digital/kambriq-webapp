@@ -231,7 +231,9 @@ listed here first.
 | `C38`                          | `PROUVE`            | the four other public routes that take an address from a stranger, as one family with one rule: forgot-password and reactivate answer every account state exactly as an unknown address, in the request's language (reactivate now checks the password first); the newsletter answers an existing subscriber as a new one; registration's 409 is declared, not equalised. A guard fails on any public route with an `email` body not placed in the family. Proven on dev at a1c6a55 by a probe with a minted account: reactivate with a wrong password answers the known account and an unknown address identically (400, French, request fr, account en); the newsletter answers a second subscription as the first (204); registration's declared 409 stands                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `C40`                          | `EN COURS`          | `POST /auth/refresh` read only `isActive`, so it minted a new pair for a locked or unverified account. Every access token it minted was refused by the strategy since C39, so this was not an access; it would become one the day a path trusted a refresh without the strategy. Both doors now call one function, `assertHoldsSession`, and a guard refuses either door carrying its own copy of the checks. Proven locally. Pending: CI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `C43`                          | `PROUVE`            | email addresses were written in clear into application log lines. Found by comparing the privacy policy's list with real log lines; the pattern search found nine paths where four had been named (invite, queued, suppressed, sent, failed - including the provider's own error text -, console transport, bounce, the bootstrap's lines and the seed's precondition). All mask through `maskEmail`/`redactEmails`; `no-address-in-a-log-line.spec.ts` fails on the next one. Proven on dev: after the deploy of fa321ce (run 36817855510), the API log from 05:19:54Z to 05:39:13Z held 50 masked addresses and 0 in clear; the bootstrap's two lines in the deploy window were masked                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `C44`                          | `EN COURS`          | a security-header value is refused unless we have proven we hold it. `https://kambriq.sanity.studio` was well formed, belonged to another organisation, and would have gone into `frame-ancestors`. `claimed-hosts.ts` lists the Studio origin, the media bucket and the Sanity project we have claimed, each with its proof; `next.config.ts` fails the build on any other value. Proven locally. Pending: CI, then the origin set and read in the served header                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `C44`                          | `PROUVE`            | a security-header value is refused unless we have proven we hold it. `https://kambriq.sanity.studio` was well formed, belonged to another organisation, and would have gone into `frame-ancestors`. `claimed-hosts.ts` lists the Studio origin, the media bucket and the Sanity project we have claimed, each with its proof; `next.config.ts` fails the build on any other value. Proven on dev: run 36853802103 at 84c0d71 green, and dev serves `frame-ancestors https://kambriq-studio.sanity.studio`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `A60`                          | `PROUVE`            | the Sanity webhook is placed and archives on publish. SANITY_WEBHOOK_SECRET generated by Terraform in SSM (`/kambriq/dev/sanity/`) and injected into the API; SANITY_MANAGE_TOKEN declared beside it and set by hand. The hook `kambriq-policy-publish` was created from SSM values; a republish of the French privacy policy was delivered, answered 200 and archived the first PolicySnapshot row. A published change reaches the page in up to fifteen minutes with no rebuild                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `C42`                          | `EN COURS`          | what the 24 October fall to Free changes beyond the quotas: roles narrow to Administrator and Viewer (non-admin members become viewers), private datasets become public, comments, scheduled drafts and AI Assist go, draft retention 90 to 3 days, webhooks 4 to 2, overages blocked instead of billed. None of it touches what dev uses today. Unanswered by the documentation: tokens holding a Growth-only level, and a hook whose creator's token is gone. Pending: those two, measured at the switch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `C39`                          | `PROUVE`            | registration handed out a session before the address was verified, and the JWT strategy never read `emailVerified`: anybody could hold a working session on somebody else's address. The check is now in `jwt.strategy.ts`, where every session passes; an unverified account's token answers 401 `EMAIL_NOT_VERIFIED`. Blast radius on dev: 13 unverified accounts, 0 live sessions. Proven on dev: develop run 36755978153 at a1c6a55, journeys.spec.ts PASS under EXPECTED_SHA, including journey 1's step that the registration token opens nothing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `C33`                          | `PROUVE`            | a revoked newest certificate read as current in the candidate's profile and the administrators' candidate list, which returned its number without its revocation. Each now carries the certificate's state (ACTIVE, REVOKED, EXPIRED) from the shared `isActive`; the overview's certificate read, selected and never returned, is removed. The product question - an older standing certificate when the newest is revoked - is Visquis's, and the code keeps today's answer. Merged (#279, 2c87d58). Proven on develop: run 36702786184 at 96dbbf6, every job green including the delivery journeys and E2E against dev (30 September)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `I48`                          | `PROUVE`            | the land list's reservation count included cancelled ones; the KAMNET agent read returned the sponsor without its suspension. Both fixed. `linked-records-read-their-status.spec.ts` refuses the next read of a linked record that ignores its standing, with 7 known reads declared by exact count. Merged (#279, 2c87d58). Proven on develop: run 36702786184 at 96dbbf6, every job green including the delivery journeys and E2E against dev (30 September)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -10808,7 +10810,12 @@ nothing outside the platform and is what ties a log line to an account when
 diagnosing a security or support case; the logs holding it are deleted within 30
 days. Kept for that reason; Visquis's to overturn.
 
-### C44 - a security-header host must be one we have proven we hold - `EN COURS`
+### C44 - a security-header host must be one we have proven we hold - `PROUVE`
+
+**Proven on dev, 1 October.** The variable was set from the hostname the deploy
+printed, after the claim; develop run 36853802103 at `84c0d71` built the guard and
+the origin together, green, and dev serves
+`frame-ancestors https://kambriq-studio.sanity.studio`.
 
 **Cost impact: None.**
 
@@ -10859,6 +10866,99 @@ header read on dev.
 says the Sanity variables are read at build time, not at run time. The delivery
 client reads them per request (#297). That document is Visquis's and is not
 edited here.
+
+### A60 - the Sanity webhook placed, and the archive seen working - `PROUVE`
+
+**Cost impact: None.** Two standard SSM parameters.
+
+**The two values, created differently on purpose** (kambriq-infra #73, #74):
+
+- `/kambriq/dev/sanity/SANITY_WEBHOOK_SECRET` - a `random_password` written as a
+  SecureString with `ignore_changes`, injected into the API task. Every plan
+  showed it as `(sensitive value)`; it appears in no log or commit.
+- `/kambriq/dev/sanity/SANITY_MANAGE_TOKEN` - declared with a placeholder and
+  `ignore_changes`, its value written by hand in the console (version 2,
+  15:01:16Z). It never reaches the state or any task: the upsert script is its
+  only reader (both task definitions' `secrets` were read; neither names it).
+
+The first apply stopped on the token parameter - a tag value with a comma, which
+SSM refuses - and #74 replaced the comma; its plan was one creation and nothing
+else.
+
+**The API reads the secret.** Before the redeploy an unsigned delivery answered
+503 "The CMS webhook is not configured" (12:40:03Z); after it, 401 "Missing
+webhook signature", and a forged one 401 "Invalid webhook signature".
+
+**The hook.** `upsert-policy-webhook.ts`, both values read from SSM into the
+environment and the output passed through a filter that masks them: `--check`
+found no hook (15:03:36Z), the write created `kambriq-policy-publish`
+(`4IrGRWaXrbGn82jt`, on create and update, filter `_type == "legalPolicy"`), and
+the second `--check` found no drift.
+
+**The archive, seen working.** `legalPolicy-legal-privacy-fr` was republished
+with its content unchanged (revision `JvPYpz8fI9X3Uqv2WspqAW`, 15:04:35Z) - no
+test text, because every delivery is a permanent row. Sanity delivered it, the
+API answered 200 and logged "Archived legal-privacy (fr) at revision
+JvPYpz8fI9X3Uqv2WspqAW" with the signature header redacted, and the first
+`PolicySnapshot` row exists: `51e43fe4-e14c-4a16-bfa7-fb24783017a6`,
+`legalPolicy-legal-privacy-fr`, `fr`, `legal-privacy`, published
+2026-10-18T23:00:00Z, archived 2026-10-01T15:04:36.863Z, 2 091 characters of
+rendered HTML opening on the new section 1. One row in the table.
+
+**A publish reaches the page with no rebuild, in up to fifteen minutes - not at
+once.** `CMS_REVALIDATE_SECONDS` is 900 and nothing calls `revalidateTag`, a
+documented choice in `libs/common/src/cms/delivery.ts`; the webhook archives and
+does not touch the web's cache. Measured on `contentPage-about-fr` with a marker
+sentence, the web image `sha-84c0d71` unchanged throughout: visible 789 s after
+the publish, gone 911 s after the restore. The first attempt watched for 100 s,
+saw nothing, and is why the window was read before the claim was made.
+
+**The token is short-lived, and what its expiry does and does not do.** An expired
+token can no longer read or modify the hook. Deliveries do not use it: the hook
+stores its `secret` as one of its own fields and signs each delivery with it.
+**One thing the documentation does not settle:** the hook records
+`createdByUserId` - the token's robot user - and no page read says whether a hook
+outlives its creator's token. Expected to keep delivering; the first policy
+published after the expiry is the measurement. Once expired, the parameter
+should hold the placeholder again rather than a dead credential - a write to SSM,
+Visquis's. Nothing else reads it.
+
+**And the token can read the secret.** The Management API returns the hook's
+`secret` in clear to a holder of a Developer token. Short expiry limits that
+window; it is one more reason the token is not kept.
+
+**Corrected:** the script's header said "Administrator rights"; the token dialog
+has no such level, and Developer is the one that manages webhooks. The READMEs
+now name the SSM paths. No other file in either repository made the claim.
+
+### C42 - what the fall to Free changes, beyond its quotas - `EN COURS`
+
+**Cost impact: None** - the decision is to let the trial end on about 24 October.
+
+**What narrows** (Sanity's pricing page and Growth-trial page, read 1 October):
+
+- **roles:** Free has two, Administrator and Viewer; Growth has five. At the
+  switch "all team members with non-admin roles will be converted to viewers".
+  The project has one member;
+- **datasets:** Free is public only, so private datasets become public;
+  `production` is already public;
+- **comments, scheduled drafts and AI Assist** stop; tasks are listed for Growth
+  only. The Studio loads `structureTool` and `visionTool`, nothing else;
+- **draft retention:** 3 days instead of 90. The archive stores rendered bytes,
+  not `_rev` pointers, for this reason;
+- **webhooks:** 2 GROQ-powered instead of 4. One is used;
+- **overages are blocked, not billed.** 1 M CDN and 250 k API requests a month,
+  identical on both plans; the web caches each document 900 s, so one web task
+  asks for each of the sixteen at most 96 times a day;
+- documents 10 k instead of 25 k (28 in the dataset, twelve of them Sanity's
+  own); seats 20 instead of 50.
+
+**What the documentation does not answer:** what becomes of an **API token**
+holding a Growth-only level such as Developer (the trial page speaks of members,
+not tokens); what happens to a hook beyond the Free count, or to a hook whose
+creator's token is gone; how long a webhook's attempt log is kept. The first two
+are measured at the switch: re-run `upsert-policy-webhook.ts --check` with a
+fresh token, and publish one policy to see a row arrive.
 
 ### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
 
