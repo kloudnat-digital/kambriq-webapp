@@ -3206,6 +3206,16 @@ announced them.
   thirty-one rounds, and the last one proves the file was read to the end. A file
   found stale against the repository says so in its own block.
 
+### An address in a log line is a promise the privacy policy has to keep
+
+From `C43`. The privacy policy lists what the logs keep, so a log line is part of
+a published statement. Nine paths wrote a recipient's address in clear - four had
+been named, the pattern found five more, one of them inside a provider's error
+text. **Log an address only through `maskEmail`, and free text you did not
+compose through `redactEmails`.** `no-address-in-a-log-line.spec.ts` reads every
+logging call and fails on the next one. And count before you report: "433
+addresses" was lines, not people.
+
 ### A remedy does not switch the mitigation back on
 
 From `A67`, after Ulrich's reading of `A56`. When something breaks, somebody

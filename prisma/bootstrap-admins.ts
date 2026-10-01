@@ -28,6 +28,7 @@ import { planBootstrap } from '../libs/common/src/bootstrap/bootstrap-plan';
 import { issueVerificationToken } from '../libs/common/src/auth/verification-token';
 import { VerificationTokenType } from '../libs/common/src/constants/core';
 import { QUEUES } from '../libs/common/src/constants/queue';
+import { maskEmail } from '../libs/common/src/utils/log-redact';
 import { redisConnectionOptions } from '../libs/common/src/redis/redis-connection';
 import { EmailService } from '../libs/common/src/email/email.service';
 import { Queue } from 'bullmq';
@@ -181,12 +182,13 @@ async function bootstrapAccount(slot: string, identity: Identity): Promise<Outco
     if (plan.grantRole) await grantSuperAdmin(created.id);
     await sendVerificationEmail(created.id, email, user.firstName);
     console.log(
-      `  [${slot}] created  ${email}  role=${SUPER_ADMIN_ROLE} grantedBy=${GRANTED_BY} verification-email=queued`,
+      `  [${slot}] created  ${maskEmail(email)}  role=${SUPER_ADMIN_ROLE} grantedBy=${GRANTED_BY} verification-email=queued`,
     );
     return 'created';
   }
 
-  if (!existing) throw new Error(`plan said ${plan.action} but no row was read for ${email}`);
+  if (!existing)
+    throw new Error(`plan said ${plan.action} but no row was read for ${maskEmail(email)}`);
 
   /**
    * Resend the verification email on subsequent runs only if the user remains
@@ -197,12 +199,12 @@ async function bootstrapAccount(slot: string, identity: Identity): Promise<Outco
     await sendVerificationEmail(existing.id, email, user.firstName);
     // Says what it did, not what the plan called it. An "unchanged" line next to
     // a queued email is two statements that contradict each other.
-    console.log(`  [${slot}] re-sent  ${email}  verification-email=queued`);
+    console.log(`  [${slot}] re-sent  ${maskEmail(email)}  verification-email=queued`);
     if (plan.action === 'unchanged') return 'updated';
   }
 
   if (plan.action === 'unchanged') {
-    console.log(`  [${slot}] unchanged ${email}  (no write issued)`);
+    console.log(`  [${slot}] unchanged ${maskEmail(email)}  (no write issued)`);
     return 'unchanged';
   }
 
@@ -216,7 +218,7 @@ async function bootstrapAccount(slot: string, identity: Identity): Promise<Outco
 
   if (plan.grantRole) await grantSuperAdmin(existing.id);
 
-  console.log(`  [${slot}] updated  ${email}  fields=${plan.changedFields.join(',')}`);
+  console.log(`  [${slot}] updated  ${maskEmail(email)}  fields=${plan.changedFields.join(',')}`);
   return 'updated';
 }
 
@@ -357,7 +359,7 @@ async function verify(created: Set<string>, emails: string[]): Promise<void> {
     });
 
     if (!user) {
-      problems.push(`${email}: no row after the run`);
+      problems.push(`${maskEmail(email)}: no row after the run`);
       continue;
     }
     const grant = user.userRoles.find((ur) => ur.role.code === SUPER_ADMIN_ROLE);
@@ -383,10 +385,10 @@ async function verify(created: Set<string>, emails: string[]): Promise<void> {
      * everything that has happened to the row since.
      */
     if (!grant) {
-      problems.push(`${email}: does not hold ${SUPER_ADMIN_ROLE}`);
+      problems.push(`${maskEmail(email)}: does not hold ${SUPER_ADMIN_ROLE}`);
     } else if (created.has(email) && grant.grantedBy !== GRANTED_BY) {
       problems.push(
-        `${email}: this run created the account but grantedBy is ` +
+        `${maskEmail(email)}: this run created the account but grantedBy is ` +
           `${String(grant.grantedBy)}, expected ${GRANTED_BY}`,
       );
     }
@@ -395,9 +397,9 @@ async function verify(created: Set<string>, emails: string[]): Promise<void> {
     // column is still null would turn a working account into a failed
     // bootstrap - the guard breaking on exactly the outcome it wants.
     if (created.has(email) && user.passwordHash !== null) {
-      problems.push(`${email}: passwordHash is not null on a freshly created account`);
+      problems.push(`${maskEmail(email)}: passwordHash is not null on a freshly created account`);
     }
-    if (!user.profile) problems.push(`${email}: has no profile row`);
+    if (!user.profile) problems.push(`${maskEmail(email)}: has no profile row`);
   }
 
   if (problems.length > 0) {

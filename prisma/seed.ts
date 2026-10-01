@@ -9,6 +9,8 @@ import {
 import { restoredParcelStatus } from './seed-data/parcel-status';
 import { SEED_ROLES, seedRoleId } from './seed-data/roles';
 import { describeKbsSettings, seedKbsSettings } from './kbs-settings-apply';
+import { maskEmail } from '@kambriq/common';
+import { maskEmail } from '@kambriq/common/utils/log-redact';
 /**
  * Database seed script.
  * Idempotent execution (UUID-keyed upserts).
@@ -276,7 +278,7 @@ async function seedCore() {
       `Core seed precondition failed: ${displaced.length} seeded account(s) exist under unexpected IDs. ` +
         `Cross-database fixtures would dangle without strictly matched UUIDs:\n` +
         displaced
-          .map((u) => `  ${u.email}: expected ${u.id}, found ${byEmail.get(u.email)}`)
+          .map((u) => `  ${maskEmail(u.email)}: expected ${u.id}, found ${byEmail.get(u.email)}`)
           .join('\n') +
         `\nExecute \`pnpm run db:reset\` to clear legacy schema state.`,
     );

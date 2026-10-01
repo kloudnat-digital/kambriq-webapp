@@ -679,7 +679,7 @@ export class UsersService {
       args: { firstName, setPasswordUrl },
     });
 
-    this.logger.log(`Client user created and invite sent to ${normalizedEmail}`);
+    this.logger.log(`Client user created and invite sent to ${maskEmail(normalizedEmail)}`);
     return { id: newUser.id, email: newUser.email, isNew: true };
   }
 

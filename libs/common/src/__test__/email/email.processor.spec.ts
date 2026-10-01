@@ -124,7 +124,9 @@ describe('EmailProcessor: sending', () => {
 
     const lines = log.mock.calls.map((c) => String(c[0]));
     expect(lines.some((l) => l.includes('ses-message-id-123'))).toBe(true);
-    expect(lines.some((l) => l.includes('alice@example.com'))).toBe(true);
+    // C43: the recipient is identified, masked, and never written in clear.
+    expect(lines.some((l) => l.includes('al***@example.com'))).toBe(true);
+    expect(lines.some((l) => l.includes('alice@example.com'))).toBe(false);
   });
 
   it('reports the SES MessageId on success', async () => {

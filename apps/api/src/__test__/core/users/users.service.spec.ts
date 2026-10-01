@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Logger } from '@nestjs/common';
 import { RoleCode } from '@kambriq/common';
 import { UsersService } from '../../../core/users/users.service';
 import { CorePrismaService } from '../../../core/prisma/core-prisma.service';
@@ -974,6 +974,19 @@ describe('UsersService', () => {
         expect.objectContaining({ data: { userId: 'new-1', roleId: 'role-c' } }),
       );
       expect(email.send).toHaveBeenCalledWith(expect.objectContaining({ template: 'inviteUser' }));
+    });
+
+    it('C43 - logs the invite with the address masked, never in clear', async () => {
+      arrangeNewUser();
+      prisma.role.findUnique.mockResolvedValue(buildRole(RoleCode.CLIENT, { id: 'role-c' }));
+      const log = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+
+      await service.findOrCreateClientUser('new@test.com', 'Jane', 'Smith');
+
+      const lines = log.mock.calls.flat().map(String).join('\n');
+      expect(lines).toContain('ne***@test.com');
+      expect(lines).not.toContain('new@test.com');
+      log.mockRestore();
     });
 
     it('fails loudly when the client role is missing, instead of creating a roleless user', async () => {
