@@ -7996,19 +7996,40 @@ text:**
   `*[_id == $id][0]` with no date filter - and a consent taken before then binds
   to that revision, which is the one served (see C41).
 
-**Held for Visquis's wording, not written:** the privacy policy's retention
-(block 5) and cookie (block 9) paragraphs. The texts proposed in the brief were
-checked against the site and each is incomplete in the other direction:
+**The privacy policy, sections 1, 3 and 5 (blocks 1, 5, 9 of both languages),
+rewritten 1 October on Visquis's decision.** The texts first proposed were each
+checked against the site and corrected before writing:
 
-- every page on dev sets **three** cookies on an anonymous visitor -
-  `NEXT_LOCALE`, `__Host-authjs.csrf-token` and `__Secure-authjs.callback-url` -
-  and the session cookie is added at sign-in. "Only the language cookie and the
-  session cookie" would be false;
-- the web access line holds the time, method, URL (query masked), the visitor's
-  address, the account id when signed in **and the user agent**; the API's holds
-  the same with the request headers (authorization and cookie redacted). A list
-  that omits the browser identification hides a field the site keeps. All three
-  dev log groups keep 7 days, so "at most 30 days" is true on dev.
+- **cookies:** every page on dev sets three cookies on an anonymous visitor -
+  `NEXT_LOCALE`, `__Host-authjs.csrf-token`, `__Secure-authjs.callback-url` - and
+  the session cookie is added at sign-in (curl on `/fr`, `/en`, `/fr/login`,
+  `/fr/register`). The text names the four, as "necessary to operate and secure
+  the site";
+- **section 1** no longer collects "browsing data to improve our services": that
+  was the analytics claim section 5 stopped making, one paragraph up;
+- **retention:** the list was compared against **the keys of real lines** in
+  `/ecs/kambriq-dev-api` and `/ecs/kambriq-dev-web` (60 forwarded API requests
+  and the web's access lines, 30 September - 1 October). Beyond the fields first
+  proposed, the logs keep the response's status and duration (`res.statusCode`,
+  `responseTime`), and **operational event lines that carry an account id and,
+  in four code paths, an email address in clear** - "Client user created and
+  invite sent to", `Email queued {"to"}`, `Update email suppressed {"to"}`, and the
+  bootstrap's "unchanged" line: 433 non-test addresses in six days. The list now
+  names both. "Parameter values are masked" was true except for the six keys
+  `LOGGED_QUERY_KEYS` keeps (`page`, `limit`, `depth`, `sort`, `order`,
+  `status`), so the exception is written; `authorization` was read in 200 stored
+  lines and every one carries the redaction marker.
+
+**C17 now backs a published sentence.** The policy says "at most 30 days"; dev
+keeps 7 on all three log groups, and production's 30 is C17's to deliver. The
+public text describes the service as offered, not its test environment, so
+production must enforce 30 days before it opens - C17 is no longer only an
+infrastructure subject.
+
+**Found, not fixed, needs a number:** email addresses written in clear into
+application log lines. Masking them (`maskEmail` already exists in
+`libs/common`) would let the policy drop that clause; until then the clause is
+what makes the paragraph true.
 
 **The import itself waits on three actions that are his:** `npx sanity login` in
 `studio/`, the project id with the five repository variables, and
