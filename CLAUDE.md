@@ -3231,6 +3231,15 @@ reader needs an `ARG` before `next build`; a run-time reader needs the value in
 the running container (`ENV` in the production stage, or the task definition).
 `build-vars-reach-the-image.spec.ts` now holds both lists.
 
+### A well-formed host is not an owned host
+
+From `C44`. `https://kambriq.sanity.studio` passed every shape rule - https, one
+label, no wildcard - and belonged to another organisation; set as the Studio
+origin, it would have let a stranger's Studio frame the site. A shape check
+answers "could this be ours", never "is it". **A value that feeds a security
+header is refused unless it is on `claimed-hosts.ts`, with the proof of the
+claim**, and the order is claim, list, set - never set, then check who holds it.
+
 ### A remedy does not switch the mitigation back on
 
 From `A67`, after Ulrich's reading of `A56`. When something breaks, somebody

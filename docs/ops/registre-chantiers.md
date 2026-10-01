@@ -230,7 +230,8 @@ listed here first.
 | `C37`                          | `PROUVE`            | sign-in answered before checking the password: an unknown address, an unverified, blocked or grace-period account, and an active one with a wrong password each answered differently, and a grace-period account returned its internal id. Now every wrong password answers exactly as an unknown address (400, invalid credentials); the reason is given only once the password is right, and no id is returned. Proven on dev: develop run 36744414995 at bb1a327 (C37 with its journey-5 repair #289), journeys.spec.ts PASS under EXPECTED_SHA, journeys 3 and 5 included                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `C38`                          | `PROUVE`            | the four other public routes that take an address from a stranger, as one family with one rule: forgot-password and reactivate answer every account state exactly as an unknown address, in the request's language (reactivate now checks the password first); the newsletter answers an existing subscriber as a new one; registration's 409 is declared, not equalised. A guard fails on any public route with an `email` body not placed in the family. Proven on dev at a1c6a55 by a probe with a minted account: reactivate with a wrong password answers the known account and an unknown address identically (400, French, request fr, account en); the newsletter answers a second subscription as the first (204); registration's declared 409 stands                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `C40`                          | `EN COURS`          | `POST /auth/refresh` read only `isActive`, so it minted a new pair for a locked or unverified account. Every access token it minted was refused by the strategy since C39, so this was not an access; it would become one the day a path trusted a refresh without the strategy. Both doors now call one function, `assertHoldsSession`, and a guard refuses either door carrying its own copy of the checks. Proven locally. Pending: CI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `C43`                          | `EN COURS`          | email addresses were written in clear into application log lines. Found by comparing the privacy policy's list with real log lines; the pattern search found nine paths where four had been named (invite, queued, suppressed, sent, failed - including the provider's own error text -, console transport, bounce, the bootstrap's lines and the seed's precondition). All mask through `maskEmail`/`redactEmails`; `no-address-in-a-log-line.spec.ts` fails on the next one. Proven locally. Pending: the dev log read again after the deploy                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `C43`                          | `PROUVE`            | email addresses were written in clear into application log lines. Found by comparing the privacy policy's list with real log lines; the pattern search found nine paths where four had been named (invite, queued, suppressed, sent, failed - including the provider's own error text -, console transport, bounce, the bootstrap's lines and the seed's precondition). All mask through `maskEmail`/`redactEmails`; `no-address-in-a-log-line.spec.ts` fails on the next one. Proven on dev: after the deploy of fa321ce (run 36817855510), the API log from 05:19:54Z to 05:39:13Z held 50 masked addresses and 0 in clear; the bootstrap's two lines in the deploy window were masked                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `C44`                          | `EN COURS`          | a security-header value is refused unless we have proven we hold it. `https://kambriq.sanity.studio` was well formed, belonged to another organisation, and would have gone into `frame-ancestors`. `claimed-hosts.ts` lists the Studio origin, the media bucket and the Sanity project we have claimed, each with its proof; `next.config.ts` fails the build on any other value. Proven locally. Pending: CI, then the origin set and read in the served header                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `C39`                          | `PROUVE`            | registration handed out a session before the address was verified, and the JWT strategy never read `emailVerified`: anybody could hold a working session on somebody else's address. The check is now in `jwt.strategy.ts`, where every session passes; an unverified account's token answers 401 `EMAIL_NOT_VERIFIED`. Blast radius on dev: 13 unverified accounts, 0 live sessions. Proven on dev: develop run 36755978153 at a1c6a55, journeys.spec.ts PASS under EXPECTED_SHA, including journey 1's step that the registration token opens nothing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `C33`                          | `PROUVE`            | a revoked newest certificate read as current in the candidate's profile and the administrators' candidate list, which returned its number without its revocation. Each now carries the certificate's state (ACTIVE, REVOKED, EXPIRED) from the shared `isActive`; the overview's certificate read, selected and never returned, is removed. The product question - an older standing certificate when the newest is revoked - is Visquis's, and the code keeps today's answer. Merged (#279, 2c87d58). Proven on develop: run 36702786184 at 96dbbf6, every job green including the delivery journeys and E2E against dev (30 September)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `I48`                          | `PROUVE`            | the land list's reservation count included cancelled ones; the KAMNET agent read returned the sponsor without its suspension. Both fixed. `linked-records-read-their-status.spec.ts` refuses the next read of a linked record that ignores its standing, with 7 known reads declared by exact count. Merged (#279, 2c87d58). Proven on develop: run 36702786184 at 96dbbf6, every job green including the delivery journeys and E2E against dev (30 September)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -10743,7 +10744,14 @@ states and "refreshTokens calls the shared rule" fail, 5 failed; a local copy of
 one check (`.lockedUntil`) added beside the call - "reads no standing field
 itself" fails alone, `Received: ".lockedUntil"`.
 
-### C43 - no email address in a log line - `EN COURS`
+### C43 - no email address in a log line - `PROUVE`
+
+**Proven on dev, 1 October.** After the deploy of `fa321ce` (run 36817855510),
+the API log from 05:19:54Z to 05:39:13Z held 50 masked addresses and 0 in clear,
+from the same paths that wrote them in clear before (invite, sent, suppressed,
+reset); the bootstrap's two lines in the deploy window were masked too. The
+masked count is the control: without it a zero could have meant the pattern
+could not see the lines.
 
 **Cost impact: None.**
 
@@ -10799,6 +10807,58 @@ data and the policy names it. It is also an internal identifier that means
 nothing outside the platform and is what ties a log line to an account when
 diagnosing a security or support case; the logs holding it are deleted within 30
 days. Kept for that reason; Visquis's to overturn.
+
+### C44 - a security-header host must be one we have proven we hold - `EN COURS`
+
+**Cost impact: None.**
+
+**The case.** `SANITY_STUDIO_ORIGIN=https://kambriq.sanity.studio` was given to
+set and was set. `studio-origin.ts` checked its **shape** - https, one label,
+`.sanity.studio`, no wildcard - and it passed. The name belonged to another
+organisation (`sanity deploy`: "Studio hostname "kambriq" is already taken"; it
+redirects into `@ods9jkbiv`), so `frame-ancestors` would have let a stranger's
+Studio frame this site. The check that would have caught it existed, and was
+placed after the variable was live.
+
+**The rule, inverted.** A value that feeds a security header is refused unless
+it is on a reviewed list of things we have proven we hold, with the proof.
+`apps/web/src/lib/security/claimed-hosts.ts` lists three kinds, each one
+globally claimable:
+
+- the Studio origin (`frame-ancestors`): `https://kambriq-studio.sanity.studio`,
+  claimed by `sanity deploy` for project `4c3y0546`, which printed "Studio
+  deployed to https://kambriq-studio.sanity.studio/" (11:03:54Z);
+- the media bucket (CSP `img-src`, the image optimizer):
+  `kambriq-media-dev.s3.eu-central-1.amazonaws.com`, proven by
+  `s3api head-bucket --expected-bucket-owner 051551940370` (11:04:19Z);
+- the Sanity project (`cdn.sanity.io/images/<id>/`): `4c3y0546`, listed by
+  `sanity projects list` as the logged-in owner (05:59:11Z).
+
+`next.config.ts` calls `assertSecurityHostsClaimed(process.env)` at module scope,
+where the headers are frozen, so an unlisted value fails the build.
+
+**How it knows we hold a host: it does not, on its own.** CI holds no Sanity
+credentials and should not, and an AWS or DNS lookup at build time would make
+the build depend on the network. So the honest answer is the one written in the
+file: **an explicit, reviewed list, edited by a person after a claim, with the
+proof beside each entry.** It is still inverted - an unlisted value is refused,
+not allowed - and the order it forces is the one that was missing: claim, then
+list, then set.
+
+**Proof, local.** `next build` with
+`SANITY_STUDIO_ORIGIN=https://kambriq.sanity.studio` exits 1 with "names a host
+this platform has not proven it holds"; the spec refuses that value and accepts
+`https://kambriq-studio.sanity.studio`, refuses a stranger's bucket and project
+id and accepts ours, asks nothing of an unset variable, requires a dated proof on
+every entry, and requires `next.config.ts` to call the assertion. The shape check
+alone still accepts the foreign origin, and the spec says so - that is the hole.
+**Pending:** CI, then the variable set from the measured hostname and the served
+header read on dev.
+
+**A half-truth in a reference document.** `ops_kambriq_sanity-branchement_v01.md`
+says the Sanity variables are read at build time, not at run time. The delivery
+client reads them per request (#297). That document is Visquis's and is not
+edited here.
 
 ### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
 
