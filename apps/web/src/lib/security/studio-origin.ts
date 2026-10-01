@@ -35,7 +35,7 @@ export function studioOrigin(env: NodeJS.ProcessEnv): string | null {
   if (!STUDIO_ORIGIN.test(raw)) {
     throw new Error(
       `${STUDIO_ORIGIN_VAR} must be a literal Studio origin such as ` +
-        `https://kambriq.sanity.studio - with the scheme, without a path, and ` +
+        `https://kambriq-studio.sanity.studio - with the scheme, without a path, and ` +
         `never a wildcard. Received: ${raw}`,
     );
   }

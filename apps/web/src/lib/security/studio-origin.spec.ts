@@ -28,15 +28,15 @@ describe('the frame-ancestors directive', () => {
   });
 
   it('names exactly the configured Studio origin, and nothing else', () => {
-    expect(frameAncestors(env('https://kambriq.sanity.studio'))).toBe(
-      'frame-ancestors https://kambriq.sanity.studio',
+    expect(frameAncestors(env('https://kambriq-studio.sanity.studio'))).toBe(
+      'frame-ancestors https://kambriq-studio.sanity.studio',
     );
   });
 
   it("does not add 'self'", () => {
     // Nothing on this origin frames its own pages. A source nothing uses is how
     // an allowlist becomes a list of things somebody once thought might help.
-    expect(frameAncestors(env('https://kambriq.sanity.studio'))).not.toContain("'self'");
+    expect(frameAncestors(env('https://kambriq-studio.sanity.studio'))).not.toContain("'self'");
   });
 
   it('refuses a wildcard, which is the reason this file exists', () => {
