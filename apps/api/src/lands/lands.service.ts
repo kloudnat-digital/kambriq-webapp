@@ -1,6 +1,12 @@
 import { I18nService } from 'nestjs-i18n';
 import slugify from 'slugify';
-import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import {
   CreateLandDto,
   UpdateLandDto,
@@ -14,9 +20,12 @@ import {
   LandReservationStatus,
   LandStatus,
   PaginationQuery,
+  REAL_TITLES,
+  REAL_TITLES_FILE,
   StorageService,
   TIMESTAMP_SORTS,
   buildPaginatedResponse,
+  isListedTitle,
   sortField,
 } from '@kambriq/common';
 import { LandsPrismaService } from './prisma/lands-prisma.service';
@@ -41,6 +50,8 @@ export class LandsService {
     if (existingSlug) {
       throw new ConflictException(this.t('lands.land.slugTaken'));
     }
+
+    this.assertTitleListed(dto.titleNumber);
 
     // Check title number uniqueness (if provided)
     if (dto.titleNumber) {
@@ -97,6 +108,8 @@ export class LandsService {
   // ----- Admin: Update Land ----- //
   async update(landId: string, dto: UpdateLandDto, adminUserId: string) {
     const land = await this.findByIdOrThrow(landId);
+
+    this.assertTitleListed(dto.titleNumber);
 
     // Check title number uniqueness if changing
     if (dto.titleNumber && dto.titleNumber !== land.titleNumber) {
@@ -535,6 +548,22 @@ export class LandsService {
    */
   private generateSlug(title: string): string {
     return slugify(title, { lower: true, strict: true });
+  }
+
+  /**
+   * C16 - a title is written only if the reviewed registry lists it.
+   *
+   * The shape (P24) cannot tell an invented title from a real one; the registry
+   * can. Empty or absent is allowed - a null title is better than a wrong one.
+   * The refusal names the file to edit, never the value it received or one it
+   * would accept: an error that echoes teaches the next caller how to guess.
+   */
+  private assertTitleListed(titleNumber: string | null | undefined): void {
+    if (!titleNumber) return;
+    if (isListedTitle(titleNumber, REAL_TITLES)) return;
+    throw new UnprocessableEntityException(
+      this.t('lands.land.titleNotInRegistry', 'fr', { file: REAL_TITLES_FILE }),
+    );
   }
 
   private t(key: string, lang = 'fr', args?: Record<string, unknown>): string {

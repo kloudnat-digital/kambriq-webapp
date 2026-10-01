@@ -67,7 +67,7 @@ describe('P24 - the seeded titles', () => {
 
   // C16: the eight seeded titles were invented in the real shape, and a shape
   // cannot tell an invented title from a real one. The seed now writes none; a
-  // published title must be listed in `prisma/seed-data/real-titles.ts`
+  // published title must be listed in `libs/common/src/lands/real-titles.ts`
   // (`published-titles-are-real.spec.ts`).
   it('are none: the seed invents no title', () => {
     expect(seed).toContain('titleNumber: null,');

@@ -36,7 +36,7 @@ export interface CatalogueParcel {
   readonly label: CatalogueLabel;
   /** The fiche says "✓ Validé"; only these may be published. */
   readonly validated: boolean;
-  /** Null until a lot's own title is in `real-titles.ts`. */
+  /** Null until a lot's own title is in `libs/common/src/lands/real-titles.ts`. */
   readonly titleNumber: string | null;
 }
 

@@ -10,7 +10,8 @@
     "titleNumberTaken": "Un terrain avec ce numéro de titre existe déjà",
     "notPublished": "Ce terrain n'est pas encore publié",
     "notVerified": "Ce terrain n'a pas encore été vérifié",
-    "priceUpdated": "Prix du terrain mis à jour de {previousPrice} à {newPrice} XAF"
+    "priceUpdated": "Prix du terrain mis à jour de {previousPrice} à {newPrice} XAF",
+    "titleNotInRegistry": "Ce numéro de titre foncier ne figure pas au registre des titres vérifiés. Un titre s'y ajoute avec sa source, par une modification relue de {file}."
   },
   "label": {
     "notFound": "Label de terrain introuvable",

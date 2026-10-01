@@ -43,6 +43,14 @@ describe('A31 - restoredParcelStatus', () => {
     }
   });
 
+  it('C16 - keeps an archived parcel ARCHIVED whatever a kept reservation holds', () => {
+    // Unpublished and listed nowhere, so A31's free-but-taken mismatch cannot arise.
+    for (const r of ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'] as const) {
+      expect(restoredParcelStatus('ARCHIVED', [r])).toBe('ARCHIVED');
+    }
+    expect(restoredParcelStatus('ARCHIVED', [])).toBe('ARCHIVED');
+  });
+
   it('maps reservations exactly as the reservation service moves parcels', () => {
     expect(statusHeldBy('PENDING')).toBe('RESERVED');
     expect(statusHeldBy('CONFIRMED')).toBe('RESERVED');

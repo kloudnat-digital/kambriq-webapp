@@ -212,6 +212,8 @@ export {
   isUnlistedDepartment,
 } from './lands/title-number';
 export type { TitleNumber } from './lands/title-number';
+export { REAL_TITLES, REAL_TITLES_FILE, isListedTitle } from './lands/real-titles';
+export type { RealTitle } from './lands/real-titles';
 
 // ----- API documentation (A43) -----
 export { LOCAL_APP_ENV, servesApiDocs } from './config/api-docs';

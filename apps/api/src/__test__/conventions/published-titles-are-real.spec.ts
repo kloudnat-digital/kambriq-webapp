@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CATALOGUE_PARCELS } from '../../../../../prisma/seed-data/lands-catalogue-v075';
-import { REAL_TITLES } from '../../../../../prisma/seed-data/real-titles';
+import { REAL_TITLES } from '@kambriq/common';
 
 /**
  * C16 - a published parcel's title number is a real title, or it is null.
@@ -10,7 +10,7 @@ import { REAL_TITLES } from '../../../../../prisma/seed-data/real-titles';
  * Until 1 October the seed published twenty invented parcels, eight of them
  * with invented titles in the real Cameroonian shape (`TF 1187/WB`...). P24
  * checks that shape, and a shape cannot tell an invented number from a real
- * one. So the rule is a list: `prisma/seed-data/real-titles.ts`, reviewed, each
+ * one. So the rule is a list: `libs/common/src/lands/real-titles.ts`, reviewed, each
  * entry with the document it was read from. A title not on it is refused.
  *
  * What is checked: every parcel the seed publishes, and every catalogue parcel
