@@ -9,6 +9,7 @@ import { LoudWorkerHost } from '../queue/loud-worker-host';
 import { EmailJobPayload } from './email.service';
 import { buildEmail } from './templates';
 import { SupportedLanguage } from '../constants/i18n';
+import { maskEmail, redactEmails } from '../utils/log-redact';
 
 @Processor(QUEUES.NOTIFICATIONS)
 export class EmailProcessor extends LoudWorkerHost {
@@ -71,7 +72,7 @@ export class EmailProcessor extends LoudWorkerHost {
     if (this.transport === 'console' || !this.sesClient) {
       this.logger.log(
         `@[console-email]\n` +
-          `To:        ${to}\n` +
+          `To:        ${maskEmail(to)}\n` +
           `Subject:   ${subject}\n` +
           `Template:  ${template} (${lang})\n` +
           `Preview:   ${this.stripHtml(html).substring(0, 200)}...`,
@@ -97,12 +98,16 @@ export class EmailProcessor extends LoudWorkerHost {
       );
 
       // Direct log interpolation prevents nestjs-pino context misinterpretation.
-      this.logger.log(`Email sent to ${to} messageId=${result.MessageId} subject="${subject}"`);
+      this.logger.log(
+        `Email sent to ${maskEmail(to)} messageId=${result.MessageId} subject="${subject}"`,
+      );
       return { delivered: true, messageId: result.MessageId, to, subject };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       // Direct error log interpolation.
-      this.logger.error(`Failed to send email to ${to} subject="${subject}" error=${message}`);
+      this.logger.error(
+        `Failed to send email to ${maskEmail(to)} subject="${subject}" error=${redactEmails(message)}`,
+      );
       throw error;
     }
   }

@@ -230,6 +230,7 @@ listed here first.
 | `C37`                          | `PROUVE`            | sign-in answered before checking the password: an unknown address, an unverified, blocked or grace-period account, and an active one with a wrong password each answered differently, and a grace-period account returned its internal id. Now every wrong password answers exactly as an unknown address (400, invalid credentials); the reason is given only once the password is right, and no id is returned. Proven on dev: develop run 36744414995 at bb1a327 (C37 with its journey-5 repair #289), journeys.spec.ts PASS under EXPECTED_SHA, journeys 3 and 5 included                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `C38`                          | `PROUVE`            | the four other public routes that take an address from a stranger, as one family with one rule: forgot-password and reactivate answer every account state exactly as an unknown address, in the request's language (reactivate now checks the password first); the newsletter answers an existing subscriber as a new one; registration's 409 is declared, not equalised. A guard fails on any public route with an `email` body not placed in the family. Proven on dev at a1c6a55 by a probe with a minted account: reactivate with a wrong password answers the known account and an unknown address identically (400, French, request fr, account en); the newsletter answers a second subscription as the first (204); registration's declared 409 stands                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `C40`                          | `EN COURS`          | `POST /auth/refresh` read only `isActive`, so it minted a new pair for a locked or unverified account. Every access token it minted was refused by the strategy since C39, so this was not an access; it would become one the day a path trusted a refresh without the strategy. Both doors now call one function, `assertHoldsSession`, and a guard refuses either door carrying its own copy of the checks. Proven locally. Pending: CI                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `C43`                          | `EN COURS`          | email addresses were written in clear into application log lines. Found by comparing the privacy policy's list with real log lines; the pattern search found nine paths where four had been named (invite, queued, suppressed, sent, failed - including the provider's own error text -, console transport, bounce, the bootstrap's lines and the seed's precondition). All mask through `maskEmail`/`redactEmails`; `no-address-in-a-log-line.spec.ts` fails on the next one. Proven locally. Pending: the dev log read again after the deploy                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `C39`                          | `PROUVE`            | registration handed out a session before the address was verified, and the JWT strategy never read `emailVerified`: anybody could hold a working session on somebody else's address. The check is now in `jwt.strategy.ts`, where every session passes; an unverified account's token answers 401 `EMAIL_NOT_VERIFIED`. Blast radius on dev: 13 unverified accounts, 0 live sessions. Proven on dev: develop run 36755978153 at a1c6a55, journeys.spec.ts PASS under EXPECTED_SHA, including journey 1's step that the registration token opens nothing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `C33`                          | `PROUVE`            | a revoked newest certificate read as current in the candidate's profile and the administrators' candidate list, which returned its number without its revocation. Each now carries the certificate's state (ACTIVE, REVOKED, EXPIRED) from the shared `isActive`; the overview's certificate read, selected and never returned, is removed. The product question - an older standing certificate when the newest is revoked - is Visquis's, and the code keeps today's answer. Merged (#279, 2c87d58). Proven on develop: run 36702786184 at 96dbbf6, every job green including the delivery journeys and E2E against dev (30 September)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `I48`                          | `PROUVE`            | the land list's reservation count included cancelled ones; the KAMNET agent read returned the sponsor without its suspension. Both fixed. `linked-records-read-their-status.spec.ts` refuses the next read of a linked record that ignores its standing, with 7 known reads declared by exact count. Merged (#279, 2c87d58). Proven on develop: run 36702786184 at 96dbbf6, every job green including the delivery journeys and E2E against dev (30 September)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -10704,6 +10705,63 @@ removed from refresh only (the strategy's call untouched) - the four refresh
 states and "refreshTokens calls the shared rule" fail, 5 failed; a local copy of
 one check (`.lockedUntil`) added beside the call - "reads no standing field
 itself" fails alone, `Received: ".lockedUntil"`.
+
+### C43 - no email address in a log line - `EN COURS`
+
+**Cost impact: None.**
+
+**Found by the privacy policy.** Comparing #294's retention list with the keys
+of real dev log lines showed application events carrying an address in clear.
+Visquis's decision, 1 October: mask first, and publish a policy that does not
+need a clause describing the defect.
+
+**The count, corrected before it travelled.** "433 non-test addresses" counted
+lines, not people, and most were the platform's own. Six days of
+`/ecs/kambriq-dev-api` (25 September - 1 October, read 1 October): 5,365 lines
+carrying an `@`; distinct addresses in clear: 1,257 journey addresses, 4 at
+`kambriq.com`, 2 on other domains. The web's log held one: a scanner bot's own
+contact address in its user agent, which is the visitor's text, not ours to mask.
+
+**Searched by pattern, not by the four named sites.** The live log was grouped by
+message shape (every shape, not the first twelve), and the source was swept for
+every logging call. Nine paths, where four had been named:
+
+- `users.service.ts` "Client user created and invite sent to";
+- `email.service.ts` "Email queued" (debug) and "Update email suppressed";
+- `email.processor.ts` "Email sent to" - the largest by far - "Failed to send
+  email to", whose `error=` carried **the provider's own message, which can
+  contain the address**, and the console-transport block;
+- `email-events.service.ts`, the SES bounce line;
+- `prisma/bootstrap-admins.ts` (ten messages, the two real administrators'
+  addresses) and `prisma/seed.ts`'s precondition error.
+
+Each now goes through `maskEmail` (`al***@example.com`), and free text the call
+did not compose through `redactEmails`. Left on purpose: `SES transport active
+{fromAddress}`, the platform's configured sender.
+
+**Proof, local.** Red first: the five email-layer tests failed against today's
+code, each on the address in clear. The invite and bounce tests were written
+after the fix, so each source was put back to clear and each test watched failing
+(`"...invite sent to new@test.com"`, `"...for ada@example.com..."`). The guard
+`no-address-in-a-log-line.spec.ts` reads every `logger.*`/`console.*` call and
+the bootstrap's problem list across `apps/api/src`, `libs/common/src` and
+`prisma/`; its first version over-reported (the argument inside `maskEmail`
+itself, `to: newTier` transitions, a lookup keyed by address), and it judges the
+value now. Mutations, each confirmed applied: the processor's interpolation in
+clear - named, `email.processor.ts:101 ${to}`; the service's property in clear -
+named, `email.service.ts:91 to: payload.to`. A second attempt at the latter did
+not apply (a quoting error) and its green run was not counted.
+
+**What a sweep cannot see, said plainly:** an address reaching a log through a
+thrown object serialised by the logger, or a `JSON.stringify` of a DTO, does not
+look like a logging call's argument. The live log is the check for that, read
+again after the deploy. **Pending: that read.**
+
+**The account id stays in the logs - an arbitration, stated.** It is personal
+data and the policy names it. It is also an internal identifier that means
+nothing outside the platform and is what ties a log line to an account when
+diagnosing a security or support case; the logs holding it are deleted within 30
+days. Kept for that reason; Visquis's to overturn.
 
 ### D28 follow-up, the envelope BigInt, and sort as a column - `PROUVE`
 
