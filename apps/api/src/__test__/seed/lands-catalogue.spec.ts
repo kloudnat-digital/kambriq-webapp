@@ -1,3 +1,4 @@
+/* eslint-disable @nx/enforce-module-boundaries -- the seed lives in prisma/, outside any nx project; these tests exist to pin it */
 import {
   CATALOGUE_DEFERRED,
   CATALOGUE_PARCELS,

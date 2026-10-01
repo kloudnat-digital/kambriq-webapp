@@ -15,6 +15,7 @@
  * database-generated price per m2 equal to the catalogue's.
  */
 
+/* eslint-disable @nx/enforce-module-boundaries -- Prisma script, located outside NX projects. */
 import 'dotenv/config';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';

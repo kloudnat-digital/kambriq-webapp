@@ -1,3 +1,4 @@
+/* eslint-disable @nx/enforce-module-boundaries -- the seed lives in prisma/, outside any nx project; these tests exist to pin it */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CATALOGUE_PARCELS } from '../../../../../prisma/seed-data/lands-catalogue-v075';

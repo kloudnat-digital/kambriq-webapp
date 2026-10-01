@@ -25,6 +25,7 @@ import { maskEmail } from '@kambriq/common/utils/log-redact';
  * - amina.fall (Agent, N2)
  */
 
+/* eslint-disable @nx/enforce-module-boundaries */
 import 'dotenv/config';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
