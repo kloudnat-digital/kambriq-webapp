@@ -871,10 +871,10 @@ async function seedLands() {
     isVerified: boolean;
     verifiedAt?: Date;
     /**
-     * Fictitious, in the Cameroonian shape `TF <number>/<department>` (P24).
-     * `WB` (Wouri B) is confirmed; `MF` Mfoundi, `FA` Fako, `MI` Mifi and `BE`
-     * Bénoué are inferred for Yaoundé, Buea, Bafoussam and Garoua and await
-     * correction. No number is a real title.
+     * Null on every seeded parcel (C16). The eight numbers these fixtures used to
+     * carry were invented in the real shape (P24), and a shape cannot tell an
+     * invented title from a real one. A published title must be listed in
+     * `seed-data/real-titles.ts`; the guard is `published-titles-are-real.spec.ts`.
      */
     titleNumber: string | null;
     pv: number;
@@ -897,7 +897,7 @@ async function seedLands() {
       isPublished: true,
       isVerified: true,
       verifiedAt: SEED_DATE,
-      titleNumber: 'TF 1187/WB',
+      titleNumber: null,
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
     },
@@ -917,7 +917,7 @@ async function seedLands() {
       isPublished: true,
       isVerified: true,
       verifiedAt: SEED_DATE,
-      titleNumber: 'TF 2350/MF',
+      titleNumber: null,
       pv: 1.1,
       ownerType: LandOwnerType.KAMBRIQ,
     },
@@ -937,7 +937,7 @@ async function seedLands() {
       isPublished: true,
       isVerified: true,
       verifiedAt: SEED_DATE,
-      titleNumber: 'TF 3462/WB',
+      titleNumber: null,
       pv: 1.2,
       ownerType: LandOwnerType.KAMBRIQ,
     },
@@ -976,7 +976,7 @@ async function seedLands() {
       isPublished: true,
       isVerified: true,
       verifiedAt: new Date('2024-12-01'),
-      titleNumber: 'TF 518/FA',
+      titleNumber: null,
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
     },
@@ -996,7 +996,7 @@ async function seedLands() {
       isPublished: true,
       isVerified: true,
       verifiedAt: SEED_DATE,
-      titleNumber: 'TF 4803/WB',
+      titleNumber: null,
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
     },
@@ -1073,7 +1073,7 @@ async function seedLands() {
       isPublished: true,
       isVerified: true,
       verifiedAt: SEED_DATE,
-      titleNumber: 'TF 912/MI',
+      titleNumber: null,
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
     },
@@ -1131,7 +1131,7 @@ async function seedLands() {
       isPublished: true,
       isVerified: true,
       verifiedAt: SEED_DATE,
-      titleNumber: 'TF 2764/BE',
+      titleNumber: null,
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
     },
@@ -1208,7 +1208,7 @@ async function seedLands() {
       isPublished: true,
       isVerified: true,
       verifiedAt: SEED_DATE,
-      titleNumber: 'TF 6075/MF',
+      titleNumber: null,
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
     },

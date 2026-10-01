@@ -65,13 +65,13 @@ describe('P24 - the seeded titles', () => {
   const seed = readFileSync(join(__dirname, '../../../../../../prisma/seed.ts'), 'utf8');
   const seeded = [...seed.matchAll(/titleNumber: '([^']+)'/g)].map((m) => m[1]);
 
-  it('are well formed', () => {
-    expect(seeded.length).toBeGreaterThan(0);
-    expect(seeded.filter((t) => !create(t).success)).toEqual([]);
-  });
-
-  it('are stored in their canonical form', () => {
-    expect(seeded.filter((t) => create(t).data?.titleNumber !== t)).toEqual([]);
+  // C16: the eight seeded titles were invented in the real shape, and a shape
+  // cannot tell an invented title from a real one. The seed now writes none; a
+  // published title must be listed in `prisma/seed-data/real-titles.ts`
+  // (`published-titles-are-real.spec.ts`).
+  it('are none: the seed invents no title', () => {
+    expect(seed).toContain('titleNumber: null,');
+    expect(seeded).toEqual([]);
   });
 
   it('are restored by a re-run, not only written on the first one', () => {
