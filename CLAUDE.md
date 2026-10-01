@@ -3240,6 +3240,18 @@ answers "could this be ours", never "is it". **A value that feeds a security
 header is refused unless it is on `claimed-hosts.ts`, with the proof of the
 claim**, and the order is claim, list, set - never set, then check who holds it.
 
+### A well-formed title is not a real title, and a fixture is harmless by construction
+
+From `C16`. The seed published twenty invented parcels, eight with titles in the
+real Cameroonian shape and a verification claim: P24's shape check passed every
+one. **A `titleNumber` is written only if `libs/common/src/lands/real-titles.ts`
+lists it with the document it was read from** - the API refuses any other on
+create and update (422, naming the file, never echoing the value), and adding a
+title is a reviewed edit to that file. Invented parcels the suite needs live in
+`prisma/seed-data/test-fixture-parcels.ts`, apart from the catalogue: null title,
+never verified, "démonstration / demonstration" in their names, and **as many as
+the suite reserves at once, counted, not a comfortable margin.**
+
 ### A remedy does not switch the mitigation back on
 
 From `A67`, after Ulrich's reading of `A56`. When something breaks, somebody
