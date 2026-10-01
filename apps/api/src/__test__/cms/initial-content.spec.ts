@@ -144,7 +144,10 @@ describe('wave 7 - the content the migration produced', () => {
         | undefined;
       expect(table?.columns).toHaveLength(2);
       expect(table?.rows).toHaveLength(2);
-      expect(table?.rows.flatMap((row) => row.cells).join(' ')).toMatch(/99/);
+      // External verification is priced at 179 EUR; the former 99 must not return.
+      const cells = table?.rows.flatMap((row) => row.cells).join(' ') ?? '';
+      expect(cells).toMatch(/179/);
+      expect(cells).not.toMatch(/\b99\b/);
     }
   });
 
