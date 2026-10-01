@@ -8014,8 +8014,11 @@ checked against the site and corrected before writing:
   `responseTime`), and **operational event lines that carry an account id and,
   in four code paths, an email address in clear** - "Client user created and
   invite sent to", `Email queued {"to"}`, `Update email suppressed {"to"}`, and the
-  bootstrap's "unchanged" line: 433 non-test addresses in six days. The list now
-  names both. "Parameter values are masked" was true except for the six keys
+  bootstrap's "unchanged" line. The list names the operational events; the
+  addresses are not listed, because C43 masks them before this text is
+  published (Visquis's decision, 1 October: a policy does not describe a defect
+  that is being fixed). "433" was a count of lines, mostly the platform's own
+  addresses - see C43. "Parameter values are masked" was true except for the six keys
   `LOGGED_QUERY_KEYS` keeps (`page`, `limit`, `depth`, `sort`, `order`,
   `status`), so the exception is written; `authorization` was read in 200 stored
   lines and every one carries the redaction marker.
@@ -8026,10 +8029,10 @@ public text describes the service as offered, not its test environment, so
 production must enforce 30 days before it opens - C17 is no longer only an
 infrastructure subject.
 
-**Found, not fixed, needs a number:** email addresses written in clear into
-application log lines. Masking them (`maskEmail` already exists in
-`libs/common`) would let the policy drop that clause; until then the clause is
-what makes the paragraph true.
+**Numbered C43:** email addresses written in clear into application log lines.
+The clause disclosing them was removed from block 5; **this import waits until
+C43 is deployed and the dev log read again shows none**, or the published text
+would be false the other way.
 
 **The import itself waits on three actions that are his:** `npx sanity login` in
 `studio/`, the project id with the five repository variables, and
