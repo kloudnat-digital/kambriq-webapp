@@ -45,6 +45,30 @@ const BUILD_TIME_VARIABLES = [
   'SANITY_STUDIO_ORIGIN',
 ];
 
+/**
+ * Build variables the SERVER also reads per request, through a parameter Next
+ * does not inline: `cmsClient(env = process.env)` in `lib/cms/client.ts`. Built
+ * with the values and run without them, every CMS page answered 404.
+ */
+const RUNTIME_READ_VARIABLES = ['NEXT_PUBLIC_SANITY_PROJECT_ID', 'NEXT_PUBLIC_SANITY_DATASET'];
+
+/** The production stage: what the running container's environment holds. */
+const PRODUCTION_STAGE = DOCKERFILE.slice(DOCKERFILE.indexOf('AS production'));
+
+describe('a build variable the server reads at run time reaches the running container', () => {
+  it.each(RUNTIME_READ_VARIABLES)('%s is an ENV of the production stage', (name) => {
+    expect(PRODUCTION_STAGE).toMatch(new RegExp(`^ARG ${name}$`, 'm'));
+    expect(PRODUCTION_STAGE).toMatch(new RegExp(`\\b${name}=\\$\\{${name}\\}`));
+  });
+
+  it('names the reader that needs them, so the list cannot outlive it', () => {
+    const client = read('apps/web/src/lib/cms/client.ts');
+    expect(client).toMatch(/cmsClient\(env: NodeJS\.ProcessEnv = process\.env\)/);
+    expect(client).toMatch(/sanityProjectId\(env\)/);
+    expect(client).toMatch(/sanityDataset\(env\)/);
+  });
+});
+
 describe('the build-time variables reach the image', () => {
   it.each(BUILD_TIME_VARIABLES)('%s is declared in Dockerfile.web before next build', (name) => {
     const arg = DOCKERFILE.search(new RegExp(`^ARG ${name}$`, 'm'));

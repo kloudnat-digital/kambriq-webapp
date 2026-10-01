@@ -3,6 +3,7 @@ import { isTransactional, TemplateKey } from './templates';
 import { InjectQueue } from '@nestjs/bullmq';
 import { NOTIFICATIONS_JOBS, QUEUES } from '../constants/queue';
 import { Queue } from 'bullmq';
+import { maskEmail } from '../utils/log-redact';
 
 export interface EmailJobPayload {
   to: string;
@@ -63,7 +64,7 @@ export class EmailService {
     });
 
     this.logger.debug('Email queued %o', {
-      to: payload.to,
+      to: maskEmail(payload.to),
       template: payload.template,
       lang: payload.lang,
     });
@@ -88,7 +89,7 @@ export class EmailService {
 
     if (prefs && !prefs.emailNotifications) {
       this.logger.log('Update email suppressed by user preference %o', {
-        to: payload.to,
+        to: maskEmail(payload.to),
         template: payload.template,
       });
       return { status: 'suppressed', reason: 'user-preference' };

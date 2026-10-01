@@ -8,6 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { maskEmail } from '@kambriq/common';
 import { CorePrismaService } from '../prisma/core-prisma.service';
 import {
   isSnsUrl,
@@ -173,7 +174,7 @@ export class EmailEventsService {
 
     for (const e of events) {
       this.logger.warn(
-        `SES ${e.kind} ${e.type ?? ''}/${e.subType ?? ''} for ${e.email} ` +
+        `SES ${e.kind} ${e.type ?? ''}/${e.subType ?? ''} for ${maskEmail(e.email)} ` +
           `messageId=${e.sesMessageId} account=${owner.get(e.email) ?? 'none'}`,
       );
     }

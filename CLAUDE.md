@@ -3188,6 +3188,58 @@ conditions: develop red only on named stale assertions, a pull request repairing
 exactly those, and the affected suite passing by hand against dev on its head.
 Register rule 5 holds the full text.
 
+### How a prompt is dated, and how a round reports which prompt ran
+
+Set by Visquis on 1 October 2026, and held in `ops_kambriq_standard-qualite_v01.md`,
+section _Comment un prompt est date, et comment une ronde se rapporte_ - read it
+there; this entry exists so the conventions do not die with the queue that
+announced them.
+
+- **Paris time for what we write, the source's time for what we measure.** A
+  queue, brief, insert or authorization carries one date, in Paris time. A run,
+  a log window or an API timestamp is reported as the tool returned it (UTC); a
+  converted figure is given with its original.
+- **Every RESUME opens with one `PROMPT EXECUTE` block per file executed**, in
+  the order taken: the file name, the date the file carries at its head, its
+  first and last non-empty lines verbatim, and when the run started, in Paris
+  time. The two lines are a fingerprint against a file name that has carried
+  thirty-one rounds, and the last one proves the file was read to the end. A file
+  found stale against the repository says so in its own block.
+
+### An address in a log line is a promise the privacy policy has to keep
+
+From `C43`. The privacy policy lists what the logs keep, so a log line is part of
+a published statement. Nine paths wrote a recipient's address in clear - four had
+been named, the pattern found five more, one of them inside a provider's error
+text. **Log an address only through `maskEmail`, and free text you did not
+compose through `redactEmails`.** `no-address-in-a-log-line.spec.ts` reads every
+logging call and fails on the next one. And count before you report: "433
+addresses" was lines, not people.
+
+### A build variable read through a parameter is a run-time variable
+
+From the CMS import, 1 October. The Sanity project id was an `ARG`, passed by
+both workflows and asserted by a test - every rule of the `ARG` entry above,
+kept - and every CMS page still answered 404 on an image built with it.
+`next.config.ts` read it at build; the delivery client read it per request
+through `cmsClient(env = process.env)`. Next inlines `process.env.X` and
+`process.env['X']` written literally, never a value passed through a parameter,
+and the production stage declared nothing, so the server had no project.
+
+**Ask where each variable is read, not only where it is passed.** A build-time
+reader needs an `ARG` before `next build`; a run-time reader needs the value in
+the running container (`ENV` in the production stage, or the task definition).
+`build-vars-reach-the-image.spec.ts` now holds both lists.
+
+### A well-formed host is not an owned host
+
+From `C44`. `https://kambriq.sanity.studio` passed every shape rule - https, one
+label, no wildcard - and belonged to another organisation; set as the Studio
+origin, it would have let a stranger's Studio frame the site. A shape check
+answers "could this be ours", never "is it". **A value that feeds a security
+header is refused unless it is on `claimed-hosts.ts`, with the proof of the
+claim**, and the order is claim, list, set - never set, then check who holds it.
+
 ### A remedy does not switch the mitigation back on
 
 From `A67`, after Ulrich's reading of `A56`. When something breaks, somebody

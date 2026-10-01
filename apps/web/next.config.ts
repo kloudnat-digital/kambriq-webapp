@@ -11,6 +11,7 @@ import {
 } from './src/lib/security/image-hosts';
 import { frameAncestors } from './src/lib/security/studio-origin';
 import { sanityDataset } from './src/lib/security/sanity-hosts';
+import { assertSecurityHostsClaimed } from './src/lib/security/claimed-hosts';
 
 // next-intl plugin - path is relative.
 // - When NX's project-graph plugin analyses this file (CWD = workspace root),
@@ -29,6 +30,8 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
  * the first page somebody opened. Failing here names the variable instead.
  */
 sanityDataset(process.env);
+// C44: a header host nobody has proven we hold fails the build, never ships.
+assertSecurityHostsClaimed(process.env);
 
 const nextConfig: WithNxOptions = {
   // NX-specific options - controls monorepo build behaviour

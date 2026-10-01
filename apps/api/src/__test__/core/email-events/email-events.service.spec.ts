@@ -98,6 +98,20 @@ describe('C24 - a delivery reaches the account only through a verified message f
     });
   });
 
+  it('C43 - logs the bounce with the address masked, never in clear', async () => {
+    const { service } = makeService();
+    const warn = jest.spyOn(Logger.prototype, 'warn');
+    const body = JSON.stringify(
+      signedNotification({ TopicArn: TOPIC, Message: bounce(['ada@example.com']) }),
+    );
+
+    await service.receive(body);
+
+    const lines = warn.mock.calls.flat().map(String).join('\n');
+    expect(lines).toContain('ad***@example.com');
+    expect(lines).not.toContain('ada@example.com');
+  });
+
   it('stores an address that belongs to no account with no account', async () => {
     const { service, prisma } = makeService();
     prisma.user.findMany.mockResolvedValue([]);
