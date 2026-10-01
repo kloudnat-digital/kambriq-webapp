@@ -27,11 +27,13 @@ const ROOT = join(__dirname, '..', '..', '..', '..', '..');
 const DOCKERFILE = readFileSync(join(ROOT, 'docker', 'Dockerfile.api'), 'utf8');
 const SEED = readFileSync(join(ROOT, 'prisma', 'seed.ts'), 'utf8');
 const BOOTSTRAP = readFileSync(join(ROOT, 'prisma', 'bootstrap-admins.ts'), 'utf8');
+const CATALOGUE = readFileSync(join(ROOT, 'prisma', 'load-lands-catalogue.ts'), 'utf8');
 
 /** The scripts that run from SOURCE inside the production image, under tsx. */
 const SOURCE_RUN: ReadonlyArray<readonly [string, string]> = [
   ['prisma/seed.ts', SEED],
   ['prisma/bootstrap-admins.ts', BOOTSTRAP],
+  ['prisma/load-lands-catalogue.ts', CATALOGUE],
 ];
 
 describe('the api image carries what the source-run scripts need', () => {
