@@ -3216,6 +3216,21 @@ compose through `redactEmails`.** `no-address-in-a-log-line.spec.ts` reads every
 logging call and fails on the next one. And count before you report: "433
 addresses" was lines, not people.
 
+### A build variable read through a parameter is a run-time variable
+
+From the CMS import, 1 October. The Sanity project id was an `ARG`, passed by
+both workflows and asserted by a test - every rule of the `ARG` entry above,
+kept - and every CMS page still answered 404 on an image built with it.
+`next.config.ts` read it at build; the delivery client read it per request
+through `cmsClient(env = process.env)`. Next inlines `process.env.X` and
+`process.env['X']` written literally, never a value passed through a parameter,
+and the production stage declared nothing, so the server had no project.
+
+**Ask where each variable is read, not only where it is passed.** A build-time
+reader needs an `ARG` before `next build`; a run-time reader needs the value in
+the running container (`ENV` in the production stage, or the task definition).
+`build-vars-reach-the-image.spec.ts` now holds both lists.
+
 ### A remedy does not switch the mitigation back on
 
 From `A67`, after Ulrich's reading of `A56`. When something breaks, somebody
