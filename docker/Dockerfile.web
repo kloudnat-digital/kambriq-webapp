@@ -81,6 +81,15 @@ ENV NODE_ENV=production
 # built. See docs/adr/ADR-005-production-automation-prerequisites.md.
 ARG APP_ENV=""
 ENV APP_ENV=${APP_ENV}
+# The CMS pair, again at run time. `next.config.ts` reads it at build (CSP and
+# image hosts), but the delivery client reads it per request through
+# `cmsClient(env = process.env)`, which Next does not inline - so without these
+# lines every CMS page answers 404 on an image that was built with the values.
+# Public values: a project id and a dataset name, already in the page's HTML.
+ARG NEXT_PUBLIC_SANITY_PROJECT_ID
+ARG NEXT_PUBLIC_SANITY_DATASET
+ENV NEXT_PUBLIC_SANITY_PROJECT_ID=${NEXT_PUBLIC_SANITY_PROJECT_ID} \
+    NEXT_PUBLIC_SANITY_DATASET=${NEXT_PUBLIC_SANITY_DATASET}
 # Required by NextAuth v5 when running behind a reverse proxy or ALB.
 # Without this every session read logs "UntrustedHost" and may fail in
 # strict next-auth configurations.

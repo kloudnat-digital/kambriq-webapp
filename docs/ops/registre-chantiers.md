@@ -7969,6 +7969,43 @@ content. The archive keys on `(documentId, revision)`, so it is still one row pe
 document per revision. But `_rev` is not unique across documents, and anything
 that ever treats it as an identifier on its own is wrong.
 
+#### The import, run 1 October, and two things it found
+
+**Done.** The CLI logged in as the account that sees project `4c3y0546`
+(`kambriq`, 1 member, created 2026-09-27; `sanity projects list`, 05:59:11Z).
+`production` is **public** (`dataset visibility get`, 05:59:46Z), so the
+anonymous delivery client can read it and the Growth trial's fall to Free on
+about 24 October changes nothing there. `pnpm validate`: 0 errors, 0 warnings.
+**Empty, checked logged in immediately before the import** (06:00:28Z):
+`count(*)` = 12, all Sanity's own (`system.group` x11, `system.retention` x1,
+created with the dataset on 27 September); content documents and drafts 0 - the
+CLI prints a zero count as "no results", confirmed against a known 11 and a known 0. Imported from #294's head `b978bc3` in create mode, which refuses rather than
+overwrites an existing id: "Imported 16 documents" (06:01:12Z - 06:01:14Z). Read
+back: the sixteen ids, and an anonymous count of 16.
+
+**The Studio hostname `kambriq` belongs to another organisation.** `sanity
+deploy` answered "Studio hostname "kambriq" is already taken"; the name
+redirects into organisation `@ods9jkbiv`'s Studio, and ours is `oiz1etdsf`. So
+`SANITY_STUDIO_ORIGIN=https://kambriq.sanity.studio`, set from the insert, would
+have let a stranger's Studio frame this site - `A40`'s wildcard as a literal
+host. The re-run that would have built it was cancelled before any image was
+built, and the variable deleted (`frame-ancestors 'none'`, the safe default). The
+Studio is not deployed; its hostname is Visquis's to choose.
+
+**Built with the values, the pages still answered 404: a build variable read at
+run time.** The web was rebuilt with the project id and dataset (run
+36817855510, attempt 3; the build-args are in its log), and all sixteen pages
+answered 404. `next.config.ts` reads the pair at build, but the delivery client
+reads it per request through `cmsClient(env = process.env)`, which Next does not
+inline, and the production stage of `Dockerfile.web` declared neither - so the
+running server had no project and failed closed, exactly as designed. The
+browser suite, no longer exempt (A71), failed 36 tests on those 404s. The two
+variables were deleted to put develop back on its previous green, and the
+production stage now carries the pair as `ENV`;
+`build-vars-reach-the-image.spec.ts` requires it (2 failed against develop's
+Dockerfile, green with the fix). **Pending: the variables set again, the web
+rebuilt, and the eight pages read at 200 in both languages.**
+
 **Step 4, the blog, is deferred by decision of 2026-09-27.** It is not abandoned
 and it is not pending work. The reason for recording it is that the blog is a
 different kind of document from everything the Studio holds today, and the
