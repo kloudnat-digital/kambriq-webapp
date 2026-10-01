@@ -20,11 +20,17 @@ export const statusHeldBy = (reservation: SeedReservationStatus): SeedLandStatus
 /**
  * The status the seed may write for a parcel, given the reservations on it that
  * the seed could not clear. The seeded status only when none of them holds it.
+ *
+ * C16: ARCHIVED outranks a kept reservation. A31 guarded a parcel the listing
+ * called free while the reservation service called it taken; an archived parcel
+ * is unpublished and listed nowhere, so that mismatch cannot arise, and writing
+ * RESERVED would un-archive one of the twenty invented parcels.
  */
 export const restoredParcelStatus = (
   seeded: SeedLandStatus,
   keptReservations: readonly SeedReservationStatus[],
 ): SeedLandStatus => {
+  if (seeded === 'ARCHIVED') return 'ARCHIVED';
   const held = keptReservations.map(statusHeldBy);
   if (held.includes('SOLD')) return 'SOLD';
   if (held.includes('RESERVED')) return 'RESERVED';

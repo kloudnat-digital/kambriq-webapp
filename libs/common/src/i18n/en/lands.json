@@ -10,7 +10,8 @@
     "titleNumberTaken": "A land with this title number already exists",
     "notPublished": "This land is not published yet",
     "notVerified": "This land has not been verified yet",
-    "priceUpdated": "Land price updated from {previousPrice} to {newPrice} XAF"
+    "priceUpdated": "Land price updated from {previousPrice} to {newPrice} XAF",
+    "titleNotInRegistry": "This land title number is not in the registry of verified titles. A title is added there with its source, through a reviewed change to {file}."
   },
   "label": {
     "notFound": "Land label not found",

@@ -7,6 +7,7 @@ import {
   type SeedQuestion,
 } from './seed-data/kbs-questions';
 import { restoredParcelStatus } from './seed-data/parcel-status';
+import { TEST_FIXTURE_PARCELS } from './seed-data/test-fixture-parcels';
 import { SEED_ROLES, seedRoleId } from './seed-data/roles';
 import { describeKbsSettings, seedKbsSettings } from './kbs-settings-apply';
 import { maskEmail } from '@kambriq/common';
@@ -874,13 +875,24 @@ async function seedLands() {
      * Null on every seeded parcel (C16). The eight numbers these fixtures used to
      * carry were invented in the real shape (P24), and a shape cannot tell an
      * invented title from a real one. A published title must be listed in
-     * `seed-data/real-titles.ts`; the guard is `published-titles-are-real.spec.ts`.
+     * `libs/common/src/lands/real-titles.ts`; the guard is `published-titles-are-real.spec.ts`.
      */
     titleNumber: string | null;
     pv: number;
     ownerType: LandOwnerType;
   };
-  const parcels: ParcelSeed[] = [
+  /**
+   * C16 - the twenty INVENTED parcels, archived. Not the catalogue, not fixtures.
+   *
+   * They were published as if real until 1 October; eight carried invented
+   * titles and a verification claim. They stay in the seed only because their
+   * reservations carry receipts and transitions, which are append-only (G1):
+   * the rows cannot be deleted, so the seed holds them ARCHIVED, unpublished,
+   * unverified and untitled on every run. The real parcels are
+   * `seed-data/lands-catalogue-v075.ts`; the parcels the suite reserves are
+   * `seed-data/test-fixture-parcels.ts`.
+   */
+  const inventedParcels: ParcelSeed[] = [
     {
       id: IDS.LAND_1,
       title: 'Parcelle Douala Akwa',
@@ -893,10 +905,9 @@ async function seedLands() {
       sizeM2: 300,
       totalPrice: 8000000,
       labelId: IDS.LABEL_TDT,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
-      isVerified: true,
-      verifiedAt: SEED_DATE,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
+      isVerified: false,
       titleNumber: null,
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
@@ -913,10 +924,9 @@ async function seedLands() {
       sizeM2: 450,
       totalPrice: 12500000,
       labelId: IDS.LABEL_VEFL,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
-      isVerified: true,
-      verifiedAt: SEED_DATE,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
+      isVerified: false,
       titleNumber: null,
       pv: 1.1,
       ownerType: LandOwnerType.KAMBRIQ,
@@ -933,10 +943,9 @@ async function seedLands() {
       sizeM2: 250,
       totalPrice: 15000000,
       labelId: IDS.LABEL_TDT,
-      status: LandStatus.RESERVED,
-      isPublished: true,
-      isVerified: true,
-      verifiedAt: SEED_DATE,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
+      isVerified: false,
       titleNumber: null,
       pv: 1.2,
       ownerType: LandOwnerType.KAMBRIQ,
@@ -953,8 +962,8 @@ async function seedLands() {
       sizeM2: 600,
       totalPrice: 6500000,
       labelId: IDS.LABEL_VEFIL,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
       isVerified: false,
       titleNumber: null,
       pv: 1.0,
@@ -972,10 +981,9 @@ async function seedLands() {
       sizeM2: 350,
       totalPrice: 9000000,
       labelId: IDS.LABEL_TDT,
-      status: LandStatus.SOLD,
-      isPublished: true,
-      isVerified: true,
-      verifiedAt: new Date('2024-12-01'),
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
+      isVerified: false,
       titleNumber: null,
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
@@ -992,10 +1000,9 @@ async function seedLands() {
       sizeM2: 400,
       totalPrice: 14000000,
       labelId: IDS.LABEL_TDT,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
-      isVerified: true,
-      verifiedAt: SEED_DATE,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
+      isVerified: false,
       titleNumber: null,
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
@@ -1012,8 +1019,8 @@ async function seedLands() {
       sizeM2: 320,
       totalPrice: 7200000,
       labelId: IDS.LABEL_VEFL,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
       isVerified: false,
       titleNumber: null,
       pv: 1.0,
@@ -1031,8 +1038,8 @@ async function seedLands() {
       sizeM2: 500,
       totalPrice: 6800000,
       labelId: IDS.LABEL_VEFIL,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
       isVerified: false,
       titleNumber: null,
       pv: 1.0,
@@ -1050,8 +1057,8 @@ async function seedLands() {
       sizeM2: 380,
       totalPrice: 6100000,
       labelId: IDS.LABEL_VEFL,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
       isVerified: false,
       titleNumber: null,
       pv: 1.0,
@@ -1069,10 +1076,9 @@ async function seedLands() {
       sizeM2: 450,
       totalPrice: 4900000,
       labelId: IDS.LABEL_TDT,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
-      isVerified: true,
-      verifiedAt: SEED_DATE,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
+      isVerified: false,
       titleNumber: null,
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
@@ -1089,8 +1095,8 @@ async function seedLands() {
       sizeM2: 520,
       totalPrice: 7600000,
       labelId: IDS.LABEL_VEFIL,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
       isVerified: false,
       titleNumber: null,
       pv: 1.0,
@@ -1108,8 +1114,8 @@ async function seedLands() {
       sizeM2: 700,
       totalPrice: 8900000,
       labelId: IDS.LABEL_VEFL,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
       isVerified: false,
       titleNumber: null,
       pv: 1.0,
@@ -1127,10 +1133,9 @@ async function seedLands() {
       sizeM2: 600,
       totalPrice: 3800000,
       labelId: IDS.LABEL_TDT,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
-      isVerified: true,
-      verifiedAt: SEED_DATE,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
+      isVerified: false,
       titleNumber: null,
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
@@ -1147,8 +1152,8 @@ async function seedLands() {
       sizeM2: 480,
       totalPrice: 3400000,
       labelId: IDS.LABEL_VEFIL,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
       isVerified: false,
       titleNumber: null,
       pv: 1.0,
@@ -1166,8 +1171,8 @@ async function seedLands() {
       sizeM2: 550,
       totalPrice: 3600000,
       labelId: IDS.LABEL_VEFL,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
       isVerified: false,
       titleNumber: null,
       pv: 1.0,
@@ -1185,8 +1190,8 @@ async function seedLands() {
       sizeM2: 420,
       totalPrice: 5400000,
       labelId: IDS.LABEL_VEFIL,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
       isVerified: false,
       titleNumber: null,
       pv: 1.0,
@@ -1204,10 +1209,9 @@ async function seedLands() {
       sizeM2: 300,
       totalPrice: 9800000,
       labelId: IDS.LABEL_TDT,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
-      isVerified: true,
-      verifiedAt: SEED_DATE,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
+      isVerified: false,
       titleNumber: null,
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
@@ -1224,8 +1228,8 @@ async function seedLands() {
       sizeM2: 360,
       totalPrice: 4200000,
       labelId: IDS.LABEL_VEFL,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
       isVerified: false,
       titleNumber: null,
       pv: 1.0,
@@ -1243,8 +1247,8 @@ async function seedLands() {
       sizeM2: 340,
       totalPrice: 7100000,
       labelId: IDS.LABEL_VEFL,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
       isVerified: false,
       titleNumber: null,
       pv: 1.0,
@@ -1262,14 +1266,40 @@ async function seedLands() {
       sizeM2: 580,
       totalPrice: 2900000,
       labelId: IDS.LABEL_VEFIL,
-      status: LandStatus.AVAILABLE,
-      isPublished: true,
+      status: LandStatus.ARCHIVED,
+      isPublished: false,
       isVerified: false,
       titleNumber: null,
       pv: 1.0,
       ownerType: LandOwnerType.KAMBRIQ,
     },
   ];
+
+  const fixtureLabel = {
+    TFL: IDS.LABEL_TDT,
+    VEFL: IDS.LABEL_VEFL,
+    VEFIL: IDS.LABEL_VEFIL,
+  } as const;
+  const fixtureParcels: ParcelSeed[] = TEST_FIXTURE_PARCELS.map((f) => ({
+    id: f.id,
+    title: f.title,
+    slug: f.slug,
+    description: f.description,
+    region: f.region,
+    city: f.city,
+    neighborhood: f.neighborhood,
+    sizeM2: f.sizeM2,
+    totalPrice: f.totalPrice,
+    labelId: fixtureLabel[f.label],
+    status: LandStatus.AVAILABLE,
+    isPublished: true,
+    isVerified: f.isVerified,
+    titleNumber: f.titleNumber,
+    pv: 1.0,
+    ownerType: LandOwnerType.KAMBRIQ,
+  }));
+
+  const parcels: ParcelSeed[] = [...inventedParcels, ...fixtureParcels];
 
   /**
    * Idempotent is not restorative, and the difference is a Monday problem.
@@ -1390,6 +1420,9 @@ async function seedLands() {
         // P24: the titles were rewritten from an invented format; without this
         // line dev would keep showing the old ones, because `create` runs once.
         titleNumber: parcel.titleNumber,
+        // C16: dev's rows carried a verification claim on eight invented parcels.
+        isVerified: parcel.isVerified,
+        verifiedAt: parcel.verifiedAt ?? null,
       },
     });
   }
@@ -1470,7 +1503,11 @@ async function seedLands() {
   const expectedAvailable = parcels.filter(
     (p) => restoredParcelStatus(p.status, keptOn.get(p.id) ?? []) === LandStatus.AVAILABLE,
   ).length;
-  const actualAvailable = await lands.land.count({ where: { status: LandStatus.AVAILABLE } });
+  // Counted over the seed's own parcels: the catalogue's rows are AVAILABLE
+  // and unpublished (C16), and are none of the seed's business.
+  const actualAvailable = await lands.land.count({
+    where: { id: { in: seededParcelIds }, status: LandStatus.AVAILABLE },
+  });
 
   if (actualAvailable !== expectedAvailable) {
     throw new Error(
@@ -1506,7 +1543,8 @@ async function seedLands() {
   }
 
   console.log(
-    `  ✓ Lands seeded (3 labels, ${parcels.length} parcels, ${actualAvailable} available, ` +
+    `  ✓ Lands seeded (3 labels, ${inventedParcels.length} invented parcels archived, ` +
+      `${fixtureParcels.length} test fixture parcels, ${actualAvailable} available, ` +
       `${seededReservationIds.length} reservations)`,
   );
 }

@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
+// eslint-disable-next-line @nx/enforce-module-boundaries -- the seed lives in prisma/, outside any nx project
+import { TEST_FIXTURE_PARCELS } from '../../../../../prisma/seed-data/test-fixture-parcels';
 
 /**
  * Every identifier the seed writes must satisfy the API's own validation.
@@ -171,17 +173,27 @@ describe('the seed restores the fixtures it owns', () => {
   });
 
   /**
-   * A pool that survives one pass is the same zero-margin mistake as ten quiz
-   * questions against a threshold of ten. A full journey pass consumes one
-   * parcel; a suite run consumes a handful.
+   * C16 - the pool is the suite's concurrent need, not a margin.
+   *
+   * This asked for 15 AVAILABLE of 20 while the twenty were invented parcels
+   * published as real. They are archived now, and the parcels the suite reserves
+   * are `seed-data/test-fixture-parcels.ts`: as many as the suite holds at once
+   * (2, counted in that module's header), because each one is an invented parcel
+   * visible on dev. A journey no longer consumes a parcel - every reserving test
+   * cancels - and the seed restores a fixture a killed run left RESERVED.
    */
-  it('seeds a parcel pool with real margin, not exactly enough', () => {
+  it('seeds exactly the fixture pool, and every invented parcel archived', () => {
     const ids = [...landsBlock.matchAll(/id: IDS\.LAND_(\d+),/g)].map((m) => Number(m[1]));
-    const parcelCount = new Set(ids).size;
-    expect(parcelCount).toBeGreaterThanOrEqual(20);
-
-    const available = [...landsBlock.matchAll(/status: LandStatus\.AVAILABLE,/g)].length;
-    expect(available).toBeGreaterThanOrEqual(15);
+    expect(new Set(ids).size).toBe(20);
+    const invented = landsBlock.slice(
+      landsBlock.indexOf('const inventedParcels'),
+      landsBlock.indexOf('const fixtureLabel'),
+    );
+    expect(invented).not.toMatch(/status: LandStatus\.(AVAILABLE|RESERVED|SOLD),/);
+    expect(landsBlock).toContain(
+      'const parcels: ParcelSeed[] = [...inventedParcels, ...fixtureParcels];',
+    );
+    expect(TEST_FIXTURE_PARCELS).toHaveLength(2);
   });
 });
 
@@ -199,8 +211,9 @@ describe('the seed verifies its own postcondition', () => {
 
   it('counts the available parcels back before reporting them', () => {
     expect(landsBlock).toContain('Lands seed postcondition failed');
-    expect(landsBlock).toContain(
-      'const actualAvailable = await lands.land.count({ where: { status: LandStatus.AVAILABLE } })',
+    // Over the seed's own parcels only: the catalogue's rows are AVAILABLE too (C16).
+    expect(landsBlock).toMatch(
+      /const actualAvailable = await lands\.land\.count\(\{\s*where: \{ id: \{ in: seededParcelIds \}, status: LandStatus\.AVAILABLE \},/,
     );
   });
 
