@@ -17,8 +17,11 @@
  *   KAMBRIQ_API_URL=https://dev.kambriq.com \
  *     npx tsx scripts/sanity/upsert-policy-webhook.ts [--check]
  *
- * The token is a project token with Administrator rights, from the project's
- * API settings. It is not the webhook secret and it is not the Studio's login.
+ * The token is a project token with the Developer access level, from the
+ * project's API settings: the token dialog offers no Administrator level, and
+ * Developer is the one that manages webhooks. It is not the webhook secret and it
+ * is not the Studio's login. On dev both values live in SSM, under
+ * /kambriq/dev/sanity/SANITY_MANAGE_TOKEN and /kambriq/dev/sanity/SANITY_WEBHOOK_SECRET.
  */
 /*
  * A command-line tool belongs to no nx project, so it reaches `libs/common` by
