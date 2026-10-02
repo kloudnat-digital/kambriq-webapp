@@ -29,17 +29,17 @@ export async function ArchivedPolicy({
   return (
     <article>
       {title ? (
-        <h1 className="mb-6 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+        <h1 className="mb-6 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           {title}
         </h1>
       ) : null}
-      <p className="mb-2 text-sm text-gray-500 italic">
+      <p className="mb-2 text-sm text-muted-foreground italic">
         {t('lastUpdated', { date: longDate(inForce.publishedAt, locale) })}
       </p>
       {upcoming ? (
         <p
           data-testid="policy-next-revision"
-          className="mb-8 rounded-md bg-amber-50 p-3 text-sm font-medium text-amber-900"
+          className="mb-8 rounded-md bg-gold-50 p-3 text-sm font-medium text-gold-900 ring-1 ring-gold-200"
         >
           {t('nextRevision', { date: longDate(upcoming, locale) })}
         </p>

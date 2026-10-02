@@ -43,7 +43,7 @@ export async function PolicyDocument({
       {effective && notYetInForce ? (
         <p
           data-testid="policy-not-yet-in-force"
-          className="mb-8 rounded-md bg-amber-50 p-3 text-sm font-medium text-amber-900"
+          className="mb-8 rounded-md bg-gold-50 p-3 text-sm font-medium text-gold-900 ring-1 ring-gold-200"
         >
           {t('comesIntoForce', { date: effective })}
         </p>
