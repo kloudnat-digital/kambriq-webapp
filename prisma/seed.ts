@@ -437,7 +437,11 @@ async function seedKbs() {
     await kbs.kbsLesson.upsert({
       where: { id: lessonId },
       create: { id: lessonId, ...lessons[i] },
-      update: {},
+      // C50: the described surface on every run. With an empty update dev kept
+      // `contentType: 'video'` from before 9a09162 and the six seeded lessons
+      // rendered nothing for thirteen days; `create` runs once. Measured before
+      // this line was written: `contentType` was the only field dev differed on.
+      update: lessons[i],
     });
   }
 
