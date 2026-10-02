@@ -40,6 +40,10 @@ export const LandInfoPanel = ({ land }: LandInfoPanelProps) => {
           />
           <InfoRow label={t('superficie')} value={`${land.sizeM2} m²`} />
           <InfoRow label={t('totalPrice')} value={formatXAF(land.totalPrice)} />
+          {/* C49: a parcel sold in portions offers what is left. */}
+          {land.remainingM2 < land.sizeM2 && (
+            <InfoRow label={t('remaining')} value={`${land.remainingM2} m²`} />
+          )}
           <div className="flex items-center justify-between">
             <p className="text-sm/6 text-slate-500">{t('pointValue')}</p>
             <Badge variant="secondary">{land.pv}</Badge>

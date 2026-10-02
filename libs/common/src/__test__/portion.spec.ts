@@ -1,5 +1,5 @@
 import { depositFor } from '../payments/deposit';
-import { portionPrice } from '../payments/portion';
+import { fitsIn, parcelStatusFor, portionPrice, surfaceLeft } from '../payments/portion';
 
 /**
  * C49 - a portion costs the parcel's total in proportion to its surface,
@@ -44,5 +44,44 @@ describe('C49 - portionPrice', () => {
     expect(() => portionPrice(1_000n, 0, 10)).toThrow(RangeError);
     expect(() => portionPrice(1_000n, 11, 10)).toThrow(RangeError);
     expect(() => portionPrice(1_000n, 1, 0)).toThrow(RangeError);
+  });
+});
+
+describe('C49 - the surface left, and the parcel status it implies', () => {
+  const held = (
+    purchasedM2: number,
+    status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED',
+  ) => ({
+    purchasedM2,
+    status,
+  });
+
+  it('counts every portion not cancelled, completed ones included', () => {
+    expect(surfaceLeft(1_000, [held(600, 'PENDING'), held(300, 'CANCELLED')])).toBe(400);
+    expect(surfaceLeft(1_000, [held(600, 'COMPLETED'), held(400, 'CONFIRMED')])).toBe(0);
+  });
+
+  it('leaves no phantom sliver from floating-point sums', () => {
+    expect(
+      surfaceLeft(0.3, [held(0.1, 'PENDING'), held(0.1, 'PENDING'), held(0.1, 'PENDING')]),
+    ).toBe(0);
+    expect(fitsIn(0.1, 0.30000000000000004 - 0.2)).toBe(true);
+  });
+
+  it('keeps a parcel AVAILABLE while ground is left, RESERVED when none is, SOLD when all is sold', () => {
+    expect(parcelStatusFor(1_000, [])).toBe('AVAILABLE');
+    expect(parcelStatusFor(1_000, [held(600, 'PENDING')])).toBe('AVAILABLE');
+    expect(parcelStatusFor(1_000, [held(600, 'COMPLETED'), held(400, 'PENDING')])).toBe('RESERVED');
+    expect(parcelStatusFor(1_000, [held(600, 'COMPLETED'), held(400, 'COMPLETED')])).toBe('SOLD');
+    // A whole-parcel sale behaves as before: RESERVED, then SOLD on completion.
+    expect(parcelStatusFor(500, [held(500, 'PENDING')])).toBe('RESERVED');
+    expect(parcelStatusFor(500, [held(500, 'COMPLETED')])).toBe('SOLD');
+    expect(parcelStatusFor(500, [held(500, 'CANCELLED')])).toBe('AVAILABLE');
+  });
+
+  it('fits a portion only within what is left', () => {
+    expect(fitsIn(400, 400)).toBe(true);
+    expect(fitsIn(400.001, 400)).toBe(false);
+    expect(fitsIn(0, 400)).toBe(false);
   });
 });

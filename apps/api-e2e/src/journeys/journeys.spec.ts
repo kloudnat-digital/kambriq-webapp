@@ -503,7 +503,9 @@ describe('journey 4 - an agent reserves a parcel and the client reaches the port
   it('creates a client who holds CLIENT and can open the portal', async () => {
     const listed = await call('GET', '/lands?limit=50', { token: agent });
     expect(listed.status).toBe(200);
-    const lands = listed.json<{ data: Array<{ id: string; status: string }> }>().data;
+    const lands = listed.json<{
+      data: Array<{ id: string; status: string; remainingM2: number }>;
+    }>().data;
     const available = lands.filter((l) => l.status === 'AVAILABLE');
 
     // The seed is restorative and carries margin; an empty pool here means the
@@ -517,6 +519,8 @@ describe('journey 4 - an agent reserves a parcel and the client reaches the port
       token: agent,
       body: {
         landId: available[0].id,
+        // C49: the whole surface still for sale on the fixture.
+        purchasedM2: available[0].remainingM2,
         clientName: 'Journey Four',
         clientEmail: email,
         clientPhone: '+237699887700',
@@ -728,7 +732,7 @@ describe('journey 5 - a passwordless super admin activates through the ordinary 
     const listed = await call('GET', '/lands?limit=50', { token: agent });
     expect(listed.status).toBe(200);
     const available = listed
-      .json<{ data: Array<{ id: string; status: string }> }>()
+      .json<{ data: Array<{ id: string; status: string; remainingM2: number }> }>()
       .data.filter((l) => l.status === 'AVAILABLE');
     expect(available.length).toBeGreaterThan(0);
     landId = available[0].id;
@@ -737,6 +741,7 @@ describe('journey 5 - a passwordless super admin activates through the ordinary 
       token: agent,
       body: {
         landId,
+        purchasedM2: available[0].remainingM2,
         clientName: 'Journey Five',
         clientEmail: email,
         clientPhone: '+237699887701',

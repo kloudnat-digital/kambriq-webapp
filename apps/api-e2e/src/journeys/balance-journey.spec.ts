@@ -103,8 +103,9 @@ run('journey 7 - a reservation from a validated deposit to a validated balance',
 
   it('reserves a parcel for a new client, who signs in', async () => {
     const listed = await call('GET', '/lands?limit=50', { token: agent });
-    const lands = listed.json<{ data: Array<{ id: string; status: string; totalPrice: number }> }>()
-      .data;
+    const lands = listed.json<{
+      data: Array<{ id: string; status: string; totalPrice: number; remainingM2: number }>;
+    }>().data;
     const land = lands.find((l) => l.status === 'AVAILABLE');
     if (!land) throw new Error('No AVAILABLE parcel on dev: the seed pool is empty.');
     totalPrice = land.totalPrice;
@@ -114,6 +115,7 @@ run('journey 7 - a reservation from a validated deposit to a validated balance',
       token: agent,
       body: {
         landId: land.id,
+        purchasedM2: land.remainingM2,
         clientName: 'Journey Seven',
         clientEmail: email,
         clientPhone: '+237699887707',

@@ -26,6 +26,7 @@ import {
   TIMESTAMP_SORTS,
   buildPaginatedResponse,
   isListedTitle,
+  surfaceLeft,
   sortField,
 } from '@kambriq/common';
 import { LandsPrismaService } from './prisma/lands-prisma.service';
@@ -245,9 +246,11 @@ export class LandsService {
       this.prisma.land.count({ where }),
     ]);
 
+    const left = await this.surfaceLeftOn(lands);
     const landsWithUrls = await Promise.all(
       lands.map(async (land) => ({
         ...land,
+        remainingM2: left.get(land.id) ?? land.sizeM2,
         media: await Promise.all(
           land.media.map(async (m) => ({
             ...m,
@@ -314,9 +317,11 @@ export class LandsService {
       this.prisma.land.count({ where }),
     ]);
 
+    const left = await this.surfaceLeftOn(lands);
     const landsWithUrls = await Promise.all(
       lands.map(async (land) => ({
         ...land,
+        remainingM2: left.get(land.id) ?? land.sizeM2,
         media: await Promise.all(
           land.media.map(async (m) => ({
             ...m,
@@ -347,6 +352,9 @@ export class LandsService {
           select: {
             id: true,
             status: true,
+            // C49: what each portion buys and costs.
+            purchasedM2: true,
+            saleAmount: true,
             clientName: true,
             agentUserId: true,
             clientEmail: true,
@@ -377,8 +385,10 @@ export class LandsService {
       })),
     );
 
+    const left = await this.surfaceLeftOn([land]);
     return {
       ...land,
+      remainingM2: left.get(land.id) ?? land.sizeM2,
       media: mediaWithUrls,
       documents: documentsWithUrls,
     };
@@ -563,6 +573,32 @@ export class LandsService {
     if (isListedTitle(titleNumber, REAL_TITLES)) return;
     throw new UnprocessableEntityException(
       this.t('lands.land.titleNotInRegistry', 'fr', { file: REAL_TITLES_FILE }),
+    );
+  }
+
+  /**
+   * C49 - the surface still for sale on each parcel, by the rule the
+   * reservation's refusal quotes (`surfaceLeft`): its surface minus every
+   * portion not cancelled.
+   */
+  private async surfaceLeftOn(
+    lands: ReadonlyArray<{ id: string; sizeM2: number }>,
+  ): Promise<Map<string, number>> {
+    const portions = await this.prisma.landReservation.findMany({
+      where: {
+        landId: { in: lands.map((l) => l.id) },
+        status: { not: LandReservationStatus.CANCELLED },
+      },
+      select: { landId: true, purchasedM2: true, status: true },
+    });
+    return new Map(
+      lands.map((l) => [
+        l.id,
+        surfaceLeft(
+          l.sizeM2,
+          portions.filter((p) => p.landId === l.id),
+        ),
+      ]),
     );
   }
 

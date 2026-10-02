@@ -142,6 +142,10 @@ export const createLandReservationSchema = z.object({
   clientName: z.string().min(1, 'Client name is required').max(200),
   clientEmail: z.email('Invalid client email'),
   clientPhone: z.string().regex(PHONE_REGEX, PHONE_ERROR),
+  // C49: the surface this sale buys, in m2 - the whole parcel or a portion.
+  // Required: the agent states it; whether it fits is checked against what is
+  // left, under the parcel's lock, by the service.
+  purchasedM2: z.number().positive('The surface bought is more than zero'),
 });
 
 export class CreateLandReservationDto extends createZodDto(createLandReservationSchema) {}

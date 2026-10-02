@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { depositFor } from '@kambriq/common/payments/deposit';
+import { fitsIn, portionPrice } from '@kambriq/common/payments/portion';
 import { useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { Controller, useForm } from 'react-hook-form';
@@ -19,7 +21,8 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   landId: string;
-  deposit: number;
+  /** C49: the parcel's whole price and surface, and the surface still for sale. */
+  sale: { totalPrice: number; sizeM2: number; remainingM2: number };
   className?: string;
   reservation?: LandDetail['reservations'][0];
   currentUserId: string;
@@ -29,7 +32,7 @@ interface Props {
 
 export const ReserveForm = ({
   landId,
-  deposit,
+  sale,
   reservation,
   className,
   currentUserId,
@@ -62,11 +65,24 @@ export const ReserveForm = ({
   const [toReadBack, setToReadBack] = useState<ReserveLandFormSchema | null>(null);
   const [isSending, setIsSending] = useState(false);
 
+  // C49: the surface bought, the whole of what is left unless the agent says
+  // less. Priced as the API prices it - pro rata of the parcel's total - so
+  // what the agent reads to the client is what the client will be asked.
+  const [surface, setSurface] = useState(String(sale.remainingM2));
+  const surfaceM2 = Number(surface.replace(',', '.'));
+  const surfaceOk = Number.isFinite(surfaceM2) && fitsIn(surfaceM2, sale.remainingM2);
+  const amount = useMemo(
+    () => (surfaceOk ? Number(portionPrice(BigInt(sale.totalPrice), surfaceM2, sale.sizeM2)) : 0),
+    [surfaceOk, surfaceM2, sale.totalPrice, sale.sizeM2],
+  );
+  const deposit = depositFor(reservation ? (reservation.saleAmount ?? 0) : amount);
+
   const isReserved = Boolean(reservation);
   const isDisabled = isReserved || isSubmitting;
   const canCancel = isAdmin || reservation?.agentUserId === currentUserId;
 
   const handleReserve = (data: ReserveLandFormSchema) => {
+    if (!surfaceOk) return;
     setToReadBack(data);
   };
 
@@ -78,6 +94,7 @@ export const ReserveForm = ({
       clientName: toReadBack.name,
       clientEmail: toReadBack.email,
       clientPhone: toReadBack.phone,
+      purchasedM2: surfaceM2,
     });
     setIsSending(false);
 
@@ -207,6 +224,42 @@ export const ReserveForm = ({
                 )}
               />
 
+              {isReserved && reservation ? (
+                <Field>
+                  <FieldLabel>{t('surface')}</FieldLabel>
+                  <Input disabled type="text" value={`${reservation.purchasedM2} m²`} />
+                </Field>
+              ) : (
+                <Field data-invalid={!surfaceOk}>
+                  <FieldLabel htmlFor="res-surface">{t('surface')}</FieldLabel>
+                  <Input
+                    id="res-surface"
+                    inputMode="decimal"
+                    value={surface}
+                    disabled={isDisabled || Boolean(toReadBack)}
+                    aria-invalid={!surfaceOk}
+                    onChange={(e) => setSurface(e.target.value)}
+                  />
+                  {!surfaceOk && (
+                    <FieldError
+                      errors={[{ message: t('surfaceInvalid', { remaining: sale.remainingM2 }) }]}
+                    />
+                  )}
+                  <FieldDescription>
+                    {t('surfaceHint', { remaining: sale.remainingM2, size: sale.sizeM2 })}
+                  </FieldDescription>
+                </Field>
+              )}
+
+              <Field>
+                <FieldLabel>{t('saleAmount')}</FieldLabel>
+                <Input
+                  disabled
+                  type="text"
+                  value={formatXAF(reservation ? (reservation.saleAmount ?? 0) : amount)}
+                />
+              </Field>
+
               <Field>
                 <FieldLabel>{t('summaryDeposit')}</FieldLabel>
                 <Input disabled type="text" value={formatXAF(deposit)} />
@@ -218,7 +271,7 @@ export const ReserveForm = ({
             <Button
               type="submit"
               className="mt-5 h-10 w-full"
-              disabled={isSubmitting || !canManageReservations}
+              disabled={isSubmitting || !canManageReservations || !surfaceOk}
             >
               {isSubmitting ? '…' : t('submit')}
             </Button>
@@ -235,6 +288,9 @@ export const ReserveForm = ({
                 {t('readBackTitle')}
               </p>
               <p className="font-mono text-lg break-all text-gray-900">{toReadBack.email}</p>
+              <p className="text-sm font-semibold text-amber-900">
+                {t('readBackSale', { surface: surfaceM2, amount: formatXAF(amount) })}
+              </p>
               <p className="text-sm text-amber-900">{t('readBackBody')}</p>
               <div className="flex gap-3">
                 <Button

@@ -1,6 +1,5 @@
 'use client';
 
-import { depositFor } from '@kambriq/common/payments/deposit';
 import type { FC } from 'react';
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -45,8 +44,6 @@ const LandDetailContent: FC<LandDetailContentProps> = ({
 
   const media = useMemo(() => [...(land?.media ?? [])].sort((a, b) => a.order - b.order), [land]);
 
-  const deposit = useMemo(() => depositFor(land?.totalPrice ?? 0), [land]);
-
   if (isPending) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -56,6 +53,12 @@ const LandDetailContent: FC<LandDetailContentProps> = ({
   }
 
   if (!land) return null;
+
+  // C49: a parcel is offered while any surface is left; the form prices the
+  // surface the agent types, so no deposit is shown before one is chosen. Only
+  // a parcel with no surface left shows a reservation in the form's place.
+  const sale = { totalPrice: land.totalPrice, sizeM2: land.sizeM2, remainingM2: land.remainingM2 };
+  const shown = land.remainingM2 > 0 ? undefined : land.reservations[0];
 
   return (
     <div className="space-y-6">
@@ -67,11 +70,11 @@ const LandDetailContent: FC<LandDetailContentProps> = ({
         <div className="lg:col-start-3 lg:row-start-1">
           <LandInfoPanel land={land} />
           <ReserveForm
-            key={land.reservations[0]?.id ?? 'new'}
+            key={shown?.id ?? 'new'}
             landId={id}
-            deposit={deposit}
+            sale={sale}
             className="mt-5 hidden lg:block"
-            reservation={land.reservations[0]}
+            reservation={shown}
             currentUserId={currentUserId}
             isAdmin={isAdmin}
             canManageReservations={canManageReservations}
@@ -127,9 +130,9 @@ const LandDetailContent: FC<LandDetailContentProps> = ({
         <div className="block lg:hidden">
           <ReserveForm
             landId={id}
-            deposit={deposit}
-            reservation={land.reservations[0]}
-            key={land.reservations[0]?.id ?? 'new'}
+            sale={sale}
+            reservation={shown}
+            key={shown?.id ?? 'new'}
             currentUserId={currentUserId}
             isAdmin={isAdmin}
             canManageReservations={canManageReservations}

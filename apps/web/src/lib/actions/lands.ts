@@ -182,6 +182,8 @@ export const createReservationAction = createAction(
     clientName: string;
     clientEmail: string;
     clientPhone: string;
+    /** C49: the surface this sale buys, in m2. */
+    purchasedM2: number;
   }) => {
     try {
       return await serverApi.post('/lands/reservations', data);

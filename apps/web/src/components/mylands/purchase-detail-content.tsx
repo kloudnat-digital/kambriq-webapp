@@ -188,6 +188,16 @@ export function PurchaseDetailContent({ id }: Props) {
         </div>
         <h1 className="truncate text-xl font-bold text-slate-900">{r.land?.title}</h1>
         <p className="text-sm text-slate-500">{r.land?.city ?? r.land?.region}</p>
+        {/* C49: what this purchase is - its surface and its amount, read from the
+            sale, so a portion of a parcel shows the portion's price. */}
+        <p data-testid="purchase-sale" className="mt-2 text-sm font-semibold text-slate-900">
+          {tMy('saleLine', {
+            surface: r.purchasedM2,
+            size: r.land.sizeM2,
+            amount: formatXAF(r.saleAmount),
+            deposit: formatXAF(r.downPaymentAmount),
+          })}
+        </p>
       </div>
 
       {/*

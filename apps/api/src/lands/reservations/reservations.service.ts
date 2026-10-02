@@ -30,8 +30,11 @@ import {
   TIMESTAMP_SORTS,
   buildPaginatedResponse,
   depositFor,
+  fitsIn,
   maskEmail,
+  parcelStatusFor,
   portionPrice,
+  surfaceLeft,
   sortField,
   sumReceipts,
 } from '@kambriq/common';
@@ -80,7 +83,12 @@ export class LandReservationsService {
     // Use a transaction to prevent race conditions.
     // Inside the transaction: check land is still available, then reserve.
     const result = await this.prisma.$transaction(async (tx) => {
-      // 1. Fetch land with a fresh read inside the transaction
+      // 1. C49: lock the parcel row first. The rule "the live portions never
+      // exceed the parcel's surface" is a sum across rows, which no index can
+      // hold; it holds because every reservation of a parcel takes this lock
+      // and counts its portions after it, so two concurrent ones are served in
+      // turn and the second sees the first.
+      await tx.$queryRaw`SELECT id FROM "Land" WHERE id = ${dto.landId} FOR UPDATE`;
       const land = await tx.land.findUnique({
         where: { id: dto.landId },
         include: { label: true },
@@ -98,24 +106,36 @@ export class LandReservationsService {
         throw new ConflictException(this.t('lands.reservation.conflict'));
       }
 
-      // 2. Check no active reservation exists for this land
-      const existingReservation = await tx.landReservation.findFirst({
-        where: {
-          landId: dto.landId,
-          status: { notIn: [LandReservationStatus.CANCELLED] },
-        },
+      // 2. The portions already sold or held on this parcel, after the lock.
+      const portions = await tx.landReservation.findMany({
+        where: { landId: dto.landId, status: { not: LandReservationStatus.CANCELLED } },
+        select: { purchasedM2: true, status: true, clientEmail: true },
       });
 
-      if (existingReservation) {
-        throw new ConflictException(this.t('lands.reservation.conflict'));
+      // One live sale per client per parcel: a client who wants more ground
+      // buys a larger portion (the index below is the backstop).
+      const email = dto.clientEmail.trim().toLowerCase();
+      const live: LandReservationStatus[] = [
+        LandReservationStatus.PENDING,
+        LandReservationStatus.CONFIRMED,
+      ];
+      if (portions.some((p) => live.includes(p.status) && p.clientEmail.toLowerCase() === email)) {
+        throw new ConflictException(this.t('lands.reservation.clientAlreadyHolds'));
+      }
+
+      // The invariant, and the figure the refusal quotes.
+      const left = surfaceLeft(land.sizeM2, portions);
+      if (!fitsIn(dto.purchasedM2, left)) {
+        throw new ConflictException(
+          this.t('lands.reservation.surfaceExceeded', 'fr', { remaining: String(left) }),
+        );
       }
 
       // 3. The sale's surface and amount (C49), then its deposit: 5 % of the
-      // SALE, not of the parcel. Every reservation buys the whole parcel until
-      // portions open, so the amount is the parcel's total, exactly. Both are
+      // SALE, not of the parcel, priced pro rata of the parcel's total. Both are
       // frozen here: a price revised later moves neither the deposit nor the
       // balance, which read the reservation.
-      const purchasedM2 = land.sizeM2;
+      const purchasedM2 = dto.purchasedM2;
       const saleAmount = portionPrice(land.totalPrice, purchasedM2, land.sizeM2);
       // Integer money; `depositFor` works on a number, which holds any realistic
       // amount exactly, and its result is already whole.
@@ -136,10 +156,16 @@ export class LandReservationsService {
         },
       });
 
-      // 5. Update land status to RESERVED
+      // 5. The parcel's status follows its portions: still AVAILABLE, and listed
+      // for agents, while any surface is left; RESERVED once none is.
       await tx.land.update({
         where: { id: dto.landId },
-        data: { status: LandStatus.RESERVED },
+        data: {
+          status: parcelStatusFor(land.sizeM2, [
+            ...portions,
+            { purchasedM2, status: LandReservationStatus.PENDING },
+          ]),
+        },
       });
 
       return { reservation, land };
@@ -415,20 +441,18 @@ export class LandReservationsService {
       throw new ForbiddenException(this.t('lands.reservation.notConfirmed'));
     }
 
-    // Atomically: update reservation + mark land as SOLD
-    await this.prisma.$transaction([
-      this.prisma.landReservation.update({
+    // Atomically: complete the sale, then restate the parcel from all its
+    // portions - SOLD only once every m2 is in a completed sale (C49).
+    await this.prisma.$transaction(async (tx) => {
+      await tx.landReservation.update({
         where: { id: reservationId },
         data: {
           status: LandReservationStatus.COMPLETED,
           completedAt: new Date(),
         },
-      }),
-      this.prisma.land.update({
-        where: { id: reservation.landId },
-        data: { status: LandStatus.SOLD },
-      }),
-    ]);
+      });
+      await this.restateParcel(tx, reservation.landId);
+    });
 
     this.logger.log('Land sale completed %o', {
       reservationId,
@@ -486,21 +510,20 @@ export class LandReservationsService {
       });
     }
 
-    // Cancel reservation + make land available again
-    await this.prisma.$transaction([
-      this.prisma.landReservation.update({
+    // Cancel the sale, then restate the parcel from the portions left: its
+    // surface is for sale again (C49). On an archived parcel this still writes
+    // AVAILABLE - declared on 2 October, the parcel stays unpublished.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.landReservation.update({
         where: { id: reservationId },
         data: {
           status: LandReservationStatus.CANCELLED,
           cancelReason: dto.reason,
           cancelledAt: new Date(),
         },
-      }),
-      this.prisma.land.update({
-        where: { id: reservation.landId },
-        data: { status: LandStatus.AVAILABLE },
-      }),
-    ]);
+      });
+      await this.restateParcel(tx, reservation.landId);
+    });
 
     // Notify agent
     const land = await this.prisma.land.findUnique({
@@ -1008,6 +1031,29 @@ export class LandReservationsService {
       throw new NotFoundException(this.t('lands.reservation.notFound'));
     }
     return reservation;
+  }
+
+  /**
+   * C49 - a parcel's status from all its portions, under the same row lock the
+   * reservation takes, so it cannot interleave with a sale being made.
+   */
+  private async restateParcel(
+    tx: Parameters<Parameters<LandsPrismaService['$transaction']>[0]>[0],
+    landId: string,
+  ): Promise<void> {
+    await tx.$queryRaw`SELECT id FROM "Land" WHERE id = ${landId} FOR UPDATE`;
+    const land = await tx.land.findUniqueOrThrow({
+      where: { id: landId },
+      select: { sizeM2: true },
+    });
+    const portions = await tx.landReservation.findMany({
+      where: { landId },
+      select: { purchasedM2: true, status: true },
+    });
+    await tx.land.update({
+      where: { id: landId },
+      data: { status: parcelStatusFor(land.sizeM2, portions) },
+    });
   }
 
   private t(key: string, lang = 'fr', args?: Record<string, unknown>): string {

@@ -13,9 +13,11 @@ interface Props {
     pricePerM2: number | null;
     sizeM2: number;
   };
+  /** C49: what this reservation buys and costs - the money reads the sale, not the parcel. */
+  sale: { purchasedM2: number; saleAmount: number };
 }
 
-export const ReservationLandSummaryCard: FC<Props> = ({ land }) => {
+export const ReservationLandSummaryCard: FC<Props> = ({ land, sale }) => {
   const t = useTranslations('app.reservations');
 
   return (
@@ -30,11 +32,15 @@ export const ReservationLandSummaryCard: FC<Props> = ({ land }) => {
         </div>
         <div className="flex justify-between">
           <span className="text-slate-400">{t('size')}</span>
-          <span className="font-medium text-slate-900">{land.sizeM2} m²</span>
+          <span className="font-medium text-slate-900">
+            {sale.purchasedM2 === land.sizeM2
+              ? `${land.sizeM2} m²`
+              : `${sale.purchasedM2} m² / ${land.sizeM2} m²`}
+          </span>
         </div>
         <div className="flex justify-between border-t border-slate-100 pt-2">
           <span className="text-slate-400">{t('total')}</span>
-          <span className="font-bold text-slate-900">{formatXAF(land.totalPrice)}</span>
+          <span className="font-bold text-slate-900">{formatXAF(sale.saleAmount)}</span>
         </div>
       </div>
       <Button asChild size="sm" variant="outline" className="mt-3 w-full">
