@@ -282,6 +282,11 @@ model LandPriceHistory {
   landId        String
   previousTotalPrice BigInt
   newTotalPrice      BigInt
+  /// C49 - the parcel's surface in m2 from this change on, beside the total
+  /// that goes with it: the rate of the period this row opens is
+  /// `newTotalPrice / sizeM2`, exact, derived and never stored rounded (G19).
+  /// Required, so a row is written when the price OR the surface changes.
+  sizeM2             Float
   /// Identifier of the admin who updated the price.
   changedBy     String
   /// Reason for the price update.

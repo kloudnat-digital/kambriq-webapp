@@ -122,22 +122,31 @@ export class LandsService {
       }
     }
 
-    // Track price change if price is being updated
-    if (dto.totalPrice !== undefined && BigInt(dto.totalPrice) !== land.totalPrice) {
+    // Track a change of price or of surface: either one moves the rate per m2,
+    // and the row records both inputs so the rate of the period it opens is
+    // derived exactly (C49), never stored rounded.
+    const newTotal = dto.totalPrice !== undefined ? BigInt(dto.totalPrice) : land.totalPrice;
+    const newSize = dto.sizeM2 !== undefined ? dto.sizeM2 : land.sizeM2;
+    if (newTotal !== land.totalPrice || newSize !== land.sizeM2) {
       await this.prisma.landPriceHistory.create({
         data: {
           landId,
           previousTotalPrice: land.totalPrice,
-          newTotalPrice: dto.totalPrice,
+          newTotalPrice: newTotal,
+          sizeM2: newSize,
           changedBy: adminUserId,
-          reason: `Total price updated from ${land.totalPrice} to ${dto.totalPrice} XAF`,
+          reason:
+            newTotal !== land.totalPrice
+              ? `Total price updated from ${land.totalPrice} to ${newTotal} XAF`
+              : `Surface updated from ${land.sizeM2} to ${newSize} m2; total unchanged`,
         },
       });
 
       this.logger.log('Land price changed %o', {
         landId,
         from: land.totalPrice,
-        to: dto.totalPrice,
+        to: newTotal,
+        sizeM2: newSize,
         adminUserId,
       });
     }
