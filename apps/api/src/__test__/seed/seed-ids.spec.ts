@@ -163,6 +163,20 @@ describe('the seed restores the fixtures it owns', () => {
     expect(upsert).not.toMatch(/update:\s*\{\s*\}/);
   });
 
+  /**
+   * C49 - `update: {}` froze dev's commissions on the reservation ids a seed of
+   * 4 September gave them; the cross-module postcondition refused them on every
+   * run after 24 September. The described surface is written on every run.
+   */
+  it('updates the commissions it describes, reservationId included', () => {
+    const block = SEED.slice(
+      SEED.indexOf('await kamnet.kamnetCommission.upsert'),
+      SEED.indexOf('async function seedLands'),
+    );
+    expect(block).toContain('update: commissions[i],');
+    expect(block).not.toMatch(/update:\s*\{\s*\}/);
+  });
+
   it('clears the reservations a journey created against seeded parcels', () => {
     expect(landsBlock).toContain('lands.landReservation.deleteMany');
     // Only the seed's own parcels, and never the seeded reservation itself.

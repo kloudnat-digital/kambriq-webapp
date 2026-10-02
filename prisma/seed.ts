@@ -10,7 +10,6 @@ import { restoredParcelStatus } from './seed-data/parcel-status';
 import { TEST_FIXTURE_PARCELS } from './seed-data/test-fixture-parcels';
 import { SEED_ROLES, seedRoleId } from './seed-data/roles';
 import { describeKbsSettings, seedKbsSettings } from './kbs-settings-apply';
-import { maskEmail } from '@kambriq/common';
 import { maskEmail } from '@kambriq/common/utils/log-redact';
 /**
  * Database seed script.
@@ -807,7 +806,12 @@ async function seedKamnet() {
     await kamnet.kamnetCommission.upsert({
       where: { id: commId },
       create: { id: commId, ...commissions[i] },
-      update: {},
+      // C49: the whole described surface, `reservationId` included. With an
+      // empty update dev kept the reservation ids a seed of 4 September gave
+      // these rows, which no longer exist, and the cross-module postcondition
+      // below refused them on every run since; `create` runs once. Same lesson
+      // as `titleNumber` on the parcel upsert.
+      update: commissions[i],
     });
   }
 
