@@ -24,3 +24,4 @@ export enum LandMediaCategory {
 }
 
 export { DOWN_PAYMENT_PERCENT, depositFor } from '../../payments/deposit';
+export { portionPrice } from '../../payments/portion';

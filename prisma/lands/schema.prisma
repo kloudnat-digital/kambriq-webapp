@@ -211,6 +211,16 @@ model LandReservation {
   clientPhone  String?
   status       LandReservationStatus @default(PENDING)
 
+  /// C49 - the surface this sale buys, in m2: the whole parcel, or a portion
+  /// of it. Required: a null meaning "the whole parcel" is the ambiguity G19
+  /// removed. Same unit and type as `Land.sizeM2`.
+  purchasedM2 Float
+  /// C49 - what this sale costs, whole XAF: `portionPrice(totalPrice,
+  /// purchasedM2, sizeM2)` at reservation, then frozen. The deposit and the
+  /// balance read this, never the parcel, so a price revised later moves
+  /// neither. Integer money, like `Land.totalPrice`.
+  saleAmount  BigInt
+
   /// Legacy down payment amount, whole XAF (G1 deprecates it; the deposit Payment
   /// carries the amount due). Integer money since 27 September, like Land.totalPrice.
   downPaymentAmount    BigInt?

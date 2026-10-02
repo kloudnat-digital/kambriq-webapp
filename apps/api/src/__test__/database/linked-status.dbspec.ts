@@ -139,6 +139,9 @@ describe('I48 - the land list counts live reservations only', () => {
           clientName: 'I48 Client',
           clientEmail: `i48-${randomUUID()}@example.test`,
           downPaymentAmount: 750_000n,
+          // The whole 500 m2 parcel: the sale's surface and amount (C49).
+          purchasedM2: 500,
+          saleAmount: 15_000_000n,
         },
       });
     }
