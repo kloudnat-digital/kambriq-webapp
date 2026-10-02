@@ -177,6 +177,18 @@ describe('the seed restores the fixtures it owns', () => {
     expect(block).not.toMatch(/update:\s*\{\s*\}/);
   });
 
+  /**
+   * C50 - the seeded lessons were frozen on `contentType: 'video'` on dev, so
+   * the fix of 19 September never reached it and six lessons rendered nothing.
+   */
+  it('updates the lessons it describes', () => {
+    const block = SEED.slice(
+      SEED.indexOf('await kbs.kbsLesson.upsert'),
+      SEED.indexOf('// Settings (singleton)'),
+    );
+    expect(block).toContain('update: lessons[i],');
+  });
+
   it('clears the reservations a journey created against seeded parcels', () => {
     expect(landsBlock).toContain('lands.landReservation.deleteMany');
     // Only the seed's own parcels, and never the seeded reservation itself.
