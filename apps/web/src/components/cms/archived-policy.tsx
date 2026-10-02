@@ -1,11 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import type { KbsLabelLanguage } from '@kambriq/common/kbs/label-definitions';
+import { legalDate } from '@/lib/cms/legal-date';
 import type { PolicyStanding } from '@/lib/cms/policy-standing';
-
-const longDate = (iso: string, locale: string) =>
-  new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(
-    new Date(iso),
-  );
 
 /**
  * C41 - the revision in force, read from the API's archive, while Sanity holds
@@ -34,14 +30,14 @@ export async function ArchivedPolicy({
         </h1>
       ) : null}
       <p className="mb-2 text-sm text-muted-foreground italic">
-        {t('lastUpdated', { date: longDate(inForce.publishedAt, locale) })}
+        {t('lastUpdated', { date: legalDate(inForce.publishedAt, locale) })}
       </p>
       {upcoming ? (
         <p
           data-testid="policy-next-revision"
           className="mb-8 rounded-md bg-gold-50 p-3 text-sm font-medium text-gold-900 ring-1 ring-gold-200"
         >
-          {t('nextRevision', { date: longDate(upcoming, locale) })}
+          {t('nextRevision', { date: legalDate(upcoming, locale) })}
         </p>
       ) : null}
       <div
