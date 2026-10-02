@@ -278,7 +278,6 @@ export class PaymentsService {
       where: { id: reservationId },
       include: {
         payments: { select: { id: true, reference: true, state: true, purpose: true } },
-        land: { select: { totalPrice: true } },
       },
     });
 
@@ -377,7 +376,7 @@ export class PaymentsService {
   }
 
   /**
-   * G20 - the balance: the parcel's total minus what the deposit RECEIVED,
+   * G20 - the balance: the sale's amount (C49) minus what the deposit RECEIVED,
    * summed over its ledger rows. Not minus the deposit
    * that was due: a deposit validated short (mobile-money ceilings, transfers in
    * tranches) leaves its shortfall here, visible, instead of a hole nobody sees
@@ -386,7 +385,7 @@ export class PaymentsService {
    */
   private async createBalance(
     clientUserId: string,
-    reservation: { id: string; documentsReceivedAt: Date | null; land: { totalPrice: bigint } },
+    reservation: { id: string; documentsReceivedAt: Date | null; saleAmount: bigint },
     depositPaymentId: string,
   ): Promise<{ id: string; reference: string; amountDue: string; currency: string }> {
     if (!reservation.documentsReceivedAt) {
@@ -401,7 +400,10 @@ export class PaymentsService {
       select: { amount: true },
     });
     // Whole XAF on both sides: the total and the receipts are integer money.
-    const amountDue = reservation.land.totalPrice - sumReceipts(receipts);
+    // C49: the sale's amount, frozen at reservation like the deposit. It read
+    // the parcel's current total, so a price revised between deposit and balance
+    // moved the balance and not the deposit.
+    const amountDue = reservation.saleAmount - sumReceipts(receipts);
     if (amountDue <= 0n) {
       throw new BadRequestException('Nothing remains to be paid on this reservation.');
     }

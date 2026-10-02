@@ -145,6 +145,9 @@ export const createPaymentFixture = async (
       clientName: 'Fixture Client',
       clientEmail: `a17-${tag}@example.test`,
       downPaymentAmount: 750_000n,
+      // The whole 500 m2 parcel: the sale's surface and amount (C49).
+      purchasedM2: 500,
+      saleAmount: 15_000_000n,
     },
   });
 

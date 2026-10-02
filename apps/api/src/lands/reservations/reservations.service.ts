@@ -31,6 +31,7 @@ import {
   buildPaginatedResponse,
   depositFor,
   maskEmail,
+  portionPrice,
   sortField,
   sumReceipts,
 } from '@kambriq/common';
@@ -109,10 +110,16 @@ export class LandReservationsService {
         throw new ConflictException(this.t('lands.reservation.conflict'));
       }
 
-      // 3. Calculate down payment (5% of the parcel's total price, G19)
-      // Both are integer money; `depositFor` works on a number, which holds any
-      // realistic total exactly, and its result is already whole.
-      const downPaymentAmount = BigInt(depositFor(Number(land.totalPrice)));
+      // 3. The sale's surface and amount (C49), then its deposit: 5 % of the
+      // SALE, not of the parcel. Every reservation buys the whole parcel until
+      // portions open, so the amount is the parcel's total, exactly. Both are
+      // frozen here: a price revised later moves neither the deposit nor the
+      // balance, which read the reservation.
+      const purchasedM2 = land.sizeM2;
+      const saleAmount = portionPrice(land.totalPrice, purchasedM2, land.sizeM2);
+      // Integer money; `depositFor` works on a number, which holds any realistic
+      // amount exactly, and its result is already whole.
+      const downPaymentAmount = BigInt(depositFor(Number(saleAmount)));
 
       // 4. Create the reservation
       const reservation = await tx.landReservation.create({
@@ -123,6 +130,8 @@ export class LandReservationsService {
           clientEmail: dto.clientEmail,
           clientPhone: dto.clientPhone || null,
           status: LandReservationStatus.PENDING,
+          purchasedM2,
+          saleAmount,
           downPaymentAmount,
         },
       });
@@ -170,7 +179,7 @@ export class LandReservationsService {
       args: {
         clientName: dto.clientName,
         landTitle: land.title,
-        totalPrice: String(land.totalPrice),
+        totalPrice: String(reservation.saleAmount),
         // Empty rather than an id: the template omits the line when there is no
         // name, which is the only honest option if the name cannot be reached.
         agentName,
@@ -187,7 +196,7 @@ export class LandReservationsService {
           firstName: agentUser.firstName || agentUser.email,
           clientName: dto.clientName,
           landTitle: land.title,
-          totalPrice: String(land.totalPrice),
+          totalPrice: String(reservation.saleAmount),
         },
       },
       agentUser.profile,
@@ -690,7 +699,7 @@ export class LandReservationsService {
   private async moneyForClient(reservation: {
     id: string;
     downPaymentAmount: bigint | null;
-    land: { totalPrice: bigint };
+    saleAmount: bigint;
   }) {
     const live = await this.prisma.payment.findMany({
       where: {
@@ -704,7 +713,9 @@ export class LandReservationsService {
         .filter((p) => p.purpose === purpose)
         .reduce((sum, p) => sum + sumReceipts(p.receipts), 0n);
 
-    const total = reservation.land.totalPrice;
+    // C49: the sale's amount, frozen at reservation - not the parcel's total,
+    // which may have been revised since. `totalPrice` below is the purchase's.
+    const total = reservation.saleAmount;
     const depositDue = reservation.downPaymentAmount ?? 0n;
     const depositReceived = received(PaymentPurpose.ACOMPTE);
     const balanceReceived = received(PaymentPurpose.SOLDE);

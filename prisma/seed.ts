@@ -1456,6 +1456,9 @@ async function seedLands() {
       clientPhone: '+237 699 000 001',
       status: LandReservationStatus.CONFIRMED,
       downPaymentAmount: 750000n,
+      // The whole parcel (250 m2): the sale's surface and amount (C49).
+      purchasedM2: 250,
+      saleAmount: 15_000_000n,
       downPaymentConfirmed: true,
       confirmedBy: IDS.USER_ADMIN_LANDS,
       confirmedAt: new Date('2025-02-01'),
@@ -1485,6 +1488,9 @@ async function seedLands() {
       clientPhone: '+237 699 000 002',
       status: LandReservationStatus.CONFIRMED,
       downPaymentAmount: 450000n,
+      // The whole parcel (350 m2): the sale's surface and amount (C49).
+      purchasedM2: 350,
+      saleAmount: 9_000_000n,
       downPaymentConfirmed: true,
       confirmedBy: IDS.USER_ADMIN_LANDS,
       confirmedAt: new Date('2025-01-20'),

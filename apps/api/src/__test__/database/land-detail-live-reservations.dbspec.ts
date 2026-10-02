@@ -66,6 +66,9 @@ describe('C32 - the land detail carries no cancelled reservation', () => {
         clientEmail: `${who}@example.test`,
         clientPhone: `+2376${who.replace(/\D/g, '').slice(0, 8).padEnd(8, '0')}`,
         downPaymentAmount: 750_000n,
+        // The whole 500 m2 parcel: the sale's surface and amount (C49).
+        purchasedM2: 500,
+        saleAmount: 15_000_000n,
       },
     });
 
