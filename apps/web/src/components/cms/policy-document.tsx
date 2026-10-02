@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import type { KbsLabelLanguage } from '@kambriq/common/kbs/label-definitions';
 import type { CmsDocument } from '@/lib/cms/documents';
+import { legalDate } from '@/lib/cms/legal-date';
 import { CmsBody } from './portable-text';
 
 /**
@@ -12,8 +13,9 @@ import { CmsBody } from './portable-text';
  * reader is entitled to rely on. The migration dropped the line after checking
  * it agreed with the field.
  *
- * The date is rendered with `Intl` in the reader's language, which is how this
- * repository writes any date somebody acts on.
+ * The date is rendered with `Intl` in the reader's language, in the zone the
+ * dates are written in (`legal-date.ts`), which is how this repository writes any
+ * date somebody acts on.
  */
 export async function PolicyDocument({
   document,
@@ -27,11 +29,7 @@ export async function PolicyDocument({
 }) {
   const t = await getTranslations('legal');
 
-  const effective = document.publishedAt
-    ? new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(
-        new Date(document.publishedAt),
-      )
-    : null;
+  const effective = document.publishedAt ? legalDate(document.publishedAt, locale) : null;
 
   return (
     <article>
