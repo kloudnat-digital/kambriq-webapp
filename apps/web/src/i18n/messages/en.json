@@ -1324,7 +1324,9 @@
       "privacy": "Privacy policy",
       "rgpd": "Data protection"
     },
-    "lastUpdated": "Last updated: {date}"
+    "lastUpdated": "Last updated: {date}",
+    "comesIntoForce": "This text takes effect on {date}. Until then, it does not yet apply.",
+    "nextRevision": "A new version of this text takes effect on {date}."
   },
   "app": {
     "nav": {

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { policyInForceWhere } from '@kambriq/common';
 import { CorePrismaService } from '../core/prisma/core-prisma.service';
 import type { PolicyPublishPayload } from './policy-publish.dto';
 import { renderPolicyHtml } from './policy-render';
@@ -105,4 +106,31 @@ export class PolicyArchiveService {
       return { status: 'already-archived', ...identity };
     }
   }
+
+  /**
+   * C41 - what a reader of a legal page is entitled to rely on: the revision in
+   * force (the most recent already published, by the same rule the consent
+   * record uses), and the next one, if one is published with a later date.
+   */
+  async inForce(slug: string, locale: string, now: Date = new Date()): Promise<PolicyStanding> {
+    const [inForce, upcoming] = await Promise.all([
+      this.core.policySnapshot.findFirst({
+        where: policyInForceWhere(slug, locale, now),
+        orderBy: { publishedAt: 'desc' },
+        select: { revision: true, publishedAt: true, rendered: true },
+      }),
+      this.core.policySnapshot.findFirst({
+        where: { slug, locale, publishedAt: { gt: now } },
+        orderBy: { publishedAt: 'asc' },
+        select: { revision: true, publishedAt: true },
+      }),
+    ]);
+    return { inForce, upcoming };
+  }
+}
+
+/** A legal policy's standing: the revision in force, and the one that comes next. */
+export interface PolicyStanding {
+  inForce: { revision: string; publishedAt: Date; rendered: string } | null;
+  upcoming: { revision: string; publishedAt: Date } | null;
 }

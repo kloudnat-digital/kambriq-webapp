@@ -1324,7 +1324,9 @@
       "privacy": "Confidentialité",
       "rgpd": "RGPD"
     },
-    "lastUpdated": "Dernière mise à jour : {date}"
+    "lastUpdated": "Dernière mise à jour : {date}",
+    "comesIntoForce": "Ce texte entre en vigueur le {date}. Jusque-là, il n'est pas encore applicable.",
+    "nextRevision": "Une nouvelle version de ce texte entrera en vigueur le {date}."
   },
   "app": {
     "nav": {

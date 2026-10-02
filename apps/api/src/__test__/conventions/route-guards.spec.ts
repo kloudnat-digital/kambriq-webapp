@@ -90,6 +90,9 @@ const PUBLIC_SURFACE: Record<string, number> = {
   // which verifies an HMAC over the raw body and refuses when the secret is
   // absent. Throttled at 30/minute: a bulk publish of every policy in both
   // languages is eight deliveries, each retried twice.
+  // C41: which legal revision is in force, read by the legal pages for any
+  // visitor; it returns only text the site already publishes.
+  'cms/cms-policies.controller.ts': 1,
   'cms/cms-webhooks.controller.ts': 1,
   'health/health.controller.ts': 3,
   // P11: the public directory of certified agents, one route. A buyer deciding

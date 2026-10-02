@@ -95,3 +95,16 @@ export const policyDocumentId = (slug: string, language: string) =>
  * determination, like the consent timestamp.
  */
 export const CONSENT_POLICY_SLUG: PolicySlug = 'legal-privacy';
+
+/**
+ * C41 - which revision of a legal policy is in force: the most recent one
+ * already published. A revision dated in the future is not in force - the
+ * terms can be prepared before they take effect - and every act records the
+ * revision in force when it was done (Visquis, 2 October). One definition,
+ * read by the consent record and by the page the visitor reads.
+ */
+export const policyInForceWhere = (slug: string, locale: string, now: Date) => ({
+  slug,
+  locale,
+  publishedAt: { lte: now },
+});

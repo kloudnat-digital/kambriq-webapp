@@ -86,7 +86,7 @@ describe('L1 - ContactService', () => {
 
       expect(prisma.policySnapshot.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { slug: 'legal-privacy', locale: 'fr' },
+          where: { slug: 'legal-privacy', locale: 'fr', publishedAt: { lte: expect.any(Date) } },
           orderBy: { publishedAt: 'desc' },
         }),
       );
@@ -104,7 +104,9 @@ describe('L1 - ContactService', () => {
       await service.submit(input({ locale: 'en' }));
 
       expect(prisma.policySnapshot.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { slug: 'legal-privacy', locale: 'en' } }),
+        expect.objectContaining({
+          where: { slug: 'legal-privacy', locale: 'en', publishedAt: { lte: expect.any(Date) } },
+        }),
       );
     });
 

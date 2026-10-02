@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   CONSENT_POLICY_SLUG,
+  policyInForceWhere,
   ContactRequestStatus,
   ContactSubject,
   EmailService,
@@ -241,7 +242,7 @@ export class ContactService {
   }
 
   /**
-   * The archived revision of the privacy policy current right now, or null.
+   * The archived revision of the privacy policy in force right now, or null.
    *
    * Read from the archive rather than taken from the request: a version supplied
    * by a browser is a claim about what somebody was shown, and the record has to
@@ -254,7 +255,10 @@ export class ContactService {
    */
   private async currentPolicySnapshotId(locale: 'fr' | 'en'): Promise<string | null> {
     const snapshot = await this.prisma.policySnapshot.findFirst({
-      where: { slug: CONSENT_POLICY_SLUG, locale },
+      // C41: in force means already published; a revision dated in the future
+      // is not what anybody consents to today. With none in force, the consent
+      // records no revision rather than one it was not given against.
+      where: policyInForceWhere(CONSENT_POLICY_SLUG, locale, new Date()),
       orderBy: { publishedAt: 'desc' },
       select: { id: true },
     });
