@@ -54,7 +54,9 @@
     "cannotUploadDocs": "Cette réservation n'accepte plus d'envoi de documents",
     "docNotFound": "Document introuvable",
     "docDeleted": "Document supprimé",
-    "docRejected": "Document rejeté"
+    "docRejected": "Document rejeté",
+    "surfaceExceeded": "La surface demandée dépasse la surface encore disponible sur ce terrain : {remaining} m².",
+    "clientAlreadyHolds": "Ce client a déjà une réservation en cours sur ce terrain. Pour davantage de surface, annulez-la puis réservez la surface totale voulue."
   },
   "invite": {
     "sent": "Invitation envoyée à {email}",

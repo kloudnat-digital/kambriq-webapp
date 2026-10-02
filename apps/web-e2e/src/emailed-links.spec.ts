@@ -35,13 +35,14 @@ test('I45 - a new client sets a password from the invitation email and signs in'
   const agent = apiToken('fieldAgent');
   const lands = (await (
     await request.get('/api/v1/lands?limit=50', { headers: { authorization: `Bearer ${agent}` } })
-  ).json()) as { data: Array<{ id: string; status: string }> };
+  ).json()) as { data: Array<{ id: string; status: string; remainingM2: number }> };
   const land = lands.data.find((l) => l.status === 'AVAILABLE');
   if (!land) throw new Error('No AVAILABLE parcel on this environment: the seed pool is empty.');
   const reserved = await request.post('/api/v1/lands/reservations', {
     headers: { authorization: `Bearer ${agent}` },
     data: {
       landId: land.id,
+      purchasedM2: land.remainingM2,
       clientName: 'E2E Invitation',
       clientEmail: email,
       clientPhone: '+237699887745',

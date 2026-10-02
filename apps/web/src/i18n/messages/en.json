@@ -1451,7 +1451,12 @@
       "notAvailable": "not available",
       "reservedTitle": "Land parcel reserved",
       "cancelButton": "Cancel reservation",
-      "cancelSuccess": "Reservation cancelled."
+      "cancelSuccess": "Reservation cancelled.",
+      "surface": "Surface bought (m²)",
+      "surfaceHint": "Available: {remaining} m² of {size} m². The price is the parcel's, pro rata of the surface.",
+      "surfaceInvalid": "Enter a surface above 0 and at most {remaining} m².",
+      "saleAmount": "Purchase amount",
+      "readBackSale": "{surface} m² for {amount}"
     },
     "landDetail": {
       "description": "Description",
@@ -1478,7 +1483,8 @@
       "verifiedAt": "Verification date",
       "notVerified": "Not verified",
       "documentsTitle": "Documents",
-      "download": "Download"
+      "download": "Download",
+      "remaining": "Surface still for sale"
     },
     "reservations": {
       "pageTitle": "Reservations",
@@ -1622,7 +1628,8 @@
         "dossierDesc": "Title transfer in progress",
         "completeLabel": "Title deed",
         "completeDesc": "Title deed issued in your name"
-      }
+      },
+      "saleLine": "Your purchase: {surface} m² of {size} m², {amount}, including a deposit of {deposit}"
     },
     "network": {
       "pageTitle": "My KAMNET™ network",

@@ -119,7 +119,7 @@ test('I46 - the back office takes a deposit from request to validation through i
   const lands = (await (
     await request.get('/api/v1/lands?limit=50', { headers: auth(agent) })
   ).json()) as {
-    data: Array<{ id: string; status: string }>;
+    data: Array<{ id: string; status: string; remainingM2: number }>;
   };
   const land = lands.data.find((l) => l.status === 'AVAILABLE');
   if (!land) throw new Error('No AVAILABLE parcel on this environment: the seed pool is empty.');
@@ -127,6 +127,7 @@ test('I46 - the back office takes a deposit from request to validation through i
     headers: auth(agent),
     data: {
       landId: land.id,
+      purchasedM2: land.remainingM2,
       clientName: 'I46 Walk',
       clientEmail: email,
       clientPhone: '+237699887746',

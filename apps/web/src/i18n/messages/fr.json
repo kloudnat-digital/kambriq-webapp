@@ -1451,7 +1451,12 @@
       "notAvailable": "non disponible",
       "reservedTitle": "Terrain réservé",
       "cancelButton": "Annuler la réservation",
-      "cancelSuccess": "Réservation annulée."
+      "cancelSuccess": "Réservation annulée.",
+      "surface": "Surface achetée (m²)",
+      "surfaceHint": "Disponible : {remaining} m² sur {size} m². Le prix est celui du terrain, au prorata de la surface.",
+      "surfaceInvalid": "Indiquez une surface supérieure à 0 et au plus {remaining} m².",
+      "saleAmount": "Montant de l'achat",
+      "readBackSale": "{surface} m² pour {amount}"
     },
     "landDetail": {
       "description": "Description",
@@ -1478,7 +1483,8 @@
       "verifiedAt": "Date de vérification",
       "notVerified": "Non vérifié",
       "documentsTitle": "Documents",
-      "download": "Télécharger"
+      "download": "Télécharger",
+      "remaining": "Surface encore disponible"
     },
     "reservations": {
       "pageTitle": "Réservations",
@@ -1622,7 +1628,8 @@
         "dossierDesc": "Transfert de propriété en cours",
         "completeLabel": "Titre foncier",
         "completeDesc": "Titre foncier à votre nom"
-      }
+      },
+      "saleLine": "Votre achat : {surface} m² sur {size} m², {amount}, dont un acompte de {deposit}"
     },
     "network": {
       "pageTitle": "Mon réseau KAMNET™",

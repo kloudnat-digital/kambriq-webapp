@@ -261,7 +261,11 @@ model LandReservation {
   payments            Payment[]
 
   /// Unique constraint to ensure only one active reservation per land.
-  @@unique([landId], where: { status: { not: "CANCELLED" } })
+  /// C49: several clients may each hold a portion of one parcel, so the old
+  /// "one reservation per parcel" index is gone; that the portions fit in the
+  /// parcel is a sum across rows, held under a row lock by the service. What
+  /// an index can still hold: one live sale per client per parcel.
+  @@unique([landId, clientEmail], map: "LandReservation_landId_clientEmail_live_key", where: raw("(\"status\" IN ('PENDING', 'CONFIRMED'))"))
   @@index([agentUserId])
   @@index([status])
 }

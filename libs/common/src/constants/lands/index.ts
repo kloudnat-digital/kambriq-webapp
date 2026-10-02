@@ -24,4 +24,5 @@ export enum LandMediaCategory {
 }
 
 export { DOWN_PAYMENT_PERCENT, depositFor } from '../../payments/deposit';
-export { portionPrice } from '../../payments/portion';
+export { fitsIn, parcelStatusFor, portionPrice, surfaceLeft } from '../../payments/portion';
+export type { PortionHold } from '../../payments/portion';

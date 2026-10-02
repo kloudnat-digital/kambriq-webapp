@@ -178,6 +178,7 @@ const ReservationDetailContent: FC<Props> = ({ id, currentUserId, isAdmin = fals
               pricePerM2: r.land.pricePerM2,
               sizeM2: r.land.sizeM2,
             }}
+            sale={{ purchasedM2: r.purchasedM2, saleAmount: r.saleAmount }}
           />
 
           {!isCancelled && !isCompleted && canCancel && (

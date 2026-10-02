@@ -54,7 +54,9 @@
     "cannotUploadDocs": "This reservation no longer accepts document uploads",
     "docNotFound": "Document not found",
     "docDeleted": "Document removed",
-    "docRejected": "Document rejected"
+    "docRejected": "Document rejected",
+    "surfaceExceeded": "The surface requested is more than what is left on this parcel: {remaining} m².",
+    "clientAlreadyHolds": "This client already has a live reservation on this parcel. For more ground, cancel it and reserve the whole surface wanted."
   },
   "invite": {
     "sent": "Invitation sent to {email}",
