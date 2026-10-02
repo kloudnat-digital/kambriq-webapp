@@ -157,7 +157,15 @@ describe('A67 - a test an environment variable can switch off runs somewhere', (
       .sort();
     const reading = walk(SITE_PAGES)
       .filter((f) => f.endsWith('page.tsx'))
-      .filter((f) => readFileSync(f, 'utf8').includes("'@/lib/cms/documents'"))
+      // C41: the legal pages read the CMS through `LegalPolicyPage`, which picks
+      // the revision in force; they are CMS pages all the same.
+      .filter((f) => {
+        const src = readFileSync(f, 'utf8');
+        return (
+          src.includes("'@/lib/cms/documents'") ||
+          src.includes("'@/components/cms/legal-policy-page'")
+        );
+      })
       .map((f) => '/' + relative(SITE_PAGES, f).replace(/\/?page\.tsx$/, ''))
       .sort();
     expect(reading.length).toBeGreaterThan(0);

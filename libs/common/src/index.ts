@@ -169,6 +169,7 @@ export {
   POLICY_WEBHOOK_PATH,
   CONSENT_POLICY_SLUG,
   policyDocumentId,
+  policyInForceWhere,
 } from './cms/legal-policy';
 export type { PolicyLanguage, PolicySlug } from './cms/legal-policy';
 export {

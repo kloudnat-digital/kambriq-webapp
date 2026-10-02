@@ -18,9 +18,12 @@ import { CmsBody } from './portable-text';
 export async function PolicyDocument({
   document,
   locale,
+  notYetInForce = false,
 }: {
   document: CmsDocument;
   locale: KbsLabelLanguage;
+  /** C41: a revision dated in the future, shown as the text to come, never as current. */
+  notYetInForce?: boolean;
 }) {
   const t = await getTranslations('legal');
 
@@ -37,7 +40,14 @@ export async function PolicyDocument({
           {document.title}
         </h1>
       ) : null}
-      {effective ? (
+      {effective && notYetInForce ? (
+        <p
+          data-testid="policy-not-yet-in-force"
+          className="mb-8 rounded-md bg-amber-50 p-3 text-sm font-medium text-amber-900"
+        >
+          {t('comesIntoForce', { date: effective })}
+        </p>
+      ) : effective ? (
         <p className="mb-8 text-sm text-gray-500 italic">{t('lastUpdated', { date: effective })}</p>
       ) : null}
       <CmsBody body={document.body} language={locale} />
